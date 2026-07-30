@@ -229,6 +229,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-jobcost" onclick="nav('jobcost')"><span class="sico">&#128200;</span>Job Costing</button>
       <button class="sb" id="sb-draws" onclick="nav('draws')"><span class="sico">&#128179;</span>Draw Requests</button>
       <button class="sb" id="sb-lienwaivers" onclick="nav('lienwaivers')"><span class="sico">&#128196;</span>Lien Waivers</button>
+      <button class="sb" id="sb-po" onclick="nav('po')"><span class="sico">&#128230;</span>Purchase Orders</button>
+      <button class="sb" id="sb-deliveries" onclick="nav('deliveries')"><span class="sico">&#128666;</span>Deliveries</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -617,6 +619,53 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- PURCHASE ORDERS -->
+<div class="panel" id="panel-po">
+  <div class="ph"><div><div class="ptitle">Purchase Orders</div><div class="psub">Material and sub POs issued against a job and a cost code</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('po')">Export CSV</button><button class="btn bp bs" onclick="openPoModal()">+ New PO</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open POs</div><div class="kval" id="po-open">0</div><div class="kt">Awaiting delivery</div></div>
+    <div class="kpi"><div class="klbl">Open PO Value</div><div class="kval" id="po-openval">$0</div><div class="kt">Selected scope</div></div>
+    <div class="kpi"><div class="klbl">Closed</div><div class="kval" id="po-closed">0</div><div class="kt">Fulfilled</div></div>
+    <div class="kpi"><div class="klbl">Cancelled</div><div class="kval" id="po-cancelled">0</div><div class="kt">Not fulfilled, not expected</div></div>
+    <div class="kpi"><div class="klbl">No Delivery Tracked</div><div class="kval" id="po-nodelivery">0</div><div class="kt" id="po-nodelivery-sub">Issued, nothing logged in Deliveries</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="pojob" onchange="rPoTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="postatus" onchange="rPoTbl()" style="width:180px;">
+        <option value="">All Statuses</option>
+        <option value="open">Open</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Cost Code</th><th>Vendor</th><th>Description</th><th>Amount</th><th>Status</th><th>Issued</th><th>Actions</th></tr></thead>
+    <tbody id="potbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- DELIVERIES -->
+<div class="panel" id="panel-deliveries">
+  <div class="ph"><div><div class="ptitle">Deliveries</div><div class="psub">Fulfillment against issued POs &mdash; POs are the commitment, this is whether it showed up</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('deliveries')">Export CSV</button><button class="btn bp bs" onclick="openDeliveryModal()">+ New Delivery</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Pending</div><div class="kval" id="dv-pending">0</div><div class="kt">Not yet due or in transit</div></div>
+    <div class="kpi"><div class="klbl">Past Expected</div><div class="kval" id="dv-overdue">0</div><div class="kt" id="dv-overdue-sub">Expected date passed, not received</div></div>
+    <div class="kpi"><div class="klbl">Received</div><div class="kval" id="dv-received">0</div><div class="kt">Complete, no issues</div></div>
+    <div class="kpi"><div class="klbl">Short / Damaged</div><div class="kval" id="dv-issues">0</div><div class="kt" id="dv-issues-sub">Needs follow-up with vendor</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="dvjob" onchange="rDvTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="dvstatus" onchange="rDvTbl()" style="width:180px;">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option><option value="received">Received</option><option value="short">Short</option><option value="damaged">Damaged</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>PO</th><th>Vendor</th><th>Expected</th><th>Received</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="dvtbody"></tbody></table></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -871,6 +920,40 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="pomodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Purchase Order</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="pom-job"></select></div><div class="fg"><label>Cost Code</label><input id="pom-code" placeholder="02-Materials"></div></div>
+    <div class="fg"><label>Vendor</label><input id="pom-vendor" placeholder="Builders FirstSource"></div>
+    <div class="fg"><label>Description</label><input id="pom-desc" placeholder="Framing lumber package"></div>
+    <div class="fr"><div class="fg"><label>Amount ($)</label><input id="pom-amount" type="number" placeholder="18400"></div><div class="fg"><label>Status</label><select id="pom-status">
+      <option value="open">Open</option><option value="closed">Closed</option><option value="cancelled">Cancelled</option>
+    </select></div></div>
+    <div class="fg"><label>Issued Date</label><input id="pom-issued" type="date"></div>
+    <div class="fg"><label>Notes</label><input id="pom-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePoModal()">Cancel</button>
+      <button class="btn bp" onclick="savePo()">Save PO</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="dvmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Delivery</div>
+    <div class="fg"><label>Purchase Order</label><select id="dvm-po" onchange="dvPoChanged()"></select></div>
+    <div class="fr"><div class="fg"><label>Expected Date</label><input id="dvm-expected" type="date"></div><div class="fg"><label>Status</label><select id="dvm-status" onchange="dvStatusChanged()">
+      <option value="pending">Pending</option><option value="received">Received</option><option value="short">Short</option><option value="damaged">Damaged</option>
+    </select></div></div>
+    <div class="fg" id="dvm-receivedrow"><label>Received Date</label><input id="dvm-received" type="date"></div>
+    <div class="fg"><label>Notes</label><input id="dvm-notes" placeholder="Optional - detail any short/damaged items"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDeliveryModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDelivery()">Save Delivery</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -981,6 +1064,8 @@ function nav(id){
   if(id==='fieldphoto')rFieldPhoto();
   if(id==='draws')rDraws();
   if(id==='lienwaivers')rLw();
+  if(id==='po')rPo();
+  if(id==='deliveries')rDv();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1167,6 +1252,33 @@ function seed(){
     {id:'LW-04',job_id:'J-2602',draw_id:'DR-02',party:'Midwest Steel Fab',type:'unconditional',amount:22000,status:'pending',date:''},
     {id:'LW-05',job_id:'J-2605',draw_id:'',party:'Builders FirstSource',type:'unconditional',amount:6500,status:'executed',date:'2026-05-25'}
   ]);
+  // Purchase Orders: every status renders (open/closed/cancelled), tied to
+  // real cost codes already seeded above so PO totals have something genuine
+  // to reconcile against Job Costing later. PO-02 is deliberately left with
+  // NO delivery row below -- a real, non-zero "No Delivery Tracked" case,
+  // same discipline as DR-01/lien-waivers above: the gap this pairing exists
+  // to catch has to actually exist in the seed, not just the happy path.
+  // PO-06 exists purely to give Deliveries a genuinely overdue row (real
+  // elapsed time via daysAgo(), not a hardcoded calendar date).
+  st('bld_pos',[
+    {id:'PO-01',job_id:'J-2601',cost_code:'02-Materials',vendor:'Builders FirstSource',description:'Framing lumber package',amount:18400,status:'closed',issued_at:'2026-05-10',notes:''},
+    {id:'PO-02',job_id:'J-2601',cost_code:'03-Countertops',vendor:'Pinnacle Stone & Design',description:'Kitchen island + perimeter slabs',amount:11200,status:'open',issued_at:'2026-07-02',notes:''},
+    {id:'PO-03',job_id:'J-2602',cost_code:'02-Materials',vendor:'Builders FirstSource',description:'Unit B drywall + insulation',amount:9800,status:'open',issued_at:'2026-06-20',notes:''},
+    {id:'PO-04',job_id:'J-2602',cost_code:'04-Subs',vendor:'Midwest Steel Fab',description:'Structural steel package',amount:42000,status:'closed',issued_at:'2026-05-01',notes:''},
+    {id:'PO-05',job_id:'J-2603',cost_code:'04-Subs',vendor:'Kessler Electric',description:'Rough electrical materials',amount:3200,status:'cancelled',issued_at:'2026-06-15',notes:'Duplicate of PO issued directly to Kessler - cancelled before delivery'},
+    {id:'PO-06',job_id:'J-2604',cost_code:'02-Materials',vendor:'Builders FirstSource',description:'Punch list touch-up materials',amount:640,status:'open',issued_at:daysAgo(35),notes:''}
+  ]);
+  // Deliveries: job_id is copied from the PO at creation time (denormalized
+  // on purpose, same reasoning documented in the Deliveries JS section below)
+  // so filtering works the same simple way every other panel filters, without
+  // a join on every render. DV-04 is real-elapsed overdue via daysAgo(), not
+  // a fixed date, matching the Draw Requests overdue seed above.
+  st('bld_deliveries',[
+    {id:'DV-01',po_id:'PO-01',job_id:'J-2601',expected_at:'2026-05-17',received_at:'2026-05-16',status:'received',notes:''},
+    {id:'DV-02',po_id:'PO-03',job_id:'J-2602',expected_at:'2026-08-05',received_at:'',status:'pending',notes:''},
+    {id:'DV-03',po_id:'PO-04',job_id:'J-2602',expected_at:'2026-05-20',received_at:'2026-05-22',status:'short',notes:'Two structural brackets missing from shipment - reorder placed'},
+    {id:'DV-04',po_id:'PO-06',job_id:'J-2604',expected_at:daysAgo(10),received_at:'',status:'pending',notes:''}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1187,7 +1299,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -2180,8 +2292,8 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // explicitly optional) are declared once; adding a new panel's job
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
-var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job'];
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -2812,6 +2924,201 @@ function saveLw(){
   toast('Saved - '+rec.party);
 }
 
+// ── PURCHASE ORDERS ───────────────────────────────────────────────────────
+var POSTATUS={open:{l:'Open',c:'bw'},closed:{l:'Closed',c:'bg'},cancelled:{l:'Cancelled',c:'bx'}};
+function bldPos(){return ld('bld_pos',[]);}
+function bldDeliveries(){return ld('bld_deliveries',[]);}
+// Same cross-dataset discipline as drawsMissingWaiver(): a PO that is open or
+// closed (i.e. genuinely expected to ship) with zero delivery rows against it
+// is a real tracking gap, computed fresh rather than hand-flagged so it can
+// never drift from what the Deliveries panel actually shows.
+function posMissingDelivery(){
+  var tracked={};
+  bldDeliveries().forEach(function(d){if(d.po_id)tracked[d.po_id]=true;});
+  return bldPos().filter(function(p){return p.status!=='cancelled'&&!tracked[p.id];});
+}
+function rPo(){fillJobSelects();fillPoSelect();rPoTbl();}
+function poScope(){
+  var jf=(($('pojob')||{}).value||''),sf=(($('postatus')||{}).value||'');
+  return bldPos().filter(function(p){return(!jf||p.job_id===jf)&&(!sf||p.status===sf);});
+}
+function rPoTbl(){
+  var list=poScope();
+  var open=list.filter(function(p){return p.status==='open';});
+  var openVal=open.reduce(function(s,p){return s+(p.amount||0);},0);
+  var closed=list.filter(function(p){return p.status==='closed';});
+  var cancelled=list.filter(function(p){return p.status==='cancelled';});
+  var missingIds={};
+  posMissingDelivery().forEach(function(p){missingIds[p.id]=true;});
+  var noDelivery=list.filter(function(p){return missingIds[p.id];});
+  $('po-open').textContent=open.length;
+  $('po-openval').textContent=fmt(openVal);
+  $('po-closed').textContent=closed.length;
+  $('po-cancelled').textContent=cancelled.length;
+  $('po-nodelivery').textContent=noDelivery.length;
+  $('po-nodelivery-sub').className='kt'+(noDelivery.length?' d':'');
+  $('po-nodelivery-sub').textContent=noDelivery.length?'Issued, nothing logged in Deliveries':'Every open/closed PO is tracked';
+  var tb=$('potbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No purchase orders match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(p){
+      var s=POSTATUS[p.status]||{l:p.status,c:'bx'};
+      var missing=missingIds[p.id];
+      return '<tr><td>'+H(jobLabel(p.job_id))+'</td>'+
+        '<td><strong>'+H(p.cost_code)+'</strong></td>'+
+        '<td>'+H(p.vendor)+'</td>'+
+        '<td>'+H(p.description)+(missing?' <span class="badge bw" style="margin-left:4px;">No Delivery</span>':'')+'</td>'+
+        '<td><strong>'+fmt(p.amount)+'</strong></td>'+
+        '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
+        '<td>'+(p.issued_at?fdate(p.issued_at):'--')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editPo(\''+H(p.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+var pomeid=null;
+function openPoModal(){
+  if(!jobs().length){toast('Add a job first - a PO must belong to one');return;}
+  pomeid=null;fillJobSelects();
+  ['pom-code','pom-vendor','pom-desc','pom-amount','pom-notes'].forEach(function(f){$(f).value='';});
+  $('pom-status').value='open';
+  $('pom-issued').value=new Date().toISOString().slice(0,10);
+  $('pomodal').classList.add('on');
+}
+function closePoModal(){$('pomodal').classList.remove('on');}
+function editPo(id){
+  var p=bldPos().find(function(x){return x.id===id;});if(!p)return;
+  pomeid=id;fillJobSelects();
+  $('pom-job').value=p.job_id||'';$('pom-code').value=p.cost_code||'';
+  $('pom-vendor').value=p.vendor||'';$('pom-desc').value=p.description||'';
+  $('pom-amount').value=p.amount||'';$('pom-status').value=p.status||'open';
+  $('pom-issued').value=p.issued_at||'';$('pom-notes').value=p.notes||'';
+  $('pomodal').classList.add('on');
+}
+function savePo(){
+  var vendor=$('pom-vendor').value.trim();
+  if(!vendor){toast('Vendor required');return;}
+  var job=$('pom-job').value;
+  if(!job){toast('Job required');return;}
+  var code=$('pom-code').value.trim();
+  if(!code){toast('Cost code required');return;}
+  var list=bldPos();
+  var existing=pomeid?list.find(function(x){return x.id===pomeid;}):null;
+  var rec={
+    id:pomeid||('PO-'+String(Date.now()).slice(-5)),
+    job_id:job,cost_code:code,vendor:vendor,
+    description:$('pom-desc').value.trim(),
+    amount:parseFloat($('pom-amount').value)||0,
+    status:$('pom-status').value,issued_at:$('pom-issued').value,
+    notes:$('pom-notes').value.trim()
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(pomeid){var i=list.findIndex(function(x){return x.id===pomeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_pos',list);
+  closePoModal();rPo();
+  toast('Saved - '+rec.vendor);
+}
+
+// ── DELIVERIES ────────────────────────────────────────────────────────────
+var DVSTATUS={pending:{l:'Pending',c:'bw'},received:{l:'Received',c:'bg'},short:{l:'Short',c:'br'},damaged:{l:'Damaged',c:'br'}};
+function fillPoSelect(){
+  var el=$('dvm-po');if(!el)return;
+  var keep=el.value;
+  el.innerHTML=bldPos().map(function(p){return '<option value="'+H(p.id)+'">'+H(jobLabel(p.job_id))+' - '+H(p.vendor)+' ('+H(p.cost_code)+')</option>';}).join('');
+  if(keep)el.value=keep;else if(bldPos().length)el.value=bldPos()[0].id;
+}
+// Job is derived from the selected PO, not entered independently -- a
+// delivery cannot exist against a job different from its own PO's job, so
+// letting the two disagree would be a data-entry footgun, not flexibility.
+function dvPoChanged(){}
+function dvDaysOverdue(d){
+  if(d.status!=='pending')return 0;
+  var exp=new Date((d.expected_at||'')+'T00:00:00');
+  if(isNaN(exp))return 0;
+  return Math.max(0,Math.round((Date.now()-exp.getTime())/86400000));
+}
+function rDv(){fillJobSelects();fillPoSelect();rDvTbl();}
+function dvScope(){
+  var jf=(($('dvjob')||{}).value||''),sf=(($('dvstatus')||{}).value||'');
+  return bldDeliveries().filter(function(d){return(!jf||d.job_id===jf)&&(!sf||d.status===sf);});
+}
+function rDvTbl(){
+  var list=dvScope();
+  var pending=list.filter(function(d){return d.status==='pending';});
+  var overdue=pending.filter(function(d){return dvDaysOverdue(d)>0;});
+  var received=list.filter(function(d){return d.status==='received';});
+  var issues=list.filter(function(d){return d.status==='short'||d.status==='damaged';});
+  $('dv-pending').textContent=pending.length-overdue.length;
+  $('dv-overdue').textContent=overdue.length;
+  $('dv-overdue-sub').className='kt'+(overdue.length?' d':'');
+  $('dv-overdue-sub').textContent=overdue.length?'Expected date passed, not received':'Nothing overdue';
+  $('dv-received').textContent=received.length;
+  $('dv-issues').textContent=issues.length;
+  $('dv-issues-sub').className='kt'+(issues.length?' d':'');
+  $('dv-issues-sub').textContent=issues.length?'Needs follow-up with vendor':'No short/damaged shipments';
+  var tb=$('dvtbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No deliveries match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(d){
+      var po=bldPos().find(function(x){return x.id===d.po_id;});
+      var s=DVSTATUS[d.status]||{l:d.status,c:'bx'};
+      var overdue=d.status==='pending'&&dvDaysOverdue(d)>0;
+      return '<tr><td>'+H(jobLabel(d.job_id))+'</td>'+
+        '<td>'+H(po?po.description:d.po_id)+'</td>'+
+        '<td>'+H(po?po.vendor:'')+'</td>'+
+        '<td>'+(d.expected_at?fdate(d.expected_at):'--')+(overdue?' <span class="badge br" style="margin-left:4px;">'+dvDaysOverdue(d)+'d late</span>':'')+'</td>'+
+        '<td>'+(d.received_at?fdate(d.received_at):'--')+'</td>'+
+        '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
+        '<td><button class="btn bo bs" onclick="editDelivery(\''+H(d.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function dvStatusChanged(){
+  $('dvm-receivedrow').style.display=$('dvm-status').value==='pending'?'none':'block';
+}
+var dvmeid=null;
+function openDeliveryModal(){
+  if(!bldPos().length){toast('Add a purchase order first - a delivery must be tied to one');return;}
+  dvmeid=null;fillPoSelect();
+  $('dvm-expected').value='';$('dvm-received').value='';$('dvm-notes').value='';
+  $('dvm-status').value='pending';
+  dvStatusChanged();
+  $('dvmodal').classList.add('on');
+}
+function closeDeliveryModal(){$('dvmodal').classList.remove('on');}
+function editDelivery(id){
+  var d=bldDeliveries().find(function(x){return x.id===id;});if(!d)return;
+  dvmeid=id;fillPoSelect();
+  $('dvm-po').value=d.po_id||'';$('dvm-expected').value=d.expected_at||'';
+  $('dvm-status').value=d.status||'pending';$('dvm-received').value=d.received_at||'';
+  $('dvm-notes').value=d.notes||'';
+  dvStatusChanged();
+  $('dvmodal').classList.add('on');
+}
+function saveDelivery(){
+  var poId=$('dvm-po').value;
+  if(!poId){toast('Purchase order required');return;}
+  var po=bldPos().find(function(x){return x.id===poId;});
+  if(!po){toast('Selected purchase order no longer exists');return;}
+  var status=$('dvm-status').value;
+  if(status!=='pending'&&!$('dvm-received').value){toast('A '+status+' delivery needs a received date');return;}
+  var list=bldDeliveries();
+  var existing=dvmeid?list.find(function(x){return x.id===dvmeid;}):null;
+  var rec={
+    id:dvmeid||('DV-'+String(Date.now()).slice(-5)),
+    po_id:poId,job_id:po.job_id,
+    expected_at:$('dvm-expected').value,
+    received_at:status==='pending'?'':$('dvm-received').value,
+    status:status,notes:$('dvm-notes').value.trim()
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(dvmeid){var i=list.findIndex(function(x){return x.id===dvmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_deliveries',list);
+  closeDeliveryModal();rDv();rPo();
+  toast('Saved delivery - '+(po.vendor||''));
+}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -2890,6 +3197,16 @@ function csv(type){
     if(!lwlist.length){toast('No lien waivers in scope to export');return;}
     rows=[['Job','Party','Type','Amount','Tied Draw','Status','Date']];
     lwlist.forEach(function(w){var d=w.draw_id?bldDraws().find(function(x){return x.id===w.draw_id;}):null;rows.push([jobLabel(w.job_id),w.party,LWTYPE[w.type]||w.type,w.amount,d?('Draw #'+(d.draw_no||'?')):'',(LWSTATUS[w.status]||{l:w.status}).l,w.date]);});
+  } else if(type==='po'){
+    var polist=poScope();
+    if(!polist.length){toast('No purchase orders in scope to export');return;}
+    rows=[['Job','Cost Code','Vendor','Description','Amount','Status','Issued','Notes']];
+    polist.forEach(function(p){rows.push([jobLabel(p.job_id),p.cost_code,p.vendor,p.description,p.amount,(POSTATUS[p.status]||{l:p.status}).l,p.issued_at,p.notes]);});
+  } else if(type==='deliveries'){
+    var dvlist=dvScope();
+    if(!dvlist.length){toast('No deliveries in scope to export');return;}
+    rows=[['Job','PO','Vendor','Expected','Received','Status','Notes']];
+    dvlist.forEach(function(d){var po=bldPos().find(function(x){return x.id===d.po_id;});rows.push([jobLabel(d.job_id),po?po.description:d.po_id,po?po.vendor:'',d.expected_at,d.received_at,(DVSTATUS[d.status]||{l:d.status}).l,d.notes]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
