@@ -103,6 +103,57 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 #toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
 #toast.on{opacity:1;transform:translateY(0);}
 .note{background:var(--pt);border:1px solid var(--pb);border-radius:10px;padding:12px 14px;font-size:12px;color:#78350F;margin-bottom:16px;}
+/* Every table lives in a scroll container. Set unconditionally, not only in
+   the phone media query: a wide table can overflow a narrow desktop window
+   or a split-screen pane too, and a rule that only exists below 768px would
+   leave that broken. */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.tw table{min-width:640px;}
+/* Off-canvas sidebar toggle. Hidden at desktop width; the media query below
+   is what reveals it, so desktop is untouched. */
+.navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+#scrim.on{display:block;}
+
+/* ── PHONE / NARROW ────────────────────────────────────────────────────────
+   Added as part of making mobile a v1 requirement rather than a later pass.
+   Audited at 390px before writing this: the page scrolled to 2124px wide,
+   the 220px sidebar never collapsed (leaving 170px for all content), .krow
+   was a hard 5-column grid needing 592px, and tables had no scroll container.
+   Each rule below targets one of those measured failures. */
+@media (max-width:768px){
+  .navtog{display:flex;align-items:center;justify-content:center;}
+  /* Sidebar slides out rather than stealing width. transform (not display)
+     so it animates and stays focusable/measurable. */
+  aside{position:fixed;top:56px;left:0;bottom:0;width:250px;z-index:50;
+        transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);}
+  aside.on{transform:translateX(0);}
+  main{padding:14px;}
+  header{padding:0 12px;gap:10px;}
+  .hlogo{font-size:17px;}
+  .hbadge{display:none;}
+  .huser{display:none;}
+  /* 44px minimum touch target -- measured 25px (header) and 38px (sidebar). */
+  .hbtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
+  .sb{min-height:44px;font-size:14px;}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  .btn.bs{min-height:40px;}
+  /* KPI grid: fit as many as will fit instead of forcing 5 across. */
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .kval{font-size:20px;}
+  .g2,.g3{grid-template-columns:1fr;}
+  .fr,.fr3{grid-template-columns:1fr;}
+  .sbar{flex-wrap:wrap;}
+  .sbar input,.sbar select{width:100%!important;flex:1 1 100%;}
+  .ph{gap:8px;}
+  .ptitle{font-size:19px;}
+  .pa{margin-left:0;width:100%;}
+  .mbox{width:94%;padding:20px;}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media (max-width:420px){
+  .krow{grid-template-columns:1fr 1fr;}
+}
 </style>
 </head>
 <body>
@@ -137,6 +188,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 
 <div id="app">
   <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation">&#9776;</button>
     <div class="hlogo">SAIRNbuild</div>
     <div class="hbadge">Jobs + Margin</div>
     <div class="hr">
@@ -145,8 +197,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="hbtn" onclick="doLogout()">Logout</button>
     </div>
   </header>
+  <div id="scrim" onclick="closeNav()"></div>
   <div class="wrap">
-    <aside>
+    <aside id="aside">
       <div class="ss">Overview</div>
       <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
       <div class="ss">Jobs</div>
@@ -199,8 +252,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="complete">Complete</option>
       </select>
     </div>
-    <table><thead><tr><th>Address</th><th>Client</th><th>Stage</th><th>Contract</th><th>Committed</th><th>Margin</th><th>Target End</th><th>Actions</th></tr></thead>
-    <tbody id="jtbody"></tbody></table>
+    <div class="tw"><table><thead><tr><th>Address</th><th>Client</th><th>Stage</th><th>Contract</th><th>Committed</th><th>Margin</th><th>Target End</th><th>Actions</th></tr></thead>
+    <tbody id="jtbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -228,8 +281,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="other">Other</option>
       </select>
     </div>
-    <table><thead><tr><th>Job</th><th>Cost Code</th><th>Kind</th><th>Vendor / Crew</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Variance</th><th>Actions</th></tr></thead>
-    <tbody id="ctbody"></tbody></table>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Cost Code</th><th>Kind</th><th>Vendor / Crew</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Variance</th><th>Actions</th></tr></thead>
+    <tbody id="ctbody"></tbody></table></div>
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Cost Code Roll-up</span></div><div class="cb" id="c-rollup"></div></div>
 </div>
@@ -347,7 +400,22 @@ function chkPin(){
 }
 function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
 
+// Off-canvas nav. Only reachable below 768px (the toggle is display:none
+// above it), so desktop behaviour is unchanged.
+function toggleNav(){
+  var a=$('aside');if(!a)return;
+  var open=a.classList.toggle('on');
+  $('scrim').classList.toggle('on',open);
+}
+function closeNav(){
+  var a=$('aside');if(a)a.classList.remove('on');
+  $('scrim').classList.remove('on');
+}
+
 function nav(id){
+  // Selecting a destination must dismiss the drawer, or on a phone the user
+  // taps a panel and is left staring at the menu that covers it.
+  closeNav();
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   var p=$('panel-'+id),b=$('sb-'+id);
