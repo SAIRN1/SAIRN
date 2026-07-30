@@ -287,6 +287,19 @@ to what just changed, not a standing background monitor — running it
 constantly would slow real work down for no added confidence beyond the
 first check.
 
+**Automated deploy-mismatch check, added 2026-07-29:** a `PostToolUse` hook
+(`tools/deploy_verify_notify.py`, wired in `.claude/settings.json`, filtered
+to `git push*`) now runs automatically after every push — waits ~60s, hashes
+`stonedesk.html` at `HEAD` against a fresh curl of `sairn.vercel.app/
+stonedesk`, and surfaces a mismatch (via `asyncRewake`) if the live site
+still doesn't match. Built after a real incident this session where Vercel's
+GitHub webhook silently didn't fire for a push; a trivial re-trigger commit
+fixed it. Notify-only by design — it never commits or pushes anything
+itself, that decision was asked and answered explicitly. This automates
+catching *"did the deploy even happen"*, not *"does the feature actually
+work"* — the manual targeted spot-check above is still required for that;
+the hook is a mechanical safety net underneath it, not a replacement for it.
+
 **Before pushing anything that touches mobile/bridge event code**, confirm it
 matches `sairn-mobile-sync`'s standard event shape (`app_id`, `event_type`,
 `source_device`, `timestamp`, `payload`) rather than a one-off shape invented
