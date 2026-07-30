@@ -1,0 +1,5 @@
+- main HEAD: `ea652023fd7c6c40b700e33ff4868d064f91dc57`
+- StoneDesk: bug-fixing phase closed per prior handoffs, but the "does this same non-functional-button pattern exist here" audit (found on SAIRNbiz tonight) has NOT been run against StoneDesk yet — flag as unverified, do not claim clean
+- SAIRNbiz: all known findings fixed and verified
+- SAIRNbuild: greenfield, no plan written yet
+- Next session: run the same non-functional-button audit (grep for `onclick="toast(...)"` as the only action, and any "coming next build" text) against stonedesk.html specifically, before trusting its earlier "100%" claims at face value
