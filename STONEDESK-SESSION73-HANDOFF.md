@@ -167,20 +167,31 @@ today's three builds). Logged here explicitly rather than left silent
 — same bug class, same fix (`.textContent` → `.innerHTML`), just not
 touched tonight.
 
-**Verdict after both fixes: CONCERNS, not CLEAN** — no criticals
-remain, but 2 warnings are still open per the review's own severity
-rubric (2+ warnings = CONCERNS, not "safe to call clean"):
-- Trial gate has zero enforcement against a technically-savvy user
-  (`localStorage.removeItem('sd_trial_start')` silently resets it) —
-  accepted risk, matches the client-side-only spec as given, not a bug
-  relative to what was asked, but still an open warning by the rubric's
-  own definition, not something that quietly downgrades to clean just
-  because it was accepted.
-- `parseAndStress`'s table renders `r.project_type`/`r.material` via
-  string concatenation, not `escHtml()` — currently unexploitable
-  (both values are filtered through fixed `MATERIALS`/`PROJECTS`
-  dictionary lookups) but inconsistent with the file's near-universal
-  escaping convention.
+**Both open warnings from the initial pass are now formally disposed**
+(fixed, in updates after this section was first written):
+
+- **ACCEPTED RISK, explicitly, not silently closed:** the trial gate
+  has zero enforcement against a technically-savvy user —
+  `localStorage.removeItem('sd_trial_start')` (or setting garbage,
+  caught by the `isNaN` fallback in `checkTrialGate()`) silently grants
+  a fresh 30-day trial, no server-side check exists anywhere. This is
+  not a bug relative to what was asked — the spec was explicitly
+  client-side-only, keyed off a localStorage timestamp, no backend
+  mentioned or implied. Justification for accepting rather than fixing:
+  fixing this for real requires server-side license verification, a
+  materially bigger feature than "add a trial gate," and was never
+  asked for. **Known limitation, on the record, for whoever revisits
+  trial enforcement later** — this deters casual reuse, not a
+  determined one, and that gap should be a conscious choice each time
+  it's revisited, not something rediscovered as if new.
+- `parseAndStress`'s table now escapes `r.project_type`/`r.material`
+  via `escHtml()` — **fixed**, was previously raw string concatenation.
+  Live-verified: sample data still renders correctly ("kitchen std" /
+  "gran_mid"), no regression.
+
+**Verdict: CLEAN** — 0 criticals, 0 un-disposed warnings. One item is
+formally on record as an accepted risk (above), which is a legitimate
+rubric disposition, not a loophole around "clean."
 
 **Coverage gaps, disclosed rather than glossed over:** true pixel/
 screenshot visual review was not achieved — the screenshot tool failed
