@@ -1076,7 +1076,14 @@ function genReport(type){
   var emps=ld('sb_emps',[]),invs=ld('sb_invs',[]);
   if(type==='roster'){$('rtitle').textContent='Employee Roster - '+new Date().toLocaleDateString();$('rbody').innerHTML='<table><thead><tr><th>ID</th><th>Name</th><th>Role</th><th>Dept</th><th>Type</th><th>Rate/Hr</th><th>Start</th><th>Status</th></tr></thead><tbody>'+emps.map(function(e){return'<tr><td>'+H(e.id)+'</td><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role)+'</td><td>'+H(e.dept)+'</td><td>'+H(e.type)+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td>'+fdate(e.start)+'</td><td>'+H(e.status)+'</td></tr>';}).join('')+'</tbody></table>';}
   else if(type==='ar'){$('rtitle').textContent='AR Aging Report - '+new Date().toLocaleDateString();$('rbody').innerHTML='<table><thead><tr><th>Customer</th><th>Invoice</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th></tr></thead><tbody>'+invs.map(function(i){var b=i.amt-(i.paid||0);return'<tr><td>'+H(i.cust)+'</td><td>'+H(i.id)+'</td><td>'+fmt(i.amt)+'</td><td>'+fmt(i.paid||0)+'</td><td><strong>'+fmt(b)+'</strong></td><td>'+H(i.status)+'</td></tr>';}).join('')+'</tbody></table>';}
-  else if(type==='pl'){$('rtitle').textContent='P&L Statement YTD 2026';$('rbody').innerHTML='<table><thead><tr><th>Category</th><th>Amount</th><th>% Revenue</th></tr></thead><tbody><tr><td><strong>Total Revenue</strong></td><td><strong>$498,000</strong></td><td>100%</td></tr><tr><td>COGS</td><td>$199,000</td><td>40%</td></tr><tr><td><strong>Gross Profit</strong></td><td><strong>$299,000</strong></td><td>60%</td></tr><tr><td>Operating Expenses</td><td>$241,000</td><td>48%</td></tr><tr><td><strong>Net Income</strong></td><td><strong>$58,000</strong></td><td>12%</td></tr></tbody></table>';}
+  else if(type==='pl'){
+    rPay();
+    var pf=function(s){return parseFloat(String(s).replace(/[^0-9.-]/g,''))||0;};
+    var rev=pf($('pl-rev').textContent),cogs=pf($('pl-cogs').textContent),gp=pf($('pl-gp').textContent),opex=pf($('pl-opex').textContent),net=pf($('pl-net').textContent);
+    var pct=function(n){return rev>0?Math.round(n/rev*100)+'%':'--';};
+    $('rtitle').textContent='P&L Statement YTD 2026';
+    $('rbody').innerHTML='<table><thead><tr><th>Category</th><th>Amount</th><th>% Revenue</th></tr></thead><tbody><tr><td><strong>Total Revenue</strong></td><td><strong>'+fmt(rev)+'</strong></td><td>'+pct(rev)+'</td></tr><tr><td>COGS</td><td>'+fmt(cogs)+'</td><td>'+pct(cogs)+'</td></tr><tr><td><strong>Gross Profit</strong></td><td><strong>'+fmt(gp)+'</strong></td><td>'+pct(gp)+'</td></tr><tr><td>Operating Expenses</td><td>'+fmt(opex)+'</td><td>'+pct(opex)+'</td></tr><tr><td><strong>Net Income</strong></td><td><strong>'+fmt(net)+'</strong></td><td>'+pct(net)+'</td></tr></tbody></table>';
+  }
   else{$('rtitle').textContent='Report: '+type;$('rbody').innerHTML='<p style="color:var(--muted);padding:24px;text-align:center;">Generated - '+new Date().toLocaleString()+'</p>';}
   $('rout').scrollIntoView({behavior:'smooth'});
 }
