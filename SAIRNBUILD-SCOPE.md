@@ -227,6 +227,86 @@ deserves its own pass rather than being rushed alongside this one.
 
 ---
 
+## 2a. Competitive Gap-Closing Requirements — added 2026-07-30
+
+Source: user-supplied competitive research (Procore vs. Buildertrend/
+CoConstruct market split). The market-positioning claims below (pricing,
+what each competitor does or doesn't offer) are **not independently verified
+by Code** — no external research was run this session, this is Michael's
+research folded into the scope doc, not re-confirmed against either
+competitor's actual product. What *is* verified is the internal
+cross-reference against §2's own panel list and against §1's existing
+decisions, which is where the real work below happened.
+
+**Positioning:** neither Procore (commercial, $20K-100K+/yr, pay-per-module)
+nor Buildertrend/CoConstruct (residential, $499-1099/mo flat, rigid
+estimating, weak commercial compliance) serves both segments. SAIRNbuild's
+target persona (§1: owner-operator GC, residential/light-commercial) sits
+exactly in the gap between them.
+
+### One real conflict this creates — flagged, not silently resolved
+
+**Digital takeoffs integrated with plans/drawings** (a named Procore
+gap-closer below) directly contradicts §1's existing, twice-stated decision:
+*"Deliberately out of scope: takeoff/estimating from plans (a different,
+CAD-shaped product)"* — restated again in §2's Bids & Proposals row
+("§1's boundary against CAD/takeoff-based estimating stays exactly as
+decided"). This is not a small wording clash; CAD-integrated takeoff is a
+materially different, larger product than everything else in this scope,
+and the original reasoning for excluding it hasn't been shown to be wrong,
+just newly in tension with a competitive-parity goal. **Not resolved in this
+pass.** Michael needs to explicitly choose one:
+  (a) keep takeoff/CAD out of v1 scope — SAIRNbuild competes on the other
+      Procore/Buildertrend gaps and accepts this one gap against Procore,
+      or
+  (b) reverse §1's exclusion and scope digital takeoff as its own
+      substantial addition (likely its own new section, not a bullet on an
+      existing panel).
+Everything below assumes (a) — takeoff stays out — until told otherwise,
+since that is what the standing decision already says and a competitive
+research note isn't sufficient on its own to silently overturn a
+named architectural decision.
+
+### FROM PROCORE (commercial-grade — matched via existing panels)
+
+| Gap-closer | Where it lands | Requirement added |
+|---|---|---|
+| RFIs/Submittals "ball in court" accountability | RFIs (`rfis`), Submittals (`submittals`) — §2 | Both panels must track and surface **who owes the next response** (GC, sub, architect/engineer) as a first-class, glanceable field — not just status. This is the specific mechanic that makes an RFI log defensible in a delay-claim dispute, not just a list. |
+| ~~Digital takeoffs integrated with plans/drawings~~ | — | **Not scoped.** See conflict above; blocked on Michael's decision. |
+| Side-by-side bid comparison + automated subcontract conversion | Bids & Proposals (`bids`) — §2 | Added requirement: compare multiple sub bids against the same cost code side by side, and convert an accepted bid directly into a subcontract/PO without re-keying line items. |
+| Document version control for drawing sets/specs | Documents (`documents`) — §2 | Added requirement: superseded versions stay visible (not overwritten), current-version flag per document, and every RFI/Submittal/Inspection that references a document should reference a specific version, not just "the plans." |
+| Subcontractor prequalification | Subcontractors (`subs`) — §2 | Added requirement: beyond the roster fields already scoped (trade, rate, COI/W-9/licence expiry), a prequalification workflow — financial capacity, safety record, references — gating whether a sub is eligible to bid, not just eligible to be listed. |
+
+### FROM BUILDERTREND (residential-grade — matched via existing panels)
+
+| Gap-closer | Where it lands | Requirement added |
+|---|---|---|
+| Client portal: progress, selections approval, e-sign COs | Client Portal (`clientportal`) — §2 | Added requirement, all three specifically: read-only schedule/progress view, in-portal selections approval (ties to Selections below), and e-signature capture on change orders — the whole point being no phone call needed for any of the three. |
+| Selections management for custom homes | Selections (`selections`) — §2 already scoped | No change needed — already covers option/chosen-date/lead-time/ordered-flag per §2. Confirmed it links into Client Portal's approval flow above rather than existing as a disconnected internal-only list. |
+| Lead management CRM + proposal generation | Bids & Proposals (`bids`) — §2, **scope widened** | Bids & Proposals now covers the funnel from lead capture through proposal generation to accepted bid, not just "price and send a proposal." This is a real widening of that panel's original scope (bidding pipeline only) — flagged here rather than silently expanded, since it changes what "done" means for that one panel materially. |
+| Scheduling with real dependency logic | Project Timeline (`timeline`) — §2 | Added requirement: tasks carry real dependencies (finish-to-start at minimum), and shifting one task's date auto-shifts everything downstream of it. A static calendar with dates typed in per task does not satisfy this — Buildertrend's actual complaint here is about competitors that only have the static version, and SAIRNbuild needs the real one to be a genuine gap-closer rather than parity-in-name-only. |
+
+### BEAT BOTH ON (SAIRN's stated advantage — cross-cutting, not one panel each)
+
+| Advantage | Where it lands |
+|---|---|
+| Flexible custom line-item structures, grouped by phase or cost type | Bids & Proposals (`bids`) estimating — explicit requirement: line items group by phase/cost-type with user-defined structure, not a fixed template. This is specifically the rigidity Buildertrend is reported to be criticized for; the requirement exists to make sure it isn't quietly rebuilt the same way. |
+| Cost-code depth for commercial AND residential, no forced segmentation | Job Costing (`jobcost`, already built/live) + Settings (`settings`) cost-code list | Requirement on the existing cost-code list: must support both a flat, simple residential cost-code set and a deep, CSI-style commercial structure in the same data model, selected by the tenant, not by which product tier they bought. |
+| Lien waiver + COI tracking built in, not bolted on | Lien Waivers (`lienwaivers`) + Compliance (`compliance`) — §2 already scoped | No new requirement — this is already true of the current scope, called out here as a confirmed advantage rather than a gap to close. |
+| Claude AI native in every panel, not a separate paid tier | Cross-cutting — every panel in §2 | New standing requirement, not a single panel: every panel should have at least one genuine Claude touchpoint doing real work, not a bolted-on chat sidebar. Named examples: Field Photo Analysis (`fieldphoto`, already core per §2) for photo→cost/scope suggestions; RFI drafting assistance on the RFIs panel (turn a rough field question into a properly worded RFI); schedule-risk flagging on Project Timeline/Dashboard (surface which jobs are trending toward a missed date before it happens, not after). Each of these needs to be evaluated for real Claude integration when its panel is built, not left as a plain CRUD panel with an unrelated AI Assistant panel elsewhere covering the "AI" checkbox. |
+| One flat price, no modular pay-per-feature | Business model, not a panel | Not a scope-doc item in the panel-list sense — flagged here so it isn't lost: whatever SAIRNbuild's eventual pricing is, it should not fragment into Procore-style per-module add-ons. This is a product/pricing decision for whoever owns that, not something Code resolves by building panels differently. |
+
+### Standard this section sets going forward
+
+**Every panel in §2 should be evaluated against this gap list before being
+called "done,"** not just built to its original one-line purpose
+description. A panel that matches its §2 description but misses the
+gap-closing requirement added here (e.g. an RFI panel with no ball-in-court
+field) is not actually done against the competitive bar this section sets —
+it's done against a lower bar than the one just decided.
+
+---
+
 ## 3. Data model
 
 ### Tenancy convention — follows the existing split exactly
