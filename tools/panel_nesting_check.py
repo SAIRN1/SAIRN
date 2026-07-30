@@ -80,39 +80,47 @@ def main():
         print("NO_PANELS_FOUND")
         sys.exit(1)
 
-    # Two legitimate app-shell containers exist and BOTH are always
-    # visible (app-body and panel-wrap) -- confirmed by checking this
-    # file directly: a real, separate, pre-existing structural imbalance
-    # elsewhere (independent of the page-field-quote/panel-crm bug this
-    # tool was originally built to catch) causes panel-wrap to appear
-    # prematurely "closed" partway through the panel list, making many
-    # later panels register as direct children of app-body instead of
-    # panel-wrap. That's real and worth knowing, but it does NOT hide
-    # anything -- both containers render fine -- so treating every
-    # non-majority parent as equally "trapped" (an earlier version of
-    # this check did) drowns the one finding that actually matters in 26
-    # harmless ones. Only a parent OUTSIDE this safe set is a real find:
-    # that's what "trapped inside a hidden container" (page-field-quote,
-    # in panel-crm's case) actually looks like.
-    SAFE_PARENTS = {'div#.app-body', 'div#.panel-wrap'}
-
+    # FIXED 2026-07-30 (was hardcoded to StoneDesk's own container class
+    # names, {'div#.app-body','div#.panel-wrap'} -- broke completely on
+    # any other app: SAIRNbiz's real safe parent is `main#main`,
+    # SAIRNcode's is `div#.container`, neither matches StoneDesk's names,
+    # so every panel in both apps was flagged TRAPPED (20/20 each) even
+    # though both apps are structurally fine. Confirmed by direct
+    # cross-check: SAIRNbiz's key-collision scan is 0/0 real (verified
+    # independently via grep, not just trusted), so a tool this
+    # unreliable on the SAME file for a different check was a real red
+    # flag, not just a suspicion.
+    #
+    # Generalized, app-agnostic method: a parent shared by 2+ panels is
+    # a real structural pattern (whether that's one single-shell app, or
+    # StoneDesk's known app-body/panel-wrap split -- both containers get
+    # many panels each, so neither looks like an outlier). Only a parent
+    # that NO OTHER panel shares -- a true singleton -- is treated as
+    # trapped, since that's what an actual "nested one level inside an
+    # unrelated leftover container" bug produces: a panel with a parent
+    # unlike every other panel's. This reproduces the original
+    # panel-crm-inside-page-field-quote catch (a genuine singleton
+    # parent) without needing to know any app's real class names ahead
+    # of time.
     parents = [p for d, l, p in parser.panels.values()]
-    safe_count = sum(1 for p in parents if p in SAFE_PARENTS)
+    parent_counts = Counter(parents)
+    majority_parent = parent_counts.most_common(1)[0][0]
+    safe_count = sum(1 for p in parents if parent_counts[p] >= 2)
 
-    trapped = {pid: info for pid, info in parser.panels.items() if info[2] not in SAFE_PARENTS}
+    trapped = {pid: info for pid, info in parser.panels.items() if parent_counts[info[2]] < 2}
     shell_split = {pid: info for pid, info in parser.panels.items()
-                   if info[2] in SAFE_PARENTS and info[2] != Counter(parents).most_common(1)[0][0]}
+                   if parent_counts[info[2]] >= 2 and info[2] != majority_parent}
 
     print("TOTAL_PANELS:%d" % len(parser.panels))
-    print("SAFE_SHELL_PARENT_PANELS:%d (app-body or panel-wrap)" % safe_count)
-    print("TRAPPED_PANELS (parent outside app-body/panel-wrap):%d" % len(trapped))
+    print("SAFE_SHELL_PARENT_PANELS:%d (any parent shared by 2+ panels)" % safe_count)
+    print("TRAPPED_PANELS (singleton parent, shared by no other panel):%d" % len(trapped))
     for pid in sorted(trapped):
         depth, line, parent = trapped[pid]
         print("TRAPPED: %s at line %d -- actual parent: %s" % (pid, line, parent))
     if shell_split:
-        print("NOTE: %d panels split between app-body/panel-wrap as direct parent (both safe, "
-              "still visible) -- likely a separate, real structural imbalance elsewhere worth "
-              "its own look, but not a hidden-panel bug:" % len(shell_split))
+        print("NOTE: %d panels have a real (2+-panel, safe) parent that isn't the majority one "
+              "(both/all safe, still visible) -- likely a separate, real structural imbalance "
+              "elsewhere worth its own look, but not a hidden-panel bug:" % len(shell_split))
         for pid in sorted(shell_split):
             depth, line, parent = shell_split[pid]
             print("  %s at line %d -- parent: %s" % (pid, line, parent))
