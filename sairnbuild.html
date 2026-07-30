@@ -151,6 +151,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
       <div class="ss">Jobs</div>
       <button class="sb" id="sb-jobs" onclick="nav('jobs')"><span class="sico">&#127959;</span>Job Board</button>
+      <div class="ss">Money</div>
+      <button class="sb" id="sb-jobcost" onclick="nav('jobcost')"><span class="sico">&#128200;</span>Job Costing</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -202,6 +204,36 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- JOB COSTING -->
+<div class="panel" id="panel-jobcost">
+  <div class="ph"><div><div class="ptitle">Job Costing</div><div class="psub">Budget vs committed vs actual, per cost code, per job</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('costs')">Export CSV</button><button class="btn bp bs" onclick="openCostModal()">+ Add Cost Line</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Budget</div><div class="kval" id="c-budget">$0</div><div class="kt" id="c-budget-sub">Selected scope</div></div>
+    <div class="kpi"><div class="klbl">Committed</div><div class="kval" id="c-committed">$0</div><div class="kt" id="c-committed-sub">PO'd or contracted</div></div>
+    <div class="kpi"><div class="klbl">Actual</div><div class="kval" id="c-actual">$0</div><div class="kt" id="c-actual-sub">Invoiced to date</div></div>
+    <div class="kpi"><div class="klbl">Variance</div><div class="kval" id="c-variance">$0</div><div class="kt" id="c-variance-sub">Budget less committed</div></div>
+    <div class="kpi"><div class="klbl">Lines Over</div><div class="kval" id="c-over">0</div><div class="kt" id="c-over-sub">Committed &gt; budget</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="cjob" onchange="rCostTbl()" style="flex:1;">
+        <option value="">All Jobs</option>
+      </select>
+      <select id="ckind" onchange="rCostTbl()" style="width:180px;">
+        <option value="">All Kinds</option>
+        <option value="labour">Labour</option>
+        <option value="material">Material</option>
+        <option value="sub">Subcontractor</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <table><thead><tr><th>Job</th><th>Cost Code</th><th>Kind</th><th>Vendor / Crew</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Variance</th><th>Actions</th></tr></thead>
+    <tbody id="ctbody"></tbody></table>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Cost Code Roll-up</span></div><div class="cb" id="c-rollup"></div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -224,6 +256,22 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="costmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Cost Line</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="cm-job"></select></div><div class="fg"><label>Kind</label><select id="cm-kind">
+      <option value="labour">Labour</option><option value="material">Material</option><option value="sub">Subcontractor</option><option value="other">Other</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Cost Code</label><input id="cm-code" placeholder="01-Labour"></div><div class="fg"><label>Vendor / Crew</label><input id="cm-vendor" placeholder="Builders FirstSource"></div></div>
+    <div class="fr"><div class="fg"><label>Budget ($)</label><input id="cm-budget" type="number" placeholder="25000"></div><div class="fg"><label>Committed ($)</label><input id="cm-committed" type="number" placeholder="24100"></div></div>
+    <div class="fg"><label>Actual ($)</label><input id="cm-actual" type="number" placeholder="0"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCostModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCost()">Save Cost Line</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -239,7 +287,7 @@ var PROXY='https://sairn.vercel.app/api/claude';
 var VALID=['BLD-','DEMO-','SAIRN-'];
 var PINS={owner:'1234',pm:'2345',office:'3456'};
 
-var pbuf='',prole='owner',jeid=null;
+var pbuf='',prole='owner',jeid=null,ceid=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -306,6 +354,7 @@ function nav(id){
   if(p)p.classList.add('on');if(b)b.classList.add('on');
   if(id==='dashboard')rDash();
   if(id==='jobs')rJobs();
+  if(id==='jobcost')rCost();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -354,7 +403,136 @@ function costs(){return ld('bld_costs',[]);}
 function committedFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.committed||0);},0);}
 function marginPct(j){var c=committedFor(j.id);return j.value>0?Math.round((j.value-c)/j.value*100):0;}
 
-function init(){seed();rDash();rJobs();}
+function init(){seed();rDash();rJobs();rCost();}
+
+var KIND={labour:'Labour',material:'Material',sub:'Subcontractor',other:'Other'};
+function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j?(j.client||j.address||id):id;}
+
+// Populates every job dropdown from the real job list, so a job added on the
+// Job Board is immediately selectable here. Rebuilt on each render rather than
+// written once at load -- otherwise the filter would silently go stale the
+// moment a job is added, which is the class of bug that makes a filter look
+// like it works while quietly excluding rows.
+function fillJobSelects(){
+  var js=jobs();
+  var opts=js.map(function(j){return '<option value="'+H(j.id)+'">'+H(j.client||j.address)+'</option>';}).join('');
+  var f=$('cjob');
+  if(f){var keep=f.value;f.innerHTML='<option value="">All Jobs</option>'+opts;f.value=keep;}
+  var m=$('cm-job');
+  if(m){var keepM=m.value;m.innerHTML=opts;m.value=keepM;}
+}
+
+function rCost(){
+  fillJobSelects();
+  rCostTbl();
+}
+
+// Scope = whatever the two filters currently select, so every KPI describes
+// exactly the rows on screen rather than the whole dataset. A KPI that ignores
+// the active filter is a different number wearing the same label.
+function costScope(){
+  var jf=(($('cjob')||{}).value||''),kf=(($('ckind')||{}).value||'');
+  return costs().filter(function(c){return(!jf||c.job_id===jf)&&(!kf||c.kind===kf);});
+}
+
+function rCostTbl(){
+  var list=costScope();
+  var budget=list.reduce(function(s,c){return s+(c.budget||0);},0);
+  var committed=list.reduce(function(s,c){return s+(c.committed||0);},0);
+  var actual=list.reduce(function(s,c){return s+(c.actual||0);},0);
+  var variance=budget-committed;
+  var over=list.filter(function(c){return (c.committed||0)>(c.budget||0);});
+  $('c-budget').textContent=fmt(budget);
+  $('c-committed').textContent=fmt(committed);
+  $('c-actual').textContent=fmt(actual);
+  $('c-variance').textContent=fmt(variance);
+  $('c-over').textContent=over.length;
+  // Conditional severity, same rule as the Dashboard: a bad number must never
+  // render in the "good" colour.
+  $('c-variance-sub').className='kt'+(variance<0?' d':'');
+  $('c-variance-sub').textContent=variance<0?'Over budget by '+fmt(Math.abs(variance)):'Budget less committed';
+  $('c-over-sub').className='kt'+(over.length?' d':'');
+  $('c-over-sub').textContent=over.length?'Committed > budget':'All lines within budget';
+  $('c-committed-sub').className='kt'+(committed>budget?' d':'');
+  $('c-actual-sub').className='kt'+(actual>budget?' d':'');
+
+  var tb=$('ctbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No cost lines match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(c){
+      var v=(c.budget||0)-(c.committed||0);
+      var col=v<0?'var(--danger)':'var(--ok)';
+      return '<tr><td>'+H(jobLabel(c.job_id))+'</td>'+
+        '<td><strong>'+H(c.cost_code)+'</strong></td>'+
+        '<td>'+H(KIND[c.kind]||c.kind||'')+'</td>'+
+        '<td>'+H(c.vendor||'')+'</td>'+
+        '<td>'+fmt(c.budget)+'</td>'+
+        '<td>'+fmt(c.committed)+'</td>'+
+        '<td>'+fmt(c.actual)+'</td>'+
+        '<td><strong style="color:'+col+'">'+(v<0?'-':'')+fmt(Math.abs(v))+'</strong></td>'+
+        '<td><button class="btn bo bs" onclick="editCost(\''+H(c.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+
+  var byCode={};
+  list.forEach(function(c){
+    var k=c.cost_code||'(uncoded)';
+    if(!byCode[k])byCode[k]={budget:0,committed:0};
+    byCode[k].budget+=(c.budget||0);byCode[k].committed+=(c.committed||0);
+  });
+  var keys=Object.keys(byCode).sort();
+  $('c-rollup').innerHTML=keys.length?keys.map(function(k){
+    var b=byCode[k].budget,cm=byCode[k].committed;
+    var pct=b>0?Math.round(cm/b*100):0;
+    var col=cm>b?'var(--danger)':pct>90?'var(--warn)':'var(--ok)';
+    return '<div class="srow"><span class="slbl">'+H(k)+'</span><span class="sval" style="color:'+col+'">'+fmt(cm)+' / '+fmt(b)+' &middot; '+pct+'%</span></div>'+
+      '<div class="pbar"><div class="pfill" style="width:'+Math.min(100,pct)+'%;background:'+col+'"></div></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No cost lines in scope</div>';
+}
+
+function openCostModal(){
+  if(!jobs().length){toast('Add a job first - a cost line must belong to one');return;}
+  ceid=null;fillJobSelects();
+  ['cm-code','cm-vendor','cm-budget','cm-committed','cm-actual'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('cm-kind').value='labour';
+  $('costmodal').classList.add('on');
+}
+function closeCostModal(){$('costmodal').classList.remove('on');}
+function editCost(id){
+  var c=costs().find(function(x){return x.id===id;});if(!c)return;
+  ceid=id;fillJobSelects();
+  $('cm-job').value=c.job_id||'';$('cm-kind').value=c.kind||'labour';
+  $('cm-code').value=c.cost_code||'';$('cm-vendor').value=c.vendor||'';
+  $('cm-budget').value=c.budget||'';$('cm-committed').value=c.committed||'';$('cm-actual').value=c.actual||'';
+  $('costmodal').classList.add('on');
+}
+function saveCost(){
+  var code=$('cm-code').value.trim();
+  if(!code){toast('Cost code required');return;}
+  var job=$('cm-job').value;
+  if(!job){toast('Job required');return;}
+  var cs=costs();
+  var existing=ceid?cs.find(function(x){return x.id===ceid;}):null;
+  var rec={
+    id:ceid||('C-'+String(Date.now()).slice(-5)),
+    job_id:job,cost_code:code,kind:$('cm-kind').value,
+    vendor:$('cm-vendor').value.trim(),
+    budget:parseFloat($('cm-budget').value)||0,
+    committed:parseFloat($('cm-committed').value)||0,
+    actual:parseFloat($('cm-actual').value)||0
+  };
+  // Same carry-forward guard as saveJob(): never drop a field the form does
+  // not render.
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(ceid){var i=cs.findIndex(function(x){return x.id===ceid;});if(i>-1)cs[i]=rec;else cs.push(rec);}
+  else cs.push(rec);
+  st('bld_costs',cs);
+  closeCostModal();rCost();
+  // Costs feed job margin, so both other panels must refresh too -- otherwise
+  // the Dashboard would keep showing a margin computed from stale costs.
+  rJobs();rDash();
+  toast('Saved - '+rec.cost_code);
+}
 
 function rDash(){
   var js=jobs();
@@ -502,6 +680,14 @@ function csv(type){
   if(type==='jobs'){
     rows=[['Job ID','Address','Client','Phone','Stage','Contract','Committed','Margin %','Start','Target End','Permit','Blocked Reason','Notes']];
     jobs().forEach(function(j){rows.push([j.id,j.address,j.client,j.phone,(STAGE[j.stage]||{l:j.stage}).l,j.value,committedFor(j.id),marginPct(j),j.start,j.target,j.permit,j.blocked,j.notes]);});
+  } else if(type==='costs'){
+    // Exports exactly the rows currently in scope, matching what is on screen.
+    // An export that silently dumps everything while the view is filtered is a
+    // different dataset wearing the same button label.
+    var list=costScope();
+    if(!list.length){toast('No cost lines in scope to export');return;}
+    rows=[['Job','Cost Code','Kind','Vendor / Crew','Budget','Committed','Actual','Variance']];
+    list.forEach(function(c){rows.push([jobLabel(c.job_id),c.cost_code,KIND[c.kind]||c.kind,c.vendor,c.budget,c.committed,c.actual,(c.budget||0)-(c.committed||0)]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
