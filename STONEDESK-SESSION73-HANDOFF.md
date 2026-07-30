@@ -128,8 +128,74 @@ this series.
   not customer-facing), CSV upload + "Load Sample Data" button, reusing
   the function's existing `stress-metrics`/`stress-table` output targets.
   Live-tested: sample data produces real formula-vs-actual output.
+- `checkTrialGate()`/`#trial-expired-screen`: 30-day trial gate keyed
+  off a real timestamp (`sd_trial_start`) written on first-ever login,
+  never a fabricated countdown. Blocks the app, not a hard dead-end —
+  shows the real trial start date and a working `mailto:` link.
+  Explicitly client-side only, no backend enforcement (matches what was
+  asked) — see §6 for the accepted-risk note on this.
+- Deploy verification: `tools/deploy_verify_notify.py`, a notify-only
+  `PostToolUse` hook on `git push*` that hashes `stonedesk.html` at
+  `HEAD` against a live curl ~60s after push and surfaces a mismatch —
+  built after a real incident this session (Vercel's webhook silently
+  didn't fire for one push; a trivial re-trigger commit fixed it).
+  Documented in `sairn-guardian-v2`'s live-verify section, not tracked
+  as a separate item.
 
-## 5. Standard verification reminder for whoever reads this next
+## 5. Adversarial + visual review pass (this session, both fixed)
+
+Ran `sairn-adversarial-reviewer` (all 4 personas) and `sairn-visual-review`
+(both viewports attempted) against the trial gate, Customer Kanban, and
+Pricing Formula Backtest. Found and fixed 2 CRITICAL issues:
+
+1. `.auth-btn`'s text color (`#1A1005`, near-black) had ~1.55:1-2.42:1
+   contrast against its own navy-gradient background (WCAG AA needs
+   4.5:1) — affected both the real Sign In button (pre-existing, not
+   introduced this session) and the new trial-expired screen's only
+   CTA. Fixed: `color:#fff`. Verified live: 7.61:1-11.27:1 across the
+   full gradient range.
+2. `custToggleView()` set the Customers view-toggle button via
+   `.textContent` with a literal HTML-entity string, so it rendered
+   the raw text `&#9776; List View` instead of a ☰ icon after the
+   first toggle. Fixed: `.innerHTML`. Verified live: renders the real
+   ☰/📁 characters across two toggles.
+
+**Known, not-yet-fixed, out of scope for today:** the identical
+`.textContent = '&#...;'` pattern exists a second time, at line 28576,
+on an unrelated AI-briefing button (unrelated feature, not part of
+today's three builds). Logged here explicitly rather than left silent
+— same bug class, same fix (`.textContent` → `.innerHTML`), just not
+touched tonight.
+
+**Verdict after both fixes: CONCERNS, not CLEAN** — no criticals
+remain, but 2 warnings are still open per the review's own severity
+rubric (2+ warnings = CONCERNS, not "safe to call clean"):
+- Trial gate has zero enforcement against a technically-savvy user
+  (`localStorage.removeItem('sd_trial_start')` silently resets it) —
+  accepted risk, matches the client-side-only spec as given, not a bug
+  relative to what was asked, but still an open warning by the rubric's
+  own definition, not something that quietly downgrades to clean just
+  because it was accepted.
+- `parseAndStress`'s table renders `r.project_type`/`r.material` via
+  string concatenation, not `escHtml()` — currently unexploitable
+  (both values are filtered through fixed `MATERIALS`/`PROJECTS`
+  dictionary lookups) but inconsistent with the file's near-universal
+  escaping convention.
+
+**Coverage gaps, disclosed rather than glossed over:** true pixel/
+screenshot visual review was not achieved — the screenshot tool failed
+4 consecutive times (`Script injection timed out`) across a fresh
+reload and multiple panels, a persistent tool failure, not a skipped
+step. Mobile viewport (390×844) was also not genuinely achieved —
+`resize_window` reported success but `document.documentElement.
+clientWidth` still read 1912 afterward. All findings came from direct
+DOM/computed-style/contrast-math inspection instead, which is rigorous
+for contrast and outcome-verification but cannot judge spacing/
+alignment/genuine visual polish. Whoever picks this up next should
+re-attempt real screenshots + a real narrow viewport before calling
+visual coverage complete.
+
+## 6. Standard verification reminder for whoever reads this next
 
 Verify `main` HEAD and `origin/main` match, re-run the local checks, and
 live-verify against `sairn.vercel.app/stonedesk` before trusting any
