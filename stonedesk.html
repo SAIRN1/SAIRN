@@ -2289,6 +2289,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
         <button class="sb-btn" id="sb-remnant"   onclick="sbNav('remnant')">  <span class="sb-icon">&#9643;</span><span class="sb-text">Remnant Yard</span></button>
         <button class="sb-btn" id="sb-inventory" onclick="sbNav('inventory')"><span class="sb-icon">&#128230;</span><span class="sb-text">Shop Supplies</span></button>
         <button class="sb-btn" id="sb-vendors"   onclick="sbNav('vendors')">  <span class="sb-icon">&#128666;</span><span class="sb-text">Vendors</span></button>
+        <button class="sb-btn" id="sb-vendorcat" onclick="sbNav('vendorcat')"><span class="sb-icon">&#128722;</span><span class="sb-text">Vendor Catalog</span></button>
         <button class="sb-btn" id="sb-po"        onclick="sbNav('po')">       <span class="sb-icon">&#128203;</span><span class="sb-text">Purchase Orders</span></button>
         <button class="sb-btn" id="sb-receiving" onclick="sbNav('receiving')"><span class="sb-icon">&#128230;</span><span class="sb-text">Receiving</span></button>
         <button class="sb-btn" id="sb-stoneyard" onclick="sbNav('stoneyard')"><span class="sb-icon">&#127981;</span><span class="sb-text">Stone Yard Contacts</span></button>
@@ -5550,6 +5551,68 @@ function sdInvExport(){
     <div id="cart-items" style="display:none" data-auto-container="missing-dom-fix"></div>
   </div>
 
+
+  <!-- == VENDOR ORDERING CATALOG == -->
+  <div class="panel" id="panel-vendorcat">
+<div style="padding:20px;max-width:1100px;margin:0 auto">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🛒 Vendor Ordering Catalog</h2>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Browse, compare prices across vendors, and order supplies</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="q-btn" onclick="vendorSpendReport()">📊 Spend Report</button>
+    <button class="q-btn primary" onclick="vendorPlaceOrder()">📤 Place Order</button>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+  <div class="kpi"><div class="kpi-val" id="vend-kpi-savings">$0</div><div class="kpi-label">Negotiated Savings</div></div>
+  <div class="kpi"><div class="kpi-val" id="vend-kpi-deals">0</div><div class="kpi-label">Active Deals</div></div>
+  <div class="kpi"><div class="kpi-val" id="vend-kpi-ytd">$0</div><div class="kpi-label">YTD Ordered</div></div>
+  <div class="kpi"><div class="kpi-val" id="vend-kpi-lowstock">0</div><div class="kpi-label">Low Stock Items</div></div>
+</div>
+<div id="vendor-tariff-alerts" style="margin-bottom:14px"></div>
+<div id="vendor-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+  <button class="vendor-tab active" onclick="vendorSetTab('gmr',this)">GMR Stone</button>
+  <button class="vendor-tab" onclick="vendorSetTab('granquartz',this)">Granquartz</button>
+  <button class="vendor-tab" onclick="vendorSetTab('braxton',this)">Braxton-Bragg</button>
+  <button class="vendor-tab" onclick="vendorSetTab('bbindustries',this)">BB Industries</button>
+  <button class="vendor-tab" onclick="vendorSetTab('slabsuppliers',this)">Slab Suppliers</button>
+</div>
+<div id="vcat-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+  <button class="vendor-tab active" onclick="vCatSet('all',this)">All</button>
+  <button class="vendor-tab" onclick="vCatSet('blades',this)">Blades</button>
+  <button class="vendor-tab" onclick="vCatSet('abrasives',this)">Abrasives</button>
+  <button class="vendor-tab" onclick="vCatSet('tooling',this)">Tooling</button>
+  <button class="vendor-tab" onclick="vCatSet('adhesives',this)">Adhesives</button>
+  <button class="vendor-tab" onclick="vCatSet('chemicals',this)">Chemicals</button>
+  <button class="vendor-tab" onclick="vCatSet('hardware',this)">Hardware</button>
+  <button class="vendor-tab" onclick="vCatSet('safety',this)">Safety</button>
+</div>
+<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px">
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+    <span style="font-size:22px" id="v-logo"></span>
+    <span style="font-size:16px;font-weight:800;color:var(--text)" id="v-name"></span>
+    <a id="v-website" href="#" target="_blank" style="font-size:12px;color:var(--a)"></a>
+    <a id="v-phone" href="#" style="font-size:12px;color:var(--muted)">📞 Call</a>
+    <a id="v-email" href="#" style="font-size:12px;color:var(--muted)">✉️ Email</a>
+  </div>
+  <div style="font-size:12px;color:var(--muted)" id="v-desc"></div>
+</div>
+<div id="vendor-products" style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:14px"></div>
+<div id="vendor-cart-summary" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+  <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Your Cart</div>
+  <div id="vendor-cart-items-list"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+    <span style="font-size:15px;font-weight:800" id="vendor-cart-total">Total: $0.00</span>
+    <button class="q-btn primary" onclick="vendorPlaceOrder()">📤 Place Order</button>
+  </div>
+</div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  setTimeout(function(){ if(typeof renderVendor==='function') renderVendor(); if(typeof vendorUpdateKPIs==='function') vendorUpdateKPIs(); },900);
+});
+</script>
+</div>
 
   <!-- == REMAKES / SHOWER TRACKER == -->
   <div class="panel" id="panel-remakes">
@@ -18604,6 +18667,18 @@ function renderCart(){
     '<button onclick="cartUpdate(\'' + _activeVendor + '\',\'' + i.id + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
     '</div>'
   ).join('');
+  var vcList=document.getElementById('vendor-cart-items-list');
+  if(vcList) vcList.innerHTML=items.map(i=>
+    '<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">'+
+    '<span style="flex:1;font-weight:500">'+escHtml(i.name)+'</span>'+
+    '<span style="color:var(--muted);font-size:11px">'+escHtml(i.vendor)+'</span>'+
+    '<span style="color:var(--muted)">×'+i.qty+'</span>'+
+    '<span style="font-weight:700;color:var(--a)">$' + (i.price*i.qty).toFixed(2)+'</span>'+
+    '<button onclick="cartUpdate(\'' + _activeVendor + '\',\'' + i.id + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
+    '</div>'
+  ).join('');
+  var vcTotal=document.getElementById('vendor-cart-total');
+  if(vcTotal) vcTotal.textContent='Total: $'+total.toFixed(2);
 }
 
 function vendorBuildAutoOrder(){
@@ -20073,6 +20148,7 @@ function finAskCFO(){
   window.showPanel = function(id) {
     if(_origSP2) _origSP2(id);
     if(id==='vendors') { vendorUpdateKPIs(); if(typeof window.sdVendorsRender==='function')window.sdVendorsRender(); }
+    if(id==='vendorcat') { if(typeof renderVendor==='function')renderVendor(); if(typeof vendorUpdateKPIs==='function')vendorUpdateKPIs(); if(typeof renderCart==='function')renderCart(); }
     if(id==='safety') { safetyUpdateKPIs(); safetyRenderTraining(); if(typeof safetyRenderIncidents==='function')safetyRenderIncidents(); }
     if(id==='nesting') { setTimeout(nestingInit,100); nestingRenderSaved(); nestingUpdateKPIs(); }
     if(id==='financial') { finUpdateKPIs(); finRenderJobs(); }
