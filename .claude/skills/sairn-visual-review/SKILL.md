@@ -17,15 +17,7 @@ Everything else checks whether the code is correct. This checks whether a real p
 
 **Loading-state / layout-shift check.** Does content flash, jump, or reflow while data loads? A KPI tile popping in after the page settles, shifting everything below it, reads as broken even if the final state is correct.
 
-## Environment Requirement (added 2026-07-30)
-
-This skill depends on the browser window actually being the real, focused, on-screen OS window — not just a tab that exists. Confirmed twice in one session (`STONEDESK-SESSION73-HANDOFF.md` §5) that when that precondition is silently false, the screenshot and resize APIs don't error clearly — they either fail opaquely or report success while doing nothing:
-
-**Failure mode 1 — unfocused/wrong window.** The tracked tab had drifted to an unrelated window (in this case, the chat client's own tab, not the app under review). Signature: `window.outerWidth`/`outerHeight` read `0`. Screenshot failed outright (`Script injection timed out`), 4/4 attempts, until the tab was re-created and correctly targeted.
-
-**Failure mode 2 — resize silently no-ops.** Even on a correctly-targeted, confirmed-non-maximized window (`outerWidth` reading a real, plausible value both before and after), `resize_window` reported success but `clientWidth` never moved — stuck at the pre-resize value across two separate attempts, one on a maximized window (a plausible cause) and one on a window already confirmed non-maximized (ruling that explanation out for the second case). Screenshot then failed with a *different*, CDP-level error (`Page.captureScreenshot timed out after 30000ms, renderer may be frozen`) — while a plain JS execution on the same tab succeeded immediately before and after, which rules out a genuinely frozen page and points at something environment-specific in the CDP/extension pairing itself.
-
-**What this means in practice:** don't treat a clean tool-call return as proof the check actually ran. Before trusting any screenshot or resize result, verify `outerWidth`/`outerHeight`/`clientWidth` read real, non-zero, expected values first. If resize doesn't visibly change `clientWidth`, or screenshot fails more than twice with different error signatures, stop and log it as an environment gap rather than retrying indefinitely or silently substituting a different check and presenting it as equivalent coverage — a DOM/computed-style inspection can catch some of the same bugs (contrast math, missing elements) but is not the same check as an actual rendered-pixel review, and the gap should stay visible in whatever this pass reports.
+**Static severity-color mismatch (added 2026-07-29).** A KPI can be correctly computed and still visually lie: SAIRNbiz's Net Margin showed -40% in the same static green used for positive metrics, because the color class was hardcoded rather than conditional on the value. Check whether a metric's color/badge actually reflects good-vs-bad based on its real current value, or whether it's a fixed style that happens to look fine regardless of what number is shown. A severely negative metric reading as visually "fine" is a distinct, real finding — not a fabrication bug, a UI-honesty bug.
 
 ## Method
 
@@ -61,6 +53,25 @@ This skill depends on the browser window actually being the real, focused, on-sc
 ## Output Format
 
 For each panel: PASS, or a specific finding with what was seen (not "looks off," but "the customer name field overflows its container at 40+ characters, cutting off the last few letters with no ellipsis or wrap"). Screenshots referenced by panel name, not just described from memory.
+
+## Environment Requirement — browser must be visible/focused (added 2026-07-29)
+
+Screenshot capture and viewport resize APIs can silently fail against a
+background/unfocused/minimized browser window: `resize_window` may report
+success while the OS never actually applies it (mobile viewport testing
+showed `clientWidth` stuck at the old value despite a "successful" resize
+call), and screenshot capture can time out at the CDP paint layer even
+though the page's own JS is fully responsive (`document.title` reads
+correctly while `Page.captureScreenshot` hangs). Two distinct failure
+modes were seen from the same root cause in one session — that's a real
+signal to stop retrying blind, not push through with more attempts.
+
+**Before running any visual-review pass:** confirm the driven browser
+window is actually visible and in focus on the screen, not minimized,
+occluded, or on an inactive virtual desktop. If screenshot/resize calls
+report success but the visible result doesn't match, this is very
+likely the cause — ask for the window to be brought to focus rather
+than retrying the same call repeatedly.
 
 ## Relationship to other skills
 
