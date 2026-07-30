@@ -125,12 +125,12 @@ unchanged (`dashboard`, `jobs`, `jobcost`, `changeorders`).
 | Panel | id | Purpose | Status |
 |---|---|---|---|
 | Job Costing | `jobcost` | Budget vs committed vs actual per cost code, per job. The margin-truth panel. | **Built, live** |
-| Draw Requests | `draws` | Progress billing: % complete per line, retainage, what has been requested vs received. | New |
-| Lien Waivers | `lienwaivers` | Conditional/unconditional waivers tied to each draw — the paperwork that travels with money, kept separate from Draws itself the same way StoneDesk keeps Invoices and AR/Financial as separate panels rather than one combined view. | New |
-| Purchase Orders | `po` | Material and sub POs issued against a job and a cost code. | New |
-| Deliveries | `deliveries` | Fulfillment tracking against issued POs — expected date, received, short/damaged flag. POs are the commitment; this is whether it showed up. | New |
-| Timesheet | `timesheet` | Crew clock-in/out per job, feeding Job Costing's labour cost-code lines directly. Reuses the pattern StoneDesk and SAIRNbiz both already run as a Timesheet panel. | New |
-| Check Register | `checkregister` | Reconciles written checks (sub/vendor payments) against the bank register — direct reuse of a real, working StoneDesk feature (`#sb-check-register`, `stonedesk.html` line ~2488), not reinvented. | New |
+| Draw Requests | `draws` | Progress billing: % complete per line, retainage, what has been requested vs received. | **Built, live** |
+| Lien Waivers | `lienwaivers` | Conditional/unconditional waivers tied to each draw — the paperwork that travels with money, kept separate from Draws itself the same way StoneDesk keeps Invoices and AR/Financial as separate panels rather than one combined view. | **Built, live** |
+| Purchase Orders | `po` | Material and sub POs issued against a job and a cost code. | **Built, live** |
+| Deliveries | `deliveries` | Fulfillment tracking against issued POs — expected date, received, short/damaged flag. POs are the commitment; this is whether it showed up. | **Built, live** |
+| Timesheet | `timesheet` | Crew clock-in/out per job, feeding Job Costing's labour cost-code lines directly. Reuses the pattern StoneDesk and SAIRNbiz both already run as a Timesheet panel. | **Built, live** |
+| Check Register | `checkregister` | Reconciles written checks (sub/vendor payments) against the bank register. **Correction, 2026-07-30:** this row previously claimed direct reuse of "a real, working StoneDesk feature" at `#sb-check-register`. Verified false while building this panel: StoneDesk's `page-check-register` is an expense logger that says "Open SAIRNbiz → Money wing → Check Register" — it does not reconcile anything itself — and SAIRNbiz has no Check Register at all (zero matches for check-register/reconcile/bank register in `sairnbiz.html`). Built as a real, self-contained reconciliation register here instead (outstanding/cleared/voided status, days-outstanding computed live), not ported from either app. | **Built, live** |
 
 ### Subs & Vendors (4)
 | Panel | id | Purpose | Status |

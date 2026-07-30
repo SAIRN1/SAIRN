@@ -231,6 +231,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-lienwaivers" onclick="nav('lienwaivers')"><span class="sico">&#128196;</span>Lien Waivers</button>
       <button class="sb" id="sb-po" onclick="nav('po')"><span class="sico">&#128230;</span>Purchase Orders</button>
       <button class="sb" id="sb-deliveries" onclick="nav('deliveries')"><span class="sico">&#128666;</span>Deliveries</button>
+      <button class="sb" id="sb-timesheet" onclick="nav('timesheet')"><span class="sico">&#9203;</span>Timesheet</button>
+      <button class="sb" id="sb-checkregister" onclick="nav('checkregister')"><span class="sico">&#127974;</span>Check Register</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -666,6 +668,53 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- TIMESHEET -->
+<div class="panel" id="panel-timesheet">
+  <div class="ph"><div><div class="ptitle">Timesheet</div><div class="psub">Crew hours per job &mdash; feeds Job Costing's labour cost-code lines directly</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('timesheet')">Export CSV</button><button class="btn bp bs" onclick="openTsModal()">+ Log Hours</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Hours This Week</div><div class="kval" id="ts-week">0</div><div class="kt">Last 7 days</div></div>
+    <div class="kpi"><div class="klbl">Labour $ This Week</div><div class="kval" id="ts-weekcost">$0</div><div class="kt">Hours &times; rate</div></div>
+    <div class="kpi"><div class="klbl">Total Hours</div><div class="kval" id="ts-total">0</div><div class="kt">All time, selected scope</div></div>
+    <div class="kpi"><div class="klbl">Unposted</div><div class="kval" id="ts-unposted">0</div><div class="kt" id="ts-unposted-sub">Not yet in Job Costing</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="tsjob" onchange="rTsTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="tspost" onchange="rTsTbl()" style="width:180px;">
+        <option value="">All Entries</option>
+        <option value="unposted">Unposted Only</option>
+        <option value="posted">Posted Only</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Employee</th><th>Date</th><th>Cost Code</th><th>Hours</th><th>Rate</th><th>Total</th><th>Posted?</th><th>Actions</th></tr></thead>
+    <tbody id="tstbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- CHECK REGISTER -->
+<div class="panel" id="panel-checkregister">
+  <div class="ph"><div><div class="ptitle">Check Register</div><div class="psub">Reconciles written checks (sub/vendor payments) against the bank register</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('checkregister')">Export CSV</button><button class="btn bp bs" onclick="openChkModal()">+ Log Check</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Outstanding</div><div class="kval" id="chk-outstanding">$0</div><div class="kt" id="chk-outstanding-sub">Written, not cleared</div></div>
+    <div class="kpi"><div class="klbl">Cleared</div><div class="kval" id="chk-cleared">$0</div><div class="kt">Selected scope</div></div>
+    <div class="kpi"><div class="klbl">Oldest Outstanding</div><div class="kval" id="chk-oldest">0 d</div><div class="kt" id="chk-oldest-sub">Days since written</div></div>
+    <div class="kpi"><div class="klbl">Voided</div><div class="kval" id="chk-voided">0</div><div class="kt">Not counted as spend</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="chkjob" onchange="rChkTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="chkstatus" onchange="rChkTbl()" style="width:180px;">
+        <option value="">All Statuses</option>
+        <option value="outstanding">Outstanding</option><option value="cleared">Cleared</option><option value="voided">Voided</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Check #</th><th>Payee</th><th>Category</th><th>Amount</th><th>Issued</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="chktbody"></tbody></table></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -954,6 +1003,40 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="tsmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Timesheet Entry</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="tsm-job"></select></div><div class="fg"><label>Employee</label><input id="tsm-employee" placeholder="Marcus Webb"></div></div>
+    <div class="fr"><div class="fg"><label>Date</label><input id="tsm-date" type="date"></div><div class="fg"><label>Cost Code</label><input id="tsm-code" placeholder="01-Labour"></div></div>
+    <div class="fr"><div class="fg"><label>Hours</label><input id="tsm-hours" type="number" step="0.25" placeholder="8"></div><div class="fg"><label>Rate ($/hr)</label><input id="tsm-rate" type="number" placeholder="42"></div></div>
+    <div class="fg"><label>Notes</label><input id="tsm-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTsModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTs()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="chkmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Check</div>
+    <div class="fr"><div class="fg"><label>Job (optional &mdash; leave blank if overhead)</label><select id="chkm-job"><option value="">Not tied to a job</option></select></div><div class="fg"><label>Check #</label><input id="chkm-no" placeholder="1042"></div></div>
+    <div class="fg"><label>Payee</label><input id="chkm-payee" placeholder="Kessler Electric"></div>
+    <div class="fr"><div class="fg"><label>Amount ($)</label><input id="chkm-amount" type="number" placeholder="8200"></div><div class="fg"><label>Category</label><select id="chkm-category">
+      <option value="labour">Labour</option><option value="material">Material</option><option value="sub">Subcontractor</option><option value="overhead">Overhead</option><option value="other">Other</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Issued Date</label><input id="chkm-issued" type="date"></div><div class="fg"><label>Status</label><select id="chkm-status" onchange="chkStatusChanged()">
+      <option value="outstanding">Outstanding</option><option value="cleared">Cleared</option><option value="voided">Voided</option>
+    </select></div></div>
+    <div class="fg" id="chkm-clearedrow"><label>Cleared Date</label><input id="chkm-cleared" type="date"></div>
+    <div class="fg"><label>Memo</label><input id="chkm-memo" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeChkModal()">Cancel</button>
+      <button class="btn bp" onclick="saveChk()">Save Check</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -1066,6 +1149,8 @@ function nav(id){
   if(id==='lienwaivers')rLw();
   if(id==='po')rPo();
   if(id==='deliveries')rDv();
+  if(id==='timesheet')rTs();
+  if(id==='checkregister')rChk();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1279,6 +1364,30 @@ function seed(){
     {id:'DV-03',po_id:'PO-04',job_id:'J-2602',expected_at:'2026-05-20',received_at:'2026-05-22',status:'short',notes:'Two structural brackets missing from shipment - reorder placed'},
     {id:'DV-04',po_id:'PO-06',job_id:'J-2604',expected_at:daysAgo(10),received_at:'',status:'pending',notes:''}
   ]);
+  // Timesheet: dates computed relative to real "now" (daysAgo, same reason
+  // Daily Logs uses it above) since This-Week hours are inherently about
+  // actual elapsed time. Two unposted entries deliberately left unposted so
+  // "feeds Job Costing directly" has a real gap to close, not a panel that
+  // is silently always caught up.
+  st('bld_timesheet',[
+    {id:'TS-01',job_id:'J-2601',employee:'Marcus Webb',log_date:daysAgo(0),cost_code:'01-Labour',hours:8,rate:42,posted:false,notes:''},
+    {id:'TS-02',job_id:'J-2601',employee:'Dana Ruiz',log_date:daysAgo(2),cost_code:'01-Labour',hours:7.5,rate:38,posted:true,notes:''},
+    {id:'TS-03',job_id:'J-2602',employee:'Marcus Webb',log_date:daysAgo(12),cost_code:'01-Labour',hours:9,rate:42,posted:true,notes:''},
+    {id:'TS-04',job_id:'J-2604',employee:'Dana Ruiz',log_date:daysAgo(1),cost_code:'01-Labour',hours:6,rate:38,posted:false,notes:'Punch list touch-up work'}
+  ]);
+  // Check Register: CHK-02 is a real 40-day-outstanding check (daysAgo(), not
+  // a fixed date) so "Oldest Outstanding" has something genuine to show.
+  // CHK-03 is deliberately job-less (overhead) -- not every check written is
+  // tied to a job, and a schema that forced one would misrepresent real
+  // insurance/utility spend as a job cost. CHK-05 is voided, proving that
+  // state renders and is excluded from spend totals.
+  st('bld_checks',[
+    {id:'CHK-01',job_id:'J-2601',check_no:'1042',payee:'Kessler Electric',amount:8200,category:'sub',status:'cleared',issued_at:'2026-06-12',cleared_at:'2026-06-18',memo:'Electrical rough-in payment'},
+    {id:'CHK-02',job_id:'J-2601',check_no:'1051',payee:'Builders FirstSource',amount:6400,category:'material',status:'outstanding',issued_at:daysAgo(40),cleared_at:'',memo:'Framing lumber balance'},
+    {id:'CHK-03',job_id:'',check_no:'1055',payee:'Westlake Business Insurance',amount:1850,category:'overhead',status:'outstanding',issued_at:daysAgo(5),cleared_at:'',memo:'Quarterly liability premium'},
+    {id:'CHK-04',job_id:'J-2602',check_no:'1060',payee:'Midwest Steel Fab',amount:42000,category:'sub',status:'cleared',issued_at:'2026-05-05',cleared_at:'2026-05-12',memo:'Structural steel package - final payment'},
+    {id:'CHK-05',job_id:'J-2603',check_no:'1063',payee:'Kessler Electric',amount:950,category:'sub',status:'voided',issued_at:daysAgo(3),cleared_at:'',memo:'Voided - reissued as check 1064 (wrong amount)'}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1299,7 +1408,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -2276,7 +2385,7 @@ function rSubBids(){
   }).join('');
 }
 
-var KIND={labour:'Labour',material:'Material',sub:'Subcontractor',other:'Other'};
+var KIND={labour:'Labour',material:'Material',sub:'Subcontractor',other:'Other',overhead:'Overhead'};
 function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j?(j.client||j.address||id):id;}
 
 // Populates every job dropdown from the real job list, so a job added on the
@@ -2292,9 +2401,9 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // explicitly optional) are declared once; adding a new panel's job
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
-var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job'];
-var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job'];
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job'];
+var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job','chkm-job'];
 function fillJobSelects(){
   var js=jobs();
   var opts=js.map(function(j){return '<option value="'+H(j.id)+'">'+H(j.client||j.address)+'</option>';}).join('');
@@ -3119,6 +3228,206 @@ function saveDelivery(){
   toast('Saved delivery - '+(po.vendor||''));
 }
 
+// ── TIMESHEET ─────────────────────────────────────────────────────────────
+function bldTimesheet(){return ld('bld_timesheet',[]);}
+function tsLineTotal(t){return (t.hours||0)*(t.rate||0);}
+function rTs(){fillJobSelects();rTsTbl();}
+function tsScope(){
+  var jf=(($('tsjob')||{}).value||''),pf=(($('tspost')||{}).value||'');
+  return bldTimesheet().filter(function(t){return(!jf||t.job_id===jf)&&(!pf||(pf==='posted')===!!t.posted);});
+}
+function rTsTbl(){
+  var list=tsScope();
+  var weekAgo=Date.now()-7*86400000;
+  var thisWeek=list.filter(function(t){var d=new Date(t.log_date+'T00:00:00');return!isNaN(d)&&d.getTime()>=weekAgo;});
+  var weekHours=thisWeek.reduce(function(s,t){return s+(t.hours||0);},0);
+  var weekCost=thisWeek.reduce(function(s,t){return s+tsLineTotal(t);},0);
+  var totalHours=list.reduce(function(s,t){return s+(t.hours||0);},0);
+  var unposted=list.filter(function(t){return!t.posted;});
+  $('ts-week').textContent=weekHours;
+  $('ts-weekcost').textContent=fmt(weekCost);
+  $('ts-total').textContent=totalHours;
+  $('ts-unposted').textContent=unposted.length;
+  $('ts-unposted-sub').className='kt'+(unposted.length?' d':'');
+  $('ts-unposted-sub').textContent=unposted.length?'Not yet in Job Costing':'Fully posted';
+  var tb=$('tstbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No timesheet entries match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(t){
+      return '<tr><td>'+H(jobLabel(t.job_id))+'</td>'+
+        '<td>'+H(t.employee)+'</td>'+
+        '<td>'+(t.log_date?fdate(t.log_date):'--')+'</td>'+
+        '<td>'+H(t.cost_code)+'</td>'+
+        '<td>'+(t.hours||0)+'</td>'+
+        '<td>'+fmt(t.rate)+'/hr</td>'+
+        '<td><strong>'+fmt(tsLineTotal(t))+'</strong></td>'+
+        '<td>'+(t.posted?'<span class="badge bg">Posted</span>':'<span class="badge bw">Unposted</span>')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editTs(\''+H(t.id)+'\')">Edit</button>'+
+        (t.posted?'':' <button class="btn bp bs" onclick="postTs(\''+H(t.id)+'\')">Post</button>')+'</td></tr>';
+    }).join('');
+  }
+}
+var tsmeid=null;
+function openTsModal(){
+  if(!jobs().length){toast('Add a job first - a timesheet entry must belong to one');return;}
+  tsmeid=null;fillJobSelects();
+  ['tsm-employee','tsm-code','tsm-hours','tsm-rate','tsm-notes'].forEach(function(f){$(f).value='';});
+  $('tsm-date').value=new Date().toISOString().slice(0,10);
+  $('tsmodal').classList.add('on');
+}
+function closeTsModal(){$('tsmodal').classList.remove('on');}
+function editTs(id){
+  var t=bldTimesheet().find(function(x){return x.id===id;});if(!t)return;
+  tsmeid=id;fillJobSelects();
+  $('tsm-job').value=t.job_id||'';$('tsm-employee').value=t.employee||'';
+  $('tsm-date').value=t.log_date||'';$('tsm-code').value=t.cost_code||'';
+  $('tsm-hours').value=t.hours||'';$('tsm-rate').value=t.rate||'';
+  $('tsm-notes').value=t.notes||'';
+  $('tsmodal').classList.add('on');
+}
+function saveTs(){
+  var employee=$('tsm-employee').value.trim();
+  if(!employee){toast('Employee name required');return;}
+  var job=$('tsm-job').value;
+  if(!job){toast('Job required');return;}
+  var hours=parseFloat($('tsm-hours').value)||0;
+  if(hours<=0){toast('Hours must be greater than zero');return;}
+  var list=bldTimesheet();
+  var existing=tsmeid?list.find(function(x){return x.id===tsmeid;}):null;
+  var rec={
+    id:tsmeid||('TS-'+String(Date.now()).slice(-5)),
+    job_id:job,employee:employee,log_date:$('tsm-date').value,
+    cost_code:$('tsm-code').value.trim()||'01-Labour',
+    hours:hours,rate:parseFloat($('tsm-rate').value)||0,
+    posted:existing?existing.posted:false,
+    notes:$('tsm-notes').value.trim()
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(tsmeid){var i=list.findIndex(function(x){return x.id===tsmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_timesheet',list);
+  closeTsModal();rTs();
+  toast('Saved - '+rec.employee);
+}
+// The actual "feeds Job Costing directly" mechanic: posting an entry finds
+// the matching job+cost_code labour line (creating one if none exists yet)
+// and adds this entry's hours*rate to BOTH committed and actual -- committed
+// because labour promised is labour owed the moment it's worked, actual
+// because it is genuinely spent, not estimated. Re-clicking Post is not
+// possible once posted (the button is removed from the row), so a line can
+// never be double-counted.
+function postTs(id){
+  var list=bldTimesheet();
+  var t=list.find(function(x){return x.id===id;});
+  if(!t||t.posted)return;
+  var amt=tsLineTotal(t);
+  var cs=costs();
+  var line=cs.find(function(c){return c.job_id===t.job_id&&c.cost_code===t.cost_code&&c.kind==='labour';});
+  if(line){line.committed=(line.committed||0)+amt;line.actual=(line.actual||0)+amt;}
+  else{cs.push({id:'C-'+String(Date.now()).slice(-5),job_id:t.job_id,cost_code:t.cost_code,kind:'labour',budget:0,committed:amt,actual:amt,vendor:'In-house crew'});}
+  st('bld_costs',cs);
+  t.posted=true;
+  st('bld_timesheet',list);
+  rTs();rCost();rJobs();rDash();
+  toast('Posted '+fmt(amt)+' to Job Costing - '+t.cost_code);
+}
+
+// ── CHECK REGISTER ────────────────────────────────────────────────────────
+var CHKSTATUS={outstanding:{l:'Outstanding',c:'bw'},cleared:{l:'Cleared',c:'bg'},voided:{l:'Voided',c:'bx'}};
+function bldChecks(){return ld('bld_checks',[]);}
+// Same real-elapsed-time discipline as everywhere else in this file: a check
+// still outstanding has no fixed "days outstanding," so it's computed
+// against Date.now() on every render.
+function chkDaysOutstanding(c){
+  if(c.status!=='outstanding')return 0;
+  var d=new Date((c.issued_at||'')+'T00:00:00');
+  if(isNaN(d))return 0;
+  return Math.max(0,Math.round((Date.now()-d.getTime())/86400000));
+}
+function rChk(){fillJobSelects();rChkTbl();}
+function chkScope(){
+  var jf=(($('chkjob')||{}).value||''),sf=(($('chkstatus')||{}).value||'');
+  return bldChecks().filter(function(c){return(!jf||c.job_id===jf)&&(!sf||c.status===sf);});
+}
+function rChkTbl(){
+  var list=chkScope();
+  var outstanding=list.filter(function(c){return c.status==='outstanding';});
+  var outstandingAmt=outstanding.reduce(function(s,c){return s+(c.amount||0);},0);
+  var cleared=list.filter(function(c){return c.status==='cleared';}).reduce(function(s,c){return s+(c.amount||0);},0);
+  var voided=list.filter(function(c){return c.status==='voided';});
+  var oldest=outstanding.reduce(function(m,c){return Math.max(m,chkDaysOutstanding(c));},0);
+  $('chk-outstanding').textContent=fmt(outstandingAmt);
+  $('chk-outstanding-sub').className='kt'+(outstanding.length?' d':'');
+  $('chk-cleared').textContent=fmt(cleared);
+  $('chk-oldest').textContent=oldest+' d';
+  $('chk-oldest-sub').className='kt'+(oldest>30?' d':'');
+  $('chk-voided').textContent=voided.length;
+  var tb=$('chktbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No checks match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(c){
+      var s=CHKSTATUS[c.status]||{l:c.status,c:'bx'};
+      var days=chkDaysOutstanding(c);
+      return '<tr><td>'+(c.job_id?H(jobLabel(c.job_id)):'<span style="color:var(--muted)">Overhead</span>')+'</td>'+
+        '<td>'+H(c.check_no||'')+'</td>'+
+        '<td><strong>'+H(c.payee)+'</strong></td>'+
+        '<td>'+H(KIND[c.category]||c.category||'')+'</td>'+
+        '<td>'+fmt(c.amount)+'</td>'+
+        '<td>'+(c.issued_at?fdate(c.issued_at):'--')+(days>30?' <span class="badge br" style="margin-left:4px;">'+days+'d</span>':'')+'</td>'+
+        '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
+        '<td><button class="btn bo bs" onclick="editChk(\''+H(c.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function chkStatusChanged(){
+  $('chkm-clearedrow').style.display=$('chkm-status').value==='cleared'?'block':'none';
+}
+var chkmeid=null;
+function openChkModal(){
+  chkmeid=null;fillJobSelects();
+  ['chkm-no','chkm-payee','chkm-amount','chkm-memo','chkm-cleared'].forEach(function(f){$(f).value='';});
+  $('chkm-job').value='';$('chkm-category').value='sub';$('chkm-status').value='outstanding';
+  $('chkm-issued').value=new Date().toISOString().slice(0,10);
+  chkStatusChanged();
+  $('chkmodal').classList.add('on');
+}
+function closeChkModal(){$('chkmodal').classList.remove('on');}
+function editChk(id){
+  var c=bldChecks().find(function(x){return x.id===id;});if(!c)return;
+  chkmeid=id;fillJobSelects();
+  $('chkm-job').value=c.job_id||'';$('chkm-no').value=c.check_no||'';
+  $('chkm-payee').value=c.payee||'';$('chkm-amount').value=c.amount||'';
+  $('chkm-category').value=c.category||'sub';$('chkm-status').value=c.status||'outstanding';
+  $('chkm-issued').value=c.issued_at||'';$('chkm-cleared').value=c.cleared_at||'';
+  $('chkm-memo').value=c.memo||'';
+  chkStatusChanged();
+  $('chkmodal').classList.add('on');
+}
+function saveChk(){
+  var payee=$('chkm-payee').value.trim();
+  if(!payee){toast('Payee required');return;}
+  var amount=parseFloat($('chkm-amount').value)||0;
+  if(amount<=0){toast('Amount must be greater than zero');return;}
+  var status=$('chkm-status').value;
+  if(status==='cleared'&&!$('chkm-cleared').value){toast('A cleared check needs a cleared date');return;}
+  var list=bldChecks();
+  var existing=chkmeid?list.find(function(x){return x.id===chkmeid;}):null;
+  var rec={
+    id:chkmeid||('CHK-'+String(Date.now()).slice(-5)),
+    job_id:$('chkm-job').value,check_no:$('chkm-no').value.trim(),
+    payee:payee,amount:amount,category:$('chkm-category').value,
+    status:status,issued_at:$('chkm-issued').value,
+    cleared_at:status==='cleared'?$('chkm-cleared').value:'',
+    memo:$('chkm-memo').value.trim()
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(chkmeid){var i=list.findIndex(function(x){return x.id===chkmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_checks',list);
+  closeChkModal();rChk();
+  toast('Saved - '+rec.payee);
+}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -3207,6 +3516,16 @@ function csv(type){
     if(!dvlist.length){toast('No deliveries in scope to export');return;}
     rows=[['Job','PO','Vendor','Expected','Received','Status','Notes']];
     dvlist.forEach(function(d){var po=bldPos().find(function(x){return x.id===d.po_id;});rows.push([jobLabel(d.job_id),po?po.description:d.po_id,po?po.vendor:'',d.expected_at,d.received_at,(DVSTATUS[d.status]||{l:d.status}).l,d.notes]);});
+  } else if(type==='timesheet'){
+    var tslist=tsScope();
+    if(!tslist.length){toast('No timesheet entries in scope to export');return;}
+    rows=[['Job','Employee','Date','Cost Code','Hours','Rate','Total','Posted']];
+    tslist.forEach(function(t){rows.push([jobLabel(t.job_id),t.employee,t.log_date,t.cost_code,t.hours,t.rate,tsLineTotal(t),t.posted?'Yes':'No']);});
+  } else if(type==='checkregister'){
+    var chklist=chkScope();
+    if(!chklist.length){toast('No checks in scope to export');return;}
+    rows=[['Job','Check #','Payee','Category','Amount','Issued','Status','Cleared','Memo']];
+    chklist.forEach(function(c){rows.push([c.job_id?jobLabel(c.job_id):'Overhead',c.check_no,c.payee,KIND[c.category]||c.category,c.amount,c.issued_at,(CHKSTATUS[c.status]||{l:c.status}).l,c.cleared_at,c.memo]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
