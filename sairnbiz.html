@@ -1101,12 +1101,29 @@ function csv(type){
   toast('Exported - '+fn);
 }
 
+function loadPins(){
+  var saved=ld('sb_cfg',null);
+  if(saved&&saved.pins){
+    ['owner','hr','accounting','manager','staff'].forEach(function(r){
+      if(saved.pins[r]&&/^\d{4}$/.test(saved.pins[r]))PINS[r]=saved.pins[r];
+    });
+  }
+}
 function saveSettings(){
-  st('sb_cfg',{pinOwner:$('sp-owner').value,pinHr:$('sp-hr').value,pinAcc:$('sp-acc').value,pinMgr:$('sp-mgr').value,pinStaff:$('sp-staff').value,fy:$('ss-fy').value,pay:$('ss-pay').value,ot:$('ss-ot').value,terms:$('ss-terms').value,tax:$('ss-tax').value});
-  toast('Settings saved');
+  var fields={owner:$('sp-owner').value.trim(),hr:$('sp-hr').value.trim(),accounting:$('sp-acc').value.trim(),manager:$('sp-mgr').value.trim(),staff:$('sp-staff').value.trim()};
+  var roles=Object.keys(fields);
+  for(var i=0;i<roles.length;i++){
+    var v=fields[roles[i]];
+    if(v&&!/^\d{4}$/.test(v)){toast('PIN must be exactly 4 digits ('+roles[i]+')',4000);return;}
+  }
+  roles.forEach(function(r){if(fields[r])PINS[r]=fields[r];});
+  st('sb_cfg',{pins:{owner:PINS.owner,hr:PINS.hr,accounting:PINS.accounting,manager:PINS.manager,staff:PINS.staff},fy:$('ss-fy').value,pay:$('ss-pay').value,ot:$('ss-ot').value,terms:$('ss-terms').value,tax:$('ss-tax').value});
+  ['sp-owner','sp-hr','sp-acc','sp-mgr','sp-staff'].forEach(function(id){$(id).value='';});
+  toast('Settings saved - PIN changes take effect immediately');
 }
 
 (function(){
+  loadPins();
   var k=ld('sb_lic',null);if(k){$('gate').style.display='none';$('pin').classList.add('on');}
   rBenKPIs();
 })();
