@@ -22442,8 +22442,8 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="kpi"><div class="kpi-val" id="rem-kpi4">$0</div><div class="kpi-label">Resale Value</div></div>
 </div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-  <input id="rem-search" placeholder="Search stone, location..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="remRender()">
-  <select id="rem-status-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="remRender()">
+  <input id="rem-search" placeholder="Search stone, location..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="sdRemnantRender()">
+  <select id="rem-status-filter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="sdRemnantRender()">
     <option value="">All Status</option>
     <option value="Available">Available</option>
     <option value="Reserved">Reserved</option>
@@ -22522,7 +22522,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var id='R-'+String(data.length+1).padStart(3,'0');
     data.push({id:id,stone:stone,size:size||'',sqft:sqft,status:'Available',location:location||'',price:price,age:0,origin:'',notes:notes||''});
     save(data);
-    remRender();
+    // Was remRender() -- the OTHER module's renderer, so adding a remnant
+    // wrote to sd_remnant but refreshed the sd_remnants grid instead, and
+    // the new piece never appeared in this module's own table. Real bug,
+    // fixed as part of collapsing the duplicate.
+    window.sdRemnantRender();
   };
   window.sdRemnantAI=function(){
     var out=document.getElementById('rem-ai-out');
@@ -22555,22 +22559,17 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 })();
 </script>
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px">
-  <div class="kpi"><div class="kpi-val" id="rem-kpi-count">0</div><div class="kpi-label">Pieces</div></div>
-  <div class="kpi"><div class="kpi-val" id="rem-kpi-value">$0</div><div class="kpi-label">Resale Value</div></div>
-  <div class="kpi"><div class="kpi-val" id="rem-kpi-sqft">0.0</div><div class="kpi-label">Total Sqft</div></div>
-  <div class="kpi"><div class="kpi-val" id="rem-kpi-aging">0</div><div class="kpi-label">Aging 90+ Days</div></div>
-</div>
-<div style="margin-bottom:10px">
-  <select id="rem-filter-thick" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="remRender()">
-    <option value="">All Thicknesses</option>
-    <option value="2CM">2CM</option>
-    <option value="3CM">3CM</option>
-    <option value="4CM">4CM</option>
-  </select>
-</div>
-<div id="rem-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px"></div>
-<div id="rem-form" style="display:none" data-auto-container="missing-dom-fix"></div>
+<!-- The rem* module's second UI (KPI row rem-kpi-count/-value/-sqft/-aging,
+     thickness filter, #rem-grid card list, and an empty #rem-form
+     missing-dom-fix stub) was deleted here along with the rem* JS module
+     itself. It was a full duplicate Remnant Yard rendering the same panel a
+     second time from a different storage key (sd_remnants) -- and a
+     non-functional one: its add form was a stub with zero fields, all 11
+     field ids it read (rem-mat/-w/-l/-color/-thick/-loc/-price/-finish/
+     -cond/-notes/-photo) never existed, nor did #rem-ai-result, and
+     remAddRemnant/remSave/remAIMatch/remExport had zero callers. Canonical
+     is the sdRemnant* module above (#rem-list, sd_remnant), which owns this
+     panel's only working action buttons. See STONEDESK-SESSION78-HANDOFF.md. -->
 </div>
 
 <!-- PANEL: PURCHASE ORDERS -->
@@ -27913,7 +27912,7 @@ function sbNav(id) {
     if(id==='crm'&&typeof window.sdCRMRender==='function')window.sdCRMRender();
     if(id==='jobcost'&&typeof window.sdJCRender==='function')window.sdJCRender();
     if(id==='timesheet'&&typeof window.sdTSRender==='function')window.sdTSRender();
-    if(id==='remnant'){if(typeof remRender==='function')remRender();if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();}
+    if(id==='remnant'){if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();}
     if(id==='inventory'&&typeof renderInventory==='function')renderInventory();
     if(id==='receiving'&&typeof rcvRender==='function')rcvRender();
     if(id==='sms'&&typeof window.sdSMSRender==='function')window.sdSMSRender();
@@ -29097,66 +29096,26 @@ async function jcAIAnalyze(){
 // ================================================================
 
 // ================================================================
-// 4. REMNANT YARD
+// 4. REMNANT YARD -- orphaned duplicate module removed (2026-07-30).
+// Canonical is the sdRemnant* IIFE inside panel-remnant (#rem-list, storage
+// key sd_remnant), which owns that panel's only working action buttons
+// (sdRemnantAdd/sdRemnantAI/sdRemnantPrint) and has real seed data.
+//
+// What was deleted here: remRemnants + sd_remnants (PLURAL -- a second,
+// separate key) and remAddRemnant/remSave/remDelete/remMarkSold/remRender/
+// remAIMatch/remExport. It rendered the same panel a second time into
+// #rem-grid, so every remnant appeared twice under two different KPI rows.
+// Verified dead before deleting, not assumed: remAddRemnant, remSave,
+// remAIMatch and remExport had ZERO callers (grep count 1 = the definition
+// itself); remDelete/remMarkSold were only reachable from onclick strings
+// this module generated for itself; all 11 form field ids remSave() read
+// (rem-mat/-w/-l/-color/-thick/-loc/-price/-finish/-cond/-notes/-photo) and
+// remAIMatch's #rem-ai-result target never existed anywhere in the file, and
+// #rem-form was an empty missing-dom-fix stub -- so nothing could ever be
+// added to sd_remnants through the UI, and no migration was needed.
+// A self-referential orphan cluster, same shape as the ones documented in
+// STONEDESK-SESSION73-HANDOFF.md SS2.
 // ================================================================
-var remRemnants=sdLoad('sd_remnants',[]);
-function remAddRemnant(){document.getElementById('rem-form').style.display='block';}
-function remSave(){
-  var mat=((document.getElementById('rem-mat')||{}).value||'').trim();if(!mat){showToast('Material required');return;}
-  var w=parseFloat((document.getElementById('rem-w')||{}).value)||0;
-  var l=parseFloat((document.getElementById('rem-l')||{}).value)||0;
-  var rem={id:'REM'+Date.now(),material:mat,color:((document.getElementById('rem-color')||{}).value||'').trim(),thickness:(document.getElementById('rem-thick')||{}).value||'3CM',width:w,length:l,sqft:w*l/144,location:((document.getElementById('rem-loc')||{}).value||'').trim(),price:parseFloat((document.getElementById('rem-price')||{}).value)||0,finish:(document.getElementById('rem-finish')||{}).value||'Polished',condition:(document.getElementById('rem-cond')||{}).value||'excellent',notes:((document.getElementById('rem-notes')||{}).value||'').trim(),photo:'',status:'available',addedAt:new Date().toISOString()};
-  var pf=document.getElementById('rem-photo');
-  var go=function(){remRemnants.unshift(rem);sdStore('sd_remnants',remRemnants);document.getElementById('rem-form').style.display='none';remRender();showToast('Remnant added');};
-  if(pf&&pf.files[0]){var fr=new FileReader();fr.onload=function(e){rem.photo=e.target.result;go();};fr.readAsDataURL(pf.files[0]);}else go();
-}
-function remDelete(id){if(!confirm('Remove?'))return;remRemnants=remRemnants.filter(function(x){return x.id!==id;});sdStore('sd_remnants',remRemnants);remRender();}
-function remMarkSold(id){var r=remRemnants.find(function(x){return x.id===id;});if(!r)return;r.status='sold';r.soldAt=new Date().toISOString();sdStore('sd_remnants',remRemnants);remRender();showToast('Marked sold');}
-function remRender(){
-  var search=((document.getElementById('rem-search')||{}).value||'').toLowerCase();
-  var thickF=((document.getElementById('rem-filter-thick')||{}).value||'');
-  var list=remRemnants.filter(function(r){return r.status!=='sold'&&(!search||r.material.toLowerCase().includes(search))&&(!thickF||r.thickness===thickF);});
-  var avail=remRemnants.filter(function(r){return r.status!=='sold';});
-  var totalVal=avail.reduce(function(s,r){return s+r.price;},0);
-  var totalSqft=avail.reduce(function(s,r){return s+r.sqft;},0);
-  var aging=avail.filter(function(r){return Date.now()-new Date(r.addedAt).getTime()>90*86400000;}).length;
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('rem-kpi-count',avail.length);sv('rem-kpi-value',sdFmt(totalVal));sv('rem-kpi-sqft',totalSqft.toFixed(1));sv('rem-kpi-aging',aging);
-  var grid=document.getElementById('rem-grid');if(!grid)return;
-  grid.innerHTML=list.length?list.map(function(r){
-    var cc=r.condition==='excellent'?'#16a34a':r.condition==='good'?'#ca8a04':'#dc2626';
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'+
-      (r.photo?'<img src="'+r.photo+'" style="width:100%;height:140px;object-fit:cover">':'<div style="height:80px;background:rgba(22,163,74,0.06);display:flex;align-items:center;justify-content:center;font-size:32px">&#129521;</div>')+
-      '<div style="padding:12px">'+
-        '<div style="font-size:13px;font-weight:700;margin-bottom:2px">'+escHtml(r.material)+'</div>'+
-        '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">'+r.width+'" x '+r.length+'" ('+r.sqft.toFixed(1)+' sqft) · '+r.thickness+'</div>'+
-        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'+
-          '<span style="font-size:16px;font-weight:800;color:var(--a)">'+sdFmt(r.price)+'</span>'+
-          '<span style="font-size:10px;font-weight:700;background:'+cc+';color:#fff;padding:2px 8px;border-radius:100px">'+r.condition+'</span>'+
-        '</div>'+
-        (r.location?'<div style="font-size:10px;color:var(--muted);margin-bottom:6px">'+escHtml(r.location)+'</div>':'')+
-        '<div style="display:flex;gap:6px">'+
-          '<button onclick="remMarkSold(\''+r.id+'\')" style="flex:1;padding:5px;background:#16a34a;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Mark Sold</button>'+
-          '<button onclick="remDelete(\''+r.id+'\')" style="padding:5px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">x</button>'+
-        '</div>'+
-      '</div></div>';
-  }).join(''):'<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:32px">No remnants in yard yet.</div>';
-}
-async function remAIMatch(){
-  var avail=remRemnants.filter(function(r){return r.status!=='sold';});
-  if(!avail.length){showToast('No remnants in yard');return;}
-  var el=document.getElementById('rem-ai-result');el.style.display='block';el.innerHTML='<div style="color:var(--muted);padding:12px">Analyzing remnants...</div>';
-  var remList=avail.map(function(r){return r.material+' '+r.width+'"x'+r.length+'" '+r.thickness+' ($'+r.price+')';}).join('; ');
-  var openJobs=(typeof sdJobs!=='undefined'?sdJobs:[]).filter(function(j){return j.stage!=='installed';}).slice(0,5);
-  var jobList=openJobs.map(function(j){return j.customer+': '+j.material+' '+j.sqft+'sqft';}).join('; ')||'none on file';
-  var txt=await sdClaude('You are a stone yard manager. Match remnants to open jobs where possible. Be specific.','Remnants: '+remList+'\nOpen jobs: '+jobList,900);
-  el.innerHTML='<div style="background:rgba(22,163,74,0.06);border:1.5px solid rgba(22,163,74,0.2);border-radius:12px;padding:16px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#0a3d1f;margin-bottom:8px">&#129504; Remnant Job Match</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
-}
-function remExport(){
-  var rows=[['Material','Width','Length','Sqft','Thickness','Price','Location','Condition','Added']].concat(remRemnants.filter(function(r){return r.status!=='sold';}).map(function(r){return [r.material,r.width,r.length,r.sqft.toFixed(2),r.thickness,r.price,r.location,r.condition,new Date(r.addedAt).toLocaleDateString()];}));
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_Remnants_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
-}
 
 // ================================================================
 // 5. PURCHASE ORDERS — orphaned duplicate removed (canonical is panel-po /
@@ -29528,7 +29487,6 @@ function piExport(){
 document.addEventListener('DOMContentLoaded',function(){
   setTimeout(function(){
     try{jcRender();}catch(e){}
-    try{remRender();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
     try{rfRender();}catch(e){}
   },1000);
