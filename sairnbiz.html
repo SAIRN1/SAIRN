@@ -870,8 +870,8 @@ function rPay(){
     gross+=g;taxes+=fi;bens+=520;
     return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td style="text-align:center;">'+hrs+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td><strong>'+fmt(g)+'</strong></td><td>'+fmt(ft)+'</td><td>'+fmt(st2)+'</td><td>'+fmt(fi)+'</td><td><strong>'+fmt(net)+'</strong></td><td><span class="badge bg">Ready</span></td></tr>';
   }).join('');
-  $('py-gross').textContent=fmt(gross);$('py-tax').textContent=fmt(taxes);$('py-ben').textContent=fmt(bens*emps.length);
-  $('py-total').textContent=fmt(gross+taxes+bens*emps.length);$('py-ytd').textContent=fmt(gross*13);
+  $('py-gross').textContent=fmt(gross);$('py-tax').textContent=fmt(taxes);$('py-ben').textContent=fmt(bens);
+  $('py-total').textContent=fmt(gross+taxes+bens);$('py-ytd').textContent=fmt(gross*13);
   var invs=ld('sb_invs',[]),exps=ld('sb_exps',[]);
   var rev=invs.reduce(function(s,i){return s+i.amt;},0);
   var cogs=exps.filter(function(e){return e.cat==='Materials';}).reduce(function(s,e){return s+e.amt;},0);
