@@ -227,6 +227,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-fieldphoto" onclick="nav('fieldphoto')"><span class="sico">&#128248;</span>Field Photo Analysis</button>
       <div class="ss">Money</div>
       <button class="sb" id="sb-jobcost" onclick="nav('jobcost')"><span class="sico">&#128200;</span>Job Costing</button>
+      <button class="sb" id="sb-draws" onclick="nav('draws')"><span class="sico">&#128179;</span>Draw Requests</button>
+      <button class="sb" id="sb-lienwaivers" onclick="nav('lienwaivers')"><span class="sico">&#128196;</span>Lien Waivers</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -566,6 +568,55 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="card"><div class="ch"><span class="ct">Cost Code Roll-up</span></div><div class="cb" id="c-rollup"></div></div>
 </div>
 
+<!-- DRAW REQUESTS -->
+<div class="panel" id="panel-draws">
+  <div class="ph"><div><div class="ptitle">Draw Requests</div><div class="psub">Progress billing &mdash; requested vs received, retainage held</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('draws')">Export CSV</button><button class="btn bp bs" onclick="openDrawModal()">+ New Draw</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Outstanding Requested</div><div class="kval" id="dr-outstanding">$0</div><div class="kt" id="dr-outstanding-sub">Not yet received</div></div>
+    <div class="kpi"><div class="klbl">Received to Date</div><div class="kval" id="dr-received">$0</div><div class="kt">All draws</div></div>
+    <div class="kpi"><div class="klbl">Retainage Held</div><div class="kval" id="dr-retainage">$0</div><div class="kt">Across all draws</div></div>
+    <div class="kpi"><div class="klbl">Past 30 Days</div><div class="kval" id="dr-overdue">0</div><div class="kt" id="dr-overdue-sub">Requested, unreceived</div></div>
+    <div class="kpi"><div class="klbl">Missing Waiver</div><div class="kval" id="dr-nowaiver">0</div><div class="kt" id="dr-nowaiver-sub">Received with no waiver on file</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="drjob" onchange="rDrawsTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="drstatus" onchange="rDrawsTbl()" style="width:180px;">
+        <option value="">All Statuses</option>
+        <option value="requested">Requested</option>
+        <option value="received">Received</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Draw #</th><th>Period End</th><th>% Complete</th><th>Requested</th><th>Retainage Held</th><th>Received</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="drtbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- LIEN WAIVERS -->
+<div class="panel" id="panel-lienwaivers">
+  <div class="ph"><div><div class="ptitle">Lien Waivers</div><div class="psub">Conditional / unconditional waivers &mdash; the paperwork that travels with money</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('lienwaivers')">Export CSV</button><button class="btn bp bs" onclick="openLwModal()">+ New Waiver</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Waivers</div><div class="kval" id="lw-total">0</div><div class="kt">Selected scope</div></div>
+    <div class="kpi"><div class="klbl">Pending</div><div class="kval" id="lw-pending">0</div><div class="kt" id="lw-pending-sub">Not yet executed</div></div>
+    <div class="kpi"><div class="klbl">Executed</div><div class="kval" id="lw-executed">0</div><div class="kt">Signed and on file</div></div>
+    <div class="kpi"><div class="klbl">Conditional</div><div class="kval" id="lw-conditional">0</div><div class="kt">vs unconditional</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="lwjob" onchange="rLwTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="lwstatus" onchange="rLwTbl()" style="width:180px;">
+        <option value="">All Statuses</option>
+        <option value="pending">Pending</option>
+        <option value="executed">Executed</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Party</th><th>Type</th><th>Amount</th><th>Tied Draw</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+    <tbody id="lwtbody"></tbody></table></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -784,6 +835,42 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="drawmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Draw Request</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="drm-job"></select></div><div class="fg"><label>Draw #</label><input id="drm-no" type="number" placeholder="1"></div></div>
+    <div class="fr"><div class="fg"><label>Period End</label><input id="drm-period" type="date"></div><div class="fg"><label>% Complete</label><input id="drm-pct" type="number" placeholder="35"></div></div>
+    <div class="fr"><div class="fg"><label>Requested Amount ($)</label><input id="drm-amount" type="number" placeholder="45000"></div><div class="fg"><label>Retainage %</label><input id="drm-retpct" type="number" placeholder="10"></div></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="drm-status" onchange="drawStatusChanged()">
+      <option value="requested">Requested</option><option value="received">Received</option>
+    </select></div><div class="fg"><label>Requested Date</label><input id="drm-reqdate" type="date"></div></div>
+    <div class="fr" id="drm-receivedrow"><div class="fg"><label>Received Date</label><input id="drm-recdate" type="date"></div><div class="fg"><label>Amount Received ($)</label><input id="drm-recamount" type="number" placeholder="40500"></div></div>
+    <div class="fg"><label>Notes</label><input id="drm-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDrawModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDraw()">Save Draw</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="lwmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Lien Waiver</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="lwm-job" onchange="lwJobChanged()"></select></div><div class="fg"><label>Tied Draw (optional)</label><select id="lwm-draw"><option value="">Not tied to a specific draw</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Party (Sub / Vendor)</label><input id="lwm-party" placeholder="Kessler Electric"></div><div class="fg"><label>Type</label><select id="lwm-type">
+      <option value="conditional">Conditional</option><option value="unconditional">Unconditional</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Amount ($)</label><input id="lwm-amount" type="number" placeholder="8200"></div><div class="fg"><label>Status</label><select id="lwm-status" onchange="lwStatusChanged()">
+      <option value="pending">Pending</option><option value="executed">Executed</option>
+    </select></div></div>
+    <div class="fg" id="lwm-daterow"><label>Executed Date</label><input id="lwm-date" type="date"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeLwModal()">Cancel</button>
+      <button class="btn bp" onclick="saveLw()">Save Waiver</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -892,6 +979,8 @@ function nav(id){
   if(id==='dailylogs')rLogs();
   if(id==='timeline')rTimeline();
   if(id==='fieldphoto')rFieldPhoto();
+  if(id==='draws')rDraws();
+  if(id==='lienwaivers')rLw();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1057,6 +1146,27 @@ function seed(){
       full:'Site condition: water staining and minor subfloor softness near the new addition footing, consistent with grading directing runoff toward the foundation rather than away from it.\n\nSuggested scope (rough ranges, not final pricing):\n- Subfloor section replacement (approx 40 sqft): $600-900\n- Regrade + extend downspout away from foundation: $800-1,200\n- Waterproofing membrane at footing: $400-650\nRough total: $1,800-2,750\n\nThis is a starting estimate from a photo, pending real material pricing and an in-person confirmation of the extent of the damage.',
       spawned_co:true,spawned_rfi:false}
   ]);
+  // Draws: exactly the seed plan's 2 -- 1 received, 1 outstanding past 30
+  // days. The overdue one uses daysAgo() (real elapsed time), same reason
+  // daily logs do: a hardcoded calendar date would silently stop being
+  // "past 30 days" the moment today moves past it.
+  st('bld_draws',[
+    {id:'DR-01',job_id:'J-2601',draw_no:1,period_end:'2026-06-30',pct_complete:35,amount:45000,retainage_pct:10,retainage_held:4500,status:'received',requested_at:'2026-07-01',received_at:'2026-07-15',amount_received:40500,notes:''},
+    {id:'DR-02',job_id:'J-2602',draw_no:2,period_end:daysAgo(50),pct_complete:55,amount:78000,retainage_pct:10,retainage_held:7800,status:'requested',requested_at:daysAgo(45),received_at:'',amount_received:0,notes:'Awaiting owner approval - past 30 days outstanding'}
+  ]);
+  // Lien waivers: DR-01 is RECEIVED but deliberately has zero waiver rows
+  // tied to it via draw_id, so "Missing Waiver" has a real, non-zero case to
+  // catch -- paying a draw with no waiver on file is exactly the exposure
+  // this panel exists to prevent, not a decorative log. The other four rows
+  // are general per-sub waivers (one tied to DR-02, three untied) so every
+  // type/status combination renders at least once.
+  st('bld_lien_waivers',[
+    {id:'LW-01',job_id:'J-2601',draw_id:'',party:'Kessler Electric',type:'conditional',amount:8200,status:'executed',date:'2026-06-10'},
+    {id:'LW-02',job_id:'J-2601',draw_id:'',party:'ABC Cabinetry',type:'unconditional',amount:12000,status:'pending',date:''},
+    {id:'LW-03',job_id:'J-2602',draw_id:'',party:'Delgado Plumbing Co',type:'conditional',amount:14200,status:'executed',date:'2026-06-01'},
+    {id:'LW-04',job_id:'J-2602',draw_id:'DR-02',party:'Midwest Steel Fab',type:'unconditional',amount:22000,status:'pending',date:''},
+    {id:'LW-05',job_id:'J-2605',draw_id:'',party:'Builders FirstSource',type:'unconditional',amount:6500,status:'executed',date:'2026-05-25'}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1077,7 +1187,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -2070,8 +2180,8 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // explicitly optional) are declared once; adding a new panel's job
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
-var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job'];
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -2484,6 +2594,224 @@ function saveJob(){
   toast('Saved - '+rec.address);
 }
 
+// ── DRAW REQUESTS ─────────────────────────────────────────────────────────
+var DRAWSTATUS={requested:{l:'Requested',c:'bw'},received:{l:'Received',c:'bg'}};
+function bldDraws(){return ld('bld_draws',[]);}
+function bldLienWaivers(){return ld('bld_lien_waivers',[]);}
+// Same real-elapsed-time discipline as rfiDaysOpen()/punchDaysOpen(): a draw
+// still outstanding has no fixed "days open," so this is computed against
+// Date.now() every render rather than stored as a number that would go stale.
+function drawDaysOutstanding(d){
+  if(d.status==='received')return 0;
+  var asked=new Date((d.requested_at||'')+'T00:00:00');
+  if(isNaN(asked))return 0;
+  return Math.max(0,Math.round((Date.now()-asked.getTime())/86400000));
+}
+// A received draw with no lien waiver referencing it (via draw_id) is real
+// exposure -- money moved with no waiver on file -- so this is computed from
+// the two datasets together, never hand-maintained as its own flag that
+// could drift from what the waiver list actually shows.
+function drawsMissingWaiver(){
+  var waived={};
+  bldLienWaivers().forEach(function(w){if(w.draw_id)waived[w.draw_id]=true;});
+  return bldDraws().filter(function(d){return d.status==='received'&&!waived[d.id];});
+}
+function rDraws(){fillJobSelects();rDrawsTbl();}
+function drawScope(){
+  var jf=(($('drjob')||{}).value||''),sf=(($('drstatus')||{}).value||'');
+  return bldDraws().filter(function(d){return(!jf||d.job_id===jf)&&(!sf||d.status===sf);});
+}
+function rDrawsTbl(){
+  var list=drawScope();
+  var outstanding=list.filter(function(d){return d.status==='requested';}).reduce(function(s,d){return s+(d.amount||0);},0);
+  var received=list.reduce(function(s,d){return s+(d.amount_received||0);},0);
+  var retainage=list.reduce(function(s,d){return s+(d.retainage_held||0);},0);
+  var overdue=list.filter(function(d){return d.status==='requested'&&drawDaysOutstanding(d)>30;});
+  // Compare by id, not object reference: ld() parses a fresh object graph on
+  // every call, so bldDraws() called here and bldDraws() called inside
+  // drawsMissingWaiver() never return the same object instances even for the
+  // same underlying row. indexOf-by-reference would silently never match.
+  var missingIds={};
+  drawsMissingWaiver().forEach(function(d){missingIds[d.id]=true;});
+  var noWaiver=list.filter(function(d){return missingIds[d.id];});
+  $('dr-outstanding').textContent=fmt(outstanding);
+  $('dr-received').textContent=fmt(received);
+  $('dr-retainage').textContent=fmt(retainage);
+  $('dr-overdue').textContent=overdue.length;
+  $('dr-overdue-sub').className='kt'+(overdue.length?' d':'');
+  $('dr-overdue-sub').textContent=overdue.length?'Past 30 days, needs follow-up':'None past 30 days';
+  $('dr-nowaiver').textContent=noWaiver.length;
+  $('dr-nowaiver-sub').className='kt'+(noWaiver.length?' d':'');
+  $('dr-nowaiver-sub').textContent=noWaiver.length?'Paid with no waiver on file':'All received draws covered';
+  var tb=$('drtbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No draw requests match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(d){
+      var s=DRAWSTATUS[d.status]||{l:d.status,c:'bx'};
+      var missing=d.status==='received'&&missingIds[d.id];
+      return '<tr><td>'+H(jobLabel(d.job_id))+'</td>'+
+        '<td>'+(d.draw_no||'')+'</td>'+
+        '<td>'+(d.period_end?fdate(d.period_end):'--')+'</td>'+
+        '<td>'+(d.pct_complete||0)+'%</td>'+
+        '<td><strong>'+fmt(d.amount)+'</strong></td>'+
+        '<td>'+fmt(d.retainage_held)+'</td>'+
+        '<td>'+(d.status==='received'?fmt(d.amount_received):'--')+(missing?' <span class="badge br" style="margin-left:4px;">No Waiver</span>':'')+'</td>'+
+        '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
+        '<td><button class="btn bo bs" onclick="editDraw(\''+H(d.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+// Received-date/amount fields only matter once status flips to received --
+// same show/hide-on-status pattern as the Inspections re-inspection row.
+function drawStatusChanged(){
+  var on=$('drm-status').value==='received';
+  $('drm-receivedrow').style.display=on?'grid':'none';
+}
+var drmeid=null;
+function openDrawModal(){
+  if(!jobs().length){toast('Add a job first - a draw must belong to one');return;}
+  drmeid=null;fillJobSelects();
+  ['drm-no','drm-pct','drm-amount','drm-recamount','drm-notes'].forEach(function(f){$(f).value='';});
+  $('drm-retpct').value=10;
+  $('drm-status').value='requested';
+  $('drm-reqdate').value=new Date().toISOString().slice(0,10);
+  $('drm-period').value='';$('drm-recdate').value='';
+  drawStatusChanged();
+  $('drawmodal').classList.add('on');
+}
+function closeDrawModal(){$('drawmodal').classList.remove('on');}
+function editDraw(id){
+  var d=bldDraws().find(function(x){return x.id===id;});if(!d)return;
+  drmeid=id;fillJobSelects();
+  $('drm-job').value=d.job_id||'';$('drm-no').value=d.draw_no||'';
+  $('drm-period').value=d.period_end||'';$('drm-pct').value=d.pct_complete||'';
+  $('drm-amount').value=d.amount||'';$('drm-retpct').value=d.retainage_pct||0;
+  $('drm-status').value=d.status||'requested';$('drm-reqdate').value=d.requested_at||'';
+  $('drm-recdate').value=d.received_at||'';$('drm-recamount').value=d.amount_received||'';
+  $('drm-notes').value=d.notes||'';
+  drawStatusChanged();
+  $('drawmodal').classList.add('on');
+}
+function saveDraw(){
+  var job=$('drm-job').value;
+  if(!job){toast('Job required');return;}
+  var amount=parseFloat($('drm-amount').value)||0;
+  if(amount<=0){toast('Requested amount must be greater than zero');return;}
+  var status=$('drm-status').value;
+  if(status==='received'&&!$('drm-recdate').value){toast('A received draw needs a received date');return;}
+  var retpct=parseFloat($('drm-retpct').value)||0;
+  var list=bldDraws();
+  var existing=drmeid?list.find(function(x){return x.id===drmeid;}):null;
+  var rec={
+    id:drmeid||('DR-'+String(Date.now()).slice(-5)),
+    job_id:job,draw_no:parseInt($('drm-no').value,10)||0,
+    period_end:$('drm-period').value,pct_complete:parseFloat($('drm-pct').value)||0,
+    amount:amount,retainage_pct:retpct,retainage_held:Math.round(amount*retpct)/100,
+    status:status,requested_at:$('drm-reqdate').value,
+    received_at:status==='received'?$('drm-recdate').value:'',
+    amount_received:status==='received'?(parseFloat($('drm-recamount').value)||0):0,
+    notes:$('drm-notes').value.trim()
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(drmeid){var i=list.findIndex(function(x){return x.id===drmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_draws',list);
+  closeDrawModal();rDraws();
+  toast('Saved - Draw #'+rec.draw_no);
+}
+
+// ── LIEN WAIVERS ──────────────────────────────────────────────────────────
+var LWTYPE={conditional:'Conditional',unconditional:'Unconditional'};
+var LWSTATUS={pending:{l:'Pending',c:'bw'},executed:{l:'Executed',c:'bg'}};
+function rLw(){fillJobSelects();fillDrawSelect();rLwTbl();}
+// Draw options aren't in MODAL_JOB_SELECTS/FILTER_JOB_SELECTS because they
+// aren't job selects -- a separate small helper, same reason fillJobSelects
+// exists as its own function rather than being inlined at each call site.
+function fillDrawSelect(){
+  var el=$('lwm-draw');if(!el)return;
+  var keep=el.value;
+  var opts=bldDraws().map(function(d){return '<option value="'+H(d.id)+'">'+H(jobLabel(d.job_id))+' - Draw #'+(d.draw_no||'?')+'</option>';}).join('');
+  el.innerHTML='<option value="">Not tied to a specific draw</option>'+opts;
+  el.value=keep;
+}
+function lwJobChanged(){}
+function lwScope(){
+  var jf=(($('lwjob')||{}).value||''),sf=(($('lwstatus')||{}).value||'');
+  return bldLienWaivers().filter(function(w){return(!jf||w.job_id===jf)&&(!sf||w.status===sf);});
+}
+function rLwTbl(){
+  var list=lwScope();
+  var pending=list.filter(function(w){return w.status==='pending';});
+  var executed=list.filter(function(w){return w.status==='executed';});
+  var conditional=list.filter(function(w){return w.type==='conditional';});
+  $('lw-total').textContent=list.length;
+  $('lw-pending').textContent=pending.length;
+  $('lw-pending-sub').className='kt'+(pending.length?' d':'');
+  $('lw-executed').textContent=executed.length;
+  $('lw-conditional').textContent=conditional.length+' / '+(list.length-conditional.length);
+  var tb=$('lwtbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No lien waivers match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(w){
+      var s=LWSTATUS[w.status]||{l:w.status,c:'bx'};
+      var d=w.draw_id?bldDraws().find(function(x){return x.id===w.draw_id;}):null;
+      return '<tr><td>'+H(jobLabel(w.job_id))+'</td>'+
+        '<td><strong>'+H(w.party)+'</strong></td>'+
+        '<td>'+H(LWTYPE[w.type]||w.type)+'</td>'+
+        '<td>'+fmt(w.amount)+'</td>'+
+        '<td>'+(d?'Draw #'+(d.draw_no||'?'):'--')+'</td>'+
+        '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
+        '<td>'+(w.date?fdate(w.date):'--')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editLw(\''+H(w.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function lwStatusChanged(){
+  $('lwm-daterow').style.display=$('lwm-status').value==='executed'?'block':'none';
+}
+var lwmeid=null;
+function openLwModal(){
+  if(!jobs().length){toast('Add a job first - a lien waiver must belong to one');return;}
+  lwmeid=null;fillJobSelects();fillDrawSelect();
+  ['lwm-party','lwm-amount','lwm-date'].forEach(function(f){$(f).value='';});
+  $('lwm-draw').value='';$('lwm-type').value='conditional';$('lwm-status').value='pending';
+  lwStatusChanged();
+  $('lwmodal').classList.add('on');
+}
+function closeLwModal(){$('lwmodal').classList.remove('on');}
+function editLw(id){
+  var w=bldLienWaivers().find(function(x){return x.id===id;});if(!w)return;
+  lwmeid=id;fillJobSelects();fillDrawSelect();
+  $('lwm-job').value=w.job_id||'';$('lwm-draw').value=w.draw_id||'';
+  $('lwm-party').value=w.party||'';$('lwm-type').value=w.type||'conditional';
+  $('lwm-amount').value=w.amount||'';$('lwm-status').value=w.status||'pending';
+  $('lwm-date').value=w.date||'';
+  lwStatusChanged();
+  $('lwmodal').classList.add('on');
+}
+function saveLw(){
+  var party=$('lwm-party').value.trim();
+  if(!party){toast('Party (sub/vendor) required');return;}
+  var job=$('lwm-job').value;
+  if(!job){toast('Job required');return;}
+  var status=$('lwm-status').value;
+  if(status==='executed'&&!$('lwm-date').value){toast('An executed waiver needs a date');return;}
+  var list=bldLienWaivers();
+  var existing=lwmeid?list.find(function(x){return x.id===lwmeid;}):null;
+  var rec={
+    id:lwmeid||('LW-'+String(Date.now()).slice(-5)),
+    job_id:job,draw_id:$('lwm-draw').value,party:party,
+    type:$('lwm-type').value,amount:parseFloat($('lwm-amount').value)||0,
+    status:status,date:status==='executed'?$('lwm-date').value:''
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(lwmeid){var i=list.findIndex(function(x){return x.id===lwmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_lien_waivers',list);
+  closeLwModal();rLw();rDraws();
+  toast('Saved - '+rec.party);
+}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -2552,6 +2880,16 @@ function csv(type){
     if(!fplist.length){toast('No photo analyses to export');return;}
     rows=[['Job','Date','Summary','Full Analysis','Change Order Created','RFI Created']];
     fplist.forEach(function(a){rows.push([jobLabel(a.job_id),a.date,a.summary,a.full,a.spawned_co?'Yes':'No',a.spawned_rfi?'Yes':'No']);});
+  } else if(type==='draws'){
+    var drlist=drawScope();
+    if(!drlist.length){toast('No draw requests in scope to export');return;}
+    rows=[['Job','Draw #','Period End','% Complete','Requested','Retainage %','Retainage Held','Status','Requested Date','Received Date','Amount Received','Notes']];
+    drlist.forEach(function(d){rows.push([jobLabel(d.job_id),d.draw_no,d.period_end,d.pct_complete,d.amount,d.retainage_pct,d.retainage_held,(DRAWSTATUS[d.status]||{l:d.status}).l,d.requested_at,d.received_at,d.amount_received,d.notes]);});
+  } else if(type==='lienwaivers'){
+    var lwlist=lwScope();
+    if(!lwlist.length){toast('No lien waivers in scope to export');return;}
+    rows=[['Job','Party','Type','Amount','Tied Draw','Status','Date']];
+    lwlist.forEach(function(w){var d=w.draw_id?bldDraws().find(function(x){return x.id===w.draw_id;}):null;rows.push([jobLabel(w.job_id),w.party,LWTYPE[w.type]||w.type,w.amount,d?('Draw #'+(d.draw_no||'?')):'',(LWSTATUS[w.status]||{l:w.status}).l,w.date]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
