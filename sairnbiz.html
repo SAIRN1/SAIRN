@@ -647,7 +647,18 @@ var SB_URL='https://ejrlrrkvhtllxbbypdjb.supabase.co';
 var SB_KEY='sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
 var PROXY='https://sairn.vercel.app/api/claude';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
-var VALID=['SB-','DEMO-','SAIRN-','BIZ-'];
+// Client-side prefix allowlist. This is a cosmetic format check only -- the
+// REAL validation is server-side in api/_lib/license.js, which looks the key
+// up in the license_keys table (existence, status==='active', trial/Stripe
+// entitlement). Never treat this list as auth.
+//
+// 'SD-' added 2026-07-30: the license that actually validates server-side for
+// this tenant is SD-PINNACLE-2026, but SD- was missing here, so gateGo()
+// rejected it and never set sb_lic -- SAIRNbiz could not accept its own
+// working license through its own UI. Confirmed live before changing: the key
+// returns HTTP 200 from /api/sd-data (valid, active, not trial-expired, tenant
+// customer_email set) while this gate refused it.
+var VALID=['SB-','SD-','DEMO-','SAIRN-','BIZ-'];
 var PINS={owner:'1234',hr:'2345',accounting:'3456',manager:'4567',staff:'5678'};
 var eid=null,pbuf='',prole='owner',aiHist=[];
 
