@@ -204,6 +204,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
       <div class="ss">Jobs</div>
       <button class="sb" id="sb-jobs" onclick="nav('jobs')"><span class="sico">&#127959;</span>Job Board</button>
+      <button class="sb" id="sb-changeorders" onclick="nav('changeorders')"><span class="sico">&#128221;</span>Change Orders</button>
       <div class="ss">Money</div>
       <button class="sb" id="sb-jobcost" onclick="nav('jobcost')"><span class="sico">&#128200;</span>Job Costing</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
@@ -255,6 +256,35 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="tw"><table><thead><tr><th>Address</th><th>Client</th><th>Stage</th><th>Contract</th><th>Committed</th><th>Margin</th><th>Target End</th><th>Actions</th></tr></thead>
     <tbody id="jtbody"></tbody></table></div>
   </div></div>
+</div>
+
+<!-- CHANGE ORDERS -->
+<div class="panel" id="panel-changeorders">
+  <div class="ph"><div><div class="ptitle">Change Orders</div><div class="psub">Capture scope changes when they happen, price them, get them accepted</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('changeorders')">Export CSV</button><button class="btn bp bs" onclick="openCOModal()">+ New Change Order</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Accepted Value</div><div class="kval" id="co-accepted">$0</div><div class="kt" id="co-accepted-sub">Added to contracts</div></div>
+    <div class="kpi"><div class="klbl">Awaiting Client</div><div class="kval" id="co-pending">$0</div><div class="kt" id="co-pending-sub">Sent, not answered</div></div>
+    <div class="kpi"><div class="klbl">Unsent Drafts</div><div class="kval" id="co-draft">0</div><div class="kt" id="co-draft-sub">Not yet priced to client</div></div>
+    <div class="kpi"><div class="klbl">Rejected</div><div class="kval" id="co-rejected">0</div><div class="kt">Declined by client</div></div>
+    <div class="kpi"><div class="klbl">Unbilled Labour</div><div class="kval" id="co-hrs">0 h</div><div class="kt" id="co-hrs-sub">On draft + sent</div></div>
+  </div>
+  <div class="note">Only <strong>accepted</strong> change orders move a job's contract value. Drafts, sent and rejected orders are tracked here but deliberately excluded from contract value and margin &mdash; counting them would inflate every margin on the Dashboard.</div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="cojob" onchange="rCOTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="costatus" onchange="rCOTbl()" style="width:180px;">
+        <option value="">All Statuses</option>
+        <option value="draft">Draft</option>
+        <option value="sent">Sent</option>
+        <option value="accepted">Accepted</option>
+        <option value="rejected">Rejected</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Description</th><th>Amount</th><th>Labour hrs</th><th>Requested By</th><th>Status</th><th>Sent</th><th>Actions</th></tr></thead>
+    <tbody id="cotbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Contract Impact by Job</span></div><div class="cb" id="co-impact"></div></div>
 </div>
 
 <!-- JOB COSTING -->
@@ -325,6 +355,23 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="comodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Change Order</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="com-job"></select></div><div class="fg"><label>Status</label><select id="com-status">
+      <option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option>
+    </select></div></div>
+    <div class="fg"><label>Description</label><input id="com-desc" placeholder="Add heated floor to primary bath"></div>
+    <div class="fr"><div class="fg"><label>Amount ($)</label><input id="com-amount" type="number" placeholder="6800"></div><div class="fg"><label>Labour Hours</label><input id="com-hrs" type="number" placeholder="22"></div></div>
+    <div class="fr"><div class="fg"><label>Requested By</label><input id="com-by" placeholder="Client / Field"></div><div class="fg"><label>Sent Date</label><input id="com-sent" type="date"></div></div>
+    <div class="fr"><div class="fg"><label>Accepted Date</label><input id="com-accepted" type="date"></div><div class="fg"><label>Rejection Reason</label><input id="com-reason" placeholder="Only if rejected"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCOModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCO()">Save Change Order</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -340,7 +387,7 @@ var PROXY='https://sairn.vercel.app/api/claude';
 var VALID=['BLD-','DEMO-','SAIRN-'];
 var PINS={owner:'1234',pm:'2345',office:'3456'};
 
-var pbuf='',prole='owner',jeid=null,ceid=null;
+var pbuf='',prole='owner',jeid=null,ceid=null,coeid=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -423,6 +470,7 @@ function nav(id){
   if(id==='dashboard')rDash();
   if(id==='jobs')rJobs();
   if(id==='jobcost')rCost();
+  if(id==='changeorders')rCO();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -459,6 +507,17 @@ function seed(){
     {id:'C-12',job_id:'J-2605',cost_code:'01-Labour',kind:'labour',budget:38000,committed:37100,actual:37100,vendor:'In-house crew'},
     {id:'C-13',job_id:'J-2605',cost_code:'02-Materials',kind:'material',budget:47000,committed:45900,actual:45900,vendor:'Builders FirstSource'}
   ]);
+  // Change orders: every state renders, per the scope's seed plan. Accepted
+  // ones carry a real accepted_at; rejected carries a reason. The accepted
+  // values feed Job Board / Dashboard through revisedValue(), so a change
+  // order is not a decorative log -- it moves the contract.
+  st('bld_change_orders',[
+    {id:'CO-001',job_id:'J-2601',description:'Add heated floor to primary bath',amount:6800,labour_hrs:22,status:'accepted',requested_by:'Client',sent_at:'2026-06-02',accepted_at:'2026-06-05',reason:''},
+    {id:'CO-002',job_id:'J-2601',description:'Upgrade island counter to Calacatta (Pinnacle Stone)',amount:4250,labour_hrs:6,status:'sent',requested_by:'Client',sent_at:'2026-07-14',accepted_at:'',reason:''},
+    {id:'CO-003',job_id:'J-2602',description:'Structural post relocation - unit B',amount:11400,labour_hrs:48,status:'accepted',requested_by:'Field',sent_at:'2026-05-20',accepted_at:'2026-05-27',reason:''},
+    {id:'CO-004',job_id:'J-2602',description:'Additional soundproofing between units',amount:8900,labour_hrs:31,status:'draft',requested_by:'Field',sent_at:'',accepted_at:'',reason:''},
+    {id:'CO-005',job_id:'J-2603',description:'Reroute HVAC around new beam',amount:5600,labour_hrs:18,status:'rejected',requested_by:'Field',sent_at:'2026-06-18',accepted_at:'',reason:'Client declined - reverting to original layout'}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -468,10 +527,18 @@ var ACTIVE=['awarded','in_progress','blocked','punch'];
 
 function jobs(){return ld('bld_jobs',[]);}
 function costs(){return ld('bld_costs',[]);}
+function chgOrders(){return ld('bld_change_orders',[]);}
 function committedFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.committed||0);},0);}
-function marginPct(j){var c=committedFor(j.id);return j.value>0?Math.round((j.value-c)/j.value*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();}
+// ONLY accepted change orders move the contract. A sent/draft/rejected CO is
+// not revenue -- counting them would inflate contract value and flatter every
+// margin on the Dashboard. This is the single place that decision lives, so
+// margin cannot disagree between panels.
+function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id===id&&c.status==='accepted';}).reduce(function(s,c){return s+(c.amount||0);},0);}
+function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
+function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
+
+function init(){seed();rDash();rJobs();rCost();rCO();}
 
 var KIND={labour:'Labour',material:'Material',sub:'Subcontractor',other:'Other'};
 function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j?(j.client||j.address||id):id;}
@@ -488,11 +555,133 @@ function fillJobSelects(){
   if(f){var keep=f.value;f.innerHTML='<option value="">All Jobs</option>'+opts;f.value=keep;}
   var m=$('cm-job');
   if(m){var keepM=m.value;m.innerHTML=opts;m.value=keepM;}
+  var cf=$('cojob');
+  if(cf){var keepF=cf.value;cf.innerHTML='<option value="">All Jobs</option>'+opts;cf.value=keepF;}
+  var cm=$('com-job');
+  if(cm){var keepCm=cm.value;cm.innerHTML=opts;cm.value=keepCm;}
 }
 
 function rCost(){
   fillJobSelects();
   rCostTbl();
+}
+
+// ── CHANGE ORDERS ────────────────────────────────────────────────────────
+var COSTATUS={draft:{l:'Draft',c:'bx'},sent:{l:'Sent',c:'bb'},accepted:{l:'Accepted',c:'bg'},rejected:{l:'Rejected',c:'br'}};
+
+function rCO(){fillJobSelects();rCOTbl();}
+
+// Same scope discipline as Job Costing: KPIs describe exactly the rows on
+// screen, so the numbers and the table can never disagree.
+function coScope(){
+  var jf=(($('cojob')||{}).value||''),sf=(($('costatus')||{}).value||'');
+  return chgOrders().filter(function(c){return(!jf||c.job_id===jf)&&(!sf||c.status===sf);});
+}
+
+function rCOTbl(){
+  var list=coScope();
+  var accepted=list.filter(function(c){return c.status==='accepted';}).reduce(function(s,c){return s+(c.amount||0);},0);
+  var pending=list.filter(function(c){return c.status==='sent';}).reduce(function(s,c){return s+(c.amount||0);},0);
+  var drafts=list.filter(function(c){return c.status==='draft';});
+  var rejected=list.filter(function(c){return c.status==='rejected';});
+  // Unbilled labour = hours committed on work that is NOT yet accepted. This
+  // is the GC's actual exposure: crew time already promised against scope the
+  // client has not agreed to pay for. Accepted hours are excluded because
+  // those are billable, so counting them would hide the real risk.
+  var unbilledHrs=list.filter(function(c){return c.status==='draft'||c.status==='sent';}).reduce(function(s,c){return s+(c.labour_hrs||0);},0);
+  $('co-accepted').textContent=fmt(accepted);
+  $('co-pending').textContent=fmt(pending);
+  $('co-draft').textContent=drafts.length;
+  $('co-rejected').textContent=rejected.length;
+  $('co-hrs').textContent=unbilledHrs+' h';
+  // Conditional severity: unsent drafts and unbilled hours are exposure, not
+  // good news, so they must not render in the "good" colour.
+  $('co-draft-sub').className='kt'+(drafts.length?' d':'');
+  $('co-draft-sub').textContent=drafts.length?'Unpriced work in progress':'Nothing unsent';
+  $('co-hrs-sub').className='kt'+(unbilledHrs>0?' d':'');
+  $('co-hrs-sub').textContent=unbilledHrs>0?'Hours at risk, not yet accepted':'No unbilled hours';
+  $('co-pending-sub').className='kt'+(pending>0?' d':'');
+
+  var tb=$('cotbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No change orders match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(c){
+      var s=COSTATUS[c.status]||{l:c.status,c:'bx'};
+      return '<tr><td>'+H(jobLabel(c.job_id))+'</td>'+
+        '<td><strong>'+H(c.description)+'</strong>'+(c.status==='rejected'&&c.reason?'<div style="font-size:11px;color:var(--danger);margin-top:3px">'+H(c.reason)+'</div>':'')+'</td>'+
+        '<td><strong>'+fmt(c.amount)+'</strong></td>'+
+        '<td>'+(c.labour_hrs||0)+' h</td>'+
+        '<td>'+H(c.requested_by||'')+'</td>'+
+        '<td><span class="badge '+s.c+'">'+H(s.l)+'</span></td>'+
+        '<td>'+(c.sent_at?fdate(c.sent_at):'--')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editCO(\''+H(c.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+
+  // Contract impact is computed against ALL change orders for each job in
+  // scope, not the filtered subset -- the original vs revised contract is a
+  // property of the job, and filtering to "draft" should not make a job's
+  // revised value appear to shrink.
+  var jobIds=[];list.forEach(function(c){if(jobIds.indexOf(c.job_id)===-1)jobIds.push(c.job_id);});
+  $('co-impact').innerHTML=jobIds.length?jobIds.map(function(id){
+    var j=jobs().find(function(x){return x.id===id;});
+    if(!j)return '';
+    var add=acceptedCOFor(id);
+    var pct=j.value>0?Math.round(add/j.value*100):0;
+    return '<div class="srow"><span class="slbl">'+H(j.client||j.address)+'</span><span class="sval">'+fmt(j.value)+' &rarr; <strong>'+fmt(revisedValue(j))+'</strong>'+(add?' <span style="color:var(--ok)">(+'+pct+'%)</span>':' <span style="color:var(--muted)">(no accepted COs)</span>')+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No change orders in scope</div>';
+}
+
+function openCOModal(){
+  if(!jobs().length){toast('Add a job first - a change order must belong to one');return;}
+  coeid=null;fillJobSelects();
+  ['com-desc','com-amount','com-hrs','com-by','com-sent','com-accepted','com-reason'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('com-status').value='draft';
+  $('comodal').classList.add('on');
+}
+function closeCOModal(){$('comodal').classList.remove('on');}
+function editCO(id){
+  var c=chgOrders().find(function(x){return x.id===id;});if(!c)return;
+  coeid=id;fillJobSelects();
+  $('com-job').value=c.job_id||'';$('com-status').value=c.status||'draft';
+  $('com-desc').value=c.description||'';$('com-amount').value=c.amount||'';
+  $('com-hrs').value=c.labour_hrs||'';$('com-by').value=c.requested_by||'';
+  $('com-sent').value=c.sent_at||'';$('com-accepted').value=c.accepted_at||'';$('com-reason').value=c.reason||'';
+  $('comodal').classList.add('on');
+}
+function saveCO(){
+  var desc=$('com-desc').value.trim();
+  if(!desc){toast('Description required');return;}
+  var job=$('com-job').value;
+  if(!job){toast('Job required');return;}
+  var status=$('com-status').value;
+  var accepted=$('com-accepted').value;
+  // An accepted CO changes the contract value, so it must carry the date that
+  // made it binding. Refusing here beats silently accepting an undated one
+  // and leaving no record of when the money moved.
+  if(status==='accepted'&&!accepted){toast('An accepted change order needs an accepted date');return;}
+  var cos=chgOrders();
+  var existing=coeid?cos.find(function(x){return x.id===coeid;}):null;
+  var rec={
+    id:coeid||('CO-'+String(Date.now()).slice(-5)),
+    job_id:job,description:desc,
+    amount:parseFloat($('com-amount').value)||0,
+    labour_hrs:parseFloat($('com-hrs').value)||0,
+    status:status,requested_by:$('com-by').value.trim(),
+    sent_at:$('com-sent').value,accepted_at:accepted,
+    reason:$('com-reason').value.trim()
+  };
+  // Same carry-forward guard as saveJob()/saveCost().
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(coeid){var i=cos.findIndex(function(x){return x.id===coeid;});if(i>-1)cos[i]=rec;else cos.push(rec);}
+  else cos.push(rec);
+  st('bld_change_orders',cos);
+  closeCOModal();rCO();
+  // Accepted COs change contract value, which changes margin -- so Job Board
+  // and Dashboard must refresh or they would show a margin computed against
+  // a stale contract.
+  rJobs();rDash();
+  toast('Saved - '+rec.description);
 }
 
 // Scope = whatever the two filters currently select, so every KPI describes
@@ -605,7 +794,10 @@ function saveCost(){
 function rDash(){
   var js=jobs();
   var act=js.filter(function(j){return ACTIVE.indexOf(j.stage)!==-1;});
-  var contract=act.reduce(function(s,j){return s+(j.value||0);},0);
+  // Revised, not original: accepted change orders are real contract value.
+  // Using j.value here while marginPct() uses revisedValue() would make the
+  // Dashboard's headline margin disagree with its own per-job margin list.
+  var contract=act.reduce(function(s,j){return s+revisedValue(j);},0);
   var committed=act.reduce(function(s,j){return s+committedFor(j.id);},0);
   var margin=contract>0?Math.round((contract-committed)/contract*100):0;
   var blocked=js.filter(function(j){return j.stage==='blocked';});
@@ -674,7 +866,7 @@ function rJobs(){
   $('j-blocked-sub').className='kt'+(bl?' d':'');
   $('j-blocked-sub').textContent=bl?'Awaiting action':'None blocked';
   $('j-complete').textContent=js.filter(function(j){return j.stage==='complete';}).length;
-  $('j-avg').textContent=js.length?fmt(Math.round(js.reduce(function(s,j){return s+(j.value||0);},0)/js.length)):'$0';
+  $('j-avg').textContent=js.length?fmt(Math.round(js.reduce(function(s,j){return s+revisedValue(j);},0)/js.length)):'$0';
   rJobsTbl();
 }
 
@@ -695,7 +887,7 @@ function rJobsTbl(){
     return '<tr><td><strong>'+H(j.address)+'</strong>'+(j.permit?'<div style="font-size:11px;color:var(--muted)">Permit '+H(j.permit)+'</div>':'')+'</td>'+
       '<td>'+H(j.client)+'</td>'+
       '<td><span class="badge '+s.c+'">'+H(s.l)+'</span>'+(j.stage==='blocked'&&j.blocked?'<div style="font-size:11px;color:var(--danger);margin-top:3px">'+H(j.blocked)+'</div>':'')+'</td>'+
-      '<td><strong>'+fmt(j.value)+'</strong></td>'+
+      '<td><strong>'+fmt(revisedValue(j))+'</strong>'+(acceptedCOFor(j.id)?'<div style="font-size:11px;color:var(--ok)">incl. '+fmt(acceptedCOFor(j.id))+' in COs</div>':'')+'</td>'+
       '<td>'+fmt(c)+'</td>'+
       '<td><strong style="color:'+mcol+'">'+m+'%</strong></td>'+
       '<td>'+fdate(j.target)+'</td>'+
@@ -746,8 +938,8 @@ function saveJob(){
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
-    rows=[['Job ID','Address','Client','Phone','Stage','Contract','Committed','Margin %','Start','Target End','Permit','Blocked Reason','Notes']];
-    jobs().forEach(function(j){rows.push([j.id,j.address,j.client,j.phone,(STAGE[j.stage]||{l:j.stage}).l,j.value,committedFor(j.id),marginPct(j),j.start,j.target,j.permit,j.blocked,j.notes]);});
+    rows=[['Job ID','Address','Client','Phone','Stage','Original Contract','Accepted COs','Revised Contract','Committed','Margin %','Start','Target End','Permit','Blocked Reason','Notes']];
+    jobs().forEach(function(j){rows.push([j.id,j.address,j.client,j.phone,(STAGE[j.stage]||{l:j.stage}).l,j.value,acceptedCOFor(j.id),revisedValue(j),committedFor(j.id),marginPct(j),j.start,j.target,j.permit,j.blocked,j.notes]);});
   } else if(type==='costs'){
     // Exports exactly the rows currently in scope, matching what is on screen.
     // An export that silently dumps everything while the view is filtered is a
@@ -756,6 +948,11 @@ function csv(type){
     if(!list.length){toast('No cost lines in scope to export');return;}
     rows=[['Job','Cost Code','Kind','Vendor / Crew','Budget','Committed','Actual','Variance']];
     list.forEach(function(c){rows.push([jobLabel(c.job_id),c.cost_code,KIND[c.kind]||c.kind,c.vendor,c.budget,c.committed,c.actual,(c.budget||0)-(c.committed||0)]);});
+  } else if(type==='changeorders'){
+    var colist=coScope();
+    if(!colist.length){toast('No change orders in scope to export');return;}
+    rows=[['Job','Description','Amount','Labour hrs','Requested By','Status','Sent','Accepted','Rejection Reason']];
+    colist.forEach(function(c){rows.push([jobLabel(c.job_id),c.description,c.amount,c.labour_hrs,c.requested_by,(COSTATUS[c.status]||{l:c.status}).l,c.sent_at,c.accepted_at,c.reason]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
