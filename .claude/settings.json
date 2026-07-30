@@ -39,6 +39,20 @@
             "timeout": 30
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python tools/deploy_verify_notify.py",
+            "if": "Bash(git push*)",
+            "async": true,
+            "asyncRewake": true,
+            "timeout": 90,
+            "statusMessage": "Verifying live deploy..."
+          }
+        ]
       }
     ],
     "PreToolUse": [
