@@ -204,8 +204,67 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data) });
       return;
     }
+    // ── EMPLOYEES write (SAIRNbiz is the owner/writer of this resource) ────
+    // The 405 that used to live here said "employees is managed by SAIRNbiz;
+    // StoneDesk may only read it" -- correct on the read side, but it left
+    // SAIRNbiz with no server-side write path at all, so SAIRNbiz kept doing
+    // a direct client-side anon upsert that can never work (anon is locked
+    // out of every table by design -- see this file's header). This branch is
+    // that missing path. StoneDesk is still refused: the app_id gate below
+    // keeps write access to SAIRNbiz only, so the original READ_ONLY
+    // guarantee for StoneDesk is preserved, not dropped.
+    //
+    // Conflict target is (customer_email, employee_id) -- verified against
+    // the live table before writing this, not assumed: probing on_conflict
+    // targets returns 42P10 for employee_id alone and for
+    // source_app,employee_id, but resolves for customer_email,employee_id.
+    // That is the composite the table is actually provisioned with, and it
+    // matches D1b's tenancy model (customer_email is the tenant key here,
+    // not license_hash -- employees deliberately differs from sd_slabs and
+    // business_profiles in that respect).
     if (resource === 'employees' && action === 'write') {
-      res.status(405).json({ error: { code: 'READ_ONLY', message: 'employees is managed by SAIRNbiz; StoneDesk may only read it' } });
+      const appId = body && body.app_id;
+      if (appId !== 'sairnbiz') {
+        res.status(405).json({ error: { code: 'READ_ONLY', message: 'employees is managed by SAIRNbiz; only SAIRNbiz may write it' } });
+        return;
+      }
+      // No tenant identity -> refuse rather than write untenanted rows that
+      // no read could ever scope to (the read branch returns empty in the
+      // same situation; writing here would silently orphan data).
+      if (!lic.customer_email) {
+        res.status(409).json({ error: { code: 'NO_TENANT', message: 'This license has no customer_email; employees cannot be scoped to a tenant' } });
+        return;
+      }
+      const roster = Array.isArray(payload) ? payload : (payload && Array.isArray(payload.employees) ? payload.employees : null);
+      if (!roster) {
+        res.status(400).json({ error: { message: 'employees write expects payload to be an array of employees (or {employees:[...]})' } });
+        return;
+      }
+      if (!roster.length) { res.status(200).json({ ok: true, data: [], written: 0 }); return; }
+      const ts = nowISO();
+      const rows = roster.map(function (e) {
+        var emp = e || {};
+        return {
+          customer_email: lic.customer_email,
+          employee_id: String(emp.employee_id || emp.id || ''),
+          source_app: 'sairnbiz',
+          status: emp.status || 'Active',
+          data: emp.data || emp,
+          updated_at: ts
+        };
+      });
+      if (rows.some(function (r) { return !r.employee_id; })) {
+        res.status(400).json({ error: { message: 'every employee needs an employee_id (or id)' } });
+        return;
+      }
+      const r = await fetch(rest('employees?on_conflict=customer_email,employee_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(rows)
+      });
+      const out = await r.json();
+      if (!r.ok) return upstream(res, out);
+      res.status(200).json({ ok: true, data: (out || []).map(function (x) { return x.data; }), written: (out || []).length });
       return;
     }
 
