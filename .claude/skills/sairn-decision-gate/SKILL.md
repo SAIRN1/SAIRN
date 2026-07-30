@@ -75,3 +75,13 @@ When facing a queue of known issues, order by actual risk/impact, never by scope
 6. Real feature/scope decisions (build vs. delete vs. defer) — these can be large and important, but they're a different kind of question than "is something broken right now," and rushing them at the end of a long session produces worse decisions than deferring them to fresh judgment.
 
 A large, well-scoped, explicitly-deferred decision is not unfinished work — it's the correct output of applying this principle honestly.
+
+## "100%/complete" is a different claim than "correctly prioritized" (added 2026-07-30)
+
+The Prioritization Principle above answers a different question than this one, and the two must not get merged. Prioritization decides *what to fix first* when something is already known to be broken. It does not decide *whether a "100%"/"complete"/"done" claim is true* while that known thing is still broken. Those are separate axes, and running the prioritization logic in answer to a completeness question is a category error, not a nuanced judgment call.
+
+**The rule:** a known bug — however low-severity, however correctly deferred by risk-ordering — does not get to ride along unfixed underneath a "100% done" or "fully complete" claim. If it's not fixed, the honest claim is "complete except for N known items" (name them), not "100% complete." Severity governs the fix queue; it does not govern what the completeness claim is allowed to say.
+
+**Why this needs to be a named rule and not just "obviously true":** the failure mode isn't lying outright — it's reaching for the Prioritization Principle's own language ("this is low-severity," "this was correctly deferred," "this doesn't block anything") to talk a "100%" claim back down to something softer than what a person holding the line on "100% means 100%" is actually asking. That person is applying the correct standard. Prioritization logic, built for a different question, should never be the tool used to argue them out of it.
+
+**How to apply:** when someone pushes back on a "100%/complete" claim by pointing at a known unfixed item — even one already correctly triaged as low-severity and deferred — the right response is to correct the claim (scope it honestly to what's actually done), not to defend the claim by re-explaining why the item was deprioritized. Prioritization was never in question; the claim's accuracy was.
