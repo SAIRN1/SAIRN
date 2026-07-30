@@ -17385,10 +17385,6 @@ function photoBeforeAfter() {
   modal.style.display='flex';
 }
 
-function photoExport() {
-  notify('Photos are stored locally — use your browser to save individual photos by right-clicking them.','');
-}
-
 function photoLightbox(id) {
   const p = sdPhotos.find(x => x.id === id);
   if (!p) return;
