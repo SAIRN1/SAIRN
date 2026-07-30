@@ -248,6 +248,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Growth</div>
       <button class="sb" id="sb-reviews" onclick="nav('reviews')"><span class="sico">&#11088;</span>Reviews</button>
       <button class="sb" id="sb-referrals" onclick="nav('referrals')"><span class="sico">&#129309;</span>Referrals</button>
+      <div class="ss">Company</div>
+      <button class="sb" id="sb-company" onclick="nav('company')"><span class="sico">&#127970;</span>Company Profile</button>
+      <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -946,6 +949,41 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- COMPANY PROFILE -->
+<div class="panel" id="panel-company">
+  <div class="ph"><div><div class="ptitle">Company Profile</div><div class="psub">Business identity, licence numbers, and insurance on file</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openCompanyModal()">Edit Profile</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Insurance Status</div><div class="kval" id="co-inssts" style="font-size:16px">--</div><div class="kt" id="co-inssts-sub">Liability coverage</div></div>
+    <div class="kpi"><div class="klbl">Years in Business</div><div class="kval" id="co-years">--</div><div class="kt">Since founding</div></div>
+    <div class="kpi"><div class="klbl">EIN on File</div><div class="kval" id="co-ein" style="font-size:16px">--</div><div class="kt">Tax identification</div></div>
+    <div class="kpi"><div class="klbl">Licence #</div><div class="kval" id="co-lic" style="font-size:16px">--</div><div class="kt">Contractor licence</div></div>
+  </div>
+  <div class="card"><div class="cb" id="co-detail"></div></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="panel" id="panel-settings">
+  <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">PINs and roles, cost-code list, default retainage and markup</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Cost Codes on File</div><div class="kval" id="set-codes">0</div><div class="kt">Reference list</div></div>
+    <div class="kpi"><div class="klbl">Default Retainage</div><div class="kval" id="set-retainage">0%</div><div class="kt">Pre-fills new draws</div></div>
+    <div class="kpi"><div class="klbl">Default Markup</div><div class="kval" id="set-markup">0%</div><div class="kt">Pre-fills new bids</div></div>
+    <div class="kpi"><div class="klbl">PIN-Protected Roles</div><div class="kval" id="set-roles">0</div><div class="kt">Owner / PM / Office</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Defaults</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openDefaultsModal()">Edit Defaults</button></div></div>
+      <div class="cb" id="set-defaults"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Role PINs</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openPinsModal()">Edit PINs</button></div></div>
+      <div class="cb" id="set-pins"></div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Cost Code List</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openCostCodeModal()">+ Add Cost Code</button></div></div>
+    <div class="cb"><div class="tw"><table><thead><tr><th>Code</th><th>Label</th><th>Actions</th></tr></thead>
+    <tbody id="cctbody"></tbody></table></div></div>
+  </div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1468,6 +1506,59 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="companymodal">
+  <div class="mbox">
+    <div class="mtitle">Edit Company Profile</div>
+    <div class="fg"><label>Business Name</label><input id="cpm-name" placeholder="Pinnacle Industries LLC"></div>
+    <div class="fg"><label>Address</label><input id="cpm-address" placeholder="1200 Center Ridge Rd, Westlake OH"></div>
+    <div class="fr"><div class="fg"><label>Phone</label><input id="cpm-phone" placeholder="(440) 555-0100"></div><div class="fg"><label>Email</label><input id="cpm-email" placeholder="office@pinnacleindustries.example"></div></div>
+    <div class="fr"><div class="fg"><label>Contractor Licence #</label><input id="cpm-lic" placeholder="OH-GC-88213"></div><div class="fg"><label>EIN</label><input id="cpm-ein" placeholder="XX-XXXXXXX"></div></div>
+    <div class="fr"><div class="fg"><label>Insurance Carrier</label><input id="cpm-inscarrier" placeholder="Westlake Business Insurance"></div><div class="fg"><label>Policy #</label><input id="cpm-inspolicy" placeholder="Optional"></div></div>
+    <div class="fr"><div class="fg"><label>Insurance Expiry</label><input id="cpm-insexp" type="date"></div><div class="fg"><label>Founded Year</label><input id="cpm-founded" type="number" placeholder="2014"></div></div>
+    <div class="fg"><label>Notes</label><input id="cpm-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCompanyModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCompany()">Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="defaultsmodal">
+  <div class="mbox">
+    <div class="mtitle">Edit Defaults</div>
+    <div class="fr"><div class="fg"><label>Default Retainage %</label><input id="dfm-retainage" type="number" placeholder="10"></div><div class="fg"><label>Default Markup %</label><input id="dfm-markup" type="number" placeholder="18"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDefaultsModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDefaults()">Save Defaults</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="pinsmodal">
+  <div class="mbox">
+    <div class="mtitle">Edit Role PINs</div>
+    <div class="note">Each PIN must be exactly 4 digits. Changing a PIN here takes effect immediately -- the next login for that role needs the new PIN.</div>
+    <div class="fg"><label>Owner PIN</label><input id="pm-owner" placeholder="1234" maxlength="4"></div>
+    <div class="fg"><label>PM PIN</label><input id="pm-pm" placeholder="2345" maxlength="4"></div>
+    <div class="fg"><label>Office PIN</label><input id="pm-office" placeholder="3456" maxlength="4"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePinsModal()">Cancel</button>
+      <button class="btn bp" onclick="savePins()">Save PINs</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="ccmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Cost Code</div>
+    <div class="fr"><div class="fg"><label>Code</label><input id="ccm-code" placeholder="05-Finishes"></div><div class="fg"><label>Label</label><input id="ccm-label" placeholder="Trim, paint, finish carpentry"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCostCodeModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCostCode()">Save Cost Code</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -1481,7 +1572,12 @@ var PROXY='https://sairn.vercel.app/api/claude';
 // returns 401 INVALID_LICENSE. That is correct, expected behaviour -- see
 // SAIRNBUILD-SCOPE.md SS4a. Never treat passing this list as authenticated.
 var VALID=['BLD-','DEMO-','SAIRN-'];
-var PINS={owner:'1234',pm:'2345',office:'3456'};
+// Settings panel makes these real editable PINs, not a hardcoded constant --
+// loaded from storage if present, falling back to the original defaults so
+// a fresh install (or a browser that never opened Settings) behaves exactly
+// as it always did.
+var DEFAULT_PINS={owner:'1234',pm:'2345',office:'3456'};
+var PINS=ld('bld_pins',null)||DEFAULT_PINS;
 
 var pbuf='',prole='owner',jeid=null,ceid=null,coeid=null;
 
@@ -1592,6 +1688,8 @@ function nav(id){
   if(id==='documents')rDocs();
   if(id==='reviews')rReviews();
   if(id==='referrals')rReferrals();
+  if(id==='company')rCompany();
+  if(id==='settings')rSettings();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1957,6 +2055,25 @@ function seed(){
     {id:'REF-04',from_customer:'Sandoval Residence',to_customer:'Whitcombe Residence',to_phone:'(440) 555-0271',status:'lost',deal_value:0,date:'2026-06-15'},
     {id:'REF-05',from_customer:'Hartley Residence',to_customer:'Ferreira Residence',to_phone:'(440) 555-0055',status:'converted',deal_value:164000,date:'2026-08-01'}
   ]);
+  // Company Profile and Settings are single-record objects, not lists --
+  // seeded directly rather than as a one-item array, matching how they're
+  // actually read/written (ld/st on the whole object, no id lookup).
+  st('bld_company_profile',{
+    name:'Pinnacle Industries LLC',address:'1200 Center Ridge Rd, Westlake OH 44145',
+    phone:'(440) 555-0100',email:'office@pinnacleindustries.example',
+    license_no:'OH-GC-88213',ein:'34-1928374',
+    insurance_carrier:'Westlake Business Insurance',insurance_policy_no:'WBI-GL-4471209',
+    insurance_expiry:daysAgo(-140),founded_year:2014,notes:''
+  });
+  st('bld_settings',{
+    default_retainage_pct:10,default_markup_pct:18,
+    cost_codes:[
+      {code:'01-Labour',label:'In-house crew labour'},
+      {code:'02-Materials',label:'General building materials'},
+      {code:'03-Countertops',label:'Stone and countertop fabrication'},
+      {code:'04-Subs',label:'Subcontracted trade work'}
+    ]
+  });
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1977,7 +2094,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();rReviews();rReferrals();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();rReviews();rReferrals();rCompany();rSettings();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -2861,7 +2978,7 @@ function bidStageChanged(){
 function openBidModal(){
   bideid=null;bidLineDraft=[];
   ['bm-client','bm-phone','bm-type','bm-sent','bm-decided','bm-lostreason','bm-notes'].forEach(function(f){$(f).value='';});
-  $('bm-source').value='referral';$('bm-stage').value='lead';$('bm-markup').value='18';
+  $('bm-source').value='referral';$('bm-stage').value='lead';$('bm-markup').value=bldSettings().default_markup_pct||18;
   bidStageChanged();renderBidLineDraft();
   $('bidmodal').classList.add('on');
 }
@@ -3523,7 +3640,7 @@ function openDrawModal(){
   if(!jobs().length){toast('Add a job first - a draw must belong to one');return;}
   drmeid=null;fillJobSelects();
   ['drm-no','drm-pct','drm-amount','drm-recamount','drm-notes'].forEach(function(f){$(f).value='';});
-  $('drm-retpct').value=10;
+  $('drm-retpct').value=bldSettings().default_retainage_pct||10;
   $('drm-status').value='requested';
   $('drm-reqdate').value=new Date().toISOString().slice(0,10);
   $('drm-period').value='';$('drm-recdate').value='';
@@ -4945,6 +5062,145 @@ function saveReferral(){
   st('bld_referrals',list);
   closeReferralModal();rReferrals();
   toast('Saved referral - '+to);
+}
+
+// ── COMPANY PROFILE ───────────────────────────────────────────────────────
+// Single-record object, not a list -- see the seed comment for why. NOT
+// synced to the shared business_profiles table: api/sd-data.js hardcodes
+// app_id='stonedesk' on both the profile read and write handlers rather
+// than using the caller's real app_id, so a SAIRNbuild write here would
+// silently overwrite StoneDesk's live business profile row instead of
+// creating its own. Confirmed by reading the handler, not assumed. Flagging
+// rather than fixing quietly: that file is shared production infrastructure
+// another live app depends on, and fixing it needs its own deliberate pass
+// with a StoneDesk regression check, not a side effect of a SAIRNbuild
+// panel. Local-only for now, consistent with every other panel this session.
+function bldCompany(){return ld('bld_company_profile',{});}
+function rCompany(){
+  var c=bldCompany();
+  var insDays=c.insurance_expiry?complianceDaysUntil(c.insurance_expiry):null;
+  var insLabel=insDays===null?'Not on file':insDays<0?'Expired':insDays<=30?'Expiring Soon':'Current';
+  $('co-inssts').textContent=insLabel;
+  $('co-inssts-sub').className='kt'+(insDays!==null&&insDays<=30?' d':'');
+  $('co-years').textContent=c.founded_year?(new Date().getFullYear()-c.founded_year):'--';
+  $('co-ein').textContent=c.ein?'On File':'Missing';
+  $('co-lic').textContent=c.license_no||'--';
+  $('co-detail').innerHTML=
+    '<div class="srow"><span class="slbl">Business Name</span><span class="sval">'+H(c.name||'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Address</span><span class="sval">'+H(c.address||'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Phone</span><span class="sval">'+H(c.phone||'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Email</span><span class="sval">'+H(c.email||'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Contractor Licence #</span><span class="sval">'+H(c.license_no||'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">EIN</span><span class="sval">'+H(c.ein||'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Insurance Carrier</span><span class="sval">'+H(c.insurance_carrier||'--')+(c.insurance_policy_no?' ('+H(c.insurance_policy_no)+')':'')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Insurance Expiry</span><span class="sval">'+(c.insurance_expiry?fdate(c.insurance_expiry):'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Founded</span><span class="sval">'+(c.founded_year||'--')+'</span></div>'+
+    (c.notes?'<div class="srow"><span class="slbl">Notes</span><span class="sval">'+H(c.notes)+'</span></div>':'');
+}
+function openCompanyModal(){
+  var c=bldCompany();
+  $('cpm-name').value=c.name||'';$('cpm-address').value=c.address||'';
+  $('cpm-phone').value=c.phone||'';$('cpm-email').value=c.email||'';
+  $('cpm-lic').value=c.license_no||'';$('cpm-ein').value=c.ein||'';
+  $('cpm-inscarrier').value=c.insurance_carrier||'';$('cpm-inspolicy').value=c.insurance_policy_no||'';
+  $('cpm-insexp').value=c.insurance_expiry||'';$('cpm-founded').value=c.founded_year||'';
+  $('cpm-notes').value=c.notes||'';
+  $('companymodal').classList.add('on');
+}
+function closeCompanyModal(){$('companymodal').classList.remove('on');}
+function saveCompany(){
+  var name=$('cpm-name').value.trim();
+  if(!name){toast('Business name required');return;}
+  var rec={
+    name:name,address:$('cpm-address').value.trim(),phone:$('cpm-phone').value.trim(),email:$('cpm-email').value.trim(),
+    license_no:$('cpm-lic').value.trim(),ein:$('cpm-ein').value.trim(),
+    insurance_carrier:$('cpm-inscarrier').value.trim(),insurance_policy_no:$('cpm-inspolicy').value.trim(),
+    insurance_expiry:$('cpm-insexp').value,founded_year:parseInt($('cpm-founded').value,10)||null,
+    notes:$('cpm-notes').value.trim()
+  };
+  st('bld_company_profile',rec);
+  closeCompanyModal();rCompany();
+  toast('Saved company profile');
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────
+function bldSettings(){return ld('bld_settings',{default_retainage_pct:10,default_markup_pct:18,cost_codes:[]});}
+function rSettings(){
+  var s=bldSettings();
+  $('set-codes').textContent=(s.cost_codes||[]).length;
+  $('set-retainage').textContent=(s.default_retainage_pct||0)+'%';
+  $('set-markup').textContent=(s.default_markup_pct||0)+'%';
+  $('set-roles').textContent=Object.keys(PINS).length;
+  $('set-defaults').innerHTML=
+    '<div class="srow"><span class="slbl">Default Retainage</span><span class="sval">'+(s.default_retainage_pct||0)+'%</span></div>'+
+    '<div class="srow"><span class="slbl">Default Markup</span><span class="sval">'+(s.default_markup_pct||0)+'%</span></div>'+
+    '<div class="note" style="margin:10px 0 0">These pre-fill the Draw Requests and Bids &amp; Proposals forms on a new record -- they do not change anything already saved.</div>';
+  $('set-pins').innerHTML=Object.keys(PINS).map(function(r){
+    return '<div class="srow"><span class="slbl">'+H(r.charAt(0).toUpperCase()+r.slice(1))+'</span><span class="sval">&bull;&bull;&bull;&bull;</span></div>';
+  }).join('');
+  var tb=$('cctbody');
+  var codes=s.cost_codes||[];
+  if(!codes.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px;">No cost codes on file</td></tr>';}
+  else{
+    tb.innerHTML=codes.map(function(c,idx){
+      return '<tr><td><strong>'+H(c.code)+'</strong></td><td>'+H(c.label||'')+'</td>'+
+        '<td><button class="btn bo bs" onclick="removeCostCode('+idx+')">Remove</button></td></tr>';
+    }).join('');
+  }
+}
+function openDefaultsModal(){
+  var s=bldSettings();
+  $('dfm-retainage').value=s.default_retainage_pct||0;$('dfm-markup').value=s.default_markup_pct||0;
+  $('defaultsmodal').classList.add('on');
+}
+function closeDefaultsModal(){$('defaultsmodal').classList.remove('on');}
+function saveDefaults(){
+  var s=bldSettings();
+  s.default_retainage_pct=parseFloat($('dfm-retainage').value)||0;
+  s.default_markup_pct=parseFloat($('dfm-markup').value)||0;
+  st('bld_settings',s);
+  closeDefaultsModal();rSettings();
+  toast('Saved defaults');
+}
+function openPinsModal(){
+  $('pm-owner').value=PINS.owner||'';$('pm-pm').value=PINS.pm||'';$('pm-office').value=PINS.office||'';
+  $('pinsmodal').classList.add('on');
+}
+function closePinsModal(){$('pinsmodal').classList.remove('on');}
+function savePins(){
+  var owner=$('pm-owner').value.trim(),pm=$('pm-pm').value.trim(),office=$('pm-office').value.trim();
+  var re=/^\d{4}$/;
+  if(!re.test(owner)||!re.test(pm)||!re.test(office)){toast('Each PIN must be exactly 4 digits');return;}
+  if(owner===pm||owner===office||pm===office){toast('Each role needs a different PIN');return;}
+  PINS={owner:owner,pm:pm,office:office};
+  st('bld_pins',PINS);
+  closePinsModal();rSettings();
+  toast('PINs updated');
+}
+function openCostCodeModal(){
+  $('ccm-code').value='';$('ccm-label').value='';
+  $('ccmodal').classList.add('on');
+}
+function closeCostCodeModal(){$('ccmodal').classList.remove('on');}
+function saveCostCode(){
+  var code=$('ccm-code').value.trim();
+  if(!code){toast('Code required');return;}
+  var s=bldSettings();
+  s.cost_codes=s.cost_codes||[];
+  if(s.cost_codes.some(function(c){return c.code===code;})){toast('That code already exists');return;}
+  s.cost_codes.push({code:code,label:$('ccm-label').value.trim()});
+  st('bld_settings',s);
+  closeCostCodeModal();rSettings();
+  toast('Added cost code '+code);
+}
+function removeCostCode(idx){
+  var s=bldSettings();
+  var removed=(s.cost_codes||[])[idx];
+  if(!removed)return;
+  s.cost_codes.splice(idx,1);
+  st('bld_settings',s);
+  rSettings();
+  toast('Removed '+removed.code);
 }
 
 function csv(type){
