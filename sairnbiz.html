@@ -893,7 +893,7 @@ function rPay(){
   var gpm=rev>0?Math.round(gp/rev*100):0,npm=rev>0?Math.round(net/rev*100):0;
   $('pl-margin').innerHTML=[{l:'Gross Margin',v:gpm+'%'},{l:'Operating Margin',v:npm+'%'},{l:'Industry Avg Gross',v:'45%'},{l:'Industry Avg Net',v:'18%'},{l:'Your Net vs Industry',v:(npm-18)+'pp'}].map(function(r){return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval"><strong>'+r.v+'</strong></span></div>';}).join('');
 }
-function runPayroll(){toast('Payroll approved - ACH transfers initiated');}
+function runPayroll(){toast('Payroll calculated - no real payment was sent. Process through your bank or payroll provider.',4000);}
 
 function rInvs(){
   var invs=ld('sb_invs',[]);
