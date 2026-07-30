@@ -340,12 +340,14 @@ def audit(path):
                 r'work in progress', r'\bTODO\b', r'\bFIXME\b'):
         for m in re.finditer(pat, src, re.I):
             place.append(f'L{ln(m.start())}: {pat}')
-    for m in re.finditer(r'placeholder', src, re.I):
-        pre = src[max(0, m.start() - 30):m.start()]
-        post = src[m.end():m.end() + 2]
-        if not post.startswith('=') and 'class' not in pre and '-' not in pre[-1:]:
-            place.append(f'L{ln(m.start())}: bare "placeholder" -- check by hand')
-    findings['E. PLACEHOLDER copy (attrs and CSS classes excluded)'] = place
+    # Session 2 correction: the bare `placeholder` word scan that used to
+    # run here was 0-for-7 across StoneDesk (CSS ::placeholder selectors)
+    # and SAIRNvet (honest prose + a correctly-named placeholderId var) --
+    # never found a real finding. Cut. The phrase list above stays as-is,
+    # including `work in progress`, despite SAIRNbuild's one standing
+    # false positive (construction-domain term) -- it's 6 true / 1 false
+    # overall and earns its place.
+    findings['E. PLACEHOLDER copy'] = place
 
     print('=' * 72)
     print(f'{path}   {len(raw):,} bytes')
