@@ -13,13 +13,15 @@ rather than deleted.
 | 3 | Build order: **Dashboard → Job Board → Job Costing → Change Orders** shipped first, live; sequencing for the remaining 32 panels is a separate, not-yet-made decision. |
 | 4 | ~~Bids & Proposals deferred out of v1~~ — **reinstated 2026-07-30**, see §2. |
 
-**Status: 4 of 36 scoped panels built and live** (`dashboard`, `jobs`,
-`jobcost`, `changeorders` — `sairnbuild.html` exists, is routed at
-`/sairnbuild`, and is wired into `vercel.json`). This corrects the
-"scope only, no code exists" status this section originally carried — that
-was true when first written and has not been true since the build-order
-panels shipped; left uncorrected it would misdirect a future session into
-re-verifying something already settled.
+**Status, 2026-07-30: all 37 scoped panels built and live.** §2's own
+"36 panels total" header (and every count in this document that echoed it)
+was an off-by-one miscount — the panel table itself always named 37,
+including AI Assistant and Schedule, which no session had actually built
+until caught by an id-by-id audit of `sairnbuild.html` against this file.
+Every count below is corrected to 37 rather than left to repeat the same
+error. This also corrects the earlier "scope only, no code exists" status
+this section originally carried, which stopped being true once the
+build-order panels shipped.
 
 Two things about SAIRNbuild *do* already exist and were verified, not assumed:
 
@@ -80,9 +82,11 @@ section replaces §2 as it stood; the original 16-panel table is preserved
 below as a decision record rather than deleted.
 
 **Honesty note on the count, stated up front rather than left implicit:** this
-pass produced **36 panels** — every real GC job-to-be-done named in the
-request, plus proven patterns cross-referenced from StoneDesk/SAIRNbiz/SAIRNvet
-— not a padded list built to hit a round number. StoneDesk's 61 is the result
+pass produced **37 panels** (corrected 2026-07-30 from an off-by-one "36"
+miscount in this section's own header — the table below always listed 37)
+— every real GC job-to-be-done named in the request, plus proven patterns
+cross-referenced from StoneDesk/SAIRNbiz/SAIRNvet — not a padded list built
+to hit a round number. StoneDesk's 61 is the result
 of many real build sessions surfacing genuine additional need over time, not
 an upfront design target. This doc does not manufacture 25 more panels to
 match that number artificially; it grows the same way StoneDesk did, from
@@ -99,19 +103,22 @@ unchanged (`dashboard`, `jobs`, `jobcost`, `changeorders`).
 | Panel | id | Purpose | Status |
 |---|---|---|---|
 | Dashboard | `dashboard` | Every active job with stage, blocked flag, and margin-at-risk in one view. | **Built, live** |
-| AI Assistant | `ai` | Claude via `/api/claude` with `app_id:'sairnbuild'` — scope questions, contract language, code lookups. | New |
+| AI Assistant | `ai` | Claude via `/api/claude` with `app_id:'sairnbuild'` — scope questions, contract language, code lookups. **Correction, 2026-07-30:** this row (and Jobs' Schedule row below) was overlooked by every session up to and including this one's earlier sections — both Jobs "8/8" and Overview were declared closed while this panel and Schedule still didn't exist. Found by auditing every `id="panel-*"` in `sairnbuild.html` against every id actually named in this file's own §2 tables, which is also how the miscounted section header below was caught. | **Built, live** |
 
 ### Sales & Bidding (1)
 | Panel | id | Purpose | Status |
 |---|---|---|---|
 | Bids & Proposals | `bids` | **Reinstated — reverses the original v1 deferral.** The rationale for cutting it ("keeps v1 tight") no longer applies once v1 itself is being redefined at StoneDesk scale; a GC managing 4-12 concurrent jobs needs a real pipeline feeding Job Board, the same way StoneDesk's Quote Builder/AI Instant Quote feed its own job flow. Line-item cost estimation lives inside this panel rather than as a separate Estimating panel — §1's boundary against CAD/takeoff-based estimating stays exactly as decided; this is proposal pricing, not a takeoff tool. | New |
 
-### Jobs (10)
+### Jobs (11)
+Header corrected 2026-07-30 — this section always listed 11 rows (Schedule
+included) even while headed "(10)"; the miscount masked the fact that
+Schedule was never actually built until this session's audit caught it.
 | Panel | id | Purpose | Status |
 |---|---|---|---|
 | Job Board | `jobs` | The core record: address, client, contract value, stage, target dates. | **Built, live** |
-| Project Timeline | `timeline` | Multi-week critical-path/Gantt-style view across all jobs — distinct from the day-to-day crew Schedule below: this panel answers "when does each phase happen," Schedule answers "who's where today." | New |
-| Schedule | `schedule` | Who (crew or sub) is on which job on which day; the coordination view. | New |
+| Project Timeline | `timeline` | Multi-week critical-path/Gantt-style view across all jobs — distinct from the day-to-day crew Schedule below: this panel answers "when does each phase happen," Schedule answers "who's where today." | **Built, live** |
+| Schedule | `schedule` | Who (crew or sub) is on which job on which day; the coordination view. Genuinely separate dataset from Project Timeline, not a reskin of it. | **Built, live** |
 | Daily Logs | `dailylogs` | Per-job site notes, weather, headcount, photos — the record that wins disputes. | New |
 | Field Photo Analysis | `fieldphoto` | **Core feature, not an afterthought — per the standing photo→Claude→structured-output product rule (`sairn-app-scaffold`).** A rep or PM photographs a site condition (unexpected framing issue, damage, a scope question), Claude reads it and suggests cost/scope impact, optionally spawning a Change Order or RFI directly from the result. Same 3-stage pattern as StoneDesk's Field Sketch Quote (camera-capture input, multimodal proxy call through `sairn.vercel.app/api/claude`, app-specific output) — output shape here is cost/scope suggestions, not a priced quote. | New |
 | Change Orders | `changeorders` | Capture scope changes at the moment they happen, price them, get them accepted. | **Built, live** |
@@ -185,9 +192,10 @@ persona (an owner-operator running 4-12 jobs from a truck). Porting every
 StoneDesk panel regardless of fit would be padding, the exact thing the
 honesty note above is trying to avoid.
 
-**36 panels total (4 already built/live, 32 new).** Comparable in real
-job-to-be-done coverage to StoneDesk's early-to-mid build, not yet at
-StoneDesk's full 61 — see the honesty note above for why that gap is left
+**37 panels total, all built and live as of 2026-07-30** (corrected from
+"36" — see the honesty note above). Comparable in real job-to-be-done
+coverage to StoneDesk's early-to-mid build, not yet at StoneDesk's full 61
+— see the honesty note above for why that gap is left
 open rather than filled artificially.
 
 **Build order:** the 4 already-built-and-live panels (`dashboard`, `jobs`,
