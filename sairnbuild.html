@@ -238,6 +238,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <button class="sb" id="sb-suppliers" onclick="nav('suppliers')"><span class="sico">&#127981;</span>Suppliers</button>
       <button class="sb" id="sb-equipment" onclick="nav('equipment')"><span class="sico">&#128667;</span>Equipment</button>
+      <div class="ss">Safety</div>
+      <button class="sb" id="sb-safety" onclick="nav('safety')"><span class="sico">&#9888;&#65039;</span>Safety &amp; Incidents</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -798,6 +800,37 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- SAFETY & INCIDENTS -->
+<div class="panel" id="panel-safety">
+  <div class="ph"><div><div class="ptitle">Safety &amp; Incidents</div><div class="psub">Incident log with OSHA-reportable tracking, plus toolbox-talk records</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('incidents')">Export CSV</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Days Since Last Incident</div><div class="kval" id="saf-days">--</div><div class="kt" id="saf-days-sub">Across all jobs</div></div>
+    <div class="kpi"><div class="klbl">YTD Incidents</div><div class="kval" id="saf-ytd">0</div><div class="kt">This calendar year</div></div>
+    <div class="kpi"><div class="klbl">OSHA Reportable</div><div class="kval" id="saf-osha">0</div><div class="kt" id="saf-osha-sub">All time</div></div>
+    <div class="kpi"><div class="klbl">Open Corrective Actions</div><div class="kval" id="saf-open">0</div><div class="kt" id="saf-open-sub">Not yet closed</div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Incident Log</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openIncidentModal()">+ Log Incident</button></div></div>
+    <div class="cb">
+    <div class="sbar">
+      <select id="safjob" onchange="rIncidentsTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="safstatus" onchange="rIncidentsTbl()" style="width:180px;">
+        <option value="">All Statuses</option>
+        <option value="open">Open</option><option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Date</th><th>Description</th><th>OSHA Reportable</th><th>Corrective Action</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="saftbody"></tbody></table></div>
+  </div></div>
+  <div class="card">
+    <div class="ch"><span class="ct">Toolbox Talks</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openTalkModal()">+ Log Talk</button></div></div>
+    <div class="cb">
+    <div class="tw"><table><thead><tr><th>Job</th><th>Date</th><th>Topic</th><th>Conducted By</th><th>Attendees</th><th>Actions</th></tr></thead>
+    <tbody id="talktbody"></tbody></table></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1182,6 +1215,36 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="incmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Incident</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="incm-job"></select></div><div class="fg"><label>Date</label><input id="incm-date" type="date"></div></div>
+    <div class="fg"><label>Description</label><input id="incm-desc" placeholder="What happened"></div>
+    <div class="fg"><label><input type="checkbox" id="incm-osha" style="width:auto;margin-right:6px;">OSHA Reportable</label></div>
+    <div class="fg"><label>Corrective Action</label><input id="incm-corrective" placeholder="Leave blank until determined"></div>
+    <div class="fg"><label>Status</label><select id="incm-status" onchange="incStatusChanged()">
+      <option value="open">Open</option><option value="closed">Closed</option>
+    </select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeIncidentModal()">Cancel</button>
+      <button class="btn bp" onclick="saveIncident()">Save Incident</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="talkmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Toolbox Talk</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="talkm-job"></select></div><div class="fg"><label>Date</label><input id="talkm-date" type="date"></div></div>
+    <div class="fg"><label>Topic</label><input id="talkm-topic" placeholder="Fall protection near open framing"></div>
+    <div class="fr"><div class="fg"><label>Conducted By</label><input id="talkm-by" placeholder="Foreman name"></div><div class="fg"><label>Attendee Count</label><input id="talkm-attendees" type="number" placeholder="4"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTalkModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTalk()">Save Talk</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -1300,6 +1363,7 @@ function nav(id){
   if(id==='compliance')rCompliance();
   if(id==='suppliers')rSuppliers();
   if(id==='equipment')rEquip();
+  if(id==='safety')rSafety();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1578,6 +1642,21 @@ function seed(){
     {id:'EQ-03',name:'Dump Trailer 14ft',type:'owned',job_id:'',status:'idle',utilization_pct:0,maintenance_due:daysAgo(5),rental_rate:0,rental_start:''},
     {id:'EQ-04',name:'Concrete Mixer, Towable',type:'rented',job_id:'J-2603',status:'active',utilization_pct:0,maintenance_due:'',rental_rate:60,rental_start:daysAgo(3)}
   ]);
+  // Incidents: INC-02 is the more recent of the two (daysAgo(6)) and is
+  // still open with no corrective action recorded yet -- real, non-zero
+  // cases for both "Open Corrective Actions" and "OSHA Reportable," and
+  // "Days Since Last Incident" is computed from whichever incident is
+  // actually most recent rather than hardcoded, so it stays honest as time
+  // passes. INC-01 is older and fully closed, proving that state renders too.
+  st('bld_incidents',[
+    {id:'INC-01',job_id:'J-2602',date:daysAgo(45),description:'Worker sustained minor laceration from sheet metal edge during unit B rough-in',osha_reportable:false,corrective_action:'Cut-resistant gloves now mandatory for all sheet metal handling on this job; toolbox talk conducted same day',status:'closed'},
+    {id:'INC-02',job_id:'J-2601',date:daysAgo(6),description:'Scaffold plank shifted during primary bath tile work - no fall occurred, caught by guardrail',osha_reportable:true,corrective_action:'',status:'open'}
+  ]);
+  st('bld_toolbox_talks',[
+    {id:'TB-01',job_id:'J-2601',date:daysAgo(6),topic:'Scaffold inspection and guardrail requirements',conducted_by:'Marcus Webb',attendees:4},
+    {id:'TB-02',job_id:'J-2602',date:daysAgo(20),topic:'Sheet metal edge protection and glove requirements',conducted_by:'Dana Ruiz',attendees:5},
+    {id:'TB-03',job_id:'J-2603',date:daysAgo(35),topic:'Ladder safety and 4-to-1 setup ratio',conducted_by:'In-house crew lead',attendees:3}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1598,7 +1677,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -2591,8 +2670,8 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // explicitly optional) are declared once; adding a new panel's job
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
-var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job'];
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob','safjob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job','chkm-job','eqm-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -3938,6 +4017,148 @@ function saveEquip(){
   toast('Saved - '+rec.name);
 }
 
+// ── SAFETY & INCIDENTS ────────────────────────────────────────────────────
+function bldIncidents(){return ld('bld_incidents',[]);}
+function bldToolboxTalks(){return ld('bld_toolbox_talks',[]);}
+// No field currently needs to show/hide on status change, but the handler
+// stays wired (rather than removed from the markup) in case a future field
+// does -- same reasoning documented at rfiStatusChanged() above.
+function incStatusChanged(){}
+function rSafety(){fillJobSelects();rIncidentsTbl();rTalksTbl();}
+function incScope(){
+  var jf=(($('safjob')||{}).value||''),sf=(($('safstatus')||{}).value||'');
+  return bldIncidents().filter(function(i){return(!jf||i.job_id===jf)&&(!sf||i.status===sf);});
+}
+function rIncidentsTbl(){
+  var list=incScope();
+  var all=bldIncidents();
+  var thisYear=new Date().getFullYear();
+  var ytd=all.filter(function(i){var d=new Date(i.date+'T00:00:00');return!isNaN(d)&&d.getFullYear()===thisYear;});
+  var osha=all.filter(function(i){return i.osha_reportable;});
+  var open=all.filter(function(i){return i.status==='open';});
+  // Most recent incident by date, across ALL incidents (not the filtered
+  // scope) -- a filtered view should not make the safety record look better
+  // than it is by hiding the most recent one.
+  var mostRecent=all.reduce(function(latest,i){
+    var d=new Date(i.date+'T00:00:00');
+    if(isNaN(d))return latest;
+    return(!latest||d>latest)?d:latest;
+  },null);
+  var daysSince=mostRecent?Math.max(0,Math.round((Date.now()-mostRecent.getTime())/86400000)):null;
+  $('saf-days').textContent=daysSince===null?'--':daysSince;
+  $('saf-days-sub').textContent=mostRecent?'Since last logged incident':'No incidents on record';
+  $('saf-ytd').textContent=ytd.length;
+  $('saf-osha').textContent=osha.length;
+  $('saf-osha-sub').className='kt'+(osha.length?' d':'');
+  $('saf-open').textContent=open.length;
+  $('saf-open-sub').className='kt'+(open.length?' d':'');
+  $('saf-open-sub').textContent=open.length?'Needs a corrective action':'All incidents closed';
+  var tb=$('saftbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No incidents match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(i){
+      return '<tr><td>'+H(jobLabel(i.job_id))+'</td>'+
+        '<td>'+(i.date?fdate(i.date):'--')+'</td>'+
+        '<td>'+H(i.description)+'</td>'+
+        '<td>'+(i.osha_reportable?'<span class="badge br">Yes</span>':'<span class="badge bx">No</span>')+'</td>'+
+        '<td>'+(i.corrective_action?H(i.corrective_action):'<span style="color:var(--muted)">Not yet determined</span>')+'</td>'+
+        '<td>'+(i.status==='open'?'<span class="badge bw">Open</span>':'<span class="badge bg">Closed</span>')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editIncident(\''+H(i.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+var incmeid=null;
+function openIncidentModal(){
+  if(!jobs().length){toast('Add a job first - an incident must belong to one');return;}
+  incmeid=null;fillJobSelects();
+  ['incm-desc','incm-corrective'].forEach(function(f){$(f).value='';});
+  $('incm-osha').checked=false;$('incm-status').value='open';
+  $('incm-date').value=new Date().toISOString().slice(0,10);
+  $('incmodal').classList.add('on');
+}
+function closeIncidentModal(){$('incmodal').classList.remove('on');}
+function editIncident(id){
+  var i=bldIncidents().find(function(x){return x.id===id;});if(!i)return;
+  incmeid=id;fillJobSelects();
+  $('incm-job').value=i.job_id||'';$('incm-date').value=i.date||'';
+  $('incm-desc').value=i.description||'';$('incm-osha').checked=!!i.osha_reportable;
+  $('incm-corrective').value=i.corrective_action||'';$('incm-status').value=i.status||'open';
+  $('incmodal').classList.add('on');
+}
+function saveIncident(){
+  var desc=$('incm-desc').value.trim();
+  if(!desc){toast('Description required');return;}
+  var job=$('incm-job').value;
+  if(!job){toast('Job required');return;}
+  var status=$('incm-status').value;
+  var corrective=$('incm-corrective').value.trim();
+  if(status==='closed'&&!corrective){toast('Cannot close an incident with no corrective action on record');return;}
+  var list=bldIncidents();
+  var existing=incmeid?list.find(function(x){return x.id===incmeid;}):null;
+  var rec={
+    id:incmeid||('INC-'+String(Date.now()).slice(-5)),
+    job_id:job,date:$('incm-date').value,description:desc,
+    osha_reportable:$('incm-osha').checked,corrective_action:corrective,status:status
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(incmeid){var i=list.findIndex(function(x){return x.id===incmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_incidents',list);
+  closeIncidentModal();rSafety();
+  toast('Saved incident');
+}
+function rTalksTbl(){
+  var list=bldToolboxTalks();
+  var tb=$('talktbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No toolbox talks logged yet</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(t){
+      return '<tr><td>'+H(jobLabel(t.job_id))+'</td>'+
+        '<td>'+(t.date?fdate(t.date):'--')+'</td>'+
+        '<td>'+H(t.topic)+'</td>'+
+        '<td>'+H(t.conducted_by||'')+'</td>'+
+        '<td>'+(t.attendees||0)+'</td>'+
+        '<td><button class="btn bo bs" onclick="editTalk(\''+H(t.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+var talkmeid=null;
+function openTalkModal(){
+  if(!jobs().length){toast('Add a job first - a toolbox talk must belong to one');return;}
+  talkmeid=null;fillJobSelects();
+  ['talkm-topic','talkm-by','talkm-attendees'].forEach(function(f){$(f).value='';});
+  $('talkm-date').value=new Date().toISOString().slice(0,10);
+  $('talkmodal').classList.add('on');
+}
+function closeTalkModal(){$('talkmodal').classList.remove('on');}
+function editTalk(id){
+  var t=bldToolboxTalks().find(function(x){return x.id===id;});if(!t)return;
+  talkmeid=id;fillJobSelects();
+  $('talkm-job').value=t.job_id||'';$('talkm-date').value=t.date||'';
+  $('talkm-topic').value=t.topic||'';$('talkm-by').value=t.conducted_by||'';
+  $('talkm-attendees').value=t.attendees||'';
+  $('talkmodal').classList.add('on');
+}
+function saveTalk(){
+  var topic=$('talkm-topic').value.trim();
+  if(!topic){toast('Topic required');return;}
+  var job=$('talkm-job').value;
+  if(!job){toast('Job required');return;}
+  var list=bldToolboxTalks();
+  var existing=talkmeid?list.find(function(x){return x.id===talkmeid;}):null;
+  var rec={
+    id:talkmeid||('TB-'+String(Date.now()).slice(-5)),
+    job_id:job,date:$('talkm-date').value,topic:topic,
+    conducted_by:$('talkm-by').value.trim(),attendees:parseInt($('talkm-attendees').value,10)||0
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(talkmeid){var i=list.findIndex(function(x){return x.id===talkmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_toolbox_talks',list);
+  closeTalkModal();rSafety();
+  toast('Saved toolbox talk');
+}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -4056,6 +4277,11 @@ function csv(type){
     if(!eqlist.length){toast('No equipment in scope to export');return;}
     rows=[['Equipment','Type','Job','Status','Utilization %','Maintenance Due','Rental Rate/Day','Rental Start','Accrual to Date']];
     eqlist.forEach(function(e){rows.push([e.name,e.type==='rented'?'Rented':'Owned',e.job_id?jobLabel(e.job_id):'',e.status,e.utilization_pct,e.maintenance_due,e.rental_rate,e.rental_start,equipAccrual(e)]);});
+  } else if(type==='incidents'){
+    var inclist=incScope();
+    if(!inclist.length){toast('No incidents in scope to export');return;}
+    rows=[['Job','Date','Description','OSHA Reportable','Corrective Action','Status']];
+    inclist.forEach(function(i){rows.push([jobLabel(i.job_id),i.date,i.description,i.osha_reportable?'Yes':'No',i.corrective_action,i.status]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
