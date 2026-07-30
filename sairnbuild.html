@@ -240,6 +240,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-equipment" onclick="nav('equipment')"><span class="sico">&#128667;</span>Equipment</button>
       <div class="ss">Safety</div>
       <button class="sb" id="sb-safety" onclick="nav('safety')"><span class="sico">&#9888;&#65039;</span>Safety &amp; Incidents</button>
+      <div class="ss">Client</div>
+      <button class="sb" id="sb-clientportal" onclick="nav('clientportal')"><span class="sico">&#128101;</span>Client Portal</button>
+      <button class="sb" id="sb-warranty" onclick="nav('warranty')"><span class="sico">&#128737;&#65039;</span>Warranty</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -831,6 +834,52 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- CLIENT PORTAL -->
+<div class="panel" id="panel-clientportal">
+  <div class="ph"><div><div class="ptitle">Client Portal</div><div class="psub">Shared view for the homeowner &mdash; status, photos, approved changes, selections, and messages</div></div></div>
+  <div class="card"><div class="cb">
+    <div class="fg" style="margin-bottom:0"><label>Viewing Job</label><select id="cp-job" onchange="rClientPortal()"></select></div>
+  </div></div>
+  <div class="card"><div class="cb" id="cp-status"></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Photos Logged</div><div class="kval" id="cp-photos">0</div><div class="kt">Via Daily Logs</div></div>
+    <div class="kpi"><div class="klbl">Approved Changes</div><div class="kval" id="cp-cos">0</div><div class="kt">Accepted change orders</div></div>
+    <div class="kpi"><div class="klbl">Pending Selections</div><div class="kval" id="cp-selpending">0</div><div class="kt">Not yet chosen</div></div>
+    <div class="kpi"><div class="klbl">Messages</div><div class="kval" id="cp-msgs">0</div><div class="kt">In communication log</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Approved Change Orders</span></div><div class="cb" id="cp-co-list"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Selections Status</span></div><div class="cb" id="cp-sel-list"></div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Communication Log</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openMsgModal()">+ Add Message</button></div></div>
+    <div class="cb" id="cp-msg-list"></div>
+  </div>
+</div>
+
+<!-- WARRANTY -->
+<div class="panel" id="panel-warranty">
+  <div class="ph"><div><div class="ptitle">Warranty</div><div class="psub">Post-completion callback tracking &mdash; claim, trade responsible, status, cost</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('warranty')">Export CSV</button><button class="btn bp bs" onclick="openWarrantyModal()">+ New Claim</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open Claims</div><div class="kval" id="war-open">0</div><div class="kt" id="war-open-sub">Needs action</div></div>
+    <div class="kpi"><div class="klbl">Resolved</div><div class="kval" id="war-resolved">0</div><div class="kt">Selected scope</div></div>
+    <div class="kpi"><div class="klbl">Total Cost</div><div class="kval" id="war-cost">$0</div><div class="kt">All claims, selected scope</div></div>
+    <div class="kpi"><div class="klbl">Avg Days Open</div><div class="kval" id="war-avgdays">0 d</div><div class="kt">Open claims only</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="warjob" onchange="rWarrantyTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="warstatus" onchange="rWarrantyTbl()" style="width:180px;">
+        <option value="">All Statuses</option>
+        <option value="open">Open</option><option value="in_progress">In Progress</option><option value="resolved">Resolved</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Claim</th><th>Trade Responsible</th><th>Filed</th><th>Status</th><th>Cost</th><th>Actions</th></tr></thead>
+    <tbody id="wartbody"></tbody></table></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1245,6 +1294,37 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="msgmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Message</div>
+    <div class="fg"><label>From</label><select id="msgm-author">
+      <option value="Office">Office</option><option value="PM">PM</option><option value="Client">Client</option>
+    </select></div>
+    <div class="fg"><label>Message</label><input id="msgm-text" placeholder="Update or question"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMsgModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMsg()">Post Message</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="warmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Warranty Claim</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="warm-job"></select></div><div class="fg"><label>Trade Responsible</label><input id="warm-trade" placeholder="In-house crew / sub name"></div></div>
+    <div class="fg"><label>Claim Description</label><input id="warm-desc" placeholder="What the client reported"></div>
+    <div class="fr"><div class="fg"><label>Filed Date</label><input id="warm-filed" type="date"></div><div class="fg"><label>Status</label><select id="warm-status" onchange="warStatusChanged()">
+      <option value="open">Open</option><option value="in_progress">In Progress</option><option value="resolved">Resolved</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Cost ($)</label><input id="warm-cost" type="number" placeholder="180"></div><div class="fg" id="warm-resolvedrow"><label>Resolved Date</label><input id="warm-resolved" type="date"></div></div>
+    <div class="fg"><label>Notes</label><input id="warm-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeWarrantyModal()">Cancel</button>
+      <button class="btn bp" onclick="saveWarranty()">Save Claim</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -1364,6 +1444,8 @@ function nav(id){
   if(id==='suppliers')rSuppliers();
   if(id==='equipment')rEquip();
   if(id==='safety')rSafety();
+  if(id==='clientportal')rClientPortal();
+  if(id==='warranty')rWarranty();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1657,6 +1739,23 @@ function seed(){
     {id:'TB-02',job_id:'J-2602',date:daysAgo(20),topic:'Sheet metal edge protection and glove requirements',conducted_by:'Dana Ruiz',attendees:5},
     {id:'TB-03',job_id:'J-2603',date:daysAgo(35),topic:'Ladder safety and 4-to-1 setup ratio',conducted_by:'In-house crew lead',attendees:3}
   ]);
+  // Communication log seeded on J-2601, which already has the richest real
+  // data (accepted + sent COs, chosen selections, daily logs) so Client
+  // Portal has something genuine to show across every card, not an empty
+  // shell on the one job a reviewer would naturally pick first.
+  st('bld_comm_log',[
+    {id:'CM-01',job_id:'J-2601',date:daysAgo(10),author:'PM',message:'Kitchen demo is complete, framing starts this week.'},
+    {id:'CM-02',job_id:'J-2601',date:daysAgo(8),author:'Client',message:'Looks great! Can we revisit the island pendant light option before it ships?'},
+    {id:'CM-03',job_id:'J-2601',date:daysAgo(7),author:'Office',message:'Noted - added as a pending selection, will confirm lead time before ordering.'}
+  ]);
+  // Warranty: WAR-01 on the one completed job (J-2605) is fully resolved
+  // with a real elapsed filed->resolved gap; WAR-02 on the punch/close-out
+  // job (J-2604) is still open with zero cost recorded yet, a real case for
+  // both "Open Claims" and a non-fabricated $0 mid-claim.
+  st('bld_warranty',[
+    {id:'WAR-01',job_id:'J-2605',claim_desc:'Grout haze noticed along mudroom floor seams after final clean',trade_responsible:'In-house crew',filed_date:daysAgo(15),status:'resolved',cost:180,resolved_date:daysAgo(8),notes:'Re-cleaned and resealed at no charge'},
+    {id:'WAR-02',job_id:'J-2604',claim_desc:'Cabinet door in kitchen not closing flush after settling',trade_responsible:'ABC Cabinetry',filed_date:daysAgo(4),status:'open',cost:0,resolved_date:'',notes:''}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1677,7 +1776,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -2670,8 +2769,8 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // explicitly optional) are declared once; adding a new panel's job
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
-var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob','safjob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job'];
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob','safjob','warjob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job','warm-job','cp-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job','chkm-job','eqm-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -4159,6 +4258,154 @@ function saveTalk(){
   toast('Saved toolbox talk');
 }
 
+// ── CLIENT PORTAL ─────────────────────────────────────────────────────────
+// Deliberately homeowner-facing only: cost, margin, committed spend, and
+// internal notes never render here even though the underlying job/cost
+// records carry them. This is the one panel in the file where showing
+// internal numbers would be a real information-boundary mistake, not just
+// clutter -- so it reads job/CO/selection records but only ever surfaces
+// the fields a client should actually see.
+function bldCommLog(){return ld('bld_comm_log',[]);}
+function rClientPortal(){
+  fillJobSelects();
+  var jobId=$('cp-job').value;
+  var j=jobs().find(function(x){return x.id===jobId;});
+  if(!j){$('cp-status').innerHTML='<div style="color:var(--muted);text-align:center;padding:12px;">Add a job first</div>';return;}
+  var s=STAGE[j.stage]||{l:j.stage,c:'bx'};
+  $('cp-status').innerHTML=
+    '<div class="srow"><span class="slbl">Address</span><span class="sval">'+H(j.address)+'</span></div>'+
+    '<div class="srow"><span class="slbl">Status</span><span class="badge '+s.c+'">'+H(s.l)+'</span></div>'+
+    '<div class="srow"><span class="slbl">Target Completion</span><span class="sval">'+(j.target?fdate(j.target):'--')+'</span></div>'+
+    (j.blocked?'<div class="srow"><span class="slbl">Currently Blocked On</span><span class="sval" style="color:var(--danger)">'+H(j.blocked)+'</span></div>':'');
+  var photos=bldLogs().filter(function(l){return l.job_id===jobId;}).reduce(function(sum,l){return sum+(l.photos||0);},0);
+  var cos=chgOrders().filter(function(c){return c.job_id===jobId&&c.status==='accepted';});
+  var sels=bldSel().filter(function(x){return x.job_id===jobId;});
+  var pendingSel=sels.filter(function(x){return selStatus(x)==='pending';});
+  var msgs=bldCommLog().filter(function(m){return m.job_id===jobId;});
+  $('cp-photos').textContent=photos;
+  $('cp-cos').textContent=cos.length;
+  $('cp-selpending').textContent=pendingSel.length;
+  $('cp-msgs').textContent=msgs.length;
+  $('cp-co-list').innerHTML=cos.length?cos.map(function(c){
+    return '<div class="srow"><span class="slbl">'+H(c.description)+'<div style="font-size:11px;color:var(--muted)">'+(c.accepted_at?fdate(c.accepted_at):'')+'</div></span><span class="sval">'+fmt(c.amount)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No approved changes yet</div>';
+  $('cp-sel-list').innerHTML=sels.length?sels.map(function(x){
+    var st_=selStatus(x);
+    var badge=st_==='ordered'?'bg':st_==='chosen'?'bb':'bw';
+    var label=st_==='ordered'?'Ordered':st_==='chosen'?'Chosen':'Pending';
+    return '<div class="srow"><span class="slbl">'+H(SELCAT[x.category]||x.category)+' - '+H(x.item)+'</span><span class="badge '+badge+'">'+label+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No selections on this job yet</div>';
+  $('cp-msg-list').innerHTML=msgs.length?msgs.map(function(m){
+    return '<div class="srow"><span class="slbl"><strong>'+H(m.author)+'</strong> &middot; '+(m.date?fdate(m.date):'')+'<div style="font-size:12px;color:var(--text);margin-top:2px">'+H(m.message)+'</div></span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No messages yet</div>';
+}
+function openMsgModal(){
+  if(!$('cp-job').value){toast('Select a job first');return;}
+  $('msgm-text').value='';$('msgm-author').value='Office';
+  $('msgmodal').classList.add('on');
+}
+function closeMsgModal(){$('msgmodal').classList.remove('on');}
+function saveMsg(){
+  var text=$('msgm-text').value.trim();
+  if(!text){toast('Message cannot be empty');return;}
+  var job=$('cp-job').value;
+  if(!job){toast('Select a job first');return;}
+  var list=bldCommLog();
+  list.push({id:'CM-'+String(Date.now()).slice(-5),job_id:job,date:new Date().toISOString().slice(0,10),author:$('msgm-author').value,message:text});
+  st('bld_comm_log',list);
+  closeMsgModal();rClientPortal();
+  toast('Message posted');
+}
+
+// ── WARRANTY ──────────────────────────────────────────────────────────────
+var WARSTATUS={open:{l:'Open',c:'bw'},in_progress:{l:'In Progress',c:'bb'},resolved:{l:'Resolved',c:'bg'}};
+function bldWarranty(){return ld('bld_warranty',[]);}
+function warDaysOpen(w){
+  if(w.status==='resolved')return 0;
+  var d=new Date((w.filed_date||'')+'T00:00:00');
+  if(isNaN(d))return 0;
+  return Math.max(0,Math.round((Date.now()-d.getTime())/86400000));
+}
+function rWarranty(){fillJobSelects();rWarrantyTbl();}
+function warScope(){
+  var jf=(($('warjob')||{}).value||''),sf=(($('warstatus')||{}).value||'');
+  return bldWarranty().filter(function(w){return(!jf||w.job_id===jf)&&(!sf||w.status===sf);});
+}
+function rWarrantyTbl(){
+  var list=warScope();
+  var open=list.filter(function(w){return w.status==='open'||w.status==='in_progress';});
+  var resolved=list.filter(function(w){return w.status==='resolved';});
+  var cost=list.reduce(function(s,w){return s+(w.cost||0);},0);
+  var avgDays=open.length?Math.round(open.reduce(function(s,w){return s+warDaysOpen(w);},0)/open.length):0;
+  $('war-open').textContent=open.length;
+  $('war-open-sub').className='kt'+(open.length?' d':'');
+  $('war-resolved').textContent=resolved.length;
+  $('war-cost').textContent=fmt(cost);
+  $('war-avgdays').textContent=avgDays+' d';
+  var tb=$('wartbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No warranty claims match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(w){
+      var s=WARSTATUS[w.status]||{l:w.status,c:'bx'};
+      return '<tr><td>'+H(jobLabel(w.job_id))+'</td>'+
+        '<td>'+H(w.claim_desc)+'</td>'+
+        '<td>'+H(w.trade_responsible||'')+'</td>'+
+        '<td>'+(w.filed_date?fdate(w.filed_date):'--')+'</td>'+
+        '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
+        '<td>'+fmt(w.cost)+'</td>'+
+        '<td><button class="btn bo bs" onclick="editWarranty(\''+H(w.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function warStatusChanged(){
+  $('warm-resolvedrow').style.display=$('warm-status').value==='resolved'?'block':'none';
+}
+var warmeid=null;
+function openWarrantyModal(){
+  if(!jobs().length){toast('Add a job first - a warranty claim must belong to one');return;}
+  warmeid=null;fillJobSelects();
+  ['warm-trade','warm-desc','warm-cost','warm-resolved','warm-notes'].forEach(function(f){$(f).value='';});
+  $('warm-status').value='open';
+  $('warm-filed').value=new Date().toISOString().slice(0,10);
+  warStatusChanged();
+  $('warmodal').classList.add('on');
+}
+function closeWarrantyModal(){$('warmodal').classList.remove('on');}
+function editWarranty(id){
+  var w=bldWarranty().find(function(x){return x.id===id;});if(!w)return;
+  warmeid=id;fillJobSelects();
+  $('warm-job').value=w.job_id||'';$('warm-trade').value=w.trade_responsible||'';
+  $('warm-desc').value=w.claim_desc||'';$('warm-filed').value=w.filed_date||'';
+  $('warm-status').value=w.status||'open';$('warm-cost').value=w.cost||'';
+  $('warm-resolved').value=w.resolved_date||'';$('warm-notes').value=w.notes||'';
+  warStatusChanged();
+  $('warmodal').classList.add('on');
+}
+function saveWarranty(){
+  var desc=$('warm-desc').value.trim();
+  if(!desc){toast('Claim description required');return;}
+  var job=$('warm-job').value;
+  if(!job){toast('Job required');return;}
+  var status=$('warm-status').value;
+  if(status==='resolved'&&!$('warm-resolved').value){toast('A resolved claim needs a resolved date');return;}
+  var list=bldWarranty();
+  var existing=warmeid?list.find(function(x){return x.id===warmeid;}):null;
+  var rec={
+    id:warmeid||('WAR-'+String(Date.now()).slice(-5)),
+    job_id:job,claim_desc:desc,trade_responsible:$('warm-trade').value.trim(),
+    filed_date:$('warm-filed').value,status:status,
+    cost:parseFloat($('warm-cost').value)||0,
+    resolved_date:status==='resolved'?$('warm-resolved').value:'',
+    notes:$('warm-notes').value.trim()
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(warmeid){var i=list.findIndex(function(x){return x.id===warmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_warranty',list);
+  closeWarrantyModal();rWarranty();
+  toast('Saved warranty claim');
+}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -4282,6 +4529,11 @@ function csv(type){
     if(!inclist.length){toast('No incidents in scope to export');return;}
     rows=[['Job','Date','Description','OSHA Reportable','Corrective Action','Status']];
     inclist.forEach(function(i){rows.push([jobLabel(i.job_id),i.date,i.description,i.osha_reportable?'Yes':'No',i.corrective_action,i.status]);});
+  } else if(type==='warranty'){
+    var warlist=warScope();
+    if(!warlist.length){toast('No warranty claims in scope to export');return;}
+    rows=[['Job','Claim','Trade Responsible','Filed','Status','Cost','Resolved','Notes']];
+    warlist.forEach(function(w){rows.push([jobLabel(w.job_id),w.claim_desc,w.trade_responsible,w.filed_date,(WARSTATUS[w.status]||{l:w.status}).l,w.cost,w.resolved_date,w.notes]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
