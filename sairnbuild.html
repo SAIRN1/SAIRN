@@ -245,6 +245,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-warranty" onclick="nav('warranty')"><span class="sico">&#128737;&#65039;</span>Warranty</button>
       <div class="ss">Documents</div>
       <button class="sb" id="sb-documents" onclick="nav('documents')"><span class="sico">&#128193;</span>Documents</button>
+      <div class="ss">Growth</div>
+      <button class="sb" id="sb-reviews" onclick="nav('reviews')"><span class="sico">&#11088;</span>Reviews</button>
+      <button class="sb" id="sb-referrals" onclick="nav('referrals')"><span class="sico">&#129309;</span>Referrals</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -905,6 +908,44 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- REVIEWS -->
+<div class="panel" id="panel-reviews">
+  <div class="ph"><div><div class="ptitle">Reviews</div><div class="psub">Customer reviews across Google, Yelp, Houzz, and Facebook</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('reviews')">Export CSV</button><button class="btn bp bs" onclick="openReviewModal()">+ Log Review</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Avg Rating</div><div class="kval" id="rv-avg">0.0</div><div class="kt">Out of 5</div></div>
+    <div class="kpi"><div class="klbl">Total Reviews</div><div class="kval" id="rv-total">0</div><div class="kt">All sources</div></div>
+    <div class="kpi"><div class="klbl">5-Star</div><div class="kval" id="rv-five">0</div><div class="kt">Of total</div></div>
+    <div class="kpi"><div class="klbl">Need Response</div><div class="kval" id="rv-needresp">0</div><div class="kt" id="rv-needresp-sub">4 stars or fewer, no reply yet</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="rvsource" onchange="rReviewsTbl()" style="flex:1;">
+        <option value="">All Sources</option>
+        <option value="Google">Google</option><option value="Yelp">Yelp</option><option value="Houzz">Houzz</option><option value="Facebook">Facebook</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Customer</th><th>Source</th><th>Rating</th><th>Date</th><th>Review</th><th>Responded?</th><th>Actions</th></tr></thead>
+    <tbody id="rvtbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- REFERRALS -->
+<div class="panel" id="panel-referrals">
+  <div class="ph"><div><div class="ptitle">Referrals</div><div class="psub">Customer referrals and source attribution</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('referrals')">Export CSV</button><button class="btn bp bs" onclick="openReferralModal()">+ Log Referral</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Referrals</div><div class="kval" id="rf-total">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Converted</div><div class="kval" id="rf-converted">0</div><div class="kt">Became a job</div></div>
+    <div class="kpi"><div class="klbl">Revenue from Refs</div><div class="kval" id="rf-revenue">$0</div><div class="kt">Converted deal value</div></div>
+    <div class="kpi"><div class="klbl">Conversion Rate</div><div class="kval" id="rf-rate">0%</div><div class="kt" id="rf-rate-sub">Converted vs decided</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Referral Log</span></div><div class="cb" id="rf-list"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Top Referrers</span></div><div class="cb" id="rf-top"></div></div>
+  </div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1394,6 +1435,39 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="rvmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Review</div>
+    <div class="fr"><div class="fg"><label>Customer</label><input id="rvm-customer" placeholder="Hartley Residence"></div><div class="fg"><label>Source</label><select id="rvm-source">
+      <option value="Google">Google</option><option value="Yelp">Yelp</option><option value="Houzz">Houzz</option><option value="Facebook">Facebook</option>
+    </select></div></div>
+    <div class="fg"><label>Job (optional)</label><select id="rvm-job"><option value="">Not tied to a job</option></select></div>
+    <div class="fr"><div class="fg"><label>Rating (1-5)</label><input id="rvm-rating" type="number" min="1" max="5" placeholder="5"></div><div class="fg"><label>Date</label><input id="rvm-date" type="date"></div></div>
+    <div class="fg"><label>Review Text</label><input id="rvm-text" placeholder="What the customer said"></div>
+    <div class="fg"><label><input type="checkbox" id="rvm-responded" style="width:auto;margin-right:6px;">Responded</label></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeReviewModal()">Cancel</button>
+      <button class="btn bp" onclick="saveReview()">Save Review</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="rfmodal">
+  <div class="mbox">
+    <div class="mtitle">Log Referral</div>
+    <div class="fg"><label>Referring Customer</label><input id="rfm-from" placeholder="Hartley Residence"></div>
+    <div class="fr"><div class="fg"><label>Referred Name</label><input id="rfm-to" placeholder="New prospect's name"></div><div class="fg"><label>Referred Phone (optional)</label><input id="rfm-phone" placeholder="(440) 555-0100"></div></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="rfm-status" onchange="refStatusChanged()">
+      <option value="lead">Lead</option><option value="quoted">Quoted</option><option value="converted">Converted</option><option value="lost">Lost</option>
+    </select></div><div class="fg" id="rfm-valuerow"><label>Deal Value ($)</label><input id="rfm-value" type="number" placeholder="98750"></div></div>
+    <div class="fg"><label>Date</label><input id="rfm-date" type="date"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeReferralModal()">Cancel</button>
+      <button class="btn bp" onclick="saveReferral()">Save Referral</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -1516,6 +1590,8 @@ function nav(id){
   if(id==='clientportal')rClientPortal();
   if(id==='warranty')rWarranty();
   if(id==='documents')rDocs();
+  if(id==='reviews')rReviews();
+  if(id==='referrals')rReferrals();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -1856,6 +1932,31 @@ function seed(){
       {v:3,uploaded_at:'2026-05-10',uploaded_by:'Midwest Steel Fab',note:'Final approved set'}
     ]}
   ]);
+  // Reviews: real spread of sources/ratings. REV-04 is deliberately the one
+  // needing a response (3 stars, not yet replied) -- the KPI's actual
+  // definition (unanswered AND <=4 stars) excludes the two unanswered
+  // 5-stars on purpose, same logic StoneDesk's real (verified) Reviews
+  // panel uses, so this needs a genuine 4-or-under unanswered case to prove
+  // the filter is doing real work, not just counting "unanswered."
+  st('bld_reviews',[
+    {id:'RV-01',job_id:'J-2601',customer:'Hartley Residence',source:'Google',rating:5,date:'2026-07-20',text:'Pinnacle Industries did an outstanding job on our kitchen remodel. Crew was professional, on schedule, and the heated floor upgrade came out perfect.',responded:true},
+    {id:'RV-02',job_id:'J-2602',customer:'Delgado Property Group',source:'Yelp',rating:5,date:'2026-06-01',text:'Structural work on our two-unit property was handled professionally start to finish. Communication was excellent throughout.',responded:false},
+    {id:'RV-03',job_id:'J-2605',customer:'Sandoval Residence',source:'Google',rating:4,date:'2026-06-05',text:'Great kitchen and mudroom work. Minor scheduling delay but the team communicated well about it.',responded:true},
+    {id:'RV-04',job_id:'J-2604',customer:'Okafor Residence',source:'Houzz',rating:3,date:'2026-07-26',text:'Basement finish looks good but the punch list items took longer than expected to close out.',responded:false},
+    {id:'RV-05',job_id:'J-2603',customer:'Whitfield Residence',source:'Facebook',rating:5,date:'2026-07-01',text:'Even with the inspection delay, the team kept us informed the whole time and made it right.',responded:false}
+  ]);
+  // Referrals: Hartley Residence is the clear top referrer (3 of 5 rows) so
+  // that card has something real to rank, not a flat list. REF-01 and
+  // REF-05 tie back to real seeded jobs (Reyes Residence became a real bid,
+  // Ferreira Residence is literally job J-2606) rather than inventing
+  // unconnected names.
+  st('bld_referrals',[
+    {id:'REF-01',from_customer:'Hartley Residence',to_customer:'Reyes Residence',to_phone:'(440) 555-0341',status:'converted',deal_value:19200,date:'2026-05-01'},
+    {id:'REF-02',from_customer:'Hartley Residence',to_customer:'Carrigan Residence',to_phone:'(440) 555-0466',status:'quoted',deal_value:0,date:'2026-07-10'},
+    {id:'REF-03',from_customer:'Delgado Property Group',to_customer:'Okonkwo Residence',to_phone:'(440) 555-0559',status:'lead',deal_value:0,date:'2026-07-22'},
+    {id:'REF-04',from_customer:'Sandoval Residence',to_customer:'Whitcombe Residence',to_phone:'(440) 555-0271',status:'lost',deal_value:0,date:'2026-06-15'},
+    {id:'REF-05',from_customer:'Hartley Residence',to_customer:'Ferreira Residence',to_phone:'(440) 555-0055',status:'converted',deal_value:164000,date:'2026-08-01'}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -1876,7 +1977,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();rReviews();rReferrals();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -2886,7 +2987,7 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // paragraph in this function.
 var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob','safjob','warjob','docjob'];
 var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job','warm-job','cp-job','docm-job'];
-var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job','chkm-job','eqm-job'];
+var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job','chkm-job','eqm-job','rvm-job'];
 function fillJobSelects(){
   var js=jobs();
   var opts=js.map(function(j){return '<option value="'+H(j.id)+'">'+H(j.client||j.address)+'</option>';}).join('');
@@ -4697,6 +4798,155 @@ function openDocHistoryModal(docId){
 }
 function closeDocHistoryModal(){$('dochistmodal').classList.remove('on');}
 
+// ── REVIEWS ───────────────────────────────────────────────────────────────
+function bldReviews(){return ld('bld_reviews',[]);}
+function rReviews(){fillJobSelects();rReviewsTbl();}
+function reviewScope(){
+  var sf=(($('rvsource')||{}).value||'');
+  return bldReviews().filter(function(r){return!sf||r.source===sf;});
+}
+function rReviewsTbl(){
+  var list=reviewScope();
+  var avg=list.length?list.reduce(function(s,r){return s+(r.rating||0);},0)/list.length:0;
+  var five=list.filter(function(r){return r.rating===5;});
+  // Matches the verified real logic in StoneDesk's own Reviews panel: only
+  // an unanswered review at 4 stars or below counts as needing a response --
+  // a 5-star review sitting unanswered is not the same kind of risk.
+  var needResp=list.filter(function(r){return!r.responded&&r.rating<=4;});
+  $('rv-avg').textContent=avg.toFixed(1);
+  $('rv-total').textContent=list.length;
+  $('rv-five').textContent=five.length;
+  $('rv-needresp').textContent=needResp.length;
+  $('rv-needresp-sub').className='kt'+(needResp.length?' d':'');
+  var tb=$('rvtbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No reviews logged yet</td></tr>';}
+  else{
+    tb.innerHTML=list.slice().sort(function(a,b){return(b.date||'').localeCompare(a.date||'');}).map(function(r){
+      var stars='';for(var i=1;i<=5;i++)stars+=(i<=r.rating?'&#9733;':'&#9734;');
+      return '<tr><td><strong>'+H(r.customer)+'</strong>'+(r.job_id?'<div style="font-size:11px;color:var(--muted)">'+H(jobLabel(r.job_id))+'</div>':'')+'</td>'+
+        '<td>'+H(r.source)+'</td>'+
+        '<td style="color:#F59E0B;letter-spacing:1px">'+stars+'</td>'+
+        '<td>'+(r.date?fdate(r.date):'--')+'</td>'+
+        '<td style="max-width:320px">'+H(r.text)+'</td>'+
+        '<td>'+(r.responded?'<span class="badge bg">Yes</span>':'<span class="badge bw">No</span>')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editReview(\''+H(r.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+var rvmeid=null;
+function openReviewModal(){
+  rvmeid=null;fillJobSelects();
+  ['rvm-customer','rvm-rating','rvm-text'].forEach(function(f){$(f).value='';});
+  $('rvm-source').value='Google';$('rvm-job').value='';$('rvm-responded').checked=false;
+  $('rvm-date').value=new Date().toISOString().slice(0,10);
+  $('rvmodal').classList.add('on');
+}
+function closeReviewModal(){$('rvmodal').classList.remove('on');}
+function editReview(id){
+  var r=bldReviews().find(function(x){return x.id===id;});if(!r)return;
+  rvmeid=id;fillJobSelects();
+  $('rvm-customer').value=r.customer||'';$('rvm-source').value=r.source||'Google';
+  $('rvm-job').value=r.job_id||'';$('rvm-rating').value=r.rating||'';$('rvm-date').value=r.date||'';
+  $('rvm-text').value=r.text||'';$('rvm-responded').checked=!!r.responded;
+  $('rvmodal').classList.add('on');
+}
+function saveReview(){
+  var customer=$('rvm-customer').value.trim();
+  if(!customer){toast('Customer name required');return;}
+  var rating=parseInt($('rvm-rating').value,10)||0;
+  if(rating<1||rating>5){toast('Rating must be 1-5');return;}
+  var list=bldReviews();
+  var existing=rvmeid?list.find(function(x){return x.id===rvmeid;}):null;
+  var rec={
+    id:rvmeid||('RV-'+String(Date.now()).slice(-5)),
+    customer:customer,source:$('rvm-source').value,job_id:$('rvm-job').value,
+    rating:rating,date:$('rvm-date').value,text:$('rvm-text').value.trim(),
+    responded:$('rvm-responded').checked
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(rvmeid){var i=list.findIndex(function(x){return x.id===rvmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_reviews',list);
+  closeReviewModal();rReviews();
+  toast('Saved review - '+customer);
+}
+
+// ── REFERRALS ─────────────────────────────────────────────────────────────
+var REFSTATUS={lead:{l:'Lead',c:'bx'},quoted:{l:'Quoted',c:'bw'},converted:{l:'Converted',c:'bg'},lost:{l:'Lost',c:'br'}};
+function bldReferrals(){return ld('bld_referrals',[]);}
+function rReferrals(){rReferralsList();}
+function rReferralsList(){
+  var list=bldReferrals();
+  var converted=list.filter(function(r){return r.status==='converted';});
+  var lost=list.filter(function(r){return r.status==='lost';});
+  var revenue=converted.reduce(function(s,r){return s+(r.deal_value||0);},0);
+  var decided=converted.length+lost.length;
+  // Same "rate excludes undecided" convention as Bids' Win Rate -- a lead
+  // or quoted referral hasn't been decided yet, so counting it against the
+  // rate would understate conversion for every referral still in progress.
+  var rate=decided>0?Math.round(converted.length/decided*100):0;
+  $('rf-total').textContent=list.length;
+  $('rf-converted').textContent=converted.length;
+  $('rf-revenue').textContent=fmt(revenue);
+  $('rf-rate').textContent=rate+'%';
+  $('rf-rate-sub').textContent=decided?(converted.length+' converted of '+decided+' decided'):'No referrals decided yet';
+  $('rf-list').innerHTML=list.length?list.slice().sort(function(a,b){return(b.date||'').localeCompare(a.date||'');}).map(function(r){
+    var s=REFSTATUS[r.status]||{l:r.status,c:'bx'};
+    return '<div class="srow"><span class="slbl">'+H(r.from_customer)+' &rarr; '+H(r.to_customer)+
+      '<div style="font-size:11px;color:var(--muted)">'+(r.date?fdate(r.date):'')+(r.to_phone?' &middot; '+H(r.to_phone):'')+'</div></span>'+
+      '<span class="sval"><span class="badge '+s.c+'">'+s.l+'</span>'+(r.status==='converted'?' '+fmt(r.deal_value):'')+
+      ' <button class="btn bo bs" onclick="editReferral(\''+H(r.id)+'\')" style="margin-left:6px;padding:2px 8px;">Edit</button></span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No referrals logged yet</div>';
+  var byReferrer={};
+  list.forEach(function(r){byReferrer[r.from_customer]=(byReferrer[r.from_customer]||0)+1;});
+  var top=Object.keys(byReferrer).sort(function(a,b){return byReferrer[b]-byReferrer[a];});
+  $('rf-top').innerHTML=top.length?top.map(function(name){
+    return '<div class="srow"><span class="slbl">'+H(name)+'</span><span class="sval">'+byReferrer[name]+' referral'+(byReferrer[name]===1?'':'s')+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No referrals logged yet</div>';
+}
+function refStatusChanged(){
+  $('rfm-valuerow').style.display=$('rfm-status').value==='converted'?'block':'none';
+}
+var rfmeid=null;
+function openReferralModal(){
+  rfmeid=null;
+  ['rfm-from','rfm-to','rfm-phone','rfm-value'].forEach(function(f){$(f).value='';});
+  $('rfm-status').value='lead';$('rfm-date').value=new Date().toISOString().slice(0,10);
+  refStatusChanged();
+  $('rfmodal').classList.add('on');
+}
+function closeReferralModal(){$('rfmodal').classList.remove('on');}
+function editReferral(id){
+  var r=bldReferrals().find(function(x){return x.id===id;});if(!r)return;
+  rfmeid=id;
+  $('rfm-from').value=r.from_customer||'';$('rfm-to').value=r.to_customer||'';
+  $('rfm-phone').value=r.to_phone||'';$('rfm-status').value=r.status||'lead';
+  $('rfm-value').value=r.deal_value||'';$('rfm-date').value=r.date||'';
+  refStatusChanged();
+  $('rfmodal').classList.add('on');
+}
+function saveReferral(){
+  var from=$('rfm-from').value.trim();
+  if(!from){toast('Referring customer required');return;}
+  var to=$('rfm-to').value.trim();
+  if(!to){toast('Referred name required');return;}
+  var status=$('rfm-status').value;
+  var list=bldReferrals();
+  var existing=rfmeid?list.find(function(x){return x.id===rfmeid;}):null;
+  var rec={
+    id:rfmeid||('REF-'+String(Date.now()).slice(-5)),
+    from_customer:from,to_customer:to,to_phone:$('rfm-phone').value.trim(),
+    status:status,deal_value:status==='converted'?(parseFloat($('rfm-value').value)||0):0,
+    date:$('rfm-date').value
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(rfmeid){var i=list.findIndex(function(x){return x.id===rfmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_referrals',list);
+  closeReferralModal();rReferrals();
+  toast('Saved referral - '+to);
+}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -4830,6 +5080,16 @@ function csv(type){
     if(!doclist.length){toast('No documents in scope to export');return;}
     rows=[['Name','Job','Category','Current Version','Last Updated','Total Versions','Superseded']];
     doclist.forEach(function(d){var cur=docCurrent(d);var n=(d.versions||[]).length;rows.push([d.name,jobLabel(d.job_id),DOCCAT[d.category]||d.category,cur?'v'+cur.v:'',cur?cur.uploaded_at:'',n,Math.max(0,n-1)]);});
+  } else if(type==='reviews'){
+    var rvlist=reviewScope();
+    if(!rvlist.length){toast('No reviews in scope to export');return;}
+    rows=[['Customer','Job','Source','Rating','Date','Review','Responded']];
+    rvlist.forEach(function(r){rows.push([r.customer,r.job_id?jobLabel(r.job_id):'',r.source,r.rating,r.date,r.text,r.responded?'Yes':'No']);});
+  } else if(type==='referrals'){
+    var rflist=bldReferrals();
+    if(!rflist.length){toast('No referrals to export');return;}
+    rows=[['Referring Customer','Referred Name','Referred Phone','Status','Deal Value','Date']];
+    rflist.forEach(function(r){rows.push([r.from_customer,r.to_customer,r.to_phone,(REFSTATUS[r.status]||{l:r.status}).l,r.deal_value,r.date]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
