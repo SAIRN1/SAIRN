@@ -221,6 +221,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-submittals" onclick="nav('submittals')"><span class="sico">&#128194;</span>Submittals</button>
       <button class="sb" id="sb-punchlist" onclick="nav('punchlist')"><span class="sico">&#9989;</span>Punch List</button>
       <button class="sb" id="sb-inspections" onclick="nav('inspections')"><span class="sico">&#127959;&#65039;</span>Inspections</button>
+      <button class="sb" id="sb-selections" onclick="nav('selections')"><span class="sico">&#127912;</span>Selections</button>
+      <button class="sb" id="sb-dailylogs" onclick="nav('dailylogs')"><span class="sico">&#128221;</span>Daily Logs</button>
       <div class="ss">Money</div>
       <button class="sb" id="sb-jobcost" onclick="nav('jobcost')"><span class="sico">&#128200;</span>Job Costing</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
@@ -427,6 +429,49 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div></div>
 </div>
 
+<!-- SELECTIONS -->
+<div class="panel" id="panel-selections">
+  <div class="ph"><div><div class="ptitle">Selections</div><div class="psub">Client-chosen finishes per job &mdash; paint, flooring, fixtures, appliances</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('selections')">Export CSV</button><button class="btn bp bs" onclick="openSelModal()">+ New Selection</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Pending</div><div class="kval" id="sel-pending">0</div><div class="kt" id="sel-pending-sub">Not yet chosen</div></div>
+    <div class="kpi"><div class="klbl">Chosen</div><div class="kval" id="sel-chosen">0</div><div class="kt">Picked, not yet ordered</div></div>
+    <div class="kpi"><div class="klbl">Ordered</div><div class="kval" id="sel-ordered">0</div><div class="kt">Ordered</div></div>
+    <div class="kpi"><div class="klbl">Long Lead (21d+)</div><div class="kval" id="sel-longlead">0</div><div class="kt" id="sel-longlead-sub">Chosen but not ordered</div></div>
+    <div class="kpi"><div class="klbl">Total Tracked</div><div class="kval" id="sel-total">0</div><div class="kt">All selections</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="seljob" onchange="rSelTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="selcat" onchange="rSelTbl()" style="width:180px;">
+        <option value="">All Categories</option><option value="paint">Paint</option><option value="flooring">Flooring</option><option value="fixtures">Fixtures</option><option value="appliances">Appliances</option><option value="other">Other</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Category</th><th>Item</th><th>Option Chosen</th><th>Status</th><th>Lead Time</th><th>Actions</th></tr></thead>
+    <tbody id="seltbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- DAILY LOGS -->
+<div class="panel" id="panel-dailylogs">
+  <div class="ph"><div><div class="ptitle">Daily Logs</div><div class="psub">Per-job site notes, weather, headcount &mdash; the record that wins disputes</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('dailylogs')">Export CSV</button><button class="btn bp bs" onclick="openLogModal()">+ New Log</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Logs This Week</div><div class="kval" id="dl-week">0</div><div class="kt">Last 7 days</div></div>
+    <div class="kpi"><div class="klbl">Total Logs</div><div class="kval" id="dl-total">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Delays Noted</div><div class="kval" id="dl-delays">0</div><div class="kt" id="dl-delays-sub">Logs with a delay recorded</div></div>
+    <div class="kpi"><div class="klbl">Active Jobs, No Recent Log</div><div class="kval" id="dl-gap">0</div><div class="kt" id="dl-gap-sub">No log in 7+ days</div></div>
+  </div>
+  <div class="note">Photo capture is tracked as a count here, not a real upload &mdash; the Field Photo Analysis panel is where an actual photo gets sent anywhere. Stated plainly so this doesn't imply storage that doesn't exist yet.</div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="dljob" onchange="rLogsTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Date</th><th>Weather</th><th>Crew</th><th>Photos</th><th>Delays</th><th>Actions</th></tr></thead>
+    <tbody id="dltbody"></tbody></table></div>
+  </div></div>
+</div>
+
 <!-- JOB COSTING -->
 <div class="panel" id="panel-jobcost">
   <div class="ph"><div><div class="ptitle">Job Costing</div><div class="psub">Budget vs committed vs actual, per cost code, per job</div></div>
@@ -609,6 +654,38 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="selmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Selection</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="selm-job"></select></div><div class="fg"><label>Category</label><select id="selm-cat">
+      <option value="paint">Paint</option><option value="flooring">Flooring</option><option value="fixtures">Fixtures</option><option value="appliances">Appliances</option><option value="other">Other</option>
+    </select></div></div>
+    <div class="fg"><label>Item</label><input id="selm-item" placeholder="Primary bath vanity light"></div>
+    <div class="fg"><label>Option Chosen</label><input id="selm-option" placeholder="Leave blank if not yet chosen"></div>
+    <div class="fr"><div class="fg"><label>Chosen Date</label><input id="selm-date" type="date"></div><div class="fg"><label>Lead Time (days)</label><input id="selm-lead" type="number" placeholder="14"></div></div>
+    <div class="fg"><label><input type="checkbox" id="selm-ordered" style="width:auto;margin-right:6px;">Ordered</label></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSelModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSel()">Save Selection</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="logmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Daily Log</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="lm-job"></select></div><div class="fg"><label>Date</label><input id="lm-date" type="date"></div></div>
+    <div class="fr"><div class="fg"><label>Weather</label><input id="lm-weather" placeholder="Clear, 78F"></div><div class="fg"><label>Crew Count</label><input id="lm-crew" type="number" placeholder="4"></div></div>
+    <div class="fg"><label>Photos Taken</label><input id="lm-photos" type="number" placeholder="0"></div>
+    <div class="fg"><label>Work Performed</label><input id="lm-work" placeholder="Rough electrical, unit B"></div>
+    <div class="fg"><label>Delays</label><input id="lm-delays" placeholder="Leave blank if none"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeLogModal()">Cancel</button>
+      <button class="btn bp" onclick="saveLog()">Save Log</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="comodal">
   <div class="mbox">
     <div class="mtitle">Add / Edit Change Order</div>
@@ -730,6 +807,8 @@ function nav(id){
   if(id==='submittals')rSubmittals();
   if(id==='punchlist')rPunch();
   if(id==='inspections')rInspections();
+  if(id==='selections')rSelections();
+  if(id==='dailylogs')rLogs();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -849,6 +928,28 @@ function seed(){
     {id:'INS-03',job_id:'J-2603',type:'Rough Electrical',scheduled:'2026-07-28',result:'fail',reinsp:'2026-08-06',notes:'Failed on missing arc-fault breaker in primary bedroom circuit'},
     {id:'INS-04',job_id:'J-2605',type:'Final',scheduled:'2026-05-28',result:'pass',reinsp:'',notes:''}
   ]);
+  // Selections: pending/chosen/ordered all seeded, plus one long-lead item
+  // (28 days) chosen but not yet ordered so that KPI has something real.
+  st('bld_selections',[
+    {id:'SEL-01',job_id:'J-2601',category:'appliances',item:'Range',option:'',date:'',lead:0,ordered:false},
+    {id:'SEL-02',job_id:'J-2601',category:'paint',item:'Kitchen wall colour',option:'Benjamin Moore Chantilly Lace',date:'2026-07-10',lead:5,ordered:true},
+    {id:'SEL-03',job_id:'J-2601',category:'fixtures',item:'Kitchen island pendant lights',option:'Visual Comfort Darlana',date:'2026-07-20',lead:28,ordered:false},
+    {id:'SEL-04',job_id:'J-2602',category:'flooring',item:'Unit B living room',option:'European white oak, wide plank',date:'2026-06-15',lead:14,ordered:true}
+  ]);
+  // Daily logs: dates computed relative to real "now" (not hardcoded
+  // calendar dates like the rest of the seed) because the This-Week and
+  // No-Recent-Log KPIs are inherently about actual elapsed time -- a fixed
+  // date would silently go stale the day after it was written. J-2601 gets
+  // a log from today (thisWeek + no gap); J-2602 gets one from 12 days ago
+  // (stale -> shows in the gap KPI even though it has history); J-2603/
+  // J-2604/J-2606 (all active per ACTIVE) get none at all, so the gap KPI
+  // has real, non-trivial jobs to catch, not just an edge case.
+  function daysAgo(n){var d=new Date(Date.now()-n*86400000);return d.toISOString().slice(0,10);}
+  st('bld_daily_logs',[
+    {id:'DL-01',job_id:'J-2601',log_date:daysAgo(0),weather:'Clear, 81F',crew:4,photos:6,work:'Framing inspection prep, rough electrical continued',delays:''},
+    {id:'DL-02',job_id:'J-2601',log_date:daysAgo(3),weather:'Overcast, 74F',crew:3,photos:4,work:'Demo complete, framing started',delays:''},
+    {id:'DL-03',job_id:'J-2602',log_date:daysAgo(12),weather:'Rain, 68F',crew:5,photos:8,work:'Structural post relocation, unit B',delays:'Rain delayed exterior work by half a day'}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -869,7 +970,164 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();}
+
+// ── SELECTIONS ────────────────────────────────────────────────────────────
+var SELCAT={paint:'Paint',flooring:'Flooring',fixtures:'Fixtures',appliances:'Appliances',other:'Other'};
+function bldSel(){return ld('bld_selections',[]);}
+// Status is derived, not stored, same discipline as ball-in-court above:
+// no option chosen = pending; option chosen but not ordered = chosen;
+// ordered = ordered. Can't drift from the fields it depends on.
+function selStatus(s){
+  if(s.ordered)return'ordered';
+  return(s.option&&s.option.trim())?'chosen':'pending';
+}
+function rSelections(){fillJobSelects();rSelTbl();}
+function selScope(){
+  var jf=(($('seljob')||{}).value||''),cf=(($('selcat')||{}).value||'');
+  return bldSel().filter(function(s){return(!jf||s.job_id===jf)&&(!cf||s.category===cf);});
+}
+function rSelTbl(){
+  var list=selScope();
+  var pending=list.filter(function(s){return selStatus(s)==='pending';});
+  var chosen=list.filter(function(s){return selStatus(s)==='chosen';});
+  var ordered=list.filter(function(s){return selStatus(s)==='ordered';});
+  var longLead=chosen.filter(function(s){return(s.lead||0)>=21;});
+  $('sel-pending').textContent=pending.length;
+  $('sel-pending-sub').className='kt'+(pending.length?' d':'');
+  $('sel-chosen').textContent=chosen.length;
+  $('sel-ordered').textContent=ordered.length;
+  $('sel-longlead').textContent=longLead.length;
+  $('sel-longlead-sub').className='kt'+(longLead.length?' d':'');
+  $('sel-total').textContent=list.length;
+  var tb=$('seltbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No selections match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(s){
+      var status=selStatus(s);
+      var sl=status==='pending'?'Pending':status==='chosen'?'Chosen':'Ordered';
+      var sc=status==='pending'?'bx':status==='chosen'?'bw':'bg';
+      return '<tr><td>'+H(jobLabel(s.job_id))+'</td>'+
+        '<td>'+H(SELCAT[s.category]||s.category)+'</td>'+
+        '<td><strong>'+H(s.item)+'</strong></td>'+
+        '<td>'+H(s.option||'--')+'</td>'+
+        '<td><span class="badge '+sc+'">'+sl+'</span></td>'+
+        '<td>'+(s.lead?s.lead+'d':'--')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editSel(\''+H(s.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function openSelModal(){
+  if(!jobs().length){toast('Add a job first - a selection must belong to one');return;}
+  seleid=null;fillJobSelects();
+  ['selm-item','selm-option','selm-lead'].forEach(function(f){$(f).value='';});
+  $('selm-cat').value='paint';$('selm-date').value='';$('selm-ordered').checked=false;
+  $('selmodal').classList.add('on');
+}
+function closeSelModal(){$('selmodal').classList.remove('on');}
+var seleid=null;
+function editSel(id){
+  var s=bldSel().find(function(x){return x.id===id;});if(!s)return;
+  seleid=id;fillJobSelects();
+  $('selm-job').value=s.job_id||'';$('selm-cat').value=s.category||'paint';
+  $('selm-item').value=s.item||'';$('selm-option').value=s.option||'';
+  $('selm-date').value=s.date||'';$('selm-lead').value=s.lead||'';$('selm-ordered').checked=!!s.ordered;
+  $('selmodal').classList.add('on');
+}
+function saveSel(){
+  var item=$('selm-item').value.trim();
+  if(!item){toast('Item required');return;}
+  var job=$('selm-job').value;
+  if(!job){toast('Job required');return;}
+  var ordered=$('selm-ordered').checked;
+  var option=$('selm-option').value.trim();
+  if(ordered&&!option){toast('Cannot mark ordered with no option chosen');return;}
+  var list=bldSel();
+  var existing=seleid?list.find(function(x){return x.id===seleid;}):null;
+  var rec={id:seleid||('SEL-'+Date.now()),job_id:job,category:$('selm-cat').value,item:item,
+    option:option,date:$('selm-date').value,lead:parseFloat($('selm-lead').value)||0,ordered:ordered};
+  if(existing){Object.assign(existing,rec);}else{list.push(rec);}
+  st('bld_selections',list);
+  closeSelModal();rSelections();
+  toast('Saved selection');
+}
+
+// ── DAILY LOGS ────────────────────────────────────────────────────────────
+function bldLogs(){return ld('bld_daily_logs',[]);}
+function rLogs(){fillJobSelects();rLogsTbl();}
+function logScope(){
+  var jf=(($('dljob')||{}).value||'');
+  return bldLogs().filter(function(l){return!jf||l.job_id===jf;}).sort(function(a,b){return(b.log_date||'').localeCompare(a.log_date||'');});
+}
+function rLogsTbl(){
+  var list=logScope();
+  var weekAgo=Date.now()-7*86400000;
+  var thisWeek=list.filter(function(l){var d=new Date(l.log_date+'T00:00:00');return!isNaN(d)&&d.getTime()>=weekAgo;});
+  var delays=list.filter(function(l){return l.delays&&l.delays.trim();});
+  // Gap detection: active jobs (per the same ACTIVE stage list Dashboard
+  // uses) with no log at all in the last 7 days -- a real signal that site
+  // activity isn't being recorded, not just a count of what exists.
+  var allLogs=bldLogs();
+  var activeJobs=jobs().filter(function(j){return ACTIVE.indexOf(j.stage)!==-1;});
+  var gapJobs=activeJobs.filter(function(j){
+    var jobLogs=allLogs.filter(function(l){return l.job_id===j.id;});
+    if(!jobLogs.length)return true;
+    var latest=jobLogs.reduce(function(m,l){return l.log_date>m?l.log_date:m;},'');
+    var d=new Date(latest+'T00:00:00');
+    return isNaN(d)||d.getTime()<weekAgo;
+  });
+  $('dl-week').textContent=thisWeek.length;
+  $('dl-total').textContent=list.length;
+  $('dl-delays').textContent=delays.length;
+  $('dl-delays-sub').className='kt'+(delays.length?' d':'');
+  $('dl-gap').textContent=gapJobs.length;
+  $('dl-gap-sub').className='kt'+(gapJobs.length?' d':'');
+  var tb=$('dltbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No daily logs match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(l){
+      return '<tr><td>'+H(jobLabel(l.job_id))+'</td>'+
+        '<td>'+(l.log_date?fdate(l.log_date):'--')+'</td>'+
+        '<td>'+H(l.weather||'')+'</td>'+
+        '<td>'+(l.crew||0)+'</td>'+
+        '<td>'+(l.photos||0)+'</td>'+
+        '<td>'+(l.delays?'<span style="color:var(--danger)">'+H(l.delays)+'</span>':'--')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editLog(\''+H(l.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function openLogModal(){
+  if(!jobs().length){toast('Add a job first - a daily log must belong to one');return;}
+  logeid=null;fillJobSelects();
+  ['lm-weather','lm-photos','lm-work','lm-delays'].forEach(function(f){$(f).value='';});
+  $('lm-date').value=new Date().toISOString().slice(0,10);$('lm-crew').value='';
+  $('logmodal').classList.add('on');
+}
+function closeLogModal(){$('logmodal').classList.remove('on');}
+var logeid=null;
+function editLog(id){
+  var l=bldLogs().find(function(x){return x.id===id;});if(!l)return;
+  logeid=id;fillJobSelects();
+  $('lm-job').value=l.job_id||'';$('lm-date').value=l.log_date||'';
+  $('lm-weather').value=l.weather||'';$('lm-crew').value=l.crew||'';$('lm-photos').value=l.photos||'';
+  $('lm-work').value=l.work||'';$('lm-delays').value=l.delays||'';
+  $('logmodal').classList.add('on');
+}
+function saveLog(){
+  var job=$('lm-job').value;
+  if(!job){toast('Job required');return;}
+  var date=$('lm-date').value;
+  if(!date){toast('Date required');return;}
+  var list=bldLogs();
+  var existing=logeid?list.find(function(x){return x.id===logeid;}):null;
+  var rec={id:logeid||('DL-'+Date.now()),job_id:job,log_date:date,weather:$('lm-weather').value.trim(),
+    crew:parseFloat($('lm-crew').value)||0,photos:parseFloat($('lm-photos').value)||0,
+    work:$('lm-work').value.trim(),delays:$('lm-delays').value.trim()};
+  if(existing){Object.assign(existing,rec);}else{list.push(rec);}
+  st('bld_daily_logs',list);
+  closeLogModal();rLogs();
+  toast('Saved daily log');
+}
 
 // ── PUNCH LIST ────────────────────────────────────────────────────────────
 function bldPunch(){return ld('bld_punchlist',[]);}
@@ -1412,8 +1670,8 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // explicitly optional) are declared once; adding a new panel's job
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
-var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job'];
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -1861,6 +2119,16 @@ function csv(type){
     if(!inslist.length){toast('No inspections in scope to export');return;}
     rows=[['Job','Type','Scheduled','Result','Re-inspection','Notes']];
     inslist.forEach(function(i){rows.push([jobLabel(i.job_id),i.type,i.scheduled,i.result,i.reinsp,i.notes]);});
+  } else if(type==='selections'){
+    var sellist=selScope();
+    if(!sellist.length){toast('No selections in scope to export');return;}
+    rows=[['Job','Category','Item','Option Chosen','Status','Chosen Date','Lead Time (days)','Ordered']];
+    sellist.forEach(function(s){rows.push([jobLabel(s.job_id),SELCAT[s.category]||s.category,s.item,s.option,selStatus(s),s.date,s.lead,s.ordered?'Yes':'No']);});
+  } else if(type==='dailylogs'){
+    var loglist=logScope();
+    if(!loglist.length){toast('No daily logs in scope to export');return;}
+    rows=[['Job','Date','Weather','Crew','Photos','Work Performed','Delays']];
+    loglist.forEach(function(l){rows.push([jobLabel(l.job_id),l.log_date,l.weather,l.crew,l.photos,l.work,l.delays]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
