@@ -1339,6 +1339,34 @@ window.sdLoad=sdLoad;
 // See the note at sdCustRender's old location for the full writeup.
 function renderComms(){if(typeof window.sdCommsRender==='function')window.sdCommsRender();}
 window.renderComms=renderComms;
+
+// ── LICENSE / SHOP IDENTITY — single source of truth ──────────────────────
+// Defined here (earliest script block) so every later block can rely on it.
+//
+// Before this, identity resolution was copy-pasted in SIX places across THREE
+// different spellings: slabLicKey(), sdData(), writeSDMemory(), and three
+// bridge-push sites. Adding a third accepted key name or changing precedence
+// meant editing six places, and a miss would make sdData() reject a license
+// the bridge sites accepted (or vice versa) -- silent, per-feature identity
+// drift. Now there is exactly one place that decides which keys count and in
+// what order.
+//
+// Two functions on purpose, because the two callers legitimately differ:
+//   sdLicenseKey() -> '' when unlicensed. Used by anything that must ABORT
+//                     without a real license (sdData, writeSDMemory, slab
+//                     sync). Returning a demo string here would silently
+//                     send unlicensed traffic to a licensed endpoint.
+//   sdShopId()     -> 'stonedesk-demo' when unlicensed. Used only by the
+//                     bridge pushes, where letting a demo install still push
+//                     is deliberate demo behaviour, not a bug.
+// The demo fallback is expressed once, layered on top of the resolver, rather
+// than re-stated at each bridge site.
+function sdLicenseKey(){
+  return localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+}
+window.sdLicenseKey=sdLicenseKey;
+function sdShopId(){ return sdLicenseKey() || 'stonedesk-demo'; }
+window.sdShopId=sdShopId;
 </script>
 </head>
 <body>
@@ -12855,7 +12883,7 @@ function crSendToBridge() {
   if(statusEl) statusEl.innerHTML = '<span style="color:#166534">Sending to SAIRNbiz...</span>';
 
   // Push to bridge
-  var shopId = (typeof slabLicKey === 'function' ? slabLicKey() : '') || localStorage.getItem('stonedesk_license_key') || 'stonedesk-demo';
+  var shopId = sdShopId();
   var bridgeUrl = (typeof BRIDGE !== 'undefined' ? BRIDGE : 'https://sairn.vercel.app/api/bridge');
   fetch(bridgeUrl + '?action=push', {
     method: 'POST', headers: {'Content-Type':'application/json'},
@@ -21377,8 +21405,7 @@ document.addEventListener('DOMContentLoaded',function(){
 // == SAIRN BRIDGE SYNC =====================================================
 async function syncToSAIRNBridge() {
   try {
-    var shopId = (typeof slabLicKey === 'function' ? slabLicKey() : '') ||
-                 localStorage.getItem('stonedesk_license_key') || 'stonedesk-demo';
+    var shopId = sdShopId();
     var body = { shopId: shopId };
     if (window.sd_jobs      && window.sd_jobs.length)      body.jobs      = window.sd_jobs;
     if (window.sd_invoices  && window.sd_invoices.length)  body.invoices  = window.sd_invoices;
@@ -21484,8 +21511,7 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
 <script>
 // SAIRNdesign Bridge — Golden Rule 2 (Construction apps)
 function syncToSAIRNdesign() {
-  var shopId = (typeof slabLicKey === 'function' ? slabLicKey() : '') ||
-               localStorage.getItem('stonedesk_license_key') || 'stonedesk-demo';
+  var shopId = sdShopId();
   var jobs = (window.sd_jobs || []).map(function(j) {
     return {
       id:           j.id,
@@ -21545,7 +21571,7 @@ function getSDSupabase() {
 // endpoint returns { ok, data } where `data` matches the shapes the old
 // sb.from(...) calls returned. Returns `data` (or null on any failure).
 async function sdData(action, resource, payload) {
-  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+  const licKey = sdLicenseKey();
   if (!licKey) return null;
   try {
     const res = await fetch('/api/sd-data', {
@@ -21609,7 +21635,7 @@ async function syncSDMemoriesFromSupabase() {
 
 async function writeSDMemory() {
   // Ask Claude to summarize the session into a memory
-  const licKey = localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
+  const licKey = sdLicenseKey();
   if (!licKey || !chatHistory || chatHistory.length < 4) return;
   try {
     const summaryRes = await fetch('https://sairn.vercel.app/api/claude', {
@@ -27278,9 +27304,9 @@ function saveSlabs(){
   localStorage.setItem('sd_slabs', JSON.stringify(sdSlabs));
 }
 
-function slabLicKey(){
-  return localStorage.getItem('stonedesk_license_key') || localStorage.getItem('sairn_license_key_stonedesk') || '';
-}
+// Kept as a named alias -- it has several callers across the slab module.
+// Delegates rather than re-implementing, so precedence lives in one place.
+function slabLicKey(){ return sdLicenseKey(); }
 
 async function slabSyncFromSupabase(){
   if(typeof sdData!=='function') return;
