@@ -253,6 +253,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
       <button class="sb" id="sb-market" onclick="nav('market')"><span class="sico">&#128225;</span>Market Intelligence</button>
+      <button class="sb" id="sb-priceintel" onclick="nav('priceintel')"><span class="sico">&#128176;</span>Material Price Intelligence</button>
+      <button class="sb" id="sb-integrations" onclick="nav('integrations')"><span class="sico">&#128268;</span>Integrations</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -1043,6 +1045,38 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- MATERIAL PRICE INTELLIGENCE -->
+<div class="panel" id="panel-priceintel">
+  <div class="ph"><div><div class="ptitle">Material Price Intelligence</div><div class="psub">Vendor price comparison and trend tracking for volatile material costs</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('priceintel')">Export CSV</button><button class="btn bp bs" onclick="openPriceModal()">+ Log Price Point</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Materials Tracked</div><div class="kval" id="pi-materials">0</div><div class="kt">Distinct materials</div></div>
+    <div class="kpi"><div class="klbl">Price Points Logged</div><div class="kval" id="pi-points">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Trending Up</div><div class="kval" id="pi-up">0</div><div class="kt" id="pi-up-sub">Latest vs previous entry</div></div>
+    <div class="kpi"><div class="klbl">Trending Down</div><div class="kval" id="pi-down">0</div><div class="kt">Latest vs previous entry</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Material</th><th>Vendor</th><th>Price</th><th>Unit</th><th>Date</th><th>Trend</th><th>Actions</th></tr></thead>
+    <tbody id="pitbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- INTEGRATIONS -->
+<div class="panel" id="panel-integrations">
+  <div class="ph"><div><div class="ptitle">Integrations</div><div class="psub">Track which outside accounting and e-signature tools you use and their setup status &mdash; a manual checklist, not a live data sync</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('integrations')">Export CSV</button><button class="btn bp bs" onclick="openIntegModal()">+ Add Integration</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Connected</div><div class="kval" id="int-connected">0</div><div class="kt">Active</div></div>
+    <div class="kpi"><div class="klbl">Pending Setup</div><div class="kval" id="int-pending">0</div><div class="kt">In progress</div></div>
+    <div class="kpi"><div class="klbl">Not Connected</div><div class="kval" id="int-notconn">0</div><div class="kt">Evaluated only</div></div>
+    <div class="kpi"><div class="klbl">Needs Review</div><div class="kval" id="int-needsreview">0</div><div class="kt" id="int-needsreview-sub">Never reviewed or 90+ days</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>App</th><th>Category</th><th>Status</th><th>Last Reviewed</th><th>Notes</th><th>Actions</th></tr></thead>
+    <tbody id="inttbody"></tbody></table></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1618,6 +1652,36 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<div class="modal" id="pricemodal">
+  <div class="mbox">
+    <div class="mtitle">Log Price Point</div>
+    <div class="fg"><label>Material</label><input id="prm-material" placeholder="Calacatta Gold Countertop"></div>
+    <div class="fr"><div class="fg"><label>Vendor</label><input id="prm-vendor" placeholder="Pinnacle Stone &amp; Design"></div><div class="fg"><label>Unit</label><input id="prm-unit" placeholder="per sqft"></div></div>
+    <div class="fr"><div class="fg"><label>Price ($)</label><input id="prm-price" type="number" step="0.01" placeholder="95"></div><div class="fg"><label>Date</label><input id="prm-date" type="date"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePriceModal()">Cancel</button>
+      <button class="btn bp" onclick="savePrice()">Save Price Point</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="integmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Integration</div>
+    <div class="fr"><div class="fg"><label>App Name</label><input id="intm-name" placeholder="QuickBooks Online"></div><div class="fg"><label>Category</label><select id="intm-category">
+      <option value="Accounting">Accounting</option><option value="E-Signature">E-Signature</option><option value="Payments">Payments</option><option value="Communication">Communication</option><option value="Other">Other</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="intm-status" onchange="integStatusChanged()">
+      <option value="connected">Connected</option><option value="pending">Pending Setup</option><option value="not_connected">Not Connected</option>
+    </select></div><div class="fg" id="intm-reviewedrow"><label>Last Reviewed</label><input id="intm-reviewed" type="date"></div></div>
+    <div class="fg"><label>Notes</label><input id="intm-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeIntegModal()">Cancel</button>
+      <button class="btn bp" onclick="saveInteg()">Save Integration</button>
+    </div>
+  </div>
+</div>
+
 <script>
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
@@ -1750,6 +1814,8 @@ function nav(id){
   if(id==='company')rCompany();
   if(id==='settings')rSettings();
   if(id==='reports')rReports();
+  if(id==='priceintel')rPriceIntel();
+  if(id==='integrations')rInteg();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -2134,6 +2200,30 @@ function seed(){
       {code:'04-Subs',label:'Subcontracted trade work'}
     ]
   });
+  // Price points: two entries each for three materials, so latest-vs-
+  // previous trend has a real up, a real down, and a real flat case (not
+  // just single-entry rows with nothing to compare against). Ties to real
+  // vendors already seeded elsewhere (Pinnacle Stone & Design, Builders
+  // FirstSource, Midwest Steel Fab) rather than inventing new ones.
+  st('bld_price_points',[
+    {id:'PP-01',material:'Calacatta Gold Countertop',vendor:'Pinnacle Stone & Design',price:95,unit:'per sqft',date:'2026-06-01'},
+    {id:'PP-02',material:'Calacatta Gold Countertop',vendor:'Pinnacle Stone & Design',price:102,unit:'per sqft',date:'2026-07-20'},
+    {id:'PP-03',material:'Framing Lumber (2x6)',vendor:'Builders FirstSource',price:0.85,unit:'per linear ft',date:'2026-05-15'},
+    {id:'PP-04',material:'Framing Lumber (2x6)',vendor:'Builders FirstSource',price:0.79,unit:'per linear ft',date:'2026-07-10'},
+    {id:'PP-05',material:'Structural Steel I-Beam',vendor:'Midwest Steel Fab',price:1.42,unit:'per lb',date:'2026-06-15'},
+    {id:'PP-06',material:'Structural Steel I-Beam',vendor:'Midwest Steel Fab',price:1.42,unit:'per lb',date:'2026-07-25'}
+  ]);
+  // Integrations: real GC-relevant tools across the two named categories
+  // (accounting, e-signature) plus payments. INT-04's last_reviewed is a
+  // real 200-days-ago via daysAgo() so "Needs Review" has a genuine stale
+  // case, not just the never-reviewed ones.
+  st('bld_integrations',[
+    {id:'INT-01',name:'QuickBooks Online',category:'Accounting',status:'connected',last_reviewed:daysAgo(20),notes:'Synced for job costing exports'},
+    {id:'INT-02',name:'DocuSign',category:'E-Signature',status:'connected',last_reviewed:daysAgo(15),notes:'Used for signed change orders'},
+    {id:'INT-03',name:'Bill.com',category:'Accounting',status:'pending',last_reviewed:'',notes:'Evaluating for AP automation'},
+    {id:'INT-04',name:'Stripe',category:'Payments',status:'not_connected',last_reviewed:daysAgo(200),notes:'Considered for client draw payments'},
+    {id:'INT-05',name:'HelloSign',category:'E-Signature',status:'not_connected',last_reviewed:'',notes:''}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -2160,7 +2250,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();rReviews();rReferrals();rCompany();rSettings();rReports();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();rReviews();rReferrals();rCompany();rSettings();rReports();rPriceIntel();rInteg();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -5455,6 +5545,157 @@ function mktRenderContext(data){
     '<div class="srow"><span class="slbl">Remodel Demand</span><span class="sval">Historically resilient in soft new-construction markets</span></div>'+
     '<div class="srow"><span class="slbl">Financing Conditions</span><span class="sval">'+financing+'</span></div>';
 }
+// ── MATERIAL PRICE INTELLIGENCE ───────────────────────────────────────────
+function bldPricePoints(){return ld('bld_price_points',[]);}
+// Trend is computed from the two most recent entries for the SAME material,
+// never stored -- a single price point has no trend by definition, and a
+// stored trend field could disagree with what the price history actually
+// shows the moment a new point is logged.
+function priceTrend(material){
+  var pts=bldPricePoints().filter(function(p){return p.material===material;}).slice().sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
+  if(pts.length<2)return{dir:'flat',pct:0};
+  var latest=pts[pts.length-1].price,prev=pts[pts.length-2].price;
+  if(!prev)return{dir:'flat',pct:0};
+  var pct=((latest-prev)/Math.abs(prev))*100;
+  return{dir:pct>1?'up':pct<-1?'down':'flat',pct:pct};
+}
+function rPriceIntel(){rPriceIntelTbl();}
+function rPriceIntelTbl(){
+  var list=bldPricePoints();
+  var materials=[];list.forEach(function(p){if(materials.indexOf(p.material)===-1)materials.push(p.material);});
+  var up=materials.filter(function(m){return priceTrend(m).dir==='up';});
+  var down=materials.filter(function(m){return priceTrend(m).dir==='down';});
+  $('pi-materials').textContent=materials.length;
+  $('pi-points').textContent=list.length;
+  $('pi-up').textContent=up.length;
+  $('pi-up-sub').className='kt'+(up.length?' d':'');
+  $('pi-down').textContent=down.length;
+  var tb=$('pitbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No price points logged yet</td></tr>';}
+  else{
+    tb.innerHTML=list.slice().sort(function(a,b){return(b.date||'').localeCompare(a.date||'');}).map(function(p){
+      var t=priceTrend(p.material);
+      var trendHtml=t.dir==='up'?'<span class="badge bw">&#9650; '+t.pct.toFixed(1)+'%</span>':t.dir==='down'?'<span class="badge bg">&#9660; '+Math.abs(t.pct).toFixed(1)+'%</span>':'<span class="badge bx">Flat</span>';
+      return '<tr><td><strong>'+H(p.material)+'</strong></td>'+
+        '<td>'+H(p.vendor)+'</td>'+
+        '<td>'+fmt(p.price)+'</td>'+
+        '<td>'+H(p.unit)+'</td>'+
+        '<td>'+(p.date?fdate(p.date):'--')+'</td>'+
+        '<td>'+trendHtml+'</td>'+
+        '<td><button class="btn bo bs" onclick="editPrice(\''+H(p.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+var prmeid=null;
+function openPriceModal(){
+  prmeid=null;
+  ['prm-material','prm-vendor','prm-unit','prm-price'].forEach(function(f){$(f).value='';});
+  $('prm-date').value=new Date().toISOString().slice(0,10);
+  $('pricemodal').classList.add('on');
+}
+function closePriceModal(){$('pricemodal').classList.remove('on');}
+function editPrice(id){
+  var p=bldPricePoints().find(function(x){return x.id===id;});if(!p)return;
+  prmeid=id;
+  $('prm-material').value=p.material||'';$('prm-vendor').value=p.vendor||'';
+  $('prm-unit').value=p.unit||'';$('prm-price').value=p.price||'';$('prm-date').value=p.date||'';
+  $('pricemodal').classList.add('on');
+}
+function savePrice(){
+  var material=$('prm-material').value.trim();
+  if(!material){toast('Material required');return;}
+  var price=parseFloat($('prm-price').value)||0;
+  if(price<=0){toast('Price must be greater than zero');return;}
+  var list=bldPricePoints();
+  var existing=prmeid?list.find(function(x){return x.id===prmeid;}):null;
+  var rec={
+    id:prmeid||('PP-'+String(Date.now()).slice(-5)),
+    material:material,vendor:$('prm-vendor').value.trim(),
+    price:price,unit:$('prm-unit').value.trim()||'each',date:$('prm-date').value
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(prmeid){var i=list.findIndex(function(x){return x.id===prmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_price_points',list);
+  closePriceModal();rPriceIntel();
+  toast('Saved price point - '+material);
+}
+
+// ── INTEGRATIONS ──────────────────────────────────────────────────────────
+// Manual status checklist, same honest framing as StoneDesk's verified
+// panel-integrations: this tracks which outside tools are connected and
+// reviewed, it does not perform any live sync itself. No button here
+// claims to actually connect to QuickBooks/DocuSign/etc.
+var INTSTATUS={connected:{l:'Connected',c:'bg'},pending:{l:'Pending Setup',c:'bw'},not_connected:{l:'Not Connected',c:'bx'}};
+function bldIntegrations(){return ld('bld_integrations',[]);}
+function integNeedsReview(i){
+  if(!i.last_reviewed)return true;
+  var d=new Date(i.last_reviewed+'T00:00:00');
+  if(isNaN(d))return true;
+  return Math.round((Date.now()-d.getTime())/86400000)>90;
+}
+function rInteg(){rIntegTbl();}
+function rIntegTbl(){
+  var list=bldIntegrations();
+  var connected=list.filter(function(i){return i.status==='connected';});
+  var pending=list.filter(function(i){return i.status==='pending';});
+  var notConn=list.filter(function(i){return i.status==='not_connected';});
+  var needsReview=list.filter(integNeedsReview);
+  $('int-connected').textContent=connected.length;
+  $('int-pending').textContent=pending.length;
+  $('int-notconn').textContent=notConn.length;
+  $('int-needsreview').textContent=needsReview.length;
+  $('int-needsreview-sub').className='kt'+(needsReview.length?' d':'');
+  var tb=$('inttbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No integrations tracked yet</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(i){
+      var s=INTSTATUS[i.status]||{l:i.status,c:'bx'};
+      var review=integNeedsReview(i);
+      return '<tr><td><strong>'+H(i.name)+'</strong></td>'+
+        '<td>'+H(i.category)+'</td>'+
+        '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
+        '<td>'+(i.last_reviewed?fdate(i.last_reviewed):'--')+(review?' <span class="badge bw" style="margin-left:4px;">Review</span>':'')+'</td>'+
+        '<td>'+H(i.notes||'')+'</td>'+
+        '<td><button class="btn bo bs" onclick="editInteg(\''+H(i.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function integStatusChanged(){}
+var intmeid=null;
+function openIntegModal(){
+  intmeid=null;
+  ['intm-name','intm-notes','intm-reviewed'].forEach(function(f){$(f).value='';});
+  $('intm-category').value='Accounting';$('intm-status').value='not_connected';
+  $('integmodal').classList.add('on');
+}
+function closeIntegModal(){$('integmodal').classList.remove('on');}
+function editInteg(id){
+  var i=bldIntegrations().find(function(x){return x.id===id;});if(!i)return;
+  intmeid=id;
+  $('intm-name').value=i.name||'';$('intm-category').value=i.category||'Accounting';
+  $('intm-status').value=i.status||'not_connected';$('intm-reviewed').value=i.last_reviewed||'';
+  $('intm-notes').value=i.notes||'';
+  $('integmodal').classList.add('on');
+}
+function saveInteg(){
+  var name=$('intm-name').value.trim();
+  if(!name){toast('App name required');return;}
+  var list=bldIntegrations();
+  var existing=intmeid?list.find(function(x){return x.id===intmeid;}):null;
+  var rec={
+    id:intmeid||('INT-'+String(Date.now()).slice(-5)),
+    name:name,category:$('intm-category').value,status:$('intm-status').value,
+    last_reviewed:$('intm-reviewed').value,notes:$('intm-notes').value.trim()
+  };
+  if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
+  if(intmeid){var i=list.findIndex(function(x){return x.id===intmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
+  else list.push(rec);
+  st('bld_integrations',list);
+  closeIntegModal();rInteg();
+  toast('Saved - '+name);
+}
+
 async function mktBriefing(){
   if(!Object.keys(MKT_STATE.data).length){toast('Refresh market data first');return;}
   $('mkt-briefing').innerHTML='<div style="color:var(--muted);font-style:italic">Generating briefing...</div>';
@@ -5638,6 +5879,16 @@ function csv(type){
     if(!spendNames.length){toast('No sub spend on file to export');return;}
     rows=[['Subcontractor / Vendor','Total Spend']];
     spendNames.sort(function(a,b){return spendMap[b]-spendMap[a];}).forEach(function(n){rows.push([n,spendMap[n]]);});
+  } else if(type==='priceintel'){
+    var pplist=bldPricePoints();
+    if(!pplist.length){toast('No price points to export');return;}
+    rows=[['Material','Vendor','Price','Unit','Date','Trend']];
+    pplist.forEach(function(p){var t=priceTrend(p.material);rows.push([p.material,p.vendor,p.price,p.unit,p.date,t.dir==='flat'?'Flat':(t.dir==='up'?'+':'')+t.pct.toFixed(1)+'%']);});
+  } else if(type==='integrations'){
+    var intlist=bldIntegrations();
+    if(!intlist.length){toast('No integrations to export');return;}
+    rows=[['App','Category','Status','Last Reviewed','Notes']];
+    intlist.forEach(function(i){rows.push([i.name,i.category,(INTSTATUS[i.status]||{l:i.status}).l,i.last_reviewed,i.notes]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
