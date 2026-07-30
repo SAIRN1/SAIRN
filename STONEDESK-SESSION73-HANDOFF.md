@@ -98,12 +98,26 @@ this series.
    nav ever existed for it, confirmed via grep, no live product ask.
    If QuickBooks integration becomes a real ask, it's a fresh feature
    scope, not a "finish this" job — nothing usable was left behind.
-4. **Vendor Ordering Catalog** — CRM pipeline split (the other half of
-   this item in `STONEDESK-SESSION72-HANDOFF.md` §4) is now resolved
-   (`855e360` retargeted the Exec Dashboard's Pipeline Funnel to the
-   real `sd_crm` data and deleted the `crmLeads` orphan). Vendor
-   Ordering Catalog itself: still untouched — **re-verified fresh this
-   session, not carried forward from memory, with one real correction:**
+4. **Vendor Ordering Catalog** — ⚠️ **PRODUCT-COUNT DISCREPANCY, UNRESOLVED,
+   MUST BE CHECKED BEFORE TOMORROW'S BUILD/DELETE DECISION:** a fresh
+   regex re-count of the `VENDORS` product entries this session found
+   **~141**, not the **~643** figure carried in
+   `STONEDESK-SESSION72-HANDOFF.md`. This is not a rounding difference —
+   it's a >4x gap that materially changes the scope estimate (effort,
+   UI surface area, everything downstream was sized off the 643 figure).
+   Neither number is confirmed correct — 141 could be a regex
+   undercount (missed a nested structure), or 643 could have been wrong
+   when first logged. **Do not carry either number into tomorrow's
+   decision without a real count first** — this is the single most
+   important fact in this item, stated first on purpose, not buried
+   after the status recap below.
+
+   CRM pipeline split (the other half of this item in
+   `STONEDESK-SESSION72-HANDOFF.md` §4) is now resolved (`855e360`
+   retargeted the Exec Dashboard's Pipeline Funnel to the real `sd_crm`
+   data and deleted the `crmLeads` orphan). Vendor Ordering Catalog
+   itself: still untouched — re-verified fresh this session, not
+   carried forward from memory:
    - Confirmed real, substantial, and separate from `panel-vendors`
      ("Vendor Management" — contact/spend tracking, a different,
      already-live feature that happens to share the word "vendor."
@@ -115,18 +129,11 @@ this series.
      has zero host panel, zero nav entry, anywhere. No `cartSubmit`/
      `placeOrder`/`checkoutCart`/`sendOrder` exists — still no checkout
      step, same as `STONEDESK-SESSION72`'s original finding.
-   - **Correction:** a fresh regex re-count of the `VENDORS` product
-     entries found **~141**, not the **~643** figure carried in
-     `STONEDESK-SESSION72-HANDOFF.md`. Not resolved which is right —
-     could be an undercount (nested structure the regex missed) or the
-     643 figure could have been wrong originally. Flagging the
-     discrepancy rather than repeating either number with confidence.
-     **Get a real count before doing any further scoping.**
    - **Decision (explicit, this session):** quarantine — do not build
      or delete before Sunday. Revisit and make the real build/delete/
      scope call once the deadline pressure is off, with a proper
-     product-count audit as the first step, same rigor as every other
-     decision this session got.
+     product-count audit as the **required first step**, same rigor as
+     every other decision this session got.
 5. **`sd_slabs`/`sd_slab_tracker` unification**, **third quote-history
    store** (`stonedesk_quote_history`), **`saveSDProfile()` zero-caller
    status**, **`sairn-toast` duplicate DOM id** — carried forward
@@ -263,3 +270,11 @@ Field Map and the Safety 5-tab system are still quarantined (not
 accidentally built or deleted piecemeal) before picking either up, and
 re-verify the "no duplicate-storage risk" finding on Safety still holds
 if anything in `sd_safety`'s shape changes before that work starts.
+
+**Before tomorrow's Vendor Ordering Catalog build/delete decision
+specifically:** §3 item 4's product-count discrepancy (**~141 vs ~643**,
+neither confirmed) is not settled by anything in this handoff — do a
+real count of `VENDORS`' product entries first. That number drives the
+whole scope estimate; deciding build vs. delete off either unverified
+figure repeats exactly the "unverified claim carried forward" mistake
+this document's own §2 exists to catch elsewhere.
