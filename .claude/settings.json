@@ -1,5 +1,4 @@
 {
-  "outputStyle": "silent",
   "permissions": {
     "allow": [
       "Read",
@@ -14,6 +13,11 @@
       "Bash(wc -c:*)",
       "Bash(wc -l:*)"
     ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(git push --force*)",
+      "Bash(git push*master*)"
+    ],
     "ask": [
       "Edit",
       "Write",
@@ -21,13 +25,9 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(npx vercel:*)"
-    ],
-    "deny": [
-      "Bash(rm -rf /*)",
-      "Bash(git push --force*)",
-      "Bash(git push*master*)"
     ]
   },
+  "model": "sonnet",
   "hooks": {
     "PostToolUse": [
       {
@@ -35,7 +35,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/html_script_check.py",
+            "command": "python C:/Users/marsh/tools/html_script_check.py",
             "timeout": 30
           }
         ]
@@ -45,12 +45,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/deploy_verify_notify.py",
+            "command": "python C:/Users/marsh/tools/deploy_verify_notify.py",
             "if": "Bash(git push*)",
-            "async": true,
-            "asyncRewake": true,
             "timeout": 90,
-            "statusMessage": "Verifying live deploy..."
+            "statusMessage": "Verifying live deploy...",
+            "async": true,
+            "asyncRewake": true
           }
         ]
       }
@@ -61,7 +61,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/git_push_master_guard.py",
+            "command": "python C:/Users/marsh/tools/git_push_master_guard.py",
             "timeout": 10
           }
         ]
@@ -71,7 +71,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/redaction_check.py",
+            "command": "python C:/Users/marsh/tools/redaction_check.py",
             "timeout": 10
           }
         ]
@@ -89,5 +89,6 @@
         ]
       }
     ]
-  }
+  },
+  "outputStyle": "silent"
 }
