@@ -217,6 +217,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Jobs</div>
       <button class="sb" id="sb-jobs" onclick="nav('jobs')"><span class="sico">&#127959;</span>Job Board</button>
       <button class="sb" id="sb-changeorders" onclick="nav('changeorders')"><span class="sico">&#128221;</span>Change Orders</button>
+      <button class="sb" id="sb-rfis" onclick="nav('rfis')"><span class="sico">&#10067;</span>RFIs</button>
+      <button class="sb" id="sb-submittals" onclick="nav('submittals')"><span class="sico">&#128194;</span>Submittals</button>
       <div class="ss">Money</div>
       <button class="sb" id="sb-jobcost" onclick="nav('jobcost')"><span class="sico">&#128200;</span>Job Costing</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
@@ -328,6 +330,53 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <tbody id="cotbody"></tbody></table></div>
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Contract Impact by Job</span></div><div class="cb" id="co-impact"></div></div>
+</div>
+
+<!-- RFIs -->
+<div class="panel" id="panel-rfis">
+  <div class="ph"><div><div class="ptitle">RFIs</div><div class="psub">Request-for-information log &mdash; the paper trail that protects against delay-claim disputes</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('rfis')">Export CSV</button><button class="btn bp bs" onclick="openRfiModal()">+ New RFI</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open RFIs</div><div class="kval" id="r-open">0</div><div class="kt">Awaiting a response</div></div>
+    <div class="kpi"><div class="klbl">Ball: Them</div><div class="kval" id="r-theirs">0</div><div class="kt">Waiting on the recipient</div></div>
+    <div class="kpi"><div class="klbl">Ball: Us</div><div class="kval" id="r-ours">0</div><div class="kt" id="r-ours-sub">Answered, needs review/close</div></div>
+    <div class="kpi"><div class="klbl">Avg Days Open</div><div class="kval" id="r-avgdays">0</div><div class="kt">Across open RFIs</div></div>
+    <div class="kpi"><div class="klbl">Closed</div><div class="kval" id="r-closed">0</div><div class="kt">Resolved</div></div>
+  </div>
+  <div class="note">The <strong>Ball</strong> column is the whole point of this panel &mdash; it says, at a glance, who owes the next move: us or the person we asked. An RFI with no owner is exactly how a delay-claim dispute gets lost.</div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="rjob" onchange="rRfisTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="rball" onchange="rRfisTbl()" style="width:180px;">
+        <option value="">All</option><option value="theirs">Ball: Them</option><option value="ours">Ball: Us</option><option value="closed">Closed</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Question</th><th>Asked To</th><th>Asked</th><th>Ball</th><th>Days Open</th><th>Actions</th></tr></thead>
+    <tbody id="rtbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- SUBMITTALS -->
+<div class="panel" id="panel-submittals">
+  <div class="ph"><div><div class="ptitle">Submittals</div><div class="psub">Material and shop-drawing approval tracking, separate from Purchase Orders</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('submittals')">Export CSV</button><button class="btn bp bs" onclick="openSubmittalModal()">+ New Submittal</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Under Review</div><div class="kval" id="sm-review">0</div><div class="kt">Ball: us</div></div>
+    <div class="kpi"><div class="klbl">Resubmit Needed</div><div class="kval" id="sm-resubmit">0</div><div class="kt" id="sm-resubmit-sub">Ball: sub/vendor</div></div>
+    <div class="kpi"><div class="klbl">Approved</div><div class="kval" id="sm-approved">0</div><div class="kt">Closed out</div></div>
+    <div class="kpi"><div class="klbl">Rejected</div><div class="kval" id="sm-rejected">0</div><div class="kt">Declined</div></div>
+    <div class="kpi"><div class="klbl">Total Tracked</div><div class="kval" id="sm-total">0</div><div class="kt">All submittals</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar">
+      <select id="smjob" onchange="rSubmittalsTbl()" style="flex:1;"><option value="">All Jobs</option></select>
+      <select id="smstatus" onchange="rSubmittalsTbl()" style="width:180px;">
+        <option value="">All Statuses</option><option value="submitted">Submitted</option><option value="under_review">Under Review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="resubmit">Resubmit</option>
+      </select>
+    </div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Item</th><th>Submitted By</th><th>Submitted</th><th>Status</th><th>Ball</th><th>Actions</th></tr></thead>
+    <tbody id="smtbody"></tbody></table></div>
+  </div></div>
 </div>
 
 <!-- JOB COSTING -->
@@ -442,6 +491,41 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeSubBidModal()">Cancel</button>
       <button class="btn bp" onclick="saveSubBid()">Save Sub Bid</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="rfimodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit RFI</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="rm-job"></select></div><div class="fg"><label>Asked To</label><select id="rm-askedto">
+      <option value="Architect">Architect</option><option value="Engineer">Engineer</option><option value="Owner">Owner</option><option value="Other">Other</option>
+    </select></div></div>
+    <div class="fg"><label>Question</label><input id="rm-question" placeholder="Confirm beam size at kitchen opening"></div>
+    <div class="fr"><div class="fg"><label>Asked Date</label><input id="rm-asked" type="date"></div><div class="fg"><label>Status</label><select id="rm-status" onchange="rfiStatusChanged()">
+      <option value="open">Open</option><option value="closed">Closed</option>
+    </select></div></div>
+    <div class="fg"><label>Response</label><input id="rm-response" placeholder="Leave blank until answered"></div>
+    <div class="fg" id="rm-respdaterow"><label>Response Date</label><input id="rm-respdate" type="date"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeRfiModal()">Cancel</button>
+      <button class="btn bp" onclick="saveRfi()">Save RFI</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="submittalmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Submittal</div>
+    <div class="fr"><div class="fg"><label>Job</label><select id="smm-job"></select></div><div class="fg"><label>Status</label><select id="smm-status">
+      <option value="submitted">Submitted</option><option value="under_review">Under Review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="resubmit">Resubmit</option>
+    </select></div></div>
+    <div class="fg"><label>Item</label><input id="smm-item" placeholder="Kitchen cabinet shop drawings"></div>
+    <div class="fr"><div class="fg"><label>Submitted By</label><input id="smm-by" placeholder="Sub or vendor name"></div><div class="fg"><label>Submitted Date</label><input id="smm-submitted" type="date"></div></div>
+    <div class="fg"><label>Notes</label><input id="smm-notes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSubmittalModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSubmittal()">Save Submittal</button>
     </div>
   </div>
 </div>
@@ -563,6 +647,8 @@ function nav(id){
   if(id==='jobcost')rCost();
   if(id==='changeorders')rCO();
   if(id==='bids')rBids();
+  if(id==='rfis')rRfis();
+  if(id==='submittals')rSubmittals();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -649,6 +735,23 @@ function seed(){
     {id:'SB-04',job_id:'J-2602',cost_code:'Plumbing rough-in',sub:'Delgado Plumbing Co',amount:14200,awarded:false},
     {id:'SB-05',job_id:'J-2602',cost_code:'Plumbing rough-in',sub:'Rocky River Mechanical',amount:13400,awarded:false}
   ]);
+  // RFIs: all three ball states seeded deliberately -- theirs (open, no
+  // response yet), ours (response is in, still needs review/close), and
+  // closed -- so the computed ball field has something real of each kind
+  // to prove, not just the "theirs" case.
+  st('bld_rfis',[
+    {id:'RFI-01',job_id:'J-2601',asked_to:'Architect',question:'Confirm beam size at kitchen opening',asked:'2026-07-10',status:'open',response:'',respdate:''},
+    {id:'RFI-02',job_id:'J-2601',asked_to:'Engineer',question:'Verify footing depth meets frost line at addition',asked:'2026-07-05',status:'open',response:'42 inches, per revised structural detail S-4',respdate:'2026-07-12'},
+    {id:'RFI-03',job_id:'J-2602',asked_to:'Owner',question:'Confirm paint colour for unit B common hallway',asked:'2026-06-20',status:'closed',response:'Benjamin Moore Revere Pewter',respdate:'2026-06-24'}
+  ]);
+  // Submittals: same discipline -- ours (under review), theirs (resubmit
+  // requested), and both closed outcomes (approved, rejected).
+  st('bld_submittals',[
+    {id:'SM-01',job_id:'J-2601',item:'Kitchen cabinet shop drawings',submitted_by:'ABC Cabinetry',submitted:'2026-07-18',status:'under_review',notes:''},
+    {id:'SM-02',job_id:'J-2601',item:'Window schedule',submitted_by:'Andersen Dealer Direct',submitted:'2026-07-08',status:'resubmit',notes:'Missing egress calculations for bedroom windows'},
+    {id:'SM-03',job_id:'J-2602',item:'Structural steel shop drawings',submitted_by:'Midwest Steel Fab',submitted:'2026-05-02',status:'approved',notes:''},
+    {id:'SM-04',job_id:'J-2602',item:'Elevator cab specifications',submitted_by:'Rocky River Elevator Co',submitted:'2026-05-15',status:'rejected',notes:'Cab dimensions do not meet accessibility clearance'}
+  ]);
   st('bld_seeded',true);
   toast('Demo data loaded - Pinnacle Industries LLC');
 }
@@ -669,7 +772,179 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();}
+
+// ── RFIs ──────────────────────────────────────────────────────────────────
+// Ball-in-court is computed, not hand-entered: open + no response = ball is
+// with whoever was asked (theirs); open + a response present = it's back on
+// us to review and close it (ours); closed = done. This is the one field
+// the whole panel exists to make glanceable, so it can't be a free-text
+// field someone forgets to update.
+function rfiBall(r){
+  if(r.status==='closed')return'closed';
+  return (r.response&&r.response.trim())?'ours':'theirs';
+}
+function rfiDaysOpen(r){
+  if(r.status==='closed')return 0;
+  var asked=new Date(r.asked+'T00:00:00');
+  if(isNaN(asked))return 0;
+  return Math.max(0,Math.round((Date.now()-asked.getTime())/86400000));
+}
+function bldRfis(){return ld('bld_rfis',[]);}
+// Response date is always available to set (it's valid the moment a
+// response comes in, before the RFI is formally closed) -- no visibility
+// toggle needed, so this just exists as the onchange target if that ever
+// changes rather than leaving a dead attribute in the markup.
+function rfiStatusChanged(){}
+
+function rRfis(){fillJobSelects();rRfisTbl();}
+function rfiScope(){
+  var jf=(($('rjob')||{}).value||''),bf=(($('rball')||{}).value||'');
+  return bldRfis().filter(function(r){return(!jf||r.job_id===jf)&&(!bf||rfiBall(r)===bf);});
+}
+function rRfisTbl(){
+  var list=rfiScope();
+  var open=list.filter(function(r){return r.status==='open';});
+  var theirs=list.filter(function(r){return rfiBall(r)==='theirs';});
+  var ours=list.filter(function(r){return rfiBall(r)==='ours';});
+  var closed=list.filter(function(r){return r.status==='closed';});
+  var avgDays=open.length?Math.round(open.reduce(function(s,r){return s+rfiDaysOpen(r);},0)/open.length):0;
+  $('r-open').textContent=open.length;
+  $('r-theirs').textContent=theirs.length;
+  $('r-ours').textContent=ours.length;
+  $('r-ours-sub').className='kt'+(ours.length?' d':'');
+  $('r-avgdays').textContent=avgDays;
+  $('r-closed').textContent=closed.length;
+  var tb=$('rtbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No RFIs match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(r){
+      var ball=rfiBall(r);
+      var ballLabel=ball==='theirs'?'Them':ball==='ours'?'Us':'Closed';
+      var ballClass=ball==='theirs'?'bw':ball==='ours'?'br':'bg';
+      return '<tr><td>'+H(jobLabel(r.job_id))+'</td>'+
+        '<td><strong>'+H(r.question)+'</strong></td>'+
+        '<td>'+H(r.asked_to||'')+'</td>'+
+        '<td>'+(r.asked?fdate(r.asked):'--')+'</td>'+
+        '<td><span class="badge '+ballClass+'">'+ballLabel+'</span></td>'+
+        '<td>'+rfiDaysOpen(r)+'</td>'+
+        '<td><button class="btn bo bs" onclick="editRfi(\''+H(r.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function openRfiModal(){
+  if(!jobs().length){toast('Add a job first - an RFI must belong to one');return;}
+  rfieid=null;fillJobSelects();
+  ['rm-question','rm-response'].forEach(function(f){$(f).value='';});
+  $('rm-askedto').value='Architect';$('rm-status').value='open';
+  $('rm-asked').value=new Date().toISOString().slice(0,10);$('rm-respdate').value='';
+  $('rfimodal').classList.add('on');
+}
+function closeRfiModal(){$('rfimodal').classList.remove('on');}
+var rfieid=null;
+function editRfi(id){
+  var r=bldRfis().find(function(x){return x.id===id;});if(!r)return;
+  rfieid=id;fillJobSelects();
+  $('rm-job').value=r.job_id||'';$('rm-askedto').value=r.asked_to||'Architect';
+  $('rm-question').value=r.question||'';$('rm-asked').value=r.asked||'';
+  $('rm-status').value=r.status||'open';$('rm-response').value=r.response||'';$('rm-respdate').value=r.respdate||'';
+  $('rfimodal').classList.add('on');
+}
+function saveRfi(){
+  var q=$('rm-question').value.trim();
+  if(!q){toast('Question required');return;}
+  var job=$('rm-job').value;
+  if(!job){toast('Job required');return;}
+  var status=$('rm-status').value;
+  if(status==='closed'&&!$('rm-response').value.trim()){toast('Cannot close an RFI with no response on record');return;}
+  var list=bldRfis();
+  var existing=rfieid?list.find(function(x){return x.id===rfieid;}):null;
+  var rec={id:rfieid||('RFI-'+Date.now()),job_id:job,asked_to:$('rm-askedto').value,question:q,
+    asked:$('rm-asked').value,status:status,response:$('rm-response').value.trim(),respdate:$('rm-respdate').value};
+  if(existing){Object.assign(existing,rec);}else{list.push(rec);}
+  st('bld_rfis',list);
+  closeRfiModal();rRfis();
+  toast('Saved RFI');
+}
+
+// ── SUBMITTALS ────────────────────────────────────────────────────────────
+var SMSTATUS={submitted:{l:'Submitted',c:'bb'},under_review:{l:'Under Review',c:'bw'},approved:{l:'Approved',c:'bg'},rejected:{l:'Rejected',c:'br'},resubmit:{l:'Resubmit',c:'bx'}};
+// Ball-in-court for submittals: submitted/under_review = ours (we owe the
+// review); resubmit = theirs (sub/vendor owes a corrected submission);
+// approved/rejected = closed. Same discipline as RFIs -- computed, not
+// hand-entered, so it can't drift from the status field it depends on.
+function submittalBall(sm){
+  if(sm.status==='approved'||sm.status==='rejected')return'closed';
+  if(sm.status==='resubmit')return'theirs';
+  return'ours';
+}
+function bldSubmittals(){return ld('bld_submittals',[]);}
+function rSubmittals(){fillJobSelects();rSubmittalsTbl();}
+function submittalScope(){
+  var jf=(($('smjob')||{}).value||''),sf=(($('smstatus')||{}).value||'');
+  return bldSubmittals().filter(function(sm){return(!jf||sm.job_id===jf)&&(!sf||sm.status===sf);});
+}
+function rSubmittalsTbl(){
+  var list=submittalScope();
+  var review=list.filter(function(sm){return sm.status==='submitted'||sm.status==='under_review';});
+  var resubmit=list.filter(function(sm){return sm.status==='resubmit';});
+  var approved=list.filter(function(sm){return sm.status==='approved';});
+  var rejected=list.filter(function(sm){return sm.status==='rejected';});
+  $('sm-review').textContent=review.length;
+  $('sm-resubmit').textContent=resubmit.length;
+  $('sm-resubmit-sub').className='kt'+(resubmit.length?' d':'');
+  $('sm-approved').textContent=approved.length;
+  $('sm-rejected').textContent=rejected.length;
+  $('sm-total').textContent=list.length;
+  var tb=$('smtbody');
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No submittals match</td></tr>';}
+  else{
+    tb.innerHTML=list.map(function(sm){
+      var s=SMSTATUS[sm.status]||{l:sm.status,c:'bx'};
+      var ball=submittalBall(sm);
+      var ballLabel=ball==='theirs'?'Them':ball==='ours'?'Us':'Closed';
+      var ballClass=ball==='theirs'?'bw':ball==='ours'?'br':'bg';
+      return '<tr><td>'+H(jobLabel(sm.job_id))+'</td>'+
+        '<td><strong>'+H(sm.item)+'</strong></td>'+
+        '<td>'+H(sm.submitted_by||'')+'</td>'+
+        '<td>'+(sm.submitted?fdate(sm.submitted):'--')+'</td>'+
+        '<td><span class="badge '+s.c+'">'+H(s.l)+'</span></td>'+
+        '<td><span class="badge '+ballClass+'">'+ballLabel+'</span></td>'+
+        '<td><button class="btn bo bs" onclick="editSubmittal(\''+H(sm.id)+'\')">Edit</button></td></tr>';
+    }).join('');
+  }
+}
+function openSubmittalModal(){
+  if(!jobs().length){toast('Add a job first - a submittal must belong to one');return;}
+  smeid=null;fillJobSelects();
+  ['smm-item','smm-by','smm-notes'].forEach(function(f){$(f).value='';});
+  $('smm-status').value='submitted';$('smm-submitted').value=new Date().toISOString().slice(0,10);
+  $('submittalmodal').classList.add('on');
+}
+function closeSubmittalModal(){$('submittalmodal').classList.remove('on');}
+var smeid=null;
+function editSubmittal(id){
+  var sm=bldSubmittals().find(function(x){return x.id===id;});if(!sm)return;
+  smeid=id;fillJobSelects();
+  $('smm-job').value=sm.job_id||'';$('smm-status').value=sm.status||'submitted';
+  $('smm-item').value=sm.item||'';$('smm-by').value=sm.submitted_by||'';
+  $('smm-submitted').value=sm.submitted||'';$('smm-notes').value=sm.notes||'';
+  $('submittalmodal').classList.add('on');
+}
+function saveSubmittal(){
+  var item=$('smm-item').value.trim();
+  if(!item){toast('Item required');return;}
+  var job=$('smm-job').value;
+  if(!job){toast('Job required');return;}
+  var list=bldSubmittals();
+  var existing=smeid?list.find(function(x){return x.id===smeid;}):null;
+  var rec={id:smeid||('SM-'+Date.now()),job_id:job,item:item,submitted_by:$('smm-by').value.trim(),
+    submitted:$('smm-submitted').value,status:$('smm-status').value,notes:$('smm-notes').value.trim()};
+  if(existing){Object.assign(existing,rec);}else{list.push(rec);}
+  st('bld_submittals',list);
+  closeSubmittalModal();rSubmittals();
+  toast('Saved submittal');
+}
 
 // ── BIDS & PROPOSALS ─────────────────────────────────────────────────────
 var BSTAGE={lead:{l:'Lead',c:'bx'},estimating:{l:'Estimating',c:'bw'},sent:{l:'Sent',c:'bb'},won:{l:'Won',c:'bg'},lost:{l:'Lost',c:'br'}};
@@ -888,19 +1163,44 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // written once at load -- otherwise the filter would silently go stale the
 // moment a job is added, which is the class of bug that makes a filter look
 // like it works while quietly excluding rows.
+// Data-driven rather than one hand-copied block per select: as of the
+// RFIs/Submittals panels this was about to become 4 more near-identical
+// blocks, and every new job-linked panel from here on would have added
+// another. FILTER_SELECTS (blank = "All Jobs" filter dropdowns) and
+// MODAL_SELECTS (required job on a save form, no blank option, unless
+// explicitly optional) are declared once; adding a new panel's job
+// select is a one-line addition to one of these two lists, not a new
+// paragraph in this function.
+var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job'];
+var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job'];
 function fillJobSelects(){
   var js=jobs();
   var opts=js.map(function(j){return '<option value="'+H(j.id)+'">'+H(j.client||j.address)+'</option>';}).join('');
-  var f=$('cjob');
-  if(f){var keep=f.value;f.innerHTML='<option value="">All Jobs</option>'+opts;f.value=keep;}
-  var m=$('cm-job');
-  if(m){var keepM=m.value;m.innerHTML=opts;m.value=keepM;}
-  var cf=$('cojob');
-  if(cf){var keepF=cf.value;cf.innerHTML='<option value="">All Jobs</option>'+opts;cf.value=keepF;}
-  var cm=$('com-job');
-  if(cm){var keepCm=cm.value;cm.innerHTML=opts;cm.value=keepCm;}
-  var sb=$('sbm-job');
-  if(sb){var keepSb=sb.value;sb.innerHTML='<option value="">Not tied to a job yet</option>'+opts;sb.value=keepSb;}
+  FILTER_JOB_SELECTS.forEach(function(id){
+    var el=$(id);if(!el)return;
+    var keep=el.value;el.innerHTML='<option value="">All Jobs</option>'+opts;el.value=keep;
+  });
+  MODAL_JOB_SELECTS.forEach(function(id){
+    var el=$(id);if(!el)return;
+    var keep=el.value;el.innerHTML=opts;el.value=keep;
+    // Pre-existing bug, found and fixed here rather than worked around per
+    // panel: rebuilding a <select>'s innerHTML then setting .value to a
+    // now-stale (usually empty) string does NOT fall back to selecting the
+    // first <option> the way parsing fresh HTML would -- it leaves the
+    // select showing option 1 visually while .value silently reads "".
+    // A brand-new Add-record modal never explicitly sets this field, so
+    // Save would fail its "Job required" guard even though a job visibly
+    // appears selected on screen. Confirmed this predates today's RFI/
+    // Submittal work -- the Add Cost Line modal (cm-job) had the exact
+    // same bug. Root-caused here once, covers every current and future
+    // entry in this list.
+    if(!el.value&&js.length)el.value=js[0].id;
+  });
+  OPTIONAL_MODAL_JOB_SELECTS.forEach(function(id){
+    var el=$(id);if(!el)return;
+    var keep=el.value;el.innerHTML='<option value="">Not tied to a job yet</option>'+opts;el.value=keep;
+  });
 }
 
 function rCost(){
@@ -1300,6 +1600,16 @@ function csv(type){
     if(!blist.length){toast('No bids in scope to export');return;}
     rows=[['Client','Phone','Project Type','Source','Stage','Subtotal','Markup %','Total','Sent','Decided','Lost Reason']];
     blist.forEach(function(b){rows.push([b.client,b.phone,b.type,b.source,(BSTAGE[b.stage]||{l:b.stage}).l,bidSubtotal(b),b.markup,bidTotal(b),b.sent,b.decided,b.lostreason]);});
+  } else if(type==='rfis'){
+    var rlist=rfiScope();
+    if(!rlist.length){toast('No RFIs in scope to export');return;}
+    rows=[['Job','Question','Asked To','Asked','Status','Ball','Days Open','Response','Response Date']];
+    rlist.forEach(function(r){rows.push([jobLabel(r.job_id),r.question,r.asked_to,r.asked,r.status,rfiBall(r),rfiDaysOpen(r),r.response,r.respdate]);});
+  } else if(type==='submittals'){
+    var smlist=submittalScope();
+    if(!smlist.length){toast('No submittals in scope to export');return;}
+    rows=[['Job','Item','Submitted By','Submitted','Status','Ball','Notes']];
+    smlist.forEach(function(sm){rows.push([jobLabel(sm.job_id),sm.item,sm.submitted_by,sm.submitted,(SMSTATUS[sm.status]||{l:sm.status}).l,submittalBall(sm),sm.notes]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
