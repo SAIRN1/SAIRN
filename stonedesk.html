@@ -356,6 +356,38 @@ body.is-exec .sb-exec{display:flex}
   [style*="grid-template-columns:1fr"]{grid-template-columns:1fr!important}
   .tw{max-width:calc(100vw - 32px)!important;min-width:0}
   .panel.active>div{min-width:0}
+  /* Quote panel's remaining 109px residual, closed 2026-07-30. Same
+     min-width:auto grid-blowout family as the table fix above, one layer
+     deeper: .quote-container already had its own @media(max-width:900px)
+     stacking rule (grid-template-columns:1fr) and IS .panel.active's
+     direct child, so .panel.active>div{min-width:0} above already applied
+     to it -- but min-width:0 alone only stops THIS element from being
+     held open by ITS OWN content; it doesn't give the grid a definite
+     width to resolve its "1fr" track against, so Chromium fell back to
+     sizing the track (and therefore the container) off the child
+     content's min-content width regardless. A definite width fixes what
+     min-width:0 alone couldn't. Verified via Playwright: panel-level
+     overflow on the quote panel went from 109px to 0 with this rule
+     alone, nothing else needed. */
+  .quote-container{
+    width:100%;max-width:calc(100vw - 32px)!important;min-width:0;overflow-x:auto;
+    /* The 1fr grid item still refuses to shrink below its .q-card's own
+       min-content width (~457px), same story one level further down --
+       contained by overflow-x:auto above so it can't break the page, but
+       with no visible cue it read as clipped rather than scrollable,
+       same gap the .tw tables had before their scroll-shadow was added.
+       Identical fade+edge-shadow technique, reused rather than
+       reinvented, for the same discoverability reason. */
+    background:
+      linear-gradient(to right,var(--card) 30%,rgba(255,255,255,0)),
+      linear-gradient(to right,rgba(255,255,255,0),var(--card) 70%) 100% 0,
+      linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),
+      linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;
+    background-repeat:no-repeat;
+    background-color:var(--card);
+    background-size:24px 100%,24px 100%,10px 100%,10px 100%;
+    background-attachment:local,local,scroll,scroll;
+  }
 }
 /* FIX (user-reported: "bottom of the page cut off"): .panel had
    overflow:hidden with no scroll fallback. Panels that don't have their
