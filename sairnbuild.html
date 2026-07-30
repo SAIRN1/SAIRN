@@ -251,6 +251,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Company</div>
       <button class="sb" id="sb-company" onclick="nav('company')"><span class="sico">&#127970;</span>Company Profile</button>
       <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
+      <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
       <div class="sfoot">SAIRNbuild v0.1 &middot; <span style="color:var(--p);font-weight:700;">Jobs + Margin</span></div>
     </aside>
     <main>
@@ -984,6 +985,42 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+
+<!-- REPORTS -->
+<div class="panel" id="panel-reports">
+  <div class="ph"><div><div class="ptitle">Reports</div><div class="psub">Job P&amp;L, WIP schedule, change-order log, compliance expiry, sub spend &mdash; all computed live, nothing duplicated</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Active Committed Cost</div><div class="kval" id="rp-committed">$0</div><div class="kt">Across active jobs</div></div>
+    <div class="kpi"><div class="klbl">Active Margin</div><div class="kval" id="rp-margin">$0</div><div class="kt">Revised contract less committed</div></div>
+    <div class="kpi"><div class="klbl">Over-Billed Jobs</div><div class="kval" id="rp-overbilled">0</div><div class="kt" id="rp-overbilled-sub">Billed ahead of work earned</div></div>
+    <div class="kpi"><div class="klbl">Compliance Issues</div><div class="kval" id="rp-compliance">0</div><div class="kt" id="rp-compliance-sub">Subs expiring or expired</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="ct">Job P&amp;L</span><div class="pa" style="margin-left:auto"><button class="btn bo bs" onclick="csv('reports_pl')">Export CSV</button></div></div>
+    <div class="cb"><div class="tw"><table><thead><tr><th>Job</th><th>Stage</th><th>Revised Contract</th><th>Committed Cost</th><th>Margin $</th><th>Margin %</th></tr></thead>
+    <tbody id="rp-pltbody"></tbody></table></div></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="ct">WIP Schedule</span><div class="pa" style="margin-left:auto"><button class="btn bo bs" onclick="csv('reports_wip')">Export CSV</button></div></div>
+    <div class="cb">
+    <div class="note" style="margin-bottom:12px">% Complete = cost to date &divide; total estimated cost. Earned Revenue = % Complete &times; contract value. Over/Under Billing = draws received to date less earned revenue &mdash; a positive number means billed ahead of work actually done.</div>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Contract</th><th>Cost to Date</th><th>Est. Total Cost</th><th>% Complete</th><th>Earned Revenue</th><th>Billed to Date</th><th>Over/Under Billing</th></tr></thead>
+    <tbody id="rp-wiptbody"></tbody></table></div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Recent Change Orders</span></div><div class="cb" id="rp-co-list"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Compliance Expiry</span></div><div class="cb" id="rp-compliance-list"></div></div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><span class="ct">Sub Spend</span><div class="pa" style="margin-left:auto"><button class="btn bo bs" onclick="csv('reports_subspend')">Export CSV</button></div></div>
+    <div class="cb" id="rp-subspend"></div>
+  </div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1690,6 +1727,7 @@ function nav(id){
   if(id==='referrals')rReferrals();
   if(id==='company')rCompany();
   if(id==='settings')rSettings();
+  if(id==='reports')rReports();
 }
 
 // ── DEMO SEED — Pinnacle Industries LLC ──────────────────────────────────
@@ -2085,6 +2123,12 @@ function jobs(){return ld('bld_jobs',[]);}
 function costs(){return ld('bld_costs',[]);}
 function chgOrders(){return ld('bld_change_orders',[]);}
 function committedFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.committed||0);},0);}
+// Siblings of committedFor(), same shape, added for the Reports WIP
+// schedule -- "cost to date" in a real WIP schedule is what's actually
+// been incurred/invoiced (actual), not what's committed/contracted, and
+// "total estimated cost" is the budget line, not committed either.
+function actualFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.actual||0);},0);}
+function budgetFor(id){return costs().filter(function(c){return c.job_id===id;}).reduce(function(s,c){return s+(c.budget||0);},0);}
 
 // ONLY accepted change orders move the contract. A sent/draft/rejected CO is
 // not revenue -- counting them would inflate contract value and flatter every
@@ -2094,7 +2138,7 @@ function acceptedCOFor(id){return chgOrders().filter(function(c){return c.job_id
 function revisedValue(j){return (j.value||0)+acceptedCOFor(j.id);}
 function marginPct(j){var v=revisedValue(j),c=committedFor(j.id);return v>0?Math.round((v-c)/v*100):0;}
 
-function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();rReviews();rReferrals();rCompany();rSettings();}
+function init(){seed();rDash();rJobs();rCost();rCO();rBids();rRfis();rSubmittals();rPunch();rInspections();rSelections();rLogs();rTimeline();rFieldPhoto();rDraws();rLw();rPo();rDv();rTs();rChk();rSubs();rCompliance();rSuppliers();rEquip();rSafety();rClientPortal();rWarranty();rDocs();rReviews();rReferrals();rCompany();rSettings();rReports();}
 
 // ── FIELD PHOTO ANALYSIS ─────────────────────────────────────────────────
 // The photo -> Claude -> structured-output pattern required for every
@@ -5203,6 +5247,95 @@ function removeCostCode(idx){
   toast('Removed '+removed.code);
 }
 
+// ── REPORTS ───────────────────────────────────────────────────────────────
+// Pure aggregation panel -- every number here reads from the same source
+// data every other panel already uses (jobs/costs/change orders/draws/subs/
+// POs/checks), nothing is stored or duplicated. That's deliberate: a report
+// that keeps its own copy of a number is a second place that number can go
+// stale.
+function jobPL(j){
+  var committed=committedFor(j.id),revised=revisedValue(j);
+  var marginD=revised-committed;
+  var marginPctV=revised>0?Math.round(marginD/revised*100):0;
+  return{committed:committed,revised:revised,marginD:marginD,marginPct:marginPctV};
+}
+function jobWIP(j){
+  var costToDate=actualFor(j.id),estTotal=budgetFor(j.id),revised=revisedValue(j);
+  var pct=estTotal>0?Math.min(1,costToDate/estTotal):0;
+  var earned=Math.round(pct*revised);
+  var billed=bldDraws().filter(function(d){return d.job_id===j.id;}).reduce(function(s,d){return s+(d.amount_received||0);},0);
+  return{costToDate:costToDate,estTotal:estTotal,pct:pct,earned:earned,billed:billed,overUnder:billed-earned};
+}
+function subComplianceIssue(s){
+  var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
+  return(coi!==null&&coi<=30)||(lic!==null&&lic<=30);
+}
+function subSpendMap(){
+  var map={};
+  bldPos().filter(function(p){return p.status!=='cancelled';}).forEach(function(p){map[p.vendor]=(map[p.vendor]||0)+(p.amount||0);});
+  bldChecks().filter(function(c){return c.status==='cleared';}).forEach(function(c){map[c.payee]=(map[c.payee]||0)+(c.amount||0);});
+  return map;
+}
+function rReports(){
+  var js=jobs();
+  var act=js.filter(function(j){return ACTIVE.indexOf(j.stage)!==-1;});
+  var committedTotal=act.reduce(function(s,j){return s+committedFor(j.id);},0);
+  var marginTotal=act.reduce(function(s,j){return s+(revisedValue(j)-committedFor(j.id));},0);
+  var overBilled=act.filter(function(j){return jobWIP(j).overUnder>0;});
+  var complianceIssues=bldSubs().filter(subComplianceIssue);
+  $('rp-committed').textContent=fmt(committedTotal);
+  $('rp-margin').textContent=fmt(marginTotal);
+  $('rp-overbilled').textContent=overBilled.length;
+  $('rp-overbilled-sub').className='kt'+(overBilled.length?' d':'');
+  $('rp-compliance').textContent=complianceIssues.length;
+  $('rp-compliance-sub').className='kt'+(complianceIssues.length?' d':'');
+
+  $('rp-pltbody').innerHTML=js.length?js.map(function(j){
+    var pl=jobPL(j);
+    var s=STAGE[j.stage]||{l:j.stage,c:'bx'};
+    var col=pl.marginD<0?'var(--danger)':'var(--ok)';
+    return '<tr><td>'+H(jobLabel(j.id))+'</td>'+
+      '<td><span class="badge '+s.c+'">'+H(s.l)+'</span></td>'+
+      '<td>'+fmt(pl.revised)+'</td>'+
+      '<td>'+fmt(pl.committed)+'</td>'+
+      '<td><strong style="color:'+col+'">'+fmt(pl.marginD)+'</strong></td>'+
+      '<td style="color:'+col+'">'+pl.marginPct+'%</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No jobs on file</td></tr>';
+
+  $('rp-wiptbody').innerHTML=act.length?act.map(function(j){
+    var w=jobWIP(j);
+    var col=w.overUnder>0?'var(--danger)':'var(--ok)';
+    return '<tr><td>'+H(jobLabel(j.id))+'</td>'+
+      '<td>'+fmt(revisedValue(j))+'</td>'+
+      '<td>'+fmt(w.costToDate)+'</td>'+
+      '<td>'+fmt(w.estTotal)+'</td>'+
+      '<td>'+Math.round(w.pct*100)+'%</td>'+
+      '<td>'+fmt(w.earned)+'</td>'+
+      '<td>'+fmt(w.billed)+'</td>'+
+      '<td><strong style="color:'+col+'">'+fmt(w.overUnder)+'</strong></td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No active jobs</td></tr>';
+
+  var recentCO=chgOrders().slice().sort(function(a,b){return(b.sent_at||b.accepted_at||'').localeCompare(a.sent_at||a.accepted_at||'');}).slice(0,6);
+  $('rp-co-list').innerHTML=recentCO.length?recentCO.map(function(c){
+    var s=COSTATUS[c.status]||{l:c.status,c:'bx'};
+    return '<div class="srow"><span class="slbl">'+H(jobLabel(c.job_id))+' - '+H(c.description)+'</span><span class="sval"><span class="badge '+s.c+'">'+s.l+'</span> '+fmt(c.amount)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No change orders on file</div>';
+
+  var issueSubs=bldSubs().filter(subComplianceIssue);
+  $('rp-compliance-list').innerHTML=issueSubs.length?issueSubs.map(function(s){
+    var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
+    var worst=[coi,lic].filter(function(d){return d!==null;});
+    var isExpired=worst.some(function(d){return d<0;});
+    return '<div class="srow"><span class="slbl">'+H(s.company)+' <span style="color:var(--muted);font-size:12px">('+H(s.trade)+')</span></span><span class="badge '+(isExpired?'br':'bw')+'">'+(isExpired?'Expired':'Expiring Soon')+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing expiring within 30 days</div>';
+
+  var spend=subSpendMap();
+  var names=Object.keys(spend).sort(function(a,b){return spend[b]-spend[a];});
+  $('rp-subspend').innerHTML=names.length?names.map(function(n){
+    return '<div class="srow"><span class="slbl">'+H(n)+'</span><span class="sval">'+fmt(spend[n])+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No PO or cleared-check spend on file</div>';
+}
+
 function csv(type){
   var rows=[],fn='sairnbuild-'+type+'.csv';
   if(type==='jobs'){
@@ -5346,6 +5479,22 @@ function csv(type){
     if(!rflist.length){toast('No referrals to export');return;}
     rows=[['Referring Customer','Referred Name','Referred Phone','Status','Deal Value','Date']];
     rflist.forEach(function(r){rows.push([r.from_customer,r.to_customer,r.to_phone,(REFSTATUS[r.status]||{l:r.status}).l,r.deal_value,r.date]);});
+  } else if(type==='reports_pl'){
+    var pljs=jobs();
+    if(!pljs.length){toast('No jobs to export');return;}
+    rows=[['Job','Stage','Revised Contract','Committed Cost','Margin $','Margin %']];
+    pljs.forEach(function(j){var pl=jobPL(j);rows.push([jobLabel(j.id),(STAGE[j.stage]||{l:j.stage}).l,pl.revised,pl.committed,pl.marginD,pl.marginPct]);});
+  } else if(type==='reports_wip'){
+    var wipjs=jobs().filter(function(j){return ACTIVE.indexOf(j.stage)!==-1;});
+    if(!wipjs.length){toast('No active jobs to export');return;}
+    rows=[['Job','Contract','Cost to Date','Est. Total Cost','% Complete','Earned Revenue','Billed to Date','Over/Under Billing']];
+    wipjs.forEach(function(j){var w=jobWIP(j);rows.push([jobLabel(j.id),revisedValue(j),w.costToDate,w.estTotal,Math.round(w.pct*100),w.earned,w.billed,w.overUnder]);});
+  } else if(type==='reports_subspend'){
+    var spendMap=subSpendMap();
+    var spendNames=Object.keys(spendMap);
+    if(!spendNames.length){toast('No sub spend on file to export');return;}
+    rows=[['Subcontractor / Vendor','Total Spend']];
+    spendNames.sort(function(a,b){return spendMap[b]-spendMap[a];}).forEach(function(n){rows.push([n,spendMap[n]]);});
   } else { rows=[['SAIRNbuild',type,new Date().toLocaleDateString()]]; }
   var c=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
