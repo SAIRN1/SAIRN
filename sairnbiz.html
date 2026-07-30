@@ -225,7 +225,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Active Employees</div><div class="kval" id="k-emp">0</div><div class="kt">Full + Part time</div></div>
     <div class="kpi"><div class="klbl">Payroll / Month</div><div class="kval" id="k-pay">$0</div><div class="kt">All staff</div></div>
     <div class="kpi"><div class="klbl">Open Invoices</div><div class="kval" id="k-inv">0</div><div class="kt d" id="k-invamt">$0 outstanding</div></div>
-    <div class="kpi"><div class="klbl">Net Margin</div><div class="kval" id="k-margin">0%</div><div class="kt">Industry avg 18%</div></div>
+    <div class="kpi"><div class="klbl">Net Margin</div><div class="kval" id="k-margin">0%</div><div class="kt" id="k-margin-sub">Industry avg 18%</div></div>
   </div>
   <div class="g2">
     <div class="card"><div class="ch"><span class="ct">Headcount by Department</span></div><div class="cb" id="d-dept"></div></div>
@@ -301,7 +301,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Total Applicants</div><div class="kval" id="h-apps">0</div><div class="kt">All stages</div></div>
     <div class="kpi"><div class="klbl">Interviews Set</div><div class="kval" id="h-int">0</div><div class="kt">This week</div></div>
     <div class="kpi"><div class="klbl">Offers Out</div><div class="kval" id="h-off">0</div><div class="kt">Pending acceptance</div></div>
-    <div class="kpi"><div class="klbl">Avg Days Open</div><div class="kval" id="h-tth">0d</div><div class="kt">Industry avg 21d to fill</div></div>
+    <div class="kpi"><div class="klbl">Avg Days Open</div><div class="kval" id="h-tth">0d</div><div class="kt" id="h-tth-sub">Industry avg 21d to fill</div></div>
   </div>
   <div class="card"><div class="cb">
     <table><thead><tr><th>Position</th><th>Department</th><th>Applicants</th><th>Stage</th><th>Posted</th><th>Target Rate</th><th>Status</th><th>Actions</th></tr></thead>
@@ -788,6 +788,7 @@ function rDash(){
   $('k-rev').textContent=fmt(rev);$('k-emp').textContent=emps.filter(function(e){return e.status==='Active';}).length;
   $('k-pay').textContent=fmt(pay);$('k-inv').textContent=oinv.length;
   $('k-invamt').textContent=fmt(oamt)+' outstanding';$('k-margin').textContent=mgn+'%';
+  var marginSub=$('k-margin-sub');if(marginSub)marginSub.className='kt'+(mgn<0?' d':'');
   var depts={};emps.forEach(function(e){depts[e.dept]=(depts[e.dept]||0)+1;});
   $('d-dept').innerHTML=Object.keys(depts).map(function(d){var p=Math.round(depts[d]/emps.length*100);return'<div class="srow"><span class="slbl">'+H(d)+'</span><span class="sval">'+depts[d]+' employees</span></div>'+pbar(p);}).join('');
   var byMonth={};invs.forEach(function(i){var mo=(i.date||'').slice(0,7);if(!mo)return;byMonth[mo]=(byMonth[mo]||0)+(i.paid||0);});
@@ -1024,6 +1025,7 @@ function rHire(){
   var openDays=h.map(function(x){return Math.floor((now-new Date(x.posted))/86400000);});
   var avgOpen=openDays.length?Math.round(openDays.reduce(function(a,b){return a+b;},0)/openDays.length):0;
   $('h-open').textContent=h.length;$('h-apps').textContent=apps;$('h-int').textContent=ints;$('h-off').textContent=offs;$('h-tth').textContent=avgOpen+'d';
+  var tthSub=$('h-tth-sub');if(tthSub)tthSub.className='kt'+(avgOpen>21?' d':'');
   $('htbody').innerHTML=h.map(function(x){var sc={Active:'bg',Paused:'bw',Closed:'bx'}[x.status]||'bx';var ss={Screening:'bb',Interviewing:'bw','Offer Out':'bg',Closed:'bx'}[x.stage]||'bx';return'<tr><td><strong>'+H(x.pos)+'</strong></td><td>'+H(x.dept)+'</td><td style="text-align:center;">'+x.apps+'</td><td><span class="badge '+ss+'">'+H(x.stage)+'</span></td><td>'+fdate(x.posted)+'</td><td>'+H(x.rate)+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast(\'Applicants - next build\')">View</button></td></tr>';}).join('');
 }
 
