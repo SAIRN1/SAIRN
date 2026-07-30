@@ -179,14 +179,24 @@ warns against applied to this skill itself — fixed, not left inconsistent.
 | SAIRNvet | sairnvet.html | #7C3AED | sairnvet |
 | SAIRNfuneral | sairnfuneral.html | #6B7280 | sairnfuneral |
 | SAIRNmechanical | sairnmechanical.html | #84CC16 | sairnmechanical |
-| SAIRNhr | hr.html | #7C3AED | sairnhr |
+| SAIRNhr | hr.html | #2563EB | sairnhr |
 | SAIRNacc | sairnaccounting.html | #0D9488 | sairnacc |
 
-Note the color collisions in this corrected table: SAIRNhr and SAIRNvet both
-show #7C3AED, and SAIRNcare and SAIRNacc both show #0D9488. This needs a real
-resolution pass the next time either pair is touched — flagging here rather
-than silently picking one, since guessing which app should move is a product
-decision, not a mechanical one this skill should make unilaterally.
+**SAIRNhr/SAIRNvet collision resolved (2026-07-30):** both previously showed
+#7C3AED. SAIRNhr moved to #2563EB (distinct from every other color in this
+table) rather than SAIRNvet, because SAIRNvet is a real, live, already-built
+app (`sairnvet.html` exists and is deployed) while SAIRNhr is still only a
+planned table entry — `hr.html` does not exist anywhere in the repo yet
+(confirmed via `git ls-tree`). Moving the not-yet-built app's planned color
+costs nothing; moving SAIRNvet's would mean re-theming a real live product.
+This is not yet a "SAIRNhr is being worked on" situation — no SAIRNhr file
+exists, this was a planning-table fix only, done ahead of that work starting.
+
+**SAIRNcare/SAIRNacc collision — still pending, not resolved.** Both show
+#0D9488. Neither `sairncare.html` nor `sairnaccounting.html` exists in the
+repo yet either, so this carries the same low-risk resolution path once
+either is actually touched — flagging here rather than silently picking one
+now, since guessing which app should move is a product decision.
 
 ---
 
