@@ -1,13 +1,13 @@
 ---
 name: sairn-guardian-v2
-description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-07-26 — was listed as 11, missing SAIRNhr and SAIRNacc). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNfuneral, SAIRNmechanical, SAIRNhr, SAIRNacc. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 26 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
+description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-07-26 — was listed as 11, missing SAIRNhr and SAIRNacc). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNfuneral, SAIRNmechanical, SAIRNhr, SAIRNacc. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 27 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
 ---
 
 # SAIRN Guardian v2
 
 Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automatic. Zero tolerance.
 
-## The 26 Checks
+## The 27 Checks
 
 ### Architecture (5)
 1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly
@@ -60,9 +60,29 @@ Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automa
     no sanitization, there's no real control between what the model returns
     and what a user's browser executes.
 
+### Non-functional buttons (1, added 2026-07-30 — numbered 27, not 26, since
+26 above already exists; noted here rather than silently colliding with it
+the same way the Navigation section's own 16/16 collision is already
+flagged below as a known open item)
+27. **sairn_dead_button_audit.py clean** — run tools/sairn_dead_button_audit.py
+    against every app file before declaring it done. Catches: handler
+    targets with no definition (Section A), inline handlers whose only
+    action is a toast (Section B), toast-only function bodies split by
+    caller count — C1 = has callers = live button, wire up or relabel;
+    C2 = zero callers = orphan, delete (these are OPPOSITE fixes, never
+    guess, always check the caller list first) — and same-scope
+    duplicate definitions (D1; D2 is cross-scope and informational
+    only). The tool strips comments via a real state machine, not a
+    regex — a naive `/\*.*?\*/` blanks strings/URLs/regex-literals too
+    and produces false "never defined" findings (cost 58 phantom
+    findings on StoneDesk before this was fixed). Section E (bare
+    "placeholder" text scan) was cut after going 0-for-7 real findings;
+    the phrase-list scan (`coming next build`, `TODO`, etc.) stays —
+    it's 6-true/1-false and catches real fabricated-honesty gaps.
+
 ---
 
-## Check 0 — Run BEFORE the 25 checks, every time, non-negotiable
+## Check 0 — Run BEFORE the 27 checks, every time, non-negotiable
 
 Added 2026-07-26 after finding SAIRNbiz was entirely non-functional in production
 (a parse error broke the whole app's JS) and after finding 14 of ~18 "remaining"
@@ -257,7 +277,7 @@ When a check fails:
 3. Re-run the check to confirm fix
 4. Log "FIXED: [check name] at line [N]"
 5. Continue to next check
-6. Push only when all 25+1 checks pass
+6. Push only when all 27+1 checks pass
 
 **For judgment calls, not mechanical fixes** (delete-vs-quarantine on a
 dormant panel, which of two colliding app colors to change, whether a file's
@@ -285,7 +305,7 @@ All others are warnings that must be fixed but don't hard-block if minor.
 site — not a full-site scan, just what changed.** Added 2026-07-26, following
 a real success: Claude Code curled the live production proxy with a real
 app_id and got a real response back, confirming a fix worked in production,
-not just in source. All 26 checks + Check 0 passing is necessary but not
+not just in source. All 27 checks + Check 0 passing is necessary but not
 sufficient — a panel can pass every mechanical check and still be broken in a
 way that only shows up against the real deployed site (a timeout, a wiring
 error only triggered by real browser conditions, a route that 404s). Claude
@@ -321,7 +341,7 @@ unexpected payload shape, it just fails to render.
 or "live" to someone outside the team** (a customer, a proposal, a status
 update), run `sairn-decision-gate`'s Premortem: assume that specific claim
 gets challenged and found false — what would the challenger find? Guardian's
-25+1 checks catch code-level defects; they don't automatically catch a true-
+27+1 checks catch code-level defects; they don't automatically catch a true-
 but-misleading status claim (all checks passing on a feature nobody has
 actually used yet is not the same as that feature being "production").
 
@@ -395,6 +415,59 @@ At the start of every build session:
 6. Run Guardian v2 again before every push
 
 This ensures we never ship degraded code and we always know the baseline health of every file.
+
+Before declaring any app "not built" or "doesn't exist," check local
+disk (e.g. `dir /s /b appname.html` under the user's Downloads/project
+folders) in addition to GitHub and Vercel. sairnscape.html was
+genuinely absent from the repo and from Vercel, but existed locally
+across ~24 old snapshot folders, never pushed — GitHub-only checking
+would have wrongly logged it as a ground-up rebuild. When multiple
+local candidates exist, don't assume the newest-numbered or
+"FINAL"-labeled folder wins — diff them. A file explicitly named
+"FINAL" can still be the regressed copy (a botched find-replace can
+corrupt a later snapshot); check node --check / div-balance on every
+candidate before trusting the name.
+
+## Known Environment Limitations
+
+Some tools silently no-op instead of failing loudly, which is worse
+than an outright error because it produces false confidence. Document
+each one here as it's found, with the working alternative:
+
+- **resize_window** (browser viewport resize in this sandboxed
+  environment): reports success but does not actually change
+  `window.innerWidth` or affect `matchMedia()` — media queries never
+  evaluate. Confirmed via `innerWidth` staying at the desktop value
+  after a reported-successful resize to 390px. Do not use for any
+  mobile/responsive verification claim.
+  **Working alternative:** a headless browser tool with real device
+  emulation (Playwright/Puppeteer viewport emulation), or a real
+  device/BrowserStack-style check. Verify the alternative actually
+  moves `innerWidth` before trusting any result from it.
+- **document.body.style.width** as a stand-in for viewport width: sets
+  layout width but does NOT change the viewport, so CSS media queries
+  still evaluate against the real (desktop) viewport. Structural
+  findings gathered this way can still be valid (a fixed-px element
+  overflowing is true at any width) but never claim "verified at
+  390px" from this method alone.
+
+When a tool in this list is the only option available, report the
+limitation explicitly in the handoff rather than upgrading a partial
+check to "verified."
+
+## Verify Aggregate Stats Before Reporting Them
+
+A summary number like "0-for-7 false positives" can silently combine
+two different measurements with opposite records — e.g. one sub-check
+that's 6-true/1-false and another that's 0-true/7-false average out
+to "0-for-7," which reads as "this whole check is useless" when really
+only one half of it is. Before reporting or acting on an aggregate
+finding (a total count, a pass rate, a "clean" summary line), break it
+down by what actually composes it. This applies to Guardian's own
+summary lines too — "checkblocks 119/119" is fine to report as-is
+because it's one homogeneous check, but a combined score across
+different check types should be reported per-type, not just as one
+number.
 
 ---
 
