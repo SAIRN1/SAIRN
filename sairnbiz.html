@@ -918,12 +918,15 @@ function filterInv(){
 
 function rExps(){
   var exps=ld('sb_exps',[]);
-  var m=exps.reduce(function(s,e){return s+e.amt;},0);
+  var now=new Date();var curYM=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  var monthExps=exps.filter(function(e){return(e.date||'').slice(0,7)===curYM;});
+  var thisMonth=monthExps.reduce(function(s,e){return s+e.amt;},0);
+  var allTime=exps.reduce(function(s,e){return s+e.amt;},0);
   var ded=exps.filter(function(e){return e.ded==='Yes';}).reduce(function(s,e){return s+e.amt;},0);
   var pend=exps.filter(function(e){return e.status==='Pending';}).length;
-  var cats={};exps.forEach(function(e){cats[e.cat]=(cats[e.cat]||0)+e.amt;});
+  var cats={};monthExps.forEach(function(e){cats[e.cat]=(cats[e.cat]||0)+e.amt;});
   var top=Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];})[0]||'--';
-  $('ex-month').textContent=fmt(m);$('ex-ytd').textContent=fmt(m);$('ex-top').textContent=top;$('ex-pend').textContent=pend;$('ex-ded').textContent=fmt(ded);
+  $('ex-month').textContent=fmt(thisMonth);$('ex-ytd').textContent=fmt(allTime);$('ex-top').textContent=top;$('ex-pend').textContent=pend;$('ex-ded').textContent=fmt(ded);
   $('extbody').innerHTML=exps.map(function(e){var sc=e.status==='Approved'?'bg':'bw';return'<tr><td>'+fdate(e.date)+'</td><td>'+H(e.desc)+'</td><td>'+H(e.cat)+'</td><td>'+H(e.vendor)+'</td><td><strong>'+fmt(e.amt)+'</strong></td><td><span class="badge '+(e.ded==='Yes'?'bg':'bx')+'">'+H(e.ded)+'</span></td><td><span class="badge '+(e.receipt==='Yes'?'bg':'bw')+'">'+H(e.receipt)+'</span></td><td><span class="badge '+sc+'">'+H(e.status)+'</span></td></tr>';}).join('');
 }
 
