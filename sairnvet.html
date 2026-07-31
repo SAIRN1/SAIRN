@@ -34,7 +34,13 @@
     .sidebar-btn{display:block;width:100%;text-align:left;padding:10px 20px;background:none;border:none;color:var(--text);cursor:pointer;font-size:13px;transition:all .2s;}
     .sidebar-btn:hover{background:var(--tint);color:var(--primary);}
     .sidebar-btn.active{background:var(--tint);color:var(--primary);font-weight:600;border-left:3px solid var(--primary);padding-left:17px;}
-    .main-content{margin-left:240px;padding:30px;}
+    /* min-width:0 -- #appContainer.active is display:flex, and flex items
+       default to min-width:auto (their content's min-content size), not 0.
+       That's what let .main-content refuse to shrink below ~714px (a wide
+       table's min-width bubbling through), even though the flex container
+       itself correctly reported the real, narrower viewport width. Same
+       flex/grid min-width:auto fix already solved in SAIRNbuild. */
+    .main-content{margin-left:240px;padding:30px;min-width:0;}
     .panel{display:none;}
     .panel.active{display:block;}
     .panel-header{margin-bottom:30px;}
@@ -87,6 +93,22 @@
       box-shadow:0 2px 8px rgba(0,0,0,.25);}
     #vetScrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55;}
     #vetScrim.on{display:block;}
+    /* Table scroll containment -- same portable pattern already solved in
+       SAIRNbuild (.tw wrapper): table-layout:auto lets a table render wider
+       than its parent's 100% the moment content demands it, and with no
+       ancestor establishing an overflow boundary, that width bubbles all
+       the way up through every width:auto block (.card, .panel, .main-
+       content, body) until the WHOLE PAGE is exactly as wide as the widest
+       table -- confirmed by measurement, not assumed: panel-drugdb's
+       .panel-header, .panel-title, .search-box and .card were all reported
+       at the identical 628px the table itself needed, despite none of them
+       having any width rule of their own. The wrapper cuts that chain:
+       the table can still be exactly as wide as it needs internally, but
+       only the wrapper scrolls, not the page. Applies at every width, not
+       just mobile, since desktop windows can be narrower than a wide table
+       too -- same reasoning as SAIRNbuild's .tw.  */
+    .sv-tw{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .sv-tw table{min-width:640px;}
     @media (max-width:768px){
       #vetNavToggle{display:flex;}
       .sidebar{position:fixed;top:0;left:0;bottom:0;height:100vh;width:250px;z-index:60;
@@ -288,10 +310,10 @@
     </div>
   </div>
   <div class="card">
-    <table id="diagnoses-table">
+    <div class="sv-tw"><table id="diagnoses-table">
       <thead><tr><th>Diagnosis</th><th>Species</th><th>Body System</th><th>Common Signs</th><th>Action</th></tr></thead>
       <tbody id="diagnoses-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);">Select filters and search to view diagnoses (465 total)</td></tr></tbody>
-    </table>
+    </table></div>
   </div>
   <div class="card">
     <h3>Get Full Protocol</h3>
@@ -334,10 +356,10 @@
   </div>
   <div id="drug-red-flags" class="red-flag" style="display:none;"><strong>RED FLAG:</strong> <span id="red-flag-text"></span></div>
   <div class="card">
-    <table id="drug-table">
+    <div class="sv-tw"><table id="drug-table">
       <thead><tr><th>Drug Name</th><th>Class</th><th>Species</th><th>Route</th><th>Dose/Notes</th><th>Status</th><th>Withdrawal</th><th>Controlled</th></tr></thead>
       <tbody id="drug-tbody"><tr><td colspan="8" style="text-align:center;color:var(--muted);">Search to view drugs (485 total)</td></tr></tbody>
-    </table>
+    </table></div>
   </div>
   <div class="card">
     <h3>Drug Interaction Checker</h3>
@@ -397,9 +419,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="patients-kpis"></div>
-<div class="card"><table id="panel-patients-table">
+<div class="card"><div class="sv-tw"><table id="panel-patients-table">
 <thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
-<tbody id="patients-tbody"></tbody></table></div>
+<tbody id="patients-tbody"></tbody></table></div></div>
 <div class="card"><h3>Quick Add Patient</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:15px 0;"><input type="text" id="pt-add-name" placeholder="Patient name"><input type="text" id="pt-add-species" placeholder="Species"><input type="text" id="pt-add-breed" placeholder="Breed"><input type="text" id="pt-add-owner" placeholder="Owner last name"><input type="number" id="pt-add-age" placeholder="Age (years)"><button class="btn" onclick="addPatient()">Add Patient</button></div></div>
 </div>
 
@@ -413,9 +435,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="soap-kpis"></div>
-<div class="card"><table id="panel-soap-table">
+<div class="card"><div class="sv-tw"><table id="panel-soap-table">
 <thead><tr><th>Date</th><th>Patient</th><th>Complaint</th><th>Author</th><th>Status</th></tr></thead>
-<tbody id="soap-tbody"></tbody></table></div>
+<tbody id="soap-tbody"></tbody></table></div></div>
 <div class="card"><h3>Generate SOAP Note with Claude</h3><label>Patient / Species</label><input type="text" id="soap-patient" placeholder="e.g., Max, canine" style="width:100%;margin:8px 0;"><label>Subjective (owner-reported)</label><textarea id="soap-subj" placeholder="e.g., limping on left hind for 2 days"></textarea><label>Objective findings</label><textarea id="soap-obj" placeholder="e.g., T 101.9F, mild swelling left stifle, pain on flexion"></textarea><button class="btn" onclick="generateSOAP()" style="margin-top:10px;">Generate SOAP Note</button><div id="soap-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div><div id="soap-signoff" style="display:none;margin-top:15px;padding-top:15px;border-top:1px solid #E5E7EB;"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="soap-vet-accepted" onchange="onSoapSignoff()"> I have reviewed and edited this note and confirm it as accurate for this patient</label></div></div>
 </div>
 
@@ -429,9 +451,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="scheduling-kpis"></div>
-<div class="card"><table id="panel-scheduling-table">
+<div class="card"><div class="sv-tw"><table id="panel-scheduling-table">
 <thead><tr><th>Time</th><th>Patient</th><th>Type</th><th>Doctor</th><th>Room</th><th>Status</th></tr></thead>
-<tbody id="scheduling-tbody"></tbody></table></div>
+<tbody id="scheduling-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Appointment</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;">
@@ -460,9 +482,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="whiteboard-kpis"></div>
-<div class="card"><table id="panel-whiteboard-table">
+<div class="card"><div class="sv-tw"><table id="panel-whiteboard-table">
 <thead><tr><th>Patient</th><th>Location</th><th>Status</th><th>Doctor</th><th>Notes</th></tr></thead>
-<tbody id="whiteboard-tbody"></tbody></table></div>
+<tbody id="whiteboard-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Patient to Board</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;">
@@ -488,9 +510,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="vitals-kpis"></div>
-<div class="card"><table id="panel-vitals-table">
+<div class="card"><div class="sv-tw"><table id="panel-vitals-table">
 <thead><tr><th>Patient</th><th>Species</th><th>Temp</th><th>HR</th><th>RR</th><th>Weight</th><th>Flag</th></tr></thead>
-<tbody id="vitals-tbody"></tbody></table></div>
+<tbody id="vitals-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Record Vitals</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -518,9 +540,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="lab-kpis"></div>
-<div class="card"><table id="panel-lab-table">
+<div class="card"><div class="sv-tw"><table id="panel-lab-table">
 <thead><tr><th>Patient</th><th>Test</th><th>Result</th><th>Reference Range</th><th>Flag</th></tr></thead>
-<tbody id="lab-tbody"></tbody></table></div>
+<tbody id="lab-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Lab Result</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -552,9 +574,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="imaging-kpis"></div>
-<div class="card"><table id="panel-imaging-table">
+<div class="card"><div class="sv-tw"><table id="panel-imaging-table">
 <thead><tr><th>Patient</th><th>Study</th><th>Modality</th><th>Ordering Dr.</th><th>Status</th></tr></thead>
-<tbody id="imaging-tbody"></tbody></table></div>
+<tbody id="imaging-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Order Imaging Study</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -582,9 +604,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="surgery-kpis"></div>
-<div class="card"><table id="panel-surgery-table">
+<div class="card"><div class="sv-tw"><table id="panel-surgery-table">
 <thead><tr><th>Patient</th><th>Procedure</th><th>Surgeon</th><th>Time</th><th>Consent</th><th>Status</th></tr></thead>
-<tbody id="surgery-tbody"></tbody></table></div>
+<tbody id="surgery-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Schedule Procedure</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -609,9 +631,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="dental-kpis"></div>
-<div class="card"><table id="panel-dental-table">
+<div class="card"><div class="sv-tw"><table id="panel-dental-table">
 <thead><tr><th>Patient</th><th>Procedure</th><th>Teeth Extracted</th><th>Grade</th><th>Doctor</th><th>Date</th></tr></thead>
-<tbody id="dental-tbody"></tbody></table></div>
+<tbody id="dental-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Log Dental Procedure</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -642,9 +664,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="examrooms-kpis"></div>
-<div class="card"><table id="panel-examrooms-table">
+<div class="card"><div class="sv-tw"><table id="panel-examrooms-table">
 <thead><tr><th>Room</th><th>Status</th><th>Patient</th><th>Doctor</th><th>Since</th></tr></thead>
-<tbody id="examrooms-tbody"></tbody></table></div>
+<tbody id="examrooms-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Room</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -665,9 +687,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="telec-kpis"></div>
-<div class="card"><table id="panel-teleconsult-table">
+<div class="card"><div class="sv-tw"><table id="panel-teleconsult-table">
 <thead><tr><th>Client</th><th>Patient</th><th>Reason</th><th>Doctor</th><th>Status</th></tr></thead>
-<tbody id="telec-tbody"></tbody></table></div>
+<tbody id="telec-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Schedule Consult</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -695,9 +717,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="lame-kpis"></div>
-<div class="card"><table id="panel-lameness-table">
+<div class="card"><div class="sv-tw"><table id="panel-lameness-table">
 <thead><tr><th>Patient</th><th>Limb</th><th>AAEP Grade</th><th>Block Result</th><th>Doctor</th></tr></thead>
-<tbody id="lame-tbody"></tbody></table></div>
+<tbody id="lame-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Log Lameness Exam</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -727,9 +749,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="farm-kpis"></div>
-<div class="card"><table id="panel-farmcalls-table">
+<div class="card"><div class="sv-tw"><table id="panel-farmcalls-table">
 <thead><tr><th>Date</th><th>Farm/Client</th><th>Species</th><th>Reason</th><th>Status</th></tr></thead>
-<tbody id="farm-tbody"></tbody></table></div>
+<tbody id="farm-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Schedule Farm Call</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -758,9 +780,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="repro-kpis"></div>
-<div class="card"><table id="panel-reproduction-table">
+<div class="card"><div class="sv-tw"><table id="panel-reproduction-table">
 <thead><tr><th>Patient</th><th>Species</th><th>Procedure</th><th>Result</th><th>Date</th></tr></thead>
-<tbody id="repro-tbody"></tbody></table></div>
+<tbody id="repro-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Log Reproduction Record</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -791,9 +813,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="eqdent-kpis"></div>
-<div class="card"><table id="panel-equinedental-table">
+<div class="card"><div class="sv-tw"><table id="panel-equinedental-table">
 <thead><tr><th>Patient</th><th>Procedure</th><th>Findings</th><th>Doctor</th><th>Date</th></tr></thead>
-<tbody id="eqdent-tbody"></tbody></table></div>
+<tbody id="eqdent-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Log Equine Dental Record</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -820,9 +842,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="ppe-kpis"></div>
-<div class="card"><table id="panel-prepurchase-table">
+<div class="card"><div class="sv-tw"><table id="panel-prepurchase-table">
 <thead><tr><th>Horse</th><th>Buyer</th><th>Seller</th><th>Result</th><th>Date</th></tr></thead>
-<tbody id="ppe-tbody"></tbody></table></div>
+<tbody id="ppe-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Log Pre-Purchase Exam</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -851,9 +873,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="cog-kpis"></div>
-<div class="card"><table id="panel-coggins-table">
+<div class="card"><div class="sv-tw"><table id="panel-coggins-table">
 <thead><tr><th>Horse</th><th>Owner</th><th>Sample Date</th><th>Lab Status</th><th>Certificate</th></tr></thead>
-<tbody id="cog-tbody"></tbody></table></div>
+<tbody id="cog-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Log Coggins Sample</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -879,9 +901,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="herd-kpis"></div>
-<div class="card"><table id="panel-herdhealth-table">
+<div class="card"><div class="sv-tw"><table id="panel-herdhealth-table">
 <thead><tr><th>Herd</th><th>Species</th><th>Head Count</th><th>Last Visit</th><th>Status</th></tr></thead>
-<tbody id="herd-tbody"></tbody></table></div>
+<tbody id="herd-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Herd</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -908,9 +930,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="wildlife-kpis"></div>
-<div class="card"><table id="panel-wildliferehab-table">
+<div class="card"><div class="sv-tw"><table id="panel-wildliferehab-table">
 <thead><tr><th>Animal</th><th>Species</th><th>Intake Reason</th><th>Status</th><th>Days in Care</th></tr></thead>
-<tbody id="wildlife-tbody"></tbody></table></div>
+<tbody id="wildlife-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Case</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -937,9 +959,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="speciesref-kpis"></div>
-<div class="card"><table id="panel-speciesref-table">
+<div class="card"><div class="sv-tw"><table id="panel-speciesref-table">
 <thead><tr><th>Species</th><th>Normal Temp</th><th>Normal HR</th><th>Normal RR</th><th>Notes</th></tr></thead>
-<tbody id="speciesref-tbody"></tbody></table></div>
+<tbody id="speciesref-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Species Profile</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -965,9 +987,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="conservation-kpis"></div>
-<div class="card"><table id="panel-conservation-table">
+<div class="card"><div class="sv-tw"><table id="panel-conservation-table">
 <thead><tr><th>Species</th><th>Studbook #</th><th>Program</th><th>Status</th></tr></thead>
-<tbody id="conservation-tbody"></tbody></table></div>
+<tbody id="conservation-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Studbook Record</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -994,9 +1016,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="controlled-kpis"></div>
-<div class="card"><table id="panel-controlled-table">
+<div class="card"><div class="sv-tw"><table id="panel-controlled-table">
 <thead><tr><th>Drug</th><th>Schedule</th><th>On Hand</th><th>Last Transaction</th><th>Balance Check</th></tr></thead>
-<tbody id="controlled-tbody"></tbody></table></div>
+<tbody id="controlled-tbody"></tbody></table></div></div>
 <div class="card"><h3>Log Controlled Substance Use</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="log-drug" placeholder="Drug name (e.g., Ketamine 100mg/mL)"><input type="text" id="log-schedule" placeholder="Schedule (e.g., III)"><input type="number" id="log-amount" placeholder="Amount used"><input type="text" id="log-patient" placeholder="Patient"><input type="text" id="log-witness" placeholder="Witness (required for Sched II)"><button class="btn" onclick="logControlledUse()">Log Entry</button></div></div>
 </div>
 
@@ -1010,9 +1032,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="compliance-kpis"></div>
-<div class="card"><table id="panel-compliance-table">
+<div class="card"><div class="sv-tw"><table id="panel-compliance-table">
 <thead><tr><th>Item</th><th>Type</th><th>Due Date</th><th>Status</th></tr></thead>
-<tbody id="compliance-tbody"></tbody></table></div>
+<tbody id="compliance-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Compliance Item</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -1037,9 +1059,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="clients-kpis"></div>
-<div class="card"><table id="panel-clients-table">
+<div class="card"><div class="sv-tw"><table id="panel-clients-table">
 <thead><tr><th>Client</th><th>Patients</th><th>Last Visit</th><th>Balance</th><th>Status</th></tr></thead>
-<tbody id="clients-tbody"></tbody></table></div>
+<tbody id="clients-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Client</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -1066,9 +1088,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="invoicing-kpis"></div>
-<div class="card"><table id="panel-invoicing-table">
+<div class="card"><div class="sv-tw"><table id="panel-invoicing-table">
 <thead><tr><th>Invoice #</th><th>Client</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
-<tbody id="invoicing-tbody"></tbody></table></div>
+<tbody id="invoicing-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Invoice</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -1095,9 +1117,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="billing-kpis"></div>
-<div class="card"><table id="billing-table">
+<div class="card"><div class="sv-tw"><table id="billing-table">
 <thead><tr><th>Client</th><th>Method</th><th>Amount</th><th>Status</th></tr></thead>
-<tbody id="billing-tbody"></tbody></table></div>
+<tbody id="billing-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Transaction</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -1126,9 +1148,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="financials-kpis"></div>
-<div class="card"><table id="panel-financials-table">
+<div class="card"><div class="sv-tw"><table id="panel-financials-table">
 <thead><tr><th>Category</th><th>Budget</th><th>Actual</th><th>Variance</th></tr></thead>
-<tbody id="financials-tbody"></tbody></table></div>
+<tbody id="financials-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Budget Category</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -1151,9 +1173,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="reports-kpis"></div>
-<div class="card"><table id="reports-table">
+<div class="card"><div class="sv-tw"><table id="reports-table">
 <thead><tr><th>Report</th><th>Category</th><th>Frequency</th><th>Last Run</th></tr></thead>
-<tbody id="reports-tbody"></tbody></table></div>
+<tbody id="reports-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Report</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -1181,9 +1203,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="analytics-kpis"></div>
-<div class="card"><table id="panel-analytics-table">
+<div class="card"><div class="sv-tw"><table id="panel-analytics-table">
 <thead><tr><th>Insight</th><th>Detail</th><th>Impact</th></tr></thead>
-<tbody id="analytics-tbody"></tbody></table></div>
+<tbody id="analytics-tbody"></tbody></table></div></div>
 <div class="card"><button class="btn" onclick="runMissedChargeScan()">Run AI Missed-Charge Scan</button><div id="missed-charge-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div><p style="font-size:0.85em;color:var(--text-muted,#666);margin:15px 0 0;">All KPIs and insights above are computed live from actual Clients, Invoicing, and Billing data — nothing here is estimated or assumed. The AI scan is grounded in the same real numbers, not a hypothetical practice profile.</p></div>
 </div>
 
@@ -1197,9 +1219,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="staff-kpis"></div>
-<div class="card"><table id="panel-staff-table">
+<div class="card"><div class="sv-tw"><table id="panel-staff-table">
 <thead><tr><th>Name</th><th>Role</th><th>Credential Status</th><th>Next Shift</th></tr></thead>
-<tbody id="staff-tbody"></tbody></table></div>
+<tbody id="staff-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Staff Member</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -1227,9 +1249,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="multisite-kpis"></div>
-<div class="card"><table id="panel-multisite-table">
+<div class="card"><div class="sv-tw"><table id="panel-multisite-table">
 <thead><tr><th>Location</th><th>Revenue MTD</th><th>Patients Active</th><th>Status</th></tr></thead>
-<tbody id="multisite-tbody"></tbody></table></div>
+<tbody id="multisite-tbody"></tbody></table></div></div>
 <div class="card">
 <h3>Add Location</h3>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
@@ -1255,9 +1277,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="docs-kpis"></div>
-<div class="card"><table id="panel-documents-table">
+<div class="card"><div class="sv-tw"><table id="panel-documents-table">
 <thead><tr><th>Document</th><th>Type</th><th>Last Updated</th><th>Used This Month</th></tr></thead>
-<tbody id="docs-tbody"></tbody></table></div>
+<tbody id="docs-tbody"></tbody></table></div></div>
 <div class="card"><h3>Add Document</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="dc-add-name" placeholder="Document name"><select id="dc-add-type"><option>Consent</option><option>Discharge</option><option>Agreement</option><option>Policy</option><option>Other</option></select><button class="btn" onclick="addDocument()">Add</button></div></div>
 </div>
 
@@ -1271,9 +1293,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="ref-kpis"></div>
-<div class="card"><table id="panel-referrals-table">
+<div class="card"><div class="sv-tw"><table id="panel-referrals-table">
 <thead><tr><th>Patient</th><th>Specialist</th><th>Reason</th><th>Status</th></tr></thead>
-<tbody id="ref-tbody"></tbody></table></div>
+<tbody id="ref-tbody"></tbody></table></div></div>
 <div class="card"><h3>Log a Referral</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="ref-add-patient" placeholder="Patient"><input type="text" id="ref-add-specialist" placeholder="Specialist"><input type="text" id="ref-add-reason" placeholder="Reason"><button class="btn" onclick="addReferral()">Log</button></div></div>
 </div>
 
@@ -1287,9 +1309,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="pi-kpis"></div>
-<div class="card"><table id="panel-petinsurance-table">
+<div class="card"><div class="sv-tw"><table id="panel-petinsurance-table">
 <thead><tr><th>Patient</th><th>Provider</th><th>Claim Amount</th><th>Status</th></tr></thead>
-<tbody id="pi-tbody"></tbody></table></div>
+<tbody id="pi-tbody"></tbody></table></div></div>
 <div class="card"><h3>Log a Claim</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="pi-add-patient" placeholder="Patient name"><input type="text" id="pi-add-provider" placeholder="Provider"><input type="number" id="pi-add-amount" placeholder="Claim amount ($)"><button class="btn" onclick="addClaim()">Submit Claim</button></div></div>
 </div>
 
@@ -1303,9 +1325,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="portal-kpis"></div>
-<div class="card"><table id="panel-portal-table">
+<div class="card"><div class="sv-tw"><table id="panel-portal-table">
 <thead><tr><th>Client</th><th>Request</th><th>Status</th></tr></thead>
-<tbody id="portal-tbody"></tbody></table></div>
+<tbody id="portal-tbody"></tbody></table></div></div>
 <div class="card"><h3>Log a Request</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="pt-add-client" placeholder="Client name"><input type="text" id="pt-add-request" placeholder="Request description"><button class="btn" onclick="addPortalRequest()">Log</button></div></div>
 </div>
 
@@ -1319,9 +1341,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="boarding-kpis"></div>
-<div class="card"><table id="panel-boarding-table">
+<div class="card"><div class="sv-tw"><table id="panel-boarding-table">
 <thead><tr><th>Patient</th><th>Service</th><th>Check-In</th><th>Check-Out</th></tr></thead>
-<tbody id="boarding-tbody"></tbody></table></div>
+<tbody id="boarding-tbody"></tbody></table></div></div>
 <div class="card"><h3>Quick Add</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="bd-add-patient" placeholder="Patient name"><select id="bd-add-service"><option>Boarding</option><option>Bath + Nail Trim</option><option>Full Groom</option></select><input type="date" id="bd-add-checkin"><input type="date" id="bd-add-checkout"><input type="number" id="bd-add-rate" placeholder="Rate ($/day or flat)"><button class="btn" onclick="addBoarding()">Add</button></div></div>
 </div>
 
@@ -1335,9 +1357,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="well-kpis"></div>
-<div class="card"><table id="panel-wellness-table">
+<div class="card"><div class="sv-tw"><table id="panel-wellness-table">
 <thead><tr><th>Patient</th><th>Plan</th><th>Monthly</th><th>Renewal Date</th></tr></thead>
-<tbody id="well-tbody"></tbody></table></div>
+<tbody id="well-tbody"></tbody></table></div></div>
 <div class="card"><h3>Enroll a Patient</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="well-add-patient" placeholder="Patient"><input type="text" id="well-add-plan" placeholder="Plan name"><input type="number" id="well-add-monthly" placeholder="Monthly ($)"><input type="date" id="well-add-renewal"><button class="btn" onclick="addWellnessPlan()">Enroll</button></div></div>
 </div>
 
@@ -1351,9 +1373,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="mv-kpis"></div>
-<div class="card"><table id="panel-mobilevet-table">
+<div class="card"><div class="sv-tw"><table id="panel-mobilevet-table">
 <thead><tr><th>Unit</th><th>Vet</th><th>Location</th><th>Arrived</th><th>Departed</th></tr></thead>
-<tbody id="mv-tbody"></tbody></table></div>
+<tbody id="mv-tbody"></tbody></table></div></div>
 <div class="card"><h3>Log a Stop</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="mv-add-unit" placeholder="Unit (e.g., Mobile Unit 1)"><input type="text" id="mv-add-vet" placeholder="Vet name"><input type="text" id="mv-add-location" placeholder="Location"><input type="number" id="mv-add-miles" placeholder="Miles (optional)"><button class="btn" onclick="addMobileStop()">Log Arrival</button></div></div>
 </div>
 
@@ -1367,9 +1389,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="comms-kpis"></div>
-<div class="card"><table id="panel-communications-table">
+<div class="card"><div class="sv-tw"><table id="panel-communications-table">
 <thead><tr><th>Type</th><th>Recipients</th><th>Sent</th><th>Open Rate</th></tr></thead>
-<tbody id="comms-tbody"></tbody></table></div>
+<tbody id="comms-tbody"></tbody></table></div></div>
 <div class="card"><h3>Log a Send</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="cm-add-type" placeholder="e.g., Appointment Reminder"><input type="number" id="cm-add-recip" placeholder="Recipients"><input type="number" id="cm-add-openrate" placeholder="Open rate % (optional)"><label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="cm-add-campaign"> Ongoing campaign</label><button class="btn" onclick="addComm()">Log</button></div></div>
 </div>
 
@@ -1383,9 +1405,9 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="rem-kpis"></div>
-<div class="card"><table id="panel-reminders-table">
+<div class="card"><div class="sv-tw"><table id="panel-reminders-table">
 <thead><tr><th>Patient</th><th>Reminder</th><th>Due Date</th><th>Status</th></tr></thead>
-<tbody id="rem-tbody"></tbody></table></div>
+<tbody id="rem-tbody"></tbody></table></div></div>
 <div class="card"><h3>Log a Reminder</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="rem-add-patient" placeholder="Patient"><input type="text" id="rem-add-type" placeholder="Reminder type"><input type="date" id="rem-add-due"><button class="btn" onclick="addReminder()">Log</button></div></div>
 </div>
 
@@ -1416,13 +1438,13 @@
 <div class="kpi-value">2026-07-07 3:00 AM</div>
 </div>
 </div>
-<div class="card"><table id="settings-table">
+<div class="card"><div class="sv-tw"><table id="settings-table">
 <thead><tr><th>Setting</th><th>Value</th></tr></thead>
 <tbody>
 <tr><td>Practice Name</td><td>Pinnacle Animal Hospital</td></tr>
 <tr><td>Time Zone</td><td>America/New_York</td></tr>
 <tr><td>License</td><td>SV-PINNACLE-2026</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 </div>
 
 <div id="panel-ai" class="panel">
@@ -1460,12 +1482,12 @@
 <div class="kpi-value">$156K</div>
 </div>
 </div>
-<div class="card"><table id="companion-patients-table">
+<div class="card"><div class="sv-tw"><table id="companion-patients-table">
 <thead><tr><th>Patient</th><th>Breed</th><th>Age</th><th>Last Visit</th><th>Next Due</th></tr></thead>
 <tbody>
 <tr><td>Max</td><td>Golden Retriever</td><td>5y</td><td>2026-07-05</td><td>Rabies — 2026-07-15</td></tr>
 <tr><td>Whiskers</td><td>Persian</td><td>8y</td><td>2026-07-04</td><td>Dental cleaning — recommended</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 </div>
 
 <div id="equine-patients" class="panel">
@@ -1495,12 +1517,12 @@
 <div class="kpi-value">$1,640</div>
 </div>
 </div>
-<div class="card"><table id="equine-patients-table">
+<div class="card"><div class="sv-tw"><table id="equine-patients-table">
 <thead><tr><th>Patient</th><th>Breed</th><th>Age</th><th>Discipline</th><th>Last Visit</th></tr></thead>
 <tbody>
 <tr><td>Star</td><td>Quarter Horse</td><td>12y</td><td>Trail</td><td>2026-06-28</td></tr>
 <tr><td>Duke</td><td>Thoroughbred</td><td>8y</td><td>Show Jumping</td><td>2026-07-01</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 </div>
 
 <div id="large-patients" class="panel">
@@ -1530,12 +1552,12 @@
 <div class="kpi-value">$198K</div>
 </div>
 </div>
-<div class="card"><table id="large-patients-table">
+<div class="card"><div class="sv-tw"><table id="large-patients-table">
 <thead><tr><th>Herd/Owner</th><th>Species</th><th>Head</th><th>Primary Concern</th></tr></thead>
 <tbody>
 <tr><td>Miller Dairy Farm</td><td>Holstein Cattle</td><td>340</td><td>Routine herd health</td></tr>
 <tr><td>Green Pastures Ranch</td><td>Angus Beef</td><td>890</td><td>Vaccination program</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 </div>
 
 <div id="exotic-patients" class="panel">
@@ -1565,12 +1587,12 @@
 <div class="kpi-value">$89K</div>
 </div>
 </div>
-<div class="card"><table id="exotic-patients-table">
+<div class="card"><div class="sv-tw"><table id="exotic-patients-table">
 <thead><tr><th>Patient</th><th>Species</th><th>Age</th><th>Last Visit</th></tr></thead>
 <tbody>
 <tr><td>Pip</td><td>Netherland Dwarf Rabbit</td><td>3y</td><td>2026-06-30</td></tr>
 <tr><td>Ziggy</td><td>Ferret</td><td>2y</td><td>2026-07-02 — adrenal recheck</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 </div>
 
 <div id="avian-patients" class="panel">
@@ -1600,12 +1622,12 @@
 <div class="kpi-value">$76K</div>
 </div>
 </div>
-<div class="card"><table id="avian-patients-table">
+<div class="card"><div class="sv-tw"><table id="avian-patients-table">
 <thead><tr><th>Patient</th><th>Species</th><th>Age</th><th>Last Visit</th></tr></thead>
 <tbody>
 <tr><td>Kiwi</td><td>African Grey Parrot</td><td>15y</td><td>2026-07-02</td></tr>
 <tr><td>Sunny</td><td>Cockatiel</td><td>6y</td><td>2026-06-18</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 </div>
 
 <div id="reptile-patients" class="panel">
@@ -1635,12 +1657,12 @@
 <div class="kpi-value">$52K</div>
 </div>
 </div>
-<div class="card"><table id="reptile-patients-table">
+<div class="card"><div class="sv-tw"><table id="reptile-patients-table">
 <thead><tr><th>Patient</th><th>Species</th><th>Age</th><th>Last Visit</th></tr></thead>
 <tbody>
 <tr><td>Shelly</td><td>Sulcata Tortoise</td><td>20y</td><td>2026-06-15 — MBD recheck</td></tr>
 <tr><td>Noodle</td><td>Ball Python</td><td>4y</td><td>2026-05-30</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 </div>
 
 <div id="aquatic-patients" class="panel">
@@ -1670,12 +1692,12 @@
 <div class="kpi-value">$18K</div>
 </div>
 </div>
-<div class="card"><table id="aquatic-patients-table">
+<div class="card"><div class="sv-tw"><table id="aquatic-patients-table">
 <thead><tr><th>Client</th><th>System</th><th>Species</th><th>Issue</th></tr></thead>
 <tbody>
 <tr><td>Park, David</td><td>Backyard Koi Pond</td><td>Koi</td><td>Fin rot — treating</td></tr>
 <tr><td>Nguyen, Lisa</td><td>75gal Freshwater</td><td>Assorted Community</td><td>Routine consult</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 </div>
 
 <div id="zoo-patients" class="panel">
@@ -1705,12 +1727,12 @@
 <div class="kpi-value">$64K</div>
 </div>
 </div>
-<div class="card"><table id="zoo-patients-table">
+<div class="card"><div class="sv-tw"><table id="zoo-patients-table">
 <thead><tr><th>Institution</th><th>Species</th><th>Procedure</th><th>Date</th></tr></thead>
 <tbody>
 <tr><td>Cleveland Metroparks Zoo</td><td>Amur Leopard</td><td>Annual exam under anesthesia</td><td>2026-06-20</td></tr>
 <tr><td>Private Wildlife Sanctuary</td><td>Red Wolf</td><td>Wellness check</td><td>2026-06-10</td></tr>
-</tbody></table></div>
+</tbody></table></div></div>
 <div class="card"><h3>AI Zoo Immobilization Protocol</h3><label>Species</label><input type="text" id="zoo-species" placeholder="e.g., Amur Leopard, African Elephant" style="width:100%;margin:8px 0;"><label>Estimated Weight (kg)</label><input type="number" id="zoo-weight" placeholder="e.g., 45" style="width:100%;margin:8px 0;"><label>Procedure</label><input type="text" id="zoo-procedure" placeholder="e.g., annual exam, dental, transport" style="width:100%;margin:8px 0;"><button class="btn" onclick="getZooProtocol()">Get Immobilization Protocol</button><div id="zoo-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div></div>
 </div>
 </div>
