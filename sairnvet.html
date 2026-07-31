@@ -74,6 +74,36 @@
     .tab-content{display:none;}
     .tab-content.active{display:block;}
     @media print{.sidebar,.panel-actions,.btn-secondary,.sv-decision-support-banner{display:none!important;-webkit-print-color-adjust:exact;}.main-content{margin-left:0;}.kpi,.card{page-break-inside:avoid;-webkit-print-color-adjust:exact;}}
+
+    /* ── MOBILE / FIELD USE ────────────────────────────────────────────────
+       Ported from the same off-canvas drawer + touch-target pattern already
+       built and verified in StoneDesk/SAIRNbuild -- not reinvented. SAIRNvet
+       has no <header> bar (sidebar runs top:0 to bottom:0 directly), so the
+       toggle button floats fixed on its own rather than living inside a
+       header row that doesn't exist here. */
+    #vetNavToggle{display:none;position:fixed;top:12px;left:12px;z-index:70;
+      width:44px;height:44px;background:var(--primary);color:#fff;border:none;
+      border-radius:8px;font-size:20px;cursor:pointer;align-items:center;justify-content:center;
+      box-shadow:0 2px 8px rgba(0,0,0,.25);}
+    #vetScrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:55;}
+    #vetScrim.on{display:block;}
+    @media (max-width:768px){
+      #vetNavToggle{display:flex;}
+      .sidebar{position:fixed;top:0;left:0;bottom:0;height:100vh;width:250px;z-index:60;
+        transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);
+        padding-top:64px;}
+      .sidebar.on{transform:translateX(0);}
+      .main-content{margin-left:0;padding:16px;padding-top:64px;}
+      /* 44px minimum touch target -- measured 34px on sidebar-btn, 32-36px on
+         in-panel .btn, same failure this project always checks for. */
+      .sidebar-btn{min-height:44px;display:flex;align-items:center;}
+      .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+      .btn-sm{min-height:40px;}
+      .panel-title{font-size:22px;}
+      .panel-actions{width:100%;}
+      .search-box input,.search-box select{width:100%!important;flex:1 1 100%;}
+      .toast{left:16px;right:16px;bottom:16px;max-width:none;}
+    }
   </style>
 </head>
 <body>
@@ -107,7 +137,9 @@
 </div>
 
 <div id="appContainer" class="app-container">
-<div class="sidebar">
+<button id="vetNavToggle" onclick="toggleVetNav()" aria-label="Toggle navigation">&#9776;</button>
+<div id="vetScrim" onclick="closeVetNav()"></div>
+<div class="sidebar" id="vetSidebar">
 <div class="sidebar-logo"><h2>SAIRNvet</h2><p id="userRole">Doctor</p><p style="font-size:9.5px;color:var(--muted);margin-top:6px;">SAIRN Technologies™</p></div>
 <div class="sidebar-section"><div class="sidebar-section-title">Core</div>
 <button class="sidebar-btn" onclick="svNav('dashboard')">Dashboard</button>
@@ -5951,7 +5983,20 @@ function logControlledUse(){
   showToast('Logged — running balance updated','success');
 }
 
+// Off-canvas drawer nav, same pattern as StoneDesk/SAIRNbuild: closing on
+// every navigation means picking a destination on a phone doesn't leave the
+// user staring at the menu that's still covering the panel they just chose.
+function toggleVetNav(){
+  var s=document.getElementById('vetSidebar');if(!s)return;
+  var open=s.classList.toggle('on');
+  document.getElementById('vetScrim').classList.toggle('on',open);
+}
+function closeVetNav(){
+  var s=document.getElementById('vetSidebar');if(s)s.classList.remove('on');
+  var scrim=document.getElementById('vetScrim');if(scrim)scrim.classList.remove('on');
+}
 function svNav(panelId){
+  closeVetNav();
   var panels=document.querySelectorAll('.panel');
   panels.forEach(function(p){p.classList.remove('active');});
   var buttons=document.querySelectorAll('.sidebar-btn');
