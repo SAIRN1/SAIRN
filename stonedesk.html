@@ -21607,13 +21607,20 @@ async function syncToSAIRNBridge() {
     if (window.sd_jobs      && window.sd_jobs.length)      body.jobs      = window.sd_jobs;
     if (window.sd_invoices  && window.sd_invoices.length)  body.invoices  = window.sd_invoices;
     if (window.sd_team      && window.sd_team.length)      body.employees = window.sd_team;
-    await fetch('https://sairn.vercel.app/api/bridge?action=push', {
+    var res = await fetch('https://sairn.vercel.app/api/bridge?action=push', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body)
     });
+    // Was fire-and-forget with no res.ok check -- a 404/5xx still resolves
+    // (fetch only rejects on network failure), so this silently showed
+    // "Synced" on total failure. Confirmed live 404 (api/bridge was never
+    // deployed) before this fix -- see api/bridge.js build.
+    if (!res.ok) throw new Error('Bridge returned ' + res.status);
+    var d = await res.json().catch(function(){ return {ok:true}; });
+    if (d && d.ok === false) throw new Error(d.error || 'Bridge rejected sync');
     notify('Synced to SAIRN Bridge', 'success');
-  } catch(e) { notify('Bridge sync queued', 'info'); }
+  } catch(e) { notify('Bridge sync failed — check connection and try again', 'red'); }
 }
 
 
