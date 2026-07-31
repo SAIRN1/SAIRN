@@ -164,6 +164,11 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 @media (max-width:420px){
   .krow{grid-template-columns:1fr 1fr;}
 }
+/* Print support -- was entirely absent (Guardian Check 14). Universal
+   selector, same working pattern as StoneDesk's @media print block, so
+   every KPI card/badge/status color survives to the printed page instead
+   of the browser's default background-strip-on-print behavior. */
+@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
 </style>
 </head>
 <body>

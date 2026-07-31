@@ -132,7 +132,12 @@ textarea{resize:vertical;min-height:80px;}
   .panel{display:block!important;}
   body{font-size:12px;}
   .card{box-shadow:none;border:1px solid #ddd;}
-  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  /* Was a bare declaration with no selector (invalid CSS, silently dropped
+     by the browser -- print-color-adjust never actually applied to
+     anything). Wrapped in the universal selector, matching StoneDesk's
+     working pattern, so every colored KPI/badge/card keeps its color on
+     print instead of falling back to the browser's default white-strip. */
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 }
 </style>
 </head>
