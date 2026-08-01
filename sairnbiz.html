@@ -126,8 +126,76 @@ textarea{resize:vertical;min-height:80px;}
 .modal.on{display:flex;}
 .mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
 .mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+/* Every table lives in a scroll container. Set unconditionally, not only in
+   the phone media query -- a wide table can overflow a narrow desktop
+   window or a split-screen pane too. Same working pattern already verified
+   in StoneDesk/SAIRNbuild/SAIRNvet, reused rather than reinvented. */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),
+    linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,
+    linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),
+    linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;
+  background-repeat:no-repeat;
+  background-color:#fff;
+  background-size:24px 100%,24px 100%,10px 100%,10px 100%;
+  background-attachment:local,local,scroll,scroll;
+}
+.tw table{min-width:640px;}
+/* Scrollable regions need to be keyboard-reachable (tabindex on the
+   wrapper, set in markup) so arrow-key/Page Down scrolling works without a
+   pointer -- a visible focus ring is what tells a keyboard user it's
+   focused and scrollable. */
+.tw:focus-visible{outline:2px solid var(--p);outline-offset:-2px;}
+/* Off-canvas sidebar toggle. Hidden at desktop width; the media query below
+   is what reveals it, so desktop is untouched. */
+.navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+#scrim.on{display:block;}
+
+/* ── PHONE / NARROW ────────────────────────────────────────────────────────
+   Was entirely absent (Guardian live-verification finding, 2026-07-31) --
+   no breakpoint anywhere except @media print, fixed 220px sidebar with no
+   collapse, tables truncating columns off-screen at 390px with no way to
+   reach them. Same audited-and-fixed pattern already shipped in StoneDesk/
+   SAIRNbuild/SAIRNvet, ported directly rather than redesigned. */
+@media (max-width:768px){
+  .navtog{display:flex;align-items:center;justify-content:center;}
+  /* Sidebar slides out rather than stealing width. transform (not display)
+     so it animates and stays focusable/measurable. aria-hidden/inert are
+     managed in JS (updateAsideA11y) so this stays in sync with the actual
+     off-canvas state instead of drifting from it. */
+  aside{position:fixed;top:56px;left:0;bottom:0;width:250px;z-index:50;
+        transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);}
+  aside.on{transform:translateX(0);}
+  main{padding:14px;}
+  header{padding:0 12px;gap:10px;}
+  .hlogo{font-size:17px;}
+  .hbadge{display:none;}
+  .huser{display:none;}
+  /* 44px minimum touch target. */
+  .hbtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
+  .sb{min-height:44px;font-size:14px;}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  .btn.bs{min-height:40px;}
+  /* KPI grid: fit as many as will fit instead of forcing 5 across. */
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .kval{font-size:20px;}
+  .g2,.g3{grid-template-columns:1fr;}
+  .fr,.fr3{grid-template-columns:1fr;}
+  .sbar{flex-wrap:wrap;}
+  .sbar input,.sbar select{width:100%!important;flex:1 1 100%;}
+  .ph{gap:8px;}
+  .ptitle{font-size:19px;}
+  .pa{margin-left:0;width:100%;}
+  .mbox{width:94%;padding:20px;}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media (max-width:420px){
+  .krow{grid-template-columns:1fr 1fr;}
+}
 @media print{
-  #gate,#pin,aside,header .hr,.pa{display:none!important;}
+  #gate,#pin,aside,header .hr,.pa,.navtog,#scrim{display:none!important;}
   main{padding:0;}
   .panel{display:block!important;}
   body{font-size:12px;}
@@ -183,6 +251,7 @@ textarea{resize:vertical;min-height:80px;}
 
 <div id="app">
   <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="aside">&#9776;</button>
     <div class="hlogo">SAIRNbiz</div>
     <div class="hbadge">People + Money</div>
     <div class="hr">
@@ -191,8 +260,9 @@ textarea{resize:vertical;min-height:80px;}
       <button class="hbtn" onclick="doLogout()">Logout</button>
     </div>
   </header>
+  <div id="scrim" onclick="closeNav()"></div>
   <div class="wrap">
-    <aside>
+    <aside id="aside" aria-label="Main navigation">
       <div class="ss">Overview</div>
       <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
       <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
@@ -276,8 +346,8 @@ textarea{resize:vertical;min-height:80px;}
       <input id="esrch" placeholder="Search by name, role, department..." oninput="filterEmps()">
       <select id="edept" onchange="filterEmps()" style="width:180px;"><option value="">All Departments</option><option>Fabrication</option><option>Installation</option><option>Sales</option><option>Administration</option><option>Management</option></select>
     </div>
-    <table><thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Type</th><th>Rate/Hr</th><th>Start Date</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody id="etbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Type</th><th>Rate/Hr</th><th>Start Date</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="etbody"></tbody></table></div>
   </div></div>
 </div>
 <div class="modal" id="empmodal">
@@ -309,8 +379,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Avg Days Open</div><div class="kval" id="h-tth">0d</div><div class="kt" id="h-tth-sub">Industry avg 21d to fill</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Position</th><th>Department</th><th>Applicants</th><th>Stage</th><th>Posted</th><th>Target Rate</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody id="htbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Position</th><th>Department</th><th>Applicants</th><th>Stage</th><th>Posted</th><th>Target Rate</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="htbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -326,8 +396,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Utilization Rate</div><div class="kval" id="ts-util">0%</div><div class="kt">Billable / Total</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Employee</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Total Hrs</th><th>OT Hrs</th><th>Est. Pay</th></tr></thead>
-    <tbody id="tstbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Total Hrs</th><th>OT Hrs</th><th>Est. Pay</th></tr></thead>
+    <tbody id="tstbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -343,8 +413,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">YTD Payroll</div><div class="kval" id="py-ytd">$0</div><div class="kt">All periods</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead>
-    <tbody id="pytbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead>
+    <tbody id="pytbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -403,8 +473,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">PIPs Active</div><div class="kval" id="pf-pip">0</div><div class="kt">Monitor closely</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Employee</th><th>Review Type</th><th>Due Date</th><th>Reviewer</th><th>Score</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody id="pftbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Review Type</th><th>Due Date</th><th>Reviewer</th><th>Score</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="pftbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -420,8 +490,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Training Spend</div><div class="kval" id="tr-bud">$0</div><div class="kt">Recorded</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Employee</th><th>Training / Cert</th><th>Completed</th><th>Expires</th><th>Provider</th><th>Cost</th><th>Status</th></tr></thead>
-    <tbody id="trtbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Training / Cert</th><th>Completed</th><th>Expires</th><th>Provider</th><th>Cost</th><th>Status</th></tr></thead>
+    <tbody id="trtbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -460,8 +530,8 @@ textarea{resize:vertical;min-height:80px;}
       <input id="ivsrch" placeholder="Search invoices..." oninput="filterInv()">
       <select id="ivstat" onchange="filterInv()" style="width:160px;"><option value="">All Status</option><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option><option>Overdue</option></select>
     </div>
-    <table><thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Due</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody id="ivtbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Invoice #</th><th>Customer</th><th>Date</th><th>Due</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="ivtbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -477,8 +547,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Tax Deductible</div><div class="kval" id="ex-ded">$0</div><div class="kt">Recorded to date</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Vendor</th><th>Amount</th><th>Deductible</th><th>Receipt</th><th>Status</th></tr></thead>
-    <tbody id="extbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Vendor</th><th>Amount</th><th>Deductible</th><th>Receipt</th><th>Status</th></tr></thead>
+    <tbody id="extbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -494,8 +564,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Largest Vendor</div><div class="kval" id="ap-top">--</div><div class="kt">By balance</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody id="aptbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="aptbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -511,8 +581,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Collection Rate</div><div class="kval" id="ar-rate">0%</div><div class="kt">Last 12 months</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Customer</th><th>Invoice #</th><th>Invoice Date</th><th>Due Date</th><th>Original</th><th>Balance</th><th>Age</th><th>Status</th></tr></thead>
-    <tbody id="artbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Customer</th><th>Invoice #</th><th>Invoice Date</th><th>Due Date</th><th>Original</th><th>Balance</th><th>Age</th><th>Status</th></tr></thead>
+    <tbody id="artbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -528,8 +598,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Forecast Variance</div><div class="kval" id="bu-var">$0</div><div class="kt">vs plan</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Category</th><th>Annual Budget</th><th>YTD Actual</th><th>Remaining</th><th>% Used</th><th>Status</th></tr></thead>
-    <tbody id="butbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Category</th><th>Annual Budget</th><th>YTD Actual</th><th>Remaining</th><th>% Used</th><th>Status</th></tr></thead>
+    <tbody id="butbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -545,8 +615,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Next Filing Due</div><div class="kval" id="tx-next">--</div><div class="kt">Mark calendar</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Est. Amount</th><th>YTD Paid</th><th>Status</th></tr></thead>
-    <tbody id="txtbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Est. Amount</th><th>YTD Paid</th><th>Status</th></tr></thead>
+    <tbody id="txtbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -597,8 +667,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">1099 Required</div><div class="kval" id="vn-1099">0</div><div class="kt">$600+ paid</div></div>
   </div>
   <div class="card"><div class="cb">
-    <table><thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>YTD Spend</th><th>Terms</th><th>W-9</th><th>Status</th></tr></thead>
-    <tbody id="vntbody"></tbody></table>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>YTD Spend</th><th>Terms</th><th>W-9</th><th>Status</th></tr></thead>
+    <tbody id="vntbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -616,7 +686,7 @@ textarea{resize:vertical;min-height:80px;}
   </div>
   <div class="card" id="rout" style="display:none;">
     <div class="ch"><span class="ct" id="rtitle">Report</span><div style="margin-left:auto;display:flex;gap:8px;"><button class="btn bo bs" onclick="csv('report')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
-    <div class="cb" id="rbody"></div>
+    <div class="cb tw" id="rbody" tabindex="0" role="region" aria-label="Scrollable report table"></div>
   </div>
 </div>
 
@@ -702,7 +772,62 @@ function chkPin(){
 }
 function doLogout(){st('sb_role',null);$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
 
+function isMobileNav(){return window.matchMedia('(max-width:768px)').matches;}
+
+// aria-hidden/inert must track the ACTUAL off-canvas state, not just the
+// .on class -- at desktop width aside is always visible regardless of .on
+// (the transform only applies inside the mobile media query), so this is
+// computed from both, not just the class.
+function updateAsideA11y(){
+  var a=$('aside');if(!a)return;
+  var hiddenOffCanvas=isMobileNav()&&!a.classList.contains('on');
+  a.setAttribute('aria-hidden',hiddenOffCanvas?'true':'false');
+  // inert also blocks Tab from reaching an off-screen drawer -- aria-hidden
+  // alone only affects assistive tech, not keyboard focus order.
+  if(hiddenOffCanvas)a.setAttribute('inert','');else a.removeAttribute('inert');
+}
+window.addEventListener('resize',updateAsideA11y);
+
+function toggleNav(){
+  var a=$('aside');if(!a)return;
+  var open=a.classList.toggle('on');
+  $('scrim').classList.toggle('on',open);
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded',open?'true':'false');
+  updateAsideA11y();
+  if(open){
+    var first=a.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if(first)first.focus();
+  }
+}
+function closeNav(){
+  var a=$('aside');var wasOpen=a&&a.classList.contains('on');
+  if(a)a.classList.remove('on');
+  $('scrim').classList.remove('on');
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded','false');
+  updateAsideA11y();
+  // Return focus to the toggle button when closed via Escape/scrim-tap so
+  // keyboard focus doesn't silently land on/behind now-hidden content.
+  if(wasOpen&&isMobileNav()&&t)t.focus();
+}
+// Focus trap (Tab/Shift+Tab cycle within the drawer while open) + Escape to
+// close, matching the standard modal/off-canvas focus-trap pattern.
+document.addEventListener('keydown',function(e){
+  var a=$('aside');
+  if(!a||!a.classList.contains('on')||!isMobileNav())return;
+  if(e.key==='Escape'){closeNav();return;}
+  if(e.key==='Tab'){
+    var f=a.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+});
+
 function nav(id){
+  // Selecting a destination must dismiss the drawer, or on a phone the user
+  // taps a panel and is left staring at the menu that covers it.
+  closeNav();
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   var p=$('panel-'+id),b=$('sb-'+id);
@@ -790,6 +915,7 @@ function init(){
   $('tsweek').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   renderSyncStatus();
   var lastSync=ld('sb_sync',null);if(lastSync)$('co-sync').textContent=lastSync;
+  updateAsideA11y();
 }
 
 function pbar(pct,color){return '<div class="pbar"><div class="pfill" style="width:'+pct+'%;'+(color?'background:'+color:'')+'"></div></div>';}
