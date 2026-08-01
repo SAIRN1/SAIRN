@@ -158,8 +158,13 @@ async function handlePush(body, res) {
     });
     const out = await r.json().catch(function () { return null; });
     if (!r.ok) {
+      // 42P01 = raw Postgres "undefined_table". PGRST205 = PostgREST's own
+      // "table not in schema cache" code, which is what a genuinely missing
+      // table actually returns in practice (confirmed live 2026-07-31 —
+      // 42P01 alone never matched, so this fell through to a misleading
+      // generic 502 instead of the actionable message below). Check both.
       const code = out && out.code;
-      if (code === '42P01') {
+      if (code === '42P01' || code === 'PGRST205') {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Bridge storage not yet provisioned — run sql/bridge_schema.sql in the Supabase SQL editor' } });
         return;
       }
@@ -201,7 +206,7 @@ async function handlePull(req, res) {
     const rows = await r.json().catch(function () { return null; });
     if (!r.ok) {
       const code = rows && rows.code;
-      if (code === '42P01') {
+      if (code === '42P01' || code === 'PGRST205') {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Bridge storage not yet provisioned — run sql/bridge_schema.sql in the Supabase SQL editor' } });
         return;
       }

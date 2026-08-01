@@ -22,6 +22,16 @@
 -- the Field Map/Check-Register expense push) send no Authorization header at
 -- all, so there is no license to hash. This intentionally does not carry the
 -- same auth/tenancy guarantee api/sd-data.js's tables do.
+--
+-- FLAG FOR REVIEW (2026-07-31): PostgREST's error hint on a failed live
+-- probe against this (not-yet-created) table read "Perhaps you meant the
+-- table 'public.bridge_data'" — meaning a table named bridge_data already
+-- exists in this Supabase project. Its schema/purpose was NOT inspected
+-- (no safe credential access from this session — see commit message /
+-- session notes) and this migration deliberately does not assume it's a fit
+-- or reuse it blind. Worth a human look in the Supabase dashboard before or
+-- instead of running this file — if bridge_data already serves this exact
+-- purpose, this new table may be redundant.
 
 create table if not exists bridge_pushes (
   id uuid primary key default gen_random_uuid(),
