@@ -29,17 +29,25 @@
 //   live callers already send. Neither sends an Authorization header, so
 //   this does not require a license key -- adding that requirement would
 //   just trade a 404 for a 401, not fix anything live.
-//   Persists one row to Supabase `bridge_pushes`
-//   (sql/bridge_schema.sql -- MUST be run once in the Supabase SQL editor
-//   before this action will work; same manual-migration convention already
-//   used by sql/agent_schema.sql). If the table doesn't exist yet, this
-//   returns a clear 503 naming the migration file instead of a generic 500.
-//   Response: { ok:true, written:1, id }
+//
+//   UPSERTS one row into the pre-existing `bridge_data` table
+//   (shop_id text primary key, data jsonb, updated_at timestamptz -- already
+//   provisioned in Supabase, confirmed empty/unused by any code before this
+//   change; NOT the `bridge_pushes` append-log table this file used
+//   originally, which was scrapped 2026-08-01 in favor of reusing bridge_data
+//   rather than standing up duplicate infra). {jobs,invoices,employees} is
+//   stored together as the `data` blob, same shape convention as
+//   api/sd-data.js's business_profiles.data. shop_id is the natural upsert
+//   key (?on_conflict=shop_id, Prefer: resolution=merge-duplicates) -- each
+//   live caller sends a full current-state snapshot on every call, not a
+//   discrete event, so "latest wins" is the correct model here, not an
+//   append-only log.
+//   Response: { ok:true, written:1, shopId }
 //
 // ACTION: pull  (symmetric read side -- no live caller yet, added for
 //   completeness since this was speced as a "push/pull" action)
-//   GET /api/bridge?action=pull&shopId=X[&limit=20]
-//   Response: { ok:true, data:[ {shop_id,jobs,invoices,employees,created_at}, ... ] }
+//   GET /api/bridge?action=pull&shopId=X
+//   Response: { ok:true, data: {jobs,invoices,employees,shop_id,updated_at} | null }
 //
 // REQUIRES env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (push/pull only --
 // proxy_get needs neither).
@@ -125,13 +133,12 @@ async function handlePush(body, res) {
     res.status(400).json({ error: { message: 'shopId is required' } });
     return;
   }
-  const row = {
-    shop_id: String(shopId),
+  const data = {
     jobs: body.jobs || null,
     invoices: body.invoices || null,
     employees: body.employees || null
   };
-  const bytes = Buffer.byteLength(JSON.stringify(row), 'utf8');
+  const bytes = Buffer.byteLength(JSON.stringify(data), 'utf8');
   if (bytes > MAX_PUSH_BYTES) {
     res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Payload is ' + bytes + ' bytes; the limit is ' + MAX_PUSH_BYTES + ' (64KB)' } });
     return;
@@ -146,26 +153,29 @@ async function handlePush(body, res) {
   }
 
   try {
-    const r = await fetch(SUPABASE_URL + '/rest/v1/bridge_pushes', {
+    // Upsert on shop_id (its primary key) -- same merge-duplicates pattern
+    // api/sd-data.js already uses for business_profiles. Each live caller
+    // sends a full current-state snapshot every time, so "latest wins" here
+    // is correct, not a data-loss shortcut.
+    const r = await fetch(SUPABASE_URL + '/rest/v1/bridge_data?on_conflict=shop_id', {
       method: 'POST',
       headers: {
         apikey: SERVICE_KEY,
         Authorization: 'Bearer ' + SERVICE_KEY,
         'Content-Type': 'application/json',
-        Prefer: 'return=representation'
+        Prefer: 'resolution=merge-duplicates,return=representation'
       },
-      body: JSON.stringify(row)
+      body: JSON.stringify({ shop_id: String(shopId), data: data, updated_at: new Date().toISOString() })
     });
     const out = await r.json().catch(function () { return null; });
     if (!r.ok) {
-      // 42P01 = raw Postgres "undefined_table". PGRST205 = PostgREST's own
-      // "table not in schema cache" code, which is what a genuinely missing
-      // table actually returns in practice (confirmed live 2026-07-31 —
-      // 42P01 alone never matched, so this fell through to a misleading
-      // generic 502 instead of the actionable message below). Check both.
+      // bridge_data already exists in Supabase (confirmed 2026-08-01), so
+      // this branch shouldn't fire in normal operation -- kept as a guard
+      // in case the table is ever renamed/dropped, so that failure mode
+      // stays self-diagnosing instead of a bare 502.
       const code = out && out.code;
       if (code === '42P01' || code === 'PGRST205') {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Bridge storage not yet provisioned — run sql/bridge_schema.sql in the Supabase SQL editor' } });
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'bridge_data table not found in Supabase — check the schema' } });
         return;
       }
       console.error('bridge push upstream error:', out);
@@ -173,7 +183,7 @@ async function handlePush(body, res) {
       return;
     }
     const written = Array.isArray(out) ? out[0] : out;
-    res.status(200).json({ ok: true, written: 1, id: written && written.id });
+    res.status(200).json({ ok: true, written: 1, shopId: written && written.shop_id });
   } catch (err) {
     console.error('bridge push error:', err);
     res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
@@ -186,8 +196,6 @@ async function handlePull(req, res) {
     res.status(400).json({ error: { message: 'shopId query param is required' } });
     return;
   }
-  const rawLimit = parseInt(getQueryParam(req, 'limit') || '20', 10);
-  const limit = Math.min(Math.max(rawLimit || 20, 1), 100);
 
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -198,8 +206,8 @@ async function handlePull(req, res) {
   }
 
   try {
-    const url = SUPABASE_URL + '/rest/v1/bridge_pushes?shop_id=eq.' + encodeURIComponent(shopId) +
-      '&select=shop_id,jobs,invoices,employees,created_at&order=created_at.desc&limit=' + limit;
+    const url = SUPABASE_URL + '/rest/v1/bridge_data?shop_id=eq.' + encodeURIComponent(shopId) +
+      '&select=shop_id,data,updated_at&limit=1';
     const r = await fetch(url, {
       headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY }
     });
@@ -207,14 +215,18 @@ async function handlePull(req, res) {
     if (!r.ok) {
       const code = rows && rows.code;
       if (code === '42P01' || code === 'PGRST205') {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Bridge storage not yet provisioned — run sql/bridge_schema.sql in the Supabase SQL editor' } });
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'bridge_data table not found in Supabase — check the schema' } });
         return;
       }
       console.error('bridge pull upstream error:', rows);
       res.status(502).json({ error: { message: 'Data store error — try again' } });
       return;
     }
-    res.status(200).json({ ok: true, data: rows || [] });
+    const row = Array.isArray(rows) && rows[0];
+    res.status(200).json({
+      ok: true,
+      data: row ? Object.assign({}, row.data, { shop_id: row.shop_id, updated_at: row.updated_at }) : null
+    });
   } catch (err) {
     console.error('bridge pull error:', err);
     res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
