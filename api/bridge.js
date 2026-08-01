@@ -178,6 +178,16 @@ async function handlePush(body, res) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'bridge_data table not found in Supabase — check the schema' } });
         return;
       }
+      // 42501 = Postgres permission_denied. Hit live 2026-08-01 even with
+      // the correct schema/query: service_role itself has no GRANT on
+      // bridge_data (unusual -- Supabase normally auto-grants service_role
+      // full access). Surfacing Postgres's own fix hint verbatim rather
+      // than a generic 502 -- this is a Supabase-side GRANT, not something
+      // fixable from this file.
+      if (code === '42501') {
+        res.status(503).json({ error: { code: 'PERMISSION_DENIED', message: (out && out.hint) || 'service_role lacks privileges on bridge_data — run the GRANT Postgres suggests in the Supabase SQL editor' } });
+        return;
+      }
       console.error('bridge push upstream error:', out);
       res.status(502).json({ error: { message: 'Data store error — try again' } });
       return;
@@ -216,6 +226,10 @@ async function handlePull(req, res) {
       const code = rows && rows.code;
       if (code === '42P01' || code === 'PGRST205') {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'bridge_data table not found in Supabase — check the schema' } });
+        return;
+      }
+      if (code === '42501') {
+        res.status(503).json({ error: { code: 'PERMISSION_DENIED', message: (rows && rows.hint) || 'service_role lacks privileges on bridge_data — run the GRANT Postgres suggests in the Supabase SQL editor' } });
         return;
       }
       console.error('bridge pull upstream error:', rows);
