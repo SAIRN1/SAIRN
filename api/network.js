@@ -115,6 +115,13 @@ async function handleGet(req, res) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'network_insights table not found — run sql/network_schema.sql in the Supabase SQL editor' } });
         return;
       }
+      // 42501 = Postgres permission_denied -- same class of gap already
+      // hit on bridge_data (2026-08-01): the table exists but service_role
+      // has no GRANT on it. Surface Postgres's own fix hint verbatim.
+      if (code === '42501') {
+        res.status(503).json({ error: { code: 'PERMISSION_DENIED', message: (rows && rows.hint) || 'service_role lacks privileges on network_insights — run the GRANT Postgres suggests in the Supabase SQL editor' } });
+        return;
+      }
       console.error('network GET upstream error:', rows);
       res.status(502).json({ error: { message: 'Data store error — try again' } });
       return;
@@ -199,6 +206,10 @@ async function handlePost(req, res) {
       const code = out && out.code;
       if (code === '42P01' || code === 'PGRST205') {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'network_insights table not found — run sql/network_schema.sql in the Supabase SQL editor' } });
+        return;
+      }
+      if (code === '42501') {
+        res.status(503).json({ error: { code: 'PERMISSION_DENIED', message: (out && out.hint) || 'service_role lacks privileges on network_insights — run the GRANT Postgres suggests in the Supabase SQL editor' } });
         return;
       }
       console.error('network POST upstream error:', out);
