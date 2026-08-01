@@ -172,6 +172,43 @@ on a different repo (SAIRN1/SAIRN -> Vercel). Compare commit recency across ever
 candidate location before trusting which one is "live." Flag and recommend archiving
 the abandoned one — don't let it silently rot and confuse a future session.
 
+**0e. Pre-build duplication check — run BEFORE any CREATE TABLE or new API
+route/handler, not after.**
+Added 2026-08-01 after a real near-miss: a new `bridge_pushes` table and its
+migration were fully designed and built for `api/bridge.js` before anyone
+checked whether existing Supabase infrastructure already covered the same
+need. It did — a `bridge_data` table, already provisioned, was discovered
+only by accident (a PostgREST error hint on the *new* table happened to
+name it: `"Perhaps you meant the table 'public.bridge_data'"`). Had that
+hint not fired, `bridge_pushes` would have shipped as a second, redundant
+table with nothing ever forcing anyone to notice the overlap — exactly the
+"second copy of something" pattern already flagged in *Eliminate
+Duplication at the Source* below, just caught one step earlier than usual
+(before ship, not after).
+
+**The rule:** before running any `CREATE TABLE` or writing a new API
+route/handler function, search first:
+- **Existing tables:** grep any known schema files (`sql/*.sql`) AND, where
+  reachable, the live Supabase schema itself for a table name or column
+  shape that already serves the same purpose. A hint in a failed-query
+  error message (like the one that caught this) is a real signal, not
+  noise — always follow it up before dismissing it.
+- **Existing API routes:** grep `api/*.js` for a handler that already talks
+  to the resource in question, or a URL the frontend already calls that
+  might just need a route built behind it (that's exactly what
+  `api/bridge.js` itself was — a URL every caller assumed already existed).
+- **Existing code call sites:** grep app HTML files for the literal name
+  under consideration (e.g. `bridge_data`, `bridge_pushes`) — zero hits
+  doesn't prove the *table* doesn't exist, but it does prove nothing in the
+  live apps is already using the *new* name you're about to create, which
+  is itself worth knowing before you commit to it.
+
+Only proceed to `CREATE TABLE` / a new handler once this search comes back
+genuinely empty. If something close-but-not-exact turns up, that's a
+judgment call (reuse with a shape change vs. build new) — log the
+reasoning per the Auto-Fix Protocol's judgment-call rule below, the same
+way the `bridge_data` vs. `bridge_pushes` decision itself was logged.
+
 ---
 
 ## Known Scope Limitation: Auth-Gated Content (added 2026-07-27)
