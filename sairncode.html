@@ -412,15 +412,151 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+        /* Was entirely absent (Guardian Check 14) -- print-color-adjust never
+           applied to anything, so colored KPI cards/badges fell back to the
+           browser's default white-strip on print. Universal selector, same
+           working pattern as StoneDesk/SAIRNbiz/SAIRNbuild. */
+        @media print { *{-webkit-print-color-adjust:exact;print-color-adjust:exact;} }
+
+        /* ── AUTH GATE (Universal Pattern 1) ─────────────────────────────
+           Matching the license-key + role-PIN pattern already used across
+           every other SAIRN app. #app stays hidden until both steps pass. */
+        #app { display: none; }
+        #app.on { display: block; }
+        #gate { position: fixed; inset: 0; background: linear-gradient(135deg,#DC2626,#F87171); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .gbox { background: #fff; border-radius: 16px; padding: 48px 40px; width: 400px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+        .glogo { font-size: 28px; font-weight: 800; color: #DC2626; letter-spacing: -1px; margin-bottom: 4px; }
+        .gsub { color: #64748b; font-size: 13px; margin-bottom: 28px; }
+        .ginp { width: 100%; border: 2px solid #e5e7eb; border-radius: 8px; padding: 12px 14px; font-size: 15px; outline: none; text-align: center; letter-spacing: 2px; margin-bottom: 12px; transition: border .2s; }
+        .ginp:focus { border-color: #F87171; }
+        .gbtn { width: 100%; background: #F87171; color: #fff; border: none; border-radius: 8px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; }
+        .gbtn:hover { background: #DC2626; }
+        .gbtn:disabled { opacity: .6; cursor: wait; }
+        .gerr { color: #dc2626; font-size: 13px; margin-top: 8px; min-height: 18px; }
+        #pin { position: fixed; inset: 0; background: linear-gradient(135deg,#DC2626,#F87171); display: none; align-items: center; justify-content: center; z-index: 9998; }
+        #pin.on { display: flex; }
+        .pbox { background: #fff; border-radius: 16px; padding: 40px; width: 360px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+        .plogo { font-size: 24px; font-weight: 800; color: #DC2626; margin-bottom: 12px; }
+        #psel { width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; padding: 9px 12px; font-size: 13px; margin-bottom: 4px; }
+        .pdots { display: flex; gap: 12px; justify-content: center; margin: 20px 0; }
+        .pdot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e5e7eb; background: #fff; transition: all .15s; }
+        .pdot.on { background: #F87171; border-color: #F87171; }
+        .ppad { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+        .pkey { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 15px; font-size: 18px; font-weight: 600; cursor: pointer; transition: all .15s; min-height: 44px; }
+        .pkey:hover { background: #fef2f2; border-color: #F87171; }
+        .perr { color: #dc2626; font-size: 12px; margin-top: 8px; min-height: 16px; }
+        .huser { text-transform: capitalize; }
+        .hbtn { background: #f3f4f6; border: none; color: #374151; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .hbtn:hover { background: #e5e7eb; }
+
+        /* ── TABLE SCROLL WRAPPER ─────────────────────────────────────────
+           Set unconditionally, not only in the phone media query -- a wide
+           table can overflow a narrow desktop window too. Same working
+           pattern as StoneDesk/SAIRNbiz/SAIRNbuild's .tw. */
+        .tw { overflow-x: auto; -webkit-overflow-scrolling: touch;
+          background:
+            linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),
+            linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,
+            linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),
+            linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;
+          background-repeat: no-repeat;
+          background-color: #fff;
+          background-size: 24px 100%,24px 100%,10px 100%,10px 100%;
+          background-attachment: local,local,scroll,scroll;
+        }
+        .tw table { min-width: 640px; }
+        .tw:focus-visible { outline: 2px solid #F87171; outline-offset: -2px; }
+
+        /* ── OFF-CANVAS NAV (mobile) ──────────────────────────────────────
+           #navbar here is a horizontal wrapping button bar, not a sidebar
+           like the other apps -- with 20 buttons across 6 groups it still
+           eats the whole screen above the fold on a phone if left inline,
+           so the same hide-by-default/slide-in-as-overlay mechanism applies
+           even though the base layout differs from StoneDesk/SAIRNbuild. */
+        /* Not the same rgba(255,255,255,.15)-on-white-#fff-color that other
+           SAIRN apps use for this button -- their headers are dark, this
+           one is white (.header{background:#fff}), so that combination is
+           invisible white-on-white here. Caught live at 390px before ship. */
+        .navtog { display: none; background: #fef2f2; border: 1px solid #F87171; color: #F87171; border-radius: 8px; width: 40px; height: 40px; font-size: 18px; cursor: pointer; flex-shrink: 0; }
+        #scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 40; }
+        #scrim.on { display: block; }
+
+        @media (max-width: 768px) {
+            .navtog { display: flex; align-items: center; justify-content: center; }
+            .header { padding: 1rem; gap: 10px; }
+            .logo { font-size: 1.2rem; }
+            .demo-badge { display: none; }
+            #navbar {
+                position: fixed; top: 0; left: 0; bottom: 0; width: 280px; z-index: 50;
+                overflow-y: auto; background: #f9fafb;
+                transform: translateX(-100%); transition: transform .22s ease;
+                box-shadow: 0 8px 30px rgba(0,0,0,.18);
+                padding-top: 4rem;
+            }
+            #navbar.on { transform: translateX(0); }
+            .nav-group-row { flex-direction: column; align-items: stretch; }
+            /* 44px minimum touch target -- measured 34px live before this fix. */
+            .nav-btn { min-height: 44px; display: flex; align-items: center; }
+            .container { padding: 1rem; }
+            .kpi-grid { grid-template-columns: repeat(auto-fit,minmax(130px,1fr)); }
+        }
     </style>
 </head>
 <body>
+
+<!-- Universal Pattern 1: role-based PIN auth. Was entirely absent -- app was
+     open by URL with zero gate (Guardian live-verification finding,
+     2026-08-01). License step does a real server round-trip against the
+     SAME shared license_keys table/validateLicenseKey() every other app
+     uses (via api/sd-data.js's license check, reused rather than
+     duplicated per Guardian Check 0e) -- not a client-side-only cosmetic
+     check. -->
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNcode</div>
+    <div class="gsub">Medical Billing Intelligence &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="SC-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()" id="gbtn">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNcode</div>
+    <div style="margin-bottom:12px;">
+      <select id="psel" onchange="pRoleChange()">
+        <option value="coder">Coder</option>
+        <option value="biller">Biller</option>
+        <option value="auditor">Auditor</option>
+        <option value="admin">Compliance Admin</option>
+      </select>
+    </div>
+    <div class="pdots">
+      <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
+      <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+    </div>
+    <div class="ppad">
+      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
+      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
+      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
+      <button class="pkey" onclick="pk('C')" style="color:#94a3b8">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')" style="color:#dc2626">&#8592;</button>
+    </div>
+    <div class="perr" id="perr"></div>
+  </div>
+</div>
+
+<div id="app">
     <div class="header">
+        <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="navbar">&#9776;</button>
         <div><div class="logo">SAIRN Code</div><div style="font-size:0.7rem;color:#94a3b8;font-style:italic;margin-top:2px;">by SAIRN Technologies™</div></div>
         <div class="header-right">
+            <span class="huser" id="huser" style="font-size:0.8rem;color:#64748b;margin-right:6px;"></span>
+            <button class="hbtn" onclick="doLogout()">Logout</button>
             <div class="demo-badge">Demo: SC-PINNACLE-2026</div>
         </div>
     </div>
+    <div id="scrim" onclick="closeNav()"></div>
 
     <div class="nav" id="navbar">
         <div class="nav-group">
@@ -541,7 +677,7 @@
                 </div>
             </div>
             <div class="table-container">
-                <table id="claimsTable">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table id="claimsTable">
                     <thead>
                         <tr>
                             <th>Claim ID</th>
@@ -618,7 +754,7 @@
                             <td>2026-01-22</td>
                         </tr>
                     </tbody>
-                </table>
+                </table></div>
             </div>
         </div>
 
@@ -632,10 +768,10 @@
             </div>
             <div class="kpi-grid" id="prebill-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Claim Ref</th><th>Error Type</th><th>Value Protected</th><th>Time Saved</th><th>Status</th><th></th></tr></thead>
                     <tbody id="prebill-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="pb-add-claim" placeholder="Claim ref" class="search-input">
@@ -656,10 +792,10 @@
             </div>
             <div class="kpi-grid" id="hcc-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>HCC Category</th><th>Patient Ref</th><th>Potential Value</th><th>Status</th><th></th></tr></thead>
                     <tbody id="hcc-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="hcc-add-cat" placeholder="HCC category" class="search-input">
@@ -679,10 +815,10 @@
             </div>
             <div class="kpi-grid" id="drg-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>DRG Code</th><th>Patient Ref</th><th>Tier</th><th>Payment</th><th></th></tr></thead>
                     <tbody id="drg-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="drg-add-code" placeholder="DRG code" class="search-input">
@@ -702,10 +838,10 @@
             </div>
             <div class="kpi-grid" id="query-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Patient</th><th>Physician</th><th>Query Type</th><th>Value Impact</th><th>Status</th><th></th></tr></thead>
                     <tbody id="query-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="qry-add-patient" placeholder="Patient ref" class="search-input">
@@ -727,10 +863,10 @@
             </div>
             <div class="kpi-grid" id="encoder-kpis"></div>
             <div class="table-container">
-                <table id="encoderTable">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table id="encoderTable">
                     <thead><tr><th>Code</th><th>Type</th><th>Description</th><th>Bundling Note</th><th></th></tr></thead>
                     <tbody id="encoder-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="enc-add-code" placeholder="Code" class="search-input">
@@ -750,10 +886,10 @@
             </div>
             <div class="kpi-grid" id="rac-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Audit Ref</th><th>Amount</th><th>Status</th><th></th></tr></thead>
                     <tbody id="rac-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="rac-add-ref" placeholder="Audit ref" class="search-input">
@@ -773,7 +909,7 @@
             </div>
             <div class="kpi-grid" id="denial-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead>
                         <tr>
                             <th>Denial Code</th>
@@ -785,7 +921,7 @@
                         </tr>
                     </thead>
                     <tbody id="denial-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="den-add-code" placeholder="Denial code" class="search-input">
@@ -806,10 +942,10 @@
             </div>
             <div class="kpi-grid" id="telehealth-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Claim Ref</th><th>POS Code</th><th>Modifier</th><th>Value</th><th>Status</th><th></th></tr></thead>
                     <tbody id="telehealth-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="th-add-claim" placeholder="Claim ref" class="search-input">
@@ -830,10 +966,10 @@
             </div>
             <div class="kpi-grid" id="anesthesia-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Case Ref</th><th>Base Units</th><th>Minutes</th><th>Time Units</th><th>QC Modifier</th><th>Total Units</th><th></th></tr></thead>
                     <tbody id="anesthesia-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="an-add-case" placeholder="Case ref" class="search-input">
@@ -853,10 +989,10 @@
             </div>
             <div class="kpi-grid" id="compliance-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Item</th><th>Category</th><th>Status</th><th>Date</th><th></th></tr></thead>
                     <tbody id="compliance-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="comp-add-item" placeholder="Item description" class="search-input">
@@ -876,7 +1012,7 @@
             </div>
             <div class="kpi-grid" id="auth-kpis"></div>
             <div class="table-container">
-                <table id="authTable">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table id="authTable">
                     <thead>
                         <tr>
                             <th>Auth ID</th>
@@ -888,7 +1024,7 @@
                         </tr>
                     </thead>
                     <tbody id="auth-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="auth-add-id" placeholder="Auth ID" class="search-input">
@@ -909,10 +1045,10 @@
             </div>
             <div class="kpi-grid" id="fraud-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Description</th><th>Confidence</th><th>Amount</th><th>Status</th><th></th></tr></thead>
                     <tbody id="fraud-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="frd-add-desc" placeholder="Anomaly description" class="search-input">
@@ -932,10 +1068,10 @@
             </div>
             <div class="kpi-grid" id="ar-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Patient Ref</th><th>Amount</th><th>Days Outstanding</th><th>Bucket</th><th>Status</th><th></th></tr></thead>
                     <tbody id="ar-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="ar-add-patient" placeholder="Patient ref" class="search-input">
@@ -955,10 +1091,10 @@
             </div>
             <div class="kpi-grid" id="revenue-kpis"></div>
             <div class="table-container">
-                <table id="revenueTable">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table id="revenueTable">
                     <thead><tr><th>Payer Type</th><th>Charge</th><th>Collected</th><th>Date</th><th></th></tr></thead>
                     <tbody id="revenue-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <select id="rev-add-payer"><option>Commercial</option><option>Government</option><option>Other</option></select>
@@ -1024,7 +1160,7 @@
             </div>
             <div class="kpi-grid" id="providers-kpis"></div>
             <div class="table-container">
-                <table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -1036,7 +1172,7 @@
                         </tr>
                     </thead>
                     <tbody id="providers-tbody"></tbody>
-                </table>
+                </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="prov-add-name" placeholder="Name" class="search-input">
@@ -1102,6 +1238,7 @@
             </div>
         </div>
     </div>
+</div>
 
     <script>
         const APP_CONFIG = {
@@ -1115,6 +1252,159 @@
             supabase: 'https://ejrlrrkvhtllxbbypdjb.supabase.co',
             is_demo: true
         };
+
+        // ── AUTH GATE (Universal Pattern 1) ─────────────────────────────────
+        // Was entirely absent -- app was open by URL, zero protection
+        // (Guardian live-verification finding, 2026-08-01). License step is a
+        // REAL server round-trip against the same shared license_keys table /
+        // validateLicenseKey() every other SAIRN app validates against (via
+        // api/sd-data.js's license check, reused per Guardian Check 0e rather
+        // than building a parallel system) -- not a client-side-only check.
+        //
+        // KNOWN GAP, flagged not hidden: the demo key SC-PINNACLE-2026
+        // referenced in this file's own demo badge has NO row in license_keys
+        // yet (confirmed live 2026-08-01 -- api/sd-data.js returns
+        // INVALID_LICENSE for it today). Someone with Supabase access needs to
+        // insert one (key='SC-PINNACLE-2026', app_id='sairncode',
+        // status='active') before the documented demo credentials will pass
+        // this real check. Not something this file/session can do -- no SQL
+        // execution access. Until then, gateGo() will correctly refuse the
+        // documented demo key, which is the honest behavior of a real check,
+        // not a bug in this gate.
+        var PINS = { coder: '1234', biller: '2345', auditor: '3456', admin: '4567' };
+        var pbuf = '';
+        var currentRole = null;
+
+        async function gateGo() {
+            var keyEl = document.getElementById('gkey');
+            var err = document.getElementById('gerr');
+            var btn = document.getElementById('gbtn');
+            var key = keyEl.value.trim();
+            err.textContent = '';
+            if (!key) { err.textContent = 'Enter a license key'; return; }
+            if (!key.toUpperCase().startsWith(APP_CONFIG.license_prefix)) {
+                err.textContent = 'License key must start with ' + APP_CONFIG.license_prefix;
+                return;
+            }
+            btn.disabled = true; btn.textContent = 'Checking…';
+            try {
+                var res = await fetch('https://sairn.vercel.app/api/sd-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+                    body: JSON.stringify({ action: 'read', resource: 'profile' })
+                });
+                if (res.status === 401) {
+                    var body = await res.json().catch(function () { return {}; });
+                    var code = body.error && body.error.code;
+                    err.textContent = code === 'INVALID_LICENSE' ? 'Unknown license key'
+                        : code === 'NO_LICENSE' ? 'License key required'
+                        : 'License check failed';
+                    btn.disabled = false; btn.textContent = 'Activate';
+                    return;
+                }
+                if (res.status === 403) {
+                    err.textContent = 'This license is not active';
+                    btn.disabled = false; btn.textContent = 'Activate';
+                    return;
+                }
+                // Any other status (200, or a resource-specific error unrelated
+                // to license validity) means the key passed the real
+                // license-validity check that runs before resource logic.
+                localStorage.setItem('sc_license_key', key);
+                document.getElementById('gate').style.display = 'none';
+                document.getElementById('pin').classList.add('on');
+            } catch (e) {
+                err.textContent = 'Could not reach the license server — check your connection';
+            }
+            btn.disabled = false; btn.textContent = 'Activate';
+        }
+
+        function pRoleChange() { pbuf = ''; dots(); document.getElementById('perr').textContent = ''; }
+
+        function dots() {
+            for (var i = 0; i < 4; i++) {
+                var d = document.getElementById('pd' + i);
+                if (d) d.className = 'pdot' + (i < pbuf.length ? ' on' : '');
+            }
+        }
+
+        function pk(k) {
+            document.getElementById('perr').textContent = '';
+            if (k === 'C') { pbuf = ''; dots(); return; }
+            if (k === 'X') { pbuf = pbuf.slice(0, -1); dots(); return; }
+            if (pbuf.length >= 4) return;
+            pbuf += k; dots();
+            if (pbuf.length === 4) setTimeout(chkPin, 120);
+        }
+
+        function chkPin() {
+            var role = document.getElementById('psel').value;
+            if (pbuf === PINS[role]) {
+                currentRole = role;
+                localStorage.setItem('sc_role', currentRole);
+                document.getElementById('pin').classList.remove('on');
+                document.getElementById('app').classList.add('on');
+                document.getElementById('huser').textContent = currentRole;
+                updateNavA11y();
+            } else {
+                document.getElementById('perr').textContent = 'Incorrect PIN';
+                pbuf = ''; dots();
+            }
+        }
+
+        function doLogout() {
+            localStorage.removeItem('sc_role');
+            currentRole = null;
+            pbuf = ''; dots();
+            document.getElementById('app').classList.remove('on');
+            document.getElementById('pin').classList.add('on');
+        }
+
+        // ── OFF-CANVAS NAV (mobile) — same drawer mechanics already proven in
+        // StoneDesk/SAIRNbiz/SAIRNbuild, adapted to #navbar's horizontal-
+        // wrapping-bar base layout instead of a <aside> sidebar. ──────────────
+        function isMobileNav() { return window.matchMedia('(max-width:768px)').matches; }
+
+        function updateNavA11y() {
+            var n = document.getElementById('navbar'); if (!n) return;
+            var hiddenOffCanvas = isMobileNav() && !n.classList.contains('on');
+            n.setAttribute('aria-hidden', hiddenOffCanvas ? 'true' : 'false');
+            if (hiddenOffCanvas) n.setAttribute('inert', ''); else n.removeAttribute('inert');
+        }
+        window.addEventListener('resize', updateNavA11y);
+
+        function toggleNav() {
+            var n = document.getElementById('navbar'); if (!n) return;
+            var open = n.classList.toggle('on');
+            document.getElementById('scrim').classList.toggle('on', open);
+            var t = document.getElementById('navtog'); if (t) t.setAttribute('aria-expanded', open ? 'true' : 'false');
+            updateNavA11y();
+            if (open) {
+                var first = n.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                if (first) first.focus();
+            }
+        }
+        function closeNav() {
+            var n = document.getElementById('navbar');
+            var wasOpen = n && n.classList.contains('on');
+            if (n) n.classList.remove('on');
+            document.getElementById('scrim').classList.remove('on');
+            var t = document.getElementById('navtog'); if (t) t.setAttribute('aria-expanded', 'false');
+            updateNavA11y();
+            if (wasOpen && isMobileNav() && t) t.focus();
+        }
+        document.addEventListener('keydown', function (e) {
+            var n = document.getElementById('navbar');
+            if (!n || !n.classList.contains('on') || !isMobileNav()) return;
+            if (e.key === 'Escape') { closeNav(); return; }
+            if (e.key === 'Tab') {
+                var f = n.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                if (!f.length) return;
+                var first = f[0], last = f[f.length - 1];
+                if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+                else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+            }
+        });
 
         const SAIRNCODE_SYSTEM_PROMPT = `You are a certified medical coding expert (CPC-level expertise) embedded in SAIRNcode, a professional medical coding and billing platform. The people asking you questions are working coders, billers, auditors, and compliance staff — treat them as peers, not laypeople.
 
@@ -1146,6 +1436,9 @@ How to answer:
         }
 
         function showPanel(panelName) {
+            // Picking a destination must dismiss the drawer, or on a phone
+            // the user taps a panel and is left staring at the menu covering it.
+            closeNav();
             const panels = document.querySelectorAll('.panel');
             const buttons = document.querySelectorAll('.nav-btn');
 
@@ -2184,6 +2477,14 @@ How to answer:
         }
 
         window.addEventListener('load', () => {
+            // Skip re-typing the license key on reload if one already passed
+            // the real check this session -- still require PIN re-entry
+            // every load/reload, same convention as StoneDesk's gate.
+            if (localStorage.getItem('sc_license_key')) {
+                document.getElementById('gate').style.display = 'none';
+                document.getElementById('pin').classList.add('on');
+            }
+            updateNavA11y();
             const lastPanel = localStorage.getItem('sc_last_panel') || 'dashboard';
             showPanel(lastPanel);
             renderRevenue();
