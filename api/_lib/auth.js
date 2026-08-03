@@ -1,9 +1,10 @@
 // api/_lib/auth.js
 // ---------------------------------------------------------------------------
-// StoneDesk per-employee RBAC — PIN hashing + signed session tokens.
-// Shared by api/sd-auth.js (issues tokens) and any api/*.js endpoint that
-// needs to know WHO is calling and WHAT ROLE they hold (currently
-// api/sd-data.js's employees resource).
+// Shared per-employee RBAC — PIN hashing + signed session tokens, used by
+// BOTH StoneDesk (api/sd-auth.js) and SAIRNbiz (api/sb-auth.js), plus any
+// api/*.js endpoint that needs to know WHO is calling and WHAT ROLE they
+// hold (currently api/sd-data.js's employees resource, both read and
+// write).
 //
 // WHY THIS EXISTS: the old client-side scaffolding (currentRole var,
 // body.is-admin/is-exec, DEFAULT_PINS shared per role) never told the
@@ -12,20 +13,41 @@
 // secret only the server holds, naming one specific employee_id + role,
 // expiring after SESSION_TTL_MS.
 //
+// GENERALIZED 2026-08-03 (was StoneDesk-only): api/sd-data.js's employees
+// WRITE branch used to trust a client-supplied body.app_id==='sairnbiz'
+// string with zero verification — any bearer of a shop's license key could
+// set that field and write payroll data regardless of role. Fixing it
+// couldn't rely on a secret embedded in sairnbiz.html itself (a static
+// client file with no backend — anything in it is exactly as extractable
+// as the app_id string already was). The real fix: sign WHICH APP issued
+// the token as a claim inside the HMAC payload (unforgeable, unlike a body
+// field), and give each app its own role vocabulary — StoneDesk's
+// owner/admin/sales/install vs SAIRNbiz's owner/hr/accounting/manager/staff
+// are deliberately separate, not merged (sql/sd_employee_auth_schema.sql
+// vs sql/sb_employee_auth_schema.sql are two distinct tables, same design).
+//
 // Zero new npm dependencies — this app's api/ layer has none today
 // (see api/_lib/license.js's use of built-in crypto). Token format is a
 // minimal HMAC-signed JSON, not a full JWT library: header/alg negotiation
 // isn't needed when both signer and verifier are this one codebase.
 //
-// REQUIRES env: SD_AUTH_SECRET (a long random string; token forgery is
-// possible without it, so treat it like SUPABASE_SERVICE_ROLE_KEY — set it
-// in Vercel project env vars, never commit it).
+// REQUIRES env: SD_AUTH_SECRET (a long random string, shared across both
+// apps' tokens — the `app` claim inside the signed payload is what keeps
+// them distinct, not separate secrets; token forgery is possible without
+// it, so treat it like SUPABASE_SERVICE_ROLE_KEY — set it in Vercel project
+// env vars, never commit it).
 // ---------------------------------------------------------------------------
 
 const crypto = require('crypto');
 
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h
-const ROLES = ['owner', 'admin', 'sales', 'install'];
+const ROLES_BY_APP = {
+  stonedesk: ['owner', 'admin', 'sales', 'install'],
+  sairnbiz: ['owner', 'hr', 'accounting', 'manager', 'staff']
+};
+// Back-compat export — StoneDesk's own role list, unchanged shape for any
+// existing caller that imported ROLES expecting just StoneDesk's set.
+const ROLES = ROLES_BY_APP.stonedesk;
 
 function b64url(buf) {
   return Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -76,13 +98,22 @@ function verifyPin(pin, pin_hash, pin_salt) {
 }
 
 // ── Session tokens ──────────────────────────────────────────────────────
-// signSessionToken({employee_id, role, license_hash}) -> 'payload.sig'
+// signSessionToken({employee_id, role, license_hash, app}) -> 'payload.sig'
+// `app` must be 'stonedesk' or 'sairnbiz' — it's signed INTO the payload
+// (not a caller-suppliable field on verify), which is what makes this an
+// actual fix for the old body.app_id=='sairnbiz' spoofing problem.
 function signSessionToken(claims) {
-  if (ROLES.indexOf(claims.role) === -1) {
-    throw new Error('signSessionToken: invalid role "' + claims.role + '"');
+  const app = claims.app;
+  const roles = ROLES_BY_APP[app];
+  if (!roles) {
+    throw new Error('signSessionToken: unknown app "' + app + '"');
+  }
+  if (roles.indexOf(claims.role) === -1) {
+    throw new Error('signSessionToken: invalid role "' + claims.role + '" for app "' + app + '"');
   }
   const secret = getSecret();
   const payload = {
+    app: app,
     employee_id: claims.employee_id,
     role: claims.role,
     license_hash: claims.license_hash,
@@ -95,12 +126,17 @@ function signSessionToken(claims) {
   return payloadB64 + '.' + b64url(sig);
 }
 
-// verifySessionToken(token, license_hash) -> {employee_id, role} or null
+// verifySessionToken(token, license_hash, expectedApp) -> {employee_id, role, app} or null
 // license_hash is required and checked: a token minted for one shop's
 // license must never be accepted against a different shop's requests, even
 // if somehow replayed (Bearer-license-per-request model matches
 // api/sd-data.js — the token augments that, it doesn't replace it).
-function verifySessionToken(token, license_hash) {
+// expectedApp, when passed, requires the token's signed `app` claim to
+// match — this is what lets a single endpoint (api/sd-data.js's employees
+// write gate) tell a genuine StoneDesk token from a genuine SAIRNbiz token,
+// without either app being able to just claim to be the other the way the
+// old body.app_id string could.
+function verifySessionToken(token, license_hash, expectedApp) {
   if (!token || typeof token !== 'string') return null;
   const parts = token.split('.');
   if (parts.length !== 2) return null;
@@ -115,11 +151,13 @@ function verifySessionToken(token, license_hash) {
 
   let payload;
   try { payload = JSON.parse(b64urlDecode(payloadB64).toString('utf8')); } catch (e) { return null; }
-  if (!payload || ROLES.indexOf(payload.role) === -1) return null;
+  if (!payload || !payload.app || !ROLES_BY_APP[payload.app]) return null;
+  if (ROLES_BY_APP[payload.app].indexOf(payload.role) === -1) return null;
+  if (expectedApp && payload.app !== expectedApp) return null;
   if (!payload.exp || Date.now() > payload.exp) return null;
   if (!license_hash || payload.license_hash !== license_hash) return null;
 
-  return { employee_id: payload.employee_id, role: payload.role };
+  return { employee_id: payload.employee_id, role: payload.role, app: payload.app };
 }
 
 // Convenience: pull the session token out of the X-SD-Auth header (kept
@@ -133,6 +171,7 @@ function tokenFromRequest(req) {
 
 module.exports = {
   ROLES,
+  ROLES_BY_APP,
   hashPin,
   verifyPin,
   signSessionToken,

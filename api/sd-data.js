@@ -37,6 +37,18 @@ const RESOURCES = { profile: true, memory: true, employees: true, slabs: true };
 // hourly_rate stripped from the response (see EMPLOYEES read branch below)
 // — only Owner sees pay.
 const EMPLOYEES_READ_DENIED_ROLES = { sales: true, install: true };
+// Roles allowed to WRITE the employees resource (added 2026-08-03, closing
+// the security-auditor finding that this branch used to trust an unverified
+// body.app_id==='sairnbiz' string with no role check at all). Write access
+// stays SAIRNbiz-only, matching this resource's original documented design
+// ("employees is managed by SAIRNbiz; StoneDesk may only read it") — this
+// fix replaces the unverified string with a verified SAIRNbiz session
+// token, it does not also grant StoneDesk write access, which would have
+// been a scope change beyond fixing the auth hole. owner/hr: HR manages
+// employee records in SAIRNbiz's own role model; accounting/manager/staff
+// do not get write access here (a default call, flagged as adjustable
+// rather than blocking on it).
+const EMPLOYEES_WRITE_ALLOWED_ROLES = { owner: true, hr: true };
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 65536
 
 module.exports = async (req, res) => {
@@ -207,7 +219,12 @@ module.exports = async (req, res) => {
     // stripped — only Owner sees pay. No session token at all -> refused,
     // same as an unrecognized role (fail closed, not open).
     if (resource === 'employees' && action === 'read') {
-      const session = verifySessionToken(tokenFromRequest(req), licHash);
+      // expectedApp:'stonedesk' matters here — without it, a valid SAIRNbiz
+      // token (role 'staff'/'accounting'/etc, none of which appear in
+      // EMPLOYEES_READ_DENIED_ROLES below since that list only names
+      // StoneDesk roles) would slip through this gate unintentionally.
+      // Caught while generalizing api/_lib/auth.js for api/sb-auth.js.
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session || EMPLOYEES_READ_DENIED_ROLES[session.role]) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Your role does not have access to employee records' } });
         return;
@@ -238,9 +255,18 @@ module.exports = async (req, res) => {
     // SAIRNbiz with no server-side write path at all, so SAIRNbiz kept doing
     // a direct client-side anon upsert that can never work (anon is locked
     // out of every table by design -- see this file's header). This branch is
-    // that missing path. StoneDesk is still refused: the app_id gate below
-    // keeps write access to SAIRNbiz only, so the original READ_ONLY
-    // guarantee for StoneDesk is preserved, not dropped.
+    // that missing path.
+    //
+    // SECURITY (security-auditor finding, 2026-08-03): this used to gate
+    // purely on body.app_id==='sairnbiz' -- a client-supplied string with no
+    // verification at all. Any bearer of a shop's license key could set
+    // that field and write/corrupt payroll data regardless of role,
+    // completely bypassing the employees READ gate's RBAC above it. Fixed
+    // by requiring a real SAIRNbiz session token (api/_lib/auth.js, minted
+    // by api/sb-auth.js) with a signed `app`:'sairnbiz' claim and an
+    // owner/hr role -- unforgeable, unlike the old body field. body.app_id
+    // is now informational only (kept for the response), not a security
+    // boundary.
     //
     // Conflict target is (customer_email, employee_id) -- verified against
     // the live table before writing this, not assumed: probing on_conflict
@@ -251,9 +277,9 @@ module.exports = async (req, res) => {
     // not license_hash -- employees deliberately differs from sd_slabs and
     // business_profiles in that respect).
     if (resource === 'employees' && action === 'write') {
-      const appId = body && body.app_id;
-      if (appId !== 'sairnbiz') {
-        res.status(405).json({ error: { code: 'READ_ONLY', message: 'employees is managed by SAIRNbiz; only SAIRNbiz may write it' } });
+      const sbSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbiz');
+      if (!sbSession || !EMPLOYEES_WRITE_ALLOWED_ROLES[sbSession.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Your role does not have write access to employee records' } });
         return;
       }
       // No tenant identity -> refuse rather than write untenanted rows that
