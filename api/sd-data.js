@@ -28,8 +28,15 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 
 const RESOURCES = { profile: true, memory: true, employees: true, slabs: true };
+// Roles refused entirely for the employees resource (carries hourly_rate —
+// payroll). Owner/Manager may read; Sales/Install may not, per the RBAC
+// design in sql/sd_employee_auth_schema.sql. Manager additionally gets
+// hourly_rate stripped from the response (see EMPLOYEES read branch below)
+// — only Owner sees pay.
+const EMPLOYEES_READ_DENIED_ROLES = { sales: true, install: true };
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 65536
 
 module.exports = async (req, res) => {
@@ -193,7 +200,18 @@ module.exports = async (req, res) => {
     }
 
     // ── EMPLOYEES (read-only from StoneDesk; scoped by customer_email — D1b) ─
+    // RBAC gate (added alongside sql/sd_employee_auth_schema.sql +
+    // api/sd-auth.js): this resource carries hourly_rate (payroll), so it's
+    // the first real server-side role check in this file. Sales/Install are
+    // refused outright; Owner/Manager may read, but Manager gets hourly_rate
+    // stripped — only Owner sees pay. No session token at all -> refused,
+    // same as an unrecognized role (fail closed, not open).
     if (resource === 'employees' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash);
+      if (!session || EMPLOYEES_READ_DENIED_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Your role does not have access to employee records' } });
+        return;
+      }
       // No tenant identity -> nothing this shop is allowed to see. Honest empty.
       if (!lic.customer_email) { res.status(200).json({ ok: true, data: [] }); return; }
       const r = await fetch(rest(
@@ -201,7 +219,17 @@ module.exports = async (req, res) => {
         '&source_app=eq.sairnbiz&status=eq.Active&select=data'), { headers });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data) });
+      let out = (rows || []).map((x) => x.data);
+      if (session.role !== 'owner') {
+        // Manager: full roster visibility, but never payroll. Shallow-copy
+        // so we're not mutating whatever the upstream client library cached.
+        out = out.map(function (e) {
+          var copy = Object.assign({}, e);
+          delete copy.hourly_rate;
+          return copy;
+        });
+      }
+      res.status(200).json({ ok: true, data: out });
       return;
     }
     // ── EMPLOYEES write (SAIRNbiz is the owner/writer of this resource) ────
