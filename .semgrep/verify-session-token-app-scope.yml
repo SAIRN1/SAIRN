@@ -1,0 +1,23 @@
+rules:
+  - id: verify-session-token-missing-expected-app
+    languages: [javascript]
+    severity: ERROR
+    message: >
+      verifySessionToken() called without its third argument (expectedApp).
+      Without it, a valid token from ONE SAIRN app can pass ANOTHER app's
+      gate whenever their role vocabularies overlap — e.g. both StoneDesk
+      and SAIRNbiz have an 'owner' role, so a SAIRNbiz owner token could
+      pass a StoneDesk-only check. Always scope the check:
+      verifySessionToken(token, license_hash, 'stonedesk') or
+      verifySessionToken(token, license_hash, 'sairnbiz').
+      This is the exact bug class found (and fixed) in api/sd-auth.js's
+      setup action and api/sd-data.js's employees read gate on 2026-08-03 —
+      this rule exists so it can't regress silently. See api/_lib/auth.js's
+      verifySessionToken doc comment for the full explanation.
+    patterns:
+      - pattern: verifySessionToken($TOKEN, $HASH)
+    paths:
+      include:
+        - "**/api/**/*.js"
+      exclude:
+        - "**/api/_lib/auth.js"
