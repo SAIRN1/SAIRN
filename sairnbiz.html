@@ -222,30 +222,45 @@ textarea{resize:vertical;min-height:80px;}
   </div>
 </div>
 
+<!-- Per-employee login (api/sb-auth.js) — replaces the old role-dropdown +
+     shared-per-role-PIN keypad. Real labels + role="alert" error region +
+     logical tab order, matching StoneDesk's equivalent rewire. -->
 <div id="pin">
   <div class="pbox">
     <div class="plogo">SAIRNbiz</div>
-    <div class="prole" id="prole">Owner / CEO</div>
-    <div style="margin-bottom:12px;">
-      <select id="psel" onchange="pRoleChange()" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;">
-        <option value="owner">Owner / CEO</option>
-        <option value="hr">HR Manager</option>
-        <option value="accounting">Accounting</option>
-        <option value="manager">Manager</option>
-        <option value="staff">Staff</option>
-      </select>
+    <div id="sb-login-view">
+      <label for="sb-employee-input" style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block">Employee ID</label>
+      <input type="text" id="sb-employee-input" autocomplete="username" maxlength="128" aria-required="true"
+        style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:14px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('sb-pin-input').focus();}">
+      <label for="sb-pin-input" style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block">PIN</label>
+      <input type="password" id="sb-pin-input" maxlength="8" inputmode="numeric" autocomplete="current-password" aria-required="true"
+        style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:16px;letter-spacing:4px;text-align:center;margin-bottom:14px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();sbDoLogin();}">
+      <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+      <button class="gbtn" onclick="sbDoLogin()" style="width:100%">Sign In</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+        <a href="#" onclick="sbShowBootstrap();return false;" style="color:var(--muted)">First time setup</a>
+      </div>
     </div>
-    <div class="pdots">
-      <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
-      <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+    <div id="sb-bootstrap-view" style="display:none">
+      <div style="font-size:13px;margin-bottom:14px;text-align:center;line-height:1.5">Set up the Owner account for this business. This only works once.</div>
+      <label for="sb-boot-employee-input" style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block">Your Employee ID</label>
+      <input type="text" id="sb-boot-employee-input" autocomplete="username" maxlength="128" aria-required="true"
+        style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:14px;box-sizing:border-box">
+      <label for="sb-boot-name-input" style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block">Your Name</label>
+      <input type="text" id="sb-boot-name-input" autocomplete="name" maxlength="128"
+        style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:14px;box-sizing:border-box">
+      <label for="sb-boot-pin-input" style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block">Choose a PIN (6-8 digits)</label>
+      <input type="password" id="sb-boot-pin-input" maxlength="8" inputmode="numeric" autocomplete="new-password" aria-required="true"
+        style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:16px;letter-spacing:4px;text-align:center;margin-bottom:14px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();sbDoBootstrap();}">
+      <div class="perr" id="sb-boot-error" role="alert" aria-live="polite"></div>
+      <button class="gbtn" onclick="sbDoBootstrap()" style="width:100%">Create Owner Account</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+        <a href="#" onclick="sbShowLogin();return false;" style="color:var(--muted)">Back to sign in</a>
+      </div>
     </div>
-    <div class="ppad">
-      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
-      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
-      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
-      <button class="pkey" onclick="pk('C')" style="color:var(--muted)">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')" style="color:var(--danger)">&#8592;</button>
-    </div>
-    <div class="perr" id="perr"></div>
   </div>
 </div>
 
@@ -695,12 +710,15 @@ textarea{resize:vertical;min-height:80px;}
   <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">PINs, roles, and system configuration</div></div>
   <div class="pa"><button class="btn bp bs" onclick="saveSettings()">Save Settings</button></div></div>
   <div class="g2">
-    <div class="card"><div class="ch"><span class="ct">PIN Management</span></div><div class="cb">
-      <div class="fg"><label>Owner PIN</label><input id="sp-owner" type="password" maxlength="4" placeholder="4 digits"></div>
-      <div class="fg"><label>HR Manager PIN</label><input id="sp-hr" type="password" maxlength="4" placeholder="4 digits"></div>
-      <div class="fg"><label>Accounting PIN</label><input id="sp-acc" type="password" maxlength="4" placeholder="4 digits"></div>
-      <div class="fg"><label>Manager PIN</label><input id="sp-mgr" type="password" maxlength="4" placeholder="4 digits"></div>
-      <div class="fg"><label>Staff PIN</label><input id="sp-staff" type="password" maxlength="4" placeholder="4 digits"></div>
+    <!-- Retired 2026-08-03 (Guardian Check 0b: this card's fields wrote to
+         PINS/sb_cfg.pins, which nothing checks at login anymore now that
+         sign-in goes through api/sb-auth.js's per-employee credentials —
+         leaving the old inputs live would have quietly lied about what
+         "Save Settings" does here. Employee credential provisioning has no
+         UI yet; only api/sb-auth.js's setup action (Owner/HR token
+         required), called directly. -->
+    <div class="card"><div class="ch"><span class="ct">Employee Access</span></div><div class="cb">
+      <div style="font-size:13px;color:var(--muted);line-height:1.5">Sign-in now uses per-employee credentials, not shared per-role PINs. There's no settings-panel UI to manage those yet — ask an Owner to provision new employee logins.</div>
     </div></div>
     <div class="card"><div class="ch"><span class="ct">System Settings</span></div><div class="cb">
       <div class="fg"><label>Fiscal Year Start</label><select id="ss-fy"><option>January</option><option>April</option><option>July</option><option>October</option></select></div>
@@ -734,8 +752,11 @@ var DATA_API='https://sairn.vercel.app/api/sd-data';
 // returns HTTP 200 from /api/sd-data (valid, active, not trial-expired, tenant
 // customer_email set) while this gate refused it.
 var VALID=['SB-','SD-','DEMO-','SAIRN-','BIZ-'];
-var PINS={owner:'1234',hr:'2345',accounting:'3456',manager:'4567',staff:'5678'};
-var eid=null,pbuf='',prole='owner',aiHist=[];
+// PINS (shared per-role, plaintext in source) retired 2026-08-03 — login
+// now goes through api/sb-auth.js's per-employee credentials (sbDoLogin
+// below). pbuf (keypad entry buffer) retired with it; eid is unrelated
+// (employee-modal edit-id tracking, still live, do not remove).
+var eid=null,prole='owner',aiHist=[];
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -753,24 +774,89 @@ function gateGo(){
   st('sb_lic',k);$('gate').style.display='none';$('pin').classList.add('on');
 }
 
-function pRoleChange(){
-  prole=$('psel').value;
-  var L={owner:'Owner / CEO',hr:'HR Manager',accounting:'Accounting',manager:'Manager',staff:'Staff'};
-  $('prole').textContent=L[prole]||prole;pbuf='';dots();
+// Real per-employee login against api/sb-auth.js, replacing the old
+// role-dropdown + shared-per-role-PIN keypad (pRoleChange/pk/dots/chkPin,
+// PINS object) entirely. Mirrors StoneDesk's equivalent rewire
+// (api/sd-auth.js) — same server, same design, separate table/role set
+// (sql/sb_employee_auth_schema.sql: owner/hr/accounting/manager/staff,
+// unchanged from this app's existing role vocabulary above).
+var SB_AUTH_API    = 'https://sairn.vercel.app/api/sb-auth';
+var SB_SESSION_KEY = 'sb_session_token';   // sessionStorage — also read by syncEmps() above
+var SB_ROLE_KEY    = 'sb_session_role';
+var SB_EMPLOYEE_KEY= 'sb_session_employee_id';
+
+function sbAuthErr(body,fallback){return (body&&body.error&&body.error.message)||fallback;}
+
+function sbApplyLoggedIn(role){
+  prole=role;st('sb_role',prole);
+  $('pin').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
+  init();
 }
-function pk(k){$('perr').textContent='';
-  if(k==='C'){pbuf='';dots();return;}
-  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
-  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+
+function sbDoLogin(){
+  var empEl=$('sb-employee-input'),pinEl=$('sb-pin-input'),errEl=$('perr');
+  var employeeId=(empEl?empEl.value:'').trim(),pin=(pinEl?pinEl.value:'').trim();
+  var lic=ld('sb_lic',null);
+  if(!employeeId||!pin){if(errEl)errEl.textContent='Enter your employee ID and PIN';return;}
+  if(!lic){if(errEl)errEl.textContent='No license key found on this install';return;}
+  if(errEl)errEl.textContent='';
+  fetch(SB_AUTH_API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic},
+    body:JSON.stringify({action:'login',employee_id:employeeId,pin:pin})
+  }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return{ok:r.ok,body:d};});})
+  .then(function(res){
+    if(!res.ok||!res.body||!res.body.ok){
+      if(errEl)errEl.textContent=sbAuthErr(res.body,'Sign-in failed — try again');
+      if(pinEl)pinEl.value='';
+      return;
+    }
+    try{sessionStorage.setItem(SB_SESSION_KEY,res.body.token);sessionStorage.setItem(SB_ROLE_KEY,res.body.role);sessionStorage.setItem(SB_EMPLOYEE_KEY,res.body.employee_id);}catch(e){}
+    if(pinEl)pinEl.value='';
+    sbApplyLoggedIn(res.body.role);
+  }).catch(function(){if(errEl)errEl.textContent='Network error — check your connection and try again';});
 }
-function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
-function chkPin(){
-  if(pbuf===PINS[prole]){
-    st('sb_role',prole);$('pin').classList.remove('on');$('app').classList.add('on');
-    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);init();
-  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+window.sbDoLogin=sbDoLogin;
+
+function sbShowBootstrap(){
+  var lv=$('sb-login-view'),bv=$('sb-bootstrap-view');
+  if(lv)lv.style.display='none';if(bv)bv.style.display='block';
+  var el=$('sb-boot-employee-input');if(el)el.focus();
 }
-function doLogout(){st('sb_role',null);$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+window.sbShowBootstrap=sbShowBootstrap;
+
+function sbShowLogin(){
+  var lv=$('sb-login-view'),bv=$('sb-bootstrap-view');
+  if(bv)bv.style.display='none';if(lv)lv.style.display='block';
+  var el=$('sb-employee-input');if(el)el.focus();
+}
+window.sbShowLogin=sbShowLogin;
+
+function sbDoBootstrap(){
+  var empEl=$('sb-boot-employee-input'),nameEl=$('sb-boot-name-input'),pinEl=$('sb-boot-pin-input'),errEl=$('sb-boot-error');
+  var employeeId=(empEl?empEl.value:'').trim(),displayName=(nameEl?nameEl.value:'').trim(),pin=(pinEl?pinEl.value:'').trim();
+  var lic=ld('sb_lic',null);
+  if(!employeeId||!/^\d{6,8}$/.test(pin)){if(errEl)errEl.textContent='Employee ID and a 6-8 digit PIN are required';return;}
+  if(!lic){if(errEl)errEl.textContent='No license key found on this install';return;}
+  if(errEl)errEl.textContent='';
+  fetch(SB_AUTH_API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic},
+    body:JSON.stringify({action:'bootstrap',employee_id:employeeId,display_name:displayName,pin:pin})
+  }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return{ok:r.ok,body:d};});})
+  .then(function(res){
+    if(!res.ok||!res.body||!res.body.ok){
+      if(errEl)errEl.textContent=sbAuthErr(res.body,'Setup failed — try again');
+      return;
+    }
+    try{sessionStorage.setItem(SB_SESSION_KEY,res.body.token);sessionStorage.setItem(SB_ROLE_KEY,res.body.role);sessionStorage.setItem(SB_EMPLOYEE_KEY,res.body.employee_id);}catch(e){}
+    sbApplyLoggedIn(res.body.role);
+  }).catch(function(){if(errEl)errEl.textContent='Network error — check your connection and try again';});
+}
+window.sbDoBootstrap=sbDoBootstrap;
+
+function doLogout(){
+  st('sb_role',null);
+  try{sessionStorage.removeItem(SB_SESSION_KEY);sessionStorage.removeItem(SB_ROLE_KEY);sessionStorage.removeItem(SB_EMPLOYEE_KEY);}catch(e){}
+  $('app').classList.remove('on');$('pin').classList.add('on');toast('Logged out');
+}
 
 function isMobileNav(){return window.matchMedia('(max-width:768px)').matches;}
 
@@ -1235,6 +1321,13 @@ function syncSupabase(){
 // as a bearer token, and the server scopes the write to that license's
 // customer_email (D1b tenancy). Conflict target and tenancy column were both
 // verified against the live table before this change, not assumed.
+//
+// X-SD-Auth (added alongside the per-employee RBAC rewire): the employees
+// WRITE branch now requires a verified SAIRNbiz owner/hr session token
+// (api/sb-auth.js) instead of trusting body.app_id — that string is still
+// sent below (informational only now) but is no longer what grants access.
+// Without this header, sync silently fails for every role, Owner included,
+// once the RBAC gate is live server-side.
 function syncEmps(emps){
   var lic=ld('sb_lic',null);
   if(!lic){console.warn('sync skipped: no license key on this install');return Promise.resolve(false);}
@@ -1243,9 +1336,11 @@ function syncEmps(emps){
     status:e.status,
     data:{first_name:e.fn,last_name:e.ln,role:e.role,department:e.dept,employment_type:e.type,hourly_rate:e.rate,start_date:e.start,phone:e.phone,email:e.email}
   };});
+  var headers={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  try{var tok=sessionStorage.getItem('sb_session_token');if(tok)headers['X-SD-Auth']=tok;}catch(e){}
   return fetch(DATA_API,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    headers:headers,
     body:JSON.stringify({action:'write',resource:'employees',app_id:APP_ID,payload:roster})
   }).then(function(r){
     return r.json().then(function(d){
@@ -1303,29 +1398,16 @@ function csv(type){
   toast('Exported - '+fn);
 }
 
-function loadPins(){
-  var saved=ld('sb_cfg',null);
-  if(saved&&saved.pins){
-    ['owner','hr','accounting','manager','staff'].forEach(function(r){
-      if(saved.pins[r]&&/^\d{4}$/.test(saved.pins[r]))PINS[r]=saved.pins[r];
-    });
-  }
-}
+// loadPins()/PINS retired 2026-08-03 — nothing checks PINS at login
+// anymore (see api/sb-auth.js). Function removed rather than left as a
+// silent no-op; sb_cfg.pins may still exist in old localStorage from
+// before this change but is never read.
 function saveSettings(){
-  var fields={owner:$('sp-owner').value.trim(),hr:$('sp-hr').value.trim(),accounting:$('sp-acc').value.trim(),manager:$('sp-mgr').value.trim(),staff:$('sp-staff').value.trim()};
-  var roles=Object.keys(fields);
-  for(var i=0;i<roles.length;i++){
-    var v=fields[roles[i]];
-    if(v&&!/^\d{4}$/.test(v)){toast('PIN must be exactly 4 digits ('+roles[i]+')',4000);return;}
-  }
-  roles.forEach(function(r){if(fields[r])PINS[r]=fields[r];});
-  st('sb_cfg',{pins:{owner:PINS.owner,hr:PINS.hr,accounting:PINS.accounting,manager:PINS.manager,staff:PINS.staff},fy:$('ss-fy').value,pay:$('ss-pay').value,ot:$('ss-ot').value,terms:$('ss-terms').value,tax:$('ss-tax').value});
-  ['sp-owner','sp-hr','sp-acc','sp-mgr','sp-staff'].forEach(function(id){$(id).value='';});
-  toast('Settings saved - PIN changes take effect immediately');
+  st('sb_cfg',{fy:$('ss-fy').value,pay:$('ss-pay').value,ot:$('ss-ot').value,terms:$('ss-terms').value,tax:$('ss-tax').value});
+  toast('Settings saved');
 }
 
 (function(){
-  loadPins();
   var k=ld('sb_lic',null);if(k){$('gate').style.display='none';$('pin').classList.add('on');}
   rBenKPIs();
 })();

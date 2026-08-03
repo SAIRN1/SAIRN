@@ -2333,30 +2333,59 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 
 </script>
 
-<!-- SAIRN AUTH GATE — Role + PIN -->
+<!-- SAIRN AUTH GATE — per-employee credential (api/sd-auth.js), replaces the
+     old shared-per-role-PIN scaffolding. Real labels + role="alert" error
+     region + logical tab order (employee ID -> PIN -> Sign In), per the
+     accessibility pass run alongside this rewire. -->
 <div id="auth-screen">
   <div class="auth-glow"></div>
   <div class="auth-logo">StoneDesk&#8482;</div>
   <div class="auth-tag">Stone Fabrication Intelligence Platform</div>
   <div class="auth-box">
-    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Select your role</div>
-    <div class="role-pills" id="sd-role-pills">
-      <div class="role-pill active" data-role="owner"   onclick="sdSelRole(this)">&#128081; Owner</div>
-      <div class="role-pill"        data-role="admin"   onclick="sdSelRole(this)">&#9874;&#65039; Manager</div>
-      <div class="role-pill"        data-role="sales"   onclick="sdSelRole(this)">&#128188; Sales</div>
-      <div class="role-pill"        data-role="install" onclick="sdSelRole(this)">&#128295; Install</div>
+    <div id="sd-login-view">
+      <label for="sd-employee-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">Employee ID</label>
+      <input type="text" id="sd-employee-input" name="employee_id" autocomplete="username" maxlength="128"
+        placeholder="e.g. jsmith" aria-required="true"
+        style="width:100%;padding:12px;font-size:16px;text-align:center;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;margin-bottom:14px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('sd-pin-input').focus();}"
+        onfocus="this.style.borderColor='rgba(232,133,10,0.7)'"
+        onblur="this.style.borderColor='rgba(232,133,10,0.3)'"
+      >
+      <label for="sd-pin-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">PIN</label>
+      <input type="password" id="sd-pin-input" name="pin" maxlength="8" inputmode="numeric" autocomplete="current-password"
+        placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" aria-required="true"
+        style="width:100%;padding:16px;font-size:32px;letter-spacing:14px;text-align:center;font-family:monospace;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;transition:border-color .15s;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();doLogin();}"
+        onfocus="this.style.borderColor='rgba(232,133,10,0.7)'"
+        onblur="this.style.borderColor='rgba(232,133,10,0.3)'"
+      >
+      <div class="auth-error" id="auth-error" role="alert" aria-live="polite" style="margin-top:10px"></div>
+      <button class="auth-btn" onclick="doLogin()" style="margin-top:14px">Sign In to StoneDesk&#8482;</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+        <a href="#" id="sd-bootstrap-link" onclick="sdShowBootstrap();return false;" style="color:var(--muted);text-decoration:underline">First time setup</a>
+      </div>
     </div>
-    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px">Enter PIN</div>
-    <input type="password" id="sd-pin-input" maxlength="4" inputmode="numeric"
-      placeholder="&#8226;&#8226;&#8226;&#8226;"
-      style="width:100%;padding:16px;font-size:32px;letter-spacing:14px;text-align:center;font-family:monospace;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;transition:border-color .15s"
-      oninput="var _v=this.value;if(_v.length===4){var _el=this;setTimeout(function(){if(_el.value.length===4)doLogin();},30);}"
-      onfocus="this.style.borderColor='rgba(232,133,10,0.7)'"
-      onblur="this.style.borderColor='rgba(232,133,10,0.3)'"
-    >
-    <div class="auth-error" id="auth-error" style="margin-top:10px"></div>
-    <button class="auth-btn" onclick="doLogin()" style="margin-top:14px">Sign In to StoneDesk&#8482;</button>
-    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Demo PIN: 1234</div>
+    <div id="sd-bootstrap-view" style="display:none">
+      <div style="font-size:13px;color:#fff;margin-bottom:14px;text-align:center;line-height:1.5">Set up the Owner account for this shop. This only works once — before that, every login attempt is refused.</div>
+      <label for="sd-boot-employee-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">Your Employee ID</label>
+      <input type="text" id="sd-boot-employee-input" autocomplete="username" maxlength="128" aria-required="true"
+        style="width:100%;padding:12px;font-size:16px;text-align:center;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;margin-bottom:14px;box-sizing:border-box"
+        onfocus="this.style.borderColor='rgba(232,133,10,0.7)'" onblur="this.style.borderColor='rgba(232,133,10,0.3)'">
+      <label for="sd-boot-name-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">Your Name</label>
+      <input type="text" id="sd-boot-name-input" autocomplete="name" maxlength="128"
+        style="width:100%;padding:12px;font-size:16px;text-align:center;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;margin-bottom:14px;box-sizing:border-box"
+        onfocus="this.style.borderColor='rgba(232,133,10,0.7)'" onblur="this.style.borderColor='rgba(232,133,10,0.3)'">
+      <label for="sd-boot-pin-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">Choose a PIN (6-8 digits)</label>
+      <input type="password" id="sd-boot-pin-input" maxlength="8" inputmode="numeric" autocomplete="new-password" aria-required="true"
+        style="width:100%;padding:16px;font-size:32px;letter-spacing:14px;text-align:center;font-family:monospace;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;transition:border-color .15s;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();sdDoBootstrap();}"
+        onfocus="this.style.borderColor='rgba(232,133,10,0.7)'" onblur="this.style.borderColor='rgba(232,133,10,0.3)'">
+      <div class="auth-error" id="sd-boot-error" role="alert" aria-live="polite" style="margin-top:10px"></div>
+      <button class="auth-btn" onclick="sdDoBootstrap()" style="margin-top:14px">Create Owner Account</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+        <a href="#" onclick="sdShowLogin();return false;" style="color:var(--muted);text-decoration:underline">Back to sign in</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -21805,13 +21834,26 @@ function getSDSupabase() {
 // cannot reach these tables. Auth is the license key as a bearer token; the
 // endpoint returns { ok, data } where `data` matches the shapes the old
 // sb.from(...) calls returned. Returns `data` (or null on any failure).
+//
+// X-SD-Auth (added alongside the per-employee RBAC rewire): resource
+// 'employees' now requires a verified session token server-side (see
+// api/sd-data.js) -- loadBizEmployees() below calls sdData('read',
+// 'employees',{}), and without this header that call would 403 for every
+// role, including Owner, the moment the RBAC gate deployed. Harmless to
+// send on every call (other resources ignore it); sessionStorage key name
+// matches SD_SESSION_KEY in the login controller further down this file.
 async function sdData(action, resource, payload) {
   const licKey = sdLicenseKey();
   if (!licKey) return null;
   try {
+    const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey };
+    try {
+      const tok = sessionStorage.getItem('sd_session_token');
+      if (tok) headers['X-SD-Auth'] = tok;
+    } catch (e) {}
     const res = await fetch('/api/sd-data', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey },
+      headers: headers,
       body: JSON.stringify({ action: action, resource: resource, payload: payload })
     });
     if (!res.ok) return null;
@@ -27181,10 +27223,16 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   // -- STATE -------------------------------------------------
   var APP_ID       = 'stonedesk';
   var FIRST_PAGE   = 'dashboard';
-  var DEFAULT_PINS = {"owner": "1234", "admin": "2345", "sales": "3456", "install": "4567"};
   var ROLE_LABELS  = {"owner": "Owner", "admin": "Manager", "sales": "Sales Rep", "install": "Installer"};
   var ROLE_INITS   = {"owner": "OW", "admin": "MG", "sales": "SR", "install": "IN"};
-  var currentRole  = Object.keys(DEFAULT_PINS)[0];
+  // currentRole now comes ONLY from a server-verified api/sd-auth.js login
+  // response (doLogin/sdDoBootstrap below) -- no more self-selected role
+  // pill / shared DEFAULT_PINS. Empty until a real login succeeds.
+  var currentRole  = '';
+  var SD_AUTH_API     = 'https://sairn.vercel.app/api/sd-auth';
+  var SD_SESSION_KEY  = 'sd_session_token';   // sessionStorage -- also read by sdData() elsewhere in this file
+  var SD_ROLE_KEY      = 'sd_session_role';
+  var SD_EMPLOYEE_KEY  = 'sd_session_employee_id';
 
   // -- SHOW PAGE ---------------------------------------------
   function showPage(id) {
@@ -27212,36 +27260,127 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   window.nav      = showPage; // sairnbiz alias
 
   // -- LOGIN -------------------------------------------------
-  function getPins() {
-    try {
-      var stored = JSON.parse(localStorage.getItem(APP_ID + '_pins'));
-      if (stored) return stored;
-    } catch(e) {}
-    return DEFAULT_PINS;
+  // Real per-employee login against api/sd-auth.js, replacing the old
+  // getPins()/selRole()/shared-DEFAULT_PINS scaffolding entirely.
+  // window.sdLicenseKey (defined earlier in this file, ~L1522) is the
+  // SAME function StoneDesk's own data layer (sdData(), ~L21837) already
+  // uses -- reused here rather than a fourth divergent license-key lookup
+  // (this app already has three: sdLicenseKey's own two localStorage keys
+  // plus a separate 'sd_license_key' used only by Settings display; not
+  // reconciling that here, just not adding a fourth).
+  window.doRegister = function() {}; // stub — registration handled via bootstrap/setup now
+
+  function sdAuthErr(body, fallback) {
+    return (body && body.error && body.error.message) || fallback;
   }
 
-  function selRole(el) {
-    document.querySelectorAll('.rb, .role-btn, [class*=role-pill]')
-      .forEach(function(b) { b.classList.remove('active'); });
-    el.classList.add('active');
-    currentRole = el.dataset.role || el.getAttribute('data-role') || currentRole;
-    var pinEl = findPinInput();
-    if (pinEl) { pinEl.value = ''; pinEl.focus(); }
-  }
-  window.selRole        = selRole;
-  window.sdSelRole      = selRole;
-  window.selectRole     = selRole;
-  window.selectAuthTab  = function() {};
-  window.doRegister     = function() {}; // stub — registration handled via Admin PIN setup
+  function doLogin() {
+    var empEl   = document.getElementById('sd-employee-input');
+    var pinEl   = document.getElementById('sd-pin-input');
+    var errEl   = document.getElementById('auth-error');
+    var employeeId = empEl ? empEl.value.trim() : '';
+    var pin     = pinEl ? pinEl.value.trim() : '';
+    var lic     = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
 
-  function findPinInput() {
-    var ids = ['pin-in','pin-input','sd-pin-input','sairn-pin','auth-password'];
-    for (var i = 0; i < ids.length; i++) {
-      var el = document.getElementById(ids[i]);
-      if (el && el.offsetParent !== null) return el;
+    if (!employeeId || !pin) {
+      if (errEl) { errEl.textContent = 'Enter your employee ID and PIN'; errEl.style.display = 'block'; }
+      return;
     }
-    return document.querySelector('input[type=password],input[type=number][maxlength="4"]');
+    if (!lic) {
+      if (errEl) { errEl.textContent = 'No license key found on this install — contact support'; errEl.style.display = 'block'; }
+      return;
+    }
+    if (errEl) errEl.style.display = 'none';
+
+    fetch(SD_AUTH_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+      body: JSON.stringify({ action: 'login', employee_id: employeeId, pin: pin })
+    }).then(function(r) {
+      return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; });
+    }).then(function(res) {
+      if (!res.ok || !res.body || !res.body.ok) {
+        if (errEl) { errEl.textContent = sdAuthErr(res.body, 'Sign-in failed — try again'); errEl.style.display = 'block'; }
+        if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+        return;
+      }
+      try {
+        sessionStorage.setItem(SD_SESSION_KEY, res.body.token);
+        sessionStorage.setItem(SD_ROLE_KEY, res.body.role);
+        sessionStorage.setItem(SD_EMPLOYEE_KEY, res.body.employee_id);
+      } catch (e) {}
+      currentRole = res.body.role;
+      if (pinEl) pinEl.value = '';
+      showApp();
+    }).catch(function() {
+      if (errEl) { errEl.textContent = 'Network error — check your connection and try again'; errEl.style.display = 'block'; }
+    });
   }
+  window.doLogin = doLogin;
+
+  function sdShowBootstrap() {
+    var lv = document.getElementById('sd-login-view');
+    var bv = document.getElementById('sd-bootstrap-view');
+    if (lv) lv.style.display = 'none';
+    if (bv) bv.style.display = 'block';
+    var el = document.getElementById('sd-boot-employee-input');
+    if (el) el.focus();
+  }
+  window.sdShowBootstrap = sdShowBootstrap;
+
+  function sdShowLogin() {
+    var lv = document.getElementById('sd-login-view');
+    var bv = document.getElementById('sd-bootstrap-view');
+    if (bv) bv.style.display = 'none';
+    if (lv) lv.style.display = 'block';
+    var el = document.getElementById('sd-employee-input');
+    if (el) el.focus();
+  }
+  window.sdShowLogin = sdShowLogin;
+
+  function sdDoBootstrap() {
+    var empEl  = document.getElementById('sd-boot-employee-input');
+    var nameEl = document.getElementById('sd-boot-name-input');
+    var pinEl  = document.getElementById('sd-boot-pin-input');
+    var errEl  = document.getElementById('sd-boot-error');
+    var employeeId  = empEl ? empEl.value.trim() : '';
+    var displayName = nameEl ? nameEl.value.trim() : '';
+    var pin = pinEl ? pinEl.value.trim() : '';
+    var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+
+    if (!employeeId || !/^\d{6,8}$/.test(pin)) {
+      if (errEl) { errEl.textContent = 'Employee ID and a 6-8 digit PIN are required'; errEl.style.display = 'block'; }
+      return;
+    }
+    if (!lic) {
+      if (errEl) { errEl.textContent = 'No license key found on this install — contact support'; errEl.style.display = 'block'; }
+      return;
+    }
+    if (errEl) errEl.style.display = 'none';
+
+    fetch(SD_AUTH_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+      body: JSON.stringify({ action: 'bootstrap', employee_id: employeeId, display_name: displayName, pin: pin })
+    }).then(function(r) {
+      return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; });
+    }).then(function(res) {
+      if (!res.ok || !res.body || !res.body.ok) {
+        if (errEl) { errEl.textContent = sdAuthErr(res.body, 'Setup failed — try again'); errEl.style.display = 'block'; }
+        return;
+      }
+      try {
+        sessionStorage.setItem(SD_SESSION_KEY, res.body.token);
+        sessionStorage.setItem(SD_ROLE_KEY, res.body.role);
+        sessionStorage.setItem(SD_EMPLOYEE_KEY, res.body.employee_id);
+      } catch (e) {}
+      currentRole = res.body.role;
+      showApp();
+    }).catch(function() {
+      if (errEl) { errEl.textContent = 'Network error — check your connection and try again'; errEl.style.display = 'block'; }
+    });
+  }
+  window.sdDoBootstrap = sdDoBootstrap;
 
   // (deploy re-trigger, 2026-07-29) 30-day trial gate, keyed off a real timestamp written on first-ever
   // login (never a fabricated countdown). Checked on every successful
@@ -27330,75 +27469,19 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     });
   }
 
-  function doLogin() {
-    var pinEl   = findPinInput();
-    var entered = pinEl ? pinEl.value.trim() : '';
-    var pins    = getPins();
-    var correct = pins[currentRole] || '1234';
-    var errEl   = document.getElementById('auth-error')
-                  || document.getElementById('lerr')
-                  || document.getElementById('login-error')
-                  || document.getElementById('le');
-
-    // Clear lockout
-    try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
-    if (window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts = 0;
-
-    if (!entered) {
-      if (errEl) { errEl.textContent = 'Enter your PIN'; errEl.style.display = 'block'; }
-      return;
-    }
-    if (entered !== correct) {
-      if (errEl) { errEl.textContent = 'Incorrect PIN — try again'; errEl.style.display = 'block'; }
-      if (pinEl) { pinEl.value = ''; pinEl.focus(); }
-      return;
-    }
-    // SUCCESS
-    if (errEl) errEl.style.display = 'none';
-    if (pinEl) pinEl.value = '';
-    showApp();
-  }
-  window.doLogin = doLogin;
-
-  function savePins() {
-    var p = {};
-    Object.keys(DEFAULT_PINS).forEach(function(role) {
-      var el = document.getElementById('pin-' + role) || document.getElementById('sd-pin-' + role + '-inp');
-      if (el && el.value.length === 4) p[role] = el.value;
-    });
-    if (Object.keys(p).length) {
-      localStorage.setItem(APP_ID + '_pins', JSON.stringify(Object.assign({}, getPins(), p)));
-      if (typeof showToast === 'function') showToast('PINs saved');
-    }
-  }
-  window.savePins    = savePins;
-  window.sdSavePins  = savePins;
-
   // -- WIRE EVERYTHING ON DOM READY --------------------------
   function init() {
     // Clear any stale lockouts from previous broken login attempts
     try { sessionStorage.setItem('s_attempts','0'); } catch(e) {}
     if (window.SAIRN_SEC) window.SAIRN_SEC.loginAttempts = 0;
 
-    // Wire PIN input — Enter key + 4-digit auto-submit
-    var pinEl = findPinInput();
-    if (pinEl) {
-      pinEl.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') doLogin();
-      });
-      pinEl.addEventListener('input', function() {
-        if (this.value.length === 4) {
-          var me = this;
-          setTimeout(function() { if (me.value.length === 4) doLogin(); }, 50);
-        }
-      });
-      pinEl.focus();
-    }
-
-    // Wire role buttons
-    document.querySelectorAll('.rb, .role-btn, [data-role]').forEach(function(btn) {
-      btn.addEventListener('click', function() { selRole(this); });
-    });
+    // Employee-ID + PIN inputs already carry their own onkeydown (Enter to
+    // advance/submit) inline in the markup -- no auto-submit-on-length
+    // here anymore (PINs are now 6-8 digits, not a fixed 4, and a stray
+    // auto-submit on a partial PIN would burn one of the server's 5
+    // lockout attempts for nothing). Just set initial focus.
+    var empEl = document.getElementById('sd-employee-input');
+    if (empEl) empEl.focus();
 
     // Wire login button
     document.querySelectorAll('[onclick*=doLogin], .lbtn, .auth-btn, .login-btn').forEach(function(btn) {
