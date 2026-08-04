@@ -342,7 +342,13 @@ body.is-admin .nav-btn.admin-only{display:inline-block}
 .sb-btn{
   display:flex;align-items:center;gap:10px;width:100%;
   padding:7px 14px 7px 22px;border:none;background:transparent;
-  color:rgba(245,240,232,.6);font-family:'Outfit',sans-serif;
+  /* FIX (contrast, 2026-08-04): was rgba(245,240,232,.6) -- against the sidebar's #1A1410
+     background that's only borderline-passing WCAG (~6.4:1) on paper, and read as "barely
+     visible" in practice at this font-size/weight (12px/500) with only the active item's
+     var(--a) color + background tint + border for contrast to compare against. Raised to .85;
+     .active/:hover are untouched (var(--a) / #fff respectively), so the active item is still
+     clearly distinct, inactive items are just no longer hard to read. */
+  color:rgba(245,240,232,.85);font-family:'Outfit',sans-serif;
   font-size:12px;font-weight:500;cursor:pointer;
   transition:all .15s;white-space:nowrap;text-align:left;
   border-radius:0;overflow:hidden;
@@ -457,6 +463,22 @@ body.is-exec .sb-exec{display:flex}
   [style*="grid-template-columns:1fr"]{grid-template-columns:1fr!important}
   .tw{max-width:calc(100vw - 32px)!important;min-width:0}
   .panel.active>div{min-width:0}
+  /* Drawing Tool (panel-draw) narrow-viewport canvas fix, 2026-08-04. Root cause was NOT
+     canvas-init timing (nothing reads offsetWidth before layout settles) -- ct-canvas's own
+     width IS read at the right moment, but its actual available CSS space genuinely was only
+     ~21px. panel-draw's two-column body is a FLEXBOX layout with a hardcoded 270px-wide,
+     flex-shrink:0 left column (the same property values as the .dm-left/.dm-right classes
+     elsewhere in this file, but duplicated as plain inline style here rather than using those
+     classes, so a class-scoped override wouldn't have reached it) -- at 386px available width,
+     270px for the left column plus its 20px gap leaves the flex:1 right column (which holds
+     the canvas) only a sliver, and nothing collapsed it to a single stacked column the way the
+     grid-based two-column panels above already are by the rule just above this one. This is
+     the same "hardcoded desktop two-column layout, never collapses on mobile" bug family, just
+     via flexbox+fixed-px instead of CSS grid, so a class-based fix wouldn't have caught it
+     either -- attribute-selected and scoped to #panel-draw specifically, same technique as the
+     Job History/Field Map panel fixes elsewhere in this file. */
+  #panel-draw [style*="padding:20px;flex:1;overflow-y:auto;display:flex;gap:20px"]{flex-direction:column!important}
+  #panel-draw [style*="width:270px;flex-shrink:0;display:flex;flex-direction:column;gap:12px"]{width:100%!important}
   /* Quote panel's remaining 109px residual, closed 2026-07-30. Same
      min-width:auto grid-blowout family as the table fix above, one layer
      deeper: .quote-container already had its own @media(max-width:900px)
