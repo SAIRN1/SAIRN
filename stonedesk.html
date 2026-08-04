@@ -431,6 +431,64 @@ body.is-exec .sb-exec{display:flex}
     background-attachment:local,local,scroll,scroll;
   }
 }
+/* Job History (panel-history) mobile fix, 2026-08-04. Scoped to this one
+   panel only -- deliberately, not sitewide -- while the rest of the app
+   goes through a panel-by-panel audit; see the audit note below for the
+   other panels already known to share this exact class of defect.
+
+   The [style*="grid-template-columns:1fr"] rule two blocks up already
+   covers this panel's 1fr-260px two-column body (confirmed: its inline
+   style is literally "grid-template-columns:1fr 260px", a substring
+   match) -- re-verified directly against the live selector match, not
+   assumed. What it does NOT cover is the separate repeat(5,1fr) KPI row:
+   that substring never matches "grid-template-columns:1fr" contiguously,
+   so it was never in scope for the existing fix and has no breakpoint at
+   all. Scoped with a descendant + attribute selector instead of adding a
+   new class, so this touches zero HTML and cannot affect any other panel
+   even where the identical repeat(5,1fr) markup pattern exists elsewhere
+   (see audit note). */
+@media(max-width:600px){
+  #panel-history [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  /* Residual ~40px overflow found DURING verification of the fix above,
+     not part of the original ask -- disclosed rather than silently left
+     in once found. Root cause is different from the KPI-row/two-column
+     fixes: this panel's direct-child content wrapper uses inline
+     `margin:0 auto` to center itself under its `max-width:1100px` on
+     desktop. Per the flexbox spec, an auto cross-axis margin disables
+     stretch alignment entirely and falls back to the item's max-content
+     width instead -- so even with .panel.active>div{min-width:0} already
+     applied (confirmed via computed style, not assumed), this wrapper
+     was never actually being asked to shrink below its widest descendant
+     in the first place. Forcing width:100% bypasses the max-content
+     fallback directly; margin:0 removes the now-pointless auto-centering
+     (nothing to center once the item is already full-width). */
+  #panel-history>div{width:100%!important;margin:0!important}
+}
+/* Touch-target floor for Job History's buttons, applied unconditionally
+   (not just under the mobile media query above -- WCAG 2.5.8 target size
+   and this project's own 40-44px house convention aren't viewport-gated
+   elsewhere either). Header buttons (AI Analysis/Export/Print) rendered
+   at 35px; the per-row View button -- built from a JS template string,
+   not static markup -- rendered at 21x43px, which fails even WCAG
+   2.5.8's 24px AA floor, not just house convention. One rule fixes both:
+   min-height is unset by either button's own inline style (the View
+   button's inline style only sets padding/font-size), so no !important
+   is needed -- this simply fills in a property neither el has an inline
+   value for, no specificity fight. */
+#panel-history .q-btn{min-height:44px}
+/* AUDIT NOTE (not fixed, flagged for the panel-by-panel queue): the same
+   unclassed repeat(N,1fr) KPI-row pattern with no responsive breakpoint
+   exists in essentially every other panel too (75 occurrences of
+   `style="display:grid;grid-template-columns:repeat(` sitewide, one grep
+   away from re-confirming) -- e.g. panel-warranty, panel-slabs,
+   panel-crm, panel-jobcost, panel-timesheet, panel-remnant, panel-po,
+   panel-ap, panel-tax and more, the same list already named in the
+   .tw table-scroll fix above. The undersized-button pattern (.q-btn's
+   base 9px/18px padding rendering at ~35px, and JS-templated per-row
+   action buttons at ~21px) is also not unique to Job History -- any
+   panel with a dense per-row action button built the same way likely
+   has the identical defect. Do not assume either is fixed anywhere but
+   Job History until each panel is actually checked in its own turn. */
 /* FIX (user-reported: "bottom of the page cut off"): .panel had
    overflow:hidden with no scroll fallback. Panels that don't have their
    own dedicated scrollable inner wrapper (History, Admin, Business,
