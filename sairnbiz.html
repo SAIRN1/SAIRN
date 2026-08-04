@@ -381,11 +381,88 @@ textarea{resize:vertical;min-height:80px;}
     </div>
   </div>
 </div>
+<div class="modal" id="hiremodal">
+  <div class="mbox">
+    <div class="mtitle">Open Position</div>
+    <div class="fg"><label>Position Title</label><input id="hpos" placeholder="Senior Fabricator"></div>
+    <div class="fr"><div class="fg"><label>Department</label><select id="hdept"><option>Fabrication</option><option>Installation</option><option>Sales</option><option>Administration</option><option>Management</option></select></div><div class="fg"><label>Stage</label><select id="hstage"><option>Screening</option><option>Interviewing</option><option>Offer Out</option><option>Closed</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Date Posted</label><input id="hposted" type="date"></div><div class="fg"><label>Pay Rate Range</label><input id="hrate" placeholder="$18-22/hr"></div></div>
+    <div class="fg"><label>Status</label><select id="hstatus"><option>Active</option><option>Paused</option><option>Closed</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeHireModal()">Cancel</button>
+      <button class="btn bp" onclick="saveHire()">Save Position</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="reviewmodal">
+  <div class="mbox">
+    <div class="mtitle">New Performance Review</div>
+    <div class="fr"><div class="fg"><label>Employee</label><select id="rvemp"></select></div><div class="fg"><label>Review Type</label><select id="rvtype"><option>Annual Review</option><option>Mid-Year Check-in</option><option>90-Day Review</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Due Date</label><input id="rvdue" type="date"></div><div class="fg"><label>Reviewer</label><input id="rvrev" placeholder="Owner"></div></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="rvstatus"><option>Upcoming</option><option>Scheduled</option><option>Completed</option></select></div><div class="fg"><label>Score (0-5, optional)</label><input id="rvscore" type="number" min="0" max="5" step="0.1" placeholder="4.5"></div></div>
+    <div class="fr"><div class="fg"><label><input id="rvraise" type="checkbox" style="width:auto;margin-right:6px;">Raise recommended</label></div><div class="fg"><label><input id="rvpip" type="checkbox" style="width:auto;margin-right:6px;">Performance improvement plan</label></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeReviewModal()">Cancel</button>
+      <button class="btn bp" onclick="saveReview()">Save Review</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="invmodal">
+  <div class="mbox">
+    <div class="mtitle">New Invoice</div>
+    <div class="fr"><div class="fg"><label>Customer</label><input id="ivcust" placeholder="Hartley Custom Homes"></div><div class="fg"><label>Category</label><select id="ivcat"><option>Kitchen Countertops</option><option>Bathroom Vanities</option><option>Commercial Projects</option><option>Repairs &amp; Remnants</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Invoice Date</label><input id="ivdate" type="date"></div><div class="fg"><label>Due Date</label><input id="ivdue2" type="date"></div></div>
+    <div class="fr"><div class="fg"><label>Amount ($)</label><input id="ivamt" type="number" placeholder="4200.00"></div><div class="fg"><label>Status</label><select id="ivstat2"><option>Draft</option><option>Sent</option><option>Partial</option><option>Paid</option><option>Overdue</option></select></div></div>
+    <div class="fg"><label>Amount Paid ($, if Partial/Paid)</label><input id="ivpaidamt" type="number" placeholder="0.00"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeInvModal()">Cancel</button>
+      <button class="btn bp" onclick="saveInv()">Save Invoice</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="expmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Expense</div>
+    <div class="fr"><div class="fg"><label>Date</label><input id="exdate" type="date"></div><div class="fg"><label>Category</label><select id="excat"><option>Materials</option><option>Tools</option><option>Insurance</option><option>Vehicle</option><option>Marketing</option><option>Supplies</option><option>Software</option><option>Other</option></select></div></div>
+    <div class="fg"><label>Description</label><input id="exdesc" placeholder="Diamond blade replacement"></div>
+    <div class="fr"><div class="fg"><label>Vendor</label><input id="exvendor" placeholder="Tooling Pros"></div><div class="fg"><label>Amount ($)</label><input id="examt" type="number" placeholder="380.00"></div></div>
+    <div class="fr"><div class="fg"><label>Tax Deductible</label><select id="exded"><option>Yes</option><option>No</option></select></div><div class="fg"><label>Receipt on File</label><select id="exreceipt"><option>Yes</option><option>No</option></select></div></div>
+    <div class="fg"><label>Status</label><select id="exstatus"><option>Approved</option><option>Pending</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeExpModal()">Cancel</button>
+      <button class="btn bp" onclick="saveExp()">Save Expense</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="billmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Bill</div>
+    <div class="fr"><div class="fg"><label>Vendor</label><select id="blvendor"></select></div><div class="fg"><label>Invoice #</label><input id="blinv" placeholder="MSS-44821"></div></div>
+    <div class="fr"><div class="fg"><label>Bill Date</label><input id="bldate" type="date"></div><div class="fg"><label>Due Date</label><input id="bldue" type="date"></div></div>
+    <div class="fr"><div class="fg"><label>Amount ($)</label><input id="blamt" type="number" placeholder="1200.00"></div><div class="fg"><label>Status</label><select id="blstatus"><option>Open</option><option>Paid</option><option>Overdue</option></select></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeBillModal()">Cancel</button>
+      <button class="btn bp" onclick="saveBill()">Save Bill</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="vendmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Vendor</div>
+    <div class="fr"><div class="fg"><label>Vendor Name</label><input id="vnname" placeholder="Midwest Stone Supply"></div><div class="fg"><label>Category</label><select id="vncat"><option>Materials</option><option>Equipment</option><option>Insurance</option><option>Subcontractor</option><option>Software</option><option>Other</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Contact Name</label><input id="vncontact" placeholder="Bob Harrington"></div><div class="fg"><label>Phone</label><input id="vnphone" placeholder="(216) 444-7700"></div></div>
+    <div class="fr"><div class="fg"><label>Terms</label><select id="vnterms"><option>Net 15</option><option>Net 30</option><option>Net 60</option><option>Monthly</option><option>Due on Receipt</option></select></div><div class="fg"><label>W-9 on File</label><select id="vnw9"><option>Yes</option><option>No</option></select></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeVendModal()">Cancel</button>
+      <button class="btn bp" onclick="saveVendor()">Save Vendor</button>
+    </div>
+  </div>
+</div>
 
 <!-- HIRING -->
 <div class="panel" id="panel-hiring">
   <div class="ph"><div><div class="ptitle">Hiring Pipeline</div><div class="psub">Open positions, applicants, and offers</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('hiring')">Export CSV</button><button class="btn bp bs" onclick="toast('Add position - coming next build')">+ Open Position</button></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('hiring')">Export CSV</button><button class="btn bp bs" onclick="openHireModal()">+ Open Position</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Open Positions</div><div class="kval" id="h-open">0</div><div class="kt">Actively hiring</div></div>
     <div class="kpi"><div class="klbl">Total Applicants</div><div class="kval" id="h-apps">0</div><div class="kt">All stages</div></div>
@@ -479,7 +556,7 @@ textarea{resize:vertical;min-height:80px;}
 <!-- PERFORMANCE -->
 <div class="panel" id="panel-performance">
   <div class="ph"><div><div class="ptitle">Performance Reviews</div><div class="psub">Annual and mid-year evaluations</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('performance')">Export CSV</button><button class="btn bp bs" onclick="toast('New review form - coming next build')">+ New Review</button></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('performance')">Export CSV</button><button class="btn bp bs" onclick="openReviewModal()">+ New Review</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Reviews Due</div><div class="kval" id="pf-due">0</div><div class="kt">Next 30 days</div></div>
     <div class="kpi"><div class="klbl">Completed YTD</div><div class="kval" id="pf-done">0</div><div class="kt">Of scheduled</div></div>
@@ -532,7 +609,7 @@ textarea{resize:vertical;min-height:80px;}
 <!-- INVOICES -->
 <div class="panel" id="panel-invoices">
   <div class="ph"><div><div class="ptitle">Invoices</div><div class="psub">Customer billing and payment tracking</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('invoices')">Export CSV</button><button class="btn bp bs" onclick="toast('New invoice - coming next build')">+ New Invoice</button></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('invoices')">Export CSV</button><button class="btn bp bs" onclick="openInvModal()">+ New Invoice</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Total Outstanding</div><div class="kval" id="iv-out">$0</div><div class="kt d">Needs collection</div></div>
     <div class="kpi"><div class="klbl">Current (0-30d)</div><div class="kval" id="iv-curr">$0</div><div class="kt">Within terms</div></div>
@@ -553,7 +630,7 @@ textarea{resize:vertical;min-height:80px;}
 <!-- EXPENSES -->
 <div class="panel" id="panel-expenses">
   <div class="ph"><div><div class="ptitle">Expenses</div><div class="psub">Business expense tracking and categorization</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('expenses')">Export CSV</button><button class="btn bp bs" onclick="toast('Add expense - coming next build')">+ Add Expense</button></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('expenses')">Export CSV</button><button class="btn bp bs" onclick="openExpModal()">+ Add Expense</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">This Month</div><div class="kval" id="ex-month">$0</div><div class="kt">All categories</div></div>
     <div class="kpi"><div class="klbl">Total Recorded</div><div class="kval" id="ex-ytd">$0</div><div class="kt">Running total</div></div>
@@ -570,7 +647,7 @@ textarea{resize:vertical;min-height:80px;}
 <!-- AP -->
 <div class="panel" id="panel-ap">
   <div class="ph"><div><div class="ptitle">Accounts Payable</div><div class="psub">Bills owed to vendors and suppliers</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('ap')">Export CSV</button><button class="btn bp bs" onclick="toast('Add bill - coming next build')">+ Add Bill</button></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('ap')">Export CSV</button><button class="btn bp bs" onclick="openBillModal()">+ Add Bill</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Total Owed</div><div class="kval" id="ap-total">$0</div><div class="kt">All vendors</div></div>
     <div class="kpi"><div class="klbl">Due This Week</div><div class="kval" id="ap-week">$0</div><div class="kt d">Pay now</div></div>
@@ -673,7 +750,7 @@ textarea{resize:vertical;min-height:80px;}
 <!-- VENDORS -->
 <div class="panel" id="panel-vendors">
   <div class="ph"><div><div class="ptitle">Vendors</div><div class="psub">Suppliers, subcontractors, and service providers</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('vendors')">Export CSV</button><button class="btn bp bs" onclick="toast('Add vendor - coming next build')">+ Add Vendor</button></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('vendors')">Export CSV</button><button class="btn bp bs" onclick="openVendModal()">+ Add Vendor</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Total Vendors</div><div class="kval" id="vn-total">0</div><div class="kt">Active</div></div>
     <div class="kpi"><div class="klbl">YTD Spend</div><div class="kval" id="vn-spend">$0</div><div class="kt">All vendors</div></div>
@@ -1079,6 +1156,82 @@ function saveEmp(){
   if(!r.fn||!r.ln){toast('Name required');return;}
   if(eid){var i=emps.findIndex(function(x){return x.id===eid;});if(i>-1)emps[i]=r;else emps.push(r);}else emps.push(r);
   st('sb_emps',emps);closeEmpModal();rEmps();syncEmps(emps);toast('Saved - '+r.fn+' '+r.ln);
+}
+
+function openHireModal(){['hpos','hrate'].forEach(function(f){$(f).value='';});$('hdept').value='Fabrication';$('hstage').value='Screening';$('hstatus').value='Active';$('hposted').value=new Date().toISOString().slice(0,10);$('hiremodal').classList.add('on');}
+function closeHireModal(){$('hiremodal').classList.remove('on');}
+function saveHire(){
+  var pos=$('hpos').value.trim();
+  if(!pos){toast('Position title required');return;}
+  var h=ld('sb_hire',[]);
+  h.push({pos:pos,dept:$('hdept').value,apps:0,stage:$('hstage').value,posted:$('hposted').value||new Date().toISOString().slice(0,10),rate:$('hrate').value.trim(),status:$('hstatus').value});
+  st('sb_hire',h);closeHireModal();rHire();rDash();toast('Position opened - '+pos);
+}
+
+function openReviewModal(){
+  var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+  $('rvemp').innerHTML=emps.map(function(e){return'<option value="'+H(e.fn+' '+e.ln)+'">'+H(e.fn+' '+e.ln)+'</option>';}).join('')||'<option value="">No active employees</option>';
+  $('rvdue').value='';$('rvrev').value='';$('rvscore').value='';$('rvraise').checked=false;$('rvpip').checked=false;
+  $('rvtype').value='Annual Review';$('rvstatus').value='Upcoming';
+  $('reviewmodal').classList.add('on');
+}
+function closeReviewModal(){$('reviewmodal').classList.remove('on');}
+function saveReview(){
+  var emp=$('rvemp').value;
+  if(!emp){toast('Employee required');return;}
+  var p=ld('sb_perf',[]);
+  var scoreVal=$('rvscore').value;
+  p.push({emp:emp,type:$('rvtype').value,due:$('rvdue').value,rev:$('rvrev').value.trim()||'Owner',score:scoreVal?parseFloat(scoreVal).toFixed(1):'--',raise:$('rvraise').checked,pip:$('rvpip').checked,status:$('rvstatus').value});
+  st('sb_perf',p);closeReviewModal();rPerf();rDash();toast('Review scheduled - '+emp);
+}
+
+function openInvModal(){['ivcust','ivamt','ivpaidamt'].forEach(function(f){$(f).value='';});$('ivdate').value=new Date().toISOString().slice(0,10);$('ivdue2').value='';$('ivstat2').value='Draft';$('ivcat').value='Kitchen Countertops';$('invmodal').classList.add('on');}
+function closeInvModal(){$('invmodal').classList.remove('on');}
+function saveInv(){
+  var cust=$('ivcust').value.trim(),amt=parseFloat($('ivamt').value)||0;
+  if(!cust||!amt){toast('Customer and amount required');return;}
+  var status=$('ivstat2').value;
+  var paid=parseFloat($('ivpaidamt').value)||(status==='Paid'?amt:0);
+  var invs=ld('sb_invs',[]);
+  var r={id:'INV-'+String(Date.now()).slice(-4),cust:cust,date:$('ivdate').value||new Date().toISOString().slice(0,10),due:$('ivdue2').value,amt:amt,paid:paid,status:status,cat:$('ivcat').value};
+  if(status==='Paid')r.paidDate=r.date;
+  invs.push(r);st('sb_invs',invs);closeInvModal();rInvs();rDash();rPay();rAR();toast('Invoice created - '+r.id);
+}
+
+function openExpModal(){['exdesc','exvendor','examt'].forEach(function(f){$(f).value='';});$('exdate').value=new Date().toISOString().slice(0,10);$('excat').value='Materials';$('exded').value='Yes';$('exreceipt').value='Yes';$('exstatus').value='Approved';$('expmodal').classList.add('on');}
+function closeExpModal(){$('expmodal').classList.remove('on');}
+function saveExp(){
+  var desc=$('exdesc').value.trim(),amt=parseFloat($('examt').value)||0;
+  if(!desc||!amt){toast('Description and amount required');return;}
+  var exps=ld('sb_exps',[]);
+  exps.push({date:$('exdate').value||new Date().toISOString().slice(0,10),desc:desc,cat:$('excat').value,vendor:$('exvendor').value.trim(),amt:amt,ded:$('exded').value,receipt:$('exreceipt').value,status:$('exstatus').value});
+  st('sb_exps',exps);closeExpModal();rExps();rDash();rPay();toast('Expense recorded - '+fmt(amt));
+}
+
+function openBillModal(){
+  var v=ld('sb_vends',[]);
+  $('blvendor').innerHTML=v.map(function(x){return'<option value="'+H(x.name)+'">'+H(x.name)+'</option>';}).join('')||'<option value="">No vendors on file</option>';
+  $('blinv').value='';$('blamt').value='';$('bldate').value=new Date().toISOString().slice(0,10);$('bldue').value='';$('blstatus').value='Open';
+  $('billmodal').classList.add('on');
+}
+function closeBillModal(){$('billmodal').classList.remove('on');}
+function saveBill(){
+  var vendor=$('blvendor').value,amt=parseFloat($('blamt').value)||0;
+  if(!vendor||!amt){toast('Vendor and amount required');return;}
+  var status=$('blstatus').value;
+  var bills=ld('sb_ap',[]);
+  bills.push({vendor:vendor,inv:$('blinv').value.trim(),date:$('bldate').value||new Date().toISOString().slice(0,10),due:$('bldue').value,amt:amt,bal:status==='Paid'?0:amt,status:status});
+  st('sb_ap',bills);closeBillModal();rAP();rDash();toast('Bill added - '+vendor);
+}
+
+function openVendModal(){['vnname','vncontact','vnphone'].forEach(function(f){$(f).value='';});$('vncat').value='Materials';$('vnterms').value='Net 30';$('vnw9').value='Yes';$('vendmodal').classList.add('on');}
+function closeVendModal(){$('vendmodal').classList.remove('on');}
+function saveVendor(){
+  var name=$('vnname').value.trim();
+  if(!name){toast('Vendor name required');return;}
+  var v=ld('sb_vends',[]);
+  v.push({id:'V'+String(Date.now()).slice(-4),name:name,cat:$('vncat').value,contact:$('vncontact').value.trim(),phone:$('vnphone').value.trim(),ytd:0,terms:$('vnterms').value,w9:$('vnw9').value});
+  st('sb_vends',v);closeVendModal();rVends();toast('Vendor added - '+name);
 }
 
 function rTS(){
