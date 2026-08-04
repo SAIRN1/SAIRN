@@ -5918,7 +5918,17 @@ function sdInvExport(){
                          // suggestion landing later can't clobber anything the staffer already typed.
   var _bsuSeq = 0;
   var BSU_MATERIALS = [['granite','Granite'],['quartzite','Quartzite'],['quartz','Engineered Quartz'],['marble','Marble'],['porcelain','Porcelain'],['soapstone','Soapstone'],['dolomite','Dolomite'],['other','Other']];
-  var BSU_PHOTO_BUDGET_BYTES = 380*1024; // see api/sd-data.js's slabs-specific 500KB write cap -- this leaves headroom for the rest of the record plus base64/JSON overhead
+  // REAL CONSTRAINT, found live (2026-08-04): sd_slabs has a DB-level CHECK constraint
+  // (sdslabs_data_size) capping the whole `data` jsonb blob at exactly 65536 bytes (64KB) --
+  // documented in api/sd-data.js's own file header as the backstop for its 64KB API cap, which
+  // this feature's first live test found the hard way (a 500KB API-level override was tried
+  // first and reverted once the underlying DB constraint turned out not to move with it -- see
+  // api/sd-data.js's history). Budgeted here against the BASE64 STRING length directly, since
+  // that's what actually lands in the JSON payload the DB checks -- not the decoded byte size,
+  // which was the first version's bug (comparing the wrong number let an oversized photo through
+  // client-side that the DB then rejected). 55KB leaves ~9KB of the 64KB ceiling for the rest of
+  // the record's fields (colorName, vendor, status, etc.) plus JSON structural overhead.
+  var BSU_PHOTO_BUDGET_BYTES = 55*1024;
 
   document.getElementById('bsu-file-input').addEventListener('change', function(){
     var files = Array.prototype.slice.call(this.files || []);
@@ -6033,12 +6043,17 @@ function sdInvExport(){
     });
   }
   async function bsuCompressUnderBudget(dataUrl, budgetBytes){
-    var attempts = [[900,0.7],[700,0.6],[500,0.5],[400,0.4],[320,0.35]];
+    // Compared against the BASE64 STRING length (the part after the "data:...;base64," prefix)
+    // directly -- that's what actually gets stored in the JSON payload the DB's 64KB check
+    // constraint measures, not the decoded image byte size. Real stone photos (lots of visual
+    // noise from natural veining) compress less efficiently than flat-color images, so the
+    // ladder runs down to fairly small/aggressive final steps as a safety net.
+    var attempts = [[700,0.6],[550,0.5],[450,0.42],[360,0.35],[280,0.3],[220,0.25]];
     var out = dataUrl;
     for (var i=0;i<attempts.length;i++){
       out = await bsuCompressOnce(dataUrl, attempts[i][0], attempts[i][1]);
-      var approxBytes = Math.ceil(out.length * 0.75);
-      if (approxBytes <= budgetBytes) return out;
+      var b64Len = out.length - (out.indexOf(',') + 1);
+      if (b64Len <= budgetBytes) return out;
     }
     return out; // best effort -- last (smallest/lowest-quality) attempt, even if still slightly over
   }
