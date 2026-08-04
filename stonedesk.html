@@ -3549,6 +3549,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
             <span style="font-size:10px;color:var(--muted);margin-right:2px">Mode:</span>
             <button class="draw-btn dc-mode-btn active" id="dc-mode-preset" onclick="setDCMode('preset')">📐 Preset Shape</button>
             <button class="draw-btn dc-mode-btn" id="dc-mode-draw" onclick="setDCMode('draw')">✏️ Custom Draw</button>
+            <button class="draw-btn dc-mode-btn" id="dc-mode-room" onclick="setDCMode('room')">🏠 Room Layout</button>
             <span style="font-size:10px;color:var(--muted);margin-left:4px" id="dc-mode-hint">In Preset Shape, drag any edge of the drawing to stretch it — type to set the exact length while dragging. Switch to Custom Draw for irregular shapes: click and drag toward the next point (snaps to 45°), type to set the exact length while dragging, release to place it. Click near the start to close the shape, drag any corner once closed.</span>
           </div>
 
@@ -3557,6 +3558,24 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
             <button class="draw-btn" id="dc-insert-btn" onclick="setDCInsertMode(!dcInsertMode)">+ Insert Point on Edge</button>
             <button class="draw-btn" id="dc-editpass-btn" onclick="setDCEditPass(!dcEditPass)">🎨 Assign Edge Types</button>
             <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcClearPoly()">Clear Shape</button>
+          </div>
+
+          <!-- Room Layout mode (Phase 1, 2026-08-04): client-presentable kitchen context -- walls,
+               cabinet runs, a small appliance catalog, and the existing countertop shape (built in
+               Preset Shape/Custom Draw) placed on top of a cabinet run. Entirely separate tool/state
+               from the two modes above; see the dcRoom* module further down for why this was kept
+               fully additive rather than generalizing the existing draw/drag mechanism. -->
+          <div class="draw-toolbar" id="dc-room-tools" style="margin-top:6px;display:none">
+            <span style="font-size:10px;color:var(--muted);margin-right:2px">Tool:</span>
+            <button class="draw-btn active" id="dc-room-tool-wall" onclick="setDCRoomTool('wall')">📏 Draw Wall</button>
+            <button class="draw-btn" id="dc-room-tool-cabinet" onclick="setDCRoomTool('cabinet')">🗄️ Cabinet Run</button>
+            <button class="draw-btn" id="dc-room-tool-appliance-range" onclick="setDCRoomTool('appliance','range')">🔥 Range</button>
+            <button class="draw-btn" id="dc-room-tool-appliance-sinkbase" onclick="setDCRoomTool('appliance','sinkbase')">🚰 Sink Base</button>
+            <button class="draw-btn" id="dc-room-tool-appliance-fridge" onclick="setDCRoomTool('appliance','fridge')">🧊 Fridge</button>
+            <button class="draw-btn" id="dc-room-tool-appliance-dishwasher" onclick="setDCRoomTool('appliance','dishwasher')">🍽️ Dishwasher</button>
+            <button class="draw-btn" id="dc-room-tool-countertop" onclick="setDCRoomTool('countertop')">🪨 Place Countertop</button>
+            <button class="draw-btn" style="background:rgba(248,113,113,0.12);border-color:rgba(248,113,113,0.3);color:#F87171" onclick="dcRoomClearAll()">Clear Room</button>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px" id="dc-room-hint">Draw Wall: click and drag to draw a wall — type to set the exact length while dragging (same mechanism as Custom Draw), release to place it; click near an existing wall's end to start the next one from there. Cabinet Run/appliances: pick a tool, click a wall (or a placed cabinet run, for appliances) to snap one into place. Place Countertop: click a cabinet run to lay the shape built in Preset Shape/Custom Draw on top of it.</span>
           </div>
           <div id="dc-running-totals" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"></div>
 
@@ -9640,6 +9659,7 @@ function initDCCanvas() {
   if (!dcCanvas._mouseupWired) {
     dcCanvas._mouseupWired = true;
     document.addEventListener('mouseup', e => {
+      if (dcRoomWallDrawing) { dcRoomWallDragEnd(e); return; }
       if (dcDrawDragging) { dcCanvasDrawDragEnd(e); return; }
       // BUGFIX (June 2026 audit): dcCornerDragging holds the dragged point's array INDEX, and
       // index 0 is falsy in JS -- the old truthy check below silently no-op'd on mouseup
@@ -9785,11 +9805,17 @@ function setDCMode(mode) {
   dcCornerDragging = null;
   dcDrawDragging = false;
   dcPresetEdgeDragging = null;
+  dcRoomWallDrawing = false;
+  dcRoomWallFrom = null;
+  dcRoomHoverAngleDeg = null;
+  dcRoomUnfreezeTransform();
   document.querySelectorAll('.dc-mode-btn').forEach(b=>b.classList.remove('active'));
   const btn = document.getElementById('dc-mode-'+mode);
   if (btn) btn.classList.add('active');
   const toolsRow = document.getElementById('dc-draw-tools');
   if (toolsRow) toolsRow.style.display = (mode==='draw') ? 'flex' : 'none';
+  const roomToolsRow = document.getElementById('dc-room-tools');
+  if (roomToolsRow) roomToolsRow.style.display = (mode==='room') ? 'flex' : 'none';
   if (mode === 'draw' && !dcPoly.length) {
     // Seed the polygon from whatever preset is currently active so "draw mode" continues
     // the shape on screen instead of starting from a blank canvas.
@@ -10090,6 +10116,10 @@ function dcPresetEdgeDragEnd(e) {
 function dcCanvasClick(e) {
   const { px, py } = dcCanvasCoords(e);
 
+  // Room Layout is a fully separate mode/tool state -- routed off first and returns immediately,
+  // so nothing below (preset edge drag, polygon draw) ever runs while it's active.
+  if (dcMode === 'room') { dcRoomCanvasClick(e); return; }
+
   // Preset edge dragging (case 3) works in PRESET mode, checked before the draw-mode gate below
   // since Custom Draw and Preset Shape are mutually exclusive view states.
   if (dcMode === 'preset') { dcTryStartPresetEdgeDrag(px, py); return; }
@@ -10147,6 +10177,7 @@ function dcCanvasClick(e) {
 }
 
 function dcCanvasHover(e) {
+  if (dcMode === 'room') { dcRoomCanvasHover(e); return; }
   if (dcPresetEdgeDragging) { dcPresetEdgeDragMove(e); return; }
   if (dcMode !== 'draw') return;
   if (dcCornerDragging !== null) { dcCornerDragMove(e); return; }
@@ -10670,6 +10701,11 @@ function drawCTPreview() {
   // rectangle math below — it has its own coordinate transform (dcGetTransform), its own
   // edge-type lookup (dcEdgeTypes, by segment index), and its own cutout/seam overlays.
   if (dcMode === 'draw') { drawDCPolygon(ctx, W, H); return; }
+  // Room Layout (Phase 1, 2026-08-04) is a third, fully independent renderer -- own coordinate
+  // transform (dcRoomGetTransform, fit to the walls drawn so far rather than dcPoly), own state
+  // (dcRoomWalls/dcRoomCabinets/dcRoomAppliances), and it borrows the finished countertop shape
+  // from dcPoly only to draw it translated onto a chosen cabinet run, read-only.
+  if (dcMode === 'room') { drawDCRoom(ctx, W, H); return; }
 
   // Draw shape fill + edges
   function drawRect(x,y,w,h,edgeMap) {
@@ -10944,6 +10980,348 @@ function drawDCPolygon(ctx, W, H) {
 
   ctx.fillStyle='rgba(51,85,119,0.65)'; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='left';
   ctx.fillText('CUSTOM DRAW — ' + (dcPolyClosed?'CLOSED':'IN PROGRESS') + (dcEditPass?' — CLICK AN EDGE TO SET ITS TYPE':''), 10, H-10);
+}
+
+// == ROOM LAYOUT MODE (Phase 1, 2026-08-04) ====================================================
+// A third, client-presentable mode alongside Preset Shape/Custom Draw: walls, cabinet runs, a
+// small appliance catalog, and the countertop shape already built in the other two modes placed
+// on top of a cabinet run in context. Deliberately built as its OWN state/transform/renderer
+// rather than generalizing dcPoly/dcGetTransform/dcCanvasClick's existing polygon logic to also
+// handle rooms -- a room's scale (a 15-20ft kitchen) and shape (open wall segments, not one closed
+// loop) don't fit the countertop-sized, single-closed-polygon assumptions baked into dcGetTransform
+// (fits to dcPoly's bounds) and dcCommitPoint (appends to one continuous ring). Reusing those as-is
+// would have meant adding room-shaped branches INSIDE the exact functions Preset Shape/Custom Draw
+// depend on -- any bug in that shared code risks both modes at once. Keeping Room Layout's own
+// dcRoomGetTransform/dcRoomWalls/dcRoomCommit* means a bug here can't touch the other two modes.
+//
+// What genuinely IS reused, per spec ("same interaction pattern already built for countertop
+// edges") -- the actual drag/type-to-dimension MECHANISM, not just its shape: dcCanvasCoords,
+// dcSnapDirection (45° angle snap), dcShowDragOverlay/dcHideDragOverlay/dcResolveDragLength (the
+// floating typeable-length box), dcPointNear, and dcDistToSegment are all called directly, unedited
+// -- every one of them already operates on plain {x,y} points with no dcPoly/dcMode dependency, so
+// wall-drawing calls the exact same functions Custom Draw's point placement does, not a rewritten
+// copy of them.
+
+var dcRoomWalls = [];             // {id, x1,y1,x2,y2} inches, room-local space (independent of dcPoly's countertop-local space)
+var dcRoomCabinets = [];          // {id, wallId, x,y (center), lengthIn, depthIn, angleDeg}
+var dcRoomAppliances = [];        // {id, type, x,y (center), angleDeg}
+var dcRoomCountertop = null;      // {cabinetId} once the countertop shape has been placed on a cabinet run, else null
+var dcRoomTool = 'wall';          // 'wall' | 'cabinet' | 'appliance' | 'countertop'
+var dcRoomApplianceType = 'range';
+var dcRoomWallSeq = 0, dcRoomCabinetSeq = 0, dcRoomApplianceSeq = 0;
+var dcRoomWallDrawing = false;    // mid-drag wall placement, mirrors dcDrawDragging
+var dcRoomWallFrom = null;        // {x,y} inches, start point of the wall currently being dragged
+var dcRoomHoverAngleDeg = null;   // mirrors dcHoverAngleDeg, for the in-progress wall's snapped direction
+var dcRoomHoverRawIn = null;      // last raw cursor position (inches), used only to draw the live wall preview line
+var dcRoomFrozenTransform = null; // mirrors dcFrozenTransform -- holds the view steady mid-drag so earlier walls don't visually shift as the bounding box grows
+
+var DC_ROOM_WALL_THICKNESS_IN = 6;
+var DC_ROOM_CABINET_DEPTH_IN = 24;
+var DC_ROOM_CABINET_DEFAULT_LEN_IN = 36;
+// Small Phase-1 catalog, per spec ("keep this small, expandable later") -- 4 items.
+var DC_ROOM_APPLIANCES = {
+  range:      { label:'Range',      w:30, d:26, icon:'🔥', color:'#DC2626' },
+  sinkbase:   { label:'Sink Base',  w:33, d:24, icon:'🚰', color:'#3B82F6' },
+  fridge:     { label:'Fridge',     w:36, d:30, icon:'🧊', color:'#0EA5E9' },
+  dishwasher: { label:'Dishwasher', w:24, d:24, icon:'🍽️', color:'#7C3AED' }
+};
+
+function dcRoomFreezeTransform() { dcRoomFrozenTransform = dcRoomGetTransform(); }
+function dcRoomUnfreezeTransform() { dcRoomFrozenTransform = null; }
+function dcRoomGetTransform() {
+  if (dcRoomFrozenTransform) return dcRoomFrozenTransform;
+  const W = dcCanvas.width, H = dcCanvas.height, pad = 48;
+  if (!dcRoomWalls.length) return { scale: DRAW_SCALE_PXPERIN, ox: pad, oy: pad }; // same empty-state default dcGetTransform uses
+  const pts = [];
+  dcRoomWalls.forEach(w => { pts.push({x:w.x1,y:w.y1}); pts.push({x:w.x2,y:w.y2}); });
+  const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+  const minX=Math.min(...xs,0), maxX=Math.max(...xs,60), minY=Math.min(...ys,0), maxY=Math.max(...ys,60);
+  const w = Math.max(maxX-minX, 60), h = Math.max(maxY-minY, 60);
+  const scale = Math.min((W-pad*2)/w, (H-pad*2)/h);
+  return { scale, ox: pad - minX*scale, oy: pad - minY*scale };
+}
+function dcRoomInToPx(pt) { const t=dcRoomGetTransform(); return { x: pt.x*t.scale+t.ox, y: pt.y*t.scale+t.oy }; }
+function dcRoomPxToIn(px, py) { const t=dcRoomGetTransform(); return { x: (px-t.ox)/t.scale, y: (py-t.oy)/t.scale }; }
+
+function setDCRoomTool(tool, applianceType) {
+  dcRoomTool = tool;
+  if (applianceType) dcRoomApplianceType = applianceType;
+  document.querySelectorAll('#dc-room-tools .draw-btn[id^="dc-room-tool-"]').forEach(b=>b.classList.remove('active'));
+  const btnId = tool==='appliance' ? ('dc-room-tool-appliance-'+applianceType) : ('dc-room-tool-'+tool);
+  const btn = document.getElementById(btnId);
+  if (btn) btn.classList.add('active');
+}
+
+function dcRoomClearAll() {
+  dcRoomWalls = []; dcRoomCabinets = []; dcRoomAppliances = []; dcRoomCountertop = null;
+  dcRoomWallDrawing = false; dcRoomWallFrom = null; dcRoomHoverAngleDeg = null; dcRoomHoverRawIn = null;
+  dcRoomUnfreezeTransform();
+  drawCTPreview();
+}
+
+// Snaps a new wall's start point onto an existing wall's endpoint when close enough, so drawing
+// wall after wall naturally chains into a connected outline without needing a single shared
+// polygon data structure (each wall stays an independent, individually placeable segment, which
+// is what lets a cabinet run be "placed on a wall" rather than "placed on segment N of a ring").
+function dcRoomSnapToNearbyWallEndpoint(rawIn) {
+  const tolIn = 10 / dcRoomGetTransform().scale;
+  for (const w of dcRoomWalls) {
+    if (dcPointNear(rawIn, {x:w.x1,y:w.y1}, tolIn)) return {x:w.x1,y:w.y1};
+    if (dcPointNear(rawIn, {x:w.x2,y:w.y2}, tolIn)) return {x:w.x2,y:w.y2};
+  }
+  return { x: Math.round(rawIn.x/GRID_SNAP_IN)*GRID_SNAP_IN, y: Math.round(rawIn.y/GRID_SNAP_IN)*GRID_SNAP_IN };
+}
+
+function dcRoomHitWall(px, py) {
+  const rawIn = dcRoomPxToIn(px, py);
+  const tolIn = 12 / dcRoomGetTransform().scale;
+  let best = null, bestDist = Infinity;
+  dcRoomWalls.forEach(w => {
+    const { dist } = dcDistToSegment(rawIn, {x:w.x1,y:w.y1}, {x:w.x2,y:w.y2});
+    if (dist < tolIn && dist < bestDist) { bestDist = dist; best = w; }
+  });
+  return best;
+}
+
+function dcRoomCanvasClick(e) {
+  const { px, py } = dcCanvasCoords(e);
+  if (dcRoomTool === 'wall') {
+    const rawIn = dcRoomPxToIn(px, py);
+    dcRoomWallFrom = dcRoomSnapToNearbyWallEndpoint(rawIn);
+    dcRoomWallDrawing = true;
+    dcRoomHoverAngleDeg = 0;
+    dcRoomHoverRawIn = dcRoomWallFrom;
+    dcRoomFreezeTransform();
+    drawCTPreview();
+    return;
+  }
+  if (dcRoomTool === 'cabinet') { dcRoomTryPlaceCabinet(px, py); return; }
+  if (dcRoomTool === 'appliance') { dcRoomTryPlaceAppliance(px, py); return; }
+  if (dcRoomTool === 'countertop') { dcRoomTryPlaceCountertop(px, py); return; }
+}
+
+function dcRoomCanvasHover(e) {
+  if (!dcRoomWallDrawing || !dcRoomWallFrom) return;
+  const { px, py } = dcCanvasCoords(e);
+  const rawIn = dcRoomPxToIn(px, py);
+  dcRoomHoverRawIn = rawIn;
+  const { angleDeg, dist } = dcSnapDirection(dcRoomWallFrom, rawIn);
+  dcRoomHoverAngleDeg = angleDeg;
+  drawCTPreview();
+  dcShowDragOverlay(dcRoomInToPx(dcRoomWallFrom), dist, null);
+}
+
+function dcRoomWallDragEnd(e) {
+  if (!dcRoomWallDrawing) return;
+  dcRoomWallDrawing = false;
+  dcHideDragOverlay();
+  if (dcRoomHoverAngleDeg === null || !dcRoomWallFrom) { dcRoomUnfreezeTransform(); return; }
+  const { px, py } = dcCanvasCoords(e);
+  const rawIn = dcRoomPxToIn(px, py); // computed while still frozen, matching dcCanvasDrawDragEnd's own comment on why
+  const { dist } = dcSnapDirection(dcRoomWallFrom, rawIn);
+  const lengthIn = dcResolveDragLength(dist);
+  dcRoomUnfreezeTransform();
+  if (lengthIn < 6) { dcRoomWallFrom = null; dcRoomHoverAngleDeg = null; drawCTPreview(); return; } // a wall under 6in is almost certainly an accidental click, not a real one
+  const rad = dcRoomHoverAngleDeg * Math.PI/180;
+  let nx = dcRoomWallFrom.x + Math.cos(rad)*lengthIn;
+  let ny = dcRoomWallFrom.y + Math.sin(rad)*lengthIn;
+  nx = Math.round(nx/GRID_SNAP_IN)*GRID_SNAP_IN;
+  ny = Math.round(ny/GRID_SNAP_IN)*GRID_SNAP_IN;
+  dcRoomWalls.push({ id:'wall'+(++dcRoomWallSeq), x1:dcRoomWallFrom.x, y1:dcRoomWallFrom.y, x2:nx, y2:ny });
+  dcRoomWallFrom = null;
+  dcRoomHoverAngleDeg = null;
+  drawCTPreview();
+}
+
+function dcRoomTryPlaceCabinet(px, py) {
+  const wall = dcRoomHitWall(px, py);
+  if (!wall) { if (typeof showToast==='function') showToast('Click directly on a wall to place a cabinet run.'); return; }
+  const rawIn = dcRoomPxToIn(px, py);
+  const { point } = dcDistToSegment(rawIn, {x:wall.x1,y:wall.y1}, {x:wall.x2,y:wall.y2});
+  const angleRad = Math.atan2(wall.y2-wall.y1, wall.x2-wall.x1);
+  // Offset inward off the wall centerline by half wall thickness + half cabinet depth so the
+  // cabinet's back sits flush against the wall face rather than centered on/through it. A lone
+  // wall segment has no inherent "room interior" side yet in Phase 1, so this always offsets to
+  // one consistent perpendicular side (+90°) -- fine for a single-wall run; multi-wall enclosed
+  // rooms picking the correct interior side automatically is a Phase 2 refinement.
+  const nx = -Math.sin(angleRad), ny = Math.cos(angleRad);
+  const offset = DC_ROOM_WALL_THICKNESS_IN/2 + DC_ROOM_CABINET_DEPTH_IN/2;
+  dcRoomCabinets.push({
+    id:'cab'+(++dcRoomCabinetSeq), wallId:wall.id,
+    x: point.x + nx*offset, y: point.y + ny*offset,
+    lengthIn: DC_ROOM_CABINET_DEFAULT_LEN_IN, depthIn: DC_ROOM_CABINET_DEPTH_IN,
+    angleDeg: angleRad*180/Math.PI
+  });
+  drawCTPreview();
+}
+
+function dcRoomTryPlaceAppliance(px, py) {
+  const rawIn = dcRoomPxToIn(px, py);
+  const spec = DC_ROOM_APPLIANCES[dcRoomApplianceType];
+  const tolIn = 16 / dcRoomGetTransform().scale;
+  let anchorAngle = 0, ax = null, ay = null;
+  // Prefer snapping onto a cabinet run if the click landed near one.
+  for (const c of dcRoomCabinets) {
+    if (dcPointNear(rawIn, {x:c.x,y:c.y}, Math.max(c.lengthIn,c.depthIn)/2 + tolIn)) {
+      anchorAngle = c.angleDeg; ax = c.x; ay = c.y; break;
+    }
+  }
+  if (ax === null) {
+    const wall = dcRoomHitWall(px, py);
+    if (wall) {
+      const { point } = dcDistToSegment(rawIn, {x:wall.x1,y:wall.y1}, {x:wall.x2,y:wall.y2});
+      anchorAngle = Math.atan2(wall.y2-wall.y1, wall.x2-wall.x1) * 180/Math.PI;
+      const nx = -Math.sin(anchorAngle*Math.PI/180), ny = Math.cos(anchorAngle*Math.PI/180);
+      const offset = DC_ROOM_WALL_THICKNESS_IN/2 + spec.d/2;
+      ax = point.x + nx*offset; ay = point.y + ny*offset;
+    }
+  }
+  if (ax === null) { if (typeof showToast==='function') showToast('Click near a wall or cabinet run to place the '+spec.label+'.'); return; }
+  dcRoomAppliances.push({ id:'appl'+(++dcRoomApplianceSeq), type:dcRoomApplianceType, x:ax, y:ay, angleDeg:anchorAngle });
+  drawCTPreview();
+}
+
+function dcRoomTryPlaceCountertop(px, py) {
+  if (!dcPoly.length) { if (typeof showToast==='function') showToast('Build a countertop shape in Preset Shape or Custom Draw first.'); return; }
+  const rawIn = dcRoomPxToIn(px, py);
+  let best = null, bestDist = Infinity;
+  dcRoomCabinets.forEach(c => {
+    const d = Math.hypot(rawIn.x-c.x, rawIn.y-c.y);
+    if (d < bestDist) { bestDist = d; best = c; }
+  });
+  if (!best || bestDist > 60) { if (typeof showToast==='function') showToast('Click on a cabinet run to place the countertop there.'); return; }
+  dcRoomCountertop = { cabinetId: best.id };
+  drawCTPreview();
+}
+
+// Same ruler-style label as the countertop canvas's dimLabel (2026-08-04 visual-polish pass) --
+// duplicated rather than shared because dimLabel is a closure declared inside drawCTPreview and
+// isn't reachable from this top-level renderer; kept in exact visual sync by design.
+function dcRoomDimLabel(ctx, x, y, txt) {
+  ctx.font='10px DM Mono,monospace'; ctx.textAlign='center';
+  const tw = ctx.measureText(txt).width;
+  ctx.fillStyle='rgba(238,243,249,0.9)';
+  ctx.fillRect(x-tw/2-5, y-10, tw+10, 13);
+  ctx.strokeStyle='rgba(51,85,119,0.55)'; ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(x-tw/2-9,y-4); ctx.lineTo(x-tw/2-9,y+2);
+  ctx.moveTo(x+tw/2+9,y-4); ctx.lineTo(x+tw/2+9,y+2);
+  ctx.stroke();
+  ctx.fillStyle='#33455B';
+  ctx.fillText(txt,x,y);
+}
+
+function dcRoomRectCorners(cx, cy, wIn, dIn, angleDeg) {
+  const rad = angleDeg*Math.PI/180, cos=Math.cos(rad), sin=Math.sin(rad);
+  const hw=wIn/2, hd=dIn/2;
+  const local = [{x:-hw,y:-hd},{x:hw,y:-hd},{x:hw,y:hd},{x:-hw,y:hd}];
+  return local.map(p => ({ x: cx + p.x*cos - p.y*sin, y: cy + p.x*sin + p.y*cos }));
+}
+
+function dcRoomPolyBoundsCenter() {
+  const xs=dcPoly.map(p=>p.x), ys=dcPoly.map(p=>p.y);
+  return { x:(Math.min(...xs)+Math.max(...xs))/2, y:(Math.min(...ys)+Math.max(...ys))/2 };
+}
+
+// Draws the countertop shape already built in Preset Shape/Custom Draw translated + rotated onto
+// a cabinet run, in the room's coordinate space. Read-only in Phase 1 (no cutout/seam editing here
+// -- those still happen back in the countertop canvas) since the spec asks for correct in-context
+// PLACEMENT, not a second full editor.
+function dcRoomDrawCountertop(ctx, cabinet) {
+  if (!dcPoly.length) return;
+  const center = dcRoomPolyBoundsCenter();
+  const rad = (cabinet.angleDeg||0) * Math.PI/180, cos=Math.cos(rad), sin=Math.sin(rad);
+  const toRoomPx = (p) => {
+    const lx = p.x-center.x, ly = p.y-center.y;
+    const rx = lx*cos - ly*sin, ry = lx*sin + ly*cos;
+    return dcRoomInToPx({ x: cabinet.x+rx, y: cabinet.y+ry });
+  };
+  const pts = dcPoly.map(toRoomPx);
+  ctx.fillStyle='rgba(232,133,10,0.22)';
+  ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+  for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+  ctx.closePath(); ctx.fill();
+  const n = dcPolyClosed ? pts.length : pts.length-1;
+  for (let i=0;i<n;i++) {
+    const a=pts[i], b=pts[(i+1)%pts.length];
+    const type = dcEdgeTypes[i];
+    ctx.strokeStyle = type ? EDGE_COLORS[type].color : 'rgba(51,85,119,0.45)';
+    ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+  }
+}
+
+function drawDCRoom(ctx, W, H) {
+  // Grid already drawn by the caller (drawCTPreview), same convention as drawDCPolygon.
+  if (!dcRoomWalls.length && !dcRoomWallDrawing) {
+    ctx.fillStyle='rgba(51,85,119,0.45)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Draw Wall selected — click and drag to draw the first wall',W/2,H/2);
+    ctx.textAlign='left';
+    return;
+  }
+
+  // Walls: a thick dark band with a lighter centerline, like a filled wall in a floor plan,
+  // plus a ruler-style length label per wall.
+  dcRoomWalls.forEach(w => {
+    const a=dcRoomInToPx({x:w.x1,y:w.y1}), b=dcRoomInToPx({x:w.x2,y:w.y2});
+    ctx.strokeStyle='#33455B'; ctx.lineWidth=9; ctx.lineCap='square';
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.strokeStyle='#EEF3F9'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    const lenIn = Math.round(Math.hypot(w.x2-w.x1, w.y2-w.y1));
+    dcRoomDimLabel(ctx, (a.x+b.x)/2, (a.y+b.y)/2-10, lenIn+'"');
+  });
+
+  // In-progress wall drag preview: dashed guide line along the live snapped angle, from the
+  // frozen start point to the current cursor position (mirrors the countertop draw-mode guide).
+  if (dcRoomWallDrawing && dcRoomWallFrom && dcRoomHoverAngleDeg !== null && dcRoomHoverRawIn) {
+    const from = dcRoomInToPx(dcRoomWallFrom);
+    const { dist } = dcSnapDirection(dcRoomWallFrom, dcRoomHoverRawIn);
+    const t = dcRoomGetTransform();
+    const rad = dcRoomHoverAngleDeg*Math.PI/180;
+    const toPx = { x: from.x+Math.cos(rad)*dist*t.scale, y: from.y+Math.sin(rad)*dist*t.scale };
+    ctx.strokeStyle='rgba(22,199,98,0.6)'; ctx.lineWidth=3; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(from.x,from.y); ctx.lineTo(toPx.x,toPx.y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Cabinet runs: warm wood-tone rectangle, blueprint-style outline, length label.
+  dcRoomCabinets.forEach(c => {
+    const corners = dcRoomRectCorners(c.x, c.y, c.lengthIn, c.depthIn, c.angleDeg).map(dcRoomInToPx);
+    ctx.fillStyle='#D9C7A8'; ctx.strokeStyle='#8B6F47'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(corners[0].x,corners[0].y);
+    for (let i=1;i<4;i++) ctx.lineTo(corners[i].x,corners[i].y);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    const mid = { x:(corners[0].x+corners[1].x)/2, y:(corners[0].y+corners[1].y)/2 };
+    dcRoomDimLabel(ctx, mid.x, mid.y-8, c.lengthIn+'"');
+  });
+
+  // Appliances: colored rectangle (per DC_ROOM_APPLIANCES), icon + label centered inside.
+  dcRoomAppliances.forEach(a => {
+    const spec = DC_ROOM_APPLIANCES[a.type];
+    if (!spec) return;
+    const corners = dcRoomRectCorners(a.x, a.y, spec.w, spec.d, a.angleDeg).map(dcRoomInToPx);
+    const center = dcRoomInToPx({x:a.x,y:a.y});
+    ctx.fillStyle=spec.color+'33'; ctx.strokeStyle=spec.color; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(corners[0].x,corners[0].y);
+    for (let i=1;i<4;i++) ctx.lineTo(corners[i].x,corners[i].y);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.font='14px Outfit,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(spec.icon, center.x, center.y-4);
+    ctx.fillStyle=spec.color; ctx.font='bold 9px Outfit,sans-serif';
+    ctx.fillText(spec.label, center.x, center.y+11);
+    ctx.textBaseline='alphabetic';
+  });
+
+  // Countertop placed on a cabinet run, read-only preview.
+  if (dcRoomCountertop) {
+    const cab = dcRoomCabinets.find(c => c.id === dcRoomCountertop.cabinetId);
+    if (cab) dcRoomDrawCountertop(ctx, cab);
+    else dcRoomCountertop = null; // the cabinet it was anchored to no longer exists (e.g. after Clear Room)
+  }
+
+  ctx.fillStyle='rgba(51,85,119,0.65)'; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='left';
+  ctx.fillText('ROOM LAYOUT — '+dcRoomWalls.length+' wall(s), '+dcRoomCabinets.length+' cabinet run(s), '+dcRoomAppliances.length+' appliance(s)'+(dcRoomCountertop?', countertop placed':''), 10, H-10);
 }
 
 // == SINK / CUTOUT PLACEMENT — click to drop, drag to fine-tune, works on every shape ==
