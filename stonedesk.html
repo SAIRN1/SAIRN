@@ -4319,13 +4319,28 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   </div>
   <div id="intake-list"></div>
 </div>
-</div><div id="intake-analyze-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;" data-auto-container="missing-dom-fix">
+<!-- FIX (widget-bleed root cause, 2026-08-04): this modal used to sit here as
+     a sibling AFTER panel-intake's own closing </div> (one </div> short of
+     properly closing the panel, moved down here instead) -- meaning it was
+     outside every .panel wrapper entirely. showPanel()/sbNav() only ever
+     toggle elements matching .panel, so this modal was never hidden on
+     navigation: intakeAnalyzePhoto() sets its display to 'flex', and unless
+     the user clicked Close before switching panels, it stayed fixed
+     (position:fixed, z-index 9998) on top of every subsequently-viewed
+     panel indefinitely. Moving panel-intake's real closing </div> to after
+     this block (instead of before it) nests it inside panel-intake, so it
+     inherits panel-intake's own display:none when any other panel is
+     active -- the same fix 18d63d6 already applied to the photos/schedule/
+     inventory/remake-trend orphans; this one and cust-detail-modal below
+     were missed by that pass. -->
+<div id="intake-analyze-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;">
   <div style="background:var(--card);border-radius:12px;max-width:480px;width:92%;max-height:85vh;overflow-y:auto;padding:20px 24px;">
     <div style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text)">📷 Photo Analysis</div>
-    <div id="intake-analyze-result" style="margin-bottom:12px" data-auto-container="missing-dom-fix"></div>
+    <div id="intake-analyze-result" style="margin-bottom:12px"></div>
     <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap" id="intake-analyze-actions"></div>
         <button class="q-btn" style="margin-top:10px;width:100%" onclick="document.getElementById('intake-analyze-modal').style.display='none'">Close</button>
   </div>
+</div>
 </div>
 
   <!-- == CUSTOMERS PANEL == -->
@@ -4466,9 +4481,18 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   };
 })();
 </script>
-</div>
+<!-- FIX (widget-bleed root cause, 2026-08-04): cust-detail-modal used to sit
+     here as a true sibling AFTER panel-customers' own closing </div>
+     (confirmed via a real HTML-tree parse, not just text-eyeballing --
+     panel-customers was already fully, correctly closed by this point, so
+     this wasn't a "shift the closing tag" case like intake-analyze-modal
+     above). Relocated it to inside panel-customers instead, so it inherits
+     panel-customers' display:none when any other panel is active --
+     custViewDetail() sets its display to 'flex' and nothing in
+     showPanel()/sbNav() ever closed it on nav away, since it never
+     matched .panel to begin with. -->
 <div id="cust-detail-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;">
-<div id="cust-form-wrap" style="display:none" data-auto-container="missing-dom-fix"></div>
+<div id="cust-form-wrap" style="display:none"></div>
   <div style="background:var(--card);border-radius:12px;max-width:800px;width:92%;max-height:85vh;overflow:hidden;display:flex;flex-direction:column;">
     <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
       <div>
@@ -4479,6 +4503,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     </div>
     <div style="padding:20px 24px;max-height:75vh;overflow-y:auto" id="cdm-body"></div>
   </div>
+</div>
 </div>
 
   <!-- == MOBILE POS PANEL == -->
