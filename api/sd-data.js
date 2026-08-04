@@ -30,7 +30,7 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 
-const RESOURCES = { profile: true, memory: true, employees: true, slabs: true };
+const RESOURCES = { profile: true, memory: true, employees: true, slabs: true, render_usage: true };
 // Roles refused entirely for the employees resource (carries hourly_rate —
 // payroll). Owner/Manager may read; Sales/Install may not, per the RBAC
 // design in sql/sd_employee_auth_schema.sql. Manager additionally gets
@@ -81,7 +81,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage' } });
     return;
   }
 
@@ -346,6 +346,28 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // ── RENDER USAGE (sd_render_usage — "Visualize on Your Kitchen" cap, 2026-08-04) ────────
+    // Read-only here (display only, e.g. "12/75 renders used this month" in the UI). The
+    // authoritative check-and-increment lives in api/sd-render.js at actual render time, never
+    // trusting a client-reported count before the paid vendor call — deliberately no write
+    // branch for this resource here, so a client can never self-report/reset its own usage.
+    if (resource === 'render_usage' && action === 'read') {
+      const month = new Date().toISOString().slice(0, 7);
+      const r = await fetch(rest(
+        'sd_render_usage?license_hash=eq.' + enc(licHash) + '&month=eq.' + enc(month) + '&select=count&limit=1'), { headers });
+      if (r.status === 404 || r.status === 400) {
+        // Migration not run yet — see sql/sd_render_usage_schema.sql. Report 0/not-provisioned
+        // rather than erroring the whole panel over a missing table.
+        res.status(200).json({ ok: true, data: { count: 0, provisioned: false } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const count = (Array.isArray(rows) && rows[0] && rows[0].count) || 0;
+      res.status(200).json({ ok: true, data: { count: count, provisioned: true } });
       return;
     }
 

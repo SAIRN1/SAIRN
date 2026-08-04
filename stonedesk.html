@@ -2787,6 +2787,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       </button>
       <div class="sb-section-body" id="sbsb-aitools">
         <button class="sb-btn" id="sb-veinmatch" onclick="sbNav('veinmatch')"><span class="sb-icon">&#127767;</span><span class="sb-text">Vein Match AI</span></button>
+        <button class="sb-btn" id="sb-visualize" onclick="sbNav('visualize')"><span class="sb-icon">&#128248;</span><span class="sb-text">Visualize on Your Kitchen</span></button>
         <button class="sb-btn" id="sb-seamai"    onclick="sbNav('seamai')">   <span class="sb-icon">&#9986;</span><span class="sb-text">Seam Placement AI</span></button>
         <button class="sb-btn" id="sb-sintered"  onclick="sbNav('sintered')"> <span class="sb-icon">&#128293;</span><span class="sb-text">Sintered Stone</span></button>
         <button class="sb-btn" id="sb-market"    onclick="sbNav('market')">   <span class="sb-icon">&#128225;</span><span class="sb-text">Market Intel</span></button>
@@ -24340,6 +24341,239 @@ document.addEventListener('DOMContentLoaded', function() {
 })();
 </script>
 </div><div id="vm-result" style="margin-top:16px;display:none"></div>
+
+<!-- PANEL: VISUALIZE ON YOUR KITCHEN (2026-08-04) -->
+<!-- Photo upload -> Claude vision finds the countertop -> rep/client picks a real in-stock slab
+     (sdSlabs, status:'in-stock' -- the reservation/consumption-tracked module, not the separate
+     panel-slabs Slab Tracker; see this app's own sd_slab_tracker/sd_slabs split noted around
+     line ~27840) -> api/sd-render.js swaps the surface via a third-party image-edit vendor,
+     gated by a flat-subscription render cap (no metering/billing -- see api/sd-render.js). -->
+<div class="panel" id="panel-visualize">
+<div style="padding:20px;max-width:1100px;margin:0 auto">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">📸 Visualize on Your Kitchen</h2>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Upload the client's kitchen photo, pick a real in-stock slab, see it rendered on their actual countertop</div></div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px">
+  <div class="kpi"><div class="kpi-val" id="viz-kpi-used">0</div><div class="kpi-label">Renders This Month</div></div>
+  <div class="kpi"><div class="kpi-val" id="viz-kpi-left">–</div><div class="kpi-label">Renders Remaining</div></div>
+  <div class="kpi"><div class="kpi-val" id="viz-kpi-cap">75</div><div class="kpi-label">Free Monthly Cap</div></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:12px;color:var(--text)">1. Kitchen Photo</div>
+      <div class="photo-zone" id="viz-drop-zone" onclick="document.getElementById('viz-file-input').click()">
+        <div style="font-size:32px;margin-bottom:8px">🖼️</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text)">Tap to upload the client's kitchen photo</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px">JPG, PNG — max 8MB</div>
+      </div>
+      <input type="file" id="viz-file-input" accept="image/*" style="display:none">
+      <img id="viz-photo-preview" alt="Uploaded kitchen photo" style="width:100%;border-radius:10px;margin-top:12px;display:none">
+      <button class="q-btn primary" id="viz-find-btn" style="width:100%;margin-top:12px;display:none" onclick="vizFindCountertop()">🔎 Find My Countertop</button>
+      <div id="viz-find-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;display:none" id="viz-slab-card">
+      <div style="font-weight:700;margin-bottom:12px;color:var(--text)">2. Pick a Real In-Stock Slab</div>
+      <div id="viz-slab-list" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
+      <button class="q-btn primary" id="viz-render-btn" style="width:100%;margin-top:12px" onclick="vizRender()" disabled>🎨 Render This Material</button>
+    </div>
+  </div>
+  <div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:200px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Result</div>
+      <div id="viz-result">
+        <div style="color:var(--muted);font-style:italic;font-size:13px">Upload a photo, confirm the countertop, and pick a slab to see it rendered here.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+(function(){
+  var _vizPhotoB64 = null;       // raw base64 (no data: prefix), the uploaded kitchen photo
+  var _vizCountertop = null;     // {found, description} from Claude vision
+  var _vizSelectedSlabId = null;
+
+  function vizToast(msg){ if (typeof showToast==='function') showToast(msg); }
+
+  document.getElementById('viz-file-input').addEventListener('change', function(){
+    var file = this.files[0];
+    if (!file) return;
+    if (file.size > 8*1024*1024) { vizToast('That photo is over 8MB — please pick a smaller one.'); return; }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      _vizPhotoB64 = e.target.result.split(',')[1];
+      var prev = document.getElementById('viz-photo-preview');
+      prev.src = e.target.result; prev.style.display = 'block';
+      document.getElementById('viz-find-btn').style.display = 'block';
+      document.getElementById('viz-find-status').textContent = '';
+      document.getElementById('viz-slab-card').style.display = 'none';
+      _vizCountertop = null; _vizSelectedSlabId = null;
+      document.getElementById('viz-result').innerHTML = '<div style="color:var(--muted);font-style:italic;font-size:13px">Upload a photo, confirm the countertop, and pick a slab to see it rendered here.</div>';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Step 2: Claude vision confirms a countertop is actually visible in the photo before letting
+  // the rep move on to slab selection -- same photo->Claude vision->JSON pattern already live in
+  // intakeAnalyzePhoto() (panel-intake), reused rather than reinvented.
+  window.vizFindCountertop = async function(){
+    if (!_vizPhotoB64) return;
+    var statusEl = document.getElementById('viz-find-status');
+    var btn = document.getElementById('viz-find-btn');
+    statusEl.textContent = 'Claude is looking for the countertop...';
+    btn.disabled = true;
+    try {
+      var prompt = 'You are looking at a kitchen photo for a stone countertop visualization tool. ' +
+        'Determine whether a countertop surface is clearly visible. Respond ONLY with raw JSON: ' +
+        '{"found":true,"description":"a short phrase locating the countertop, e.g. \'the L-shaped counter along the left and back walls\'"} ' +
+        'or {"found":false,"description":"a short reason, e.g. \'no countertop surface is visible in this photo\'"}.';
+      var res = await fetch('https://sairn.vercel.app/api/claude', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          app_id: 'stonedesk', is_demo: true, max_tokens: 200,
+          system: 'Respond with ONLY raw JSON. No markdown fences.',
+          messages: [{ role:'user', content: [
+            { type:'image', source:{ type:'base64', media_type:'image/jpeg', data:_vizPhotoB64 } },
+            { type:'text', text: prompt }
+          ]}]
+        })
+      });
+      var data = await res.json();
+      var raw = (data.content && data.content[0] && data.content[0].text) || '';
+      raw = raw.replace(/```json|```/g,'').trim();
+      var parsed = JSON.parse(raw);
+      _vizCountertop = parsed;
+      if (!parsed.found) {
+        statusEl.textContent = '⚠️ ' + (parsed.description || "Claude couldn't find a clear countertop in this photo — try a different angle.");
+        btn.disabled = false;
+        return;
+      }
+      statusEl.textContent = '✓ Found it: ' + (parsed.description || 'countertop identified');
+      document.getElementById('viz-slab-card').style.display = 'block';
+      vizRenderSlabList();
+    } catch(e) {
+      statusEl.textContent = 'Could not analyze the photo — please try again.';
+      btn.disabled = false;
+    }
+  };
+
+  // Real in-stock inventory, per spec -- sdSlabs (the reservation/consumption-tracked module,
+  // cross-referenced by Quote Builder/POS/Schedule), filtered to status:'in-stock'. Deliberately
+  // NOT the separate panel-slabs Slab Tracker list -- that system is self-contained and isn't
+  // wired into the reserve/quote flow this feature's "Quote This" button needs (qbPickSlab()).
+  window.vizRenderSlabList = function(){
+    var el = document.getElementById('viz-slab-list');
+    var inStock = (typeof sdSlabs !== 'undefined' ? sdSlabs : []).filter(function(s){ return s.status === 'in-stock'; });
+    if (!inStock.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No in-stock slabs found — add some in the slab reservation system first.</div>';
+      return;
+    }
+    el.innerHTML = inStock.map(function(s){
+      var label = (typeof slabMaterialLabel==='function' ? slabMaterialLabel(s.material) : (s.material||''));
+      return '<div class="viz-slab-row" data-id="'+escHtml(s.id)+'" onclick="vizSelectSlab(\''+s.id+'\')" ' +
+        'style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between;align-items:center">' +
+        '<span><b>'+escHtml(s.colorName||'(unnamed)')+'</b> — '+escHtml(label)+'</span>' +
+        '<span style="color:var(--muted)">'+(s.usableSqft||0)+' sqft</span>' +
+      '</div>';
+    }).join('');
+  };
+
+  window.vizSelectSlab = function(id){
+    _vizSelectedSlabId = id;
+    document.querySelectorAll('.viz-slab-row').forEach(function(r){
+      r.style.borderColor = (r.getAttribute('data-id')===id) ? 'var(--a)' : 'var(--border)';
+      r.style.background = (r.getAttribute('data-id')===id) ? 'rgba(232,133,10,0.06)' : '';
+    });
+    document.getElementById('viz-render-btn').disabled = false;
+  };
+
+  // Bearer-license fetch, same auth convention as sdData() (api/sd-data.js) -- this feature calls
+  // a separate endpoint (api/sd-render.js) rather than routing through sdData() because it does a
+  // fundamentally different job (a paid third-party vendor call, not a Supabase CRUD op), but the
+  // auth header shape stays identical on purpose so the two are trivially cross-checkable.
+  function vizAuthHeaders(){
+    var headers = { 'Content-Type': 'application/json' };
+    var lic = typeof sdLicenseKey === 'function' ? sdLicenseKey() : null;
+    if (lic) headers['Authorization'] = 'Bearer ' + lic;
+    try { var tok = sessionStorage.getItem('sd_session_token'); if (tok) headers['X-SD-Auth'] = tok; } catch(e){}
+    return headers;
+  }
+
+  window.vizRefreshUsageKPIs = async function(){
+    if (typeof sdData !== 'function') return;
+    var data = await sdData('read', 'render_usage', {});
+    var used = (data && typeof data.count === 'number') ? data.count : 0;
+    var cap = 75;
+    document.getElementById('viz-kpi-used').textContent = used;
+    document.getElementById('viz-kpi-left').textContent = Math.max(0, cap - used);
+    document.getElementById('viz-kpi-cap').textContent = cap;
+  };
+
+  window.vizRender = async function(){
+    if (!_vizPhotoB64 || !_vizSelectedSlabId) return;
+    var slab = (typeof sdSlabs !== 'undefined' ? sdSlabs : []).find(function(s){ return s.id === _vizSelectedSlabId; });
+    if (!slab) { vizToast('Selected slab not found — pick again.'); return; }
+    var lic = typeof sdLicenseKey === 'function' ? sdLicenseKey() : null;
+    if (!lic) { vizToast('No license key on this device — sign in again to render.'); return; }
+
+    var resultEl = document.getElementById('viz-result');
+    var btn = document.getElementById('viz-render-btn');
+    btn.disabled = true; btn.textContent = '⚙️ Rendering...';
+    resultEl.innerHTML = '<div style="color:var(--muted);font-size:13px">Rendering '+escHtml(slab.colorName||'material')+' onto the photo...</div>';
+
+    var materialLabel = (typeof slabMaterialLabel==='function' ? slabMaterialLabel(slab.material) : (slab.material||''));
+    var materialDescription = (slab.colorName||'') + ' ' + materialLabel;
+
+    try {
+      var res = await fetch('/api/sd-render', {
+        method: 'POST', headers: vizAuthHeaders(),
+        body: JSON.stringify({ photo_base64: _vizPhotoB64, material_description: materialDescription.trim() })
+      });
+      var data = await res.json();
+
+      if (data && data.capped) {
+        resultEl.innerHTML = '<div style="padding:14px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;font-size:13px;color:var(--text)">📅 '+escHtml(data.message||"You've used this shop's free renders for this month — renders reset next month.")+'</div>';
+        vizRefreshUsageKPIs();
+        return;
+      }
+      if (data && data.error && data.error.code === 'VENDOR_NOT_CONFIGURED') {
+        resultEl.innerHTML = '<div style="padding:14px;background:var(--stone);border-radius:8px;font-size:13px;color:var(--muted)">Kitchen visualization rendering is still being finished — check back soon.</div>';
+        return;
+      }
+      if (!res.ok || !data || !data.ok) {
+        resultEl.innerHTML = '<div style="padding:14px;color:#dc2626;font-size:13px">Render failed — please try again.'+((data&&data.error&&data.error.message)?'<br><small>'+escHtml(data.error.message)+'</small>':'')+'</div>';
+        return;
+      }
+
+      resultEl.innerHTML =
+        '<img src="data:image/png;base64,'+data.image_base64+'" style="width:100%;border-radius:10px;margin-bottom:12px">' +
+        '<div style="font-size:13px;color:var(--text);margin-bottom:10px"><b>'+escHtml(slab.colorName||'')+'</b> — '+escHtml(materialLabel)+'</div>' +
+        '<button class="q-btn primary" style="width:100%" onclick="vizQuoteThis()">💰 Quote This Material</button>';
+      vizRefreshUsageKPIs();
+    } catch(e) {
+      resultEl.innerHTML = '<div style="padding:14px;color:#dc2626;font-size:13px">Render failed — please try again.</div>';
+    } finally {
+      btn.disabled = false; btn.textContent = '🎨 Render This Material';
+    }
+  };
+
+  // Carries the selected slab straight into Quote Builder's existing reservation flow --
+  // qbPickSlab() is the same function the Quote Builder's own "Pick a Slab" modal calls, so this
+  // reserves the slab and updates the qb-slab-chip exactly as if the rep had picked it there.
+  window.vizQuoteThis = function(){
+    if (!_vizSelectedSlabId) return;
+    if (typeof _slabPickerCtx !== 'undefined') _slabPickerCtx = 'quote';
+    if (typeof qbPickSlab === 'function') qbPickSlab(_vizSelectedSlabId);
+    sbNav('quote');
+    vizToast('Material added to Quote Builder.');
+  };
+
+  vizRefreshUsageKPIs();
+})();
+</script>
+</div>
 
 <!-- PANEL: SEAM PLACEMENT AI -->
 <div class="panel" id="panel-seamai">
