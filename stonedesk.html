@@ -1490,6 +1490,18 @@ function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt
 window.escHtml=escHtml;
 function sdLoad(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
 window.sdLoad=sdLoad;
+// sdDemoCleared() -- the one shared gate every ||SEED demo-data fallback
+// below now checks before defaulting to fabricated Pinnacle Stone content.
+// Before Michael clicks "Clear Demo Data" (Admin & Settings), this returns
+// false and every module behaves exactly as it always has -- zero change
+// for anyone using this as a fresh sales-demo install. Once he clicks it,
+// this flips to true permanently, and every one of those modules returns a
+// real empty array on an empty key instead of silently re-seeding -- the
+// exact `JSON.parse('[]')||SEED` trap flagged in SAIRNBUILD-SCOPE.md never
+// gets a chance to fire, because the flag is checked before any
+// truthiness test on the loaded data, not after.
+function sdDemoCleared(){try{return localStorage.getItem('sd_demo_cleared')==='1';}catch(e){return false;}}
+window.sdDemoCleared=sdDemoCleared;
 // renderCustomers() is defined once, for real, at its Tier-3 definition
 // later in the file -- this early stub (which dispatched to sdCustRender,
 // now removed as dead/shadowed code) was silently overridden by that
@@ -3500,7 +3512,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var d=[];
     try{d=JSON.parse(localStorage.getItem('sd_quote_history')||'null')||[];}catch(e){}
     try{var q=JSON.parse(localStorage.getItem('sd_aiquotes')||'[]');d=d.concat(q);}catch(e){}
-    return d.length?d:SEED;
+    return (d.length||sdDemoCleared())?d:SEED;
   }
   function save(d){try{localStorage.setItem('sd_quote_history',JSON.stringify(d));}catch(e){}}
   function updateKPIs(d){
@@ -3699,7 +3711,21 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
           <div><div style="font-size:13px;font-weight:600">Demo Mode</div><div style="font-size:11px;color:var(--muted)">Show seeded Pinnacle data on load</div></div>
-          <input type="checkbox" id="adm-demo" checked style="width:16px;height:16px;cursor:pointer">
+          <input type="checkbox" id="adm-demo" onchange="sdDemoToggleChanged()" style="width:16px;height:16px;cursor:pointer">
+        </div>
+        <!-- This checkbox existed with no wiring at all before today (Guardian
+             Check 0b: a control claiming to do something it doesn't) -- now wired
+             to sdDemoCleared(). Turning it off requires a real second confirm
+             below, not a single click, since it permanently clears 30 modules'
+             worth of seeded demo data (listed explicitly so nothing is a
+             surprise); turning it back on is instant and reversible, since it
+             only flips the flag other modules already check on their own. -->
+        <div id="adm-demo-confirm" style="display:none;margin-top:-2px;padding:12px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;line-height:1.6">
+          Turning this off permanently clears demo data from all 30 seeded modules (Quote History, Intakes, Warranty, Schedule, Slab Tracker, Vendors, Comms, CRM, Job Costing, Timesheets, Remnants, POS, Receiving, Manifest, Sintered, Reviews, Contractors, Referrals, Price Intel, Equipment, Employees, Stoneyard, Subs, Bids, Damage, Training, Bulletins, Waste, NPS, AP) — it does <strong>not</strong> touch your license key, PINs, shop name, rep name, or settings. This cannot be undone.
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="q-btn" style="background:#ef4444;color:#fff;border-color:#dc2626;flex:1" onclick="sdClearDemoDataConfirmed()">Yes, clear demo data</button>
+            <button class="q-btn" style="flex:1" onclick="sdDemoToggleCancel()">Cancel</button>
+          </div>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
           <div><div style="font-size:13px;font-weight:600">Print Header Logo</div><div style="font-size:11px;color:var(--muted)">Include company logo on printed docs</div></div>
@@ -3753,6 +3779,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   var lk=localStorage.getItem('sd_license_key')||'';
   var lkEl=document.getElementById('adm-lic-status');
   if(lkEl)lkEl.textContent=lk||'Not Set';
+  var demoEl=document.getElementById('adm-demo');
+  if(demoEl)demoEl.checked=!sdDemoCleared();
   window.sdAdminSave=function(){
     var s={company:document.getElementById('adm-co').value,owner:document.getElementById('adm-owner').value,
       phone:document.getElementById('adm-phone').value,addr:document.getElementById('adm-addr').value,
@@ -3775,6 +3803,42 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       var ok=r.content||r.completion;
       showToast(ok?'API proxy: Connected':'API proxy returned empty response');
     }).catch(function(){showToast('API proxy: Unreachable — check connection');});
+  };
+  // sdDemoToggleChanged/sdDemoToggleCancel/sdClearDemoDataConfirmed --
+  // added 2026-08-04, scoped deliberately narrower than sdAdminClear()
+  // just below: that button wipes every sd_* key including license/PINs/
+  // settings with a single click + native confirm() and predates this
+  // change untouched (flagged to Michael, not silently fixed here -- it's
+  // a separate, more dangerous control this session did not have
+  // authorization to modify). This one clears only the 30 keys with a
+  // demo SEED fallback, never the config/identity keys, and requires a
+  // real second click on a visible confirm panel, not a native dialog.
+  window.sdDemoToggleChanged=function(){
+    var cb=document.getElementById('adm-demo');
+    if(cb.checked){
+      localStorage.setItem('sd_demo_cleared','0');
+      document.getElementById('adm-demo-confirm').style.display='none';
+      showToast('Demo mode re-enabled.');
+      return;
+    }
+    cb.checked=true; // revert until the explicit confirm below is clicked
+    document.getElementById('adm-demo-confirm').style.display='block';
+  };
+  window.sdDemoToggleCancel=function(){
+    document.getElementById('adm-demo-confirm').style.display='none';
+  };
+  window.sdClearDemoDataConfirmed=function(){
+    var SAFE_DEMO_KEYS=['sd_intakes','sd_warranty','sd_schedule','sd_slab_tracker','sd_vendors',
+      'sd_comms','sd_crm','sd_jobcost','sd_timesheets','sd_remnant','sd_pos','sd_receiving',
+      'sd_manifest','sd_sintered','sd_reviews','sd_contractors','sd_referrals','sd_priceintel',
+      'sd_equipment','sd_employees','sd_stoneyard','sd_subs','sd_bids','sd_damage','sd_training',
+      'sd_bulletins','sd_waste','sd_nps','sd_ap','sd_quote_history'];
+    localStorage.setItem('sd_demo_cleared','1');
+    SAFE_DEMO_KEYS.forEach(function(k){try{localStorage.setItem(k,'[]');}catch(e){}});
+    document.getElementById('adm-demo-confirm').style.display='none';
+    document.getElementById('adm-demo').checked=false;
+    showToast('Demo data cleared. Reloading...');
+    setTimeout(function(){location.reload();},1200);
   };
   window.sdAdminClear=function(){
     if(confirm('Clear ALL StoneDesk data? This cannot be undone.')){
@@ -4221,7 +4285,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     {name:'Amy Nguyen',phone:'(555) 222-3344',email:'amy@email.com',type:'Bathroom Vanity',material:'Quartz (Engineered)',sqft:18,budget:'Under $3k',timeline:'30-60 days',source:'Google',date:new Date().toISOString().slice(0,10),converted:false},
     {name:'Brian Torres',phone:'(555) 333-4455',email:'btorres@email.com',type:'Outdoor Kitchen',material:'Granite',sqft:60,budget:'$6k - $12k',timeline:'ASAP',source:'Contractor',date:new Date(Date.now()-86400000).toISOString().slice(0,10),converted:true},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_intakes')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_intakes')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_intakes',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -4855,7 +4919,7 @@ window.sdPhotosExport=function(){
     {id:'W-005',job:'J-2024-062',customer:'Maria Lopez',stone:'White Macaubas',install:'2024-03-22',expires:'2025-03-22',years:1,status:'Expired',claims:0,claimCost:0,coverage:'Fabrication defects'},
     {id:'W-006',job:'J-2024-091',customer:'Carla Reyes',stone:'Statuario Extra',install:'2024-06-20',expires:'2027-06-20',years:3,status:'Active',claims:0,claimCost:0,coverage:'Premium: fabrication, sealing, annual re-seal visit'}
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_warranty')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_warranty')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_warranty',JSON.stringify(d));}catch(e){}}
   var data=load();
   var STATUS_COLOR={Active:'#16c762',Expired:'#94a3b8','Claim Open':'#ef4444'};
@@ -5203,7 +5267,7 @@ window.sdPhotosExport=function(){
     {id:'SCH-006',job:'J-2024-094',customer:'John Morris',address:'601 Brookside Blvd, Dunwoody GA',type:'Install',date:dateOffset(4),crew:['Carlos M.','Josh T.'],status:'Scheduled',notes:'Quartzite kitchen — 5hr est. Large job'},
     {id:'SCH-007',job:'J-2024-080',customer:'Amy Foster',address:'12 Cedar Grove, Kennesaw GA',type:'Install',date:dateOffset(-1),crew:['Dave K.'],status:'Delayed',notes:'Material delayed — reschedule needed'}
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_schedule')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_schedule')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_schedule',JSON.stringify(d));}catch(e){}}
   var data=load();
   var STATUS_COLOR={Scheduled:'#6366f1','In Progress':'#f59e0b',Completed:'#16c762',Delayed:'#ef4444',Cancelled:'#94a3b8'};
@@ -5601,7 +5665,7 @@ function sdInvExport(){
   function load(){
     try{
       var mig=localStorage.getItem('sd_slab_tracker');
-      if(mig)return JSON.parse(mig)||SEED;
+      if(mig)return JSON.parse(mig)||(sdDemoCleared()?[]:SEED);
       // One-time carry-forward: if 'sd_slabs' last held this panel's shape
       // (has .stone, not the engine's .colorName) rather than the engine's,
       // don't silently drop it -- copy it to the new key once. Also clear
@@ -5618,7 +5682,7 @@ function sdInvExport(){
         return old;
       }
     }catch(e){}
-    return SEED;
+    return sdDemoCleared()?[]:SEED;
   }
   function save(d){try{localStorage.setItem('sd_slab_tracker',JSON.stringify(d));}catch(e){}}
   var data=load();
@@ -5760,7 +5824,7 @@ function sdInvExport(){
     {id:'V-006',name:'Cosentino',type:'Stone Supplier',contact:'Sofia Garcia',phone:'(305) 555-0455',email:'sofia@cosentino.com',ytdSpend:61500,rating:4.6,preferred:true,terms:'Net 30',notes:'Dekton and Silestone'},
     {id:'V-007',name:'Global Stone Co',type:'Stone Supplier',contact:'Ray Kim',phone:'(617) 555-0302',email:'ray@globalstone.com',ytdSpend:38700,rating:4.0,preferred:false,terms:'Net 45',notes:'Quartzite and exotic slabs'}
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_vendors')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_vendors')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_vendors',JSON.stringify(d));}catch(e){}}
   var data=load();
   window.sdVendorsRender=function(){
@@ -6377,7 +6441,7 @@ window.sdRMExport=function(){
     {type:'Follow-Up',to:'Emma Rodriguez',subj:'Quote follow-up',body:'Following up on our $3,400 quote for fireplace surround.',date:'2024-06-12 09:00',sent:true},
     {type:'Vendor Email',to:'Stone World Supply',subj:'Calacatta Gold order',body:'Need 6 additional slabs of Calacatta Gold 3cm by June 20.',date:'2024-06-11 11:00',sent:true},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_comms')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_comms')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_comms',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -22289,7 +22353,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'James Lee',proj:'Full Kitchen Reno',val:11000,stage:'Hot',source:'Contractor',date:'2024-06-07',phone:'(555) 501-1005'},
     {name:'Carol White',proj:'Kitchen + 2 Baths',val:7200,stage:'Quote Sent',source:'Referral',date:'2024-06-05',phone:'(555) 501-1006'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_crm')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_crm')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_crm',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -22436,7 +22500,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {job:'Rodriguez Fireplace',rev:3400,mat:1200,lab:600,oth:150,status:'Billed',date:'2024-06-07'},
     {job:'Chen Full Kitchen',rev:8900,mat:3200,lab:1800,oth:400,status:'In Progress',date:'2024-06-05'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_jobcost')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_jobcost')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_jobcost',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -22642,7 +22706,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {id:8,emp:"Carlos Mendez",date:weekAgo,inn:"07:00",out:"14:30",job:"Remnant Fabrication",hrs:7.5,rate:26},
     {id:9,emp:"Tony Perez",date:weekAgo,inn:"07:30",out:"16:00",job:"Torres Bath Install",hrs:8.5,rate:24},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem("sd_timesheets")||"null")||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem("sd_timesheets")||"null")||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem("sd_timesheets",JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -22797,7 +22861,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {id:'R-005',stone:'White Macaubas',size:'44x16',sqft:4.9,status:'Sold',location:'—',price:110,age:34,origin:'J-2024-062',notes:'Sold to walk-in 6/10'},
     {id:'R-006',stone:'Dekton Sirius',size:'60x12',sqft:5.0,status:'Available',location:'Yard-B Row 4',price:95,age:15,origin:'J-2024-083',notes:'Matte finish'}
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_remnant')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_remnant')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_remnant',JSON.stringify(d));}catch(e){}}
   var data=load();
   var STATUS_COLOR={Available:'#16c762',Reserved:'#f59e0b',Sold:'#6b7280'};
@@ -22964,7 +23028,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {num:'PO-2024-039',vendor:'Global Stone Inc',mat:'Black Galaxy x8 slabs',amt:3800,exp:'2024-06-20',status:'In Transit',date:'2024-06-09'},
     {num:'PO-2024-038',vendor:'Cosentino Direct',mat:'Silestone x5 slabs',amt:4500,exp:'2024-06-12',status:'Overdue',date:'2024-06-05'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_pos')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_pos')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_pos',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -23088,7 +23152,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {id:3,mat:'Black Galaxy Granite — 3cm',qty:8,val:3200,vendor:'Global Stone',cond:'Good',notes:'',date:'2024-06-13'},
     {id:4,mat:'Silestone Blanco Zeus',qty:3,val:2100,vendor:'Cosentino Direct',cond:'Minor Issue',notes:'Corner chip on slab #3',date:'2024-06-12'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_receiving')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_receiving')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_receiving',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -23213,7 +23277,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {cust:'David Park',addr:'301 Cedar Blvd, Springfield',time:'13:00',crew:'Crew B',type:'Template',status:'Scheduled',date:today},
     {cust:'Emma Rodriguez',addr:'55 Birch Ln, Springfield',time:'15:00',crew:'Crew B',type:'Install',status:'Scheduled',date:today},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_manifest')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_manifest')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_manifest',JSON.stringify(d));}catch(e){}}
   function updateKPIs(d){
     var tod=d.filter(function(x){return x.date===today;});
@@ -23767,7 +23831,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'Lapitec Bianco Polare',brand:'Lapitec',thickness:'12mm',price:105,finish:'Soft Touch',available:false},
     {name:'Laminam Calacatta',brand:'Laminam',thickness:'5.6mm',price:80,finish:'Polished',available:true},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_sintered')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_sintered')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_sintered',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -24271,7 +24335,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {id:'RV-005',customer:'Stone Barn LLC',source:'Google',rating:3,date:'2024-06-01',text:'Decent work overall but we had a chip on delivery that took time to resolve. The replacement piece looks great but the delay impacted our timeline.',responded:false,job:'J-2024-085'},
     {id:'RV-006',customer:'Sandra Kim',source:'Facebook',rating:5,date:'2024-06-15',text:'Used Pinnacle for our laundry room quartz top. Small job but they treated it like it was a mansion remodel. Excellent quality and fair pricing.',responded:true,job:'J-2024-087'}
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_reviews')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_reviews')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_reviews',JSON.stringify(d));}catch(e){}}
   var data=load();
   function stars(n){var s='';for(var i=1;i<=5;i++)s+='<span style="color:'+(i<=n?'#f59e0b':'#d1d5db')+'">&#9733;</span>';return s;}
@@ -24434,7 +24498,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'ProBuild Contractors',contact:'Tom Willis',phone:'(555) 301-5500',tier:'Standard',ytd:9800,active:1},
     {name:'Sunrise Remodel',contact:'Ana Flores',phone:'(555) 301-6600',tier:'Standard',ytd:5200,active:0},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_contractors')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_contractors')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_contractors',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -24560,7 +24624,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {from:'Marcus Webb',to:'Dana Kim',phone:'(555) 234-7777',status:'Converted',val:5100,date:'2024-05-28'},
     {from:'David Park',to:'Amy Lee',phone:'(555) 234-8888',status:'Lead',val:0,date:'2024-05-20'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_referrals')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_referrals')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_referrals',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -24700,18 +24764,33 @@ document.addEventListener('DOMContentLoaded', function() {
     {mat:'Quartzite (Super White)',mkt:110,ours:135,source:'Market Survey',date:'2024-06-07'},
     {mat:'Silestone Blanco Zeus',mkt:80,ours:98,source:'Distributor List',date:'2024-06-06'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_priceintel')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_priceintel')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_priceintel',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
+    document.getElementById('pi-count').textContent=d.length;
+    var tb=document.getElementById('pi-table');
+    if(!d.length){
+      // FIX (2026-08-04): this branch never used to be reachable -- every
+      // load() before today's Clear Demo Data feature fell back to SEED on
+      // any empty array, so d.length was never actually 0 here. Once real
+      // empty is possible, the code below (a bare d.sort(...)[0].mat with
+      // no length guard, plus two 0/0=NaN divisions) crashed the instant
+      // this panel rendered on a genuinely empty data set -- caught live
+      // while verifying Clear Demo Data, not by any existing check.
+      document.getElementById('pi-avg').textContent='$0';
+      document.getElementById('pi-our').textContent='$0';
+      document.getElementById('pi-margin').textContent='0%';
+      tb.innerHTML='';
+      document.getElementById('pi-summary').innerHTML='No price intelligence data yet — add a material comparison to get started.';
+      return;
+    }
     var avgMkt=d.reduce(function(a,x){return a+x.mkt;},0)/d.length;
     var avgOurs=d.reduce(function(a,x){return a+x.ours;},0)/d.length;
     var margin=((avgOurs-avgMkt)/avgMkt*100);
     document.getElementById('pi-avg').textContent='$'+avgMkt.toFixed(0);
     document.getElementById('pi-our').textContent='$'+avgOurs.toFixed(0);
     document.getElementById('pi-margin').textContent=(margin>=0?'+':'')+margin.toFixed(1)+'%';
-    document.getElementById('pi-count').textContent=d.length;
-    var tb=document.getElementById('pi-table');
     tb.innerHTML=d.map(function(x){
       var m=((x.ours-x.mkt)/x.mkt*100);
       var col=m>0?'#166534':'#dc2626';
@@ -24824,7 +24903,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'Truck + Trailer',make:'Ford F-450 + Flatbed',val:58000,maint:'2024-07-10',status:'Operational'},
     {name:'Fabrication Table (x2)',make:'Custom Steel',val:8000,maint:'2024-12-01',status:'Operational'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_equipment')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_equipment')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_equipment',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -24946,7 +25025,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'Lisa Chen',role:'Office Manager',dept:'Office',phone:'(555) 847-3206',start:'2021-01-01',certs:[]},
     {name:'Jake Burns',role:'Installer',dept:'Field',phone:'(555) 847-3207',start:'2022-05-01',certs:['OSHA 10']},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_employees')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_employees')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_employees',JSON.stringify(d));}catch(e){}}
   function updateKPIs(d){
     document.getElementById('emp-total').textContent=d.length;
@@ -25075,7 +25154,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {id:7,mat:'Silestone Blanco Zeus',loc:'E1',price:900,status:'Available',thickness:'2cm'},
     {id:8,mat:'Blue Bahia Granite',loc:'F1',price:1800,status:'Reserved',thickness:'3cm'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_stoneyard')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_stoneyard')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_stoneyard',JSON.stringify(d));}catch(e){}}
   function updateKPIs(d){
     document.getElementById('yard-slabs').textContent=d.length;
@@ -25192,7 +25271,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'Crane Services LLC',trade:'Heavy Lift',phone:'(555) 411-1004',rate:900,ytd:5400,ins_exp:'2024-11-01',status:'Active'},
     {name:'Waterjet Pro',trade:'Waterjet Cutting',phone:'(555) 411-1005',rate:600,ytd:9600,ins_exp:'2025-01-01',status:'Inactive'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_subs')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_subs')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_subs',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -25319,7 +25398,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {cust:'Chen Residence',proj:'Full Home Stone Package',val:28000,stage:'Proposal Sent',close:'2024-06-22',date:'2024-06-07'},
     {cust:'Northside Hotel',proj:'Guest Bath Vanities x30',val:120000,stage:'Qualifying',close:'2024-08-01',date:'2024-06-10'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_bids')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_bids')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_bids',JSON.stringify(d));}catch(e){}}
   function card(x){
     return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'
@@ -25575,7 +25654,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {job:'Chen Kitchen',type:'Cabinet Damage',amount:650,fault:'Disputed',desc:'Cabinet door hinge stripped when moving for countertop template',status:'Open',recovered:0,date:'2024-06-11'},
     {job:'Park Outdoor',type:'Scratched Surface',amount:200,fault:'Customer Fault',desc:'Customer dragged metal chair across new surface',status:'Closed — No Pay',recovered:0,date:'2024-05-30'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_damage')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_damage')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_damage',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -25712,7 +25791,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {topic:'Silicosis Awareness',dept:'All',interval:'Annual'},
     {topic:'First Aid/CPR',dept:'All',interval:'Every 2 years'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_training')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_training')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_training',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -25840,7 +25919,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {id:5,cat:'Safety',title:'Forklift Certification Renewal',body:'3 team members need recertification by June 30. See HR to schedule.',pinned:false,date:'2024-06-08',author:'Safety Officer'},
   ];
   function load(){
-    try{ var d=JSON.parse(localStorage.getItem('sd_bulletins')||'null'); return d||SEED; }catch(e){return SEED;}
+    try{ var d=JSON.parse(localStorage.getItem('sd_bulletins')||'null'); return d||(sdDemoCleared()?[]:SEED); }catch(e){return sdDemoCleared()?[]:SEED;}
   }
   function save(d){ try{localStorage.setItem('sd_bulletins',JSON.stringify(d));}catch(e){} }
   function render(){
@@ -25976,7 +26055,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {job:'Rodriguez FP',material:'Quartzite',lbs:140,cost:35,type:'Slurry — Disposed',date:'2024-06-07'},
     {job:'Various',material:'Mixed',lbs:50,cost:0,type:'Donated to Habitat',date:'2024-06-05'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_waste')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_waste')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_waste',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -26107,7 +26186,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {customer:'Linda Torres',score:7,comment:'Good work overall. Communication could be a bit faster.',date:'2024-06-03'},
     {customer:'Robert Chen',score:9,comment:'Stunning result. Jim\'s team really knows their craft.',date:'2024-05-28'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_nps')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_nps')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_nps',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
@@ -26240,7 +26319,7 @@ document.addEventListener('DOMContentLoaded', function() {
     {vendor:'Cosentino Direct',desc:'Silestone inventory',amt:4500,due:'2024-06-22',status:'Open',date:'2024-06-10'},
     {vendor:'Shop Utilities',desc:'Electric & Water — May',amt:820,due:'2024-06-10',status:'Paid',date:'2024-06-01'},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||SEED;}catch(e){return SEED;}}
+  function load(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_ap',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
