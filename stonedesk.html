@@ -3827,24 +3827,46 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   window.sdDemoToggleCancel=function(){
     document.getElementById('adm-demo-confirm').style.display='none';
   };
-  window.sdClearDemoDataConfirmed=function(){
-    var SAFE_DEMO_KEYS=['sd_intakes','sd_warranty','sd_schedule','sd_slab_tracker','sd_vendors',
-      'sd_comms','sd_crm','sd_jobcost','sd_timesheets','sd_remnant','sd_pos','sd_receiving',
-      'sd_manifest','sd_sintered','sd_reviews','sd_contractors','sd_referrals','sd_priceintel',
-      'sd_equipment','sd_employees','sd_stoneyard','sd_subs','sd_bids','sd_damage','sd_training',
-      'sd_bulletins','sd_waste','sd_nps','sd_ap','sd_quote_history'];
+  // sdClearSafeDemoData() -- the ONE place that knows which sd_* keys are
+  // safe to clear. Shared by sdClearDemoDataConfirmed() above (the Demo
+  // Mode toggle) and sdAdminClear() below ("Clear All Data & Reset") so
+  // there is a single source of truth instead of two lists that could
+  // silently drift apart. Added 2026-08-04 when sdAdminClear() was found
+  // to still be doing an unscoped removeItem on every sd_* key -- would
+  // have wiped sd_license_key/sd_pin_*/sd_settings/sd_shop_name/
+  // sd_rep_name/sd_exec_role on a single native confirm(). Never remove a
+  // key from this list without checking sairn-app-scaffold's data-layer
+  // note on which sd_* keys are config/identity vs. seeded demo data.
+  var SAFE_DEMO_KEYS=['sd_intakes','sd_warranty','sd_schedule','sd_slab_tracker','sd_vendors',
+    'sd_comms','sd_crm','sd_jobcost','sd_timesheets','sd_remnant','sd_pos','sd_receiving',
+    'sd_manifest','sd_sintered','sd_reviews','sd_contractors','sd_referrals','sd_priceintel',
+    'sd_equipment','sd_employees','sd_stoneyard','sd_subs','sd_bids','sd_damage','sd_training',
+    'sd_bulletins','sd_waste','sd_nps','sd_ap','sd_quote_history'];
+  function sdClearSafeDemoData(){
     localStorage.setItem('sd_demo_cleared','1');
     SAFE_DEMO_KEYS.forEach(function(k){try{localStorage.setItem(k,'[]');}catch(e){}});
+  }
+  window.sdClearDemoDataConfirmed=function(){
+    sdClearSafeDemoData();
     document.getElementById('adm-demo-confirm').style.display='none';
     document.getElementById('adm-demo').checked=false;
     showToast('Demo data cleared. Reloading...');
     setTimeout(function(){location.reload();},1200);
   };
   window.sdAdminClear=function(){
-    if(confirm('Clear ALL StoneDesk data? This cannot be undone.')){
-      var keys=Object.keys(localStorage).filter(function(k){return k.startsWith('sd_');});
-      keys.forEach(function(k){localStorage.removeItem(k);});
-      showToast('All data cleared. Reloading...');
+    // Scoped 2026-08-04 (previously: removeItem on every sd_* key, no
+    // classification -- see the note on sdClearSafeDemoData() above).
+    // Kept the native confirm() rather than building a second inline
+    // confirm panel for one button elsewhere on this same settings page --
+    // not less safe than the toggle above (both require a real second
+    // explicit action beyond the first click), just a different control
+    // for the identical scoped operation. Text updated to actually
+    // describe what happens now, not what it used to do.
+    if(confirm('Clear all StoneDesk DEMO data (quotes, schedule, CRM, vendors, and 26 other seeded modules)? Your license key, PINs, shop name, and settings are not affected. This cannot be undone.')){
+      sdClearSafeDemoData();
+      var demoEl=document.getElementById('adm-demo');
+      if(demoEl)demoEl.checked=false;
+      showToast('Demo data cleared. Reloading...');
       setTimeout(function(){location.reload();},1200);
     }
   };
