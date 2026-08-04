@@ -50,6 +50,14 @@ const EMPLOYEES_READ_DENIED_ROLES = { sales: true, install: true };
 // rather than blocking on it).
 const EMPLOYEES_WRITE_ALLOWED_ROLES = { owner: true, hr: true };
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 65536
+// slabs-specific override (2026-08-04): the bulk slab upload flow (stonedesk.html panel-slabs,
+// bsuSaveAll) attaches a compressed photo thumbnail (photo_base64) to each record so "Visualize
+// on Your Kitchen" clients can tell real slabs apart -- that alone typically runs well past 64KB
+// even downscaled, so the blanket cap would reject every real photo upload. Client-side
+// compression (bsuCompressUnderBudget) targets ~380KB before base64/JSON overhead, so this leaves
+// real headroom rather than being a rubber-stamp raise; every OTHER resource keeps the tighter
+// 64KB default unchanged.
+const MAX_PAYLOAD_BYTES_SLABS = 500 * 1024; // 512000
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -85,14 +93,16 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // ── 64KB payload cap on writes (reject early, before any DB call) ──
+  // ── payload cap on writes (reject early, before any DB call) — resource-aware, see
+  // MAX_PAYLOAD_BYTES_SLABS above for why 'slabs' gets a higher ceiling than everything else ──
   if (action === 'write') {
+    const payloadCap = resource === 'slabs' ? MAX_PAYLOAD_BYTES_SLABS : MAX_PAYLOAD_BYTES;
     const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    if (payloadBytes > MAX_PAYLOAD_BYTES) {
+    if (payloadBytes > payloadCap) {
       res.status(413).json({
         error: {
           code: 'PAYLOAD_TOO_LARGE',
-          message: 'Payload is ' + payloadBytes + ' bytes; the limit is ' + MAX_PAYLOAD_BYTES + ' (64KB)'
+          message: 'Payload is ' + payloadBytes + ' bytes; the limit for this resource is ' + payloadCap + ' bytes'
         }
       });
       return;

@@ -5885,6 +5885,199 @@ function sdInvExport(){
     <button class="q-btn" onclick="sdSlabsPrint()">🖨️ Print</button>
   </div>
 </div>
+
+<!-- BULK SLAB UPLOAD (2026-08-04) -- feeds "Visualize on Your Kitchen" with REAL photographed
+     slabs, not this panel's own demo-seeded Slab Tracker list below (module 1, 'sd_slab_tracker'
+     -- a separate, self-contained system, see the SLAB RESERVATION/CONSUMPTION ENGINE comment
+     further down for the full history). Saves into sdSlabs (module 2, 'sd_slabs' + Supabase
+     'slabs' resource) -- the reservation/consumption-tracked list Quote Builder, POS, and
+     Visualize on Your Kitchen already read from. Deliberately in THIS panel (what staff actually
+     call "the Slabs panel") even though it writes to the other module's data -- reconciling the
+     two into one system is still the same real, separate product decision flagged in
+     STONEDESK-SESSION72-HANDOFF.md, not resolved here; this only adds a second, correctly-routed
+     entry point into the module that was already the real one. -->
+<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px">
+  <div style="font-weight:700;margin-bottom:4px;color:var(--text)">📸 Bulk Add Real Slabs (with Photos)</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Upload photos of slabs actually in stock — these are what clients pick from in "Visualize on Your Kitchen." Claude suggests a name per photo; confirm or edit it (only you know your supplier's real product name) before saving.</div>
+  <div class="photo-zone" id="bsu-drop-zone" onclick="document.getElementById('bsu-file-input').click()">
+    <div style="font-size:32px;margin-bottom:8px">🖼️</div>
+    <div style="font-size:13px;font-weight:600;color:var(--text)">Tap to select one or more slab photos</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">JPG, PNG — up to 20 at once, 8MB each</div>
+  </div>
+  <input type="file" id="bsu-file-input" accept="image/*" multiple style="display:none">
+  <div id="bsu-queue" style="display:flex;flex-direction:column;gap:10px;margin-top:14px"></div>
+  <div id="bsu-actions" style="display:none;gap:8px;margin-top:12px">
+    <button class="q-btn primary" onclick="bsuSaveAll()">💾 Save All to Inventory</button>
+    <button class="q-btn" onclick="bsuClearQueue()">Clear</button>
+  </div>
+</div>
+<script>
+(function(){
+  var _bsuQueue = [];   // [{id, dataUrl}] -- confirmed name/material/status/etc. are read live from
+                         // each card's own inputs at save time, never cached, so an async AI
+                         // suggestion landing later can't clobber anything the staffer already typed.
+  var _bsuSeq = 0;
+  var BSU_MATERIALS = [['granite','Granite'],['quartzite','Quartzite'],['quartz','Engineered Quartz'],['marble','Marble'],['porcelain','Porcelain'],['soapstone','Soapstone'],['dolomite','Dolomite'],['other','Other']];
+  var BSU_PHOTO_BUDGET_BYTES = 380*1024; // see api/sd-data.js's slabs-specific 500KB write cap -- this leaves headroom for the rest of the record plus base64/JSON overhead
+
+  document.getElementById('bsu-file-input').addEventListener('change', function(){
+    var files = Array.prototype.slice.call(this.files || []);
+    files.forEach(function(file){
+      if (!file.type || file.type.indexOf('image/') !== 0) return;
+      if (file.size > 8*1024*1024) { if (typeof showToast==='function') showToast(file.name+' is over 8MB — skipped.'); return; }
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var item = { id: 'bsu'+(++_bsuSeq), dataUrl: e.target.result };
+        _bsuQueue.push(item);
+        bsuAddCard(item);
+        bsuAnalyzeItem(item);
+      };
+      reader.readAsDataURL(file);
+    });
+    this.value = ''; // lets the same file(s) be re-selected later without an unchanged-value no-op
+  });
+
+  // Appends ONE new card -- never a full-queue re-render, so an in-progress AI suggestion
+  // resolving for card 1 can never wipe out text already typed into card 2's inputs.
+  function bsuAddCard(item){
+    document.getElementById('bsu-actions').style.display = 'flex';
+    var materialOptions = BSU_MATERIALS.map(function(m){ return '<option value="'+m[0]+'">'+m[1]+'</option>'; }).join('');
+    var html =
+      '<div class="bsu-card" id="bsu-card-'+item.id+'" style="display:flex;gap:12px;padding:10px;border:1px solid var(--border);border-radius:8px;align-items:flex-start">' +
+        '<img src="'+item.dataUrl+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;flex-shrink:0">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic" id="bsu-ai-'+item.id+'">🧠 Analyzing photo...</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">' +
+            '<input placeholder="Color / product name (confirm or edit)" id="bsu-name-'+item.id+'" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text)">' +
+            '<select id="bsu-material-'+item.id+'" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text)">'+materialOptions+'</select>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">' +
+            '<select id="bsu-status-'+item.id+'" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text)">' +
+              '<option value="in-stock">In Stock</option><option value="reserved">Reserved</option><option value="consumed">Consumed</option>' +
+            '</select>' +
+            '<input type="number" min="0" placeholder="Usable sqft" id="bsu-sqft-'+item.id+'" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text)">' +
+            '<input placeholder="Vendor (optional)" id="bsu-vendor-'+item.id+'" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text)">' +
+          '</div>' +
+        '</div>' +
+        '<button onclick="bsuRemoveItem(\''+item.id+'\')" style="background:rgba(220,38,38,.08);color:#dc2626;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer;flex-shrink:0">×</button>' +
+      '</div>';
+    document.getElementById('bsu-queue').insertAdjacentHTML('beforeend', html);
+  }
+
+  // Claude vision suggestion -- same photo->vision->JSON pattern already live in panel-intake's
+  // intakeAnalyzePhoto() and Visualize on Your Kitchen's vizFindCountertop(), reused again rather
+  // than reinvented a third time. Pre-fills the name input with a SHORT suggested name (still
+  // fully editable, nothing is saved yet) and shows the longer reasoning as read-only helper text
+  // -- staff confirm/override the actual name, per spec ("only they know their real supplier's
+  // product name").
+  window.bsuAnalyzeItem = async function(item){
+    var statusEl = document.getElementById('bsu-ai-'+item.id);
+    try {
+      var b64 = item.dataUrl.split(',')[1];
+      var res = await fetch('https://sairn.vercel.app/api/claude', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          app_id:'stonedesk', is_demo:true, max_tokens:200,
+          system:'Respond with ONLY raw JSON. No markdown fences.',
+          messages:[{ role:'user', content:[
+            { type:'image', source:{ type:'base64', media_type:'image/jpeg', data:b64 } },
+            { type:'text', text:'You are looking at a photo of a stone slab for a fabrication shop\'s inventory system. Suggest a likely material type and a short color/pattern name guess. Respond ONLY with raw JSON: {"material":"granite","suggested_name":"Black Galaxy or similar","description":"a black granite with fine white/silver metallic flecks"}. material must be exactly one of: granite, quartzite, quartz, marble, porcelain, soapstone, dolomite, other.' }
+          ]}]
+        })
+      });
+      var data = await res.json();
+      var raw = (data.content && data.content[0] && data.content[0].text) || '';
+      raw = raw.replace(/```json|```/g,'').trim();
+      var parsed = JSON.parse(raw);
+      if (statusEl) statusEl.textContent = '🧠 AI guess: ' + (parsed.description || parsed.suggested_name || '(no suggestion)');
+      var nameInput = document.getElementById('bsu-name-'+item.id);
+      if (nameInput && !nameInput.value) nameInput.value = parsed.suggested_name || '';
+      var matSelect = document.getElementById('bsu-material-'+item.id);
+      if (matSelect && parsed.material && BSU_MATERIALS.some(function(m){return m[0]===parsed.material;})) matSelect.value = parsed.material;
+    } catch(e) {
+      if (statusEl) statusEl.textContent = '⚠️ AI suggestion unavailable — enter the name manually.';
+    }
+  };
+
+  window.bsuRemoveItem = function(id){
+    _bsuQueue = _bsuQueue.filter(function(i){ return i.id !== id; });
+    var card = document.getElementById('bsu-card-'+id);
+    if (card) card.remove();
+    if (!_bsuQueue.length) document.getElementById('bsu-actions').style.display = 'none';
+  };
+
+  window.bsuClearQueue = function(){
+    _bsuQueue = [];
+    document.getElementById('bsu-queue').innerHTML = '';
+    document.getElementById('bsu-actions').style.display = 'none';
+  };
+
+  // Downscales + recompresses a photo until it fits BSU_PHOTO_BUDGET_BYTES, or gives up after the
+  // last attempt (best effort). This is a THUMBNAIL/recognition-quality target, not a gallery-
+  // quality export -- the render pipeline (api/sd-render.js) never reads this field at all, it only
+  // ever sees the client's OWN kitchen photo plus a text material_description; this photo exists
+  // purely so staff/clients can visually tell slabs apart in the picker.
+  function bsuCompressOnce(dataUrl, maxDim, quality){
+    return new Promise(function(resolve){
+      var img = new Image();
+      img.onload = function(){
+        var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width*scale)), h = Math.max(1, Math.round(img.height*scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = function(){ resolve(dataUrl); };
+      img.src = dataUrl;
+    });
+  }
+  async function bsuCompressUnderBudget(dataUrl, budgetBytes){
+    var attempts = [[900,0.7],[700,0.6],[500,0.5],[400,0.4],[320,0.35]];
+    var out = dataUrl;
+    for (var i=0;i<attempts.length;i++){
+      out = await bsuCompressOnce(dataUrl, attempts[i][0], attempts[i][1]);
+      var approxBytes = Math.ceil(out.length * 0.75);
+      if (approxBytes <= budgetBytes) return out;
+    }
+    return out; // best effort -- last (smallest/lowest-quality) attempt, even if still slightly over
+  }
+
+  window.bsuSaveAll = async function(){
+    if (!_bsuQueue.length) return;
+    var btn = document.querySelector('#bsu-actions .q-btn.primary');
+    if (btn) { btn.disabled = true; btn.textContent = '💾 Saving...'; }
+    var saved = 0, skipped = 0;
+    var queueCopy = _bsuQueue.slice(); // save() below mutates _bsuQueue via bsuRemoveItem-style cleanup at the end
+    for (var i=0;i<queueCopy.length;i++){
+      var item = queueCopy[i];
+      var nameInput = document.getElementById('bsu-name-'+item.id);
+      var name = nameInput ? nameInput.value.trim() : '';
+      if (!name) { skipped++; continue; }
+      var material = (document.getElementById('bsu-material-'+item.id)||{value:'other'}).value;
+      var status = (document.getElementById('bsu-status-'+item.id)||{value:'in-stock'}).value;
+      var sqft = parseFloat((document.getElementById('bsu-sqft-'+item.id)||{value:''}).value) || 0;
+      var vendor = (document.getElementById('bsu-vendor-'+item.id)||{value:''}).value.trim();
+      var photo = await bsuCompressUnderBudget(item.dataUrl, BSU_PHOTO_BUDGET_BYTES);
+
+      var slab = {
+        id: 'SLAB'+Date.now()+'-'+i, material: material, colorName: name, status: status,
+        usableSqft: sqft, vendor: vendor, photo_base64: photo, addedAt: new Date().toISOString()
+      };
+      if (typeof sdSlabs !== 'undefined') sdSlabs.push(slab);
+      saved++;
+      // Synced one at a time so a mid-batch network failure doesn't lose everything already sent —
+      // each already-synced slab stays saved even if a later one in the same batch fails.
+      if (typeof slabSyncOne === 'function') { try { await slabSyncOne(slab); } catch(e){} }
+    }
+    if (typeof saveSlabs === 'function') saveSlabs();
+    bsuClearQueue();
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Save All to Inventory'; }
+    if (typeof showToast === 'function') showToast(saved+' slab(s) saved to inventory'+(skipped?', '+skipped+' skipped (no name entered)':'')+'.');
+  };
+})();
+</script>
+
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="slabs-kpi1">0</div><div class="kpi-label">Total Slabs</div></div>
   <div class="kpi"><div class="kpi-val" id="slabs-kpi2">0</div><div class="kpi-label">Available</div></div>
@@ -24472,9 +24665,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     el.innerHTML = inStock.map(function(s){
       var label = (typeof slabMaterialLabel==='function' ? slabMaterialLabel(s.material) : (s.material||''));
+      // Thumbnail from the bulk slab upload flow (panel-slabs) if this record has one -- purely
+      // presentational, so staff/clients can visually tell slabs apart here too, same as the
+      // upload queue itself. Falls back to a plain rock emoji tile when a slab has no photo yet.
+      var thumb = s.photo_base64
+        ? '<img src="'+s.photo_base64+'" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0">'
+        : '<div style="width:36px;height:36px;border-radius:5px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🪨</div>';
       return '<div class="viz-slab-row" data-id="'+escHtml(s.id)+'" onclick="vizSelectSlab(\''+s.id+'\')" ' +
-        'style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between;align-items:center">' +
-        '<span><b>'+escHtml(s.colorName||'(unnamed)')+'</b> — '+escHtml(label)+'</span>' +
+        'style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;display:flex;gap:8px;align-items:center">' +
+        thumb +
+        '<span style="flex:1"><b>'+escHtml(s.colorName||'(unnamed)')+'</b> — '+escHtml(label)+'</span>' +
         '<span style="color:var(--muted)">'+(s.usableSqft||0)+' sqft</span>' +
       '</div>';
     }).join('');
