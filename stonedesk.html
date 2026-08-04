@@ -95,11 +95,44 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
   align-items:center;justify-content:center;z-index:1001;
   flex-direction:column;gap:24px;
 }
+/* == PHASE 2 POLISH: background motion (2026-08-04) ==
+   Slow-drifting blurred blobs, pure CSS, 30-40s loops so it reads as "alive" in
+   peripheral vision, not as an active animation someone is watching. pointer-events:none
+   throughout so nothing is ever unclickable; prefers-reduced-motion turns all of it off.
+   Two separate treatments because #auth-screen and #app have different, both fully OPAQUE
+   backgrounds of their own (navy gradient vs var(--bg)) -- a single shared body-level layer
+   would be invisible behind whichever one paints on top, so each gets its own blob(s) tuned
+   to its own palette instead. */
+@keyframes bgDrift1{
+  0%,100%{transform:translate(-50%,-10%) scale(1);opacity:.7}
+  50%{transform:translate(-42%,-18%) scale(1.15);opacity:.9}
+}
+@keyframes bgDrift2{
+  0%,100%{transform:translate(0,0) scale(1);opacity:.5}
+  50%{transform:translate(6%,-8%) scale(1.12);opacity:.75}
+}
+@media (prefers-reduced-motion:reduce){
+  .auth-glow,#auth-screen::after,#app::before,#app::after{animation:none!important}
+}
 .auth-glow{
   position:absolute;top:20%;left:50%;transform:translateX(-50%);
   width:600px;height:600px;border-radius:50%;
   background:radial-gradient(circle,rgba(232,133,10,0.08) 0%,transparent 65%);
+  filter:blur(40px);
   pointer-events:none;
+  animation:bgDrift1 32s ease-in-out infinite;
+  will-change:transform,opacity;
+}
+/* Second blob, login/bootstrap screens only -- a pseudo-element so no HTML changed for it. */
+#auth-screen::after{
+  content:'';
+  position:absolute;top:62%;left:68%;
+  width:480px;height:480px;border-radius:50%;
+  background:radial-gradient(circle,rgba(42,82,152,0.30) 0%,transparent 65%);
+  filter:blur(50px);
+  pointer-events:none;
+  animation:bgDrift2 38s ease-in-out infinite;
+  will-change:transform,opacity;
 }
 .auth-logo{
   font-family:'Cormorant Garamond',serif;
@@ -160,6 +193,32 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 /* == APP SHELL == */
 #app{display:none;min-height:100vh;flex-direction:column}
 #app.visible{display:flex}
+/* Main-app background blobs (see the Phase 2 polish note near .auth-glow above for why this
+   is separate from the auth-screen treatment). position:fixed so they anchor to the viewport
+   regardless of #app's own layout; z-index:-1 (not 0) is required -- a positioned descendant
+   at z-index:0 paints AFTER normal-flow static content in the CSS stacking order, which would
+   have drawn these blobs OVER the sidebar/topbar/panels instead of behind them. Verified this
+   sits correctly behind real UI, not just behind var(--bg), before shipping. */
+#app::before,#app::after{
+  content:'';
+  position:fixed;
+  border-radius:50%;
+  pointer-events:none;
+  z-index:-1;
+  filter:blur(90px);
+}
+#app::before{
+  top:-10%;left:-5%;width:55vw;height:55vw;max-width:700px;max-height:700px;
+  background:radial-gradient(circle,rgba(27,58,107,0.10) 0%,transparent 70%);
+  animation:bgDrift1 34s ease-in-out infinite;
+  will-change:transform,opacity;
+}
+#app::after{
+  bottom:-15%;right:-10%;width:50vw;height:50vw;max-width:640px;max-height:640px;
+  background:radial-gradient(circle,rgba(201,112,8,0.08) 0%,transparent 70%);
+  animation:bgDrift2 40s ease-in-out infinite;
+  will-change:transform,opacity;
+}
 .app-body{display:flex;flex:1;overflow:hidden;min-height:0}
 
 /* == TOPBAR == */
@@ -516,7 +575,22 @@ body.is-exec .sb-exec{display:flex}
    overflow-y:auto here is the safety net; panels with their own scrollable
    wrapper (.messages-area, .quote-container) are unaffected since the
    browser only shows a scrollbar on whichever element actually overflows. */
-.panel.active{display:flex;flex-direction:column;overflow-y:auto;flex:1;min-height:0}
+.panel.active{display:flex;flex-direction:column;overflow-y:auto;flex:1;min-height:0;animation:panelEnter .22s ease-out both}
+/* Soft entry instead of the previous hard display:none/flex cut -- pure CSS on the .active
+   class itself, showPanel()/sbNav() untouched. opacity+transform only (never anything that
+   affects layout/offsetWidth/offsetHeight), so this can't shift Drawing Tool's canvas sizing
+   or coordinate math -- transform never affects getBoundingClientRect()'s width/height, only
+   its momentary on-screen position, and a real drag can't start within the 220ms this runs
+   for. No symmetric exit animation: showPanel() removes .active from the OLD panel and adds
+   it to the new one in the same synchronous call, so display:none reverts before any exit
+   transition could run without also changing that JS -- entry-only was the scope agreed. */
+@keyframes panelEnter{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media (prefers-reduced-motion:reduce){
+  .panel.active{animation:none!important}
+}
 
 /* == CHAT PANEL == */
 .chat-container{
@@ -741,6 +815,26 @@ textarea#userInput::placeholder{color:var(--muted)}
 .q-btn.primary:hover{background:rgba(232,133,10,0.2)}
 .q-btn.gold{background:var(--grad);border-color:transparent;color:#1A1005}
 .q-btn.gold:hover{opacity:.9}
+/* Press-down on tap/click -- .q-btn already carries transition:all .15s above, so this needed
+   no new transition property, just the :active state itself. :active fires correctly on touch
+   tap-down too, no touch-specific handling needed here unlike the hover-lift rules below. */
+.q-btn:active{transform:translateY(1px);box-shadow:inset 0 1px 3px rgba(0,0,0,0.15)}
+
+/* == PHASE 2 POLISH: card depth (2026-08-04) ==
+   Hover lift + shadow on the common card classes named in scope (.dm-card/.kpi/.product-row).
+   Guarded to (hover:hover) and (pointer:fine) so touch devices get a no-op instead of a lift
+   that can "stick" after a tap -- touch has no real hover state, and without this guard a tap
+   on a card can leave the :hover style applied until the next unrelated tap elsewhere clears
+   it, reading as a visual glitch rather than a lift. Desktop/mouse only. */
+@media (hover:hover) and (pointer:fine){
+  .dm-card,.kpi,.product-row{transition:transform .18s ease,box-shadow .18s ease}
+  .dm-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.12)}
+  .kpi:hover{transform:translateY(-2px)}
+  .product-row:hover{transform:translateX(3px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .dm-card,.kpi,.product-row,.q-btn{transition:none!important}
+}
 
 /* badge */
 .badge{
