@@ -24538,7 +24538,10 @@ document.addEventListener('DOMContentLoaded', function() {
         vizRefreshUsageKPIs();
         return;
       }
-      if (data && data.error && data.error.code === 'VENDOR_NOT_CONFIGURED') {
+      if (data && data.error && (data.error.code === 'VENDOR_NOT_CONFIGURED' || data.error.code === 'NOT_PROVISIONED')) {
+        // Both mean "not fully live yet" from the client's point of view (missing vendor API key
+        // vs. the one-time Supabase migration not run yet) -- same honest, non-alarming message
+        // either way; the specific reason is still in data.error for anyone reading network logs.
         resultEl.innerHTML = '<div style="padding:14px;background:var(--stone);border-radius:8px;font-size:13px;color:var(--muted)">Kitchen visualization rendering is still being finished — check back soon.</div>';
         return;
       }
