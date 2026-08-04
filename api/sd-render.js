@@ -127,6 +127,17 @@ module.exports = async (req, res) => {
   const enc = encodeURIComponent;
 
   // ── CAP CHECK (before spending anything on the vendor call) ──
+  // REAL INCIDENT (2026-08-04): this used to fail OPEN (assume currentCount=0, proceed to the
+  // vendor call) on any non-ok response that wasn't literally 400/404 -- meant to tolerate a
+  // transient network blip, but it also silently swallowed a genuine `permission denied for
+  // table sd_render_usage` (Postgres 42501, missing GRANT — see sql/sd_render_usage_schema.sql)
+  // on the very first live run: every render went through completely untracked and uncapped,
+  // with no error surfaced anywhere. A cap that can silently stop counting is worse than no cap
+  // at all, since nothing about that failure mode is visible until someone goes looking. Fixed
+  // to fail CLOSED on any read outcome this code can't positively confirm as either "under cap"
+  // or "table genuinely not created yet" -- only a network-level exception (the catch below,
+  // where no request landed anywhere) still fails open, and even that keeps the honest comment
+  // about why.
   let currentCount = 0;
   let usageTableProvisioned = true;
   try {
@@ -139,12 +150,23 @@ module.exports = async (req, res) => {
     } else if (r.ok) {
       const rows = await r.json();
       currentCount = (Array.isArray(rows) && rows[0] && rows[0].count) || 0;
+    } else {
+      // Anything else (permission denied, RLS, a genuine 5xx from PostgREST/Supabase) is a real
+      // problem, not a "table missing" or "table fine" signal -- refuse the render rather than
+      // guessing, and log the real upstream detail so it shows up in Vercel logs instead of
+      // vanishing silently the way it did before this fix.
+      const errBody = await r.text().catch(() => '');
+      console.error('sd-render usage cap-check failed:', r.status, errBody.slice(0, 300));
+      res.status(502).json({ error: { code: 'USAGE_CHECK_FAILED', message: 'Could not verify this shop\'s render usage — try again' } });
+      return;
     }
-    // A non-ok, non-400/404 response falls through with currentCount left at 0 -- see the
-    // comment on the catch block just below for why that's the deliberate fail-open choice here.
   } catch (e) {
-    // A usage-READ blip should not block a render the shop is entitled to; worst case on a
-    // transient failure is one under-counted render, not a hard failure of the whole feature.
+    // A genuine network-level failure (no response at all) should not block a render the shop
+    // is entitled to; worst case on a true transient blip is one under-counted render, not a
+    // hard failure of the whole feature. This is a narrower, more honest version of the old
+    // fail-open behavior -- it no longer covers "got a response but didn't like it," only "never
+    // got a response."
+    console.error('sd-render usage cap-check network error (failing open):', e);
   }
 
   if (!usageTableProvisioned) {

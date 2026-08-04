@@ -31,6 +31,16 @@
 -- bridge_data/network_insights: read/write exclusively via api/sd-render.js and api/sd-data.js
 -- using SUPABASE_SERVICE_ROLE_KEY, which bypasses RLS regardless. The anon key is never used
 -- against this table.
+--
+-- REAL INCIDENT, not hypothetical (2026-08-04): the first live run of this feature hit
+-- `permission denied for table sd_render_usage` (Postgres 42501) on every read/write, even
+-- though the table existed -- CREATE TABLE alone does not grant service_role access on this
+-- Supabase project. Same failure class as an earlier real incident on sd_employee_auth (see
+-- sql/sd_employee_auth_schema.sql's history / STONEDESK handoffs), where the fix was applied
+-- manually in the Supabase SQL editor and never backfilled into that migration file -- a gap
+-- worth knowing about if that table is ever re-provisioned from scratch. The GRANT below is
+-- folded directly into this file so a fresh run of this migration is self-sufficient and can't
+-- silently repeat the same incident.
 
 create table if not exists sd_render_usage (
   id uuid primary key default gen_random_uuid(),
@@ -43,3 +53,5 @@ create table if not exists sd_render_usage (
 
 create index if not exists sd_render_usage_license_month_idx
   on sd_render_usage (license_hash, month);
+
+grant select, insert, update on public.sd_render_usage to service_role;
