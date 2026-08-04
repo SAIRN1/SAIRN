@@ -9500,6 +9500,7 @@ function initDCCanvas() {
   dcCanvas.oncontextmenu = e => e.preventDefault();
   initDCCutoutEvents();
   initDCSeamEvents();
+  initDCTouchEvents();
   // Document-level mouseup (not canvas-level) so a drag that ends outside the canvas bounds —
   // easy to do when stretching a long measurement near the panel edge — still gets caught and
   // committed instead of leaving the drag stuck active. Guarded so it only wires once per canvas
@@ -9521,6 +9522,61 @@ function initDCCanvas() {
   if (typeof drawCTPreview === 'function') drawCTPreview();
   updateDCCutoutList();
   updateDCSeamList();
+}
+
+// == TOUCH SUPPORT (ct-canvas) =================================================================
+// Added 2026-08-04 -- ct-canvas was mouse-only (onmousedown/onmousemove property assignment,
+// plus capture-phase mousedown/mousemove/mouseup listeners for the cutout/seam router, plus a
+// document-level mouseup for corner/preset-edge/draw-point drag-end). Deliberately NOT touching
+// any of that hit-testing/drag logic -- it already correctly handles resize/type-to-dimension/
+// cutout-and-seam placement and dragging. Instead, single-finger touch events are translated into
+// the exact same synthetic MouseEvents that pipeline already handles, dispatched ON THE CANVAS
+// (not document) so both the capture-phase listeners (wired directly on cv) AND the document-level
+// bubble listener see them, same as a real mouse click would produce -- dispatching only on
+// document would skip cv's own capture-phase router (dcRouterDown/Move/Up), silently breaking
+// cutout/seam placement on touch while corner/preset drags kept working, which would have been an
+// easy thing to miss without testing touch against BOTH interaction families. Multi-touch (pinch/
+// rotate) is out of scope -- only the first touch point is used, matching a single mouse pointer.
+// Touch has no hover equivalent (touchmove only fires while a finger is down), so any interaction
+// that relied on mouse-hover-without-a-button preview (aiming the next segment, the seam
+// live-preview line) becomes "touch and hold to preview, lift to commit" instead of "hover then
+// click" on a touchscreen -- an inherent touch/mouse difference, not a bug in this translation.
+function dcTouchToMouseEvent(touch, type) {
+  return new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+    button: 0,
+    buttons: type === 'mouseup' ? 0 : 1,
+  });
+}
+function initDCTouchEvents() {
+  const cv = document.getElementById('ct-canvas');
+  if (!cv || cv._touchWired) return;
+  cv._touchWired = true;
+  cv.addEventListener('touchstart', function(e) {
+    if (!e.touches.length) return;
+    e.preventDefault();
+    cv.dispatchEvent(dcTouchToMouseEvent(e.touches[0], 'mousedown'));
+  }, { passive: false });
+  cv.addEventListener('touchmove', function(e) {
+    if (!e.touches.length) return;
+    e.preventDefault();
+    cv.dispatchEvent(dcTouchToMouseEvent(e.touches[0], 'mousemove'));
+  }, { passive: false });
+  function dcTouchEnd(e) {
+    e.preventDefault();
+    var t = e.changedTouches && e.changedTouches[0];
+    // Real touch targets stay associated with whatever element touchstart began on, even if the
+    // finger has since moved outside its bounds -- changedTouches[0] still carries the correct
+    // final clientX/clientY, which covers the same "drag ends outside canvas bounds" case the
+    // existing document-level mouseup listener's own comment was written to catch for mice.
+    if (t) cv.dispatchEvent(dcTouchToMouseEvent(t, 'mousemove'));
+    cv.dispatchEvent(t ? dcTouchToMouseEvent(t, 'mouseup') : new MouseEvent('mouseup', { bubbles:true, cancelable:true }));
+  }
+  cv.addEventListener('touchend', dcTouchEnd, { passive: false });
+  cv.addEventListener('touchcancel', dcTouchEnd, { passive: false });
 }
 
 // -- Coordinate helpers: dcPoly is stored in INCHES, local space (0,0 = top-left of the shape's
@@ -11633,6 +11689,45 @@ function calcDrawing() {
     'Order quantity at +15% standard waste allowance. Verify with actual slab dimensions before ordering.';
 
   drawCTPreview();
+  dcSyncLiveToQuoteEngine(grossSqFt);
+}
+
+// Live pricing sync (2026-08-04): calcDrawing() above recomputes gross sqft on every shape edit
+// (corner drag, preset edge drag, dimension field change, seam/cutout change -- see every call
+// site of calcDrawing() throughout this module), so this fires automatically as the shape is
+// edited, not just on an explicit click. Mirrors qbImportFromDraw()'s existing shape-to-quote-
+// field mapping (panel-quote, ~L8884: same runA-D/island mapping, same custom-polygon gross-sqft-
+// to-equivalent-straight-run conversion at the standard 25.5in reference depth) so a rep sees the
+// same number here as they would from that button, but WITHOUT its banner/tab-switch side effects
+// -- those make sense for one explicit click, not for every drag frame. Deliberately duplicated
+// rather than refactored into a shared helper: qbImportFromDraw() is untouched, zero risk to its
+// existing tested behavior. No pricing formula is duplicated or reimplemented here -- this only
+// feeds the real calc() (unchanged, still owns MATERIALS/PROJECTS/TIERS) the same inputs
+// qbImportFromDraw() would, then lets it compute lastCalc itself.
+function dcSyncLiveToQuoteEngine(grossSqFt) {
+  if (typeof calc !== 'function' || typeof setV !== 'function' || typeof gN !== 'function') return;
+  const shape = (typeof ctShape !== 'undefined') ? ctShape : 'straight';
+  const isCustom = (typeof dcMode !== 'undefined' && dcMode === 'draw' && typeof dcPolyClosed !== 'undefined' && dcPolyClosed);
+
+  if (isCustom) {
+    if (!(grossSqFt > 0)) return; // nothing real to price yet
+    const equivLen = Math.round((grossSqFt * 144) / 25.5);
+    setV('runA', equivLen); setV('runB', 0); setV('runC', 0); setV('runD', 0); setV('island', 0);
+  } else {
+    const aL = gN('da-len'), bL = gN('db-len'), cL = gN('dc-len'), dL = gN('dd-len');
+    if (!(aL > 0 || bL > 0 || cL > 0 || dL > 0)) return; // nothing real to price yet
+    setV('runA', Math.round(aL));
+    setV('runB', Math.round(bL));
+    setV('runC', Math.round(cL));
+    setV('runD', Math.round(dL));
+    setV('island', shape === 'island' ? Math.round(aL) : 0);
+  }
+
+  const ptEl = document.getElementById('project-type');
+  const projMap = { straight:'kitchen_std', island:'kitchen_island', lshape:'kitchen_l', ushape:'kitchen_l', galley:'kitchen_std', custom:'kitchen_std' };
+  if (ptEl) ptEl.value = projMap[shape] || 'kitchen_std';
+
+  calc();
 }
 
 // AI Drawing Advice
