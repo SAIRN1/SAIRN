@@ -9287,14 +9287,23 @@ function printEstimate() {
 }
 
 // == AI QUOTE ADVICE ===========================================
-async function getAIQuoteAdvice() {
+function getAIQuoteAdvice() {
   if (!lastCalc.total) { showToast('Build a quote first.'); return; }
   const c = lastCalc;
   const context = 'Job: ' + (document.getElementById('client-name').value || 'unknown') + '. Material: ' + c.mat.name + '. Project: ' + c.proj.name + '. Total LF: ' + c.totalLF.toFixed(1) + '. Implied sqft: ' + c.impliedSF.toFixed(1) + '. Total quoted: $' + c.total + '. PPSF: $' + c.impliedPPSF.toFixed(0) + '. Tier: ' + c.tier.label + '. Waterfall legs: ' + COUNTERS.wf + '. Sinks: ' + COUNTERS.sink + '.';
-  showPanel('ai');
-  addMessage('user', 'Please review this quote and tell me if I am pricing it correctly: ' + context);
-  chatHistory.push({ role:'user', content:'Please review this quote and give me specific feedback on pricing, margin, and anything I may have missed: ' + context });
-  await sendToClaudeAndRender();
+  sbNav('ai');
+  setTimeout(function(){
+    // Retargeted from the dead #userInput/addMessage()/chatHistory/
+    // sendToClaudeAndRender() legacy chat -- addMessage() targets
+    // document.getElementById('messages'), a container that no longer
+    // exists anywhere in this file (see DEAD CODE FLAG comment near
+    // panel-ai), so it threw "Cannot read properties of null (reading
+    // 'appendChild')" before any fetch could fire. Same fix pattern
+    // already applied to custFollowUpAI/vendorSpendAI/warrAskClaude:
+    // sbNav('ai') + sdAIQuick(), the real widget that fills #ai-input
+    // and sends via #ai-chat.
+    if(typeof sdAIQuick==='function')sdAIQuick('Please review this quote and give me specific feedback on pricing, margin, and anything I may have missed: '+context);
+  },400);
 }
 
 // == KITCHEN DRAWING TOOL (in Quote Builder) ===================
