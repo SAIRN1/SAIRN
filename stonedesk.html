@@ -476,6 +476,24 @@ body.is-exec .sb-exec{display:flex}
    is needed -- this simply fills in a property neither el has an inline
    value for, no specificity fight. */
 #panel-history .q-btn{min-height:44px}
+/* Field Map (panel-fieldmap) touch-target floor, 2026-08-04. Same defect
+   class as Job History's .q-btn fix above, but broadened to `button`
+   rather than `.q-btn` specifically: this panel's per-stop Delete button
+   (fmStopCardHtml(), built from a JS template string) carries no class
+   at all, only inline font-size/padding, so a .q-btn-scoped rule would
+   have missed it. Header buttons/tabs/Add Stop/Optimize Route/Save Stop/
+   Cancel/Next 7/30 Days all measured 35-36px before this; Delete could
+   not be measured directly (no manual stops exist in the current demo
+   state to render one) but shares the identical undersized inline-style
+   pattern, confirmed by reading its template rather than assumed absent
+   a live sample. Checked separately and found clean, not fixed because
+   nothing needed it: this panel's repeat(4,1fr) KPI row and its three
+   1fr-Npx two-column grids (My Day/Overview/Dispatch board) do NOT
+   overflow at 390px -- verified across all three tabs plus the
+   always-visible dispatch section (document.scrollWidth===innerWidth,
+   0 elements past the viewport edge in each case) -- so no equivalent to
+   Job History's KPI-stacking or wrapper-margin fix was needed here. */
+#panel-fieldmap button{min-height:44px}
 /* AUDIT NOTE (not fixed, flagged for the panel-by-panel queue): the same
    unclassed repeat(N,1fr) KPI-row pattern with no responsive breakpoint
    exists in essentially every other panel too (75 occurrences of
@@ -3899,7 +3917,10 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     'sd_comms','sd_crm','sd_jobcost','sd_timesheets','sd_remnant','sd_pos','sd_receiving',
     'sd_manifest','sd_sintered','sd_reviews','sd_contractors','sd_referrals','sd_priceintel',
     'sd_equipment','sd_employees','sd_stoneyard','sd_subs','sd_bids','sd_damage','sd_training',
-    'sd_bulletins','sd_waste','sd_nps','sd_ap','sd_quote_history'];
+    'sd_bulletins','sd_waste','sd_nps','sd_ap','sd_quote_history',
+    'sd_fieldmap' /* added 2026-08-04, found during Field Map's audit -- see the
+      load() fix note at its ||DISPATCH fallback for why this was missed
+      the first time (differently-named fallback variable, not ||SEED). */];
   function sdClearSafeDemoData(){
     localStorage.setItem('sd_demo_cleared','1');
     SAFE_DEMO_KEYS.forEach(function(k){try{localStorage.setItem(k,'[]');}catch(e){}});
@@ -5540,7 +5561,16 @@ window.sdPhotosExport=function(){
     {crew:'Mike S. + Dave K.',job:'J-2024-091',customer:'Carla Reyes',address:'87 Peachtree Hills, Atlanta GA',status:'En Route',eta:'1:00 PM',type:'Install',stone:'Statuario Extra'},
     {crew:'Carlos M.',job:'J-2024-092',customer:'Robert Wallace',address:'215 Magnolia Ln, Alpharetta GA',status:'Scheduled',eta:'3:30 PM',type:'Template',stone:'TBD'}
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_fieldmap')||'null')||DISPATCH;}catch(e){return DISPATCH;}}
+  // FIX (2026-08-04, found during Field Map's panel-by-panel audit): this
+  // fallback used a differently-named variable (DISPATCH, not SEED), so
+  // the sitewide grep for ||SEED during the Clear Demo Data build (2b)
+  // never found it -- sd_fieldmap was never added to SAFE_DEMO_KEYS and
+  // this gate never checked sdDemoCleared(), so it would have kept
+  // showing these 3 fabricated dispatch records (Jim Hartwell/Carla
+  // Reyes/Robert Wallace) forever, even after a real Clear Demo Data.
+  // Same fix pattern as the other 30 modules, just applied to the 31st
+  // one once found. sd_fieldmap added to SAFE_DEMO_KEYS below.
+  function load(){try{return JSON.parse(localStorage.getItem('sd_fieldmap')||'null')||(sdDemoCleared()?[]:DISPATCH);}catch(e){return sdDemoCleared()?[]:DISPATCH;}}
   function save(d){try{localStorage.setItem('sd_fieldmap',JSON.stringify(d));}catch(e){}}
   var data=load();
   var STATUS_COLOR={'In Progress':'#f59e0b','En Route':'#6366f1','Scheduled':'#94a3b8',Completed:'#16c762'};
