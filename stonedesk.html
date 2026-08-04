@@ -2582,6 +2582,35 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       <button class="auth-btn" onclick="doLogin()" style="margin-top:14px">Sign In to StoneDesk&#8482;</button>
       <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
         <a href="#" id="sd-bootstrap-link" onclick="sdShowBootstrap();return false;" style="color:var(--muted);text-decoration:underline">First time setup</a>
+        &nbsp;&middot;&nbsp;
+        <a href="#" id="sd-sublogin-link" onclick="sdShowSubLogin();return false;" style="color:var(--muted);text-decoration:underline">Subcontractor sign in</a>
+      </div>
+    </div>
+    <!-- SUBCONTRACTOR LOGIN (2026-08-04) -- separate credential tier from employee login above,
+         verified against sd_sub_auth via api/sd-sub-auth.js, never sd_employee_auth. On success
+         this shows #sub-portal (a completely separate, minimal DOM tree elsewhere in this file),
+         never #app -- a sub never even loads the real app shell/sidebar/panels, so there's no
+         client-side hiding to bypass. The real enforcement is server-side (api/sd-sub-data.js
+         filters jobs by the sub's own verified token identity, never a client-supplied id) --
+         this separate UI is defense in depth on top of that, not a substitute for it. -->
+    <div id="sd-sublogin-view" style="display:none">
+      <div style="font-size:13px;color:#fff;margin-bottom:14px;text-align:center;line-height:1.5">Subcontractor sign-in — for your assigned job(s) only.</div>
+      <label for="sd-sub-id-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">Subcontractor ID</label>
+      <input type="text" id="sd-sub-id-input" autocomplete="username" maxlength="128" aria-required="true"
+        placeholder="e.g. jrivera"
+        style="width:100%;padding:12px;font-size:16px;text-align:center;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;margin-bottom:14px;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('sd-sub-pin-input').focus();}"
+        onfocus="this.style.borderColor='rgba(232,133,10,0.7)'" onblur="this.style.borderColor='rgba(232,133,10,0.3)'">
+      <label for="sd-sub-pin-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">PIN</label>
+      <input type="password" id="sd-sub-pin-input" maxlength="8" inputmode="numeric" autocomplete="current-password" aria-required="true"
+        placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+        style="width:100%;padding:16px;font-size:32px;letter-spacing:14px;text-align:center;font-family:monospace;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;transition:border-color .15s;box-sizing:border-box"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();doSubLogin();}"
+        onfocus="this.style.borderColor='rgba(232,133,10,0.7)'" onblur="this.style.borderColor='rgba(232,133,10,0.3)'">
+      <div class="auth-error" id="sd-sub-error" role="alert" aria-live="polite" style="margin-top:10px"></div>
+      <button class="auth-btn" onclick="doSubLogin()" style="margin-top:14px">Sign In</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+        <a href="#" onclick="sdShowLogin();return false;" style="color:var(--muted);text-decoration:underline">Back to employee sign in</a>
       </div>
     </div>
     <div id="sd-bootstrap-view" style="display:none">
@@ -2623,6 +2652,102 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">Your trial data is safe and will be here when you upgrade.</div>
   </div>
 </div>
+
+<!-- == SUBCONTRACTOR PORTAL (2026-08-04) ==
+     Completely separate DOM tree from #app below -- a sub never loads the real app shell,
+     sidebar, or any of its panels at all, shown via showSubPortal() after a successful sub login
+     (doSubLogin, defined in the auth-gate script further down). The real access control is
+     server-side (api/sd-sub-data.js's 'jobs' read filters by the sub's own verified token
+     identity, never a client-supplied id) -- this separate UI is defense in depth on top of
+     that, not a substitute for it, but it does mean there's no existing nav route for a sub to
+     accidentally or deliberately reach real shop data through, since none of that UI exists in
+     this tree at all. -->
+<div id="sub-portal" style="display:none">
+  <div style="background:#1A1410;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div style="font-size:16px;font-weight:800;color:#fff">StoneDesk&#8482; — Subcontractor Portal</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.6)" id="sub-portal-greeting">Welcome</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="q-btn" onclick="subPortalLoadJobs()" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">&#128260; Refresh</button>
+      <button class="q-btn" onclick="doSubLogout()" style="background:rgba(255,255,255,0.1);color:#fff;border-color:rgba(255,255,255,0.2)">Sign Out</button>
+    </div>
+  </div>
+  <div style="max-width:800px;margin:0 auto;padding:20px;min-height:100vh;box-sizing:border-box;background:var(--bg)">
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;text-align:center">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Total Owed</div>
+      <div style="font-size:32px;font-weight:900;color:#16C762" id="sub-portal-owed">$0</div>
+    </div>
+    <div id="sub-portal-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px"></div>
+    <div id="sub-portal-jobs"></div>
+  </div>
+</div>
+<script>
+(function(){
+  // Same SD_SUB_* sessionStorage keys the auth-gate IIFE writes on login -- read directly here
+  // rather than through a shared variable since this is a separate script block/closure.
+  window.subPortalLoadJobs = async function(){
+    var statusEl = document.getElementById('sub-portal-status');
+    var jobsEl = document.getElementById('sub-portal-jobs');
+    var token = null;
+    try { token = sessionStorage.getItem('sd_sub_session_token'); } catch(e) {}
+    var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+    if (!token || !lic) { if (statusEl) statusEl.textContent = 'Not signed in.'; return; }
+    if (statusEl) statusEl.textContent = 'Loading your jobs...';
+    try {
+      var res = await fetch('https://sairn.vercel.app/api/sd-sub-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic, 'X-SD-Auth': token },
+        body: JSON.stringify({ action: 'read', resource: 'jobs', payload: {} })
+      });
+      var data = await res.json();
+      if (!res.ok || !data || !data.ok) {
+        if (statusEl) statusEl.textContent = (data && data.error && data.error.message) || 'Could not load your jobs — try refreshing.';
+        jobsEl.innerHTML = '';
+        return;
+      }
+      if (statusEl) statusEl.textContent = '';
+      subPortalRenderJobs(data.data || []);
+    } catch (e) {
+      if (statusEl) statusEl.textContent = 'Network error — try refreshing.';
+    }
+  };
+
+  function subEsc(s){ return typeof escHtml === 'function' ? escHtml(s) : String(s||''); }
+
+  window.subPortalRenderJobs = function(jobs){
+    var jobsEl = document.getElementById('sub-portal-jobs');
+    var owedEl = document.getElementById('sub-portal-owed');
+    var owed = jobs.filter(function(j){ return !j.paid; }).reduce(function(sum,j){ return sum + (parseFloat(j.payAmount)||0); }, 0);
+    if (owedEl) owedEl.textContent = '$' + owed.toLocaleString();
+
+    if (!jobs.length) {
+      jobsEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:30px;font-size:13px">No jobs assigned to you yet.</div>';
+      return;
+    }
+    jobsEl.innerHTML = jobs.map(function(j){
+      var photosHtml = (j.photos||[]).map(function(p){
+        return '<img src="'+p+'" style="width:80px;height:80px;object-fit:cover;border-radius:6px;flex-shrink:0">';
+      }).join('');
+      var paidBadge = j.paid
+        ? '<span style="background:#DCFCE7;color:#166534;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px">PAID'+(j.paidDate?' — '+subEsc(j.paidDate):'')+'</span>'
+        : '<span style="background:#FEF3C7;color:#92400E;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px">UNPAID</span>';
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">' +
+          '<div style="font-size:15px;font-weight:800;color:var(--text)">'+subEsc(j.address||'(no address given)')+'</div>' +
+          paidBadge +
+        '</div>' +
+        (j.details ? '<div style="font-size:13px;color:var(--text);margin-top:8px;line-height:1.5">'+subEsc(j.details)+'</div>' : '') +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px">' +
+          '<span style="color:var(--muted)">Rate: '+(j.payRate?subEsc(j.payRate):'—')+'</span>' +
+          '<span style="font-weight:800;color:'+(j.paid?'#16a34a':'#92400E')+'">$'+(parseFloat(j.payAmount)||0).toLocaleString()+'</span>' +
+        '</div>' +
+        (photosHtml ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+photosHtml+'</div>' : '') +
+      '</div>';
+    }).join('');
+  };
+})();
+</script>
 
 <!-- == APP == -->
 <div id="app">
@@ -25938,116 +26063,296 @@ document.addEventListener('DOMContentLoaded', function() {
 <div id="sy-list" style="display:flex;flex-direction:column;gap:10px"></div>
 </div>
 
+<!-- PANEL: SUBCONTRACTOR PORTAL, office side (2026-08-04) -- replaces the old localStorage-only
+     demo roster (name/trade/phone/rate/ytd/ins_exp/status, 5 fictional seeded subs, no login, no
+     job assignment, no cross-device sync). Confirmed via grep before touching this panel that
+     nothing else in the app referenced sdSubAdd/sdSubAI/sdSubPrint or the 'sd_subs' localStorage
+     key except the demo-data-clear utility's key list, which still works unchanged (the roster
+     below still mirrors to localStorage under the same key as a read cache; Supabase via
+     api/sd-sub-data.js is the source of truth now, needed for the sub's own portal login to see
+     office-entered data on a different device). See sql/sd_sub_portal_schema.sql +
+     api/sd-sub-auth.js + api/sd-sub-data.js for the backend half of this. -->
 <div class="panel" id="panel-subcontractor">
-<div style="padding:20px;max-width:1100px;margin:0 auto">
+<div style="padding:20px;max-width:1200px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🔩 Subcontractors</h2>
-  <div style="font-size:13px;color:var(--muted);margin-top:2px">Sub trade management, payments & compliance tracking</div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="q-btn primary" onclick="sdSubAdd()">+ Add Sub</button>
-    <button class="q-btn" onclick="sdSubAI()">🤖 AI Review</button>
-    <button class="q-btn" onclick="sdSubPrint()">🖨️ Print</button>
-  </div>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Roster, job assignments, and pay tracking — subs sign in separately to see only their own job(s)</div></div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-  <div class="kpi"><div class="kpi-val" id="sub-total">0</div><div class="kpi-label">Active Subs</div></div>
-  <div class="kpi"><div class="kpi-val" id="sub-ytd">$0</div><div class="kpi-label">Paid YTD</div></div>
-  <div class="kpi"><div class="kpi-val" id="sub-ins">0</div><div class="kpi-label">Insurance Current</div></div>
-  <div class="kpi"><div class="kpi-val" id="sub-exp">0</div><div class="kpi-label">Expiring 60 Days</div></div>
+  <div class="kpi"><div class="kpi-val" id="subx-kpi-active">0</div><div class="kpi-label">Active Subs</div></div>
+  <div class="kpi"><div class="kpi-val" id="subx-kpi-jobs">0</div><div class="kpi-label">Jobs Assigned</div></div>
+  <div class="kpi"><div class="kpi-val" id="subx-kpi-unpaid">0</div><div class="kpi-label">Unpaid Jobs</div></div>
+  <div class="kpi"><div class="kpi-val" id="subx-kpi-owed">$0</div><div class="kpi-label">Total Owed</div></div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
-    <div id="sub-list"></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+  <div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">+ Add Subcontractor</div>
+      <input id="subx-name" placeholder="Name / company" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <input id="subx-trade" placeholder="Trade / specialty (e.g. Installer, Templater)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input id="subx-phone" placeholder="Phone" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <input id="subx-email" placeholder="Email" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+      </div>
+      <input id="subx-id" placeholder="Portal login ID (e.g. jrivera — no spaces)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px">You'll set their PIN in a separate step after adding them, from the roster list below.</div>
+      <button class="q-btn primary" style="width:100%" onclick="subxAddSub()">Add Subcontractor</button>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Roster</div>
+      <div id="subx-roster-list" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
   </div>
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
-      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Add Subcontractor</div>
-      <input id="sub-name" placeholder="Company name" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
-      <input id="sub-trade" placeholder="Trade / specialty" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
-      <input id="sub-phone" placeholder="Phone" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">+ Assign a Job</div>
+      <select id="subx-job-sub" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)"><option value="">Pick a subcontractor...</option></select>
+      <input id="subx-job-address" placeholder="Job address / location" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <textarea id="subx-job-details" placeholder="Job details / scope" rows="3" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box;resize:vertical"></textarea>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
-        <input id="sub-rate" type="number" placeholder="Daily rate ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
-        <input id="sub-ins-exp" type="date" placeholder="Ins. expiry" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <input id="subx-job-rate" placeholder="Pay rate (e.g. $450/day)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        <input id="subx-job-amount" type="number" min="0" placeholder="Agreed amount ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
       </div>
-      <button class="q-btn primary" style="width:100%" onclick="sdSubAdd()">Add Subcontractor</button>
+      <div class="photo-zone" id="subx-job-drop-zone" onclick="document.getElementById('subx-job-photo-input').click()" style="padding:14px;margin-bottom:8px">
+        <div style="font-size:12px;color:var(--muted)">Tap to add up to 3 reference photos (optional)</div>
+      </div>
+      <input type="file" id="subx-job-photo-input" accept="image/*" multiple style="display:none">
+      <div id="subx-job-photo-preview" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"></div>
+      <button class="q-btn primary" style="width:100%" onclick="subxAssignJob()">Assign Job</button>
     </div>
-    <div id="sub-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Job Assignments</div>
+      <div id="subx-jobs-list" style="display:flex;flex-direction:column;gap:8px;max-height:520px;overflow-y:auto"></div>
+    </div>
   </div>
 </div>
 </div>
 <script>
 (function(){
-  var today=new Date().toISOString().slice(0,10);
-  var exp60=new Date(Date.now()+60*86400000).toISOString().slice(0,10);
-  var SEED=[
-    {name:'Pro Template LLC',trade:'Templating',phone:'(555) 411-1001',rate:400,ytd:18400,ins_exp:'2024-12-01',status:'Active'},
-    {name:'EdgePro Finishing',trade:'Edge & Polish',phone:'(555) 411-1002',rate:350,ytd:12600,ins_exp:'2024-08-01',status:'Active'},
-    {name:'Tile & Stone Install',trade:'Tile Install',phone:'(555) 411-1003',rate:450,ytd:8100,ins_exp:'2024-06-30',status:'Active'},
-    {name:'Crane Services LLC',trade:'Heavy Lift',phone:'(555) 411-1004',rate:900,ytd:5400,ins_exp:'2024-11-01',status:'Active'},
-    {name:'Waterjet Pro',trade:'Waterjet Cutting',phone:'(555) 411-1005',rate:600,ytd:9600,ins_exp:'2025-01-01',status:'Inactive'},
-  ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_subs')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
-  function save(d){try{localStorage.setItem('sd_subs',JSON.stringify(d));}catch(e){}}
-  function render(){
-    var d=load();
-    var active=d.filter(function(x){return x.status==='Active';});
-    document.getElementById('sub-total').textContent=active.length;
-    document.getElementById('sub-ytd').textContent='$'+d.reduce(function(a,x){return a+(x.ytd||0);},0).toLocaleString();
-    document.getElementById('sub-ins').textContent=d.filter(function(x){return x.ins_exp>today;}).length;
-    document.getElementById('sub-exp').textContent=d.filter(function(x){return x.ins_exp>=today&&x.ins_exp<=exp60;}).length;
-    document.getElementById('sub-list').innerHTML=d.map(function(x){
-      var insOk=x.ins_exp>today;
-      var insWarn=x.ins_exp>today&&x.ins_exp<=exp60;
-      var insColor=insOk?(insWarn?'#f59e0b':'#16C762'):'#dc2626';
-      return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px">'
-        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-        +'<div><div style="font-weight:700;font-size:14px">'+escHtml(x.name)+'</div>'
-        +'<div style="font-size:12px;color:var(--muted)">'+escHtml(x.trade)+' &bull; '+x.phone+'</div></div>'
-        +'<span style="background:'+(x.status==='Active'?'#dcfce7':'#f3f4f6')+';padding:2px 10px;border-radius:10px;font-size:11px">'+x.status+'</span>'
-        +'</div>'
-        +'<div style="display:flex;justify-content:space-between;font-size:12px">'
-        +'<span>YTD: <strong style="color:#16C762">$'+(x.ytd||0).toLocaleString()+'</strong></span>'
-        +'<span>Rate: $'+x.rate+'/day</span>'
-        +'<span style="color:'+insColor+'">Ins: '+x.ins_exp+(insWarn?' ⚠️':!insOk?' EXPIRED':'')+'</span>'
-        +'</div></div>';
+  var _subxRoster = [];
+  var _subxJobs = [];
+  var _subxJobPhotos = []; // pending compressed data-urls for the assign-job form
+
+  function subxAuthHeaders(){
+    var headers = { 'Content-Type': 'application/json' };
+    var lic = typeof sdLicenseKey === 'function' ? sdLicenseKey() : null;
+    if (lic) headers['Authorization'] = 'Bearer ' + lic;
+    try { var tok = sessionStorage.getItem('sd_session_token'); if (tok) headers['X-SD-Auth'] = tok; } catch(e){}
+    return headers;
+  }
+  async function subxCall(action, resource, payload){
+    var res = await fetch('https://sairn.vercel.app/api/sd-sub-data', {
+      method: 'POST', headers: subxAuthHeaders(),
+      body: JSON.stringify({ action: action, resource: resource, payload: payload || {} })
+    });
+    var data = await res.json();
+    if (!res.ok || !data || !data.ok) {
+      showToast((data && data.error && data.error.message) || 'Request failed — try again.');
+      return null;
+    }
+    return data;
+  }
+
+  window.subxLoadRoster = async function(){
+    var data = await subxCall('read', 'roster', {});
+    _subxRoster = (data && data.data) || [];
+    subxRenderRoster();
+    subxUpdateKPIs();
+  };
+
+  function subxRenderRoster(){
+    var el = document.getElementById('subx-roster-list');
+    var sel = document.getElementById('subx-job-sub');
+    if (!_subxRoster.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No subcontractors added yet.</div>';
+    } else {
+      el.innerHTML = _subxRoster.map(function(s){
+        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+            '<div><div style="font-weight:700;font-size:13px;color:var(--text)">'+escHtml(s.name)+'</div>' +
+            '<div style="font-size:11px;color:var(--muted)">'+escHtml(s.trade||'')+(s.phone?' &bull; '+escHtml(s.phone):'')+' &bull; ID: '+escHtml(s.sub_id)+'</div></div>' +
+            '<span style="background:'+(s.active!==false?'#dcfce7':'#f3f4f6')+';color:'+(s.active!==false?'#166534':'#6b7280')+';padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">'+(s.active!==false?'ACTIVE':'INACTIVE')+'</span>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;margin-top:8px">' +
+            '<button class="q-btn" style="font-size:11px;padding:4px 9px" onclick="subxSetPin(\''+s.sub_id+'\')">🔑 Set/Reset PIN</button>' +
+            '<button class="q-btn" style="font-size:11px;padding:4px 9px" onclick="subxToggleActive(\''+s.sub_id+'\','+(s.active!==false)+')">'+(s.active!==false?'Deactivate':'Reactivate')+'</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+    var current = sel.value;
+    sel.innerHTML = '<option value="">Pick a subcontractor...</option>' + _subxRoster.filter(function(s){return s.active!==false;}).map(function(s){
+      return '<option value="'+escHtml(s.sub_id)+'">'+escHtml(s.name)+'</option>';
+    }).join('');
+    if (current) sel.value = current;
+  }
+
+  window.subxAddSub = async function(){
+    var name = document.getElementById('subx-name').value.trim();
+    var subId = document.getElementById('subx-id').value.trim();
+    if (!name || !subId) { showToast('Name and a portal login ID are required.'); return; }
+    if (!/^[a-zA-Z0-9._-]+$/.test(subId)) { showToast('Login ID: letters, numbers, dots, dashes only — no spaces.'); return; }
+    var payload = {
+      sub_id: subId, name: name, trade: document.getElementById('subx-trade').value.trim(),
+      phone: document.getElementById('subx-phone').value.trim(), email: document.getElementById('subx-email').value.trim(),
+      active: true
+    };
+    var data = await subxCall('write', 'roster', payload);
+    if (!data) return;
+    ['subx-name','subx-trade','subx-phone','subx-email','subx-id'].forEach(function(id){ document.getElementById(id).value = ''; });
+    showToast('Subcontractor added — set their PIN below to give them portal access.');
+    subxLoadRoster();
+  };
+
+  window.subxToggleActive = async function(subId, currentlyActive){
+    var sub = _subxRoster.find(function(s){ return s.sub_id === subId; });
+    if (!sub) return;
+    var data = await subxCall('write', 'roster', Object.assign({}, sub, { active: !currentlyActive }));
+    if (!data) return;
+    subxLoadRoster();
+  };
+
+  window.subxSetPin = async function(subId){
+    var pin = prompt('Set a 6-8 digit PIN for this subcontractor\'s portal login:');
+    if (pin === null) return;
+    pin = pin.trim();
+    if (!/^\d{6,8}$/.test(pin)) { showToast('PIN must be 6-8 digits.'); return; }
+    var res = await fetch('https://sairn.vercel.app/api/sd-sub-auth', {
+      method: 'POST', headers: subxAuthHeaders(),
+      body: JSON.stringify({ action: 'setup', sub_id: subId, pin: pin })
+    });
+    var data = await res.json();
+    if (!res.ok || !data || !data.ok) { showToast((data && data.error && data.error.message) || 'Could not set PIN.'); return; }
+    showToast('PIN set for '+subId+' — they can now sign in at the Subcontractor Login link.');
+  };
+
+  // Same downscale-until-it-fits pattern as the bulk slab upload flow (panel-slabs, bsuCompressUnderBudget)
+  // -- duplicated rather than shared since it's a different closure/scope, kept in sync by design intent
+  // not by shared code. Budget is per-photo; up to 3 photos plus text fields must stay under
+  // api/sd-sub-data.js's 1.5MB whole-record cap, so ~400KB/photo leaves real headroom.
+  function subxCompressOnce(dataUrl, maxDim, quality){
+    return new Promise(function(resolve){
+      var img = new Image();
+      img.onload = function(){
+        var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var w = Math.max(1, Math.round(img.width*scale)), h = Math.max(1, Math.round(img.height*scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = function(){ resolve(dataUrl); };
+      img.src = dataUrl;
+    });
+  }
+  async function subxCompressUnderBudget(dataUrl, budgetBytes){
+    var attempts = [[1000,0.65],[800,0.55],[600,0.45],[450,0.38],[350,0.32]];
+    var out = dataUrl;
+    for (var i=0;i<attempts.length;i++){
+      out = await subxCompressOnce(dataUrl, attempts[i][0], attempts[i][1]);
+      if ((out.length - (out.indexOf(',')+1)) <= budgetBytes) return out;
+    }
+    return out;
+  }
+
+  document.getElementById('subx-job-photo-input').addEventListener('change', async function(){
+    var files = Array.prototype.slice.call(this.files || []).slice(0, 3 - _subxJobPhotos.length);
+    for (var i=0;i<files.length;i++){
+      var file = files[i];
+      if (!file.type || file.type.indexOf('image/')!==0) continue;
+      var dataUrl = await new Promise(function(resolve){
+        var reader = new FileReader();
+        reader.onload = function(e){ resolve(e.target.result); };
+        reader.readAsDataURL(file);
+      });
+      var compressed = await subxCompressUnderBudget(dataUrl, 400*1024);
+      _subxJobPhotos.push(compressed);
+    }
+    this.value = '';
+    subxRenderJobPhotoPreview();
+  });
+  function subxRenderJobPhotoPreview(){
+    document.getElementById('subx-job-photo-preview').innerHTML = _subxJobPhotos.map(function(p,i){
+      return '<div style="position:relative"><img src="'+p+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px">' +
+        '<button onclick="subxRemoveJobPhoto('+i+')" style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer">×</button></div>';
     }).join('');
   }
-  window.sdSubAdd=function(){
-    var name=document.getElementById('sub-name').value.trim();
-    if(!name){showToast('Enter company name');return;}
-    var d=load();
-    d.push({name:name,trade:document.getElementById('sub-trade').value||'General',
-      phone:document.getElementById('sub-phone').value||'',
-      rate:parseFloat(document.getElementById('sub-rate').value)||0,
-      ytd:0,ins_exp:document.getElementById('sub-ins-exp').value||'',status:'Active'});
-    save(d);render();
-    ['sub-name','sub-trade','sub-phone','sub-rate'].forEach(function(id){document.getElementById(id).value='';});
-  };
-  window.sdSubAI=function(){
-    var d=load();
-    var out=document.getElementById('sub-ai-out');
-    out.style.display='block';out.textContent='Reviewing subs...';
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these subcontractors for a stone fabrication company and flag compliance issues, recommend relationship improvements:\n'+JSON.stringify(d)}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      out.innerHTML='<strong>🤖 Sub Review:</strong><br>'+escHtml((r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''))).replace(/\n/g,'<br>');
-    }).catch(function(){out.textContent='AI unavailable.';});
-  };
-  window.sdSubPrint=function(){
-    var d=load();
-    var w=window.open('','_blank');
-    w.document.write('<html><head><title>Subcontractors</title><style>body{font-family:Arial;padding:20px}h1{color:#1B3A6B}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h1>Pinnacle Stone — Subcontractors</h1><p>'+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<table><tr><th>Company</th><th>Trade</th><th>Phone</th><th>Rate</th><th>YTD</th><th>Ins Exp</th><th>Status</th></tr>');
-    d.forEach(function(x){w.document.write('<tr><td>'+escHtml(x.name)+'</td><td>'+escHtml(x.trade)+'</td><td>'+escHtml(x.phone)+'</td><td>$'+x.rate+'/day</td><td>$'+(x.ytd||0)+'</td><td>'+escHtml(x.ins_exp)+'</td><td>'+escHtml(x.status)+'</td></tr>');});
-    w.document.write('</table></body></html>');w.document.close();w.print();
-  };
-  window.sdSubRender=render;
-  render();
-})();
+  window.subxRemoveJobPhoto = function(i){ _subxJobPhotos.splice(i,1); subxRenderJobPhotoPreview(); };
 
+  window.subxAssignJob = async function(){
+    var subId = document.getElementById('subx-job-sub').value;
+    var address = document.getElementById('subx-job-address').value.trim();
+    if (!subId || !address) { showToast('Pick a subcontractor and enter a job address.'); return; }
+    var payload = {
+      sub_id: subId, address: address, details: document.getElementById('subx-job-details').value.trim(),
+      payRate: document.getElementById('subx-job-rate').value.trim(),
+      payAmount: parseFloat(document.getElementById('subx-job-amount').value) || 0,
+      photos: _subxJobPhotos.slice(), paid: false, paidDate: null
+    };
+    var data = await subxCall('write', 'jobs', payload);
+    if (!data) return;
+    ['subx-job-address','subx-job-details','subx-job-rate','subx-job-amount'].forEach(function(id){ document.getElementById(id).value=''; });
+    _subxJobPhotos = []; subxRenderJobPhotoPreview();
+    document.getElementById('subx-job-sub').value = '';
+    showToast('Job assigned.');
+    subxLoadJobs();
+  };
+
+  window.subxLoadJobs = async function(){
+    var data = await subxCall('read', 'jobs', {});
+    _subxJobs = (data && data.data) || [];
+    subxRenderJobs();
+    subxUpdateKPIs();
+  };
+
+  function subxSubName(subId){
+    var s = _subxRoster.find(function(x){ return x.sub_id === subId; });
+    return s ? s.name : subId;
+  }
+
+  function subxRenderJobs(){
+    var el = document.getElementById('subx-jobs-list');
+    if (!_subxJobs.length) { el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No jobs assigned yet.</div>'; return; }
+    el.innerHTML = _subxJobs.map(function(j){
+      var badge = j.paid
+        ? '<span style="background:#dcfce7;color:#166534;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px">PAID</span>'
+        : '<span style="background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px">UNPAID</span>';
+      return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+          '<div><div style="font-weight:700;font-size:13px;color:var(--text)">'+escHtml(subxSubName(j.sub_id))+'</div>' +
+          '<div style="font-size:11px;color:var(--muted)">'+escHtml(j.address||'')+'</div></div>' +
+          badge +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px">' +
+          '<span style="color:var(--muted)">'+escHtml(j.payRate||'')+'</span>' +
+          '<span style="font-weight:800">$'+(parseFloat(j.payAmount)||0).toLocaleString()+'</span>' +
+        '</div>' +
+        (!j.paid ? '<button class="q-btn primary" style="width:100%;margin-top:8px;font-size:11px;padding:5px" onclick="subxMarkPaid(\''+j.id+'\')">✓ Mark Paid</button>' : '') +
+      '</div>';
+    }).join('');
+  }
+
+  window.subxMarkPaid = async function(jobId){
+    var job = _subxJobs.find(function(j){ return j.id === jobId; });
+    if (!job) return;
+    var payload = Object.assign({}, job, { paid: true, paidDate: new Date().toISOString().slice(0,10) });
+    var data = await subxCall('write', 'jobs', payload);
+    if (!data) return;
+    showToast('Marked paid.');
+    subxLoadJobs();
+  };
+
+  function subxUpdateKPIs(){
+    document.getElementById('subx-kpi-active').textContent = _subxRoster.filter(function(s){return s.active!==false;}).length;
+    document.getElementById('subx-kpi-jobs').textContent = _subxJobs.length;
+    var unpaid = _subxJobs.filter(function(j){ return !j.paid; });
+    document.getElementById('subx-kpi-unpaid').textContent = unpaid.length;
+    document.getElementById('subx-kpi-owed').textContent = '$' + unpaid.reduce(function(s,j){ return s+(parseFloat(j.payAmount)||0); }, 0).toLocaleString();
+  }
+
+  subxLoadRoster().then(function(){ subxLoadJobs(); });
+})();
 </script>
-<div style="display:flex;flex-direction:column;gap:10px"></div>
 </div>
 
 
@@ -28052,6 +28357,15 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   var SD_SESSION_KEY  = 'sd_session_token';   // sessionStorage -- also read by sdData() elsewhere in this file
   var SD_ROLE_KEY      = 'sd_session_role';
   var SD_EMPLOYEE_KEY  = 'sd_session_employee_id';
+  // Subcontractor Portal (2026-08-04) -- separate sessionStorage keys from the employee ones
+  // above, and a separate token entirely (X-SD-Auth carries whichever one is active; a browser
+  // is only ever showing #app or #sub-portal at a time, never both, so there's no real collision
+  // risk, but keeping the keys distinct avoids any ambiguity about which token a given key holds.
+  var SD_SUB_AUTH_API   = 'https://sairn.vercel.app/api/sd-sub-auth';
+  var SD_SUB_DATA_API   = 'https://sairn.vercel.app/api/sd-sub-data';
+  var SD_SUB_SESSION_KEY = 'sd_sub_session_token';
+  var SD_SUB_ID_KEY      = 'sd_sub_session_id';
+  var SD_SUB_NAME_KEY    = 'sd_sub_session_name';
 
   // -- SHOW PAGE ---------------------------------------------
   function showPage(id) {
@@ -28140,7 +28454,9 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   function sdShowBootstrap() {
     var lv = document.getElementById('sd-login-view');
     var bv = document.getElementById('sd-bootstrap-view');
+    var sv = document.getElementById('sd-sublogin-view');
     if (lv) lv.style.display = 'none';
+    if (sv) sv.style.display = 'none';
     if (bv) bv.style.display = 'block';
     var el = document.getElementById('sd-boot-employee-input');
     if (el) el.focus();
@@ -28150,12 +28466,101 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   function sdShowLogin() {
     var lv = document.getElementById('sd-login-view');
     var bv = document.getElementById('sd-bootstrap-view');
+    var sv = document.getElementById('sd-sublogin-view');
     if (bv) bv.style.display = 'none';
+    if (sv) sv.style.display = 'none';
     if (lv) lv.style.display = 'block';
     var el = document.getElementById('sd-employee-input');
     if (el) el.focus();
   }
   window.sdShowLogin = sdShowLogin;
+
+  function sdShowSubLogin() {
+    var lv = document.getElementById('sd-login-view');
+    var bv = document.getElementById('sd-bootstrap-view');
+    var sv = document.getElementById('sd-sublogin-view');
+    if (lv) lv.style.display = 'none';
+    if (bv) bv.style.display = 'none';
+    if (sv) sv.style.display = 'block';
+    var el = document.getElementById('sd-sub-id-input');
+    if (el) el.focus();
+  }
+  window.sdShowSubLogin = sdShowSubLogin;
+
+  function doSubLogin() {
+    var idEl  = document.getElementById('sd-sub-id-input');
+    var pinEl = document.getElementById('sd-sub-pin-input');
+    var errEl = document.getElementById('sd-sub-error');
+    var subId = idEl ? idEl.value.trim() : '';
+    var pin   = pinEl ? pinEl.value.trim() : '';
+    var lic   = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+
+    if (!subId || !pin) {
+      if (errEl) { errEl.textContent = 'Enter your subcontractor ID and PIN'; errEl.style.display = 'block'; }
+      return;
+    }
+    if (!lic) {
+      if (errEl) { errEl.textContent = 'No license key found on this install — contact the shop'; errEl.style.display = 'block'; }
+      return;
+    }
+    if (errEl) errEl.style.display = 'none';
+
+    fetch(SD_SUB_AUTH_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+      body: JSON.stringify({ action: 'login', sub_id: subId, pin: pin })
+    }).then(function(r) {
+      return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; });
+    }).then(function(res) {
+      if (!res.ok || !res.body || !res.body.ok) {
+        if (errEl) { errEl.textContent = sdAuthErr(res.body, 'Sign-in failed — try again'); errEl.style.display = 'block'; }
+        if (pinEl) { pinEl.value = ''; pinEl.focus(); }
+        return;
+      }
+      try {
+        sessionStorage.setItem(SD_SUB_SESSION_KEY, res.body.token);
+        sessionStorage.setItem(SD_SUB_ID_KEY, res.body.sub_id);
+        sessionStorage.setItem(SD_SUB_NAME_KEY, res.body.name || res.body.sub_id);
+      } catch (e) {}
+      if (pinEl) pinEl.value = '';
+      if (typeof showSubPortal === 'function') showSubPortal();
+    }).catch(function() {
+      if (errEl) { errEl.textContent = 'Network error — check your connection and try again'; errEl.style.display = 'block'; }
+    });
+  }
+  window.doSubLogin = doSubLogin;
+
+  function doSubLogout() {
+    try {
+      sessionStorage.removeItem(SD_SUB_SESSION_KEY);
+      sessionStorage.removeItem(SD_SUB_ID_KEY);
+      sessionStorage.removeItem(SD_SUB_NAME_KEY);
+    } catch (e) {}
+    var portal = document.getElementById('sub-portal');
+    if (portal) portal.style.cssText = 'display:none!important';
+    var authScr = document.getElementById('auth-screen');
+    if (authScr) authScr.style.cssText = 'display:flex!important';
+    sdShowSubLogin();
+  }
+  window.doSubLogout = doSubLogout;
+
+  // Trial gate deliberately NOT applied to the sub portal -- a shop's trial status shouldn't be
+  // able to lock a sub out of seeing a job they're mid-way through; that's a shop-account concern,
+  // not something a sub should ever have to deal with or be told about.
+  function showSubPortal() {
+    ['auth-screen','trial-expired-screen'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.cssText = 'display:none!important';
+    });
+    var portal = document.getElementById('sub-portal');
+    if (portal) portal.style.cssText = 'display:block!important';
+    var nameEl = document.getElementById('sub-portal-greeting');
+    var name = '';
+    try { name = sessionStorage.getItem(SD_SUB_NAME_KEY) || ''; } catch (e) {}
+    if (nameEl) nameEl.textContent = name ? ('Welcome, ' + name) : 'Welcome';
+    if (typeof subPortalLoadJobs === 'function') subPortalLoadJobs();
+  }
+  window.showSubPortal = showSubPortal;
 
   function sdDoBootstrap() {
     var empEl  = document.getElementById('sd-boot-employee-input');
@@ -29061,7 +29466,7 @@ function sbNav(id) {
     if(id==='priceintel'&&typeof piInit==='function')piInit();
     if(id==='equipment'&&typeof window.sdEqRender==='function')window.sdEqRender();
     if(id==='stoneyard'&&typeof window.sdYardRender==='function')window.sdYardRender();
-    if(id==='subcontractor'&&typeof window.sdSubRender==='function')window.sdSubRender();
+    if(id==='subcontractor'&&typeof window.subxLoadRoster==='function'){window.subxLoadRoster();if(typeof window.subxLoadJobs==='function')window.subxLoadJobs();}
     if(id==='bidboard'&&typeof window.sdBidRender==='function')window.sdBidRender();
     if(id==='bulletin'&&typeof window.sdBulletinRender==='function')window.sdBulletinRender();
     if(id==='waste'&&typeof window.sdWasteRender==='function')window.sdWasteRender();

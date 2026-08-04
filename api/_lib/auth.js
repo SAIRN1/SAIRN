@@ -43,7 +43,17 @@ const crypto = require('crypto');
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h
 const ROLES_BY_APP = {
   stonedesk: ['owner', 'admin', 'sales', 'install'],
-  sairnbiz: ['owner', 'hr', 'accounting', 'manager', 'staff']
+  sairnbiz: ['owner', 'hr', 'accounting', 'manager', 'staff'],
+  // Subcontractor Portal (2026-08-04): a DELIBERATELY separate app namespace,
+  // not a new role added to 'stonedesk' above. Subs are not staff — giving
+  // them a 'sub' role inside the 'stonedesk' app would mean any endpoint
+  // that checks verifySessionToken(token, licHash, 'stonedesk') without also
+  // checking the specific role would treat a sub token as a valid (if
+  // low-privilege) employee token. A separate app means expectedApp:
+  // 'stonedesk_sub' on every sub-facing check rejects an employee token
+  // outright and vice versa, the same cross-app-collision discipline this
+  // file's header already documents for stonedesk vs sairnbiz.
+  stonedesk_sub: ['sub']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.
