@@ -18580,6 +18580,7 @@ function renderCustomers() {
         '</div>'+
         '<div style="text-align:right;min-width:100px">'+
           (c.quote?'<div style="font-size:17px;font-weight:900;color:#16C762">$'+c.quote.toLocaleString()+'</div>':'')+
+          (c.estimateStatus==='preliminary'&&c.status!=='templated'?'<div style="font-size:9px;font-weight:700;color:#92400E;background:#FEF3C7;display:inline-block;padding:2px 7px;border-radius:100px;margin-top:3px">PRELIMINARY</div>':'')+
           '<div style="margin-top:4px;background:'+sc+';color:#fff;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700;display:inline-block">'+statusLabels[c.status]+'</div>'+
         '</div>'+
       '</div>'+
@@ -24586,6 +24587,34 @@ document.addEventListener('DOMContentLoaded', function() {
       <div id="viz-slab-list" style="display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto"></div>
       <button class="q-btn primary" id="viz-render-btn" style="width:100%;margin-top:12px" onclick="vizRender()" disabled>🎨 Render This Material</button>
     </div>
+
+    <!-- PRELIMINARY ESTIMATE FLOW (2026-08-04) -- closes the "Field Sketch Quote" spec gap
+         (photo -> a few quick questions -> branded ballpark -> lands in the pipeline) that was
+         planned but never actually built. Independent of the render step above -- a rep can get
+         a number without spending a render, since the point per spec is a number in under a
+         minute, not waiting on a vendor image call. Shown alongside the slab card (same reveal
+         point as "Render This Material" becoming available) rather than gated behind it. -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;display:none;margin-top:12px" id="viz-estimate-card">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--text)">3. Quick Ballpark Estimate</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">A fast preliminary number to give the client on the spot — not a firm quote. The real number gets confirmed at template.</div>
+      <div class="dm-field"><label>Customer name</label><input type="text" id="viz-est-customer" placeholder="e.g. Sarah Johnson"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+        <div class="dm-field"><label>Approx. sq ft</label><input type="number" min="0" id="viz-est-sqft" placeholder="e.g. 40"></div>
+        <div class="dm-field"><label>Edge preference</label>
+          <select id="viz-est-edge">
+            <option value="standard">Standard / Eased</option>
+            <option value="premium">Bullnose, Ogee, or Bevel (+8%)</option>
+            <option value="waterfall">Waterfall or Mitered (+20%)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--text)">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="viz-est-sink"> Sink cutout</label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" id="viz-est-cooktop"> Cooktop cutout</label>
+      </div>
+      <button class="q-btn primary" style="width:100%;margin-top:12px" onclick="vizGetBallpark()">💵 Get Ballpark Price</button>
+      <div id="viz-estimate-out" style="margin-top:10px"></div>
+    </div>
   </div>
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:200px">
@@ -24617,6 +24646,8 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('viz-find-btn').style.display = 'block';
       document.getElementById('viz-find-status').textContent = '';
       document.getElementById('viz-slab-card').style.display = 'none';
+      document.getElementById('viz-estimate-card').style.display = 'none';
+      document.getElementById('viz-estimate-out').innerHTML = '';
       _vizCountertop = null; _vizSelectedSlabId = null;
       document.getElementById('viz-result').innerHTML = '<div style="color:var(--muted);font-style:italic;font-size:13px">Upload a photo, confirm the countertop, and pick a slab to see it rendered here.</div>';
     };
@@ -24660,6 +24691,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       statusEl.textContent = '✓ Found it: ' + (parsed.description || 'countertop identified');
       document.getElementById('viz-slab-card').style.display = 'block';
+      document.getElementById('viz-estimate-card').style.display = 'block';
       vizRenderSlabList();
     } catch(e) {
       statusEl.textContent = 'Could not analyze the photo — please try again.';
@@ -24702,6 +24734,66 @@ document.addEventListener('DOMContentLoaded', function() {
       r.style.background = (r.getAttribute('data-id')===id) ? 'rgba(232,133,10,0.06)' : '';
     });
     document.getElementById('viz-render-btn').disabled = false;
+  };
+
+  // == PRELIMINARY ESTIMATE (2026-08-04) =========================================================
+  // Fast ballpark math for a rep standing in a client's kitchen -- deliberately simpler than the
+  // real Quote Builder/Drawing Tool pricing engines (no linear-foot edge math, no seam/waterfall
+  // accounting): a flat $/sqft by material, a coarse edge-style multiplier, flat cutout adds. Uses
+  // the SAME admin-configurable Unit Pricing rates calcDrawing() already reads (sairn-unit-*) so
+  // the ballpark and the real numbers come from one shared rate table, not two that can drift --
+  // just applied with much less precision, which is the honest tradeoff for a 3-question estimate.
+  var VIZ_UNIT_RATE_FALLBACK = { granite:65, quartz:75, quartzite:95, marble:110, porcelain:75, soapstone:65, dolomite:75, other:65 };
+  function vizUnitRateFor(material){
+    var idMap = { granite:'sairn-unit-granite_sqft', quartz:'sairn-unit-quartz_sqft', quartzite:'sairn-unit-quartzite_sqft', marble:'sairn-unit-marble_sqft' };
+    var el = idMap[material] ? document.getElementById(idMap[material]) : null;
+    var val = el ? parseFloat(el.value) : NaN;
+    return (val > 0) ? val : (VIZ_UNIT_RATE_FALLBACK[material] || VIZ_UNIT_RATE_FALLBACK.other);
+  }
+
+  window.vizGetBallpark = function(){
+    if (!_vizSelectedSlabId) { vizToast('Pick a slab first.'); return; }
+    var slab = (typeof sdSlabs !== 'undefined' ? sdSlabs : []).find(function(s){ return s.id === _vizSelectedSlabId; });
+    if (!slab) { vizToast('Selected slab not found — pick again.'); return; }
+    var custName = (document.getElementById('viz-est-customer').value || '').trim();
+    if (!custName) { vizToast('Enter the customer\'s name first.'); return; }
+    var sqft = parseFloat(document.getElementById('viz-est-sqft').value) || 0;
+    if (sqft <= 0) { vizToast('Enter an approximate square footage.'); return; }
+    var edge = document.getElementById('viz-est-edge').value;
+    var hasSink = document.getElementById('viz-est-sink').checked;
+    var hasCooktop = document.getElementById('viz-est-cooktop').checked;
+
+    var rate = vizUnitRateFor(slab.material);
+    var edgeMult = edge === 'waterfall' ? 1.20 : edge === 'premium' ? 1.08 : 1.0;
+    var sinkRate = parseFloat((document.getElementById('sairn-unit-sink_cutout') || {}).value) || 150;
+    var cooktopRate = parseFloat((document.getElementById('sairn-unit-cooktop_cutout') || {}).value) || 125;
+    var ballpark = Math.round(sqft * rate * edgeMult + (hasSink ? sinkRate : 0) + (hasCooktop ? cooktopRate : 0));
+
+    // Lands the customer at 'quoted' in the EXISTING pipeline (STAGE_LABEL/statusLabels:
+    // quoted -> approved -> templated -> fabricating -> scheduled -> complete) -- no new status
+    // added, per spec. estimateStatus:'preliminary' is what renderCustomers() (panel-customers)
+    // checks to show the PRELIMINARY badge; that check also reads c.status !== 'templated', so
+    // the label naturally stops appearing once staff move the customer past templated in the
+    // existing status dropdown -- no separate cleanup step needed.
+    if (typeof sdCustomers === 'undefined') window.sdCustomers = [];
+    var matLabel = (typeof slabMaterialLabel === 'function' ? slabMaterialLabel(slab.material) : slab.material) + (slab.colorName ? ' — ' + slab.colorName : '');
+    var cust = {
+      id: 'C' + Date.now(), name: custName, phone: '', email: '', project: 'Kitchen Countertops',
+      material: matLabel, quote: ballpark, status: 'quoted', referral: 'Visualize on Your Kitchen',
+      rating: null, createdAt: new Date().toISOString(), estimateStatus: 'preliminary',
+      estimateInputs: { sqft: sqft, edge: edge, hasSink: hasSink, hasCooktop: hasCooktop, slabId: slab.id }
+    };
+    sdCustomers.unshift(cust);
+    if (typeof saveSD3Data === 'function') saveSD3Data();
+    if (typeof renderCustomers === 'function') renderCustomers();
+
+    document.getElementById('viz-estimate-out').innerHTML =
+      '<div style="padding:12px;background:rgba(232,133,10,0.08);border:1px solid rgba(232,133,10,0.25);border-radius:8px">' +
+        '<div style="font-size:22px;font-weight:900;color:var(--a)">$' + ballpark.toLocaleString() + '</div>' +
+        '<div style="font-size:11px;font-weight:700;color:#92400E;background:#FEF3C7;display:inline-block;padding:2px 8px;border-radius:100px;margin-top:4px">PRELIMINARY — CONFIRMED AT TEMPLATE</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:8px">Added to your pipeline as <b>' + escHtml(custName) + '</b> — status: Awaiting Approval.</div>' +
+      '</div>';
+    vizToast('Preliminary estimate saved for ' + custName + '.');
   };
 
   // Bearer-license fetch, same auth convention as sdData() (api/sd-data.js) -- this feature calls
