@@ -512,6 +512,16 @@ body.is-exec .sb-exec{display:flex}
     background-attachment:local,local,scroll,scroll;
   }
 }
+/* Drawing Tool (panel-draw) left-panel collapse, 2026-08-04. Item 7 of the visual-polish pass --
+   canvas was competing for space with an equal-weight 270px form column. Rather than shrinking
+   that fixed 270px value (which the narrow-viewport attribute-selector fix above matches by
+   exact inline-style substring -- changing the number would silently break that already-verified
+   fix), this adds a toggle that collapses the column to near-zero width on demand, so the canvas
+   can go full-width without touching the verified default-width behavior at all. */
+#draw-left-col.dc-collapsed{width:0!important;min-width:0;padding:0;margin:0;overflow:hidden;flex-shrink:0}
+@media (prefers-reduced-motion:no-preference){
+  #draw-left-col{transition:width .2s ease}
+}
 /* Job History (panel-history) mobile fix, 2026-08-04. Scoped to this one
    panel only -- deliberately, not sitewide -- while the rest of the app
    goes through a panel-by-panel audit; see the audit note below for the
@@ -1051,7 +1061,7 @@ textarea#userInput::placeholder{color:var(--muted)}
 /* canvas */
 #ct-canvas{
   width:100%;height:auto;display:block;
-  border-radius:8px;background:#060810;
+  border-radius:8px;background:#EEF3F9;
 }
 
 /* results grid */
@@ -3362,6 +3372,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <button class="q-btn" onclick="sdDrawPrint()" style="font-size:12px;padding:5px 12px">🖨️ Print Drawing</button>
   <button class="q-btn primary" onclick="sdDrawSave()" style="font-size:12px;padding:5px 12px">💾 Save Drawing</button>
   <span id="draw-save-status" style="font-size:11px;color:#16c762"></span>
+  <button class="q-btn" id="dc-collapse-btn" onclick="toggleDCLeftPanel()" style="font-size:12px;padding:5px 12px;margin-left:auto">◀ Hide Panel</button>
 </div>
 <script>
 (function(){
@@ -3393,8 +3404,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 })();
 </script>
 
-    <div style="padding:20px;flex:1;overflow-y:auto;display:flex;gap:20px;min-height:0">
-      <div style="width:270px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
+    <div id="draw-body" style="padding:20px;flex:1;overflow-y:auto;display:flex;gap:20px;min-height:0">
+      <div id="draw-left-col" style="width:270px;flex-shrink:0;display:flex;flex-direction:column;gap:12px">
 
         <div class="dm-card">
           <div class="dm-card-title">Job Details</div>
@@ -3590,7 +3601,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
             <span style="font-size:10px;color:var(--muted);margin-left:4px">Pick a type, click one spot on the drawing — a full seam auto-extends edge-to-edge through that point. Drag instead for a custom length. Drag a placed seam to move it.</span>
           </div>
 
-          <canvas id="ct-canvas" width="640" height="480" style="width:100%;height:auto;display:block;border-radius:8px;background:#060810;cursor:crosshair;margin-top:8px"></canvas>
+          <canvas id="ct-canvas" width="640" height="480" style="width:100%;height:auto;display:block;border-radius:8px;background:#EEF3F9;cursor:crosshair;margin-top:8px"></canvas>
           <div id="dc-cutout-list" style="margin-top:8px;display:flex;gap:4px;flex-wrap:wrap"></div>
           <div id="dc-seam-list" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap"></div>
         </div>
@@ -9640,6 +9651,25 @@ function initDCCanvas() {
   updateDCSeamList();
 }
 
+// Collapses the 270px form column so the canvas can go full-width -- see the CSS comment above
+// #draw-left-col.dc-collapsed for why this is a toggle rather than a permanent width change.
+// Canvas internal pixel width is re-synced from its new offsetWidth after the CSS transition
+// settles, same pattern initDCCanvas already uses on first load (dcCanvas.width = offsetWidth).
+function toggleDCLeftPanel() {
+  var col = document.getElementById('draw-left-col');
+  var btn = document.getElementById('dc-collapse-btn');
+  if (!col) return;
+  var collapsed = col.classList.toggle('dc-collapsed');
+  if (btn) btn.textContent = collapsed ? '▶ Show Panel' : '◀ Hide Panel';
+  setTimeout(function(){
+    if (dcCanvas) {
+      dcCanvas.width = dcCanvas.offsetWidth || dcCanvas.width;
+      dcCanvas.height = 480;
+    }
+    if (typeof drawCTPreview === 'function') drawCTPreview();
+  }, 220);
+}
+
 // == TOUCH SUPPORT (ct-canvas) =================================================================
 // Added 2026-08-04 -- ct-canvas was mouse-only (onmousedown/onmousemove property assignment,
 // plus capture-phase mousedown/mousemove/mouseup listeners for the cutout/seam router, plus a
@@ -10612,10 +10642,19 @@ function drawCTPreview() {
   const W=cv.width, H=cv.height;
   ctx.clearRect(0,0,W,H);
 
-  // Grid
-  ctx.strokeStyle='rgba(255,255,255,0.03)'; ctx.lineWidth=1;
+  // Graph-paper grid (2026-08-04 visual polish): light blueprint-paper background (#EEF3F9, set
+  // via CSS on the canvas element) with a two-tier grid -- a faint 40px minor line every 10in at
+  // this scale, plus a slightly bolder major line every 200px (5 cells) so the sheet reads as
+  // measured graph paper rather than a flat tint. Ink color (#33455B, a dark slate-blue) is used
+  // for both tiers and for dimension text below instead of the old low-alpha orange, which relied
+  // on the near-black background this canvas used to have for contrast and would wash out to an
+  // illegible pale peach against a light paper tone.
+  ctx.strokeStyle='rgba(51,85,119,0.07)'; ctx.lineWidth=1;
   for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.strokeStyle='rgba(51,85,119,0.16)'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=200){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=200){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
 
   const pad=48;
   const aL=gN('da-len'), aD=gN('da-dep');
@@ -10651,14 +10690,30 @@ function drawCTPreview() {
   // Shape-specific drawing with color-coded edges
   function colorEdge(x1,y1,x2,y2,colorKey) {
     const c = EDGE_COLORS[colorKey] ? EDGE_COLORS[colorKey].color : '#E8850A';
-    ctx.strokeStyle=c; ctx.lineWidth=5; ctx.lineCap='round';
-    ctx.shadowColor=c; ctx.shadowBlur=4;
+    // Line weight/glow trimmed for the light graph-paper background (2026-08-04): the old 5px+4px
+    // glow was tuned to pop off a near-black canvas; on light paper the same glow read as a hazy
+    // blur rather than a crisp line, so both are dialed back for a cleaner technical-drawing look.
+    ctx.strokeStyle=c; ctx.lineWidth=4; ctx.lineCap='round';
+    ctx.shadowColor=c; ctx.shadowBlur=2;
     ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
     ctx.shadowBlur=0;
   }
 
+  // Ruler-style dimension label (2026-08-04): a light pill behind the text so it stays readable
+  // sitting on top of the grid, flanked by two short vertical ticks like a real dimension line's
+  // extension marks. Text moved from low-alpha orange (illegible on the new light background) to
+  // a solid dark-ink color for real contrast.
   function dimLabel(x,y,txt) {
-    ctx.fillStyle='rgba(232,133,10,0.6)'; ctx.font='10px DM Mono,monospace'; ctx.textAlign='center';
+    ctx.font='10px DM Mono,monospace'; ctx.textAlign='center';
+    const tw = ctx.measureText(txt).width;
+    ctx.fillStyle='rgba(238,243,249,0.9)';
+    ctx.fillRect(x-tw/2-5, y-10, tw+10, 13);
+    ctx.strokeStyle='rgba(51,85,119,0.55)'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(x-tw/2-9,y-4); ctx.lineTo(x-tw/2-9,y+2);
+    ctx.moveTo(x+tw/2+9,y-4); ctx.lineTo(x+tw/2+9,y+2);
+    ctx.stroke();
+    ctx.fillStyle='#33455B';
     ctx.fillText(txt,x,y);
   }
 
@@ -10674,7 +10729,7 @@ function drawCTPreview() {
   window._ctRects = [];
 
   if (ctShape==='straight' || ctShape==='island') {
-    if(!aL||!aD) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
+    if(!aL||!aD) { ctx.fillStyle='rgba(51,85,119,0.45)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const sc=Math.min((W-pad*3)/aL,(H-pad*3)/aD);
     const x=(W-aL*sc)/2, y=(H-aD*sc)/2;
     ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(x,y,aL*sc,aD*sc); ctx.fill();
@@ -10709,7 +10764,7 @@ function drawCTPreview() {
     dimLabel(x+aL*sc+24, y+aD*sc/2, aD+'"');
 
   } else if(ctShape==='lshape') {
-    if(!aL||!aD) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
+    if(!aL||!aD) { ctx.fillStyle='rgba(51,85,119,0.45)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const totL=Math.max(aL,(bD||25))+10, totD=aD+(bL||72)+10;
     const sc=Math.min((W-pad*2)/totL,(H-pad*2)/totD);
     const ox=pad, oy=pad;
@@ -10758,7 +10813,7 @@ function drawCTPreview() {
     dimLabel(ax+aw/2, ay-12, aL+'"');
 
   } else if(ctShape==='ushape') {
-    if(!aL||!aD||!bL) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
+    if(!aL||!aD||!bL) { ctx.fillStyle='rgba(51,85,119,0.45)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const cLv=cL||aL, cDv=cD||aD, bDv=bD||25.5;
     const totW=aD+bL+cDv+20, totH=Math.max(aL,cLv)+bDv+20;
     const sc=Math.min((W-pad*2)/totW,(H-pad*2)/Math.max(totH,80));
@@ -10795,7 +10850,7 @@ function drawCTPreview() {
     const labelSet = ctShape==='galley' ? galleyLabels : customLabels;
     const rawSecs=[[aL,aD],[bL,bD],[cL,cD],[gN('dd-len'),gN('dd-dep')]];
     const secs = rawSecs.map((s,i)=>({dims:s, lbl:labelSet[i]||{front:null,back:null}})).filter(s=>s.dims[0]&&s.dims[1]);
-    if(!secs.length) { ctx.fillStyle='rgba(232,133,10,0.2)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
+    if(!secs.length) { ctx.fillStyle='rgba(51,85,119,0.45)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const maxL=Math.max.apply(null,secs.map(s=>s.dims[0]));
     const totD=secs.reduce((a,s)=>a+s.dims[1]+8,0);
     const sc=Math.min((W-pad*2)/maxL,(H-pad*2)/totD);
@@ -10816,7 +10871,7 @@ function drawCTPreview() {
   if (typeof renderDCSeams === 'function') renderDCSeams(ctx);
 
   // Label
-  ctx.fillStyle='rgba(232,133,10,0.5)'; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='left';
+  ctx.fillStyle='rgba(51,85,119,0.65)'; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='left';
   ctx.fillText(ctShape.toUpperCase()+' — COLOR-CODED EDGE PREVIEW', pad, H-10);
 }
 
@@ -10825,7 +10880,7 @@ function drawDCPolygon(ctx, W, H) {
   window._ctRects = []; // polygon mode hit-tests cutouts against segments directly, not rects — kept empty/unused here
   // Grid was already drawn by the caller before branching into this function.
   if (!dcPoly.length) {
-    ctx.fillStyle='rgba(232,133,10,0.3)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle='rgba(51,85,119,0.45)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center';
     ctx.fillText('Click to place your first point',W/2,H/2);
     ctx.textAlign='left';
     return;
@@ -10846,9 +10901,9 @@ function drawDCPolygon(ctx, W, H) {
   for (let i=0;i<n;i++) {
     const a=pts[i], b=pts[(i+1)%pts.length];
     const type = dcEdgeTypes[i];
-    const color = type ? EDGE_COLORS[type].color : 'rgba(232,133,10,0.35)';
-    ctx.strokeStyle=color; ctx.lineWidth = (dcEditPass ? 7 : 5); ctx.lineCap='round';
-    ctx.shadowColor=color; ctx.shadowBlur = type ? 4 : 0;
+    const color = type ? EDGE_COLORS[type].color : 'rgba(51,85,119,0.4)';
+    ctx.strokeStyle=color; ctx.lineWidth = (dcEditPass ? 6 : 4); ctx.lineCap='round';
+    ctx.shadowColor=color; ctx.shadowBlur = type ? 2 : 0;
     ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
     ctx.shadowBlur=0;
     // Segment length label
@@ -10882,7 +10937,7 @@ function drawDCPolygon(ctx, W, H) {
   if (typeof renderDCCutouts === 'function') renderDCCutouts(ctx);
   if (typeof renderDCSeams === 'function') renderDCSeams(ctx);
 
-  ctx.fillStyle='rgba(232,133,10,0.5)'; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='left';
+  ctx.fillStyle='rgba(51,85,119,0.65)'; ctx.font='bold 10px Outfit,sans-serif'; ctx.textAlign='left';
   ctx.fillText('CUSTOM DRAW — ' + (dcPolyClosed?'CLOSED':'IN PROGRESS') + (dcEditPass?' — CLICK AN EDGE TO SET ITS TYPE':''), 10, H-10);
 }
 
