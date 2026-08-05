@@ -31,7 +31,7 @@
 const KNOWN_APP_IDS = [
   'stonedesk', 'sairnbiz', 'sairnscape', 'sairncode', 'sairnbuild',
   'sairnlaw', 'sairndesign', 'sairncare', 'sairnvet', 'sairnfuneral',
-  'sairnmechanical', 'sairnhr', 'sairnacc'
+  'sairnmechanical', 'sairnhr', 'sairnacc', 'sairngrounds'
 ];
 
 // Best-effort only — see limitation note above. Resets on cold start / differs per instance.

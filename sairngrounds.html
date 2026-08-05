@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNgrounds - Golf Course &amp; Grounds Operations</title>
+<style>
+:root{--p:#16A34A;--pd:#15803D;--pt:#F0FDF4;--pb:#86EFAC;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* ROLE SELECT -- Phase 1 uses a simple role picker, not per-employee PIN
+   auth. Matches the platform's own precedent (SAIRNbiz's original shared
+   per-role PINS before its 2026-08-03 per-employee rewrite) -- deferring
+   the full api/grd-auth.js + Supabase schema build to a follow-up rather
+   than adding new backend infra inside a "scaffold" pass. See
+   SAIRNGROUNDS-SCOPE.md "Required server changes". */
+#role{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#role.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:16px;}
+.rolebtn{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;}
+.rolebtn:hover{background:var(--pt);border-color:var(--p);color:var(--pd);}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.navtog{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;display:none;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+/* Weather Command Engine topbar -- ported from stonedesk.html:14153-14198
+   (Pattern 12), not rebuilt. Cross-cutting, not a panel -- see
+   SAIRNGROUNDS-SCOPE.md section 2. */
+#grd-weather-bar{font-size:11px;color:rgba(255,255,255,.85);margin-right:10px;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.wrap{display:flex;flex:1;overflow:hidden;}
+/* SIDEBAR */
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;transition:transform .2s;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;transition:all .15s;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;}
+#scrim.on{display:block;}
+@media (max-width:768px){
+  .navtog{display:block;}
+  aside{position:fixed;top:56px;bottom:0;left:0;z-index:50;transform:translateX(-100%);}
+  aside.on{transform:translateX(0);}
+}
+/* MAIN */
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;min-height:40px;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--p);}
+.bs{padding:6px 12px;font-size:12px;min-height:36px;}
+/* KPIs */
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+@media (max-width:768px){.krow{grid-template-columns:repeat(2,1fr);}}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media (max-width:768px){.g2{grid-template-columns:1fr;}}
+/* TABLE */
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+/* FORMS */
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;transition:border .2s;font-family:inherit;min-height:40px;}
+input:focus,select:focus,textarea:focus{border-color:var(--p);}
+textarea{resize:vertical;min-height:80px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media (max-width:768px){.fr{grid-template-columns:1fr;}}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:14px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:17px;font-weight:800;margin-bottom:18px;}
+/* AI */
+.achat{background:var(--bg);border-radius:10px;padding:14px;min-height:180px;max-height:320px;overflow-y:auto;font-size:13px;line-height:1.6;margin-bottom:12px;}
+.amu{background:var(--p);color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;margin:6px 0 6px 40px;font-size:13px;}
+.ama{background:#fff;border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:8px 12px;margin:6px 40px 6px 0;font-size:13px;}
+.air{display:flex;gap:8px;}
+.air input{flex:1;}
+.qts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.qt{background:var(--pt);border:1px solid var(--pb);color:var(--pd);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.qt:hover{background:var(--p);color:#fff;}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNgrounds</div>
+    <div class="gsub">Golf Course &amp; Grounds Operations &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="GRD-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="role">
+  <div class="pbox">
+    <div class="plogo">SAIRNgrounds</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:18px">Select your role for this session</div>
+    <button class="rolebtn" onclick="applyRole('Superintendent')">&#9971; Superintendent</button>
+    <button class="rolebtn" onclick="applyRole('Grounds Manager')">&#127807; Grounds Manager</button>
+    <button class="rolebtn" onclick="applyRole('Crew')">&#128119; Crew</button>
+    <button class="rolebtn" onclick="applyRole('Office')">&#128188; Office</button>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="aside">&#9776;</button>
+    <div class="hlogo">SAIRNgrounds</div>
+    <div class="hbadge">Course &amp; Property Ops</div>
+    <div class="hr">
+      <span id="grd-weather-bar"><span id="grd-wx-icon"></span><span id="grd-wx-temp"></span><span id="grd-wx-desc"></span><strong id="grd-wx-status"></strong></span>
+      <span class="huser" id="huser">Superintendent</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div id="scrim" onclick="closeNav()"></div>
+  <div class="wrap">
+    <aside id="aside" aria-label="Main navigation">
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
+      <div class="ss">Operations</div>
+      <button class="sb" id="sb-properties" onclick="nav('properties')"><span class="sico">&#127760;</span>Properties</button>
+      <button class="sb" id="sb-intake" onclick="nav('intake')"><span class="sico">&#128203;</span>Job Intake</button>
+      <button class="sb" id="sb-quotes" onclick="nav('quotes')"><span class="sico">&#128176;</span>Quoting</button>
+      <div class="ss">Golf</div>
+      <button class="sb" id="sb-golfcourse" onclick="nav('golfcourse')"><span class="sico">&#9971;</span>Golf Course Module</button>
+      <div class="sfoot">SAIRNgrounds Phase 1 &middot; <span style="color:var(--p);font-weight:700;">Course &amp; Property Ops</span></div>
+    </aside>
+    <main>
+
+<!-- DASHBOARD -->
+<div class="panel on" id="panel-dashboard">
+  <div class="ph"><div><div class="ptitle">Grounds Dashboard</div><div class="psub">Every active property and job, at a glance</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Active Properties</div><div class="kval" id="k-props">0</div><div class="kt">Under contract</div></div>
+    <div class="kpi"><div class="klbl">Open Jobs</div><div class="kval" id="k-jobs">0</div><div class="kt">In progress</div></div>
+    <div class="kpi"><div class="klbl">Open Quotes</div><div class="kval" id="k-quotes">0</div><div class="kt" id="k-quotesamt">$0 pending</div></div>
+    <div class="kpi"><div class="klbl">Golf Zones Tracked</div><div class="kval" id="k-zones">0</div><div class="kt">Holes / areas</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Recent Activity</span></div><div class="cb" id="d-activity"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Action Items</span></div><div class="cb" id="d-actions"></div></div>
+  </div>
+</div>
+
+<!-- AI -->
+<div class="panel" id="panel-ai">
+  <div class="ph"><div><div class="ptitle">AI Grounds Assistant</div><div class="psub">Powered by Claude &middot; Turf, contracts, scheduling</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="clrAI()">Clear</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="qts">
+      <span class="qt" onclick="askAI('Draft a quote for weekly mowing and quarterly fertilization on a 12-acre HOA property')">Draft HOA Quote</span>
+      <span class="qt" onclick="askAI('What turf treatment schedule fits a cool-season fairway in the Midwest?')">Turf Schedule</span>
+      <span class="qt" onclick="askAI('Is today a good day for crew work given the current weather?')">Weather Go/No-Go</span>
+      <span class="qt" onclick="askAI('Write a service scope for a new golf course maintenance contract')">Contract Scope</span>
+    </div>
+    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about turf care, contracts, scheduling, or course conditions.</div></div>
+    <div class="air"><input id="ainp" placeholder="Ask about properties, quotes, golf zones, weather..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
+  </div></div>
+</div>
+
+<!-- PROPERTIES -->
+<div class="panel" id="panel-properties">
+  <div class="ph"><div><div class="ptitle">Property Directory</div><div class="psub">Golf courses, HOAs, and commercial properties under contract</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openPropModal()">+ Add Property</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="sbar"><input id="psrch" placeholder="Search by name, type, contact..." oninput="filterProps()"></div>
+    <div class="tw"><table><thead><tr><th>Name</th><th>Type</th><th>Contact</th><th>Acreage</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="ptbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="propmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Property</div>
+    <div class="fg"><label>Property Name</label><input id="pname" placeholder="Fairview Golf Club"></div>
+    <div class="fr"><div class="fg"><label>Type</label><select id="ptype"><option value="golf">Golf Course</option><option value="hoa">HOA</option><option value="commercial">Commercial</option></select></div><div class="fg"><label>Acreage</label><input id="pacreage" type="number" placeholder="120"></div></div>
+    <div class="fr"><div class="fg"><label>Contact Name</label><input id="pcontact" placeholder="Jane Reynolds"></div><div class="fg"><label>Contact Phone</label><input id="pphone" placeholder="(440) 555-0100"></div></div>
+    <div class="fg"><label>Contact Email</label><input id="pemail" type="email" placeholder="jane@fairview.example"></div>
+    <div class="fg"><label>Address</label><input id="paddress" placeholder="4200 Fairway Dr, Westlake OH"></div>
+    <div class="fg"><label>Contract Status</label><select id="pstatus"><option>Active</option><option>Prospect</option><option>Lapsed</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="pnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePropModal()">Cancel</button>
+      <button class="btn bp" onclick="saveProp()">Save Property</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOB INTAKE -->
+<div class="panel" id="panel-intake">
+  <div class="ph"><div><div class="ptitle">Job Intake</div><div class="psub">New work orders against a property</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openJobModal()">+ New Job</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Scope</th><th>Target Date</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="jtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="jobmodal">
+  <div class="mbox">
+    <div class="mtitle">New Job</div>
+    <div class="fg"><label>Property</label><select id="jproperty"></select></div>
+    <div class="fg"><label>Scope Requested</label><textarea id="jscope" rows="2" placeholder="Spring cleanup, mulch beds, trim hedges"></textarea></div>
+    <div class="fr"><div class="fg"><label>Target Date</label><input id="jdate" type="date"></div><div class="fg"><label>Status</label><select id="jstatus"><option>Requested</option><option>Scheduled</option><option>In Progress</option><option>Complete</option></select></div></div>
+    <div class="fg"><label>Site Notes</label><textarea id="jnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeJobModal()">Cancel</button>
+      <button class="btn bp" onclick="saveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUOTING -->
+<div class="panel" id="panel-quotes">
+  <div class="ph"><div><div class="ptitle">Quoting / Estimating</div><div class="psub">Contract work quotes for HOA and commercial properties</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openQuoteModal()">+ New Quote</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Total (Mid)</th><th>Status</th><th>Valid Until</th><th>Actions</th></tr></thead>
+    <tbody id="qtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="quotemodal">
+  <div class="mbox">
+    <div class="mtitle">New Quote</div>
+    <div class="fg"><label>Property</label><select id="qproperty"></select></div>
+    <div class="fg"><label>Line Items (one per line: description, amount)</label><textarea id="qlines" rows="4" placeholder="Weekly mowing, 2400&#10;Quarterly fertilization, 1800"></textarea></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="qstatus"><option>Draft</option><option>Sent</option><option>Accepted</option><option>Rejected</option></select></div><div class="fg"><label>Valid Until</label><input id="qvalid" type="date"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeQuoteModal()">Cancel</button>
+      <button class="btn bp" onclick="saveQuote()">Save Quote</button>
+    </div>
+  </div>
+</div>
+
+<!-- GOLF COURSE MODULE -->
+<div class="panel" id="panel-golfcourse">
+  <div class="ph"><div><div class="ptitle">Golf Course Module</div><div class="psub">Per-hole / per-zone status board &mdash; Phase 1: manual entry, GPS walk-mapping deferred (see scope doc)</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openZoneModal()">+ Add Zone</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="fg" style="max-width:280px"><label>Property</label><select id="gcproperty" onchange="rGolf()"></select></div>
+    <div class="tw"><table><thead><tr><th>Hole / Zone</th><th>Acreage</th><th>Last Serviced</th><th>Condition</th><th>Actions</th></tr></thead>
+    <tbody id="gtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="zonemodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Zone</div>
+    <div class="fg"><label>Property</label><select id="zproperty"></select></div>
+    <div class="fr"><div class="fg"><label>Hole / Zone Name</label><input id="zname" placeholder="Hole 7 / Practice Green"></div><div class="fg"><label>Acreage</label><input id="zacreage" type="number" step="0.1" placeholder="1.2"></div></div>
+    <div class="fg"><label>Last Serviced</label><input id="zserviced" type="date"></div>
+    <div class="fg"><label>Condition Note</label><textarea id="zcondition" rows="2" placeholder="Green mowed, bunker sand low"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeZoneModal()">Cancel</button>
+      <button class="btn bp" onclick="saveZone()">Save Zone</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairngrounds';
+var PROXY='https://sairn.vercel.app/api/claude';
+// Client-side prefix allowlist -- cosmetic format check only, per the
+// existing platform convention (see sairnbiz.html's VALID comment). Real
+// validation is server-side in api/_lib/license.js once a GRD- row is
+// provisioned (Michael's step, see SAIRNGROUNDS-SCOPE.md section 4).
+var VALID=['GRD-','DEMO-','SAIRN-'];
+var zid=null,jid=null,qid=null,pid=null,aiHist=[];
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fdate(d){if(!d)return'--';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key. Try GRD-DEMO-2026';return;}
+  st('grd_lic',k);$('gate').style.display='none';$('role').classList.add('on');
+}
+
+function applyRole(role){
+  st('grd_role',role);
+  $('role').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=role;
+  init();
+}
+
+function doLogout(){
+  st('grd_role',null);
+  $('app').classList.remove('on');$('role').classList.add('on');toast('Logged out');
+}
+
+function isMobileNav(){return window.matchMedia('(max-width:768px)').matches;}
+function updateAsideA11y(){
+  var a=$('aside');if(!a)return;
+  var hiddenOffCanvas=isMobileNav()&&!a.classList.contains('on');
+  a.setAttribute('aria-hidden',hiddenOffCanvas?'true':'false');
+  if(hiddenOffCanvas)a.setAttribute('inert','');else a.removeAttribute('inert');
+}
+window.addEventListener('resize',updateAsideA11y);
+
+function toggleNav(){
+  var a=$('aside');if(!a)return;
+  var open=a.classList.toggle('on');
+  $('scrim').classList.toggle('on',open);
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded',open?'true':'false');
+  updateAsideA11y();
+  if(open){var first=a.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');if(first)first.focus();}
+}
+function closeNav(){
+  var a=$('aside');var wasOpen=a&&a.classList.contains('on');
+  if(a)a.classList.remove('on');
+  $('scrim').classList.remove('on');
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded','false');
+  updateAsideA11y();
+  if(wasOpen&&isMobileNav()&&t)t.focus();
+}
+document.addEventListener('keydown',function(e){
+  var a=$('aside');
+  if(!a||!a.classList.contains('on')||!isMobileNav())return;
+  if(e.key==='Escape'){closeNav();return;}
+  if(e.key==='Tab'){
+    var f=a.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if(!f.length)return;
+    var first=f[0],last=f[f.length-1];
+    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+  }
+});
+
+function nav(id){
+  closeNav();
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+}
+
+// === SEED DATA -- guarded, only seeds when the key is absent (not just
+// falsy -- an emptied array stays empty, per the platform's standing trap
+// note in SAIRNBUILD-SCOPE.md section 5). ===
+function seed(){
+  if(ld('grd_seeded',false))return;
+  st('grd_properties',[
+    {id:'P-001',name:'Fairview Golf Club',type:'golf',contact:'Jane Reynolds',phone:'(440) 555-0120',email:'jane@fairview.example',acreage:145,address:'4200 Fairway Dr, Westlake OH',status:'Active',notes:'18-hole championship course'},
+    {id:'P-002',name:'Rocky River Estates HOA',type:'hoa',contact:'Tom Baird',phone:'(440) 555-0121',email:'tbaird@rrehoa.example',acreage:22,address:'110 Estates Blvd, Rocky River OH',status:'Active',notes:'Common areas + entrance beds'},
+    {id:'P-003',name:'Lakeshore Corporate Park',type:'commercial',contact:'Priya Shah',phone:'(440) 555-0122',email:'pshah@lakeshorecp.example',acreage:38,address:'900 Lakeshore Pkwy, Avon Lake OH',status:'Prospect',notes:'Quoting weekly mowing + seasonal color'}
+  ]);
+  st('grd_jobs',[
+    {id:'J-001',property_id:'P-001',scope:'Fairway aerification, all 18 holes',date:daysFromNow(3),status:'Scheduled',notes:''},
+    {id:'J-002',property_id:'P-002',scope:'Spring cleanup, mulch beds, trim hedges',date:daysFromNow(-2),status:'In Progress',notes:'Weather delayed start by one day'},
+    {id:'J-003',property_id:'P-001',scope:'Bunker sand top-off, holes 4-9',date:daysFromNow(7),status:'Requested',notes:''}
+  ]);
+  st('grd_quotes',[
+    {id:'Q-001',property_id:'P-003',lines:[{d:'Weekly mowing (Apr-Oct)',a:14400},{d:'Seasonal color rotation',a:2200}],status:'Sent',valid:daysFromNow(21)},
+    {id:'Q-002',property_id:'P-002',lines:[{d:'Fall cleanup',a:1800}],status:'Accepted',valid:daysFromNow(-5)}
+  ]);
+  st('grd_golf_zones',[
+    {id:'Z-001',property_id:'P-001',name:'Hole 1 Fairway',acreage:2.8,serviced:daysFromNow(-1),condition:'Freshly mowed, in good shape'},
+    {id:'Z-002',property_id:'P-001',name:'Hole 1 Green',acreage:0.4,serviced:daysFromNow(-1),condition:'Rolled this morning, fast'},
+    {id:'Z-003',property_id:'P-001',name:'Practice Range',acreage:3.1,serviced:daysFromNow(-4),condition:'Divots need filling'}
+  ]);
+  st('grd_seeded',true);
+}
+function daysFromNow(n){var d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+
+function propName(id){var p=ld('grd_properties',[]).find(function(x){return x.id===id;});return p?p.name:'--';}
+function fillPropertySelects(){
+  var props=ld('grd_properties',[]);
+  var opts=props.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join('');
+  ['jproperty','qproperty','gcproperty','zproperty'].forEach(function(id){
+    var el=$(id);if(!el)return;var cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;
+  });
+}
+
+function init(){
+  seed();
+  fillPropertySelects();
+  rDash();rProps();rJobs();rQuotes();rGolf();
+  updateAsideA11y();
+  sairnLoadWeather();
+}
+
+function rDash(){
+  var props=ld('grd_properties',[]),jobs=ld('grd_jobs',[]),quotes=ld('grd_quotes',[]),zones=ld('grd_golf_zones',[]);
+  $('k-props').textContent=props.filter(function(p){return p.status==='Active';}).length;
+  $('k-jobs').textContent=jobs.filter(function(j){return j.status!=='Complete';}).length;
+  var openQ=quotes.filter(function(q){return q.status==='Draft'||q.status==='Sent';});
+  var openAmt=openQ.reduce(function(s,q){return s+q.lines.reduce(function(ss,l){return ss+(l.a||0);},0);},0);
+  $('k-quotes').textContent=openQ.length;$('k-quotesamt').textContent=fmt(openAmt)+' pending';
+  $('k-zones').textContent=zones.length;
+  var acts=[];
+  jobs.forEach(function(j){acts.push({t:H(propName(j.property_id))+' - '+H(j.scope),d:j.date});});
+  $('d-activity').innerHTML=acts.length?acts.sort(function(a,b){return new Date(b.d)-new Date(a.d);}).slice(0,5).map(function(a){return'<div class="srow"><span>'+a.t+'</span><span style="font-size:11px;color:var(--muted)">'+fdate(a.d)+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No activity recorded yet</div>';
+  var actions=[];
+  jobs.filter(function(j){return j.status==='Requested';}).forEach(function(j){actions.push({t:H(propName(j.property_id))+' job needs scheduling',b:'Requested',c:'bw'});});
+  quotes.filter(function(q){return q.status==='Sent';}).forEach(function(q){actions.push({t:H(propName(q.property_id))+' quote awaiting response',b:'Sent',c:'bb'});});
+  $('d-actions').innerHTML=actions.length?actions.map(function(a){return'<div class="srow"><span>'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
+}
+
+// === PROPERTIES ===
+function rProps(){
+  var props=ld('grd_properties',[]);
+  var q=($('psrch')&&$('psrch').value||'').toLowerCase();
+  var filtered=q?props.filter(function(p){return (p.name+p.type+p.contact).toLowerCase().indexOf(q)>-1;}):props;
+  $('ptbody').innerHTML=filtered.map(function(p){
+    var sc={Active:'bg',Prospect:'bb',Lapsed:'bx'}[p.status]||'bx';
+    return '<tr><td><strong>'+H(p.name)+'</strong></td><td>'+H(p.type)+'</td><td>'+H(p.contact)+'</td><td>'+H(p.acreage)+' ac</td><td><span class="badge '+sc+'">'+H(p.status)+'</span></td><td><button class="btn bo bs" onclick="openPropModal(\''+p.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No properties yet</td></tr>';
+}
+function filterProps(){rProps();}
+function openPropModal(id){
+  pid=id||null;
+  var p=id?ld('grd_properties',[]).find(function(x){return x.id===id;}):null;
+  $('pname').value=p?p.name:'';$('ptype').value=p?p.type:'golf';$('pacreage').value=p?p.acreage:'';
+  $('pcontact').value=p?p.contact:'';$('pphone').value=p?p.phone:'';$('pemail').value=p?p.email:'';
+  $('paddress').value=p?p.address:'';$('pstatus').value=p?p.status:'Active';$('pnotes').value=p?p.notes:'';
+  $('propmodal').classList.add('on');
+}
+function closePropModal(){$('propmodal').classList.remove('on');}
+function saveProp(){
+  var name=$('pname').value.trim();
+  if(!name){toast('Property name is required');return;}
+  var props=ld('grd_properties',[]);
+  var rec={id:pid||('P-'+Date.now()),name:name,type:$('ptype').value,acreage:Number($('pacreage').value||0),
+    contact:$('pcontact').value.trim(),phone:$('pphone').value.trim(),email:$('pemail').value.trim(),
+    address:$('paddress').value.trim(),status:$('pstatus').value,notes:$('pnotes').value.trim()};
+  if(pid){props=props.map(function(p){return p.id===pid?rec:p;});}else{props.push(rec);}
+  st('grd_properties',props);closePropModal();fillPropertySelects();rProps();rDash();toast('Property saved');
+}
+
+// === JOB INTAKE ===
+function rJobs(){
+  var jobs=ld('grd_jobs',[]);
+  $('jtbody').innerHTML=jobs.map(function(j){
+    var sc={Requested:'bw',Scheduled:'bb','In Progress':'bb',Complete:'bg'}[j.status]||'bx';
+    return '<tr><td>'+H(propName(j.property_id))+'</td><td>'+H(j.scope)+'</td><td>'+fdate(j.date)+'</td><td><span class="badge '+sc+'">'+H(j.status)+'</span></td><td><button class="btn bo bs" onclick="openJobModal(\''+j.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No jobs yet</td></tr>';
+}
+function openJobModal(id){
+  jid=id||null;fillPropertySelects();
+  var j=id?ld('grd_jobs',[]).find(function(x){return x.id===id;}):null;
+  $('jproperty').value=j?j.property_id:'';$('jscope').value=j?j.scope:'';
+  $('jdate').value=j?j.date:'';$('jstatus').value=j?j.status:'Requested';$('jnotes').value=j?j.notes:'';
+  $('jobmodal').classList.add('on');
+}
+function closeJobModal(){$('jobmodal').classList.remove('on');}
+function saveJob(){
+  var propertyId=$('jproperty').value,scope=$('jscope').value.trim();
+  if(!propertyId||!scope){toast('Property and scope are required');return;}
+  var jobs=ld('grd_jobs',[]);
+  var rec={id:jid||('J-'+Date.now()),property_id:propertyId,scope:scope,date:$('jdate').value,status:$('jstatus').value,notes:$('jnotes').value.trim()};
+  if(jid){jobs=jobs.map(function(j){return j.id===jid?rec:j;});}else{jobs.push(rec);}
+  st('grd_jobs',jobs);closeJobModal();rJobs();rDash();toast('Job saved');
+}
+
+// === QUOTING ===
+function rQuotes(){
+  var quotes=ld('grd_quotes',[]);
+  $('qtbody').innerHTML=quotes.map(function(q){
+    var total=q.lines.reduce(function(s,l){return s+(l.a||0);},0);
+    var sc={Draft:'bx',Sent:'bb',Accepted:'bg',Rejected:'br'}[q.status]||'bx';
+    return '<tr><td>'+H(propName(q.property_id))+'</td><td>'+fmt(total)+'</td><td><span class="badge '+sc+'">'+H(q.status)+'</span></td><td>'+fdate(q.valid)+'</td><td><button class="btn bo bs" onclick="openQuoteModal(\''+q.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No quotes yet</td></tr>';
+}
+function openQuoteModal(id){
+  qid=id||null;fillPropertySelects();
+  var q=id?ld('grd_quotes',[]).find(function(x){return x.id===id;}):null;
+  $('qproperty').value=q?q.property_id:'';
+  $('qlines').value=q?q.lines.map(function(l){return l.d+', '+l.a;}).join('\n'):'';
+  $('qstatus').value=q?q.status:'Draft';$('qvalid').value=q?q.valid:'';
+  $('quotemodal').classList.add('on');
+}
+function closeQuoteModal(){$('quotemodal').classList.remove('on');}
+function saveQuote(){
+  var propertyId=$('qproperty').value;
+  if(!propertyId){toast('Property is required');return;}
+  var lines=$('qlines').value.split('\n').map(function(l){return l.trim();}).filter(Boolean).map(function(l){
+    var parts=l.split(',');var amt=Number((parts.pop()||'0').trim());return {d:parts.join(',').trim(),a:isNaN(amt)?0:amt};
+  });
+  var quotes=ld('grd_quotes',[]);
+  var rec={id:qid||('Q-'+Date.now()),property_id:propertyId,lines:lines,status:$('qstatus').value,valid:$('qvalid').value};
+  if(qid){quotes=quotes.map(function(q){return q.id===qid?rec:q;});}else{quotes.push(rec);}
+  st('grd_quotes',quotes);closeQuoteModal();rQuotes();rDash();toast('Quote saved');
+}
+
+// === GOLF COURSE MODULE ===
+function rGolf(){
+  var zones=ld('grd_golf_zones',[]);
+  var propFilter=$('gcproperty')?$('gcproperty').value:'';
+  var filtered=propFilter?zones.filter(function(z){return z.property_id===propFilter;}):zones;
+  $('gtbody').innerHTML=filtered.map(function(z){
+    return '<tr><td><strong>'+H(z.name)+'</strong></td><td>'+H(z.acreage)+' ac</td><td>'+fdate(z.serviced)+'</td><td>'+H(z.condition)+'</td><td><button class="btn bo bs" onclick="openZoneModal(\''+z.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No zones tracked yet</td></tr>';
+}
+function openZoneModal(id){
+  zid=id||null;fillPropertySelects();
+  var z=id?ld('grd_golf_zones',[]).find(function(x){return x.id===id;}):null;
+  $('zproperty').value=z?z.property_id:($('gcproperty')?$('gcproperty').value:'');
+  $('zname').value=z?z.name:'';$('zacreage').value=z?z.acreage:'';
+  $('zserviced').value=z?z.serviced:'';$('zcondition').value=z?z.condition:'';
+  $('zonemodal').classList.add('on');
+}
+function closeZoneModal(){$('zonemodal').classList.remove('on');}
+function saveZone(){
+  var propertyId=$('zproperty').value,name=$('zname').value.trim();
+  if(!propertyId||!name){toast('Property and zone name are required');return;}
+  var zones=ld('grd_golf_zones',[]);
+  var rec={id:zid||('Z-'+Date.now()),property_id:propertyId,name:name,acreage:Number($('zacreage').value||0),
+    serviced:$('zserviced').value,condition:$('zcondition').value.trim()};
+  if(zid){zones=zones.map(function(z){return z.id===zid?rec:z;});}else{zones.push(rec);}
+  st('grd_golf_zones',zones);closeZoneModal();rGolf();rDash();toast('Zone saved');
+}
+
+// === AI ASSISTANT ===
+function sendAI(){var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
+function askAI(q){$('ainp').value=q;sendAI();}
+function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Conversation cleared.</div>';}
+function addMsg(t,role){var c=$('achat');var d=document.createElement('div');d.className=role==='u'?'amu':'ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function callAI(msg){
+  var props=ld('grd_properties',[]);
+  var ctx='You are the AI grounds operations assistant for SAIRNgrounds, used by a golf course / HOA / commercial grounds operator managing '+props.length+' properties. Be concise, practical, and turf/landscaping-industry-specific. No fluff.';
+  aiHist.push({role:'user',content:msg});addMsg('Thinking...','a');
+  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
+  .then(function(r){return r.json();}).then(function(d){
+    var c=$('achat');var msgs=c.querySelectorAll('.ama');if(msgs.length)msgs[msgs.length-1].remove();
+    var rep=(d.content&&d.content[0]&&d.content[0].text)||'No response.';aiHist.push({role:'assistant',content:rep});addMsg(rep,'a');
+  }).catch(function(){var c=$('achat');var msgs=c.querySelectorAll('.ama');if(msgs.length)msgs[msgs.length-1].remove();addMsg('Connection error.','a');});
+}
+
+// === WEATHER COMMAND ENGINE (Pattern 12) ===
+// Ported from stonedesk.html:14153-14198, not rebuilt -- same Open-Meteo
+// call, same go/no-go thresholds. Unlike StoneDesk (exec-role-gated),
+// this app shows it to every role once logged in -- crew go/no-go is the
+// #1 daily question for this persona (SAIRNGROUNDS-SCOPE.md section 1),
+// not an executive-only signal.
+async function sairnLoadWeather() {
+  var bar=$('grd-weather-bar');
+  if(!bar)return;
+  try {
+    if(!navigator.geolocation){$('grd-wx-desc').textContent='Location unavailable';return;}
+    navigator.geolocation.getCurrentPosition(async function(pos){
+      var lat=pos.coords.latitude,lon=pos.coords.longitude;
+      var url='https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph';
+      try {
+        var r=await fetch(url);
+        var data=await r.json();
+        var cw=data.current_weather;
+        var temp=Math.round(cw.temperature);
+        var wind=Math.round(cw.windspeed);
+        var wc=cw.weathercode;
+        var icons={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',61:'🌧',71:'🌨',80:'🌦',95:'⛈'};
+        var icon=icons[wc]||(wc<=3?'☀️':wc<=60?'⛅':'🌧');
+        var desc=temp+'°F · Wind '+wind+'mph';
+        var goGo=temp>32&&temp<100&&wind<25&&[61,71,80,95].indexOf(wc)===-1;
+        $('grd-wx-icon').textContent=icon;
+        $('grd-wx-temp').textContent=temp+'°F';
+        $('grd-wx-desc').textContent=desc;
+        $('grd-wx-status').textContent=goGo?'Crews Go':'Check Conditions';
+        $('grd-wx-status').style.color=goGo?'#BBF7D0':'#FDE68A';
+      } catch(e) { $('grd-wx-desc').textContent='Weather unavailable'; }
+    }, function(){ $('grd-wx-desc').textContent='Location denied'; });
+  } catch(e) {}
+}
+window.sairnLoadWeather=sairnLoadWeather;
+
+(function(){
+  var k=ld('grd_lic',null);if(k){$('gate').style.display='none';$('role').classList.add('on');}
+})();
+</script>
+</body>
+</html>

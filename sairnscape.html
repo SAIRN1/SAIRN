@@ -133,6 +133,10 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
   <div class="nav-r">
     <div class="nav-badge">SAIRN Technologies</div>
     <button class="nav-cta" onclick="showPage('app')">Open App</button>
+    <!-- Real Phase 1 panel-based app (SAIRNSCAPE-SCOPE.md), distinct from
+         the chat-demo #appPage above -- separate entry point rather than
+         replacing the existing marketing/demo flow. -->
+    <button class="nav-cta" style="background:transparent;border:1.5px solid rgba(255,255,255,0.15)" onclick="scpShowRealApp()">Business Login</button>
   </div>
 </nav>
 
@@ -1050,5 +1054,593 @@ if (document.readyState === 'loading') {
 })();
 
 </script>
+
+<!-- =====================================================================
+     REAL PHASE 1 APP -- SAIRNSCAPE-SCOPE.md
+     Everything above this point is the original marketing page + 5-mode
+     chat demo (#homePage / #appPage) -- kept exactly as-is, not the
+     architecture this section is built on. This is new construction,
+     namespaced with an "scp" prefix throughout (ids, classes, JS globals)
+     so nothing here can collide with the demo's own code above. Entry
+     point: the "Business Login" nav button calls scpShowRealApp().
+     ===================================================================== -->
+<style>
+#scp-real-app{display:none;position:fixed;inset:0;z-index:2000;background:#F8FAFC;font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;font-size:14px;color:#0F172A;}
+#scp-real-app.on{display:block;}
+#scp-real-app *{box-sizing:border-box;}
+#scp-gate{position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#22C55E);display:flex;align-items:center;justify-content:center;z-index:2099;}
+#scp-gate .gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+#scp-gate .glogo{font-size:28px;font-weight:800;color:#15803D;letter-spacing:-1px;margin-bottom:4px;}
+#scp-gate .gsub{color:#64748B;font-size:13px;margin-bottom:28px;}
+#scp-gate .ginp{width:100%;border:2px solid #E2E8F0;border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+#scp-gate .ginp:focus{border-color:#22C55E;}
+#scp-gate .gbtn{width:100%;background:#22C55E;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+#scp-gate .gbtn:hover{background:#15803D;}
+#scp-gate .gerr{color:#EF4444;font-size:13px;margin-top:8px;min-height:18px;}
+#scp-gate .gback{font-size:12px;color:#94A3B8;margin-top:14px;cursor:pointer;}
+#scp-role{position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#22C55E);display:none;align-items:center;justify-content:center;z-index:2098;}
+#scp-role.on{display:flex;}
+#scp-role .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+#scp-role .plogo{font-size:24px;font-weight:800;color:#15803D;margin-bottom:16px;}
+.scp-rolebtn{display:block;width:100%;text-align:left;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:14px 16px;margin-bottom:10px;font-size:14px;font-weight:600;cursor:pointer;}
+.scp-rolebtn:hover{background:#F0FDF4;border-color:#22C55E;color:#15803D;}
+#scp-app{display:none;flex-direction:column;height:100vh;}
+#scp-app.on{display:flex;}
+#scp-app header{height:56px;background:#15803D;display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
+#scp-app .hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+#scp-app .hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+#scp-app .hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+#scp-app .huser{color:rgba(255,255,255,.85);font-size:13px;}
+#scp-app .hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+#scp-app .hbtn:hover{background:rgba(255,255,255,.25);}
+.scp-navtog{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;display:none;}
+.scp-wrap{display:flex;flex:1;overflow:hidden;}
+#scp-aside{width:220px;background:#fff;border-right:1px solid #E2E8F0;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;transition:transform .2s;}
+.scp-ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:#64748B;letter-spacing:.8px;text-transform:uppercase;}
+.scp-sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:#0F172A;font-size:13px;font-weight:500;}
+.scp-sb:hover{background:#F0FDF4;color:#15803D;}
+.scp-sb.on{background:#F0FDF4;color:#15803D;font-weight:700;}
+.scp-sico{font-size:15px;width:20px;text-align:center;}
+.scp-sfoot{margin-top:auto;padding:12px;border-top:1px solid #E2E8F0;font-size:11px;color:#64748B;text-align:center;}
+#scp-scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2040;}
+#scp-scrim.on{display:block;}
+@media (max-width:768px){
+  .scp-navtog{display:block;}
+  #scp-aside{position:fixed;top:56px;bottom:0;left:0;z-index:2050;transform:translateX(-100%);}
+  #scp-aside.on{transform:translateX(0);}
+}
+#scp-main{flex:1;overflow-y:auto;padding:24px;}
+.scp-panel{display:none;}
+.scp-panel.on{display:block;}
+.scp-ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.scp-ptitle{font-size:22px;font-weight:800;}
+.scp-psub{color:#64748B;font-size:13px;margin-top:2px;}
+.scp-pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.scp-btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;min-height:40px;}
+.scp-bp{background:#22C55E;color:#fff;}
+.scp-bp:hover{background:#15803D;}
+.scp-bo{background:#fff;border:1px solid #E2E8F0;color:#0F172A;}
+.scp-bo:hover{border-color:#22C55E;color:#15803D;}
+.scp-bs{padding:6px 12px;font-size:12px;min-height:36px;}
+.scp-krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.scp-kpi{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.scp-klbl{font-size:11px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.scp-kval{font-size:24px;font-weight:800;color:#15803D;margin:4px 0;}
+.scp-kt{font-size:11px;color:#22C55E;}
+@media (max-width:768px){.scp-krow{grid-template-columns:repeat(2,1fr);}}
+.scp-card{background:#fff;border:1px solid #E2E8F0;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;}
+.scp-ch{padding:14px 18px;border-bottom:1px solid #E2E8F0;display:flex;align-items:center;gap:10px;}
+.scp-ct{font-size:14px;font-weight:700;}
+.scp-cb{padding:16px 18px;}
+.scp-tw{overflow-x:auto;}
+#scp-real-app table{width:100%;border-collapse:collapse;font-size:13px;}
+#scp-real-app th{background:#F8FAFC;padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #E2E8F0;}
+#scp-real-app td{padding:10px 12px;border-bottom:1px solid #E2E8F0;vertical-align:middle;}
+#scp-real-app tr:last-child td{border-bottom:none;}
+#scp-real-app tr:hover td{background:#F0FDF4;}
+.scp-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.scp-bg{background:#DCFCE7;color:#15803D;}
+.scp-bb{background:#DBEAFE;color:#1D4ED8;}
+.scp-bw{background:#FEF3C7;color:#92400E;}
+.scp-br{background:#FEE2E2;color:#991B1B;}
+.scp-bx{background:#F1F5F9;color:#475569;}
+.scp-fg{margin-bottom:14px;}
+#scp-real-app label{display:block;font-size:12px;font-weight:600;color:#64748B;margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+#scp-real-app input,#scp-real-app select,#scp-real-app textarea{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;font-family:inherit;min-height:40px;}
+#scp-real-app input:focus,#scp-real-app select:focus,#scp-real-app textarea:focus{border-color:#22C55E;}
+#scp-real-app textarea{resize:vertical;min-height:80px;}
+.scp-fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media (max-width:768px){.scp-fr{grid-template-columns:1fr;}}
+.scp-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:2200;align-items:center;justify-content:center;padding:16px;}
+.scp-modal.on{display:flex;}
+.scp-mbox{background:#fff;border-radius:14px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+.scp-mtitle{font-size:17px;font-weight:800;margin-bottom:18px;}
+.scp-achat{background:#F8FAFC;border-radius:10px;padding:14px;min-height:180px;max-height:320px;overflow-y:auto;font-size:13px;line-height:1.6;margin-bottom:12px;}
+.scp-amu{background:#22C55E;color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;margin:6px 0 6px 40px;font-size:13px;}
+.scp-ama{background:#fff;border:1px solid #E2E8F0;border-radius:10px 10px 10px 2px;padding:8px 12px;margin:6px 40px 6px 0;font-size:13px;}
+.scp-air{display:flex;gap:8px;}
+.scp-air input{flex:1;}
+.scp-qts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.scp-qt{background:#F0FDF4;border:1px solid #86EFAC;color:#15803D;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;}
+.scp-qt:hover{background:#22C55E;color:#fff;}
+#scp-toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:2999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#scp-toast.on{opacity:1;transform:translateY(0);}
+.scp-srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #E2E8F0;}
+.scp-srow:last-child{border-bottom:none;}
+</style>
+
+<div id="scp-real-app">
+<div id="scp-toast"></div>
+
+<div id="scp-gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNscape</div>
+    <div class="gsub">Landscaping Business Operations &mdash; Enter License Key</div>
+    <input class="ginp" id="scp-gkey" placeholder="SCP-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')scpGateGo()">
+    <button class="gbtn" onclick="scpGateGo()">Activate</button>
+    <div class="gerr" id="scp-gerr"></div>
+    <div class="gback" onclick="scpCloseRealApp()">&larr; Back to site</div>
+  </div>
+</div>
+
+<div id="scp-role">
+  <div class="pbox">
+    <div class="plogo">SAIRNscape</div>
+    <div style="font-size:13px;color:#64748B;margin-bottom:18px">Select your role for this session</div>
+    <button class="scp-rolebtn" onclick="scpApplyRole('Owner')">&#127793; Owner</button>
+    <button class="scp-rolebtn" onclick="scpApplyRole('Crew Lead')">&#128119; Crew Lead</button>
+    <button class="scp-rolebtn" onclick="scpApplyRole('Office')">&#128188; Office</button>
+  </div>
+</div>
+
+<div id="scp-app">
+  <header>
+    <button class="scp-navtog" onclick="scpToggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="scp-aside">&#9776;</button>
+    <div class="hlogo">SAIRNscape</div>
+    <div class="hbadge">Landscaping Ops</div>
+    <div class="hr">
+      <span class="huser" id="scp-huser">Owner</span>
+      <button class="hbtn" onclick="scpCloseRealApp()">Site</button>
+      <button class="hbtn" onclick="scpDoLogout()">Logout</button>
+    </div>
+  </header>
+  <div id="scp-scrim" onclick="scpCloseNav()"></div>
+  <div class="scp-wrap">
+    <aside id="scp-aside" aria-label="Main navigation">
+      <div class="scp-ss">Overview</div>
+      <button class="scp-sb on" id="scp-sb-dashboard" onclick="scpNav('dashboard')"><span class="scp-sico">&#128202;</span>Dashboard</button>
+      <button class="scp-sb" id="scp-sb-ai" onclick="scpNav('ai')"><span class="scp-sico">&#129302;</span>AI Assistant</button>
+      <div class="scp-ss">Operations</div>
+      <button class="scp-sb" id="scp-sb-customers" onclick="scpNav('customers')"><span class="scp-sico">&#127968;</span>Customers</button>
+      <button class="scp-sb" id="scp-sb-intake" onclick="scpNav('intake')"><span class="scp-sico">&#128203;</span>Job Intake</button>
+      <button class="scp-sb" id="scp-sb-quotes" onclick="scpNav('quotes')"><span class="scp-sico">&#128176;</span>Quoting</button>
+      <button class="scp-sb" id="scp-sb-schedule" onclick="scpNav('schedule')"><span class="scp-sico">&#128197;</span>Scheduling</button>
+      <button class="scp-sb" id="scp-sb-invoices" onclick="scpNav('invoices')"><span class="scp-sico">&#128179;</span>Invoicing</button>
+      <div class="scp-sfoot">SAIRNscape Phase 1 &middot; <span style="color:#22C55E;font-weight:700;">Landscaping Ops</span></div>
+    </aside>
+    <main id="scp-main">
+
+<!-- DASHBOARD -->
+<div class="scp-panel on" id="scp-panel-dashboard">
+  <div class="scp-ph"><div><div class="scp-ptitle">Landscaping Dashboard</div><div class="scp-psub">Today's jobs and routes across all customers</div></div></div>
+  <div class="scp-krow">
+    <div class="scp-kpi"><div class="scp-klbl">Active Customers</div><div class="scp-kval" id="scp-k-custs">0</div><div class="scp-kt">On the books</div></div>
+    <div class="scp-kpi"><div class="scp-klbl">Open Jobs</div><div class="scp-kval" id="scp-k-jobs">0</div><div class="scp-kt">In progress</div></div>
+    <div class="scp-kpi"><div class="scp-klbl">Open Quotes</div><div class="scp-kval" id="scp-k-quotes">0</div><div class="scp-kt" id="scp-k-quotesamt">$0 pending</div></div>
+    <div class="scp-kpi"><div class="scp-klbl">Unpaid Invoices</div><div class="scp-kval" id="scp-k-inv">0</div><div class="scp-kt" id="scp-k-invamt">$0 outstanding</div></div>
+  </div>
+  <div class="scp-card"><div class="scp-ch"><span class="scp-ct">Upcoming Schedule</span></div><div class="scp-cb" id="scp-d-schedule"></div></div>
+</div>
+
+<!-- AI -->
+<div class="scp-panel" id="scp-panel-ai">
+  <div class="scp-ph"><div><div class="scp-ptitle">AI Landscaping Assistant</div><div class="scp-psub">Powered by Claude</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bo scp-bs" onclick="scpClrAI()">Clear</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-qts">
+      <span class="scp-qt" onclick="scpAskAI('Draft a quote for weekly mowing plus fall cleanup for a 0.5 acre residential yard')">Draft Quote</span>
+      <span class="scp-qt" onclick="scpAskAI('How should I price a mulch installation job, materials plus labor?')">Pricing Help</span>
+      <span class="scp-qt" onclick="scpAskAI('Write a friendly reminder text to a customer about tomorrow\'s scheduled visit')">Reminder Text</span>
+    </div>
+    <div class="scp-achat" id="scp-achat"><div style="color:#64748B;text-align:center;padding:40px 0;">Ask anything about quoting, scheduling, or customer jobs.</div></div>
+    <div class="scp-air"><input id="scp-ainp" placeholder="Ask about customers, quotes, scheduling..." onkeydown="if(event.key==='Enter')scpSendAI()"><button class="scp-btn scp-bp" onclick="scpSendAI()">Send</button></div>
+  </div></div>
+</div>
+
+<!-- CUSTOMERS -->
+<div class="scp-panel" id="scp-panel-customers">
+  <div class="scp-ph"><div><div class="scp-ptitle">Customer Directory</div><div class="scp-psub">Residential and small-commercial accounts</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenCustModal()">+ Add Customer</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-tw"><table><thead><tr><th>Name</th><th>Service Type</th><th>Recurring</th><th>Phone</th><th>Actions</th></tr></thead>
+    <tbody id="scp-ctbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="scp-modal" id="scp-custmodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">Add / Edit Customer</div>
+    <div class="scp-fg"><label>Name</label><input id="scp-cname" placeholder="Diane Ferraro"></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Service Type</label><input id="scp-cservice" placeholder="Mowing, mulch, cleanup"></div><div class="scp-fg"><label>Recurring?</label><select id="scp-crecurring"><option value="true">Yes</option><option value="false">No, one-off</option></select></div></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Phone</label><input id="scp-cphone" placeholder="(440) 555-0100"></div><div class="scp-fg"><label>Email</label><input id="scp-cemail" type="email"></div></div>
+    <div class="scp-fg"><label>Address</label><input id="scp-caddress" placeholder="12 Birchwood Ln, Avon OH"></div>
+    <div class="scp-fg"><label>Notes</label><textarea id="scp-cnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseCustModal()">Cancel</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveCust()">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- JOB INTAKE -->
+<div class="scp-panel" id="scp-panel-intake">
+  <div class="scp-ph"><div><div class="scp-ptitle">Job Intake</div><div class="scp-psub">One-off or recurring-tied job capture</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenJobModal()">+ New Job</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Scope</th><th>Target Date</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="scp-jtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="scp-modal" id="scp-jobmodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">New Job</div>
+    <div class="scp-fg"><label>Customer</label><select id="scp-jcustomer"></select></div>
+    <div class="scp-fg"><label>Scope</label><textarea id="scp-jscope" rows="2" placeholder="Weekly mow + edge"></textarea></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Target Date</label><input id="scp-jdate" type="date"></div><div class="scp-fg"><label>Status</label><select id="scp-jstatus"><option>Requested</option><option>Scheduled</option><option>In Progress</option><option>Complete</option></select></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseJobModal()">Cancel</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUOTING -->
+<div class="scp-panel" id="scp-panel-quotes">
+  <div class="scp-ph"><div><div class="scp-ptitle">Quoting</div><div class="scp-psub">Line-item quotes, Low/Mid/High</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenQuoteModal()">+ New Quote</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Total (Mid)</th><th>Status</th><th>Valid Until</th><th>Actions</th></tr></thead>
+    <tbody id="scp-qtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="scp-modal" id="scp-quotemodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">New Quote</div>
+    <div class="scp-fg"><label>Customer</label><select id="scp-qcustomer"></select></div>
+    <div class="scp-fg"><label>Line Items (one per line: description, amount)</label><textarea id="scp-qlines" rows="4" placeholder="Mowing (weekly, Apr-Oct), 1800&#10;Mulch install, 600"></textarea></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Status</label><select id="scp-qstatus"><option>Draft</option><option>Sent</option><option>Accepted</option><option>Rejected</option></select></div><div class="scp-fg"><label>Valid Until</label><input id="scp-qvalid" type="date"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseQuoteModal()">Cancel</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveQuote()">Save Quote</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULING -->
+<div class="scp-panel" id="scp-panel-schedule">
+  <div class="scp-ph"><div><div class="scp-ptitle">Scheduling</div><div class="scp-psub">Recurring routes + one-off jobs</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenSchedModal()">+ Add to Schedule</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Frequency</th><th>Next Date</th><th>Crew</th><th>Actions</th></tr></thead>
+    <tbody id="scp-stbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="scp-modal" id="scp-schedmodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">Add to Schedule</div>
+    <div class="scp-fg"><label>Customer</label><select id="scp-scustomer"></select></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Frequency</label><select id="scp-sfreq"><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="one_off">One-off</option></select></div><div class="scp-fg"><label>Next Date</label><input id="scp-snext" type="date"></div></div>
+    <div class="scp-fg"><label>Assigned Crew</label><input id="scp-screw" placeholder="Crew A"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseSchedModal()">Cancel</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveSched()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVOICING -->
+<div class="scp-panel" id="scp-panel-invoices">
+  <div class="scp-ph"><div><div class="scp-ptitle">Invoicing</div><div class="scp-psub">Bills tied to completed visits/jobs</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenInvModal()">+ New Invoice</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Amount</th><th>Status</th><th>Issued</th><th>Actions</th></tr></thead>
+    <tbody id="scp-itbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="scp-modal" id="scp-invmodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">New Invoice</div>
+    <div class="scp-fg"><label>Customer</label><select id="scp-icustomer"></select></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Amount ($)</label><input id="scp-iamt" type="number" placeholder="180.00"></div><div class="scp-fg"><label>Status</label><select id="scp-istatus"><option>Unpaid</option><option>Paid</option><option>Overdue</option></select></div></div>
+    <div class="scp-fg"><label>Issued Date</label><input id="scp-idate" type="date"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseInvModal()">Cancel</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveInv()">Save Invoice</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+</div>
+
+<script>
+var SCP_APP_ID='sairnscape';
+var SCP_PROXY='https://sairn.vercel.app/api/claude';
+// Cosmetic client-side prefix check only -- real validation is server-side
+// once a SCP- row is provisioned (Michael's step, SAIRNSCAPE-SCOPE.md sec.4).
+var SCP_VALID=['SCP-','DEMO-','SAIRN-'];
+var scpCid=null,scpJid=null,scpQid=null,scpSid=null,scpIid=null,scpAiHist=[];
+
+function scpH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function scpSt(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function scpLd(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
+function scp$(s){return document.getElementById(s);}
+function scpFmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function scpFdate(d){if(!d)return'--';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function scpToast(m,d){var t=scp$('scp-toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+
+function scpShowRealApp(){
+  scp$('scp-real-app').classList.add('on');
+  var k=scpLd('scp_lic',null);
+  if(k){scp$('scp-gate').style.display='none';scp$('scp-role').classList.add('on');}
+}
+window.scpShowRealApp=scpShowRealApp;
+function scpCloseRealApp(){scp$('scp-real-app').classList.remove('on');}
+window.scpCloseRealApp=scpCloseRealApp;
+
+function scpGateGo(){
+  var k=(scp$('scp-gkey').value||'').trim().toUpperCase();
+  var ok=SCP_VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){scp$('scp-gerr').textContent='Invalid key. Try SCP-DEMO-2026';return;}
+  scpSt('scp_lic',k);scp$('scp-gate').style.display='none';scp$('scp-role').classList.add('on');
+}
+
+function scpApplyRole(role){
+  scpSt('scp_role',role);
+  scp$('scp-role').classList.remove('on');scp$('scp-app').classList.add('on');
+  scp$('scp-huser').textContent=role;
+  scpInit();
+}
+
+function scpDoLogout(){
+  scpSt('scp_role',null);
+  scp$('scp-app').classList.remove('on');scp$('scp-role').classList.add('on');scpToast('Logged out');
+}
+
+function scpIsMobileNav(){return window.matchMedia('(max-width:768px)').matches;}
+function scpUpdateAsideA11y(){
+  var a=scp$('scp-aside');if(!a)return;
+  var hiddenOffCanvas=scpIsMobileNav()&&!a.classList.contains('on');
+  a.setAttribute('aria-hidden',hiddenOffCanvas?'true':'false');
+  if(hiddenOffCanvas)a.setAttribute('inert','');else a.removeAttribute('inert');
+}
+window.addEventListener('resize',scpUpdateAsideA11y);
+
+function scpToggleNav(){
+  var a=scp$('scp-aside');if(!a)return;
+  var open=a.classList.toggle('on');
+  scp$('scp-scrim').classList.toggle('on',open);
+  scpUpdateAsideA11y();
+}
+function scpCloseNav(){
+  var a=scp$('scp-aside');if(a)a.classList.remove('on');
+  scp$('scp-scrim').classList.remove('on');
+  scpUpdateAsideA11y();
+}
+
+function scpNav(id){
+  scpCloseNav();
+  document.querySelectorAll('.scp-panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.scp-sb').forEach(function(b){b.classList.remove('on');});
+  var p=scp$('scp-panel-'+id),b=scp$('scp-sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+}
+
+function scpDaysFromNow(n){var d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+
+function scpSeed(){
+  if(scpLd('scp_seeded',false))return;
+  scpSt('scp_customers',[
+    {id:'C-001',name:'Diane Ferraro',service:'Weekly mowing + edge',recurring:true,phone:'(440) 555-0140',email:'dferraro@example.com',address:'12 Birchwood Ln, Avon OH',notes:''},
+    {id:'C-002',name:'Marcus Webb',service:'Seasonal cleanup',recurring:false,phone:'(440) 555-0141',email:'mwebb@example.com',address:'88 Elmwood Ave, Avon Lake OH',notes:'Prefers Friday visits'},
+    {id:'C-003',name:'Nguyen Family',service:'Biweekly mowing + mulch',recurring:true,phone:'(440) 555-0142',email:'nguyenfam@example.com',address:'305 Maple Ct, Bay Village OH',notes:''}
+  ]);
+  scpSt('scp_jobs',[
+    {id:'J-001',customer_id:'C-002',scope:'Fall cleanup, gutter debris, leaf removal',date:scpDaysFromNow(4),status:'Scheduled'},
+    {id:'J-002',customer_id:'C-003',scope:'Mulch install, front beds',date:scpDaysFromNow(-1),status:'In Progress'}
+  ]);
+  scpSt('scp_quotes',[
+    {id:'Q-001',customer_id:'C-002',lines:[{d:'Fall cleanup',a:280}],status:'Sent',valid:scpDaysFromNow(14)}
+  ]);
+  scpSt('scp_schedule',[
+    {id:'S-001',customer_id:'C-001',freq:'weekly',next:scpDaysFromNow(2),crew:'Crew A'},
+    {id:'S-002',customer_id:'C-003',freq:'biweekly',next:scpDaysFromNow(6),crew:'Crew A'}
+  ]);
+  scpSt('scp_invoices',[
+    {id:'I-001',customer_id:'C-001',amount:180,status:'Paid',issued:scpDaysFromNow(-10)},
+    {id:'I-002',customer_id:'C-003',amount:340,status:'Unpaid',issued:scpDaysFromNow(-3)}
+  ]);
+  scpSt('scp_seeded',true);
+}
+
+function scpCustName(id){var c=scpLd('scp_customers',[]).find(function(x){return x.id===id;});return c?c.name:'--';}
+function scpFillCustomerSelects(){
+  var custs=scpLd('scp_customers',[]);
+  var opts=custs.map(function(c){return '<option value="'+scpH(c.id)+'">'+scpH(c.name)+'</option>';}).join('');
+  ['scp-jcustomer','scp-qcustomer','scp-scustomer','scp-icustomer'].forEach(function(id){
+    var el=scp$(id);if(!el)return;var cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;
+  });
+}
+
+function scpInit(){
+  scpSeed();
+  scpFillCustomerSelects();
+  scpRDash();scpRCust();scpRJobs();scpRQuotes();scpRSched();scpRInv();
+  scpUpdateAsideA11y();
+}
+
+function scpRDash(){
+  var custs=scpLd('scp_customers',[]),jobs=scpLd('scp_jobs',[]),quotes=scpLd('scp_quotes',[]),invs=scpLd('scp_invoices',[]),sched=scpLd('scp_schedule',[]);
+  scp$('scp-k-custs').textContent=custs.length;
+  scp$('scp-k-jobs').textContent=jobs.filter(function(j){return j.status!=='Complete';}).length;
+  var openQ=quotes.filter(function(q){return q.status==='Draft'||q.status==='Sent';});
+  var openAmt=openQ.reduce(function(s,q){return s+q.lines.reduce(function(ss,l){return ss+(l.a||0);},0);},0);
+  scp$('scp-k-quotes').textContent=openQ.length;scp$('scp-k-quotesamt').textContent=scpFmt(openAmt)+' pending';
+  var unpaid=invs.filter(function(i){return i.status!=='Paid';});
+  var unpaidAmt=unpaid.reduce(function(s,i){return s+(i.amount||0);},0);
+  scp$('scp-k-inv').textContent=unpaid.length;scp$('scp-k-invamt').textContent=scpFmt(unpaidAmt)+' outstanding';
+  var upcoming=sched.slice().sort(function(a,b){return new Date(a.next)-new Date(b.next);});
+  scp$('scp-d-schedule').innerHTML=upcoming.length?upcoming.map(function(s){return '<div class="scp-srow"><span>'+scpH(scpCustName(s.customer_id))+' &mdash; '+scpH(s.freq)+'</span><span style="font-size:11px;color:#64748B">'+scpFdate(s.next)+'</span></div>';}).join(''):'<div style="color:#64748B;text-align:center;padding:12px;">Nothing scheduled yet</div>';
+}
+
+function scpRCust(){
+  var custs=scpLd('scp_customers',[]);
+  scp$('scp-ctbody').innerHTML=custs.map(function(c){
+    return '<tr><td><strong>'+scpH(c.name)+'</strong></td><td>'+scpH(c.service)+'</td><td><span class="scp-badge '+(c.recurring?'scp-bg':'scp-bx')+'">'+(c.recurring?'Recurring':'One-off')+'</span></td><td>'+scpH(c.phone)+'</td><td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenCustModal(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#64748B;padding:20px">No customers yet</td></tr>';
+}
+function scpOpenCustModal(id){
+  scpCid=id||null;
+  var c=id?scpLd('scp_customers',[]).find(function(x){return x.id===id;}):null;
+  scp$('scp-cname').value=c?c.name:'';scp$('scp-cservice').value=c?c.service:'';
+  scp$('scp-crecurring').value=c?String(c.recurring):'true';
+  scp$('scp-cphone').value=c?c.phone:'';scp$('scp-cemail').value=c?c.email:'';
+  scp$('scp-caddress').value=c?c.address:'';scp$('scp-cnotes').value=c?c.notes:'';
+  scp$('scp-custmodal').classList.add('on');
+}
+function scpCloseCustModal(){scp$('scp-custmodal').classList.remove('on');}
+function scpSaveCust(){
+  var name=scp$('scp-cname').value.trim();
+  if(!name){scpToast('Customer name is required');return;}
+  var custs=scpLd('scp_customers',[]);
+  var rec={id:scpCid||('C-'+Date.now()),name:name,service:scp$('scp-cservice').value.trim(),
+    recurring:scp$('scp-crecurring').value==='true',phone:scp$('scp-cphone').value.trim(),
+    email:scp$('scp-cemail').value.trim(),address:scp$('scp-caddress').value.trim(),notes:scp$('scp-cnotes').value.trim()};
+  if(scpCid){custs=custs.map(function(c){return c.id===scpCid?rec:c;});}else{custs.push(rec);}
+  scpSt('scp_customers',custs);scpCloseCustModal();scpFillCustomerSelects();scpRCust();scpRDash();scpToast('Customer saved');
+}
+
+function scpRJobs(){
+  var jobs=scpLd('scp_jobs',[]);
+  scp$('scp-jtbody').innerHTML=jobs.map(function(j){
+    var sc={Requested:'scp-bw',Scheduled:'scp-bb','In Progress':'scp-bb',Complete:'scp-bg'}[j.status]||'scp-bx';
+    return '<tr><td>'+scpH(scpCustName(j.customer_id))+'</td><td>'+scpH(j.scope)+'</td><td>'+scpFdate(j.date)+'</td><td><span class="scp-badge '+sc+'">'+scpH(j.status)+'</span></td><td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenJobModal(\''+j.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#64748B;padding:20px">No jobs yet</td></tr>';
+}
+function scpOpenJobModal(id){
+  scpJid=id||null;scpFillCustomerSelects();
+  var j=id?scpLd('scp_jobs',[]).find(function(x){return x.id===id;}):null;
+  scp$('scp-jcustomer').value=j?j.customer_id:'';scp$('scp-jscope').value=j?j.scope:'';
+  scp$('scp-jdate').value=j?j.date:'';scp$('scp-jstatus').value=j?j.status:'Requested';
+  scp$('scp-jobmodal').classList.add('on');
+}
+function scpCloseJobModal(){scp$('scp-jobmodal').classList.remove('on');}
+function scpSaveJob(){
+  var customerId=scp$('scp-jcustomer').value,scope=scp$('scp-jscope').value.trim();
+  if(!customerId||!scope){scpToast('Customer and scope are required');return;}
+  var jobs=scpLd('scp_jobs',[]);
+  var rec={id:scpJid||('J-'+Date.now()),customer_id:customerId,scope:scope,date:scp$('scp-jdate').value,status:scp$('scp-jstatus').value};
+  if(scpJid){jobs=jobs.map(function(j){return j.id===scpJid?rec:j;});}else{jobs.push(rec);}
+  scpSt('scp_jobs',jobs);scpCloseJobModal();scpRJobs();scpRDash();scpToast('Job saved');
+}
+
+function scpRQuotes(){
+  var quotes=scpLd('scp_quotes',[]);
+  scp$('scp-qtbody').innerHTML=quotes.map(function(q){
+    var total=q.lines.reduce(function(s,l){return s+(l.a||0);},0);
+    var sc={Draft:'scp-bx',Sent:'scp-bb',Accepted:'scp-bg',Rejected:'scp-br'}[q.status]||'scp-bx';
+    return '<tr><td>'+scpH(scpCustName(q.customer_id))+'</td><td>'+scpFmt(total)+'</td><td><span class="scp-badge '+sc+'">'+scpH(q.status)+'</span></td><td>'+scpFdate(q.valid)+'</td><td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenQuoteModal(\''+q.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#64748B;padding:20px">No quotes yet</td></tr>';
+}
+function scpOpenQuoteModal(id){
+  scpQid=id||null;scpFillCustomerSelects();
+  var q=id?scpLd('scp_quotes',[]).find(function(x){return x.id===id;}):null;
+  scp$('scp-qcustomer').value=q?q.customer_id:'';
+  scp$('scp-qlines').value=q?q.lines.map(function(l){return l.d+', '+l.a;}).join('\n'):'';
+  scp$('scp-qstatus').value=q?q.status:'Draft';scp$('scp-qvalid').value=q?q.valid:'';
+  scp$('scp-quotemodal').classList.add('on');
+}
+function scpCloseQuoteModal(){scp$('scp-quotemodal').classList.remove('on');}
+function scpSaveQuote(){
+  var customerId=scp$('scp-qcustomer').value;
+  if(!customerId){scpToast('Customer is required');return;}
+  var lines=scp$('scp-qlines').value.split('\n').map(function(l){return l.trim();}).filter(Boolean).map(function(l){
+    var parts=l.split(',');var amt=Number((parts.pop()||'0').trim());return {d:parts.join(',').trim(),a:isNaN(amt)?0:amt};
+  });
+  var quotes=scpLd('scp_quotes',[]);
+  var rec={id:scpQid||('Q-'+Date.now()),customer_id:customerId,lines:lines,status:scp$('scp-qstatus').value,valid:scp$('scp-qvalid').value};
+  if(scpQid){quotes=quotes.map(function(q){return q.id===scpQid?rec:q;});}else{quotes.push(rec);}
+  scpSt('scp_quotes',quotes);scpCloseQuoteModal();scpRQuotes();scpRDash();scpToast('Quote saved');
+}
+
+function scpRSched(){
+  var sched=scpLd('scp_schedule',[]);
+  scp$('scp-stbody').innerHTML=sched.map(function(s){
+    return '<tr><td>'+scpH(scpCustName(s.customer_id))+'</td><td>'+scpH(s.freq)+'</td><td>'+scpFdate(s.next)+'</td><td>'+scpH(s.crew)+'</td><td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenSchedModal(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#64748B;padding:20px">Nothing scheduled yet</td></tr>';
+}
+function scpOpenSchedModal(id){
+  scpSid=id||null;scpFillCustomerSelects();
+  var s=id?scpLd('scp_schedule',[]).find(function(x){return x.id===id;}):null;
+  scp$('scp-scustomer').value=s?s.customer_id:'';scp$('scp-sfreq').value=s?s.freq:'weekly';
+  scp$('scp-snext').value=s?s.next:'';scp$('scp-screw').value=s?s.crew:'';
+  scp$('scp-schedmodal').classList.add('on');
+}
+function scpCloseSchedModal(){scp$('scp-schedmodal').classList.remove('on');}
+function scpSaveSched(){
+  var customerId=scp$('scp-scustomer').value;
+  if(!customerId){scpToast('Customer is required');return;}
+  var sched=scpLd('scp_schedule',[]);
+  var rec={id:scpSid||('S-'+Date.now()),customer_id:customerId,freq:scp$('scp-sfreq').value,next:scp$('scp-snext').value,crew:scp$('scp-screw').value.trim()};
+  if(scpSid){sched=sched.map(function(s){return s.id===scpSid?rec:s;});}else{sched.push(rec);}
+  scpSt('scp_schedule',sched);scpCloseSchedModal();scpRSched();scpRDash();scpToast('Schedule saved');
+}
+
+function scpRInv(){
+  var invs=scpLd('scp_invoices',[]);
+  scp$('scp-itbody').innerHTML=invs.map(function(i){
+    var sc={Unpaid:'scp-bw',Paid:'scp-bg',Overdue:'scp-br'}[i.status]||'scp-bx';
+    return '<tr><td>'+scpH(scpCustName(i.customer_id))+'</td><td>'+scpFmt(i.amount)+'</td><td><span class="scp-badge '+sc+'">'+scpH(i.status)+'</span></td><td>'+scpFdate(i.issued)+'</td><td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenInvModal(\''+i.id+'\')">Edit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#64748B;padding:20px">No invoices yet</td></tr>';
+}
+function scpOpenInvModal(id){
+  scpIid=id||null;scpFillCustomerSelects();
+  var i=id?scpLd('scp_invoices',[]).find(function(x){return x.id===id;}):null;
+  scp$('scp-icustomer').value=i?i.customer_id:'';scp$('scp-iamt').value=i?i.amount:'';
+  scp$('scp-istatus').value=i?i.status:'Unpaid';scp$('scp-idate').value=i?i.issued:'';
+  scp$('scp-invmodal').classList.add('on');
+}
+function scpCloseInvModal(){scp$('scp-invmodal').classList.remove('on');}
+function scpSaveInv(){
+  var customerId=scp$('scp-icustomer').value;
+  if(!customerId){scpToast('Customer is required');return;}
+  var invs=scpLd('scp_invoices',[]);
+  var rec={id:scpIid||('I-'+Date.now()),customer_id:customerId,amount:Number(scp$('scp-iamt').value||0),status:scp$('scp-istatus').value,issued:scp$('scp-idate').value};
+  if(scpIid){invs=invs.map(function(i){return i.id===scpIid?rec:i;});}else{invs.push(rec);}
+  scpSt('scp_invoices',invs);scpCloseInvModal();scpRInv();scpRDash();scpToast('Invoice saved');
+}
+
+function scpSendAI(){var inp=scp$('scp-ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';scpAddMsg(m,'u');scpCallAI(m);}
+function scpAskAI(q){scp$('scp-ainp').value=q;scpSendAI();}
+function scpClrAI(){scpAiHist=[];scp$('scp-achat').innerHTML='<div style="color:#64748B;text-align:center;padding:40px 0;">Conversation cleared.</div>';}
+function scpAddMsg(t,role){var c=scp$('scp-achat');var d=document.createElement('div');d.className=role==='u'?'scp-amu':'scp-ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function scpCallAI(msg){
+  var custs=scpLd('scp_customers',[]);
+  var ctx='You are the AI business assistant for SAIRNscape, used by a residential/small-commercial landscaping company with '+custs.length+' active customers. Be concise, practical, and landscaping-industry-specific. No fluff.';
+  scpAiHist.push({role:'user',content:msg});scpAddMsg('Thinking...','a');
+  fetch(SCP_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:SCP_APP_ID,is_demo:true,system:ctx,messages:scpAiHist.slice(-10)})})
+  .then(function(r){return r.json();}).then(function(d){
+    var c=scp$('scp-achat');var msgs=c.querySelectorAll('.scp-ama');if(msgs.length)msgs[msgs.length-1].remove();
+    var rep=(d.content&&d.content[0]&&d.content[0].text)||'No response.';scpAiHist.push({role:'assistant',content:rep});scpAddMsg(rep,'a');
+  }).catch(function(){var c=scp$('scp-achat');var msgs=c.querySelectorAll('.scp-ama');if(msgs.length)msgs[msgs.length-1].remove();scpAddMsg('Connection error.','a');});
+}
+
+(function(){
+  var k=scpLd('scp_lic',null);
+  if(k&&scp$('scp-real-app')&&scp$('scp-real-app').classList.contains('on')){scp$('scp-gate').style.display='none';scp$('scp-role').classList.add('on');}
+})();
+</script>
+
 </body>
 </html>
