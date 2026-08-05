@@ -17751,6 +17751,13 @@ function buildSharedCompanyContext() {
   return lines.join('\n');
 }
 loadSharedKnowledge();
+// Exposed on window -- not just for this module's own use. Lets any other part of the app (or a
+// live diagnostic check) read/refresh the shared context or contribute topics directly, the same
+// way buildPersonalizationContext's per-browser counterpart stays private only because nothing
+// outside this closure has ever needed to call it directly; these three genuinely do.
+window.loadSharedKnowledge = loadSharedKnowledge;
+window.recordSharedTopics = recordSharedTopics;
+window.buildSharedCompanyContext = buildSharedCompanyContext;
 
 // == INJECT PERSONALIZATION INTO FETCH ========================
 if (!window._saircPersExFetchPatched) {
