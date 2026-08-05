@@ -9,7 +9,21 @@
     :root{--primary:#7C3AED;--dark:#5B21B6;--tint:#EDE9FE;--bright:#A78BFA;--bg:#F8FAFC;--card:#FFFFFF;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--success:#22C55E;--warn:#F59E0B;--danger:#EF4444;--shadow:0 1px 4px rgba(0,0,0,.08);}
     *{margin:0;padding:0;box-sizing:border-box;}
     body{font-family:Inter,sans-serif;background:var(--bg);color:var(--text);line-height:1.5;}
-    .gate{position:fixed;top:0;left:0;width:100%;height:100%;background:#FFFFFF;display:flex;align-items:center;justify-content:center;z-index:9999;}
+    /* overflow-y:auto + padding fallback, 2026-08-05 -- mobile login-hang fix. Root cause:
+       position:fixed + height:100% + overflow:visible (the default) has no scroll fallback,
+       same defect family already documented/fixed for .panel elsewhere in the SAIRN codebase.
+       On a real phone, focusing the License input opens the on-screen keyboard, which shrinks
+       the VISUAL viewport (often to ~450-500px on an 844px-tall screen) without necessarily
+       shrinking the LAYOUT viewport .gate's height:100% is computed against, and mobile browsers
+       don't reliably scroll a position:fixed ancestor's focused descendant into view. Confirmed
+       via Playwright at a simulated post-keyboard 390x450 viewport: the Enter button rendered at
+       y:523-569, entirely below the 450px visible area, with gate.scrollHeight (685px) exceeding
+       clientHeight (450px) but overflow-y:visible meant nothing could scroll to reach it -- the
+       user could fill in License/PIN but the Enter button (and lower PIN digits) were completely
+       unreachable, reading as a dead/hung login screen. align-items:center kept for the common
+       no-keyboard case; min-height ensures short-viewport content still fills the screen while
+       remaining scrollable once content exceeds it. */
+    .gate{position:fixed;top:0;left:0;width:100%;height:100%;min-height:100%;overflow-y:auto;background:#FFFFFF;display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px 0;}
     .gate-card{background:#FFFFFF;padding:60px 40px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.12);max-width:420px;width:100%;text-align:center;}
     .gate-card h1{font-size:28px;margin-bottom:8px;color:var(--primary);font-weight:700;}
     .gate-card p{color:var(--muted);margin-bottom:30px;font-size:14px;}
