@@ -358,12 +358,20 @@ async function sendMessage() {
   messages.push({role:'user',content:text});
   showTyping();
   try {
+    // Organization Intelligence Layer (2026-08-05): wires up the
+    // getOrgIntelligence()/saveOrgIntelligence() functions already defined
+    // further down this file (Organization Intelligence Layer section) --
+    // previously built but never called anywhere. No-ops cleanly via their
+    // own `if (!ORG_ID) return` guards when no org has been connected via
+    // the OIL "Connect" modal, so this is a pure addition with zero effect
+    // on the single-location/no-org case.
+    const orgContext = await getOrgIntelligence(text);
     const res = await fetch(SAIRN_API, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         max_tokens:1000,
-        system: SYSTEM,
+        system: SYSTEM + orgContext,
         messages: messages.slice(-20),
         app_id: APP_ID,
         is_demo: true
@@ -378,6 +386,14 @@ async function sendMessage() {
       const reply = data.content?.[0]?.text || 'Sorry, I had trouble with that. Please try again.';
       messages.push({role:'assistant',content:reply});
       addMsg('ai', reply);
+      // Save what was asked (not the AI's answer) as this location's
+      // contribution to the org's shared insight log -- the question
+      // itself is the durable, reusable signal ("what topics/situations
+      // come up"), not the generated response, which is disposable and
+      // regeneratable from the question at any time. category comes from
+      // whichever quick-mode or guided flow was active, if any.
+      const oilCategory = (activeFlow && activeFlow.id) || (document.querySelector('.mode-btn.active .mode-label')?.textContent) || 'general';
+      saveOrgIntelligence(text, oilCategory);
     }
   } catch(e) {
     document.getElementById('typing-indicator')?.remove();
@@ -781,6 +797,257 @@ function saveOILSettings() {
 // Show badge on load if org is set
 setTimeout(function() { showOILBadge(); }, 1500);
 // =======================================================================
+
+// ================================================================
+// SAIRN VOICE INPUT (2026-08-05) -- ported from stonedesk.html's proven
+// module, near-verbatim (attachVoiceInput itself is fully app-agnostic).
+// Free, browser-native SpeechRecognition, zero new vendor/cost. Wired to
+// the single #userInput textarea -- unlike every other app in this
+// rollout, SAIRNscape has no separate quick-entry FORM distinct from the
+// chat itself (the "Estimate a Job" mode button just changes this same
+// textarea's placeholder text, per setMode() above) -- so one target is
+// the whole surface, not a scope shortfall.
+// ================================================================
+(function() {
+'use strict';
+if (window._saircVoiceInputInstalled) return;
+window._saircVoiceInputInstalled = true;
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var VOICE_SUPPORTED = !!SR;
+
+window.attachVoiceInput = function(inputId, opts) {
+  if (!VOICE_SUPPORTED) return;
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('voicebtn-' + inputId)) return;
+  opts = opts || {};
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'voicebtn-' + inputId;
+  btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+  btn.title = 'Tap to dictate';
+  btn.textContent = '\u{1F3A4}';
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#F0F0FF;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+  input.parentNode.insertBefore(btn, input.nextSibling);
+
+  var recognizing = false;
+  var recognition = null;
+
+  function stop() {
+    recognizing = false;
+    btn.style.background = 'rgba(255,255,255,0.06)';
+    btn.style.borderColor = 'rgba(255,255,255,0.1)';
+    btn.textContent = '\u{1F3A4}';
+    if (recognition) { try { recognition.stop(); } catch (e) {} }
+  }
+
+  btn.onclick = function() {
+    if (recognizing) { stop(); return; }
+    try {
+      recognition = new SR();
+    } catch (e) {
+      return;
+    }
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognizing = true;
+    btn.style.background = '#dc2626';
+    btn.style.borderColor = '#dc2626';
+    btn.textContent = '\u{1F534}';
+
+    recognition.onresult = function(e) {
+      var transcript = '';
+      for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      transcript = transcript.trim();
+      if (!transcript) return;
+      if (input.tagName === 'TEXTAREA' && input.value) {
+        input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+      } else {
+        input.value = transcript;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    };
+    recognition.onerror = function() {};
+    recognition.onend = stop;
+
+    try { recognition.start(); } catch (e) { stop(); }
+  };
+};
+
+function installVoiceInputTargets() {
+  window.attachVoiceInput('userInput', { label: 'your message' });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installVoiceInputTargets);
+} else {
+  installVoiceInputTargets();
+}
+})();
+
+// ================================================================
+// SAIRN AR MEASURE (2026-08-05) -- ported from stonedesk.html's proven
+// module (attachARMeasure's hit-test/session logic is fully app-agnostic).
+// Free, WebXR hit-test, no vendor. Arguably a BETTER-fitting use case than
+// StoneDesk's own countertop measurement: landscaping estimates are
+// fundamentally property/lawn-area-based ("Estimate a Job" mode's own
+// hint text is literally "Snap or describe a property"), and unlike the
+// scoped-input version this measures INTO -- there's no discrete numeric
+// field anywhere in this app's chat-only UI, so the result is appended to
+// #userInput as readable text (e.g. "Measured area: 1,200 sqft (via AR)")
+// for the user to send along with their own description, same
+// never-auto-submit discipline as every other port this rollout.
+// ================================================================
+(function() {
+'use strict';
+if (window._saircARMeasureInstalled) return;
+window._saircARMeasureInstalled = true;
+
+function checkARSupport() {
+  return new Promise(function(resolve) {
+    if (!navigator.xr || typeof navigator.xr.isSessionSupported !== 'function') { resolve(false); return; }
+    navigator.xr.isSessionSupported('immersive-ar').then(resolve).catch(function(){ resolve(false); });
+  });
+}
+
+function ensureOverlay() {
+  var overlay = document.getElementById('ar-measure-overlay');
+  if (overlay) return overlay;
+  overlay = document.createElement('div');
+  overlay.id = 'ar-measure-overlay';
+  overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;flex-direction:column;justify-content:space-between;padding:20px;box-sizing:border-box;pointer-events:none';
+  overlay.innerHTML =
+    '<div style="pointer-events:auto;align-self:flex-end">' +
+      '<button id="ar-measure-cancel" style="min-width:44px;min-height:44px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:20px;cursor:pointer">×</button>' +
+    '</div>' +
+    '<div style="text-align:center;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.85)">' +
+      '<div class="ar-instructions" style="font-size:16px;font-weight:700;margin-bottom:6px">Point your camera at the property, then tap to place the first corner</div>' +
+      '<div class="ar-distance" style="font-size:13px"></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#ar-measure-cancel').onclick = function() {
+    if (window._arMeasureSession) { try { window._arMeasureSession.end(); } catch (e) {} }
+  };
+  return overlay;
+}
+
+function distFt(a, b) {
+  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2)) * 3.28084;
+}
+
+async function startARMeasureSession(targetInput) {
+  if (!navigator.xr) return;
+  var overlay = ensureOverlay();
+  var instructionsEl = overlay.querySelector('.ar-instructions');
+  var distanceEl = overlay.querySelector('.ar-distance');
+  var session;
+  try {
+    session = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: overlay }
+    });
+  } catch (e) {
+    return;
+  }
+  window._arMeasureSession = session;
+
+  var canvas = document.createElement('canvas');
+  var gl = canvas.getContext('webgl', { xrCompatible: true });
+  try { if (gl.makeXRCompatible) await gl.makeXRCompatible(); } catch (e) {}
+  session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
+  var refSpace = await session.requestReferenceSpace('local');
+  var viewerSpace = await session.requestReferenceSpace('viewer');
+  var hitTestSource = null;
+  try { hitTestSource = await session.requestHitTestSource({ space: viewerSpace }); } catch (e) {}
+
+  var points = [];
+  var lastHitPos = null;
+
+  overlay.style.display = 'flex';
+
+  session.addEventListener('select', function() {
+    if (!lastHitPos) return;
+    points.push(lastHitPos);
+    if (points.length === 1) {
+      instructionsEl.textContent = 'Now tap the next corner (end of the first edge).';
+    } else if (points.length === 2) {
+      instructionsEl.textContent = 'Now tap the far corner (end of the second edge).';
+    } else if (points.length === 3) {
+      var lenA = distFt(points[0], points[1]);
+      var lenB = distFt(points[1], points[2]);
+      var sqft = Math.round(lenA * lenB * 10) / 10;
+      instructionsEl.textContent = 'Measured ' + lenA.toFixed(1) + 'ft × ' + lenB.toFixed(1) + 'ft = ' + sqft + ' sqft';
+      distanceEl.textContent = 'Adding to your message...';
+      var note = 'Measured area: ' + sqft + ' sqft (via AR)';
+      targetInput.value = (targetInput.value ? targetInput.value.replace(/\s+$/, '') + ' ' : '') + note;
+      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+      setTimeout(function() { try { session.end(); } catch (e) {} }, 1800);
+    }
+  });
+
+  function onXRFrame(t, frame) {
+    session.requestAnimationFrame(onXRFrame);
+    var pose = frame.getViewerPose(refSpace);
+    if (!pose || !session.renderState.baseLayer) return;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    var hitResults = hitTestSource ? frame.getHitTestResults(hitTestSource) : [];
+    if (hitResults.length) {
+      var hitPose = hitResults[0].getPose(refSpace);
+      if (hitPose) {
+        lastHitPos = hitPose.transform.position;
+        distanceEl.textContent = points.length
+          ? (distFt(lastHitPos, points[points.length - 1]).toFixed(1) + ' ft from last point — tap to place')
+          : 'Surface detected — tap to place a point';
+      }
+    } else {
+      lastHitPos = null;
+      distanceEl.textContent = 'Move your camera to find a flat surface...';
+    }
+  }
+  session.requestAnimationFrame(onXRFrame);
+
+  session.addEventListener('end', function() {
+    overlay.style.display = 'none';
+    window._arMeasureSession = null;
+  });
+}
+
+window.attachARMeasure = async function(inputId) {
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('armeasure-' + inputId)) return;
+  var supported = await checkARSupport();
+  if (!supported) return;
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'armeasure-' + inputId;
+  btn.setAttribute('aria-label', 'Measure with AR camera');
+  btn.title = 'Measure with your camera';
+  btn.textContent = '\u{1F4D0}';
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.06);color:#F0F0FF;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center';
+  var voiceBtn = document.getElementById('voicebtn-' + inputId);
+  var afterEl = voiceBtn || input;
+  afterEl.parentNode.insertBefore(btn, afterEl.nextSibling);
+  btn.onclick = function() { startARMeasureSession(input); };
+};
+
+function installARMeasureTargets() {
+  window.attachARMeasure('userInput');
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installARMeasureTargets);
+} else {
+  installARMeasureTargets();
+}
+})();
 
 </script>
 </body>
