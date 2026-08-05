@@ -53,7 +53,11 @@ const ROLES_BY_APP = {
   // 'stonedesk_sub' on every sub-facing check rejects an employee token
   // outright and vice versa, the same cross-app-collision discipline this
   // file's header already documents for stonedesk vs sairnbiz.
-  stonedesk_sub: ['sub']
+  stonedesk_sub: ['sub'],
+  // SAIRNgrounds (2026-08-05): matches sairngrounds.html's Phase 1 role picker
+  // (Superintendent/Grounds Manager/Crew/Office) plus 'owner' for bootstrap,
+  // same convention as every other app's first-provisioned credential.
+  sairngrounds: ['owner', 'superintendent', 'manager', 'crew', 'office']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.

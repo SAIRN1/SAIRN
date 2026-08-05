@@ -15,32 +15,45 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 .gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
 .ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
 .ginp:focus{border-color:var(--p);}
-.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;}
 .gbtn:hover{background:var(--pd);}
 .gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
-/* ROLE SELECT -- Phase 1 uses a simple role picker, not per-employee PIN
-   auth. Matches the platform's own precedent (SAIRNbiz's original shared
-   per-role PINS before its 2026-08-03 per-employee rewrite) -- deferring
-   the full api/grd-auth.js + Supabase schema build to a follow-up rather
-   than adding new backend infra inside a "scaffold" pass. See
-   SAIRNGROUNDS-SCOPE.md "Required server changes". */
+/* Real per-employee login (api/grd-auth.js) -- Phase 2, replaces Phase 1's
+   simple role picker. Matches StoneDesk/SAIRNbiz's rewire exactly: real
+   labels, role="alert" error region, logical tab order. */
 #role{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
 #role.on{display:flex;}
 .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
-.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:16px;}
-.rolebtn{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;}
-.rolebtn:hover{background:var(--pt);border-color:var(--p);color:var(--pd);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
+.plabel{font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;display:block;text-align:left}
+.pinput{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:14px;box-sizing:border-box}
+.pinput.pin{font-size:16px;letter-spacing:4px;text-align:center}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
 /* LAYOUT */
 #app{display:none;}
 #app.on{display:flex;flex-direction:column;height:100vh;}
 header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-.navtog{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;display:none;}
+.navtog{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;display:none;min-width:44px;min-height:44px;}
 .hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
-.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;white-space:nowrap;}
 .hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
-.huser{color:rgba(255,255,255,.85);font-size:13px;}
-.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;white-space:nowrap;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;min-height:44px;}
 .hbtn:hover{background:rgba(255,255,255,.25);}
+/* Header overflow fix (found via 390px Playwright sweep, 2026-08-05): the
+   weather bar + badge + username + two buttons don't fit one row under
+   ~480px. Badge, weather detail text, and username collapse to keep only
+   the weather icon/status (crew go/no-go is the highest-value signal on a
+   phone, per SAIRNGROUNDS-SCOPE.md section 1) and the two action buttons
+   visible and reachable without horizontal scroll. */
+@media (max-width:480px){
+  header{padding:0 8px;gap:6px;}
+  .hbadge,.huser,#grd-wx-temp,#grd-wx-desc{display:none;}
+  #grd-weather-bar{gap:3px;margin-right:4px;}
+  .hr{gap:4px;}
+  .hbtn{padding:6px 8px;font-size:11px;}
+}
 /* Weather Command Engine topbar -- ported from stonedesk.html:14153-14198
    (Pattern 12), not rebuilt. Cross-cutting, not a panel -- see
    SAIRNGROUNDS-SCOPE.md section 2. */
@@ -49,7 +62,7 @@ header{height:56px;background:var(--pd);display:flex;align-items:center;padding:
 /* SIDEBAR */
 aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;transition:transform .2s;}
 .ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
-.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;transition:all .15s;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;transition:all .15s;min-height:44px;}
 .sb:hover{background:var(--pt);color:var(--pd);}
 .sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
 .sico{font-size:15px;width:20px;text-align:center;}
@@ -69,12 +82,12 @@ main{flex:1;overflow-y:auto;padding:24px;}
 .ptitle{font-size:22px;font-weight:800;}
 .psub{color:var(--muted);font-size:13px;margin-top:2px;}
 .pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
-.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;min-height:40px;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;min-height:44px;}
 .bp{background:var(--p);color:#fff;}
 .bp:hover{background:var(--pd);}
 .bo{background:#fff;border:1px solid var(--border);color:var(--text);}
 .bo:hover{border-color:var(--p);color:var(--p);}
-.bs{padding:6px 12px;font-size:12px;min-height:36px;}
+.bs{padding:6px 12px;font-size:12px;min-height:44px;}
 /* KPIs */
 .krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
@@ -150,11 +163,34 @@ textarea{resize:vertical;min-height:80px;}
 <div id="role">
   <div class="pbox">
     <div class="plogo">SAIRNgrounds</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:18px">Select your role for this session</div>
-    <button class="rolebtn" onclick="applyRole('Superintendent')">&#9971; Superintendent</button>
-    <button class="rolebtn" onclick="applyRole('Grounds Manager')">&#127807; Grounds Manager</button>
-    <button class="rolebtn" onclick="applyRole('Crew')">&#128119; Crew</button>
-    <button class="rolebtn" onclick="applyRole('Office')">&#128188; Office</button>
+    <div id="grd-login-view">
+      <label class="plabel" for="grd-employee-input">Employee ID</label>
+      <input type="text" id="grd-employee-input" class="pinput" autocomplete="username" maxlength="128" aria-required="true"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('grd-pin-input').focus();}">
+      <label class="plabel" for="grd-pin-input">PIN</label>
+      <input type="password" id="grd-pin-input" class="pinput pin" maxlength="8" inputmode="numeric" autocomplete="current-password" aria-required="true"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();grdDoLogin();}">
+      <div class="perr" id="grd-perr" role="alert" aria-live="polite"></div>
+      <button class="gbtn" onclick="grdDoLogin()" style="width:100%">Sign In</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+        <a href="#" onclick="grdShowBootstrap();return false;" style="color:var(--muted)">First time setup</a>
+      </div>
+    </div>
+    <div id="grd-bootstrap-view" style="display:none">
+      <div style="font-size:13px;margin-bottom:14px;text-align:center;line-height:1.5">Set up the Owner account for this property/course. This only works once.</div>
+      <label class="plabel" for="grd-boot-employee-input">Your Employee ID</label>
+      <input type="text" id="grd-boot-employee-input" class="pinput" autocomplete="username" maxlength="128" aria-required="true">
+      <label class="plabel" for="grd-boot-name-input">Your Name</label>
+      <input type="text" id="grd-boot-name-input" class="pinput" autocomplete="name" maxlength="128">
+      <label class="plabel" for="grd-boot-pin-input">Choose a PIN (6-8 digits)</label>
+      <input type="password" id="grd-boot-pin-input" class="pinput pin" maxlength="8" inputmode="numeric" autocomplete="new-password" aria-required="true"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();grdDoBootstrap();}">
+      <div class="perr" id="grd-boot-error" role="alert" aria-live="polite"></div>
+      <button class="gbtn" onclick="grdDoBootstrap()" style="width:100%">Create Owner Account</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+        <a href="#" onclick="grdShowLogin();return false;" style="color:var(--muted)">Back to sign in</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -200,6 +236,12 @@ textarea{resize:vertical;min-height:80px;}
     <div class="card"><div class="ch"><span class="ct">Recent Activity</span></div><div class="cb" id="d-activity"></div></div>
     <div class="card"><div class="ch"><span class="ct">Action Items</span></div><div class="cb" id="d-actions"></div></div>
   </div>
+  <!-- Predictive insights -- both computed live from real grd_* data below,
+       never hardcoded. Each shows "--" rather than a fake number when the
+       real data can't yet support it (zero decided quotes, no zones with a
+       serviced date), same honesty discipline as every other app's
+       AI-advancement rollout this session. -->
+  <div class="card"><div class="ch"><span class="ct">Insights</span></div><div class="cb" id="d-insights"></div></div>
 </div>
 
 <!-- AI -->
@@ -336,6 +378,30 @@ function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionD
 function fdate(d){if(!d)return'--';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
 function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 
+// === SERVER DATA SYNC (api/sd-data.js grd_* resources) -- Phase 2 ===
+// Same shape as sdData()/sbData() elsewhere on the platform: license key as
+// bearer token, session token in X-SD-Auth. Returns null on any failure
+// (network error, license not provisioned, table not migrated yet) so
+// callers can fall back to the existing localStorage copy rather than
+// hard-failing a panel -- see SAIRNGROUNDS-SCOPE.md's honest note that
+// Phase 1's localStorage layer stays as the offline/fallback path, not
+// something Phase 2 deletes.
+async function grdData(action, resource, payload) {
+  var licKey = ld('grd_lic', null);
+  if (!licKey) return null;
+  try {
+    var headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey };
+    try { var tok = sessionStorage.getItem(GRD_SESSION_KEY); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
+    var res = await fetch('https://sairn.vercel.app/api/sd-data', {
+      method: 'POST', headers: headers,
+      body: JSON.stringify({ action: action, resource: resource, payload: payload })
+    });
+    if (!res.ok) return null;
+    var j = await res.json();
+    return (j && j.ok) ? j : null;
+  } catch (e) { return null; }
+}
+
 function gateGo(){
   var k=($('gkey').value||'').trim().toUpperCase();
   var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
@@ -343,15 +409,82 @@ function gateGo(){
   st('grd_lic',k);$('gate').style.display='none';$('role').classList.add('on');
 }
 
-function applyRole(role){
+// === REAL PER-EMPLOYEE LOGIN (api/grd-auth.js) -- Phase 2 ===
+var GRD_AUTH_API    = 'https://sairn.vercel.app/api/grd-auth';
+var GRD_SESSION_KEY = 'grd_session_token';
+var GRD_ROLE_KEY    = 'grd_session_role';
+var GRD_EMPLOYEE_KEY= 'grd_session_employee_id';
+
+function grdAuthErr(body,fallback){return (body&&body.error&&body.error.message)||fallback;}
+
+function grdApplyLoggedIn(role){
   st('grd_role',role);
   $('role').classList.remove('on');$('app').classList.add('on');
-  $('huser').textContent=role;
+  $('huser').textContent=role.charAt(0).toUpperCase()+role.slice(1);
   init();
 }
 
+function grdDoLogin(){
+  var empEl=$('grd-employee-input'),pinEl=$('grd-pin-input'),errEl=$('grd-perr');
+  var employeeId=(empEl?empEl.value:'').trim(),pin=(pinEl?pinEl.value:'').trim();
+  var lic=ld('grd_lic',null);
+  if(!employeeId||!pin){if(errEl)errEl.textContent='Enter your employee ID and PIN';return;}
+  if(!lic){if(errEl)errEl.textContent='No license key found on this install';return;}
+  if(errEl)errEl.textContent='';
+  fetch(GRD_AUTH_API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic},
+    body:JSON.stringify({action:'login',employee_id:employeeId,pin:pin})
+  }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return{ok:r.ok,body:d};});})
+  .then(function(res){
+    if(!res.ok||!res.body||!res.body.ok){
+      if(errEl)errEl.textContent=grdAuthErr(res.body,'Sign-in failed — try again');
+      if(pinEl)pinEl.value='';
+      return;
+    }
+    try{sessionStorage.setItem(GRD_SESSION_KEY,res.body.token);sessionStorage.setItem(GRD_ROLE_KEY,res.body.role);sessionStorage.setItem(GRD_EMPLOYEE_KEY,res.body.employee_id);}catch(e){}
+    if(pinEl)pinEl.value='';
+    grdApplyLoggedIn(res.body.role);
+  }).catch(function(){if(errEl)errEl.textContent='Network error — check your connection and try again';});
+}
+window.grdDoLogin=grdDoLogin;
+
+function grdShowBootstrap(){
+  var lv=$('grd-login-view'),bv=$('grd-bootstrap-view');
+  if(lv)lv.style.display='none';if(bv)bv.style.display='block';
+  var el=$('grd-boot-employee-input');if(el)el.focus();
+}
+window.grdShowBootstrap=grdShowBootstrap;
+
+function grdShowLogin(){
+  var lv=$('grd-login-view'),bv=$('grd-bootstrap-view');
+  if(bv)bv.style.display='none';if(lv)lv.style.display='block';
+  var el=$('grd-employee-input');if(el)el.focus();
+}
+window.grdShowLogin=grdShowLogin;
+
+function grdDoBootstrap(){
+  var empEl=$('grd-boot-employee-input'),nameEl=$('grd-boot-name-input'),pinEl=$('grd-boot-pin-input'),errEl=$('grd-boot-error');
+  var employeeId=(empEl?empEl.value:'').trim(),displayName=(nameEl?nameEl.value:'').trim(),pin=(pinEl?pinEl.value:'').trim();
+  var lic=ld('grd_lic',null);
+  if(!employeeId||!/^\d{6,8}$/.test(pin)){if(errEl)errEl.textContent='Employee ID and a 6-8 digit PIN are required';return;}
+  if(!lic){if(errEl)errEl.textContent='No license key found on this install';return;}
+  if(errEl)errEl.textContent='';
+  fetch(GRD_AUTH_API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic},
+    body:JSON.stringify({action:'bootstrap',employee_id:employeeId,display_name:displayName,pin:pin})
+  }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return{ok:r.ok,body:d};});})
+  .then(function(res){
+    if(!res.ok||!res.body||!res.body.ok){
+      if(errEl)errEl.textContent=grdAuthErr(res.body,'Setup failed — try again');
+      return;
+    }
+    try{sessionStorage.setItem(GRD_SESSION_KEY,res.body.token);sessionStorage.setItem(GRD_ROLE_KEY,res.body.role);sessionStorage.setItem(GRD_EMPLOYEE_KEY,res.body.employee_id);}catch(e){}
+    grdApplyLoggedIn(res.body.role);
+  }).catch(function(){if(errEl)errEl.textContent='Network error — check your connection and try again';});
+}
+window.grdDoBootstrap=grdDoBootstrap;
+
 function doLogout(){
   st('grd_role',null);
+  try{sessionStorage.removeItem(GRD_SESSION_KEY);sessionStorage.removeItem(GRD_ROLE_KEY);sessionStorage.removeItem(GRD_EMPLOYEE_KEY);}catch(e){}
   $('app').classList.remove('on');$('role').classList.add('on');toast('Logged out');
 }
 
@@ -444,6 +577,26 @@ function init(){
   rDash();rProps();rJobs();rQuotes();rGolf();
   updateAsideA11y();
   sairnLoadWeather();
+  grdSyncFromServer();
+  loadGrdSharedKnowledge();
+}
+
+// Read-through sync: if the server has real data (grd_* tables provisioned
+// and this license has rows), it replaces the local copy. If the tables
+// aren't provisioned yet or the call fails, the existing localStorage
+// seed/data stays exactly as it was -- an honest, silent no-op, not an
+// error shown to the user (matches render_usage/shared_knowledge's
+// provisioned:false graceful-degrade pattern server-side).
+async function grdSyncFromServer(){
+  var resources=[['properties','grd_properties'],['jobs','grd_jobs'],['quotes','grd_quotes'],['golf_zones','grd_golf_zones']];
+  var changed=false;
+  for(var i=0;i<resources.length;i++){
+    var res=await grdData('read',resources[i][0],{});
+    if(res&&res.provisioned&&Array.isArray(res.data)&&res.data.length){
+      st(resources[i][1],res.data);changed=true;
+    }
+  }
+  if(changed){fillPropertySelects();rDash();rProps();rJobs();rQuotes();rGolf();}
 }
 
 function rDash(){
@@ -461,6 +614,31 @@ function rDash(){
   jobs.filter(function(j){return j.status==='Requested';}).forEach(function(j){actions.push({t:H(propName(j.property_id))+' job needs scheduling',b:'Requested',c:'bw'});});
   quotes.filter(function(q){return q.status==='Sent';}).forEach(function(q){actions.push({t:H(propName(q.property_id))+' quote awaiting response',b:'Sent',c:'bb'});});
   $('d-actions').innerHTML=actions.length?actions.map(function(a){return'<div class="srow"><span>'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
+  rInsights(props,jobs,quotes,zones);
+}
+
+// Predictive insights -- both signals checked against real data before
+// being added, same discipline as every other app's rollout this session:
+// win rate only counts DECIDED quotes (accepted/rejected), never drafts or
+// sent-but-pending; "--" shown honestly when the denominator is zero
+// rather than a misleading 0% or 100%. Zones-overdue is a straightforward
+// live computation off each zone's own serviced date, no fabrication risk.
+function rInsights(props,jobs,quotes,zones){
+  var decided=quotes.filter(function(q){return q.status==='Accepted'||q.status==='Rejected';});
+  var accepted=quotes.filter(function(q){return q.status==='Accepted';});
+  var winRate=decided.length?Math.round(accepted.length/decided.length*100)+'%':'--';
+  var OVERDUE_DAYS=7;
+  var now=new Date();
+  var overdue=zones.filter(function(z){
+    if(!z.serviced)return true;
+    var days=(now-new Date(z.serviced))/86400000;
+    return days>OVERDUE_DAYS;
+  });
+  var rows=[
+    {t:'Quote win rate (decided quotes only)',v:winRate,sub:decided.length?decided.length+' decided quote'+(decided.length===1?'':'s'):'No quotes accepted or rejected yet'},
+    {t:'Golf zones overdue for service (7+ days)',v:String(overdue.length),sub:zones.length?overdue.length+' of '+zones.length+' tracked zones':'No zones tracked yet'}
+  ];
+  $('d-insights').innerHTML=rows.map(function(r){return '<div class="srow"><span>'+H(r.t)+'<br><span style="font-size:11px;color:var(--muted)">'+H(r.sub)+'</span></span><strong>'+H(r.v)+'</strong></div>';}).join('');
 }
 
 // === PROPERTIES ===
@@ -492,6 +670,7 @@ function saveProp(){
     address:$('paddress').value.trim(),status:$('pstatus').value,notes:$('pnotes').value.trim()};
   if(pid){props=props.map(function(p){return p.id===pid?rec:p;});}else{props.push(rec);}
   st('grd_properties',props);closePropModal();fillPropertySelects();rProps();rDash();toast('Property saved');
+  grdData('write','properties',rec); // fire-and-forget server sync -- local save above is already durable
 }
 
 // === JOB INTAKE ===
@@ -517,6 +696,7 @@ function saveJob(){
   var rec={id:jid||('J-'+Date.now()),property_id:propertyId,scope:scope,date:$('jdate').value,status:$('jstatus').value,notes:$('jnotes').value.trim()};
   if(jid){jobs=jobs.map(function(j){return j.id===jid?rec:j;});}else{jobs.push(rec);}
   st('grd_jobs',jobs);closeJobModal();rJobs();rDash();toast('Job saved');
+  grdData('write','jobs',rec);
 }
 
 // === QUOTING ===
@@ -547,6 +727,7 @@ function saveQuote(){
   var rec={id:qid||('Q-'+Date.now()),property_id:propertyId,lines:lines,status:$('qstatus').value,valid:$('qvalid').value};
   if(qid){quotes=quotes.map(function(q){return q.id===qid?rec:q;});}else{quotes.push(rec);}
   st('grd_quotes',quotes);closeQuoteModal();rQuotes();rDash();toast('Quote saved');
+  grdData('write','quotes',rec);
 }
 
 // === GOLF COURSE MODULE ===
@@ -575,6 +756,7 @@ function saveZone(){
     serviced:$('zserviced').value,condition:$('zcondition').value.trim()};
   if(zid){zones=zones.map(function(z){return z.id===zid?rec:z;});}else{zones.push(rec);}
   st('grd_golf_zones',zones);closeZoneModal();rGolf();rDash();toast('Zone saved');
+  grdData('write','golf_zones',rec);
 }
 
 // === AI ASSISTANT ===
@@ -585,12 +767,41 @@ function addMsg(t,role){var c=$('achat');var d=document.createElement('div');d.c
 function callAI(msg){
   var props=ld('grd_properties',[]);
   var ctx='You are the AI grounds operations assistant for SAIRNgrounds, used by a golf course / HOA / commercial grounds operator managing '+props.length+' properties. Be concise, practical, and turf/landscaping-industry-specific. No fluff.';
+  var sharedCtx=buildGrdSharedCompanyContext();
+  if(sharedCtx)ctx+='\n\n'+sharedCtx;
+  recordGrdSharedTopics(msg);
   aiHist.push({role:'user',content:msg});addMsg('Thinking...','a');
   fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
   .then(function(r){return r.json();}).then(function(d){
     var c=$('achat');var msgs=c.querySelectorAll('.ama');if(msgs.length)msgs[msgs.length-1].remove();
     var rep=(d.content&&d.content[0]&&d.content[0].text)||'No response.';aiHist.push({role:'assistant',content:rep});addMsg(rep,'a');
   }).catch(function(){var c=$('achat');var msgs=c.querySelectorAll('.ama');if(msgs.length)msgs[msgs.length-1].remove();addMsg('Connection error.','a');});
+}
+
+// === SHARED COMPANY KNOWLEDGE (sd_shared_knowledge, keyed by license_hash
+// only -- app-agnostic resource already wired server-side in api/sd-data.js,
+// no new server work needed here) ===
+// Mirrors sairnbiz.html's buildSbSharedCompanyContext/recordSbSharedTopics
+// pattern exactly: topics from everyone at this company (not just this
+// device/session) feed back into future AI calls.
+var _grdSharedKnowledge = { topics: {}, totalQuestions: 0 };
+function loadGrdSharedKnowledge(){
+  grdData('read','shared_knowledge',{}).then(function(res){
+    if(res&&res.data)_grdSharedKnowledge=res.data;
+  });
+}
+function recordGrdSharedTopics(msg){
+  var words=(msg||'').toLowerCase().match(/[a-z]{5,40}/g)||[];
+  grdData('write','shared_knowledge',{words:words.slice(0,200)});
+}
+function buildGrdSharedCompanyContext(){
+  var lines=['SHARED COMPANY KNOWLEDGE (from everyone at this company, not just this device):'];
+  if(_grdSharedKnowledge&&_grdSharedKnowledge.topics){
+    var topics=Object.entries(_grdSharedKnowledge.topics).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(e){return e[0];});
+    if(topics.length)lines.push('• Frequently discussed across the company: '+topics.join(', '));
+  }
+  if(lines.length===1)return'';
+  return lines.join('\n');
 }
 
 // === WEATHER COMMAND ENGINE (Pattern 12) ===
@@ -631,6 +842,111 @@ window.sairnLoadWeather=sairnLoadWeather;
 
 (function(){
   var k=ld('grd_lic',null);if(k){$('gate').style.display='none';$('role').classList.add('on');}
+})();
+</script>
+
+<!-- SAIRN VOICE INPUT (2026-08-05) -->
+<!-- Ported verbatim from stonedesk.html's SAIRN VOICE INPUT module, not
+     rebuilt -- same generic attachVoiceInput(inputId, opts) helper, same
+     browser-native SpeechRecognition (zero cost, no new vendor), same
+     graceful no-op when unsupported (Firefox). Attached below to this
+     app's two highest-value spots: the AI chat input and Job Intake's
+     scope field -- matching the "chat input + one relevant field" pattern
+     used in the SAIRNbiz/SAIRNcode rollout. -->
+<script>
+(function() {
+'use strict';
+if (window._saircVoiceInputInstalled) return;
+window._saircVoiceInputInstalled = true;
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var VOICE_SUPPORTED = !!SR;
+
+window.attachVoiceInput = function(inputId, opts) {
+  if (!VOICE_SUPPORTED) return;
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('voicebtn-' + inputId)) return;
+  opts = opts || {};
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'voicebtn-' + inputId;
+  btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+  btn.title = 'Tap to dictate';
+  btn.textContent = '\u{1F3A4}';
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch;flex:1;min-width:0';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.style.flex = '1';
+  input.style.minWidth = '0';
+  wrap.appendChild(btn);
+
+  var recognizing = false;
+  var recognition = null;
+
+  function stop() {
+    recognizing = false;
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--border)';
+    btn.textContent = '\u{1F3A4}';
+    if (recognition) { try { recognition.stop(); } catch (e) {} }
+  }
+
+  btn.onclick = function() {
+    if (recognizing) { stop(); return; }
+    try {
+      recognition = new SR();
+    } catch (e) {
+      if (typeof toast === 'function') toast('Voice input unavailable in this browser.');
+      return;
+    }
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognizing = true;
+    btn.style.background = '#dc2626';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#dc2626';
+    btn.textContent = '\u{1F534}';
+
+    recognition.onresult = function(e) {
+      var transcript = '';
+      for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      transcript = transcript.trim();
+      if (!transcript) return;
+      if (opts.numeric) {
+        var m = transcript.match(/\d+(\.\d+)?/);
+        if (m) input.value = m[0];
+      } else if (input.tagName === 'TEXTAREA' && input.value) {
+        input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+      } else {
+        input.value = transcript;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    };
+    recognition.onerror = function() {
+      if (typeof toast === 'function') toast('Could not hear that — try again.');
+    };
+    recognition.onend = stop;
+
+    try { recognition.start(); } catch (e) { stop(); }
+  };
+};
+
+function installVoiceInputTargets() {
+  window.attachVoiceInput('ainp', { label: 'your question' });
+  window.attachVoiceInput('jscope', { label: 'job scope' });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installVoiceInputTargets);
+} else {
+  installVoiceInputTargets();
+}
 })();
 </script>
 </body>

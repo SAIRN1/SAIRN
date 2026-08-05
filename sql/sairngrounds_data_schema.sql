@@ -1,0 +1,102 @@
+-- sql/sairngrounds_data_schema.sql
+-- SAIRNgrounds application data — Supabase schema
+--
+-- Run this once in the Supabase SQL editor before api/sd-data.js's
+-- properties/jobs/quotes/golf_zones resources will work for SAIRNgrounds.
+-- Until this runs, sairngrounds.html falls back to its existing Phase 1
+-- localStorage-only behavior (see SAIRNGROUNDS-SCOPE.md section 3) — the
+-- client is written to degrade to that, not to hard-fail, the same pattern
+-- sd_render_usage/sd_shared_knowledge use for "migration not run yet".
+--
+-- KEYING: license_hash = sha256(license_key), matching every other app's
+-- tables (sd_slabs, bld_jobs, etc.) — the raw license key never lands in
+-- these rows. app_id is stamped 'sairngrounds' explicitly on every write
+-- (mirrors sd_slabs' own explicit app_id:'stonedesk' stamp) so these rows
+-- are unambiguously grounds-owned inside the platform's shared data-sync
+-- endpoint, even though the endpoint file itself is historically named
+-- api/sd-data.js.
+--
+-- SECURITY MODEL: service-role only, RLS enabled with no anon policy — same
+-- as every table in sql/stonedesk_data_schema.sql. api/sd-data.js is the
+-- only door in.
+--
+-- SIZE CAP: 64KB per row's data jsonb, matching api/sd-data.js's uniform
+-- MAX_PAYLOAD_BYTES (confirmed there is no useful per-resource override at
+-- the DB layer, per that file's own comment on sd_slabs' identical cap).
+
+create extension if not exists pgcrypto;
+
+create table if not exists public.grd_properties (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'sairngrounds',
+  property_id  text not null,                        -- client-generated id
+  data         jsonb not null default '{}'::jsonb,    -- name, type, contact*, acreage, address, status, notes
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, property_id),
+  constraint grdprop_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_grdprop_license on public.grd_properties(license_hash);
+
+create table if not exists public.grd_jobs (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'sairngrounds',
+  job_id       text not null,
+  property_id  text not null,
+  data         jsonb not null default '{}'::jsonb,    -- scope, target_date, status, site_notes
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, job_id),
+  constraint grdjobs_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_grdjobs_license on public.grd_jobs(license_hash);
+
+create table if not exists public.grd_quotes (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'sairngrounds',
+  quote_id     text not null,
+  property_id  text not null,
+  data         jsonb not null default '{}'::jsonb,    -- line_items[], status, valid_until
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, quote_id),
+  constraint grdquotes_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_grdquotes_license on public.grd_quotes(license_hash);
+
+create table if not exists public.grd_golf_zones (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'sairngrounds',
+  zone_id      text not null,
+  property_id  text not null,
+  data         jsonb not null default '{}'::jsonb,    -- hole_or_zone_name, acreage, last_serviced, condition_note
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, zone_id),
+  constraint grdzones_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_grdzones_license on public.grd_golf_zones(license_hash);
+
+-- ── RLS: service-role only (mirror stonedesk_data_schema.sql) ────────────
+alter table public.grd_properties  enable row level security;
+alter table public.grd_jobs        enable row level security;
+alter table public.grd_quotes      enable row level security;
+alter table public.grd_golf_zones  enable row level security;
+
+drop policy if exists "svc only grd_properties" on public.grd_properties;
+drop policy if exists "svc only grd_jobs"       on public.grd_jobs;
+drop policy if exists "svc only grd_quotes"     on public.grd_quotes;
+drop policy if exists "svc only grd_golf_zones" on public.grd_golf_zones;
+
+create policy "svc only grd_properties" on public.grd_properties
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only grd_jobs" on public.grd_jobs
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only grd_quotes" on public.grd_quotes
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only grd_golf_zones" on public.grd_golf_zones
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
