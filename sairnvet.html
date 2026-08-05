@@ -478,6 +478,7 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="scheduling-kpis"></div>
+<div id="scheduling-predictive-zone" style="margin-bottom:14px"></div>
 <div class="card"><div class="sv-tw"><table id="panel-scheduling-table">
 <thead><tr><th>Time</th><th>Patient</th><th>Type</th><th>Doctor</th><th>Room</th><th>Status</th></tr></thead>
 <tbody id="scheduling-tbody"></tbody></table></div></div>
@@ -2148,6 +2149,7 @@ function renderSchedule(){
       '<div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-value">'+completed+'</div></div>'+
       '<div class="kpi"><div class="kpi-label">No-Show Rate</div><div class="kpi-value">'+noShowRate+'</div><div class="kpi-change">This list</div></div>';
   }
+  if (typeof renderSchedulePredictiveInsights === 'function') renderSchedulePredictiveInsights();
 }
 
 function openScheduleEdit(id){
@@ -6908,9 +6910,12 @@ function askAI(){
   var q=document.getElementById('ai-question').value.trim();
   if(!q){showToast('Enter a question','error');return;}
   var system='You are a general veterinary knowledge assistant. Answer clearly and accurately. IMPORTANT: if the question asks for a specific numeric drug dose or asks you to diagnose a specific patient, do NOT provide a specific number or a single diagnosis here — this tool is not connected to the verified drug/diagnosis database or the contraindication safety checks. Instead, tell the user to use the AI Dosing Calculator (for verified, bounds-checked doses) or the Diagnosis Library / Diagnosis Protocol Generator (for a grounded, ranked differential) so the safety checks actually run. You may still discuss general concepts, mechanisms, and reasoning freely.';
+  var sharedCtx=(typeof buildSvSharedCompanyContext==='function')?buildSvSharedCompanyContext():'';
+  if(sharedCtx) system+='\n\n'+sharedCtx;
   var messages=[{role:'user',content:q}];
   showToast('Asking Claude...','info');
   logDoseAudit({type:'ai_assistant_question', question:q.slice(0,200)});
+  if(typeof recordSvSharedTopics==='function') recordSvSharedTopics(q);
   callClaude(system,messages,1500).then(function(result){
     document.getElementById('ai-result').style.display='block';
     document.getElementById('ai-result').textContent=result;
@@ -7242,6 +7247,264 @@ window.submitPeerConsult = function(){
   closePeerCam();
   renderPeerConsults();
 };
+
+// ================================================================
+// SAIRN VOICE INPUT (2026-08-05) -- ported from stonedesk.html's proven
+// module, near-verbatim (attachVoiceInput itself is fully app-agnostic;
+// only the target field IDs at the bottom are SAIRNvet-specific). Free,
+// browser-native SpeechRecognition, zero new vendor/cost. Wired to the AI
+// Assistant question field and SOAP Notes' Subjective/Objective fields --
+// SOAP generation is this app's highest-value quick-entry moment: a vet
+// examining an animal, hands occupied, dictating findings is an even more
+// direct fit for this than StoneDesk's own "dirty/gloved hands" framing.
+// AR measurement (StoneDesk/SAIRNbuild capability 2) is deliberately NOT
+// ported here -- no genuine measurement use case exists in this app's
+// workflow, per explicit scope.
+// ================================================================
+(function() {
+'use strict';
+if (window._saircVoiceInputInstalled) return;
+window._saircVoiceInputInstalled = true;
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var VOICE_SUPPORTED = !!SR;
+
+window.attachVoiceInput = function(inputId, opts) {
+  if (!VOICE_SUPPORTED) return;
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('voicebtn-' + inputId)) return;
+  opts = opts || {};
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'voicebtn-' + inputId;
+  btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+  btn.title = 'Tap to dictate';
+  btn.textContent = '\u{1F3A4}';
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch;flex:1;min-width:0';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.style.flex = '1';
+  input.style.minWidth = '0';
+  wrap.appendChild(btn);
+
+  var recognizing = false;
+  var recognition = null;
+
+  function stop() {
+    recognizing = false;
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--border)';
+    btn.textContent = '\u{1F3A4}';
+    if (recognition) { try { recognition.stop(); } catch (e) {} }
+  }
+
+  btn.onclick = function() {
+    if (recognizing) { stop(); return; }
+    try {
+      recognition = new SR();
+    } catch (e) {
+      if (typeof showToast === 'function') showToast('Voice input unavailable in this browser.','error');
+      return;
+    }
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognizing = true;
+    btn.style.background = '#dc2626';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#dc2626';
+    btn.textContent = '\u{1F534}';
+
+    recognition.onresult = function(e) {
+      var transcript = '';
+      for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      transcript = transcript.trim();
+      if (!transcript) return;
+      if (opts.numeric) {
+        var m = transcript.match(/\d+(\.\d+)?/);
+        if (m) input.value = m[0];
+      } else if (input.tagName === 'TEXTAREA' && input.value) {
+        input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+      } else {
+        input.value = transcript;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    };
+    recognition.onerror = function() {
+      if (typeof showToast === 'function') showToast('Could not hear that — try again.','error');
+    };
+    recognition.onend = stop;
+
+    try { recognition.start(); } catch (e) { stop(); }
+  };
+};
+
+function installVoiceInputTargets() {
+  window.attachVoiceInput('ai-question', { label: 'your question' });
+  window.attachVoiceInput('soap-subj', { label: 'subjective findings' });
+  window.attachVoiceInput('soap-obj', { label: 'objective findings' });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installVoiceInputTargets);
+} else {
+  installVoiceInputTargets();
+}
+})();
+
+// ================================================================
+// PREDICTIVE INSIGHTS (2026-08-05) -- real signals computed live from
+// getScheduleAppts(), same anti-fabrication standard as StoneDesk/
+// SAIRNbuild (Guardian Check 0b): never a placeholder number, explicit
+// "not enough history" below a minimum sample size. Checked the pipeline
+// first, not assumed: SCHEDULE_STATUSES already includes a real 'No-Show'
+// terminal state (renderSchedule() already computes an aggregate no-show
+// rate) -- what's new here is breaking it down BY APPOINTMENT TYPE, which
+// nothing currently computes, same "extend the existing honest KPI,
+// don't duplicate it" pattern used for SAIRNbuild's win-rate signal.
+// ================================================================
+function computeNoShowRateByType() {
+  var appts = getScheduleAppts();
+  var settled = appts.filter(function(a) { return a.status === 'No-Show' || a.status === 'Completed'; });
+  var groups = {};
+  settled.forEach(function(a) {
+    var type = a.type || 'Unspecified';
+    if (!groups[type]) groups[type] = [];
+    groups[type].push(a);
+  });
+  var results = [];
+  Object.keys(groups).forEach(function(type) {
+    var list = groups[type];
+    if (list.length < 4) return;
+    var noShows = list.filter(function(a) { return a.status === 'No-Show'; }).length;
+    results.push({ type: type, noShowRate: Math.round(noShows / list.length * 100), sampleSize: list.length, noShows: noShows });
+  });
+  return results.sort(function(a, b) { return b.noShowRate - a.noShowRate; });
+}
+function computeSchedulePatterns() {
+  var appts = getScheduleAppts();
+  var byType = {};
+  appts.forEach(function(a) { if (a.type) byType[a.type] = (byType[a.type] || 0) + 1; });
+  var topTypes = Object.entries(byType).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3);
+  var byDoctor = {};
+  appts.forEach(function(a) { if (a.doctor) byDoctor[a.doctor] = (byDoctor[a.doctor] || 0) + 1; });
+  return { topTypes: topTypes, byDoctor: byDoctor, total: appts.length };
+}
+function renderSchedulePredictiveInsights() {
+  var el = document.getElementById('scheduling-predictive-zone');
+  if (!el) return;
+  var appts = getScheduleAppts();
+
+  if (appts.length < 5) {
+    el.innerHTML = '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted)">📊 Predictive insights need more scheduling history to be meaningful — only ' + appts.length + ' appointment(s) on record so far. This will start surfacing real patterns once there\'s more volume.</div>';
+    return;
+  }
+
+  var noShowByType = computeNoShowRateByType();
+  var patterns = computeSchedulePatterns();
+  var typeBits = patterns.topTypes.map(function(e) { return e[0] + ' (' + e[1] + ')'; });
+  var doctorBits = Object.keys(patterns.byDoctor).sort(function(a, b) { return patterns.byDoctor[b] - patterns.byDoctor[a]; })
+    .slice(0, 3).map(function(d) { return d + ' (' + patterns.byDoctor[d] + ')'; });
+
+  var html = '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px">';
+  html += '<div style="font-weight:700;color:var(--text);margin-bottom:8px;font-size:13px">📊 Predictive Insights <span style="font-weight:400;color:var(--muted);font-size:11px">(from ' + patterns.total + ' appointments on record)</span></div>';
+
+  if (noShowByType.length) {
+    html += '<div style="margin-bottom:8px">';
+    noShowByType.slice(0, 3).forEach(function(n) {
+      html += '<div style="font-size:12px;color:var(--text);padding:4px 0">' + (n.noShowRate >= 15 ? '⚠️' : '📈') + ' <b>' + escHtml(n.type) + '</b> — ' + n.noShowRate + '% no-show rate (' + n.noShows + ' of ' + n.sampleSize + ' settled appointments) — this clinic\'s own track record for this visit type.</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div style="font-size:11px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:8px;margin-top:4px">';
+  if (typeBits.length) html += 'Most-scheduled visit types: ' + typeBits.join(', ') + '<br>';
+  if (doctorBits.length) html += 'Busiest doctors: ' + doctorBits.join(', ');
+  html += '</div>';
+
+  if (!noShowByType.length && !typeBits.length) {
+    html += '<div style="font-size:12px;color:var(--muted)">No no-show or visit-type patterns detected yet — need at least 4 settled (completed or no-show) appointments of the same type before showing a rate for it.</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ================================================================
+// SHARED COMPANY-KNOWLEDGE LAYER (2026-08-05) -- same privacy-preserving
+// pattern as StoneDesk/SAIRNbuild: topic/term frequency only, scoped by
+// license_hash, never per-employee/device tracking, never verbatim
+// message text. SAIRNvet has NO existing server-data endpoint of its own
+// (confirmed: no api/sv-*.js file exists, and this app's login is
+// entirely client-side today -- no bearer token, no session, nothing
+// server-verifiable). Reuses the SAME /api/sd-data shared_knowledge
+// resource StoneDesk/SAIRNbuild already use (its backing table is keyed
+// by license_hash alone, no app-specific logic), sending this app's plain
+// license string as the bearer value -- the same level of "security" this
+// app already has everywhere else (none; it's a demo-tier client-only
+// app), not new auth infrastructure invented as a side effect of this
+// task. No SV- row is provisioned server-side yet, so every call 401s
+// cleanly and this degrades to a no-op, same documented "correct,
+// expected, not yet provisioned" state SAIRNbuild's build is already in.
+// ================================================================
+var SV_DATA_API = 'https://sairn.vercel.app/api/sd-data';
+function svData(action, resource, payload) {
+  var lic = svLoad('license', '');
+  if (!lic) return Promise.resolve(null);
+  return fetch(SV_DATA_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+    body: JSON.stringify({ action: action, resource: resource, app_id: 'sairnvet', payload: payload || {} })
+  }).then(function(r) {
+    return r.json().then(function(d) {
+      if (!r.ok || !d || !d.ok) { console.warn('svData ' + resource + ' failed (' + r.status + '):', (d && d.error && (d.error.code || d.error.message)) || 'unknown'); return null; }
+      return d.data;
+    });
+  }).catch(function(e) { console.warn('svData network error:', e.message); return null; });
+}
+var _svSharedKnowledge = null;
+function loadSvSharedKnowledge() {
+  try { svData('read', 'shared_knowledge', {}).then(function(data) { if (data) _svSharedKnowledge = data; }); } catch (e) {}
+}
+function recordSvSharedTopics(text) {
+  try {
+    if (!text) return;
+    var words = (String(text).toLowerCase().match(/\b[a-z]{5,}\b/g) || []).slice(0, 60);
+    if (!words.length) return;
+    svData('write', 'shared_knowledge', { words: words });
+  } catch (e) {}
+}
+// "Recurring case patterns" -- computed LIVE from real getScheduleAppts()
+// data already in the app, never stored/aggregated separately, same
+// reasoning as StoneDesk/SAIRNbuild's equivalents.
+function buildSvCasePatternContext() {
+  try {
+    var appts = getScheduleAppts();
+    if (!appts.length) return '';
+    var types = {};
+    appts.forEach(function(a) { if (a.type) types[a.type] = (types[a.type] || 0) + 1; });
+    var topTypes = Object.entries(types).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3).map(function(e) { return e[0]; });
+    return topTypes.length ? ('• Recurring visit types (live from this clinic\'s current data) — ' + topTypes.join(', ')) : '';
+  } catch (e) { return ''; }
+}
+function buildSvSharedCompanyContext() {
+  var lines = ['SHARED CLINIC KNOWLEDGE (from everyone at this clinic, not just this device):'];
+  if (_svSharedKnowledge && _svSharedKnowledge.topics) {
+    var topics = Object.entries(_svSharedKnowledge.topics).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 8).map(function(e) { return e[0]; });
+    if (topics.length) lines.push('• Frequently discussed across the clinic: ' + topics.join(', '));
+  }
+  var caseLine = buildSvCasePatternContext();
+  if (caseLine) lines.push(caseLine);
+  if (lines.length === 1) return '';
+  return lines.join('\n');
+}
+loadSvSharedKnowledge();
+window.buildSvSharedCompanyContext = buildSvSharedCompanyContext;
+window.recordSvSharedTopics = recordSvSharedTopics;
 
 setupPinPad();
 var auth=svLoad('auth');
