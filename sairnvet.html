@@ -140,6 +140,18 @@
       .search-box input,.search-box select{width:100%!important;flex:1 1 100%;}
       .toast{left:16px;right:16px;bottom:16px;max-width:none;}
     }
+    /* Photo/Video Consult camera modal -- pattern ported from StoneDesk's SAIRN MULTI-MODAL
+       INPUT module, same full-screen-overlay/viewfinder/canvas/preview shape, colors swapped
+       to this app's --primary purple. */
+    .pc-cam-modal{position:fixed;inset:0;background:rgba(15,23,42,.97);z-index:9998;display:none;flex-direction:column;overflow-y:auto;}
+    .pc-cam-modal.open{display:flex;}
+    .pc-cam-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:rgba(0,0,0,.3);flex-shrink:0;}
+    .pc-cam-body{flex:1;display:flex;flex-direction:column;padding:20px;max-width:520px;margin:0 auto;width:100%;box-sizing:border-box;}
+    #pc-viewfinder{width:100%;border-radius:12px;overflow:hidden;background:#000;position:relative;min-height:200px;}
+    #pc-video{width:100%;display:block;border-radius:12px;}
+    #pc-preview{width:100%;border-radius:12px;border:2px solid var(--primary);}
+    .pc-coach-banner{margin-top:10px;padding:10px 14px;background:rgba(124,58,237,.25);border:1px solid var(--primary);border-radius:8px;color:#fff;font-size:13px;font-weight:600;text-align:center;transition:opacity .2s;}
+    .pc-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;}
   </style>
 </head>
 <body>
@@ -196,6 +208,7 @@
 <button class="sidebar-btn" onclick="svNav('panel-dental')">Dental</button>
 <button class="sidebar-btn" onclick="svNav('panel-examrooms')">Exam Rooms</button>
 <button class="sidebar-btn" onclick="svNav('panel-teleconsult')">Telemedicine</button>
+<button class="sidebar-btn" onclick="svNav('panel-photoconsult')">Photo/Video Consult</button>
 </div>
 <div class="sidebar-section"><div class="sidebar-section-title">Species Hubs</div>
 <button class="sidebar-btn" onclick="svNav('companion-patients')">Companion Animals</button>
@@ -718,6 +731,86 @@
 <div class="card">
 <button class="btn" onclick="copyConsultLink()">Copy Consult Link</button>
 <p style="font-size:0.85em;color:var(--text-muted,#666);margin:10px 0 0 0;">This app doesn't host video itself — it generates a placeholder link to paste into whatever video platform your clinic uses (Zoom, Google Meet, etc).</p>
+</div>
+</div>
+
+<!-- Photo/Video Consult -- internal staff-to-staff peer consult, distinct from panel-teleconsult
+     (which is client-facing/external video scheduling). Phase 1 scope, deliberately: photo/video
+     capture with AI-guided real-time coaching, an optional AI suggestion, and routing to a
+     colleague's queue. No video-calling infra, scheduling, or payments -- that's a separate,
+     much bigger build if ever wanted. Camera/capture UI pattern ported from StoneDesk's SAIRN
+     MULTI-MODAL INPUT module (stonedesk.html) -- same viewfinder/canvas/preview/capture-retake
+     shape, adapted to this app's static-panel-markup convention instead of StoneDesk's
+     JS-injected-modal approach, and extended with a live coaching loop StoneDesk's version
+     doesn't have (that one only analyzes after capture, never during the live view). -->
+<div id="panel-photoconsult" class="panel">
+<div class="panel-header">
+<h1 class="panel-title">Photo/Video Consult</h1>
+<p class="panel-desc">Capture a photo for an AI-guided suggestion, or send it straight to a colleague on staff for their input</p>
+</div>
+<div class="card" style="background:var(--tint);border:1px solid var(--bright);">
+<strong>ℹ Clinical Decision Support Only:</strong> AI suggestions and colleague responses here are input, not a diagnosis or prescription. The treating veterinarian retains full diagnostic and treatment authority and must review and confirm before use on a patient. Colleague responses are logged as consult notes and are never auto-applied to a patient record.
+</div>
+
+<div class="card">
+<h3>Before You Start</h3>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:15px 0;">
+<div class="gate-role" style="margin-bottom:0;">
+<label>I am</label>
+<select id="pc-identity"></select>
+</div>
+<input type="text" id="pc-patient" placeholder="Patient name (optional)">
+<select id="pc-species">
+<option value="">Species (optional)</option>
+<option>Canine</option><option>Feline</option><option>Equine</option><option>Bovine</option><option>Avian</option><option>Reptile</option><option>Exotic/Other</option>
+</select>
+</div>
+<input type="text" id="pc-note" placeholder="Brief case note, e.g. 'lesion on left flank, first noticed 3 days ago'" style="margin-bottom:15px;">
+<button class="btn" onclick="openPeerCam()">📷 Open Camera</button>
+</div>
+
+<div id="pc-cam-modal" class="pc-cam-modal">
+<div class="pc-cam-hdr">
+<div>
+<div style="font-size:15px;font-weight:700;">📷 Photo/Video Consult</div>
+<div id="pc-coach-status" style="font-size:11px;color:rgba(255,255,255,.55);margin-top:2px;">AI capture coaching is on — framing tips will appear below the viewfinder</div>
+</div>
+<button onclick="closePeerCam()" style="background:none;border:none;color:#fff;font-size:26px;cursor:pointer;line-height:1;">×</button>
+</div>
+<div class="pc-cam-body">
+<div id="pc-viewfinder">
+<video id="pc-video" autoplay playsinline muted></video>
+<canvas id="pc-canvas" style="display:none;"></canvas>
+<img id="pc-preview" alt="Captured image" style="display:none;">
+</div>
+<div id="pc-coach-banner" class="pc-coach-banner" style="display:none;"></div>
+<div class="pc-controls">
+<button class="btn" id="pc-capture-btn" onclick="capturePeerPhoto()">📷 Take Photo</button>
+<button class="btn btn-secondary" id="pc-retake-btn" onclick="retakePeerPhoto()" style="display:none;">↩ Retake</button>
+<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#fff;"><input type="checkbox" id="pc-coach-toggle" checked onchange="togglePeerCoaching()"> AI coaching</label>
+</div>
+<div id="pc-upload-fallback" style="display:none;text-align:center;margin-top:10px;">
+<input type="file" id="pc-file-input" accept="image/*" style="display:none;">
+<button class="btn btn-secondary" onclick="document.getElementById('pc-file-input').click()">🖼️ Camera unavailable — upload an image instead</button>
+</div>
+<div id="pc-action-row" style="display:none;margin-top:16px;">
+<button class="btn" onclick="requestAISuggestion()">🧠 Get AI Suggestion</button>
+<button class="btn btn-secondary" onclick="showPeerPicker()">👥 Send to a Colleague</button>
+</div>
+<div id="pc-peer-picker" style="display:none;margin-top:12px;">
+<select id="pc-peer-select" style="width:100%;margin-bottom:8px;"></select>
+<button class="btn" onclick="submitPeerConsult()">Send to Colleague</button>
+</div>
+<div id="pc-ai-result" style="display:none;margin-top:14px;padding:14px;background:rgba(255,255,255,.08);border-radius:8px;white-space:pre-wrap;line-height:1.6;color:#fff;font-size:13px;"></div>
+</div>
+</div>
+
+<div class="card">
+<h3>Consult Queue</h3>
+<div class="kpi-row" id="pc-kpis"></div>
+<div class="sv-tw"><table id="pc-table">
+<thead><tr><th>When</th><th>Patient / Species</th><th>From → To</th><th>Note</th><th>Status</th></tr></thead>
+<tbody id="pc-tbody"></tbody></table></div>
 </div>
 </div>
 
@@ -1881,6 +1974,7 @@ function gateSubmit(){
   renderAnalytics();
   renderStaff();
   renderMultisite();
+  renderPeerConsults();
 }
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
@@ -6843,6 +6937,312 @@ function exportTableCSV(tableId,filename){
   showToast('Exported '+filename+'.csv','success');
 }
 
+// ================================================================
+// PHOTO/VIDEO CONSULT -- camera capture, AI-guided real-time coaching,
+// AI suggestion, and staff peer-consult routing (panel-photoconsult).
+// Phase 1 / internal-staff scope only -- see the HTML comment above the
+// panel markup for the full scope note. Data: sv_peerconsults (localStorage,
+// same convention as every other sv_ store in this app). No per-user auth
+// exists beyond the shared clinic login, so "who am I" is a simple
+// self-selected staff picker (svStore'd as pc_identity), not a real
+// account system -- this is a deliberately honest, minimal stand-in
+// rather than a fabricated multi-user auth layer.
+// ================================================================
+var pcStream = null;
+var pcCapturedB64 = null;
+var pcCoachTimer = null;
+var pcCoachEnabled = true;
+
+function pcGetIdentity(){
+  var id = svLoad('pc_identity', null);
+  var staff = getStaff();
+  if(id && staff.some(function(s){return s.name===id;})) return id;
+  return staff.length ? staff[0].name : 'Unknown';
+}
+function pcPopulateIdentity(){
+  var sel = document.getElementById('pc-identity');
+  if(!sel) return;
+  var staff = getStaff();
+  var current = pcGetIdentity();
+  sel.innerHTML = staff.map(function(s){
+    return '<option value="'+escHtml(s.name)+'"'+(s.name===current?' selected':'')+'>'+escHtml(s.name)+' ('+escHtml(s.role)+')</option>';
+  }).join('');
+  sel.onchange = function(){ svStore('pc_identity', sel.value); renderPeerConsults(); };
+}
+function pcPopulatePeerSelect(){
+  var sel = document.getElementById('pc-peer-select');
+  if(!sel) return;
+  var staff = getStaff();
+  var me = pcGetIdentity();
+  var others = staff.filter(function(s){ return s.name !== me; });
+  if(!others.length){
+    sel.innerHTML = '<option value="">No other staff on roster -- add staff in the Staff panel first</option>';
+    return;
+  }
+  sel.innerHTML = others.map(function(s){
+    return '<option value="'+escHtml(s.name)+'">'+escHtml(s.name)+' ('+escHtml(s.role)+')</option>';
+  }).join('');
+}
+
+function getPeerConsults(){
+  try{ return JSON.parse(localStorage.getItem('sv_peerconsults')||'[]'); }catch(e){ return []; }
+}
+function savePeerConsults(list){
+  try{ localStorage.setItem('sv_peerconsults', JSON.stringify(list)); }catch(e){}
+}
+
+function renderPeerConsults(){
+  var list = getPeerConsults();
+  var tbody = document.getElementById('pc-tbody');
+  if(!tbody) return;
+  var existing = document.getElementById('pc-detail-card');
+  if(existing) existing.remove();
+  tbody.innerHTML = '';
+  if(!list.length){
+    tbody.innerHTML = '<tr><td colspan="5">No consults yet — open the camera above to start one.</td></tr>';
+  } else {
+    list.slice().reverse().forEach(function(c){
+      var tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.onclick = function(){ pcOpenDetail(c.id); };
+      var statusBadge = c.status==='Resolved' ? '✅ Resolved' : (c.type==='ai' ? '🧠 AI' : '⏳ Pending');
+      tr.innerHTML = '<td>'+escHtml(new Date(c.timestamp).toLocaleString())+'</td>'
+        +'<td>'+escHtml(c.patient||'—')+(c.species?' ('+escHtml(c.species)+')':'')+'</td>'
+        +'<td>'+escHtml(c.from)+' → '+escHtml(c.to)+'</td>'
+        +'<td>'+escHtml((c.note||'').slice(0,60))+'</td>'
+        +'<td>'+statusBadge+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+  var kpis = document.getElementById('pc-kpis');
+  if(kpis){
+    var me = pcGetIdentity();
+    var incoming = list.filter(function(c){ return c.to===me && c.status!=='Resolved' && c.type==='peer'; }).length;
+    var sent = list.filter(function(c){ return c.from===me && c.type==='peer'; }).length;
+    var aiCount = list.filter(function(c){ return c.type==='ai'; }).length;
+    kpis.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Waiting on Your Input</div><div class="kpi-value">'+incoming+'</div></div>'
+      +'<div class="kpi"><div class="kpi-label">Sent by You</div><div class="kpi-value">'+sent+'</div></div>'
+      +'<div class="kpi"><div class="kpi-label">AI Suggestions Requested</div><div class="kpi-value">'+aiCount+'</div></div>'
+      +'<div class="kpi"><div class="kpi-label">Total Consults</div><div class="kpi-value">'+list.length+'</div></div>';
+  }
+}
+
+// Inline detail/response card, same insertAdjacentHTML-after-table convention
+// as openStaffEdit() elsewhere in this file -- no native prompt()/confirm(),
+// consistent with the rest of the app and far more usable on mobile.
+function pcOpenDetail(id){
+  var list = getPeerConsults();
+  var c = list.find(function(x){ return x.id===id; });
+  if(!c) return;
+  var existing = document.getElementById('pc-detail-card');
+  if(existing) existing.remove();
+  var body = c.type==='ai'
+    ? '<p style="white-space:pre-wrap;line-height:1.6;">'+escHtml(c.aiResponse||'')+'</p>'
+    : (c.status==='Resolved'
+        ? '<p><strong>Response from '+escHtml(c.to)+':</strong></p><p style="white-space:pre-wrap;line-height:1.6;">'+escHtml(c.response||'')+'</p>'
+        : '<textarea id="pc-response-text" placeholder="Your input for '+escHtml(c.from)+'..." style="min-height:90px;"></textarea>'
+          +'<button class="btn" style="margin-top:10px;" onclick="pcSubmitResponse(\''+id+'\')">Log Response</button>');
+  var html =
+    '<div class="card" id="pc-detail-card" style="border:2px solid var(--primary);">'
+    +'<h3>Consult: '+escHtml(c.patient||c.species||'Untitled')+'</h3>'
+    +'<p style="color:var(--muted);font-size:13px;margin-bottom:10px;">'+escHtml(c.from)+' → '+escHtml(c.to)+' · '+escHtml(new Date(c.timestamp).toLocaleString())+'</p>'
+    +(c.image ? '<img src="data:image/jpeg;base64,'+c.image+'" style="max-width:100%;border-radius:8px;margin-bottom:12px;">' : '')
+    +(c.note ? '<p style="margin-bottom:10px;"><strong>Case note:</strong> '+escHtml(c.note)+'</p>' : '')
+    +body
+    +'<button class="btn btn-secondary" style="margin-top:10px;" onclick="document.getElementById(\'pc-detail-card\').remove()">Close</button>'
+    +'</div>';
+  var table = document.getElementById('pc-table');
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('pc-detail-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+function pcSubmitResponse(id){
+  var text = document.getElementById('pc-response-text').value.trim();
+  if(!text){ showToast('Enter a response first','error'); return; }
+  var list = getPeerConsults();
+  var c = list.find(function(x){ return x.id===id; });
+  if(!c) return;
+  c.response = text;
+  c.status = 'Resolved';
+  c.respondedAt = new Date().toISOString();
+  savePeerConsults(list);
+  logDoseAudit({type:'peer_consult_response', consultId:id, from:c.to, to:c.from});
+  showToast('Response logged — not applied to any patient record automatically','success');
+  renderPeerConsults();
+}
+
+// -- Camera lifecycle --
+window.openPeerCam = function(){
+  pcPopulateIdentity();
+  document.getElementById('pc-cam-modal').classList.add('open');
+  document.getElementById('pc-action-row').style.display = 'none';
+  document.getElementById('pc-peer-picker').style.display = 'none';
+  document.getElementById('pc-ai-result').style.display = 'none';
+  document.getElementById('pc-video').style.display = 'block';
+  pcCapturedB64 = null;
+  pcStartCamera();
+};
+window.closePeerCam = function(){
+  document.getElementById('pc-cam-modal').classList.remove('open');
+  pcStopCamera();
+  pcStopCoaching();
+};
+async function pcStartCamera(){
+  try{
+    pcStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } });
+    var vid = document.getElementById('pc-video');
+    vid.srcObject = pcStream;
+    document.getElementById('pc-upload-fallback').style.display = 'none';
+    document.getElementById('pc-capture-btn').style.display = 'inline-flex';
+    if(pcCoachEnabled) pcStartCoaching();
+  }catch(e){
+    document.getElementById('pc-upload-fallback').style.display = 'block';
+    document.getElementById('pc-capture-btn').style.display = 'none';
+    document.getElementById('pc-coach-status').textContent = 'Camera unavailable — coaching needs a live camera; upload an image instead';
+  }
+}
+function pcStopCamera(){
+  if(pcStream){ pcStream.getTracks().forEach(function(t){t.stop();}); pcStream=null; }
+}
+window.togglePeerCoaching = function(){
+  pcCoachEnabled = document.getElementById('pc-coach-toggle').checked;
+  document.getElementById('pc-coach-status').textContent = pcCoachEnabled ? 'AI capture coaching is on — framing tips will appear below the viewfinder' : 'AI capture coaching is off';
+  if(pcCoachEnabled && pcStream) pcStartCoaching(); else pcStopCoaching();
+};
+function pcStartCoaching(){
+  pcStopCoaching();
+  var b = document.getElementById('pc-coach-banner');
+  b.style.display = 'block';
+  b.textContent = 'Watching…';
+  pcCoachTimer = setInterval(pcCoachTick, 3000);
+  pcCoachTick();
+}
+function pcStopCoaching(){
+  if(pcCoachTimer){ clearInterval(pcCoachTimer); pcCoachTimer=null; }
+  var b = document.getElementById('pc-coach-banner');
+  if(b) b.style.display = 'none';
+}
+// Grabs a downscaled frame from the LIVE video every 3s and asks Claude for
+// one short framing/lighting instruction -- this is what makes the coaching
+// real-time rather than a static on-screen tip: it's re-evaluating the
+// actual current camera view on a timer, not a fixed instruction that never
+// changes regardless of what the camera sees.
+async function pcCoachTick(){
+  var vid = document.getElementById('pc-video');
+  if(!vid || !vid.videoWidth || pcCapturedB64) return;
+  var c = document.createElement('canvas');
+  var scale = 320 / vid.videoWidth;
+  c.width = 320; c.height = Math.round(vid.videoHeight*scale) || 240;
+  c.getContext('2d').drawImage(vid,0,0,c.width,c.height);
+  var b64 = c.toDataURL('image/jpeg',0.6).split(',')[1];
+  var species = document.getElementById('pc-species').value || 'an animal';
+  var system = 'You are coaching a veterinary staff member taking a clinical reference photo of '+species+' in real time, one short tip at a time. Reply with ONE short actionable framing/lighting/distance instruction under 10 words (e.g. "Move closer", "Add more light", "Hold steady", "Good framing -- capture now"). If the shot already looks clinically usable, say so plainly. Never diagnose or comment on the condition itself -- only the shot quality.';
+  try{
+    var res = await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:20,system:system,
+        messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:'Coach this framing.'}]}]})});
+    var data = await res.json();
+    var tip = data.content && data.content[0] && data.content[0].text ? data.content[0].text.trim() : '';
+    if(tip && !pcCapturedB64){
+      var b = document.getElementById('pc-coach-banner');
+      if(b) b.textContent = tip;
+    }
+  }catch(e){ /* coaching is a nice-to-have -- a failed tick never blocks capture */ }
+}
+window.capturePeerPhoto = function(){
+  var vid = document.getElementById('pc-video');
+  var canvas = document.getElementById('pc-canvas');
+  canvas.width = vid.videoWidth || 640;
+  canvas.height = vid.videoHeight || 480;
+  canvas.getContext('2d').drawImage(vid,0,0);
+  var dataURL = canvas.toDataURL('image/jpeg',0.85);
+  pcCapturedB64 = dataURL.split(',')[1];
+  var preview = document.getElementById('pc-preview');
+  preview.src = dataURL;
+  preview.style.display = 'block';
+  vid.style.display = 'none';
+  document.getElementById('pc-capture-btn').style.display = 'none';
+  document.getElementById('pc-retake-btn').style.display = 'inline-flex';
+  document.getElementById('pc-action-row').style.display = 'flex';
+  pcStopCoaching();
+  pcStopCamera();
+};
+window.retakePeerPhoto = function(){
+  pcCapturedB64 = null;
+  document.getElementById('pc-preview').style.display = 'none';
+  document.getElementById('pc-video').style.display = 'block';
+  document.getElementById('pc-capture-btn').style.display = 'inline-flex';
+  document.getElementById('pc-retake-btn').style.display = 'none';
+  document.getElementById('pc-action-row').style.display = 'none';
+  document.getElementById('pc-peer-picker').style.display = 'none';
+  document.getElementById('pc-ai-result').style.display = 'none';
+  pcStartCamera();
+};
+document.addEventListener('DOMContentLoaded', function(){
+  var fi = document.getElementById('pc-file-input');
+  if(fi){
+    fi.addEventListener('change', function(){
+      var file = this.files[0];
+      if(!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e){
+        pcCapturedB64 = e.target.result.split(',')[1];
+        var preview = document.getElementById('pc-preview');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        document.getElementById('pc-action-row').style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+});
+window.requestAISuggestion = async function(){
+  if(!pcCapturedB64){ showToast('Capture or upload an image first','error'); return; }
+  var species = document.getElementById('pc-species').value || 'unspecified species';
+  var note = document.getElementById('pc-note').value.trim();
+  var patient = document.getElementById('pc-patient').value.trim();
+  var resultEl = document.getElementById('pc-ai-result');
+  resultEl.style.display = 'block';
+  resultEl.textContent = 'Asking Claude…';
+  var system = 'You are a veterinary clinical decision support assistant reviewing a staff-submitted photo. Species: '+species+'. Case note: '+(note||'none provided')+'. Give a SHORT ranked list of possible differentials or considerations based on what is visible, and flag anything that looks urgent. This is a suggestion for a licensed veterinarian to review, NOT a diagnosis -- say so explicitly. Do not recommend a specific drug or dose here.';
+  try{
+    var res = await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:600,system:system,
+        messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:pcCapturedB64}},{type:'text',text:'What do you see, and what should the reviewing vet consider?'}]}]})});
+    var data = await res.json();
+    var text = data.content && data.content[0] && data.content[0].text ? data.content[0].text : 'No response.';
+    resultEl.textContent = text;
+    var list = getPeerConsults();
+    list.push({id:'pc'+Date.now(), timestamp:new Date().toISOString(), type:'ai', from:pcGetIdentity(), to:'AI Assistant',
+      patient:patient, species:species, note:note, image:pcCapturedB64, aiResponse:text, status:'Resolved'});
+    savePeerConsults(list);
+    logDoseAudit({type:'photo_consult_ai_suggestion', patient:patient, species:species});
+    renderPeerConsults();
+  }catch(e){
+    resultEl.textContent = 'AI suggestion failed — try again.';
+  }
+};
+window.showPeerPicker = function(){
+  pcPopulatePeerSelect();
+  document.getElementById('pc-peer-picker').style.display = 'block';
+};
+window.submitPeerConsult = function(){
+  if(!pcCapturedB64){ showToast('Capture or upload an image first','error'); return; }
+  var to = document.getElementById('pc-peer-select').value;
+  if(!to){ showToast('No colleague selected','error'); return; }
+  var species = document.getElementById('pc-species').value;
+  var note = document.getElementById('pc-note').value.trim();
+  var patient = document.getElementById('pc-patient').value.trim();
+  var list = getPeerConsults();
+  list.push({id:'pc'+Date.now(), timestamp:new Date().toISOString(), type:'peer', from:pcGetIdentity(), to:to,
+    patient:patient, species:species, note:note, image:pcCapturedB64, status:'Pending'});
+  savePeerConsults(list);
+  logDoseAudit({type:'photo_consult_sent', to:to, patient:patient});
+  showToast('Sent to '+to+' — they will see it in the Consult Queue','success');
+  closePeerCam();
+  renderPeerConsults();
+};
+
 setupPinPad();
 var auth=svLoad('auth');
 if(auth){
@@ -6891,6 +7291,7 @@ if(auth){
   renderAnalytics();
   renderStaff();
   renderMultisite();
+  renderPeerConsults();
 } else {
   updatePinDisplay();
 }
