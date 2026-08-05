@@ -17846,6 +17846,144 @@ document.addEventListener('DOMContentLoaded', function(){ setTimeout(installLear
 
 </script>
 
+<!-- SAIRN VOICE INPUT (2026-08-05) -->
+<script>
+// ================================================================
+// SAIRN VOICE INPUT
+// Shop-floor dictation -- speech-to-text via the browser's native Web
+// Speech API (SpeechRecognition), zero new vendor, zero cost, no network
+// dependency beyond what Chrome/Edge/Safari already ship. A rep with dirty
+// or gloved hands standing in a client's kitchen can dictate a customer
+// name or a chat question instead of typing.
+//
+// Deliberately NOT a paid vendor (unlike the render/avatar-class features
+// elsewhere in this app) -- SpeechRecognition is built into the browser,
+// same "zero cost, offline-tolerant enough for shop-floor use" bar the
+// build spec asked for. Coverage is real but not universal: Chrome/Edge/
+// Safari (iOS 14.5+) support it, Firefox does not as of this writing --
+// attachVoiceInput() below feature-detects and simply never renders a mic
+// button when unsupported, so the existing typed-input path is completely
+// unaffected either way. Never auto-submits anything -- transcribed text
+// only ever fills the target field, exactly like a normal keystroke would;
+// the human still reviews/edits and clicks Send/Save themselves.
+// Built by Michael L. Dibert · SAIRN Technologies™
+// ================================================================
+(function() {
+'use strict';
+if (window._saircVoiceInputInstalled) return;
+window._saircVoiceInputInstalled = true;
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var VOICE_SUPPORTED = !!SR;
+
+// Injects a mic button immediately after the given input/textarea element, sized to this app's
+// existing 44px touch-target floor (see #panel-history/.inv-step-btn's own min-height:44px rules
+// elsewhere in this file for the same convention). numeric:true extracts just the first spoken
+// number out of the transcript (for a sqft-style field) instead of using the raw transcript text.
+window.attachVoiceInput = function(inputId, opts) {
+  if (!VOICE_SUPPORTED) return; // no button at all -- typed input is the only path, unaffected
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('voicebtn-' + inputId)) return; // already attached, or target missing
+  opts = opts || {};
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'voicebtn-' + inputId;
+  btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+  btn.title = 'Tap to dictate';
+  btn.textContent = '\u{1F3A4}'; // 🎤
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+  // Wrap the input so the button sits inline next to it without disturbing whatever layout
+  // (flex row, grid cell, etc.) already places the input -- inserting the button as the input's
+  // own next sibling inside a small flex wrapper is safer than assuming the parent is already a
+  // flex row itself.
+  var wrap = document.createElement('div');
+  // flex:1 + min-width:0 on the wrapper itself (not just the input inside it) -- the input's own
+  // flex:1 only worked before because IT was the direct child of the original flex row; moving it
+  // inside this wrapper makes the wrapper the new direct child, so it needs to inherit that same
+  // "take remaining space" behavior or a field like #ai-input (sitting next to a Send button)
+  // would collapse to content width instead of filling the row the way it did before this ran.
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch;flex:1;min-width:0';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.style.flex = '1';
+  input.style.minWidth = '0';
+  wrap.appendChild(btn);
+
+  var recognizing = false;
+  var recognition = null;
+
+  function stop() {
+    recognizing = false;
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--border)';
+    btn.textContent = '\u{1F3A4}';
+    if (recognition) { try { recognition.stop(); } catch (e) {} }
+  }
+
+  btn.onclick = function() {
+    if (recognizing) { stop(); return; }
+    try {
+      recognition = new SR();
+    } catch (e) {
+      if (typeof showToast === 'function') showToast('Voice input unavailable in this browser.');
+      return;
+    }
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognizing = true;
+    btn.style.background = '#dc2626';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#dc2626';
+    btn.textContent = '\u{1F534}'; // 🔴 -- listening
+
+    recognition.onresult = function(e) {
+      var transcript = '';
+      for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      transcript = transcript.trim();
+      if (!transcript) return;
+      if (opts.numeric) {
+        var m = transcript.match(/\d+(\.\d+)?/);
+        if (m) input.value = m[0];
+      } else if (input.tagName === 'TEXTAREA' && input.value) {
+        // Append rather than overwrite for multi-line fields already carrying text (chat
+        // follow-ups, notes) -- overwrite is correct for a single-purpose field like a name.
+        input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+      } else {
+        input.value = transcript;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true })); // so any existing oninput/onchange listener still fires
+      input.focus();
+    };
+    recognition.onerror = function() {
+      if (typeof showToast === 'function') showToast('Could not hear that — try again.');
+    };
+    recognition.onend = stop;
+
+    try { recognition.start(); } catch (e) { stop(); }
+  };
+};
+
+// Attach to the two highest-value spots per spec. Deferred until DOM is actually ready (these
+// targets live inside panels that exist in markup from page load, unlike lazily-injected panel
+// content elsewhere in this file, so DOMContentLoaded is sufficient -- no polling needed).
+function installVoiceInputTargets() {
+  window.attachVoiceInput('ai-input', { label: 'your question' });
+  window.attachVoiceInput('viz-est-customer', { label: 'customer name' });
+  window.attachVoiceInput('viz-est-sqft', { label: 'square footage', numeric: true });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installVoiceInputTargets);
+} else {
+  installVoiceInputTargets();
+}
+
+})();
+</script>
+
 <!-- SAIRN MULTI-MODAL INPUT -->
 <script>
 // ================================================================
