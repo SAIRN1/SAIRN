@@ -908,6 +908,7 @@
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
             <div class="kpi-grid" id="denial-kpis"></div>
+            <div id="denial-predictive-zone" style="margin-bottom:14px"></div>
             <div class="table-container">
                 <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead>
@@ -1595,6 +1596,7 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Recovery Value</div><div class="kpi-value">$'+recoveryValue.toLocaleString()+'</div><div class="kpi-detail">From resolved entries</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Entries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Denial records</div></div>';
             }
+            if (typeof renderDenialPredictiveInsights === 'function') renderDenialPredictiveInsights();
         }
         function removeDenialEntry(id){
             saveDenialEntries(getDenialEntries().filter(function(d){return d.id!==id;}));
@@ -2440,12 +2442,14 @@ How to answer:
             history.scrollTop = history.scrollHeight;
 
             try {
+                const sharedCtx = (typeof buildScSharedCompanyContext === 'function') ? buildScSharedCompanyContext() : '';
+                if (typeof recordScSharedTopics === 'function') recordScSharedTopics(message);
                 const response = await fetch(APP_CONFIG.proxy, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         messages: [{ role: 'user', content: message }],
-                        system: SAIRNCODE_SYSTEM_PROMPT,
+                        system: SAIRNCODE_SYSTEM_PROMPT + (sharedCtx ? ('\n\n' + sharedCtx) : ''),
                         app_id: APP_CONFIG.app_id,
                         is_demo: APP_CONFIG.is_demo
                     })
@@ -2508,6 +2512,258 @@ How to answer:
                 if (e.key === 'Enter') sendChatMessage();
             });
         });
+
+        // ================================================================
+        // SAIRN VOICE INPUT (2026-08-05) -- ported from stonedesk.html's
+        // proven module, near-verbatim (attachVoiceInput itself is fully
+        // app-agnostic). Free, browser-native SpeechRecognition, zero new
+        // vendor/cost. Wired to the AI Medical Coding Assistant chat input
+        // plus the Encoder and Denial panels' free-text description/cause
+        // fields -- coders dictating a clinical scenario or denial reason
+        // while reviewing a chart is the same "hands busy, dictate instead
+        // of type" case StoneDesk's shop-floor framing was built for.
+        // AR measurement (StoneDesk/SAIRNbuild capability 2) is
+        // deliberately NOT ported -- checked first: no sqft/measurement/
+        // dimensions workflow anywhere in this medical coding/billing
+        // platform, same judgment already applied to SAIRNvet/SAIRNbiz.
+        // ================================================================
+        (function() {
+        'use strict';
+        if (window._saircVoiceInputInstalled) return;
+        window._saircVoiceInputInstalled = true;
+
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        var VOICE_SUPPORTED = !!SR;
+
+        window.attachVoiceInput = function(inputId, opts) {
+            if (!VOICE_SUPPORTED) return;
+            var input = document.getElementById(inputId);
+            if (!input || document.getElementById('voicebtn-' + inputId)) return;
+            opts = opts || {};
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.id = 'voicebtn-' + inputId;
+            btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+            btn.title = 'Tap to dictate';
+            btn.textContent = '\u{1F3A4}';
+            btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid #ddd;background:#f8f8f8;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+            var wrap = document.createElement('div');
+            wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch;flex:1;min-width:0';
+            input.parentNode.insertBefore(wrap, input);
+            wrap.appendChild(input);
+            input.style.flex = '1';
+            input.style.minWidth = '0';
+            wrap.appendChild(btn);
+
+            var recognizing = false;
+            var recognition = null;
+
+            function stop() {
+                recognizing = false;
+                btn.style.background = '#f8f8f8';
+                btn.style.borderColor = '#ddd';
+                btn.textContent = '\u{1F3A4}';
+                if (recognition) { try { recognition.stop(); } catch (e) {} }
+            }
+
+            btn.onclick = function() {
+                if (recognizing) { stop(); return; }
+                try {
+                    recognition = new SR();
+                } catch (e) {
+                    if (typeof showToast === 'function') showToast('Voice input unavailable in this browser.');
+                    return;
+                }
+                recognition.lang = 'en-US';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+                recognizing = true;
+                btn.style.background = '#dc2626';
+                btn.style.color = '#fff';
+                btn.style.borderColor = '#dc2626';
+                btn.textContent = '\u{1F534}';
+
+                recognition.onresult = function(e) {
+                    var transcript = '';
+                    for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+                    transcript = transcript.trim();
+                    if (!transcript) return;
+                    if (opts.numeric) {
+                        var m = transcript.match(/\d+(\.\d+)?/);
+                        if (m) input.value = m[0];
+                    } else if (input.tagName === 'TEXTAREA' && input.value) {
+                        input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+                    } else {
+                        input.value = transcript;
+                    }
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.focus();
+                };
+                recognition.onerror = function() {
+                    if (typeof showToast === 'function') showToast('Could not hear that — try again.');
+                };
+                recognition.onend = stop;
+
+                try { recognition.start(); } catch (e) { stop(); }
+            };
+        };
+
+        function installVoiceInputTargets() {
+            window.attachVoiceInput('chatInput', { label: 'your question' });
+            window.attachVoiceInput('enc-add-desc', { label: 'code description' });
+            window.attachVoiceInput('den-add-cause', { label: 'denial cause' });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', installVoiceInputTargets);
+        } else {
+            installVoiceInputTargets();
+        }
+        })();
+
+        // ================================================================
+        // PREDICTIVE INSIGHTS (2026-08-05) -- real signals computed live
+        // from getDenialEntries(), same anti-fabrication standard as every
+        // other app in this rollout: never a placeholder number, explicit
+        // "not enough history" below a minimum sample size. Checked the
+        // pipeline first, not assumed: renderDenial() already computes a
+        // real "Appeal Success Rate" (resolved vs closed-out denials,
+        // shows "—" with zero closed entries) -- what's new here is
+        // breaking it down BY ROOT CAUSE, which nothing currently
+        // computes, same "extend the existing honest KPI" pattern as
+        // every other app's win-rate/no-show-rate/slow-payer signal.
+        // ================================================================
+        function computeAppealRateByCause() {
+            var list = getDenialEntries();
+            var closedOut = list.filter(function(d) { return d.status === 'Resolved' || d.status === 'Denied'; });
+            var groups = {};
+            closedOut.forEach(function(d) {
+                var cause = d.cause || 'Unspecified';
+                if (!groups[cause]) groups[cause] = [];
+                groups[cause].push(d);
+            });
+            var overallResolved = closedOut.filter(function(d) { return d.status === 'Resolved'; }).length;
+            var overallRate = closedOut.length ? (overallResolved / closedOut.length) : null;
+            if (overallRate === null) return [];
+            var results = [];
+            Object.keys(groups).forEach(function(cause) {
+                var group = groups[cause];
+                if (group.length < 4) return;
+                var resolved = group.filter(function(d) { return d.status === 'Resolved'; }).length;
+                var rate = resolved / group.length;
+                if (rate < overallRate * 0.7) {
+                    results.push({ cause: cause, rate: Math.round(rate * 100), overallRate: Math.round(overallRate * 100), sampleSize: group.length });
+                }
+            });
+            return results.sort(function(a, b) { return a.rate - b.rate; });
+        }
+        function computeDenialPatterns() {
+            var list = getDenialEntries();
+            var byCause = {};
+            list.forEach(function(d) { if (d.cause) byCause[d.cause] = (byCause[d.cause] || 0) + d.count; });
+            var topCauses = Object.entries(byCause).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3);
+            return { topCauses: topCauses, total: list.length };
+        }
+        function renderDenialPredictiveInsights() {
+            var el = document.getElementById('denial-predictive-zone');
+            if (!el) return;
+            var list = getDenialEntries();
+
+            if (list.length < 5) {
+                el.innerHTML = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:12px 16px;font-size:12px;color:#666">📊 Predictive insights need more denial history to be meaningful — only ' + list.length + ' entry(ies) on record so far. This will start surfacing real patterns once there\'s more volume.</div>';
+                return;
+            }
+
+            var worstCauses = computeAppealRateByCause();
+            var patterns = computeDenialPatterns();
+            var causeBits = patterns.topCauses.map(function(e) { return e[0] + ' (' + e[1] + ')'; });
+
+            var html = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:14px 16px">';
+            html += '<div style="font-weight:700;color:#111;margin-bottom:8px;font-size:13px">📊 Predictive Insights <span style="font-weight:400;color:#666;font-size:11px">(from ' + patterns.total + ' denial entries on record)</span></div>';
+
+            if (worstCauses.length) {
+                html += '<div style="margin-bottom:8px">';
+                worstCauses.slice(0, 3).forEach(function(w) {
+                    html += '<div style="font-size:12px;color:#111;padding:4px 0">⚠️ <b>' + escHtml(w.cause) + '</b> — ' + w.rate + '% appeal success rate vs this practice\'s own ' + w.overallRate + '% overall (' + w.sampleSize + ' closed-out entries) — worth reviewing appeal strategy for this root cause.</div>';
+                });
+                html += '</div>';
+            }
+
+            html += '<div style="font-size:11px;color:#666;line-height:1.7;border-top:1px solid #ddd;padding-top:8px;margin-top:4px">';
+            if (causeBits.length) html += 'Most-logged denial causes (by count): ' + causeBits.join(', ');
+            html += '</div>';
+
+            if (!worstCauses.length && !causeBits.length) {
+                html += '<div style="font-size:12px;color:#666">No root-cause patterns detected yet — need at least 4 closed-out entries for the same cause before flagging its appeal rate.</div>';
+            }
+            html += '</div>';
+            el.innerHTML = html;
+        }
+
+        // ================================================================
+        // SHARED COMPANY-KNOWLEDGE LAYER (2026-08-05) -- reuses the SAME
+        // /api/sd-data shared_knowledge resource StoneDesk/SAIRNbuild/
+        // SAIRNvet/SAIRNbiz already use. SAIRNcode already validates its
+        // license against this exact endpoint (gateGo() above) -- no new
+        // backend needed, just a new scData() wrapper using the same raw
+        // bearer-key pattern that function already established.
+        // ================================================================
+        var _scSharedKnowledge = null;
+        function scData(action, resource, payload) {
+            var lic = null;
+            try { lic = localStorage.getItem('sc_license_key'); } catch (e) {}
+            if (!lic) return Promise.resolve(null);
+            return fetch('https://sairn.vercel.app/api/sd-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+                body: JSON.stringify({ action: action, resource: resource, app_id: 'sairncode', payload: payload || {} })
+            }).then(function(r) {
+                return r.json().then(function(d) {
+                    if (!r.ok || !d || !d.ok) { console.warn('scData ' + resource + ' failed (' + r.status + '):', (d && d.error && (d.error.code || d.error.message)) || 'unknown'); return null; }
+                    return d.data;
+                });
+            }).catch(function(e) { console.warn('scData network error:', e.message); return null; });
+        }
+        function loadScSharedKnowledge() {
+            try { scData('read', 'shared_knowledge', {}).then(function(data) { if (data) _scSharedKnowledge = data; }); } catch (e) {}
+        }
+        function recordScSharedTopics(text) {
+            try {
+                if (!text) return;
+                var words = (String(text).toLowerCase().match(/\b[a-z]{5,}\b/g) || []).slice(0, 60);
+                if (!words.length) return;
+                scData('write', 'shared_knowledge', { words: words });
+            } catch (e) {}
+        }
+        // "Recurring denial patterns" -- computed LIVE from real
+        // getDenialEntries() data already in the app, never stored/
+        // aggregated separately, same reasoning as every other app's
+        // equivalent this rollout.
+        function buildScDenialPatternContext() {
+            try {
+                var list = getDenialEntries();
+                if (!list.length) return '';
+                var causes = {};
+                list.forEach(function(d) { if (d.cause) causes[d.cause] = (causes[d.cause] || 0) + 1; });
+                var topCauses = Object.entries(causes).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3).map(function(e) { return e[0]; });
+                return topCauses.length ? ('• Recurring denial causes (live from this practice\'s current data) — ' + topCauses.join(', ')) : '';
+            } catch (e) { return ''; }
+        }
+        function buildScSharedCompanyContext() {
+            var lines = ['SHARED PRACTICE KNOWLEDGE (from everyone at this practice, not just this device):'];
+            if (_scSharedKnowledge && _scSharedKnowledge.topics) {
+                var topics = Object.entries(_scSharedKnowledge.topics).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 8).map(function(e) { return e[0]; });
+                if (topics.length) lines.push('• Frequently discussed across the practice: ' + topics.join(', '));
+            }
+            var causeLine = buildScDenialPatternContext();
+            if (causeLine) lines.push(causeLine);
+            if (lines.length === 1) return '';
+            return lines.join('\n');
+        }
+        loadScSharedKnowledge();
+        window.buildScSharedCompanyContext = buildScSharedCompanyContext;
+        window.recordScSharedTopics = recordScSharedTopics;
     </script>
 </body>
 </html>
