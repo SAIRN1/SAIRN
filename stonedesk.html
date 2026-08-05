@@ -17984,6 +17984,206 @@ if (document.readyState === 'loading') {
 })();
 </script>
 
+<!-- SAIRN AR MEASURE (2026-08-05) -->
+<script>
+// ================================================================
+// SAIRN AR MEASURE
+// Browser-native AR square-footage measurement via the WebXR Device API's
+// hit-test feature -- no native app, no ARKit/RoomPlan/ARCore SDK
+// dependency, works in any WebXR-capable mobile browser (real-world
+// support today: Chrome/Edge on ARCore-capable Android; Safari/iOS does
+// not expose WebXR AR sessions as of this writing -- iOS AR is ARKit-only,
+// reachable from native apps, not from web pages). Feature-detects via
+// navigator.xr.isSessionSupported('immersive-ar') and simply never renders
+// a button when unsupported -- manual typing (and voice dictation, see the
+// SAIRN VOICE INPUT module just above) remain the only path on every
+// device that can't do this, same "never break the existing path"
+// discipline used everywhere else in this build sequence.
+//
+// SCOPE, deliberately narrow per spec ("square-footage/linear-footage...
+// not full room layout"): taps 3 points in AR space -- a start corner, a
+// middle corner, an end point -- forming two edges (like tracing a
+// countertop's front and side). Each edge's real-world length comes from
+// the Euclidean distance between the hit-test poses' 3D positions;
+// multiplying the two lengths gives an area. This is NOT room scanning --
+// the existing manual Room Layout mode (Drawing Tool) already covers that
+// and is untouched by this module entirely.
+//
+// INTEGRATION: writes a single number into the SAME #viz-est-sqft field
+// manual typing and voice dictation already fill -- Quick Ballpark
+// Estimate's vizGetBallpark() (built earlier in this build sequence) is
+// completely unmodified and has no idea the number came from AR instead
+// of a keystroke. No separate/invented pricing path, per spec.
+//
+// The differentiator per the research behind this build isn't the AR
+// measurement itself (MeasureSquare, AR Ruler, arcsite, and others already
+// do that, no patent blocker either way -- all built on the same public
+// ARKit/ARCore/WebXR surface) -- it's that the number lands directly in a
+// real, already-wired pricing/inventory/Quote-Builder pipeline instead of
+// staying a standalone measurement nobody's business software ever sees.
+// Built by Michael L. Dibert · SAIRN Technologies™
+// ================================================================
+(function() {
+'use strict';
+if (window._saircARMeasureInstalled) return;
+window._saircARMeasureInstalled = true;
+
+function checkARSupport() {
+  return new Promise(function(resolve) {
+    if (!navigator.xr || typeof navigator.xr.isSessionSupported !== 'function') { resolve(false); return; }
+    navigator.xr.isSessionSupported('immersive-ar').then(resolve).catch(function(){ resolve(false); });
+  });
+}
+
+function ensureOverlay() {
+  var overlay = document.getElementById('ar-measure-overlay');
+  if (overlay) return overlay;
+  overlay = document.createElement('div');
+  overlay.id = 'ar-measure-overlay';
+  overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;flex-direction:column;justify-content:space-between;padding:20px;box-sizing:border-box;pointer-events:none';
+  overlay.innerHTML =
+    '<div style="pointer-events:auto;align-self:flex-end">' +
+      '<button id="ar-measure-cancel" style="min-width:44px;min-height:44px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:20px;cursor:pointer">×</button>' +
+    '</div>' +
+    '<div style="text-align:center;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.85)">' +
+      '<div class="ar-instructions" style="font-size:16px;font-weight:700;margin-bottom:6px">Point your camera at the countertop</div>' +
+      '<div class="ar-distance" style="font-size:13px"></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#ar-measure-cancel').onclick = function() {
+    if (window._arMeasureSession) { try { window._arMeasureSession.end(); } catch (e) {} }
+  };
+  return overlay;
+}
+
+// Real-world distance between two hit-test-pose positions (meters), converted to feet.
+function distFt(a, b) {
+  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2)) * 3.28084;
+}
+
+async function startARMeasureSession(targetInput) {
+  if (!navigator.xr) return;
+  var overlay = ensureOverlay();
+  var instructionsEl = overlay.querySelector('.ar-instructions');
+  var distanceEl = overlay.querySelector('.ar-distance');
+  var session;
+  try {
+    session = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: overlay }
+    });
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Could not start AR — enter square footage manually instead.');
+    return;
+  }
+  window._arMeasureSession = session;
+
+  var canvas = document.createElement('canvas');
+  var gl = canvas.getContext('webgl', { xrCompatible: true });
+  try { if (gl.makeXRCompatible) await gl.makeXRCompatible(); } catch (e) {}
+  session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
+  var refSpace = await session.requestReferenceSpace('local');
+  var viewerSpace = await session.requestReferenceSpace('viewer');
+  var hitTestSource = null;
+  try { hitTestSource = await session.requestHitTestSource({ space: viewerSpace }); } catch (e) {}
+
+  var points = []; // recorded {x,y,z} positions, in meters, up to 3
+  var lastHitPos = null;
+
+  overlay.style.display = 'flex';
+  instructionsEl.textContent = 'Point your camera at the countertop, then tap to place the first corner.';
+
+  session.addEventListener('select', function() {
+    if (!lastHitPos) return;
+    points.push(lastHitPos);
+    if (points.length === 1) {
+      instructionsEl.textContent = 'Now tap the next corner (end of the first edge).';
+    } else if (points.length === 2) {
+      instructionsEl.textContent = 'Now tap the far corner (end of the second edge).';
+    } else if (points.length === 3) {
+      var lenA = distFt(points[0], points[1]);
+      var lenB = distFt(points[1], points[2]);
+      var sqft = Math.round(lenA * lenB * 10) / 10;
+      instructionsEl.textContent = 'Measured ' + lenA.toFixed(1) + 'ft × ' + lenB.toFixed(1) + 'ft = ' + sqft + ' sqft';
+      distanceEl.textContent = 'Filling the square footage field...';
+      targetInput.value = sqft;
+      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+      setTimeout(function() { try { session.end(); } catch (e) {} }, 1800);
+    }
+  });
+
+  function onXRFrame(t, frame) {
+    session.requestAnimationFrame(onXRFrame);
+    var pose = frame.getViewerPose(refSpace);
+    if (!pose || !session.renderState.baseLayer) return;
+    // Minimal per-frame WebGL bind+clear -- required to keep an immersive-ar session's
+    // compositor happy per the WebXR spec, even though all user-visible feedback here comes from
+    // the DOM overlay, not a rendered 3D reticle (a deliberate scope cut -- see this module's
+    // header comment on what's in vs. out of scope for this pass).
+    gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    var hitResults = hitTestSource ? frame.getHitTestResults(hitTestSource) : [];
+    if (hitResults.length) {
+      var hitPose = hitResults[0].getPose(refSpace);
+      if (hitPose) {
+        lastHitPos = hitPose.transform.position;
+        distanceEl.textContent = points.length
+          ? (distFt(lastHitPos, points[points.length - 1]).toFixed(1) + ' ft from last point — tap to place')
+          : 'Surface detected — tap to place a point';
+      }
+    } else {
+      lastHitPos = null;
+      distanceEl.textContent = 'Move your camera to find a flat surface...';
+    }
+  }
+  session.requestAnimationFrame(onXRFrame);
+
+  session.addEventListener('end', function() {
+    overlay.style.display = 'none';
+    window._arMeasureSession = null;
+  });
+}
+
+window.attachARMeasure = async function(inputId) {
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('armeasure-' + inputId)) return;
+  var supported = await checkARSupport();
+  if (!supported) return; // no button at all -- manual entry (typed or voice) is the only path
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'armeasure-' + inputId;
+  btn.setAttribute('aria-label', 'Measure with AR camera');
+  btn.title = 'Measure with your camera';
+  btn.textContent = '\u{1F4D0}'; // 📐
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center';
+  // Slots in right after whatever's already sitting next to the input. attachVoiceInput (SAIRN
+  // VOICE INPUT, registered earlier in the same DOMContentLoaded pass so it runs first) wraps the
+  // input in its own flex div when it attaches a mic button -- detected here by checking for that
+  // mic button as a sibling, rather than assuming any particular class name on the wrapper, since
+  // this module doesn't (and per spec shouldn't) modify that one to expose one.
+  var voiceBtn = document.getElementById('voicebtn-' + inputId);
+  var afterEl = (voiceBtn && voiceBtn.parentNode === input.parentNode) ? input.parentNode : input;
+  afterEl.parentNode.insertBefore(btn, afterEl.nextSibling);
+  btn.onclick = function() { startARMeasureSession(input); };
+};
+
+function installARMeasureTargets() {
+  window.attachARMeasure('viz-est-sqft');
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installARMeasureTargets);
+} else {
+  installARMeasureTargets();
+}
+
+})();
+</script>
+
 <!-- SAIRN MULTI-MODAL INPUT -->
 <script>
 // ================================================================
