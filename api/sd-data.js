@@ -30,7 +30,20 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 
-const RESOURCES = { profile: true, memory: true, employees: true, slabs: true, render_usage: true };
+const RESOURCES = { profile: true, memory: true, employees: true, slabs: true, render_usage: true, shared_knowledge: true };
+// Word-frequency cap for the shared_knowledge topics map (2026-08-05) -- pruned to the top N by
+// count on every write so a shop's row can't grow unbounded over the account's lifetime. See
+// sql/sd_shared_knowledge_schema.sql for the full design/scope note.
+const SHARED_KNOWLEDGE_TOPIC_CAP = 150;
+// Generic filler words excluded from the shared topics map so "frequent topics" reflects actual
+// stone-industry/company-specific vocabulary rather than common English words that would
+// otherwise dominate any word-frequency count regardless of subject matter.
+const SHARED_KNOWLEDGE_STOPWORDS = {
+  about:1, after:1, again:1, their:1, there:1, these:1, thing:1, think:1, would:1, could:1,
+  should:1, which:1, where:1, whose:1, other:1, still:1, going:1, doing:1, being:1, maybe:1,
+  really:1, actually:1, something:1, someone:1, anyone:1, thanks:1, thank:1, please:1, hello:1,
+  regarding:1, wanted:1, wondering:1, question:1, message:1
+};
 // Roles refused entirely for the employees resource (carries hourly_rate —
 // payroll). Owner/Manager may read; Sales/Install may not, per the RBAC
 // design in sql/sd_employee_auth_schema.sql. Manager additionally gets
@@ -90,7 +103,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge' } });
     return;
   }
 
@@ -378,6 +391,66 @@ module.exports = async (req, res) => {
       if (!r.ok) return upstream(res, rows);
       const count = (Array.isArray(rows) && rows[0] && rows[0].count) || 0;
       res.status(200).json({ ok: true, data: { count: count, provisioned: true } });
+      return;
+    }
+
+    // ── SHARED KNOWLEDGE (sd_shared_knowledge — "Claude learns the company", 2026-08-05) ────
+    // One row per shop (license_hash), not per employee/device — see
+    // sql/sd_shared_knowledge_schema.sql for the full scope note on what deliberately does NOT
+    // carry forward from the old per-browser personalization module. No employee-token gate on
+    // either action — this is aggregate topic-frequency data, not the payroll/pay-rate class of
+    // sensitivity that got 'employees' and the subcontractor roster their per-role gates.
+    if (resource === 'shared_knowledge' && action === 'read') {
+      const r = await fetch(rest('sd_shared_knowledge?license_hash=eq.' + enc(licHash) + '&select=data&limit=1'), { headers });
+      if (r.status === 404 || r.status === 400) {
+        res.status(200).json({ ok: true, data: { topics: {}, totalQuestions: 0 }, provisioned: false });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const row = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: (row && row.data) || { topics: {}, totalQuestions: 0 }, provisioned: true });
+      return;
+    }
+    if (resource === 'shared_knowledge' && action === 'write') {
+      // payload: { words: ['countertop','waterfall',...] } -- extracted client-side from one
+      // user message, same 5+-letter-word pattern the old per-browser module already used
+      // (analyzeUserMessage's topicWords regex), just written to a shared row instead of
+      // localStorage. Never raw message text — only the extracted word list ever leaves the
+      // browser for this purpose.
+      const words = Array.isArray(payload.words) ? payload.words.slice(0, 200) : [];
+      // Read-current-then-write, same accepted non-atomic tradeoff as sd_render_usage's
+      // increment (see that resource's own comment) — fine at this feature's real volume
+      // (a handful of employees' chat activity, not high-frequency concurrent writes).
+      let current = { topics: {}, totalQuestions: 0 };
+      try {
+        const r = await fetch(rest('sd_shared_knowledge?license_hash=eq.' + enc(licHash) + '&select=data&limit=1'), { headers });
+        if (r.ok) {
+          const rows = await r.json();
+          const row = Array.isArray(rows) && rows[0];
+          if (row && row.data) current = row.data;
+        }
+      } catch (e) { /* fall through with the empty default rather than blocking the write */ }
+      const topics = Object.assign({}, current.topics || {});
+      words.forEach((w) => {
+        const word = String(w || '').toLowerCase().trim();
+        if (word.length < 5 || word.length > 40 || SHARED_KNOWLEDGE_STOPWORDS[word]) return;
+        topics[word] = (topics[word] || 0) + 1;
+      });
+      // Prune to the top N by count before writing back.
+      const pruned = Object.entries(topics)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, SHARED_KNOWLEDGE_TOPIC_CAP)
+        .reduce((acc, [k, v]) => { acc[k] = v; return acc; }, {});
+      const newData = { topics: pruned, totalQuestions: (current.totalQuestions || 0) + (words.length ? 1 : 0) };
+      const r2 = await fetch(rest('sd_shared_knowledge?on_conflict=license_hash'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, data: newData, updated_at: nowISO() })
+      });
+      const rows2 = await r2.json();
+      if (!r2.ok) return upstream(res, rows2);
+      res.status(200).json({ ok: true, data: newData });
       return;
     }
 

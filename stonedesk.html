@@ -17695,6 +17695,63 @@ function buildPersonalizationContext() {
   return lines.join('\n');
 }
 
+// == SHARED COMPANY-KNOWLEDGE LAYER (2026-08-05) ==============
+// Company-wide, not per-browser -- Supabase-backed via api/sd-data.js's 'shared_knowledge'
+// resource, scoped by license_hash so every employee on every device contributes to and reads
+// from the SAME aggregate, unlike the per-browser `learned`/`global_l` tracking above. See
+// sql/sd_shared_knowledge_schema.sql for exactly what does and doesn't carry forward from that
+// per-browser module into this shared one (deliberately narrower -- topic/term frequency only,
+// never per-person communication-style signals, never verbatim message text, never device/
+// activity tracking).
+var _sharedKnowledge = null; // {topics:{word:count}, totalQuestions} once loaded this session
+function loadSharedKnowledge() {
+  try {
+    if (typeof sdData !== 'function') return;
+    sdData('read', 'shared_knowledge', {}).then(function(data){ if (data) _sharedKnowledge = data; });
+  } catch (e) {}
+}
+function recordSharedTopics(text) {
+  try {
+    if (typeof sdData !== 'function' || !text) return;
+    var words = (String(text).toLowerCase().match(/\b[a-z]{5,}\b/g) || []).slice(0, 60);
+    if (!words.length) return;
+    sdData('write', 'shared_knowledge', { words: words }); // fire-and-forget, non-blocking
+  } catch (e) {}
+}
+// "Recurring customer patterns" -- computed LIVE from real business data already in the app
+// (sdCustomers), never stored/aggregated separately -- see sql/sd_shared_knowledge_schema.sql's
+// scope note for why (always fresh, zero extra storage, no risk of aggregating customer PII from
+// chat text the way scraping conversation history for "customer patterns" would risk).
+function buildCustomerPatternContext() {
+  try {
+    if (typeof sdCustomers === 'undefined' || !sdCustomers.length) return '';
+    var materials = {}, projects = {};
+    sdCustomers.forEach(function(c){
+      if (c.material) materials[c.material] = (materials[c.material]||0)+1;
+      if (c.project) projects[c.project] = (projects[c.project]||0)+1;
+    });
+    var topMat = Object.entries(materials).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return e[0];});
+    var topProj = Object.entries(projects).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(e){return e[0];});
+    var bits = [];
+    if (topMat.length) bits.push('most-requested materials: ' + topMat.join(', '));
+    if (topProj.length) bits.push('most common project types: ' + topProj.join(', '));
+    return bits.length ? ('• Recurring customer patterns (live from this shop\'s current data) — ' + bits.join('; ')) : '';
+  } catch (e) { return ''; }
+}
+function buildSharedCompanyContext() {
+  var lines = ['SHARED COMPANY KNOWLEDGE (from everyone at this shop, not just this device):'];
+  if (_sharedKnowledge && _sharedKnowledge.topics) {
+    var topics = Object.entries(_sharedKnowledge.topics)
+      .sort(function(a,b){ return b[1]-a[1]; }).slice(0,8).map(function(e){ return e[0]; });
+    if (topics.length) lines.push('• Frequently discussed across the shop: ' + topics.join(', '));
+  }
+  var custLine = buildCustomerPatternContext();
+  if (custLine) lines.push(custLine);
+  if (lines.length === 1) return '';
+  return lines.join('\n');
+}
+loadSharedKnowledge();
+
 // == INJECT PERSONALIZATION INTO FETCH ========================
 if (!window._saircPersExFetchPatched) {
   window._saircPersExFetchPatched = true;
@@ -17707,6 +17764,13 @@ if (!window._saircPersExFetchPatched) {
           var ctx = buildPersonalizationContext();
           if (ctx) {
             body.system = ctx + '\n\n---\n\n' + body.system;
+            opts = Object.assign({}, opts, { body: JSON.stringify(body) });
+          }
+        }
+        if (body.system && !body.system.includes('SHARED COMPANY KNOWLEDGE')) {
+          var sharedCtx = buildSharedCompanyContext();
+          if (sharedCtx) {
+            body.system = sharedCtx + '\n\n---\n\n' + body.system;
             opts = Object.assign({}, opts, { body: JSON.stringify(body) });
           }
         }
@@ -17727,6 +17791,7 @@ function installLearningHook() {
   window.addMsg = function(role, content) {
     if (role === 'user' && content && content.length > 3) {
       analyzeUserMessage(content);
+      recordSharedTopics(content);
     }
     return _orig.apply(this, arguments);
   };
