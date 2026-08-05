@@ -419,6 +419,12 @@ module.exports = async (req, res) => {
       // localStorage. Never raw message text — only the extracted word list ever leaves the
       // browser for this purpose.
       const words = Array.isArray(payload.words) ? payload.words.slice(0, 200) : [];
+      // removeWords (2026-08-05): strikes exact keys from the topics map before the merge below
+      // runs. Added specifically because no delete/edit path existed for this table at all —
+      // a test artifact ("zephyrgranite", injected verifying cross-session propagation) needed
+      // removing from a shop's real topics data without wiping the whole row. General-purpose
+      // going forward, not a one-off: any bad/test/stale term can be struck the same way.
+      const removeWords = Array.isArray(payload.removeWords) ? payload.removeWords.slice(0, 50) : [];
       // Read-current-then-write, same accepted non-atomic tradeoff as sd_render_usage's
       // increment (see that resource's own comment) — fine at this feature's real volume
       // (a handful of employees' chat activity, not high-frequency concurrent writes).
@@ -441,6 +447,7 @@ module.exports = async (req, res) => {
         }
       } catch (e) { /* fall through with the empty default rather than blocking the write */ }
       const topics = Object.assign({}, current.topics || {});
+      removeWords.forEach((w) => { delete topics[String(w || '').toLowerCase().trim()]; });
       words.forEach((w) => {
         const word = String(w || '').toLowerCase().trim();
         if (word.length < 5 || word.length > 40 || SHARED_KNOWLEDGE_STOPWORDS[word]) return;
