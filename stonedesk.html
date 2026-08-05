@@ -4799,6 +4799,14 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   </div>
 </div>
 <div id="cust-alerts-zone" style="margin-bottom:14px"></div>
+<!-- PREDICTIVE INSIGHTS (2026-08-05) -- computed live from real sdCustomers data every time
+     runAlertScan() runs (same cadence as the stale-quote alert banner just above, which already
+     covers "quotes sitting unaddressed" -- this callout deliberately does NOT duplicate that
+     signal, it adds the two the app didn't have yet. See renderPredictiveInsights() for the real
+     data sourcing/honesty rules (minimum sample size before showing an average, explicit "not
+     enough data yet" state, no invented win-rate since sdCustomers has no loss/decline status to
+     compute one from -- see that function's own comment for why). -->
+<div id="cust-predictive-zone" style="margin-bottom:14px"></div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="cust-kpi1">0</div><div class="kpi-label">Total Customers</div></div>
   <div class="kpi"><div class="kpi-val" id="cust-kpi2">0</div><div class="kpi-label">Active (90 days)</div></div>
@@ -18757,6 +18765,92 @@ function runAlertScan() {
   updateCustomerKPIs();
   renderCustomerAlertZone(alerts);
   renderWarrantyAlertZone(alerts);
+  if (typeof renderPredictiveInsights === 'function') renderPredictiveInsights();
+}
+
+// == PREDICTIVE INSIGHTS (2026-08-05) ===========================================================
+// Real signals computed live from sdCustomers -- no fabricated/placeholder numbers, matching the
+// same anti-fabrication standard this app's own panel-by-panel audit history exists to enforce
+// (Guardian Check 0b). Two signals here, not three -- a third ("win-rate patterns by material/
+// project/price band") was in the original brief but sdCustomers' status pipeline
+// (quoted->approved->templated->fabricating->scheduled->complete) has NO loss/decline state at
+// all, only forward progression -- a customer that never converts just stays stuck at 'quoted'
+// forever, which is indistinguishable from "hasn't responded yet" (already covered by the
+// existing stale-quote alert above). Computing a "win rate" from that would mean treating every
+// stuck quote as a loss with zero real evidence either way -- exactly the fabricated-confidence
+// pattern this build was told not to reintroduce, so it's dropped rather than faked. "Quotes
+// sitting unaddressed" (the other candidate signal) already exists too, as the alert banner
+// directly above this callout -- not duplicated here either.
+function computePricingInsight() {
+  var priced = sdCustomers.filter(function(c) { return c.quote > 0 && c.material; });
+  var groups = {};
+  priced.forEach(function(c) {
+    if (!groups[c.material]) groups[c.material] = [];
+    groups[c.material].push(c);
+  });
+  var flags = [];
+  Object.keys(groups).forEach(function(material) {
+    var list = groups[material];
+    // Minimum sample size before an "average" means anything -- below this, stay silent rather
+    // than show a fake-confident comparison off 1-2 data points. Chosen, not derived: 4 is small
+    // enough to matter for a shop this size, large enough that one outlier can't dominate it.
+    if (list.length < 4) return;
+    var avg = list.reduce(function(s, c) { return s + c.quote; }, 0) / list.length;
+    list.forEach(function(c) {
+      if (c.status === 'quoted' && c.quote < avg * 0.8) {
+        flags.push({ customer: c, material: material, avg: avg, sampleSize: list.length, pctBelow: Math.round((1 - c.quote / avg) * 100) });
+      }
+    });
+  });
+  return flags.sort(function(a, b) { return b.pctBelow - a.pctBelow; });
+}
+function computePipelinePatterns() {
+  var byStage = {};
+  sdCustomers.forEach(function(c) { byStage[c.status] = (byStage[c.status] || 0) + (c.quote || 0); });
+  var byMaterial = {};
+  sdCustomers.forEach(function(c) { if (c.material) byMaterial[c.material] = (byMaterial[c.material] || 0) + 1; });
+  var topMaterials = Object.entries(byMaterial).sort(function(a, b) { return b[1] - a[1]; }).slice(0, 3);
+  return { byStage: byStage, topMaterials: topMaterials, totalCustomers: sdCustomers.length };
+}
+function renderPredictiveInsights() {
+  var el = document.getElementById('cust-predictive-zone');
+  if (!el || typeof sdCustomers === 'undefined') return;
+  var statusLabels = { quoted: 'Quoted', approved: 'Approved', templated: 'Templated', fabricating: 'Fabricating', scheduled: 'Scheduled', complete: 'Complete' };
+
+  if (sdCustomers.length < 5) {
+    el.innerHTML = '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted)">📊 Predictive insights need more pipeline history to be meaningful — only ' + sdCustomers.length + ' customer(s) on record so far. This will start surfacing real patterns once there\'s more volume.</div>';
+    return;
+  }
+
+  var pricingFlags = computePricingInsight();
+  var patterns = computePipelinePatterns();
+  var stageBits = Object.keys(patterns.byStage).filter(function(k) { return patterns.byStage[k] > 0; })
+    .sort(function(a, b) { return patterns.byStage[b] - patterns.byStage[a]; })
+    .map(function(k) { return (statusLabels[k] || k) + ': $' + Math.round(patterns.byStage[k]).toLocaleString(); });
+  var matBits = patterns.topMaterials.map(function(e) { return e[0] + ' (' + e[1] + ')'; });
+
+  var html = '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px">';
+  html += '<div style="font-weight:700;color:var(--text);margin-bottom:8px;font-size:13px">📊 Predictive Insights <span style="font-weight:400;color:var(--muted);font-size:11px">(from ' + patterns.totalCustomers + ' customers on record)</span></div>';
+
+  if (pricingFlags.length) {
+    html += '<div style="margin-bottom:8px">';
+    pricingFlags.slice(0, 3).forEach(function(f) {
+      html += '<div style="font-size:12px;color:var(--text);padding:4px 0">⚠️ <b>' + escHtml(f.customer.name) + '</b> — quoted $' + Math.round(f.customer.quote).toLocaleString() +
+        ', ' + f.pctBelow + '% below this shop\'s own $' + Math.round(f.avg).toLocaleString() + ' average for ' + escHtml(f.material) + ' (based on ' + f.sampleSize + ' prior quotes) — worth a second look before it goes further.</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div style="font-size:11px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:8px;margin-top:4px">';
+  if (stageBits.length) html += 'Pipeline value by stage: ' + stageBits.join(' · ') + '<br>';
+  if (matBits.length) html += 'Most-quoted materials: ' + matBits.join(', ');
+  html += '</div>';
+
+  if (!pricingFlags.length && !stageBits.length && !matBits.length) {
+    html += '<div style="font-size:12px;color:var(--muted)">No pricing or material patterns detected yet.</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
 }
 
 function renderAlertBar(alerts) {
