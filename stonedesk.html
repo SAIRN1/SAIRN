@@ -559,50 +559,116 @@ body.is-exec .sb-exec{display:flex}
      fallback directly; margin:0 removes the now-pointless auto-centering
      (nothing to center once the item is already full-width). */
   #panel-history>div{width:100%!important;margin:0!important}
+  /* Sitewide KPI-row breakpoint sweep, 2026-08-05. Closes the AUDIT NOTE
+     below: every repeat(N>=3,1fr) KPI-row grid across the app measured via
+     real Playwright 390px viewport (child-tile width < 100px flagged,
+     matching Job History's own measured 61px-broken / 167.5px-fixed
+     range). 53 panels, 62 grid instances total. repeat(1,1fr)/repeat(2,1fr)
+     grids and auto-fit/auto-fill grids excluded -- already responsive or
+     already single-column. */
+  #panel-admin [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-agreements [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-ai [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-ai [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-aiquote [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-ap [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-bidboard [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-bulletin [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-business [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-careguide [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-comms [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-contractor [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-crm [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-crm [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-customers [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-damage [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-emailsecurity [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-employees [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-equipment [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-executive [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-executive [style*="grid-template-columns:repeat(3,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-fieldmap [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-financial [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-intake [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-integrations [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-inventory [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-invoices [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-itadmin [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-jobcost [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-jobcost [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-manifest [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-nesting [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-nps [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-photos [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-po [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-priceintel [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-quote [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-receiving [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-referral [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-remnant [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-reviews [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-safety [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-schedule [style*="grid-template-columns:repeat(7,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-schedule [style*="grid-template-columns:repeat(6,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-schedule [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-seamai [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-sintered [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-slabs [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-sms [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-stonehub [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-stoneyard [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-subcontractor [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-tax [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-template [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-timesheet [style*="grid-template-columns:repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-training [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-veinmatch [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-vendorcat [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-vendors [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-warranty [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  #panel-waste [style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+  /* Same wrapper-margin defect as Job History's own residual fix above
+     (inline `margin:0 auto` under `max-width:1100/1200px` disabling flex
+     stretch), found on these 9 panels specifically -- confirmed via
+     getBoundingClientRect() on the direct child wrapper before/after,
+     not assumed from the KPI-grid symptom alone. Collapsing the grid's
+     own columns wasn't sufficient for these because the wrapper itself,
+     not just the grid, was wider than the 390px viewport. */
+  #panel-comms>div{width:100%!important;margin:0!important}
+  #panel-safety>div{width:100%!important;margin:0!important}
+  #panel-nesting>div{width:100%!important;margin:0!important}
+  #panel-crm>div{width:100%!important;margin:0!important}
+  #panel-jobcost>div{width:100%!important;margin:0!important}
+  #panel-timesheet>div{width:100%!important;margin:0!important}
+  #panel-po>div{width:100%!important;margin:0!important}
+  #panel-careguide>div{width:100%!important;margin:0!important}
+  #panel-ap>div{width:100%!important;margin:0!important}
 }
-/* Touch-target floor for Job History's buttons, applied unconditionally
-   (not just under the mobile media query above -- WCAG 2.5.8 target size
-   and this project's own 40-44px house convention aren't viewport-gated
-   elsewhere either). Header buttons (AI Analysis/Export/Print) rendered
-   at 35px; the per-row View button -- built from a JS template string,
-   not static markup -- rendered at 21x43px, which fails even WCAG
-   2.5.8's 24px AA floor, not just house convention. One rule fixes both:
-   min-height is unset by either button's own inline style (the View
-   button's inline style only sets padding/font-size), so no !important
-   is needed -- this simply fills in a property neither el has an inline
-   value for, no specificity fight. */
-#panel-history .q-btn{min-height:44px}
-/* Field Map (panel-fieldmap) touch-target floor, 2026-08-04. Same defect
-   class as Job History's .q-btn fix above, but broadened to `button`
-   rather than `.q-btn` specifically: this panel's per-stop Delete button
-   (fmStopCardHtml(), built from a JS template string) carries no class
-   at all, only inline font-size/padding, so a .q-btn-scoped rule would
-   have missed it. Header buttons/tabs/Add Stop/Optimize Route/Save Stop/
-   Cancel/Next 7/30 Days all measured 35-36px before this; Delete could
-   not be measured directly (no manual stops exist in the current demo
-   state to render one) but shares the identical undersized inline-style
-   pattern, confirmed by reading its template rather than assumed absent
-   a live sample. Checked separately and found clean, not fixed because
-   nothing needed it: this panel's repeat(4,1fr) KPI row and its three
-   1fr-Npx two-column grids (My Day/Overview/Dispatch board) do NOT
-   overflow at 390px -- verified across all three tabs plus the
-   always-visible dispatch section (document.scrollWidth===innerWidth,
-   0 elements past the viewport edge in each case) -- so no equivalent to
-   Job History's KPI-stacking or wrapper-margin fix was needed here. */
-#panel-fieldmap button{min-height:44px}
-/* AUDIT NOTE (not fixed, flagged for the panel-by-panel queue): the same
-   unclassed repeat(N,1fr) KPI-row pattern with no responsive breakpoint
-   exists in essentially every other panel too (75 occurrences of
-   `style="display:grid;grid-template-columns:repeat(` sitewide, one grep
-   away from re-confirming) -- e.g. panel-warranty, panel-slabs,
-   panel-crm, panel-jobcost, panel-timesheet, panel-remnant, panel-po,
-   panel-ap, panel-tax and more, the same list already named in the
-   .tw table-scroll fix above. The undersized-button pattern (.q-btn's
-   base 9px/18px padding rendering at ~35px, and JS-templated per-row
-   action buttons at ~21px) is also not unique to Job History -- any
-   panel with a dense per-row action button built the same way likely
-   has the identical defect. Do not assume either is fixed anywhere but
-   Job History until each panel is actually checked in its own turn. */
+/* Sitewide touch-target floor, 2026-08-05. Supersedes the two panel-scoped
+   rules this replaces (#panel-history .q-btn, #panel-fieldmap button --
+   see git history for their original reasoning, still valid, just no
+   longer panel-limited). Swept all 62 panels via Playwright at a real
+   390px viewport: every .q-btn is itself a <button> (confirmed via
+   tagName, not assumed), so `button` alone covers both the classed
+   9px/18px-padding .q-btn case (~36px tall) and unclassed JS-templated
+   per-row action buttons (~21-35px tall, e.g. Field Map's Delete). Scoped
+   to `.panel` so login/auth-screen controls (.auth-btn, a different
+   class) are untouched. min-height only, matching the two rules it
+   replaces -- min-width was deliberately left alone: only 2 buttons
+   sitewide measured under 44px wide (quote's per-line-item qty
+   +/- steppers at 28px, market's "Clear All" at 41px), both tight inline
+   controls where forcing min-width would risk breaking their row layout;
+   visually verified post-fix at 390px, no regression from the height
+   change alone. Re-verified after: 0 buttons under 44px tall remain
+   across all 62 panels. */
+.panel button{min-height:44px}
+/* AUDIT NOTE (RESOLVED 2026-08-05, see the two fixes above and in the KPI
+   breakpoint media query further up): this comment previously flagged 75
+   unfixed repeat(N,1fr) KPI-row instances and an app-wide undersized-
+   button pattern as a to-do for a future panel-by-panel pass. That pass
+   ran -- full 62-panel Playwright sweep at a real 390px viewport, not
+   assumed -- and both are now closed sitewide. Left here (rather than
+   deleted) as the historical record of what prompted the sweep. */
 /* FIX (user-reported: "bottom of the page cut off"): .panel had
    overflow:hidden with no scroll fallback. Panels that don't have their
    own dedicated scrollable inner wrapper (History, Admin, Business,
