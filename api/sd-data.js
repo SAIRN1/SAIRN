@@ -425,6 +425,15 @@ module.exports = async (req, res) => {
       let current = { topics: {}, totalQuestions: 0 };
       try {
         const r = await fetch(rest('sd_shared_knowledge?license_hash=eq.' + enc(licHash) + '&select=data&limit=1'), { headers });
+        if (r.status === 404 || r.status === 400) {
+          // Migration not run yet — see sql/sd_shared_knowledge_schema.sql. Refuse cleanly here
+          // rather than letting the write below fail with an opaque 502 for the same reason
+          // (found live: PostgREST returns PGRST205 "table not found in schema cache" for this
+          // exact case, which the write POST further down would otherwise surface as a generic
+          // "Data store error" with no hint what's actually wrong).
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Shared knowledge tracking is not set up yet — run sql/sd_shared_knowledge_schema.sql in Supabase first.' } });
+          return;
+        }
         if (r.ok) {
           const rows = await r.json();
           const row = Array.isArray(rows) && rows[0];
