@@ -57,7 +57,10 @@ const ROLES_BY_APP = {
   // SAIRNgrounds (2026-08-05): matches sairngrounds.html's Phase 1 role picker
   // (Superintendent/Grounds Manager/Crew/Office) plus 'owner' for bootstrap,
   // same convention as every other app's first-provisioned credential.
-  sairngrounds: ['owner', 'superintendent', 'manager', 'crew', 'office']
+  sairngrounds: ['owner', 'superintendent', 'manager', 'crew', 'office'],
+  // SAIRNscape (2026-08-06): matches sairnscape.html's Phase 1 role picker
+  // (Owner/Crew Lead/Office) -- 'owner' already covers bootstrap.
+  sairnscape: ['owner', 'crew_lead', 'office']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.

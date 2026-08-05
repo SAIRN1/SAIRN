@@ -1074,16 +1074,18 @@ if (document.readyState === 'loading') {
 #scp-gate .gsub{color:#64748B;font-size:13px;margin-bottom:28px;}
 #scp-gate .ginp{width:100%;border:2px solid #E2E8F0;border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;}
 #scp-gate .ginp:focus{border-color:#22C55E;}
-#scp-gate .gbtn{width:100%;background:#22C55E;color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
-#scp-gate .gbtn:hover{background:#15803D;}
+#scp-gate .gbtn,#scp-role .gbtn{width:100%;background:#22C55E;color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;}
+#scp-gate .gbtn:hover,#scp-role .gbtn:hover{background:#15803D;}
 #scp-gate .gerr{color:#EF4444;font-size:13px;margin-top:8px;min-height:18px;}
 #scp-gate .gback{font-size:12px;color:#94A3B8;margin-top:14px;cursor:pointer;}
 #scp-role{position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#22C55E);display:none;align-items:center;justify-content:center;z-index:2098;}
 #scp-role.on{display:flex;}
 #scp-role .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
-#scp-role .plogo{font-size:24px;font-weight:800;color:#15803D;margin-bottom:16px;}
-.scp-rolebtn{display:block;width:100%;text-align:left;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:14px 16px;margin-bottom:10px;font-size:14px;font-weight:600;cursor:pointer;}
-.scp-rolebtn:hover{background:#F0FDF4;border-color:#22C55E;color:#15803D;}
+#scp-role .plogo{font-size:24px;font-weight:800;color:#15803D;margin-bottom:4px;}
+.scp-plabel{font-size:12px;font-weight:600;color:#64748B;margin-bottom:6px;display:block;text-align:left}
+.scp-pinput{width:100%;border:1px solid #E2E8F0;border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:14px;box-sizing:border-box;min-height:44px}
+.scp-pinput.scp-pin{font-size:16px;letter-spacing:4px;text-align:center}
+.scp-perr{color:#EF4444;font-size:12px;margin-top:8px;min-height:16px;}
 #scp-app{display:none;flex-direction:column;height:100vh;}
 #scp-app.on{display:flex;}
 #scp-app header{height:56px;background:#15803D;display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
@@ -1091,13 +1093,13 @@ if (document.readyState === 'loading') {
 #scp-app .hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
 #scp-app .hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
 #scp-app .huser{color:rgba(255,255,255,.85);font-size:13px;}
-#scp-app .hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+#scp-app .hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;min-height:44px;}
 #scp-app .hbtn:hover{background:rgba(255,255,255,.25);}
-.scp-navtog{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;display:none;}
+.scp-navtog{background:none;border:none;color:#fff;font-size:20px;cursor:pointer;display:none;min-width:44px;min-height:44px;}
 .scp-wrap{display:flex;flex:1;overflow:hidden;}
 #scp-aside{width:220px;background:#fff;border-right:1px solid #E2E8F0;overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;transition:transform .2s;}
 .scp-ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:#64748B;letter-spacing:.8px;text-transform:uppercase;}
-.scp-sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:#0F172A;font-size:13px;font-weight:500;}
+.scp-sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:#0F172A;font-size:13px;font-weight:500;min-height:44px;}
 .scp-sb:hover{background:#F0FDF4;color:#15803D;}
 .scp-sb.on{background:#F0FDF4;color:#15803D;font-weight:700;}
 .scp-sico{font-size:15px;width:20px;text-align:center;}
@@ -1116,12 +1118,12 @@ if (document.readyState === 'loading') {
 .scp-ptitle{font-size:22px;font-weight:800;}
 .scp-psub{color:#64748B;font-size:13px;margin-top:2px;}
 .scp-pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
-.scp-btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;min-height:40px;}
+.scp-btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px;}
 .scp-bp{background:#22C55E;color:#fff;}
 .scp-bp:hover{background:#15803D;}
 .scp-bo{background:#fff;border:1px solid #E2E8F0;color:#0F172A;}
 .scp-bo:hover{border-color:#22C55E;color:#15803D;}
-.scp-bs{padding:6px 12px;font-size:12px;min-height:36px;}
+.scp-bs{padding:6px 12px;font-size:12px;min-height:44px;}
 .scp-krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
 .scp-kpi{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);}
 .scp-klbl{font-size:11px;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
@@ -1186,10 +1188,34 @@ if (document.readyState === 'loading') {
 <div id="scp-role">
   <div class="pbox">
     <div class="plogo">SAIRNscape</div>
-    <div style="font-size:13px;color:#64748B;margin-bottom:18px">Select your role for this session</div>
-    <button class="scp-rolebtn" onclick="scpApplyRole('Owner')">&#127793; Owner</button>
-    <button class="scp-rolebtn" onclick="scpApplyRole('Crew Lead')">&#128119; Crew Lead</button>
-    <button class="scp-rolebtn" onclick="scpApplyRole('Office')">&#128188; Office</button>
+    <div id="scp-login-view">
+      <label class="scp-plabel" for="scp-employee-input">Employee ID</label>
+      <input type="text" id="scp-employee-input" class="scp-pinput" autocomplete="username" maxlength="128" aria-required="true"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('scp-pin-input').focus();}">
+      <label class="scp-plabel" for="scp-pin-input">PIN</label>
+      <input type="password" id="scp-pin-input" class="scp-pinput scp-pin" maxlength="8" inputmode="numeric" autocomplete="current-password" aria-required="true"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();scpDoLogin();}">
+      <div class="scp-perr" id="scp-perr" role="alert" aria-live="polite"></div>
+      <button class="gbtn" onclick="scpDoLogin()" style="width:100%">Sign In</button>
+      <div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:14px">
+        <a href="#" onclick="scpShowBootstrap();return false;" style="color:#94A3B8">First time setup</a>
+      </div>
+    </div>
+    <div id="scp-bootstrap-view" style="display:none">
+      <div style="font-size:13px;margin-bottom:14px;text-align:center;line-height:1.5">Set up the Owner account for this business. This only works once.</div>
+      <label class="scp-plabel" for="scp-boot-employee-input">Your Employee ID</label>
+      <input type="text" id="scp-boot-employee-input" class="scp-pinput" autocomplete="username" maxlength="128" aria-required="true">
+      <label class="scp-plabel" for="scp-boot-name-input">Your Name</label>
+      <input type="text" id="scp-boot-name-input" class="scp-pinput" autocomplete="name" maxlength="128">
+      <label class="scp-plabel" for="scp-boot-pin-input">Choose a PIN (6-8 digits)</label>
+      <input type="password" id="scp-boot-pin-input" class="scp-pinput scp-pin" maxlength="8" inputmode="numeric" autocomplete="new-password" aria-required="true"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();scpDoBootstrap();}">
+      <div class="scp-perr" id="scp-boot-error" role="alert" aria-live="polite"></div>
+      <button class="gbtn" onclick="scpDoBootstrap()" style="width:100%">Create Owner Account</button>
+      <div style="font-size:11px;color:#94A3B8;text-align:center;margin-top:14px">
+        <a href="#" onclick="scpShowLogin();return false;" style="color:#94A3B8">Back to sign in</a>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1230,6 +1256,10 @@ if (document.readyState === 'loading') {
     <div class="scp-kpi"><div class="scp-klbl">Unpaid Invoices</div><div class="scp-kval" id="scp-k-inv">0</div><div class="scp-kt" id="scp-k-invamt">$0 outstanding</div></div>
   </div>
   <div class="scp-card"><div class="scp-ch"><span class="scp-ct">Upcoming Schedule</span></div><div class="scp-cb" id="scp-d-schedule"></div></div>
+  <!-- Predictive insights -- computed live from real scp_* data below,
+       never hardcoded. "--" shown honestly when the denominator is empty,
+       same discipline as every other app's rollout this session. -->
+  <div class="scp-card"><div class="scp-ch"><span class="scp-ct">Insights</span></div><div class="scp-cb" id="scp-d-insights"></div></div>
 </div>
 
 <!-- AI -->
@@ -1380,6 +1410,26 @@ function scpFmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFracti
 function scpFdate(d){if(!d)return'--';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
 function scpToast(m,d){var t=scp$('scp-toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 
+// === SERVER DATA SYNC (api/sd-data.js scp_* resources) -- Phase 2 ===
+// Same shape as grdData()/sdData()/sbData() elsewhere on the platform.
+// Returns null on any failure so callers fall back to the existing
+// localStorage copy rather than hard-failing a panel.
+async function scpData(action, resource, payload) {
+  var licKey = scpLd('scp_lic', null);
+  if (!licKey) return null;
+  try {
+    var headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey };
+    try { var tok = sessionStorage.getItem(SCP_SESSION_KEY); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
+    var res = await fetch('https://sairn.vercel.app/api/sd-data', {
+      method: 'POST', headers: headers,
+      body: JSON.stringify({ action: action, resource: resource, payload: payload })
+    });
+    if (!res.ok) return null;
+    var j = await res.json();
+    return (j && j.ok) ? j : null;
+  } catch (e) { return null; }
+}
+
 function scpShowRealApp(){
   scp$('scp-real-app').classList.add('on');
   var k=scpLd('scp_lic',null);
@@ -1396,15 +1446,82 @@ function scpGateGo(){
   scpSt('scp_lic',k);scp$('scp-gate').style.display='none';scp$('scp-role').classList.add('on');
 }
 
-function scpApplyRole(role){
+// === REAL PER-EMPLOYEE LOGIN (api/scp-auth.js) -- Phase 2 ===
+var SCP_AUTH_API    = 'https://sairn.vercel.app/api/scp-auth';
+var SCP_SESSION_KEY = 'scp_session_token';
+var SCP_ROLE_KEY    = 'scp_session_role';
+var SCP_EMPLOYEE_KEY= 'scp_session_employee_id';
+
+function scpAuthErr(body,fallback){return (body&&body.error&&body.error.message)||fallback;}
+
+function scpApplyLoggedIn(role){
   scpSt('scp_role',role);
   scp$('scp-role').classList.remove('on');scp$('scp-app').classList.add('on');
-  scp$('scp-huser').textContent=role;
+  scp$('scp-huser').textContent=role.charAt(0).toUpperCase()+role.slice(1).replace('_',' ');
   scpInit();
 }
 
+function scpDoLogin(){
+  var empEl=scp$('scp-employee-input'),pinEl=scp$('scp-pin-input'),errEl=scp$('scp-perr');
+  var employeeId=(empEl?empEl.value:'').trim(),pin=(pinEl?pinEl.value:'').trim();
+  var lic=scpLd('scp_lic',null);
+  if(!employeeId||!pin){if(errEl)errEl.textContent='Enter your employee ID and PIN';return;}
+  if(!lic){if(errEl)errEl.textContent='No license key found on this install';return;}
+  if(errEl)errEl.textContent='';
+  fetch(SCP_AUTH_API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic},
+    body:JSON.stringify({action:'login',employee_id:employeeId,pin:pin})
+  }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return{ok:r.ok,body:d};});})
+  .then(function(res){
+    if(!res.ok||!res.body||!res.body.ok){
+      if(errEl)errEl.textContent=scpAuthErr(res.body,'Sign-in failed — try again');
+      if(pinEl)pinEl.value='';
+      return;
+    }
+    try{sessionStorage.setItem(SCP_SESSION_KEY,res.body.token);sessionStorage.setItem(SCP_ROLE_KEY,res.body.role);sessionStorage.setItem(SCP_EMPLOYEE_KEY,res.body.employee_id);}catch(e){}
+    if(pinEl)pinEl.value='';
+    scpApplyLoggedIn(res.body.role);
+  }).catch(function(){if(errEl)errEl.textContent='Network error — check your connection and try again';});
+}
+window.scpDoLogin=scpDoLogin;
+
+function scpShowBootstrap(){
+  var lv=scp$('scp-login-view'),bv=scp$('scp-bootstrap-view');
+  if(lv)lv.style.display='none';if(bv)bv.style.display='block';
+  var el=scp$('scp-boot-employee-input');if(el)el.focus();
+}
+window.scpShowBootstrap=scpShowBootstrap;
+
+function scpShowLogin(){
+  var lv=scp$('scp-login-view'),bv=scp$('scp-bootstrap-view');
+  if(bv)bv.style.display='none';if(lv)lv.style.display='block';
+  var el=scp$('scp-employee-input');if(el)el.focus();
+}
+window.scpShowLogin=scpShowLogin;
+
+function scpDoBootstrap(){
+  var empEl=scp$('scp-boot-employee-input'),nameEl=scp$('scp-boot-name-input'),pinEl=scp$('scp-boot-pin-input'),errEl=scp$('scp-boot-error');
+  var employeeId=(empEl?empEl.value:'').trim(),displayName=(nameEl?nameEl.value:'').trim(),pin=(pinEl?pinEl.value:'').trim();
+  var lic=scpLd('scp_lic',null);
+  if(!employeeId||!/^\d{6,8}$/.test(pin)){if(errEl)errEl.textContent='Employee ID and a 6-8 digit PIN are required';return;}
+  if(!lic){if(errEl)errEl.textContent='No license key found on this install';return;}
+  if(errEl)errEl.textContent='';
+  fetch(SCP_AUTH_API,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic},
+    body:JSON.stringify({action:'bootstrap',employee_id:employeeId,display_name:displayName,pin:pin})
+  }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return{ok:r.ok,body:d};});})
+  .then(function(res){
+    if(!res.ok||!res.body||!res.body.ok){
+      if(errEl)errEl.textContent=scpAuthErr(res.body,'Setup failed — try again');
+      return;
+    }
+    try{sessionStorage.setItem(SCP_SESSION_KEY,res.body.token);sessionStorage.setItem(SCP_ROLE_KEY,res.body.role);sessionStorage.setItem(SCP_EMPLOYEE_KEY,res.body.employee_id);}catch(e){}
+    scpApplyLoggedIn(res.body.role);
+  }).catch(function(){if(errEl)errEl.textContent='Network error — check your connection and try again';});
+}
+window.scpDoBootstrap=scpDoBootstrap;
+
 function scpDoLogout(){
   scpSt('scp_role',null);
+  try{sessionStorage.removeItem(SCP_SESSION_KEY);sessionStorage.removeItem(SCP_ROLE_KEY);sessionStorage.removeItem(SCP_EMPLOYEE_KEY);}catch(e){}
   scp$('scp-app').classList.remove('on');scp$('scp-role').classList.add('on');scpToast('Logged out');
 }
 
@@ -1478,6 +1595,24 @@ function scpInit(){
   scpFillCustomerSelects();
   scpRDash();scpRCust();scpRJobs();scpRQuotes();scpRSched();scpRInv();
   scpUpdateAsideA11y();
+  scpSyncFromServer();
+  loadScpSharedKnowledge();
+}
+
+// Read-through sync -- same honest-degrade behavior as SAIRNgrounds'
+// grdSyncFromServer(): if the server has real data (tables provisioned,
+// this license has rows), it replaces the local copy; otherwise the
+// existing localStorage seed/data stays exactly as it was, silently.
+async function scpSyncFromServer(){
+  var resources=[['customers','scp_customers'],['scp_jobs','scp_jobs'],['scp_quotes','scp_quotes'],['schedule','scp_schedule'],['invoices','scp_invoices']];
+  var changed=false;
+  for(var i=0;i<resources.length;i++){
+    var res=await scpData('read',resources[i][0],{});
+    if(res&&res.provisioned&&Array.isArray(res.data)&&res.data.length){
+      scpSt(resources[i][1],res.data);changed=true;
+    }
+  }
+  if(changed){scpFillCustomerSelects();scpRDash();scpRCust();scpRJobs();scpRQuotes();scpRSched();scpRInv();}
 }
 
 function scpRDash(){
@@ -1492,6 +1627,30 @@ function scpRDash(){
   scp$('scp-k-inv').textContent=unpaid.length;scp$('scp-k-invamt').textContent=scpFmt(unpaidAmt)+' outstanding';
   var upcoming=sched.slice().sort(function(a,b){return new Date(a.next)-new Date(b.next);});
   scp$('scp-d-schedule').innerHTML=upcoming.length?upcoming.map(function(s){return '<div class="scp-srow"><span>'+scpH(scpCustName(s.customer_id))+' &mdash; '+scpH(s.freq)+'</span><span style="font-size:11px;color:#64748B">'+scpFdate(s.next)+'</span></div>';}).join(''):'<div style="color:#64748B;text-align:center;padding:12px;">Nothing scheduled yet</div>';
+  scpRInsights(quotes,invs);
+}
+
+// Predictive insights -- win rate only counts DECIDED quotes (accepted or
+// rejected), never drafts or sent-but-pending; "--" shown honestly when
+// the denominator is zero. Invoice aging is a straightforward live
+// computation off each invoice's own issued date and status, no
+// fabrication risk.
+function scpRInsights(quotes,invs){
+  var decided=quotes.filter(function(q){return q.status==='Accepted'||q.status==='Rejected';});
+  var accepted=quotes.filter(function(q){return q.status==='Accepted';});
+  var winRate=decided.length?Math.round(accepted.length/decided.length*100)+'%':'--';
+  var now=new Date();
+  var aging=invs.filter(function(i){
+    if(i.status!=='Unpaid')return false;
+    var days=(now-new Date(i.issued))/86400000;
+    return days>30;
+  });
+  var agingAmt=aging.reduce(function(s,i){return s+(i.amount||0);},0);
+  var rows=[
+    {t:'Quote win rate (decided quotes only)',v:winRate,sub:decided.length?decided.length+' decided quote'+(decided.length===1?'':'s'):'No quotes accepted or rejected yet'},
+    {t:'Invoices unpaid 30+ days',v:String(aging.length),sub:aging.length?scpFmt(agingAmt)+' at risk':'No invoices yet, or all current'}
+  ];
+  scp$('scp-d-insights').innerHTML=rows.map(function(r){return '<div class="scp-srow"><span>'+scpH(r.t)+'<br><span style="font-size:11px;color:#64748B">'+scpH(r.sub)+'</span></span><strong>'+scpH(r.v)+'</strong></div>';}).join('');
 }
 
 function scpRCust(){
@@ -1519,6 +1678,7 @@ function scpSaveCust(){
     email:scp$('scp-cemail').value.trim(),address:scp$('scp-caddress').value.trim(),notes:scp$('scp-cnotes').value.trim()};
   if(scpCid){custs=custs.map(function(c){return c.id===scpCid?rec:c;});}else{custs.push(rec);}
   scpSt('scp_customers',custs);scpCloseCustModal();scpFillCustomerSelects();scpRCust();scpRDash();scpToast('Customer saved');
+  scpData('write','customers',rec);
 }
 
 function scpRJobs(){
@@ -1543,6 +1703,7 @@ function scpSaveJob(){
   var rec={id:scpJid||('J-'+Date.now()),customer_id:customerId,scope:scope,date:scp$('scp-jdate').value,status:scp$('scp-jstatus').value};
   if(scpJid){jobs=jobs.map(function(j){return j.id===scpJid?rec:j;});}else{jobs.push(rec);}
   scpSt('scp_jobs',jobs);scpCloseJobModal();scpRJobs();scpRDash();scpToast('Job saved');
+  scpData('write','scp_jobs',rec);
 }
 
 function scpRQuotes(){
@@ -1572,6 +1733,7 @@ function scpSaveQuote(){
   var rec={id:scpQid||('Q-'+Date.now()),customer_id:customerId,lines:lines,status:scp$('scp-qstatus').value,valid:scp$('scp-qvalid').value};
   if(scpQid){quotes=quotes.map(function(q){return q.id===scpQid?rec:q;});}else{quotes.push(rec);}
   scpSt('scp_quotes',quotes);scpCloseQuoteModal();scpRQuotes();scpRDash();scpToast('Quote saved');
+  scpData('write','scp_quotes',rec);
 }
 
 function scpRSched(){
@@ -1595,6 +1757,7 @@ function scpSaveSched(){
   var rec={id:scpSid||('S-'+Date.now()),customer_id:customerId,freq:scp$('scp-sfreq').value,next:scp$('scp-snext').value,crew:scp$('scp-screw').value.trim()};
   if(scpSid){sched=sched.map(function(s){return s.id===scpSid?rec:s;});}else{sched.push(rec);}
   scpSt('scp_schedule',sched);scpCloseSchedModal();scpRSched();scpRDash();scpToast('Schedule saved');
+  scpData('write','schedule',rec);
 }
 
 function scpRInv(){
@@ -1619,6 +1782,7 @@ function scpSaveInv(){
   var rec={id:scpIid||('I-'+Date.now()),customer_id:customerId,amount:Number(scp$('scp-iamt').value||0),status:scp$('scp-istatus').value,issued:scp$('scp-idate').value};
   if(scpIid){invs=invs.map(function(i){return i.id===scpIid?rec:i;});}else{invs.push(rec);}
   scpSt('scp_invoices',invs);scpCloseInvModal();scpRInv();scpRDash();scpToast('Invoice saved');
+  scpData('write','invoices',rec);
 }
 
 function scpSendAI(){var inp=scp$('scp-ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';scpAddMsg(m,'u');scpCallAI(m);}
@@ -1628,6 +1792,9 @@ function scpAddMsg(t,role){var c=scp$('scp-achat');var d=document.createElement(
 function scpCallAI(msg){
   var custs=scpLd('scp_customers',[]);
   var ctx='You are the AI business assistant for SAIRNscape, used by a residential/small-commercial landscaping company with '+custs.length+' active customers. Be concise, practical, and landscaping-industry-specific. No fluff.';
+  var sharedCtx=buildScpSharedCompanyContext();
+  if(sharedCtx)ctx+='\n\n'+sharedCtx;
+  recordScpSharedTopics(msg);
   scpAiHist.push({role:'user',content:msg});scpAddMsg('Thinking...','a');
   fetch(SCP_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:SCP_APP_ID,is_demo:true,system:ctx,messages:scpAiHist.slice(-10)})})
   .then(function(r){return r.json();}).then(function(d){
@@ -1636,9 +1803,136 @@ function scpCallAI(msg){
   }).catch(function(){var c=scp$('scp-achat');var msgs=c.querySelectorAll('.scp-ama');if(msgs.length)msgs[msgs.length-1].remove();scpAddMsg('Connection error.','a');});
 }
 
+// === SHARED COMPANY KNOWLEDGE (sd_shared_knowledge, app-agnostic resource
+// already wired server-side, no new server work needed) ===
+var _scpSharedKnowledge = { topics: {}, totalQuestions: 0 };
+function loadScpSharedKnowledge(){
+  scpData('read','shared_knowledge',{}).then(function(res){
+    if(res&&res.data)_scpSharedKnowledge=res.data;
+  });
+}
+function recordScpSharedTopics(msg){
+  var words=(msg||'').toLowerCase().match(/[a-z]{5,40}/g)||[];
+  scpData('write','shared_knowledge',{words:words.slice(0,200)});
+}
+function buildScpSharedCompanyContext(){
+  var lines=['SHARED COMPANY KNOWLEDGE (from everyone at this company, not just this device):'];
+  if(_scpSharedKnowledge&&_scpSharedKnowledge.topics){
+    var topics=Object.entries(_scpSharedKnowledge.topics).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(e){return e[0];});
+    if(topics.length)lines.push('• Frequently discussed across the company: '+topics.join(', '));
+  }
+  if(lines.length===1)return'';
+  return lines.join('\n');
+}
+
 (function(){
   var k=scpLd('scp_lic',null);
   if(k&&scp$('scp-real-app')&&scp$('scp-real-app').classList.contains('on')){scp$('scp-gate').style.display='none';scp$('scp-role').classList.add('on');}
+})();
+</script>
+
+<!-- SAIRN VOICE INPUT (2026-08-06) -->
+<!-- Ported verbatim from stonedesk.html's SAIRN VOICE INPUT module (also
+     reused for SAIRNgrounds) -- same generic attachVoiceInput(inputId,
+     opts) helper. Reuses window.attachVoiceInput if another module on this
+     page already installed it (it won't have, since this is a standalone
+     app file), otherwise installs its own copy -- guarded the same way the
+     original does. Attached to the AI chat input and Job Intake's scope
+     field, the same two-spot pattern as every other app's rollout. -->
+<script>
+(function() {
+'use strict';
+if (window._saircVoiceInputInstalled) return;
+window._saircVoiceInputInstalled = true;
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var VOICE_SUPPORTED = !!SR;
+
+window.attachVoiceInput = function(inputId, opts) {
+  if (!VOICE_SUPPORTED) return;
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('voicebtn-' + inputId)) return;
+  opts = opts || {};
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'voicebtn-' + inputId;
+  btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+  btn.title = 'Tap to dictate';
+  btn.textContent = '\u{1F3A4}';
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid #E2E8F0;background:#F8FAFC;color:#0F172A;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch;flex:1;min-width:0';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.style.flex = '1';
+  input.style.minWidth = '0';
+  wrap.appendChild(btn);
+
+  var recognizing = false;
+  var recognition = null;
+
+  function stop() {
+    recognizing = false;
+    btn.style.background = '#F8FAFC';
+    btn.style.color = '#0F172A';
+    btn.style.borderColor = '#E2E8F0';
+    btn.textContent = '\u{1F3A4}';
+    if (recognition) { try { recognition.stop(); } catch (e) {} }
+  }
+
+  btn.onclick = function() {
+    if (recognizing) { stop(); return; }
+    try {
+      recognition = new SR();
+    } catch (e) {
+      if (typeof scpToast === 'function') scpToast('Voice input unavailable in this browser.');
+      return;
+    }
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognizing = true;
+    btn.style.background = '#dc2626';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#dc2626';
+    btn.textContent = '\u{1F534}';
+
+    recognition.onresult = function(e) {
+      var transcript = '';
+      for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      transcript = transcript.trim();
+      if (!transcript) return;
+      if (opts.numeric) {
+        var m = transcript.match(/\d+(\.\d+)?/);
+        if (m) input.value = m[0];
+      } else if (input.tagName === 'TEXTAREA' && input.value) {
+        input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+      } else {
+        input.value = transcript;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    };
+    recognition.onerror = function() {
+      if (typeof scpToast === 'function') scpToast('Could not hear that — try again.');
+    };
+    recognition.onend = stop;
+
+    try { recognition.start(); } catch (e) { stop(); }
+  };
+};
+
+function installVoiceInputTargets() {
+  window.attachVoiceInput('scp-ainp', { label: 'your question' });
+  window.attachVoiceInput('scp-jscope', { label: 'job scope' });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installVoiceInputTargets);
+} else {
+  installVoiceInputTargets();
+}
 })();
 </script>
 
