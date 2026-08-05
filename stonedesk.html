@@ -27052,8 +27052,9 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'Microsoft 365',seats:10,cost:1200,renewal:'2024-10-01',status:'Active'},
     {name:'Adobe Acrobat',seats:2,cost:299,renewal:'2024-09-01',status:'Active'},
   ];
-  function loadTickets(){try{return JSON.parse(localStorage.getItem('sd_it_tickets')||'null')||TICKETS;}catch(e){return TICKETS;}}
+  function loadTickets(){try{return JSON.parse(localStorage.getItem('sd_it_tickets')||'null')||(sdDemoCleared()?[]:TICKETS);}catch(e){return sdDemoCleared()?[]:TICKETS;}}
   function saveTickets(d){try{localStorage.setItem('sd_it_tickets',JSON.stringify(d));}catch(e){}}
+  function loadLicenses(){try{return JSON.parse(localStorage.getItem('sd_it_licenses')||'null')||(sdDemoCleared()?[]:LICENSES);}catch(e){return sdDemoCleared()?[]:LICENSES;}}
   function render(){
     var t=loadTickets();
     var open=t.filter(function(x){return x.status!=='Resolved';});
@@ -27062,7 +27063,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('it-uptime').textContent=resolved.length;
     document.getElementById('it-users').textContent=empCount;
     document.getElementById('it-tickets').textContent=open.length;
-    document.getElementById('it-licenses').textContent=LICENSES.length;
+    document.getElementById('it-licenses').textContent=loadLicenses().length;
     var pColors={Critical:'#fee2e2',High:'#fef3c7',Medium:'#dbeafe',Low:'#f3f4f6'};
     var sColors={Open:'#fef3c7','In Progress':'#dbeafe',Resolved:'#dcfce7'};
     document.getElementById('it-ticket-list').innerHTML=t.map(function(x){
@@ -27077,7 +27078,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+x.cat+' &bull; '+x.date+'</div>'
         +'</div>';
     }).join('');
-    document.getElementById('it-licenses-list').innerHTML=LICENSES.map(function(x){
+    document.getElementById('it-licenses-list').innerHTML=loadLicenses().map(function(x){
       return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">'
         +'<div><strong>'+x.name+'</strong> <span style="color:var(--muted)">x'+x.seats+'</span></div>'
         +'<div style="text-align:right"><div style="font-weight:700">$'+x.cost+'/yr</div>'
@@ -27102,7 +27103,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var out=document.getElementById('it-ai-out');
     out.style.display='block';out.textContent='Auditing...';
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these IT tickets and licenses for a stone fabrication company. Identify security risks, optimization opportunities, and prioritize open tickets:\n'+JSON.stringify({tickets:t,licenses:LICENSES})}]})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Review these IT tickets and licenses for a stone fabrication company. Identify security risks, optimization opportunities, and prioritize open tickets:\n'+JSON.stringify({tickets:t,licenses:loadLicenses()})}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML='<strong>🤖 IT Audit:</strong><br>'+escHtml((r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''))).replace(/\n/g,'<br>');
     }).catch(function(){out.textContent='AI unavailable.';});
