@@ -2627,7 +2627,35 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="auth-logo">StoneDesk&#8482;</div>
   <div class="auth-tag">Stone Fabrication Intelligence Platform</div>
   <div class="auth-box">
+    <!-- SELF-SERVICE LICENSE ENTRY (2026-08-05) -- closes the console-only dead end: previously,
+         if localStorage.stonedesk_license_key was unset (new device, cleared cache, different
+         browser, a reviewer's machine), doLogin()/sdDoBootstrap() just showed "No license key
+         found on this install — contact support" with no way to actually enter one anywhere in
+         the UI. Shown automatically on load whenever sdLicenseKey() is empty (see
+         sdCheckLicenseGate(), wired at the bottom of this auth controller); validated against the
+         same api/sd-auth.js backend via the new action:'check_license' (added alongside this),
+         which runs the identical validateLicenseKey() check every other action already goes
+         through, just without touching employee credentials. -->
+    <div id="sd-license-view" style="display:none">
+      <div style="font-size:13px;color:#fff;margin-bottom:14px;text-align:center;line-height:1.5">Enter your shop's StoneDesk license key to continue.</div>
+      <label for="sd-license-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">License Key</label>
+      <input type="text" id="sd-license-input" name="license_key" autocomplete="off" maxlength="128"
+        placeholder="e.g. SD-YOURSHOP-2026" aria-required="true"
+        style="width:100%;padding:12px;font-size:16px;text-align:center;background:rgba(255,255,255,0.06);border:1.5px solid rgba(232,133,10,0.3);border-radius:10px;color:#fff;outline:none;margin-bottom:14px;box-sizing:border-box;text-transform:uppercase"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();sdSubmitLicenseKey();}"
+        onfocus="this.style.borderColor='rgba(232,133,10,0.7)'"
+        onblur="this.style.borderColor='rgba(232,133,10,0.3)'"
+      >
+      <div class="auth-error" id="sd-license-error" role="alert" aria-live="polite" style="margin-top:10px"></div>
+      <button class="auth-btn" id="sd-license-submit-btn" onclick="sdSubmitLicenseKey()" style="margin-top:14px">Continue</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
+        Don't have a license key? <a href="mailto:michael@sairn.com?subject=StoneDesk%20license%20key" style="color:var(--muted);text-decoration:underline">Email michael@sairn.com</a>
+      </div>
+    </div>
     <div id="sd-login-view">
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:12px">
+        <a href="#" id="sd-change-license-link" onclick="sdShowLicenseEntry();return false;" style="color:var(--muted);text-decoration:underline">Wrong shop? Enter a different license key</a>
+      </div>
       <label for="sd-employee-input" style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;display:block">Employee ID</label>
       <input type="text" id="sd-employee-input" name="employee_id" autocomplete="username" maxlength="128"
         placeholder="e.g. jsmith" aria-required="true"
@@ -26418,6 +26446,31 @@ document.addEventListener('DOMContentLoaded', function() {
       <input id="emp-start" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <button class="q-btn primary" style="width:100%" onclick="sdEmpAdd()">Add Employee</button>
     </div>
+    <!-- APP LOGIN ACCESS (2026-08-05) -- closes a real gap: this HR directory card just above
+         (sdEmpAdd()) only ever wrote a name/role/dept/phone record for the team-directory list;
+         it has never touched sd_employee_auth (the actual PIN-login credentials table api/sd-
+         auth.js checks). There was no UI anywhere in this file calling the server's existing
+         action:'setup' (only a *different*, subcontractor-specific 'setup' call at L26820 exists
+         client-side) -- confirmed by grep before building this, not assumed. Until now, granting
+         someone real StoneDesk sign-in access required either the one-time bootstrap flow (Owner
+         only, works once) or a console fetch() -- the same class of gap as the license-entry
+         screen this ships alongside. Client-side role gate below is UX only, not the real
+         enforcement -- api/sd-auth.js's action:'setup' independently re-checks the caller's
+         session token server-side (owner/admin only, and only an Owner can grant Owner), so a
+         Sales/Install employee who forces this card visible via devtools still gets a 403 from
+         the server, same as always. -->
+    <div id="emp-login-access-card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--text)">Grant App Login Access</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Creates a real StoneDesk sign-in for this person -- separate from the directory entry above. They'll use this Employee ID + PIN at the login screen, never your PIN.</div>
+      <input id="emp-login-id" placeholder="Employee ID for sign-in, e.g. jsmith" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <input id="emp-login-name" placeholder="Display name (optional)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <select id="emp-login-role" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)">
+        <option value="install">Install</option><option value="sales">Sales</option><option value="admin">Manager (admin)</option><option value="owner">Owner</option>
+      </select>
+      <input id="emp-login-pin" type="password" inputmode="numeric" maxlength="8" placeholder="6-8 digit PIN for them to sign in with" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <div id="emp-login-error" role="alert" style="display:none;color:#dc2626;font-size:12px;margin-bottom:8px"></div>
+      <button class="q-btn primary" id="emp-login-submit-btn" style="width:100%" onclick="sdGrantLoginAccess()">Grant Access</button>
+    </div>
     <div id="emp-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
   </div>
 </div>
@@ -26501,7 +26554,61 @@ document.addEventListener('DOMContentLoaded', function() {
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='employees-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   };
+  // Client-side visibility gate only -- see the HTML comment above
+  // #emp-login-access-card for why this is safe to be UX-only (the server
+  // independently re-checks the caller's actual session token on every
+  // action:'setup' call, so this hiding the card for a non-owner/admin role
+  // is a convenience, not the security boundary).
+  function sdRefreshLoginAccessGate(){
+    var card=document.getElementById('emp-login-access-card');
+    if(!card)return;
+    var role='';
+    try{role=sessionStorage.getItem('sd_session_role')||'';}catch(e){}
+    card.style.display=(role==='owner'||role==='admin')?'block':'none';
+  }
+  window.sdRefreshLoginAccessGate=sdRefreshLoginAccessGate;
+  window.sdGrantLoginAccess=function(){
+    var idEl=document.getElementById('emp-login-id');
+    var nameEl=document.getElementById('emp-login-name');
+    var roleEl=document.getElementById('emp-login-role');
+    var pinEl=document.getElementById('emp-login-pin');
+    var errEl=document.getElementById('emp-login-error');
+    var btn=document.getElementById('emp-login-submit-btn');
+    var employeeId=idEl.value.trim();
+    var displayName=nameEl.value.trim();
+    var role=roleEl.value;
+    var pin=pinEl.value.trim();
+    errEl.style.display='none';
+    if(!employeeId){errEl.textContent='Enter an Employee ID for sign-in';errEl.style.display='block';return;}
+    if(!/^\d{6,8}$/.test(pin)){errEl.textContent='PIN must be 6-8 digits';errEl.style.display='block';return;}
+    var lic=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
+    var token='';
+    try{token=sessionStorage.getItem('sd_session_token')||'';}catch(e){}
+    if(!lic||!token){errEl.textContent='Your session has expired -- sign out and back in, then try again';errEl.style.display='block';return;}
+    btn.textContent='Granting...';btn.disabled=true;
+    fetch(SD_AUTH_API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':token},
+      body:JSON.stringify({action:'setup',employee_id:employeeId,display_name:displayName,pin:pin,role:role})
+    }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return {ok:r.ok,body:d};});})
+    .then(function(res){
+      btn.textContent='Grant Access';btn.disabled=false;
+      if(!res.ok||!res.body||!res.body.ok){
+        errEl.textContent=(res.body&&res.body.error&&res.body.error.message)||'Could not grant access -- try again';
+        errEl.style.display='block';
+        return;
+      }
+      showToast('Login access granted to '+employeeId+' ('+role+') — share the PIN with them directly, never in writing','success');
+      [idEl,nameEl,pinEl].forEach(function(el){el.value='';});
+      roleEl.value='install';
+    }).catch(function(){
+      btn.textContent='Grant Access';btn.disabled=false;
+      errEl.textContent='Network error -- check your connection and try again';
+      errEl.style.display='block';
+    });
+  };
   sdEmpRender();
+  sdRefreshLoginAccessGate();
 })();
 </script>
 <div id="emp-list" style="display:flex;flex-direction:column;gap:10px"></div>
@@ -28991,6 +29098,9 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       return;
     }
     if (!lic) {
+      // Was a dead end ("contact support", no way to actually enter a key
+      // anywhere in the UI) -- now routes to the real self-service screen.
+      if (typeof sdShowLicenseEntry === 'function') { sdShowLicenseEntry(); return; }
       if (errEl) { errEl.textContent = 'No license key found on this install — contact support'; errEl.style.display = 'block'; }
       return;
     }
@@ -29004,6 +29114,19 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; });
     }).then(function(res) {
       if (!res.ok || !res.body || !res.body.ok) {
+        // A stored key that's since gone bad (revoked, typo'd into localStorage some other way)
+        // shouldn't dead-end here either -- send them back to fix the key instead of retrying a
+        // PIN that was never the actual problem.
+        var code = res.body && res.body.error && res.body.error.code;
+        if (code === 'INVALID_LICENSE' || code === 'LICENSE_INACTIVE') {
+          try { localStorage.removeItem('stonedesk_license_key'); localStorage.removeItem('sairn_license_key_stonedesk'); } catch (e) {}
+          if (typeof sdShowLicenseEntry === 'function') {
+            sdShowLicenseEntry();
+            var licErrEl = document.getElementById('sd-license-error');
+            if (licErrEl) { licErrEl.textContent = sdAuthErr(res.body, 'That license key is no longer valid'); licErrEl.style.display = 'block'; }
+            return;
+          }
+        }
         if (errEl) { errEl.textContent = sdAuthErr(res.body, 'Sign-in failed — try again'); errEl.style.display = 'block'; }
         if (pinEl) { pinEl.value = ''; pinEl.focus(); }
         return;
@@ -29016,6 +29139,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       currentRole = res.body.role;
       if (pinEl) pinEl.value = '';
       showApp();
+      if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
     }).catch(function() {
       if (errEl) { errEl.textContent = 'Network error — check your connection and try again'; errEl.style.display = 'block'; }
     });
@@ -29038,13 +29162,80 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     var lv = document.getElementById('sd-login-view');
     var bv = document.getElementById('sd-bootstrap-view');
     var sv = document.getElementById('sd-sublogin-view');
+    var lic = document.getElementById('sd-license-view');
     if (bv) bv.style.display = 'none';
     if (sv) sv.style.display = 'none';
+    if (lic) lic.style.display = 'none';
     if (lv) lv.style.display = 'block';
     var el = document.getElementById('sd-employee-input');
     if (el) el.focus();
   }
   window.sdShowLogin = sdShowLogin;
+
+  // -- SELF-SERVICE LICENSE ENTRY -----------------------------
+  function sdShowLicenseEntry() {
+    var lv = document.getElementById('sd-login-view');
+    var bv = document.getElementById('sd-bootstrap-view');
+    var sv = document.getElementById('sd-sublogin-view');
+    var lic = document.getElementById('sd-license-view');
+    if (lv) lv.style.display = 'none';
+    if (bv) bv.style.display = 'none';
+    if (sv) sv.style.display = 'none';
+    if (lic) lic.style.display = 'block';
+    var el = document.getElementById('sd-license-input');
+    if (el) el.focus();
+  }
+  window.sdShowLicenseEntry = sdShowLicenseEntry;
+
+  // Runs once on load (wired at the bottom of this controller): shows the
+  // license-entry screen instead of the normal login form whenever no
+  // license key is stored yet, instead of letting the user reach doLogin()'s
+  // old dead-end. Safe to call multiple times (e.g. also invoked after a
+  // login attempt reveals the stored key was actually invalid).
+  function sdCheckLicenseGate() {
+    var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+    if (!lic) sdShowLicenseEntry();
+  }
+  window.sdCheckLicenseGate = sdCheckLicenseGate;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', sdCheckLicenseGate);
+  } else {
+    sdCheckLicenseGate();
+  }
+
+  function sdSubmitLicenseKey() {
+    var input = document.getElementById('sd-license-input');
+    var errEl = document.getElementById('sd-license-error');
+    var btn = document.getElementById('sd-license-submit-btn');
+    var key = input ? input.value.trim().toUpperCase() : '';
+    if (!key) {
+      if (errEl) { errEl.textContent = 'Enter your license key'; errEl.style.display = 'block'; }
+      return;
+    }
+    if (errEl) errEl.style.display = 'none';
+    if (btn) { btn.textContent = 'Checking...'; btn.disabled = true; }
+
+    fetch(SD_AUTH_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ action: 'check_license' })
+    }).then(function(r) {
+      return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; });
+    }).then(function(res) {
+      if (btn) { btn.textContent = 'Continue'; btn.disabled = false; }
+      if (!res.ok || !res.body || !res.body.ok) {
+        if (errEl) { errEl.textContent = sdAuthErr(res.body, 'That license key was not recognized — check for typos'); errEl.style.display = 'block'; }
+        return;
+      }
+      try { localStorage.setItem('stonedesk_license_key', key); } catch (e) {}
+      if (input) input.value = '';
+      sdShowLogin();
+    }).catch(function() {
+      if (btn) { btn.textContent = 'Continue'; btn.disabled = false; }
+      if (errEl) { errEl.textContent = 'Network error — check your connection and try again'; errEl.style.display = 'block'; }
+    });
+  }
+  window.sdSubmitLicenseKey = sdSubmitLicenseKey;
 
   function sdShowSubLogin() {
     var lv = document.getElementById('sd-login-view');
@@ -29148,6 +29339,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       return;
     }
     if (!lic) {
+      if (typeof sdShowLicenseEntry === 'function') { sdShowLicenseEntry(); return; }
       if (errEl) { errEl.textContent = 'No license key found on this install — contact support'; errEl.style.display = 'block'; }
       return;
     }
@@ -29171,6 +29363,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       } catch (e) {}
       currentRole = res.body.role;
       showApp();
+      if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
     }).catch(function() {
       if (errEl) { errEl.textContent = 'Network error — check your connection and try again'; errEl.style.display = 'block'; }
     });

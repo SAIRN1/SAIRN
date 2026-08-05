@@ -58,8 +58,8 @@ module.exports = async (req, res) => {
     }
   }
   const action = body && body.action;
-  if (['bootstrap', 'login', 'setup'].indexOf(action) === -1) {
-    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', or 'setup'" } });
+  if (['bootstrap', 'login', 'setup', 'check_license'].indexOf(action) === -1) {
+    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', 'setup', or 'check_license'" } });
     return;
   }
 
@@ -84,6 +84,20 @@ module.exports = async (req, res) => {
   }
   if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
   if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
+
+  // check_license: the self-service license-entry screen (stonedesk.html's
+  // #sd-license-view, added 2026-08-05) needs to confirm a key is real
+  // BEFORE storing it to localStorage and moving the user to employee
+  // login -- the alternative (only finding out via a failed login attempt)
+  // would misattribute a bad license key to a wrong PIN. License validity
+  // is already fully checked above, common to every action; this just
+  // stops here instead of falling through to bootstrap/login/setup's
+  // employee-credential logic, which a bare license check has no business
+  // touching.
+  if (action === 'check_license') {
+    res.status(200).json({ ok: true, active: true, app_id: lic.app_id || null });
+    return;
+  }
 
   const licHash = lic.license_hash;
   const headers = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' };
