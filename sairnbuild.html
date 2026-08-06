@@ -846,6 +846,22 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="tw"><table><thead><tr><th>Company</th><th>Trade</th><th>Rate</th><th>W-9</th><th>COI Expiry</th><th>Licence Expiry</th><th>Prequal</th><th>Eligible to Bid</th><th>Actions</th></tr></thead>
     <tbody id="subtbody"></tbody></table></div>
   </div></div>
+  <div class="card"><div class="ch"><span class="ct">Sub Selection Advisor</span></div><div class="cb">
+    <div class="note" style="margin:0 0 12px">Which trades a job actually needs, and whether the roster already covers them. NAHB data puts a standard build at ~22 subs (20-25 production, 25-35 semi-custom, 50+ full custom) &mdash; this checks the real roster against that expected trade list for the tier you pick, so gaps and bundling opportunities show up before bidding starts, not after.</div>
+    <div class="fr">
+      <div class="fg"><label>Job</label><select id="ssa-job"></select></div>
+      <div class="fg"><label>Project Complexity Tier</label><select id="ssa-tier">
+        <option value="production">Production / Plain (~20-25 subs)</option>
+        <option value="semicustom">Semi-Custom (~25-35 subs)</option>
+        <option value="fullcustom">Full Custom / High-End (50+ subs)</option>
+      </select></div>
+    </div>
+    <button class="btn bp" id="ssa-btn" onclick="ssaAnalyze()" style="margin-top:8px">Analyze Sub Coverage</button>
+    <div id="ssa-result-wrap" style="display:none;margin-top:16px">
+      <div class="mtitle" style="font-size:14px">Trade Coverage &amp; Bundling</div>
+      <div id="ssa-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+    </div>
+  </div></div>
 </div>
 
 <!-- COMPLIANCE -->
@@ -3541,7 +3557,7 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
 var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob','safjob','warjob','docjob','schjob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job','warm-job','cp-job','docm-job','schm-job','claim-job','dis-job'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job','warm-job','cp-job','docm-job','schm-job','claim-job','dis-job','ssa-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job','chkm-job','eqm-job','rvm-job','ai-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -4673,7 +4689,7 @@ function eligibleToBid(s){
   if(lic!==null&&lic<0)return false;
   return true;
 }
-function rSubs(){rSubsTbl();}
+function rSubs(){fillJobSelects();rSubsTbl();}
 function subScope(){
   var pf=(($('subprequal')||{}).value||'');
   return bldSubs().filter(function(s){return!pf||s.prequal_status===pf;});
@@ -4709,6 +4725,54 @@ function rSubsTbl(){
         '<td><button class="btn bo bs" onclick="editSub(\''+H(s.id)+'\')">Edit</button></td></tr>';
     }).join('');
   }
+}
+// ── SUB SELECTION ADVISOR (item 5 Part D) ───────────────────────────────
+// Grounds the trade taxonomy against the REAL roster rather than trying to
+// hand-roll fuzzy trade-name matching in JS (roster trade fields are free
+// text -- "Cabinetry / Millwork" vs taxonomy's "cabinets" -- so a keyword
+// matcher would be fragile). Claude does the matching, but only ever sees
+// the taxonomy list and the actual roster rows -- same anti-fabrication
+// grounding as claimGeneratePacket() and disRespond().
+function ssaAnalyze(){
+  var jobId=$('ssa-job').value;
+  if(!jobId){toast('Select a job first');return;}
+  var job=jobs().find(function(x){return x.id===jobId;});
+  var tier=$('ssa-tier').value;
+  var tierLabel={production:'Production / Plain',semicustom:'Semi-Custom',fullcustom:'Full Custom / High-End'}[tier]||tier;
+  var roster=bldSubs();
+  var rosterLines=roster.length?roster.map(function(s){
+    return '- '+s.company+' | trade: '+s.trade+' | eligible to bid: '+(eligibleToBid(s)?'yes':'no')+' | prequal: '+(PREQUAL[s.prequal_status]||{l:s.prequal_status}).l;
+  }).join('\n'):'(no subcontractors on the roster yet)';
+  $('ssa-result-wrap').style.display='block';
+  $('ssa-result').textContent='Analyzing...';
+  var facts='JOB: '+(job?(job.client||job.address):jobId)+' -- '+(job?job.notes:'')+'\n'+
+    'PROJECT COMPLEXITY TIER (user-selected): '+tierLabel+'\n\n'+
+    'ACTUAL SUBCONTRACTOR ROSTER ON FILE (the only subs that exist -- do not invent others):\n'+rosterLines;
+  var sys='You are analyzing subcontractor trade coverage for a general contractor, using the '+
+    'trade taxonomy knowledge below. For the given project complexity tier, list the trades a '+
+    'project at that tier typically needs. For each trade, state whether the ACTUAL roster given '+
+    'below already has an eligible-to-bid sub covering it, has a sub on file but not yet eligible '+
+    '(name the sub and say why per its prequal status), or has NO sub on file at all (a real gap '+
+    'to recruit for). Then suggest bundling opportunities ONLY among subs that actually appear in '+
+    'the roster given -- for example if one real sub\'s trade field plausibly spans multiple '+
+    'taxonomy trades. Do not invent subcontractor names, and do not claim a trade is covered by '+
+    'a sub that is not in the roster given. Keep it organized and under 350 words. Plain ASCII '+
+    'only, no Unicode box characters.\n\n'+SB_TRADE_TAXONOMY_KNOWLEDGE+'\n\n'+facts;
+  fetch(PROXY,{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,
+      messages:[{role:'user',content:'Analyze trade coverage and bundling for this job.'}],
+      max_tokens:1400})
+  }).then(function(res){
+    if(!res.ok)throw new Error('Claude error '+res.status);
+    return res.json();
+  }).then(function(data){
+    var content=data.content||[];
+    var text=content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    $('ssa-result').textContent=text||'No response text returned.';
+  }).catch(function(e){
+    $('ssa-result').textContent='Could not reach Claude. Check your connection and try again.';
+  });
 }
 var submeid=null;
 function openSubModal(){
@@ -6052,6 +6116,34 @@ var SB_TRADE_SEQUENCE_KNOWLEDGE=
   'field and that costs GCs money -- flag it when a question conflates the '+
   'two.';
 window.SB_TRADE_SEQUENCE_KNOWLEDGE=SB_TRADE_SEQUENCE_KNOWLEDGE;
+// Part D of item 5: full trade taxonomy, plain to custom, plus the real
+// NAHB sub-count benchmarks -- so the AI Assistant (and the dedicated Sub
+// Selection Advisor on the Subcontractors panel) knows the full set of
+// trades a house can need, not just the handful already on this
+// contractor's roster.
+var SB_TRADE_TAXONOMY_KNOWLEDGE=
+  'SUBCONTRACTOR TRADE TAXONOMY (NAHB-based):\n'+
+  'A standard home uses an average of 22 subcontractors. Production/plain '+
+  'builds typically use 20-25 subs, semi-custom builds 25-35, and full '+
+  'custom/high-end builds 50 or more.\n'+
+  '23 standard trades used on nearly every build: excavation, foundation/'+
+  'concrete, concrete flatwork, framing, roofing, windows and doors, '+
+  'plumbing, HVAC, electrical, low-voltage, insulation, drywall, masonry, '+
+  'siding, painting/wallcovering, trim/finish carpentry, flooring, tile, '+
+  'cabinets, countertops, landscaping, garage doors, gutters.\n'+
+  'Additional trades that only show up on custom/high-end builds: '+
+  'structural steel, custom millwork, smart-home/automation integration, '+
+  'elevator, pool/spa, outdoor kitchen, wine cellar, home theater/AV, '+
+  'specialty stonework/fabrication, custom ironwork/railings, geothermal/'+
+  'solar, specialty glass/glazing.\n'+
+  'Efficiency angle: some subs legitimately bundle multiple scopes -- for '+
+  'example excavation, foundation, and concrete flatwork are often one sub. '+
+  'When asked about sub selection, suggest real bundling opportunities '+
+  'based on the trades a specific sub already covers, rather than treating '+
+  'every trade as needing a separate sub by default -- but only suggest a '+
+  'bundle involving a sub that is actually on the roster given to you, '+
+  'never a plausible-sounding sub that was not provided as a real fact.';
+window.SB_TRADE_TAXONOMY_KNOWLEDGE=SB_TRADE_TAXONOMY_KNOWLEDGE;
 function bldAiChat(){return ld('bld_ai_chat',[]);}
 function rAi(){fillJobSelects();rAiHistory();}
 function rAiHistory(){
@@ -6078,20 +6170,26 @@ async function aiAsk(){
   var sys='You are the SAIRNbuild AI Assistant for Pinnacle Industries LLC, a residential/'+
     'light-commercial general contractor in the Cleveland/Westlake OH area. Answer scope '+
     'questions, help draft contract language, give general building-code reference pointers, '+
-    'and answer questions about current building products, materials, pricing, availability, '+
-    'and trends -- all of these are in scope, do not decline a question just because it asks '+
-    'about material trends or pricing rather than a specific job. '+
+    'answer questions about current building products, materials, pricing, availability, and '+
+    'trends, and answer questions about which trades/subcontractors a project needs and how '+
+    'to select or bundle them for efficiency -- all of these are in scope, do not decline a '+
+    'question just because it asks about material trends, pricing, or trade/sub selection '+
+    'rather than a specific job. '+
     (j?('Current job context: '+(j.client||j.address)+', stage '+j.stage+'. '):'')+
     'If a question touches build sequencing, scheduling order, or trade timing, use the '+
     'trade-sequence knowledge below to proactively flag any real violation even if the '+
     'question does not explicitly ask about it. '+
+    'If a question touches which trades/subs a project needs, use the trade-taxonomy '+
+    'knowledge below -- but only name a specific sub if the roster context below actually '+
+    'lists one; otherwise speak in terms of trades, not invented company names. '+
     'If a question depends on current information -- specific products, materials, pricing, '+
     'availability, codes, or trends that could have changed since training -- you MUST use '+
     'the web search tool rather than answering from memory alone, so the trade-knowledge '+
     'base stays current without manual upkeep. '+
     'Always end with a one-line reminder that code/legal answers must be verified with the '+
     'local building department or contract counsel before being relied on. Plain ASCII only, '+
-    'no Unicode box characters. Keep it under 200 words.\n\n'+SB_TRADE_SEQUENCE_KNOWLEDGE;
+    'no Unicode box characters. Keep it under 200 words.\n\n'+SB_TRADE_SEQUENCE_KNOWLEDGE+
+    '\n\n'+SB_TRADE_TAXONOMY_KNOWLEDGE;
   var sharedCtx=(typeof buildBldSharedCompanyContext==='function')?buildBldSharedCompanyContext():'';
   if(sharedCtx) sys+='\n\n'+sharedCtx;
   var msgs=[{role:'user',content:q}];
