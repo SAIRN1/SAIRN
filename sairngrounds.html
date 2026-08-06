@@ -2672,7 +2672,12 @@ function msbCheckout(which){
   st('msb_products',products);
   msbCart[which]=[];rMsbCart(which);
   if(which==='bar')$('msb-age-verified').checked=false;
-  rMsbProShop();rMsbBarCompliance();
+  // Real bug found+fixed via live testing: a food-category item can sell
+  // through either cart, but this only refreshed the two panels for the
+  // cart that sold it -- the Food Inventory panel's food-cost % KPI (which
+  // reads real revenue from EVERY sale, not just food-cart ones) went
+  // stale until a manual re-render. Always refresh it here too.
+  rMsbProShop();rMsbBarCompliance();rMsbFoodInv();
   toast('Sale completed - '+fmt(total));
 }
 
@@ -2704,7 +2709,7 @@ function confirmMsbVoid(){
   });
   st('msb_products',products);
   closeMsbVoidModal();
-  rMsbProShop();rMsbBarCompliance();
+  rMsbProShop();rMsbBarCompliance();rMsbFoodInv();
   toast('Sale voided');
 }
 
