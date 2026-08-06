@@ -69,8 +69,12 @@ module.exports = async (req, res) => {
   const action = body && body.action;
   const resource = body && body.resource;
   const payload = (body && body.payload) || {};
-  if (action !== 'read' && action !== 'write') {
-    res.status(400).json({ error: { message: "action must be 'read' or 'write'" } });
+  // 'qc-review' (2026-08-06): a separate action, not folded into 'write', so
+  // the QC-gate discipline (owner/admin only, never the original uploader)
+  // can be enforced in one dedicated branch rather than as a special-case
+  // inside the general write path.
+  if (action !== 'read' && action !== 'write' && action !== 'qc-review') {
+    res.status(400).json({ error: { message: "action must be 'read', 'write', or 'qc-review'" } });
     return;
   }
   if (!RESOURCES[resource]) {
@@ -231,25 +235,36 @@ module.exports = async (req, res) => {
     // captured_by_type/captured_by_id are ALWAYS derived from the verified
     // caller, never accepted from the client, so nobody can log a photo
     // under someone else's name.
+    const PROGRESS_PHOTO_SELECT = 'id,job_id,captured_by_type,captured_by_id,is_final,qc_status,qc_reviewer_id,qc_notes,qc_reviewed_at,data,created_at';
+    function flattenProgressPhoto(row) {
+      return Object.assign({
+        id: row.id, job_id: row.job_id, captured_by_type: row.captured_by_type, captured_by_id: row.captured_by_id,
+        is_final: row.is_final, qc_status: row.qc_status, qc_reviewer_id: row.qc_reviewer_id, qc_notes: row.qc_notes,
+        qc_reviewed_at: row.qc_reviewed_at, created_at: row.created_at
+      }, row.data);
+    }
     if (resource === 'progress_photos' && action === 'read') {
       if (subCaller) {
         const jobFilter = payload && payload.job_id ? '&job_id=eq.' + enc(String(payload.job_id)) : '';
-        const r = await fetch(rest('sd_progress_photos?license_hash=eq.' + enc(licHash) + jobFilter + '&captured_by_type=eq.sub&captured_by_id=eq.' + enc(subCaller.employee_id) + '&select=id,job_id,captured_by_type,captured_by_id,data,created_at&order=created_at.desc'), { headers: sbHeaders });
+        const r = await fetch(rest('sd_progress_photos?license_hash=eq.' + enc(licHash) + jobFilter + '&captured_by_type=eq.sub&captured_by_id=eq.' + enc(subCaller.employee_id) + '&select=' + PROGRESS_PHOTO_SELECT + '&order=created_at.desc'), { headers: sbHeaders });
         const rows = await r.json();
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         if (!r.ok) return upstream(res, rows);
-        const out = (rows || []).map((row) => Object.assign({ id: row.id, job_id: row.job_id, captured_by_type: row.captured_by_type, captured_by_id: row.captured_by_id, created_at: row.created_at }, row.data));
-        res.status(200).json({ ok: true, data: out });
+        res.status(200).json({ ok: true, data: (rows || []).map(flattenProgressPhoto) });
         return;
       }
       if (employeeCaller) {
+        // payload.pending_qc_only (2026-08-06): the QC review list wants only
+        // is_final=true, qc_status=pending rows across the whole shop -- built
+        // as a filter here rather than a separate resource/action, since it's
+        // the exact same table and read-trust-mode, just a narrower slice.
         const jobFilter = payload && payload.job_id ? '&job_id=eq.' + enc(String(payload.job_id)) : '';
-        const r = await fetch(rest('sd_progress_photos?license_hash=eq.' + enc(licHash) + jobFilter + '&select=id,job_id,captured_by_type,captured_by_id,data,created_at&order=created_at.desc'), { headers: sbHeaders });
+        const qcFilter = payload && payload.pending_qc_only ? '&is_final=eq.true&qc_status=eq.pending' : '';
+        const r = await fetch(rest('sd_progress_photos?license_hash=eq.' + enc(licHash) + jobFilter + qcFilter + '&select=' + PROGRESS_PHOTO_SELECT + '&order=created_at.desc'), { headers: sbHeaders });
         const rows = await r.json();
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         if (!r.ok) return upstream(res, rows);
-        const out = (rows || []).map((row) => Object.assign({ id: row.id, job_id: row.job_id, captured_by_type: row.captured_by_type, captured_by_id: row.captured_by_id, created_at: row.created_at }, row.data));
-        res.status(200).json({ ok: true, data: out });
+        res.status(200).json({ ok: true, data: (rows || []).map(flattenProgressPhoto) });
         return;
       }
       res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Sign in to view progress photos' } });
@@ -261,21 +276,70 @@ module.exports = async (req, res) => {
       if (!job_id) { res.status(400).json({ error: { message: 'job_id is required' } }); return; }
       const capturedByType = subCaller ? 'sub' : 'employee';
       const capturedById = subCaller ? subCaller.employee_id : employeeCaller.employee_id;
+      // is_final/qc_status are real columns (the QC gate lives on them), not
+      // part of the free-form data blob -- pulled out explicitly here.
+      // qc_status is ALWAYS forced to 'pending' server-side on write,
+      // regardless of what the client sends -- a client can never
+      // self-approve its own photo. That's the actual "not self-
+      // certification" enforcement point, not just UI copy.
+      const isFinal = payload.is_final === true;
       const recordData = Object.assign({}, payload);
       delete recordData.job_id;
       delete recordData.id;
       delete recordData.captured_by_type;
       delete recordData.captured_by_id;
+      delete recordData.is_final;
+      delete recordData.qc_status;
+      delete recordData.qc_reviewer_id;
+      delete recordData.qc_notes;
+      delete recordData.qc_reviewed_at;
       const r = await fetch(rest('sd_progress_photos'), {
         method: 'POST',
         headers: Object.assign({}, sbHeaders, { Prefer: 'return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, job_id, captured_by_type: capturedByType, captured_by_id: capturedById, data: recordData })
+        body: JSON.stringify({ license_hash: licHash, job_id, captured_by_type: capturedByType, captured_by_id: capturedById, is_final: isFinal, qc_status: 'pending', data: recordData })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Progress photo storage is not set up yet — run sql/sd_progress_photos_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Progress photo storage is not set up yet — run sql/sd_progress_photos_schema.sql and sql/sd_progress_photos_qc_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const row = Array.isArray(rows) && rows[0];
-      res.status(200).json({ ok: true, data: row ? Object.assign({ id: row.id, job_id: row.job_id, captured_by_type: row.captured_by_type, captured_by_id: row.captured_by_id, created_at: row.created_at }, row.data) : payload });
+      res.status(200).json({ ok: true, data: row ? flattenProgressPhoto(row) : payload });
+      return;
+    }
+    // ── QC REVIEW (2026-08-06) -- the hard-gate enforcement point ───────────
+    // Owner/admin only, AND the reviewer may never be the same person who
+    // captured the photo -- both checked server-side, not left to client
+    // discipline. This is what actually makes "reviewed by someone else, not
+    // self-certification" real rather than a UI convention someone could
+    // route around by editing the DOM.
+    if (resource === 'progress_photos' && action === 'qc-review') {
+      if (!employeeCaller || !WRITE_ALLOWED_ROLES[employeeCaller.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can QC-review a progress photo' } });
+        return;
+      }
+      const id = String(payload.id || '').trim();
+      const qcStatus = payload.qc_status;
+      if (!id || (qcStatus !== 'approved' && qcStatus !== 'rejected')) {
+        res.status(400).json({ error: { message: "id and qc_status ('approved' or 'rejected') are required" } });
+        return;
+      }
+      const existing = await fetch(rest('sd_progress_photos?license_hash=eq.' + enc(licHash) + '&id=eq.' + enc(id) + '&select=captured_by_id&limit=1'), { headers: sbHeaders });
+      if (existing.status === 404 || existing.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Progress photo storage is not set up yet — run sql/sd_progress_photos_qc_schema.sql in Supabase first.' } }); return; }
+      const existingRows = await existing.json();
+      const existingRow = Array.isArray(existingRows) && existingRows[0];
+      if (!existingRow) { res.status(404).json({ error: { message: 'Photo not found' } }); return; }
+      if (existingRow.captured_by_id === employeeCaller.employee_id) {
+        res.status(403).json({ error: { code: 'SELF_QC_FORBIDDEN', message: 'You cannot QC-review your own photo -- have someone else review it' } });
+        return;
+      }
+      const r = await fetch(rest('sd_progress_photos?license_hash=eq.' + enc(licHash) + '&id=eq.' + enc(id)), {
+        method: 'PATCH',
+        headers: Object.assign({}, sbHeaders, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ qc_status: qcStatus, qc_reviewer_id: employeeCaller.employee_id, qc_notes: payload.qc_notes || null, qc_reviewed_at: nowISO() })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const row = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: row ? flattenProgressPhoto(row) : null });
       return;
     }
 

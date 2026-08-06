@@ -5291,6 +5291,21 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     <div style="color:var(--muted);font-size:13px">No progress checks logged yet.</div>
   </div>
 </div>
+<!-- QC REVIEW QUEUE (2026-08-06) -- owner/admin only (client-side display
+     gate, same UX-only convention as every other role-gated card in this
+     file; the real enforcement is api/sd-sub-data.js's qc-review action,
+     which independently re-checks the caller's role AND refuses if they
+     are the original uploader). This is where "reviewed by someone else"
+     actually happens -- approving/rejecting is what flips qc_status,
+     which is what api/sd-webauthn... no, fmCheckCompletionGate() (Field
+     Map panel) actually checks before allowing a stop to be marked Done. -->
+<div id="sd-qc-queue-card" style="display:none;margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
+  <div style="font-weight:700;color:var(--text);margin-bottom:4px;font-size:14px">QC Review Queue</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Finished-product photos awaiting approval before their task can be marked Done. You cannot approve your own submissions.</div>
+  <div id="sd-qc-queue-list" style="display:flex;flex-direction:column;gap:10px">
+    <div style="color:var(--muted);font-size:13px">Nothing pending review.</div>
+  </div>
+</div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="photos-kpi1">0</div><div class="kpi-label">Total Entries</div></div>
   <div class="kpi"><div class="kpi-val" id="photos-kpi2">0</div><div class="kpi-label">Portfolio Ready</div></div>
@@ -8991,9 +9006,41 @@ function fmRenderMap(containerId, stops){
     .catch(function(){ el.innerHTML='<div class="fm-map-placeholder">Map unavailable -- check GOOGLE_MAPS_API_KEY is set.</div>'; });
 }
 
-function fmMarkStopStatus(manualId, status){
+// HARD GATE (2026-08-06): a stop cannot be marked Done until a QC-APPROVED
+// finished-product photo exists for it -- not just "a photo was uploaded,"
+// an actual human (not the uploader) has reviewed and approved it. This is
+// the concrete first example of the cross-app process-checklist principle:
+// the gate blocks progression itself, it doesn't just track completion
+// after the fact. job_id here is the stop's own address -- StoneDesk has no
+// single canonical job-number field reachable from a manual Field Map stop,
+// and address is the same loose identifier the progress-photo feature
+// already uses for the Subcontractor Portal's job cards, so this stays
+// consistent with that rather than inventing a second convention.
+async function fmCheckCompletionGate(jobId){
+  if(!jobId)return false;
+  var lic=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
+  var headers={'Content-Type':'application/json'};
+  if(lic)headers['Authorization']='Bearer '+lic;
+  try{var tok=sessionStorage.getItem('sd_session_token');if(tok)headers['X-SD-Auth']=tok;}catch(e){}
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/sd-sub-data',{method:'POST',headers:headers,
+      body:JSON.stringify({action:'read',resource:'progress_photos',payload:{job_id:jobId}})});
+    var data=await res.json();
+    if(!res.ok||!data||!data.ok||!data.data)return false;
+    return data.data.some(function(p){return p.is_final===true&&p.qc_status==='approved';});
+  }catch(e){return false;}
+}
+async function fmMarkStopStatus(manualId, status){
   var s=sdFieldStops.find(function(x){return x.id===manualId;});
   if(!s) return;
+  if(status==='done'){
+    var gateOk=await fmCheckCompletionGate(s.address);
+    if(!gateOk){
+      fmRenderMyDay(); // rebuilds the dropdown from s.status (unchanged) -- visually reverts the selection
+      if(typeof showToast==='function')showToast('Cannot mark Done -- this job needs a finished-product photo that has been QC-approved by someone else first. Use AI Progress Check in Job Photos.',6000);
+      return;
+    }
+  }
   s.status=status;
   saveFM();
   fmRenderMyDay();
@@ -29377,6 +29424,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       showApp();
       if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
       if (typeof loadMyEmployeeProfile === 'function') loadMyEmployeeProfile();
+      if (typeof window.sdQcQueueRefresh === 'function') window.sdQcQueueRefresh();
     }).catch(function() {
       if (errEl) { errEl.textContent = 'Network error — check your connection and try again'; errEl.style.display = 'block'; }
     });
@@ -29397,6 +29445,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     showApp();
     if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
     if (typeof loadMyEmployeeProfile === 'function') loadMyEmployeeProfile();
+    if (typeof window.sdQcQueueRefresh === 'function') window.sdQcQueueRefresh();
   };
 
   function sdShowBootstrap() {
@@ -32681,6 +32730,10 @@ if (document.readyState === 'loading') {
     <input id="sd-progchk-job" placeholder="Job # or address" style="width:100%;padding:9px 12px;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:12px;box-sizing:border-box;font-size:14px">
     <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:4px;display:block">What was scoped for this visit</label>
     <textarea id="sd-progchk-scope" rows="2" placeholder="e.g. Install kitchen island countertop, quartz, waterfall edge both sides" style="width:100%;padding:9px 12px;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:12px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#374151;margin-bottom:12px;cursor:pointer">
+      <input type="checkbox" id="sd-progchk-final" style="width:auto;min-width:18px;min-height:18px">
+      This is the <strong>finished-product photo</strong> (required, with QC approval, before this task can be marked Done)
+    </label>
     <div id="sd-progchk-upload" onclick="document.getElementById('sd-progchk-file').click()" style="border:2px dashed #E5E7EB;border-radius:10px;padding:24px 12px;text-align:center;cursor:pointer;margin-bottom:12px">
       <div style="font-size:28px;margin-bottom:4px">📷</div>
       <div style="font-size:13px;font-weight:600;color:#374151" id="sd-progchk-upload-lbl">Tap to photograph current progress</div>
@@ -32715,6 +32768,7 @@ window.sdOpenProgressPhoto = function(mode, jobId) {
   var jobEl = document.getElementById('sd-progchk-job');
   if (jobEl) { jobEl.value = _pcJobIdFixed || ''; jobEl.disabled = !!_pcJobIdFixed; }
   var scopeEl = document.getElementById('sd-progchk-scope'); if (scopeEl) scopeEl.value = '';
+  var finalEl = document.getElementById('sd-progchk-final'); if (finalEl) finalEl.checked = false;
   var prevWrap = document.getElementById('sd-progchk-preview-wrap'); if (prevWrap) prevWrap.style.display = 'none';
   var uploadLbl = document.getElementById('sd-progchk-upload-lbl'); if (uploadLbl) uploadLbl.textContent = 'Tap to photograph current progress';
   var analyzeBtn = document.getElementById('sd-progchk-analyze-btn'); if (analyzeBtn) analyzeBtn.disabled = true;
@@ -32833,6 +32887,8 @@ window.sdProgChkSave = async function() {
   var saveBtn = document.getElementById('sd-progchk-save-btn');
   var jobId = (jobEl.value || '').trim();
   if (!jobId || !_pcAnalysisText) return;
+  var finalEl = document.getElementById('sd-progchk-final');
+  var isFinal = !!(finalEl && finalEl.checked);
   var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
   var headers = { 'Content-Type': 'application/json' };
   if (lic) headers['Authorization'] = 'Bearer ' + lic;
@@ -32844,7 +32900,7 @@ window.sdProgChkSave = async function() {
       method: 'POST', headers: headers,
       body: JSON.stringify({
         action: 'write', resource: 'progress_photos',
-        payload: { job_id: jobId, photo_base64: _pcImg64, scope_notes: scopeEl.value.trim(), ai_analysis: _pcAnalysisText, match_status: _pcMatchStatus }
+        payload: { job_id: jobId, photo_base64: _pcImg64, scope_notes: scopeEl.value.trim(), ai_analysis: _pcAnalysisText, match_status: _pcMatchStatus, is_final: isFinal }
       })
     });
     var data = await res.json();
@@ -32896,8 +32952,68 @@ window.sdProgChkRenderRecent = async function() {
   } catch (e) { /* leave default message in place */ }
 };
 
+// QC review queue -- client-side visibility gate only (see the HTML
+// comment above #sd-qc-queue-card); the server independently re-checks
+// role AND self-QC on every qc-review call.
+window.sdQcQueueRefresh = async function() {
+  var card = document.getElementById('sd-qc-queue-card');
+  var listEl = document.getElementById('sd-qc-queue-list');
+  if (!card || !listEl) return;
+  var role = '';
+  try { role = sessionStorage.getItem('sd_session_role') || ''; } catch (e) {}
+  var isManager = (role === 'owner' || role === 'admin');
+  card.style.display = isManager ? 'block' : 'none';
+  if (!isManager) return;
+  var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+  var headers = { 'Content-Type': 'application/json' };
+  if (lic) headers['Authorization'] = 'Bearer ' + lic;
+  try { var tok = sessionStorage.getItem('sd_session_token'); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
+  try {
+    var res = await fetch('https://sairn.vercel.app/api/sd-sub-data', {
+      method: 'POST', headers: headers,
+      body: JSON.stringify({ action: 'read', resource: 'progress_photos', payload: { pending_qc_only: true } })
+    });
+    var data = await res.json();
+    if (!res.ok || !data || !data.ok || !data.data || !data.data.length) return; // leave "Nothing pending review" default in place
+    listEl.innerHTML = data.data.map(function(p) {
+      var img = p.photo_base64 ? '<img src="data:image/jpeg;base64,' + p.photo_base64 + '" style="width:64px;height:64px;object-fit:cover;border-radius:6px;flex-shrink:0">' : '';
+      return '<div style="display:flex;gap:10px;align-items:flex-start;border:1px solid #E5E7EB;border-radius:8px;padding:10px">'
+        + img
+        + '<div style="flex:1;min-width:0">'
+        + '<div style="font-weight:700;font-size:13px">' + escHtml(p.job_id) + ' <span style="font-weight:400;color:#6B7280;font-size:11px">(' + escHtml(p.captured_by_type === 'sub' ? 'sub: ' + p.captured_by_id : p.captured_by_id) + ')</span></div>'
+        + '<div style="font-size:11px;color:#374151;margin-top:2px;white-space:pre-wrap">' + escHtml((p.ai_analysis || '').slice(0, 200)) + '</div>'
+        + '<div style="display:flex;gap:8px;margin-top:8px">'
+        + '<button onclick="sdQcDecide(\'' + p.id + '\',\'approved\')" style="background:#16A34A;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Approve</button>'
+        + '<button onclick="sdQcDecide(\'' + p.id + '\',\'rejected\')" style="background:#fff;border:1px solid #DC2626;color:#DC2626;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Reject</button>'
+        + '</div></div></div>';
+    }).join('');
+  } catch (e) { /* leave default message in place */ }
+};
+window.sdQcDecide = async function(id, qcStatus) {
+  var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+  var headers = { 'Content-Type': 'application/json' };
+  if (lic) headers['Authorization'] = 'Bearer ' + lic;
+  try { var tok = sessionStorage.getItem('sd_session_token'); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
+  try {
+    var res = await fetch('https://sairn.vercel.app/api/sd-sub-data', {
+      method: 'POST', headers: headers,
+      body: JSON.stringify({ action: 'qc-review', resource: 'progress_photos', payload: { id: id, qc_status: qcStatus } })
+    });
+    var data = await res.json();
+    if (!res.ok || !data || !data.ok) {
+      if (typeof showToast === 'function') showToast((data && data.error && data.error.message) || 'Could not save QC decision', 4000);
+      return;
+    }
+    if (typeof showToast === 'function') showToast('Marked ' + qcStatus, 'success');
+    sdQcQueueRefresh();
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('Network error -- try again', 4000);
+  }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
   if (typeof window.sdProgChkRenderRecent === 'function') window.sdProgChkRenderRecent();
+  if (typeof window.sdQcQueueRefresh === 'function') window.sdQcQueueRefresh();
 });
 })();
 </script>
