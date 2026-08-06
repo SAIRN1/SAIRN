@@ -1768,7 +1768,8 @@ async function genEcosystemReport(){
       body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,app_id:APP_ID,is_demo:true,system:sys,
         messages:[{role:'user',content:'Write layer 7 (Overall Recommendations) from the facts given.'}]})});
     var data=await res.json();
-    var layer7=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    var layer7=(data.content&&data.content[0]&&data.content[0].text)||
+      (data.error&&data.error.message?('AI recommendations unavailable: '+data.error.message):'No response text returned.');
     var summary='LAYER 1 - TURF/ZONE CONDITION:\n'+layer1+'\n\nLAYER 2 - IRRIGATION SYSTEM HEALTH:\n'+layer2+
       '\n\nLAYER 3 - WATER FEATURES CONDITION:\n'+layer3+'\n\nLAYER 4 - INVASIVE SPECIES PRESSURE:\n'+layer4+
       '\n\nLAYER 5 - SOIL & PLANT HEALTH:\n'+layer5+'\n\nLAYER 6 - BIODIVERSITY OBSERVATIONS:\n'+layer6+
@@ -1831,7 +1832,8 @@ async function dcAnalyze(){
           {type:'text',text:'Client design direction: '+(direction||'(none given -- use your best judgment from the photo alone)')}
         ]}]})});
     var data=await res.json();
-    dcCurrentDesignText=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    dcCurrentDesignText=(data.content&&data.content[0]&&data.content[0].text)||
+      (data.error&&data.error.message?('Could not analyze photo: '+data.error.message+' -- try a different photo.'):'No response text returned.');
     $('dc-result').textContent=dcCurrentDesignText;
     dcCurrentQuoteId=null;dcCurrentApproved=false;dcCurrentApprover=null;
     $('dc-approval-wrap').style.display='none';$('dc-final-wrap').style.display='none';
