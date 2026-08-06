@@ -49,6 +49,9 @@ const RESOURCES = {
   // -- see the block comments below for why these are prefixed rather than reusing 'schedule'/
   // 'progress_photos' bare.
   grd_schedule: true, grd_progress_photos: true,
+  // SAIRNgrounds invoices + DreamClose (2026-08-06, sweep fix) -- 'invoices' bare was already
+  // claimed by SAIRNscape below (customer_id-scoped); 'dreamclose' never had a route at all.
+  grd_invoices: true, grd_dreamclose: true,
   // SAIRNscape progress-photo QC (2026-08-06) -- same fix, same prefixing reason.
   scp_progress_photos: true
 };
@@ -129,7 +132,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose' } });
     return;
   }
 
@@ -619,6 +622,63 @@ module.exports = async (req, res) => {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // === SAIRNGROUNDS: INVOICES / DREAMCLOSE (2026-08-06, sweep fix) ===
+    // Same collision/missing-route bug class as grd_schedule and
+    // grd_progress_photos above, found via a full resource-name sweep after
+    // the user asked whether dcCreateInvoiceAndSchedule()'s reported PASS
+    // was real. 'invoices' was already claimed by SAIRNscape's block below
+    // (customer_id-scoped) -- every SAIRNgrounds invoice write (saveInv(),
+    // DreamClose) has always 400'd, same silent failure as grd_schedule had.
+    // 'dreamclose' had no route at all, anywhere, ever -- not a misread, a
+    // real gap. The sweep also found ~18 more resource names used by
+    // SAIRNgrounds/SAIRNscape client code with no matching route at all
+    // (irrigation, merchandise/bar, training academy, invasive species,
+    // water features, vendors, BOQ, ecosystem reports, generic designs) --
+    // NOT fixed here, deliberately out of scope for this pass; see the
+    // session report for the full list.
+    if (resource === 'grd_invoices' && action === 'read') {
+      const r = await fetch(rest('grd_invoices?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'grd_invoices' && action === 'write') {
+      if (!payload || !payload.id || !payload.property_id) { res.status(400).json({ error: { message: 'invoice payload.id and payload.property_id are required' } }); return; }
+      const r = await fetch(rest('grd_invoices?on_conflict=license_hash,invoice_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', invoice_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+    if (resource === 'grd_dreamclose' && action === 'read') {
+      const r = await fetch(rest('grd_dreamclose?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'grd_dreamclose' && action === 'write') {
+      if (!payload || !payload.id || !payload.property_id) { res.status(400).json({ error: { message: 'dreamclose payload.id and payload.property_id are required' } }); return; }
+      const r = await fetch(rest('grd_dreamclose?on_conflict=license_hash,dreamclose_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', dreamclose_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();

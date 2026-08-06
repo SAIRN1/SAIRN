@@ -1325,8 +1325,12 @@ async function grdSyncFromServer(){
   // pull down the crew's uploaded photo even after the write route itself
   // was fixed, since read-sync is what actually populates a fresh device's
   // localStorage on load.
+  // grd_invoices + grd_dreamclose added 2026-08-06 (sweep fix) -- same
+  // reasoning, same missing-route bug DreamClose's invoice/schedule writes
+  // had.
   var resources=[['properties','grd_properties'],['jobs','grd_jobs'],['quotes','grd_quotes'],['golf_zones','grd_golf_zones'],
-    ['grd_schedule','grd_schedule'],['grd_progress_photos','grd_progress_photos']];
+    ['grd_schedule','grd_schedule'],['grd_progress_photos','grd_progress_photos'],
+    ['grd_invoices','grd_invoices'],['grd_dreamclose','grd_dreamclose']];
   var changed=false;
   for(var i=0;i<resources.length;i++){
     var res=await grdData('read',resources[i][0],{});
@@ -1334,7 +1338,7 @@ async function grdSyncFromServer(){
       st(resources[i][1],res.data);changed=true;
     }
   }
-  if(changed){fillPropertySelects();rDash();rProps();rJobs();rQuotes();rGolf();rSched();}
+  if(changed){fillPropertySelects();rDash();rProps();rJobs();rQuotes();rGolf();rSched();rInv();rDreamClose();}
 }
 
 function rDash(){
@@ -2045,7 +2049,7 @@ function openInvModal(id){
   $('invmodal').classList.add('on');
 }
 function closeInvModal(){$('invmodal').classList.remove('on');}
-function saveInv(){
+async function saveInv(){
   var propertyId=$('invproperty').value;
   if(!propertyId){toast('Property is required');return;}
   var list=bldInv();
@@ -2053,8 +2057,9 @@ function saveInv(){
     amount:Number($('invamount').value||0),status:$('invstatus').value,issued:$('invissued').value,due:$('invdue').value,
     notes:$('invnotes').value.trim()};
   if(invid){list=list.map(function(x){return x.id===invid?rec:x;});}else{list.push(rec);}
-  st('grd_invoices',list);closeInvModal();rInv();rDash();toast('Invoice saved');
-  grdData('write','invoices',rec);
+  st('grd_invoices',list);closeInvModal();rInv();rDash();
+  var syncResult=await grdData('write','grd_invoices',rec);
+  toast(syncResult?'Invoice saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === IRRIGATION (item 1) =========================================
@@ -2705,7 +2710,7 @@ function dcApprove(){
   $('dc-final-wrap').style.display='block';
   toast('Proposal approved by '+name);
 }
-function dcCreateInvoiceAndSchedule(){
+async function dcCreateInvoiceAndSchedule(){
   var propertyId=$('dc-property').value;
   if(!dcCurrentApproved||!dcCurrentQuoteId){toast('Approve the proposal first');return;}
   var quotes=ld('grd_quotes',[]);
@@ -2714,18 +2719,34 @@ function dcCreateInvoiceAndSchedule(){
   var invoices=bldInv();
   var irec={id:'INV-'+Date.now(),property_id:propertyId,quote_id:dcCurrentQuoteId,amount:total,status:'Unpaid',
     issued:grdLocalToday(),due:daysFromNow(30),notes:'From DreamClose proposal, approved by '+dcCurrentApprover};
-  invoices.push(irec);st('grd_invoices',invoices);grdData('write','invoices',irec);
+  invoices.push(irec);st('grd_invoices',invoices);
   var sched=bldSched();
   var srec={id:'SCH-'+Date.now(),property_id:propertyId,freq:'one_off',next:daysFromNow(7),crew:'',quote_id:dcCurrentQuoteId};
-  sched.push(srec);st('grd_schedule',sched);grdData('write','grd_schedule',srec);
+  sched.push(srec);st('grd_schedule',sched);
   var dc=bldDcRecords();
-  dc.push({id:'DC-'+Date.now(),property_id:propertyId,created_at:grdLocalToday(),
-    approved:true,approved_by:dcCurrentApprover,quote_id:dcCurrentQuoteId,invoice_id:irec.id,schedule_id:srec.id});
-  st('grd_dreamclose',dc);grdData('write','dreamclose',dc[dc.length-1]);
+  var dcRec={id:'DC-'+Date.now(),property_id:propertyId,created_at:grdLocalToday(),
+    approved:true,approved_by:dcCurrentApprover,quote_id:dcCurrentQuoteId,invoice_id:irec.id,schedule_id:srec.id};
+  dc.push(dcRec);st('grd_dreamclose',dc);
   $('dc-final-status').style.display='block';
   $('dc-final-status').textContent='Invoice '+irec.id+' created ($'+total+', 0 until priced) and job scheduled '+fdate(srec.next)+'.';
   rInv();rSched();rDreamClose();
-  toast('DreamClose complete -- invoice + schedule created');
+  // All three awaited and checked -- previously fire-and-forget (this is the
+  // exact call site the user asked about: the earlier "PASS end-to-end,
+  // correctly cross-linked by quote_id" report only ever verified this
+  // local state, never whether these three writes actually reached the
+  // server). The toast now reflects real sync status, not just local
+  // creation, and names which record(s) didn't make it if any fail.
+  var results=await Promise.all([
+    grdData('write','grd_invoices',irec),
+    grdData('write','grd_schedule',srec),
+    grdData('write','grd_dreamclose',dcRec)
+  ]);
+  var failedNames=['invoice','schedule entry','DreamClose record'].filter(function(_,i){return !results[i];});
+  if(failedNames.length){
+    toast('DreamClose complete on this device, but '+failedNames.join(', ')+' did not sync to the server -- retry with a connection.',7000);
+  }else{
+    toast('DreamClose complete -- invoice + schedule created');
+  }
 }
 
 // === CREW TRAINING ACADEMY (item 4) ===============================

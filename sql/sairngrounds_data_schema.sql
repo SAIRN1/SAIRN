@@ -2,8 +2,12 @@
 -- SAIRNgrounds application data — Supabase schema
 --
 -- Run this once in the Supabase SQL editor before api/sd-data.js's
--- properties/jobs/quotes/golf_zones/grd_schedule/grd_progress_photos
--- resources will work for SAIRNgrounds. Until this runs, sairngrounds.html
+-- properties/jobs/quotes/golf_zones/grd_schedule/grd_progress_photos/
+-- grd_invoices/grd_dreamclose resources will work for SAIRNgrounds.
+-- If you already ran an earlier version of this file (before
+-- grd_invoices/grd_dreamclose existed), re-running this version is safe --
+-- every statement is idempotent (create table if not exists) and only adds
+-- the two new tables. Until this runs, sairngrounds.html
 -- falls back to its existing Phase 1 localStorage-only behavior (see
 -- SAIRNGROUNDS-SCOPE.md section 3) — the client is written to degrade to
 -- that, not to hard-fail, the same pattern sd_render_usage/sd_shared_knowledge
@@ -126,6 +130,34 @@ create table if not exists public.grd_progress_photos (
 );
 create index if not exists idx_grdphotos_license_sched on public.grd_progress_photos(license_hash, schedule_id);
 
+create table if not exists public.grd_invoices (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'sairngrounds',
+  invoice_id   text not null,
+  property_id  text not null,
+  data         jsonb not null default '{}'::jsonb,    -- quote_id, amount, status, issued, due, notes
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, invoice_id),
+  constraint grdinv_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_grdinv_license on public.grd_invoices(license_hash);
+
+create table if not exists public.grd_dreamclose (
+  id            uuid primary key default gen_random_uuid(),
+  license_hash  text not null,
+  app_id        text not null default 'sairngrounds',
+  dreamclose_id text not null,
+  property_id   text not null,
+  data          jsonb not null default '{}'::jsonb,    -- approved, approved_by, quote_id, invoice_id, schedule_id
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  unique (license_hash, dreamclose_id),
+  constraint grddc_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_grddc_license on public.grd_dreamclose(license_hash);
+
 -- ── RLS: service-role only (mirror stonedesk_data_schema.sql) ────────────
 alter table public.grd_properties       enable row level security;
 alter table public.grd_jobs             enable row level security;
@@ -133,6 +165,8 @@ alter table public.grd_quotes           enable row level security;
 alter table public.grd_golf_zones       enable row level security;
 alter table public.grd_schedule         enable row level security;
 alter table public.grd_progress_photos  enable row level security;
+alter table public.grd_invoices         enable row level security;
+alter table public.grd_dreamclose       enable row level security;
 
 drop policy if exists "svc only grd_properties" on public.grd_properties;
 drop policy if exists "svc only grd_jobs"       on public.grd_jobs;
@@ -140,6 +174,8 @@ drop policy if exists "svc only grd_quotes"     on public.grd_quotes;
 drop policy if exists "svc only grd_golf_zones" on public.grd_golf_zones;
 drop policy if exists "svc only grd_schedule" on public.grd_schedule;
 drop policy if exists "svc only grd_progress_photos" on public.grd_progress_photos;
+drop policy if exists "svc only grd_invoices" on public.grd_invoices;
+drop policy if exists "svc only grd_dreamclose" on public.grd_dreamclose;
 
 create policy "svc only grd_properties" on public.grd_properties
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
@@ -153,7 +189,13 @@ create policy "svc only grd_schedule" on public.grd_schedule
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 create policy "svc only grd_progress_photos" on public.grd_progress_photos
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only grd_invoices" on public.grd_invoices
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only grd_dreamclose" on public.grd_dreamclose
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
 grant usage on schema public to service_role;
 grant select, insert, update, delete on public.grd_schedule        to service_role;
 grant select, insert, update, delete on public.grd_progress_photos to service_role;
+grant select, insert, update, delete on public.grd_invoices        to service_role;
+grant select, insert, update, delete on public.grd_dreamclose      to service_role;
