@@ -1243,7 +1243,12 @@ if (document.readyState === 'loading') {
       <button class="scp-sb" id="scp-sb-quotes" onclick="scpNav('quotes')"><span class="scp-sico">&#128176;</span>Quoting</button>
       <button class="scp-sb" id="scp-sb-schedule" onclick="scpNav('schedule')"><span class="scp-sico">&#128197;</span>Scheduling</button>
       <button class="scp-sb" id="scp-sb-invoices" onclick="scpNav('invoices')"><span class="scp-sico">&#128179;</span>Invoicing</button>
-      <div class="scp-sfoot">SAIRNscape Phase 1 &middot; <span style="color:#22C55E;font-weight:700;">Landscaping Ops</span></div>
+      <div class="scp-ss">Irrigation &amp; Water</div>
+      <button class="scp-sb" id="scp-sb-irrigation" onclick="scpNav('irrigation')"><span class="scp-sico">&#128167;</span>Irrigation</button>
+      <button class="scp-sb" id="scp-sb-waterfeatures" onclick="scpNav('waterfeatures')"><span class="scp-sico">&#9970;</span>Water Features</button>
+      <div class="scp-ss">Business</div>
+      <button class="scp-sb" id="scp-sb-vendors" onclick="scpNav('vendors')"><span class="scp-sico">&#128666;</span>Vendors</button>
+      <div class="scp-sfoot">SAIRNscape Phase 3 &middot; <span style="color:#22C55E;font-weight:700;">Landscaping Ops</span></div>
     </aside>
     <main id="scp-main">
 
@@ -1420,6 +1425,160 @@ if (document.readyState === 'loading') {
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="scp-btn scp-bo" onclick="scpCloseInvModal()">Cancel</button>
       <button class="scp-btn scp-bp" onclick="scpSaveInv()">Save Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- IRRIGATION (item 1, small/residential scale here -- same extensible
+     architecture as sairngrounds.html's Irrigation panel, "build once, both
+     apps use it" per the shared-feature pattern. See SCP_IRR_BRAND_PROTOCOLS
+     in the script below for the extensibility contract: add a brand, nothing
+     else needs to change. Data layer only, no live controller API calls. -->
+<div class="scp-panel" id="scp-panel-irrigation">
+  <div class="scp-ph"><div><div class="scp-ptitle">Irrigation</div><div class="scp-psub">Controllers, zones, and run schedules &mdash; extensible brand/protocol registry, data layer only (no live controller API calls yet)</div></div></div>
+  <div class="scp-krow">
+    <div class="scp-kpi"><div class="scp-klbl">Controllers</div><div class="scp-kval" id="scp-irr-k-controllers">0</div><div class="scp-kt">On file</div></div>
+    <div class="scp-kpi"><div class="scp-klbl">Zones</div><div class="scp-kval" id="scp-irr-k-zones">0</div><div class="scp-kt" id="scp-irr-k-zones-sub">Active</div></div>
+    <div class="scp-kpi"><div class="scp-klbl">Needs Repair</div><div class="scp-kval" id="scp-irr-k-repair">0</div><div class="scp-kt">Flagged zones</div></div>
+    <div class="scp-kpi"><div class="scp-klbl">Active Run Schedules</div><div class="scp-kval" id="scp-irr-k-sched">0</div><div class="scp-kt">Running</div></div>
+  </div>
+  <div class="scp-sbar" style="margin-bottom:14px">
+    <button class="scp-btn scp-bo scp-bs on" id="scp-irr-tab-controllers" onclick="scpIrrTab('controllers')">Controllers</button>
+    <button class="scp-btn scp-bo scp-bs" id="scp-irr-tab-zones" onclick="scpIrrTab('zones')">Zones</button>
+    <button class="scp-btn scp-bo scp-bs" id="scp-irr-tab-schedules" onclick="scpIrrTab('schedules')">Run Schedules</button>
+  </div>
+  <div id="scp-irr-view-controllers">
+    <div class="scp-card"><div class="scp-cb">
+      <div class="scp-pa" style="margin-bottom:10px"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenControllerModal()">+ Add Controller</button></div>
+      <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Name</th><th>Brand / Protocol</th><th>Model</th><th>Zones Supported</th><th>Actions</th></tr></thead>
+      <tbody id="scp-irrctltbody"></tbody></table></div>
+    </div></div>
+  </div>
+  <div id="scp-irr-view-zones" style="display:none">
+    <div class="scp-card"><div class="scp-cb">
+      <div class="scp-pa" style="margin-bottom:10px"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenIrrZoneModal()">+ Add Zone</button></div>
+      <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Zone</th><th>Type</th><th>Controller</th><th>Heads</th><th>Status</th><th>Last Service</th><th>Actions</th></tr></thead>
+      <tbody id="scp-irrzonetbody"></tbody></table></div>
+    </div></div>
+  </div>
+  <div id="scp-irr-view-schedules" style="display:none">
+    <div class="scp-card"><div class="scp-cb">
+      <div class="scp-pa" style="margin-bottom:10px"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenIrrSchedModal()">+ Add Run Schedule</button></div>
+      <div class="scp-tw"><table><thead><tr><th>Zone</th><th>Days</th><th>Start</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="scp-irrschedtbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="scp-modal" id="scp-controllermodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">Add / Edit Controller</div>
+    <div class="scp-fg"><label>Customer</label><select id="scp-ctlcustomer"></select></div>
+    <div class="scp-fg"><label>Controller Name</label><input id="scp-ctlname" placeholder="Backyard Controller"></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Brand / Protocol</label><select id="scp-ctlbrand"></select></div><div class="scp-fg"><label>Model</label><input id="scp-ctlmodel" placeholder="Optional"></div></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Zones Supported</label><input id="scp-ctlzonesup" type="number" placeholder="8"></div><div class="scp-fg"><label>Install Date</label><input id="scp-ctlinstall" type="date"></div></div>
+    <div class="scp-fg"><label>Notes</label><textarea id="scp-ctlnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseControllerModal()">Cancel</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveController()">Save Controller</button>
+    </div>
+  </div>
+</div>
+<div class="scp-modal" id="scp-irrzonemodal">
+  <div class="scp-mbox" style="width:640px;max-width:94vw">
+    <div class="scp-mtitle">Add / Edit Irrigation Zone</div>
+    <div class="scp-fg"><label>Customer</label><select id="scp-izcustomer" onchange="scpIzCustomerChanged()"></select></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Zone Name</label><input id="scp-izname" placeholder="Front Lawn Zone 1"></div><div class="scp-fg"><label>Type</label><select id="scp-iztype">
+      <option value="sprinkler">Sprinkler</option><option value="rotor">Rotor</option><option value="drip">Drip</option><option value="bubbler">Bubbler</option>
+    </select></div></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Controller</label><select id="scp-izcontroller"><option value="">Unassigned / Manual</option></select></div><div class="scp-fg"><label>Station #</label><input id="scp-izstation" placeholder="Optional"></div></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Head Count</label><input id="scp-izheads" type="number" placeholder="6"></div><div class="scp-fg"><label>Sq Ft Covered</label><input id="scp-izsqft" type="number" placeholder="1200"></div></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Status</label><select id="scp-izstatus"><option value="active">Active</option><option value="inactive">Inactive</option><option value="needs_repair">Needs Repair</option></select></div><div class="scp-fg"><label>Last Service</label><input id="scp-izlastservice" type="date"></div></div>
+    <div class="scp-fg"><label>Backflow Device Note</label><input id="scp-izbackflow" placeholder="e.g. PVB, last tested 2026-04-01"></div>
+    <div class="scp-mtitle" style="font-size:14px;margin-top:10px">Parts List / Install Checklist <span style="font-weight:400;color:#64748B;font-size:12px">&mdash; one item per line</span></div>
+    <textarea id="scp-izchecklist" rows="3" placeholder="Rotor head x6&#10;Backflow preventer test&#10;Trench + lateral line"></textarea>
+    <div class="scp-fg"><label>Notes</label><textarea id="scp-iznotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseIrrZoneModal()">Cancel</button>
+      <button class="scp-btn scp-bo scp-bs" onclick="scpSendIrrZoneToQuote()">Send Parts/Install to Quote</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveIrrZone()">Save Zone</button>
+    </div>
+  </div>
+</div>
+<div class="scp-modal" id="scp-irrschedmodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">Add / Edit Run Schedule</div>
+    <div class="scp-fg"><label>Zone</label><select id="scp-ischzone"></select></div>
+    <div class="scp-fg"><label>Days</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px">
+        <label><input type="checkbox" class="scp-ischday" value="Mon"> Mon</label>
+        <label><input type="checkbox" class="scp-ischday" value="Tue"> Tue</label>
+        <label><input type="checkbox" class="scp-ischday" value="Wed"> Wed</label>
+        <label><input type="checkbox" class="scp-ischday" value="Thu"> Thu</label>
+        <label><input type="checkbox" class="scp-ischday" value="Fri"> Fri</label>
+        <label><input type="checkbox" class="scp-ischday" value="Sat"> Sat</label>
+        <label><input type="checkbox" class="scp-ischday" value="Sun"> Sun</label>
+      </div>
+    </div>
+    <div class="scp-fr"><div class="scp-fg"><label>Start Time</label><input id="scp-ischstart" type="time"></div><div class="scp-fg"><label>Duration (min)</label><input id="scp-ischduration" type="number" placeholder="15"></div></div>
+    <div class="scp-fg"><label>Status</label><select id="scp-ischstatus"><option value="active">Active</option><option value="paused">Paused</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseIrrSchedModal()">Cancel</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveIrrSched()">Save Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- WATER FEATURES (item 2, small/residential scale) -->
+<div class="scp-panel" id="scp-panel-waterfeatures">
+  <div class="scp-ph"><div><div class="scp-ptitle">Water Features</div><div class="scp-psub">Ponds, fountains, waterfalls &mdash; pumps and filtration, residential scale</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenWfModal()">+ Add Water Feature</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Name</th><th>Type</th><th>Pump / Filtration</th><th>Condition</th><th>Actions</th></tr></thead>
+    <tbody id="scp-wftbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="scp-modal" id="scp-wfmodal">
+  <div class="scp-mbox" style="width:640px;max-width:94vw">
+    <div class="scp-mtitle">Add / Edit Water Feature</div>
+    <div class="scp-fg"><label>Customer</label><select id="scp-wfcustomer"></select></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Name</label><input id="scp-wfname" placeholder="Backyard Pond"></div><div class="scp-fg"><label>Type</label><select id="scp-wftype">
+      <option value="pond">Pond</option><option value="fountain">Fountain</option><option value="waterfall">Waterfall</option>
+    </select></div></div>
+    <div class="scp-fg"><label>Size (note unit)</label><input id="scp-wfsize" placeholder="e.g. 200 gallons"></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Pump Model</label><input id="scp-wfpump" placeholder="Optional"></div><div class="scp-fg"><label>Filtration Type</label><input id="scp-wffilter" placeholder="Optional"></div></div>
+    <div class="scp-fg"><label>Last Service</label><input id="scp-wflastservice" type="date"></div>
+    <div class="scp-fg"><label>Condition Note</label><textarea id="scp-wfcondition" rows="2"></textarea></div>
+    <div class="scp-mtitle" style="font-size:14px;margin-top:10px">Parts List / Install Checklist</div>
+    <textarea id="scp-wfchecklist" rows="3" placeholder="Submersible pump&#10;UV filter&#10;Liner repair"></textarea>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseWfModal()">Cancel</button>
+      <button class="scp-btn scp-bo scp-bs" onclick="scpSendWfToQuote()">Send Parts/Install to Quote</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveWf()">Save Feature</button>
+    </div>
+  </div>
+</div>
+
+<!-- VENDOR PORTAL (item 8, shared with SAIRNgrounds -- see decision note in
+     sairngrounds.html's Vendors panel comment: no prior open question was
+     actually found on file, decided fresh this session as SHARED.) -->
+<div class="scp-panel" id="scp-panel-vendors">
+  <div class="scp-ph"><div><div class="scp-ptitle">Vendors</div><div class="scp-psub">Irrigation supply, nursery, hardscape, and equipment vendors</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenVendorModal()">+ Add Vendor</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-tw"><table><thead><tr><th>Name</th><th>Category</th><th>Contact</th><th>Terms</th><th>Actions</th></tr></thead>
+    <tbody id="scp-vendtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="scp-modal" id="scp-vendormodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">Add / Edit Vendor</div>
+    <div class="scp-fr"><div class="scp-fg"><label>Name</label><input id="scp-vendname" placeholder="Ewing Irrigation"></div><div class="scp-fg"><label>Category</label><select id="scp-vendcat"><option value="irrigation">Irrigation Supply</option><option value="nursery">Nursery / Plants</option><option value="hardscape">Hardscape</option><option value="equipment">Equipment</option><option value="other">Other</option></select></div></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Contact Name</label><input id="scp-vendcontact" placeholder="Optional"></div><div class="scp-fg"><label>Phone</label><input id="scp-vendphone" placeholder="Optional"></div></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Email</label><input id="scp-vendemail" placeholder="Optional"></div><div class="scp-fg"><label>Terms</label><input id="scp-vendterms" placeholder="Net 30"></div></div>
+    <div class="scp-fg"><label>Notes</label><textarea id="scp-vendnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseVendorModal()">Cancel</button>
+      <button class="scp-btn scp-bp" onclick="scpSaveVendor()">Save Vendor</button>
     </div>
   </div>
 </div>
@@ -1620,7 +1779,8 @@ function scpCustName(id){var c=scpLd('scp_customers',[]).find(function(x){return
 function scpFillCustomerSelects(){
   var custs=scpLd('scp_customers',[]);
   var opts=custs.map(function(c){return '<option value="'+scpH(c.id)+'">'+scpH(c.name)+'</option>';}).join('');
-  ['scp-jcustomer','scp-qcustomer','scp-scustomer','scp-icustomer','scp-dwcustomer'].forEach(function(id){
+  ['scp-jcustomer','scp-qcustomer','scp-scustomer','scp-icustomer','scp-dwcustomer',
+    'scp-ctlcustomer','scp-izcustomer','scp-wfcustomer'].forEach(function(id){
     var el=scp$(id);if(!el)return;var cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;
   });
 }
@@ -1629,6 +1789,7 @@ function scpInit(){
   scpSeed();
   scpFillCustomerSelects();
   scpRDash();scpRCust();scpRJobs();scpRQuotes();scpRSched();scpRInv();scpRDesignWalks();
+  scpRIrrigation();scpRWf();scpRVendors();
   scpUpdateAsideA11y();
   scpSyncFromServer();
   loadScpSharedKnowledge();
@@ -1925,6 +2086,233 @@ function scpSaveInv(){
   if(scpIid){invs=invs.map(function(i){return i.id===scpIid?rec:i;});}else{invs.push(rec);}
   scpSt('scp_invoices',invs);scpCloseInvModal();scpRInv();scpRDash();scpToast('Invoice saved');
   scpData('write','invoices',rec);
+}
+
+// === ITEM 7 MODULE IDS ============================================
+var scpCtlid=null,scpIzid=null,scpIschid=null,scpWfid=null,scpVendid=null;
+
+// === IRRIGATION (item 1, small/residential scale) =================
+// EXTENSIBILITY CONTRACT, identical to sairngrounds.html's: add a brand key
+// to SCP_IRR_BRAND_PROTOCOLS, nothing else needs to change.
+var SCP_IRR_BRAND_PROTOCOLS={
+  rainbird:{label:'Rain Bird',protocol:'ARC8 / Wi-Fi'},
+  hunter:{label:'Hunter',protocol:'Pro-HC / Hydrawise'},
+  rachio:{label:'Rachio',protocol:'Rachio Wi-Fi API'},
+  orbit:{label:'Orbit',protocol:'B-hyve'},
+  other:{label:'Other / Manual',protocol:'Manual entry only'}
+};
+window.SCP_IRR_BRAND_PROTOCOLS=SCP_IRR_BRAND_PROTOCOLS;
+function scpControllers(){return scpLd('scp_irr_controllers',[]);}
+function scpIrrZones(){return scpLd('scp_irr_zones',[]);}
+function scpIrrSched(){return scpLd('scp_irr_schedules',[]);}
+function scpFillControllerBrandSelect(){
+  var el=scp$('scp-ctlbrand');if(!el)return;var keep=el.value;
+  el.innerHTML=Object.keys(SCP_IRR_BRAND_PROTOCOLS).map(function(k){return '<option value="'+k+'">'+scpH(SCP_IRR_BRAND_PROTOCOLS[k].label)+' ('+scpH(SCP_IRR_BRAND_PROTOCOLS[k].protocol)+')</option>';}).join('');
+  el.value=keep||'other';
+}
+function scpIrrTab(which){
+  ['controllers','zones','schedules'].forEach(function(t){
+    scp$('scp-irr-view-'+t).style.display=(t===which)?'block':'none';
+    scp$('scp-irr-tab-'+t).classList.toggle('on',t===which);
+  });
+}
+function scpRIrrigation(){
+  scpFillCustomerSelects();scpFillControllerBrandSelect();
+  var ctls=scpControllers(),zones=scpIrrZones(),sched=scpIrrSched();
+  scp$('scp-irr-k-controllers').textContent=ctls.length;
+  var activeZones=zones.filter(function(z){return z.status==='active';});
+  scp$('scp-irr-k-zones').textContent=activeZones.length;scp$('scp-irr-k-zones-sub').textContent=activeZones.length+' of '+zones.length+' total';
+  var repair=zones.filter(function(z){return z.status==='needs_repair';});
+  scp$('scp-irr-k-repair').textContent=repair.length;
+  var activeSched=sched.filter(function(s){return s.status==='active';});
+  scp$('scp-irr-k-sched').textContent=activeSched.length;
+  scp$('scp-irrctltbody').innerHTML=ctls.length?ctls.map(function(c){
+    var bp=SCP_IRR_BRAND_PROTOCOLS[c.brand]||{label:c.brand,protocol:''};
+    return '<tr><td>'+scpH(scpCustName(c.customer_id))+'</td><td><strong>'+scpH(c.name)+'</strong></td><td>'+scpH(bp.label)+' <span style="color:#64748B;font-size:11px">('+scpH(bp.protocol)+')</span></td><td>'+scpH(c.model||'--')+'</td><td>'+(c.zones_supported||'--')+'</td>'+
+      '<td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenControllerModal(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:#64748B;padding:20px">No controllers on file</td></tr>';
+  scp$('scp-irrzonetbody').innerHTML=zones.length?zones.map(function(z){
+    var ctl=ctls.find(function(c){return c.id===z.controller_id;});
+    var sc={active:'scp-bg',inactive:'scp-bx',needs_repair:'scp-br'}[z.status]||'scp-bx';
+    return '<tr><td>'+scpH(scpCustName(z.customer_id))+'</td><td><strong>'+scpH(z.name)+'</strong></td><td>'+scpH(z.zone_type)+'</td><td>'+(ctl?scpH(ctl.name):'<span style="color:#64748B">Unassigned</span>')+'</td><td>'+(z.head_count||'--')+'</td>'+
+      '<td><span class="scp-badge '+sc+'">'+scpH(z.status)+'</span></td><td>'+(z.last_service?scpFdate(z.last_service):'--')+'</td>'+
+      '<td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenIrrZoneModal(\''+z.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:#64748B;padding:20px">No zones on file</td></tr>';
+  var zoneById={};zones.forEach(function(z){zoneById[z.id]=z;});
+  scp$('scp-irrschedtbody').innerHTML=sched.length?sched.map(function(s){
+    var z=zoneById[s.zone_id];
+    var sc={active:'scp-bg',paused:'scp-bx'}[s.status]||'scp-bx';
+    return '<tr><td>'+(z?scpH(z.name):'--')+'</td><td>'+(s.days||[]).join(', ')+'</td><td>'+scpH(s.start||'--')+'</td><td>'+(s.duration||0)+' min</td>'+
+      '<td><span class="scp-badge '+sc+'">'+scpH(s.status)+'</span></td><td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenIrrSchedModal(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:#64748B;padding:20px">No run schedules on file</td></tr>';
+}
+function scpOpenControllerModal(id){
+  scpCtlid=id||null;scpFillCustomerSelects();scpFillControllerBrandSelect();
+  var c=id?scpControllers().find(function(x){return x.id===id;}):null;
+  scp$('scp-ctlcustomer').value=c?c.customer_id:'';scp$('scp-ctlname').value=c?c.name:'';
+  scp$('scp-ctlbrand').value=c?c.brand:'other';scp$('scp-ctlmodel').value=c?c.model||'':'';
+  scp$('scp-ctlzonesup').value=c?c.zones_supported||'':'';scp$('scp-ctlinstall').value=c?c.install_date||'':'';
+  scp$('scp-ctlnotes').value=c?c.notes||'':'';
+  scp$('scp-controllermodal').classList.add('on');
+}
+function scpCloseControllerModal(){scp$('scp-controllermodal').classList.remove('on');}
+function scpSaveController(){
+  var customerId=scp$('scp-ctlcustomer').value,name=scp$('scp-ctlname').value.trim();
+  if(!customerId||!name){scpToast('Customer and controller name are required');return;}
+  var list=scpControllers();
+  var rec={id:scpCtlid||('CTL-'+Date.now()),customer_id:customerId,name:name,brand:scp$('scp-ctlbrand').value,
+    model:scp$('scp-ctlmodel').value.trim(),zones_supported:Number(scp$('scp-ctlzonesup').value||0),
+    install_date:scp$('scp-ctlinstall').value,notes:scp$('scp-ctlnotes').value.trim()};
+  if(scpCtlid){list=list.map(function(x){return x.id===scpCtlid?rec:x;});}else{list.push(rec);}
+  scpSt('scp_irr_controllers',list);scpCloseControllerModal();scpRIrrigation();scpToast('Controller saved');
+  scpData('write','irr_controllers',rec);
+}
+function scpIzCustomerChanged(){
+  var sel=scp$('scp-izcontroller');if(!sel)return;
+  var customerId=scp$('scp-izcustomer').value;
+  var ctls=scpControllers().filter(function(c){return c.customer_id===customerId;});
+  var keep=sel.value;
+  sel.innerHTML='<option value="">Unassigned / Manual</option>'+ctls.map(function(c){return '<option value="'+scpH(c.id)+'">'+scpH(c.name)+'</option>';}).join('');
+  sel.value=keep;
+}
+function scpOpenIrrZoneModal(id){
+  scpIzid=id||null;scpFillCustomerSelects();
+  var z=id?scpIrrZones().find(function(x){return x.id===id;}):null;
+  scp$('scp-izcustomer').value=z?z.customer_id:'';scpIzCustomerChanged();
+  scp$('scp-izname').value=z?z.name:'';scp$('scp-iztype').value=z?z.zone_type:'sprinkler';
+  scp$('scp-izcontroller').value=z?(z.controller_id||''):'';scp$('scp-izstation').value=z?z.station||'':'';
+  scp$('scp-izheads').value=z?z.head_count||'':'';scp$('scp-izsqft').value=z?z.sqft||'':'';
+  scp$('scp-izstatus').value=z?z.status:'active';scp$('scp-izlastservice').value=z?z.last_service||'':'';
+  scp$('scp-izbackflow').value=z?z.backflow||'':'';
+  scp$('scp-izchecklist').value=z&&z.checklist?z.checklist.join('\n'):'';
+  scp$('scp-iznotes').value=z?z.notes||'':'';
+  scp$('scp-irrzonemodal').classList.add('on');
+}
+function scpCloseIrrZoneModal(){scp$('scp-irrzonemodal').classList.remove('on');}
+function scpSaveIrrZone(){
+  var customerId=scp$('scp-izcustomer').value,name=scp$('scp-izname').value.trim();
+  if(!customerId||!name){scpToast('Customer and zone name are required');return;}
+  var list=scpIrrZones();
+  var rec={id:scpIzid||('IZ-'+Date.now()),customer_id:customerId,name:name,zone_type:scp$('scp-iztype').value,
+    controller_id:scp$('scp-izcontroller').value||null,station:scp$('scp-izstation').value.trim(),
+    head_count:Number(scp$('scp-izheads').value||0),sqft:Number(scp$('scp-izsqft').value||0),
+    status:scp$('scp-izstatus').value,last_service:scp$('scp-izlastservice').value,backflow:scp$('scp-izbackflow').value.trim(),
+    checklist:scp$('scp-izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean),
+    notes:scp$('scp-iznotes').value.trim()};
+  if(scpIzid){list=list.map(function(x){return x.id===scpIzid?rec:x;});}else{list.push(rec);}
+  scpSt('scp_irr_zones',list);scpCloseIrrZoneModal();scpRIrrigation();scpToast('Irrigation zone saved');
+  scpData('write','irr_zones',rec);
+}
+function scpSendIrrZoneToQuote(){
+  var customerId=scp$('scp-izcustomer').value,name=scp$('scp-izname').value.trim();
+  if(!customerId){scpToast('Select a customer first');return;}
+  var checklist=scp$('scp-izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  if(!checklist.length){scpToast('Add at least one parts/install line first');return;}
+  var lines=checklist.map(function(l){return {d:'Irrigation zone '+(name||'')+' - '+l,a:0};});
+  var quotes=scpLd('scp_quotes',[]);
+  var qrec={id:'Q-'+Date.now(),customer_id:customerId,lines:lines,status:'Draft',valid:scpDaysFromNow(30)};
+  quotes.push(qrec);scpSt('scp_quotes',quotes);scpData('write','scp_quotes',qrec);
+  scpToast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+}
+function scpOpenIrrSchedModal(id){
+  scpIschid=id||null;
+  var zones=scpIrrZones();
+  var sel=scp$('scp-ischzone');sel.innerHTML=zones.map(function(z){return '<option value="'+scpH(z.id)+'">'+scpH(z.name)+' ('+scpH(scpCustName(z.customer_id))+')</option>';}).join('');
+  var s=id?scpIrrSched().find(function(x){return x.id===id;}):null;
+  sel.value=s?s.zone_id:(zones[0]?zones[0].id:'');
+  document.querySelectorAll('.scp-ischday').forEach(function(cb){cb.checked=!!(s&&(s.days||[]).indexOf(cb.value)!==-1);});
+  scp$('scp-ischstart').value=s?s.start||'':'';scp$('scp-ischduration').value=s?s.duration||'':'';
+  scp$('scp-ischstatus').value=s?s.status:'active';
+  scp$('scp-irrschedmodal').classList.add('on');
+}
+function scpCloseIrrSchedModal(){scp$('scp-irrschedmodal').classList.remove('on');}
+function scpSaveIrrSched(){
+  var zoneId=scp$('scp-ischzone').value;
+  if(!zoneId){scpToast('Add an irrigation zone first');return;}
+  var days=Array.from(document.querySelectorAll('.scp-ischday:checked')).map(function(cb){return cb.value;});
+  var list=scpIrrSched();
+  var rec={id:scpIschid||('ISCH-'+Date.now()),zone_id:zoneId,days:days,start:scp$('scp-ischstart').value,
+    duration:Number(scp$('scp-ischduration').value||0),status:scp$('scp-ischstatus').value};
+  if(scpIschid){list=list.map(function(x){return x.id===scpIschid?rec:x;});}else{list.push(rec);}
+  scpSt('scp_irr_schedules',list);scpCloseIrrSchedModal();scpRIrrigation();scpToast('Run schedule saved');
+  scpData('write','irr_schedules',rec);
+}
+
+// === WATER FEATURES (item 2, small/residential scale) ==============
+function scpWf(){return scpLd('scp_water_features',[]);}
+function scpRWf(){
+  scpFillCustomerSelects();
+  var list=scpWf();
+  scp$('scp-wftbody').innerHTML=list.length?list.map(function(w){
+    return '<tr><td>'+scpH(scpCustName(w.customer_id))+'</td><td><strong>'+scpH(w.name)+'</strong></td><td>'+scpH(w.type)+'</td>'+
+      '<td>'+scpH(w.pump||'--')+(w.filter?' / '+scpH(w.filter):'')+'</td><td>'+scpH(w.condition||'--')+'</td>'+
+      '<td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenWfModal(\''+w.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:#64748B;padding:20px">No water features on file</td></tr>';
+}
+function scpOpenWfModal(id){
+  scpWfid=id||null;scpFillCustomerSelects();
+  var w=id?scpWf().find(function(x){return x.id===id;}):null;
+  scp$('scp-wfcustomer').value=w?w.customer_id:'';scp$('scp-wfname').value=w?w.name:'';
+  scp$('scp-wftype').value=w?w.type:'pond';scp$('scp-wfsize').value=w?w.size||'':'';
+  scp$('scp-wfpump').value=w?w.pump||'':'';scp$('scp-wffilter').value=w?w.filter||'':'';
+  scp$('scp-wflastservice').value=w?w.last_service||'':'';scp$('scp-wfcondition').value=w?w.condition||'':'';
+  scp$('scp-wfchecklist').value=w&&w.checklist?w.checklist.join('\n'):'';
+  scp$('scp-wfmodal').classList.add('on');
+}
+function scpCloseWfModal(){scp$('scp-wfmodal').classList.remove('on');}
+function scpSaveWf(){
+  var customerId=scp$('scp-wfcustomer').value,name=scp$('scp-wfname').value.trim();
+  if(!customerId||!name){scpToast('Customer and feature name are required');return;}
+  var list=scpWf();
+  var rec={id:scpWfid||('WF-'+Date.now()),customer_id:customerId,name:name,type:scp$('scp-wftype').value,scale:'small',
+    size:scp$('scp-wfsize').value.trim(),pump:scp$('scp-wfpump').value.trim(),filter:scp$('scp-wffilter').value.trim(),
+    last_service:scp$('scp-wflastservice').value,condition:scp$('scp-wfcondition').value.trim(),
+    checklist:scp$('scp-wfchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean)};
+  if(scpWfid){list=list.map(function(x){return x.id===scpWfid?rec:x;});}else{list.push(rec);}
+  scpSt('scp_water_features',list);scpCloseWfModal();scpRWf();scpToast('Water feature saved');
+  scpData('write','water_features',rec);
+}
+function scpSendWfToQuote(){
+  var customerId=scp$('scp-wfcustomer').value,name=scp$('scp-wfname').value.trim();
+  if(!customerId){scpToast('Select a customer first');return;}
+  var checklist=scp$('scp-wfchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  if(!checklist.length){scpToast('Add at least one parts/install line first');return;}
+  var lines=checklist.map(function(l){return {d:'Water feature '+(name||'')+' - '+l,a:0};});
+  var quotes=scpLd('scp_quotes',[]);
+  var qrec={id:'Q-'+Date.now(),customer_id:customerId,lines:lines,status:'Draft',valid:scpDaysFromNow(30)};
+  quotes.push(qrec);scpSt('scp_quotes',quotes);scpData('write','scp_quotes',qrec);
+  scpToast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+}
+
+// === VENDOR PORTAL (item 8, shared with SAIRNgrounds) ===============
+function scpVendors(){return scpLd('scp_vendors',[]);}
+function scpRVendors(){
+  var list=scpVendors();
+  scp$('scp-vendtbody').innerHTML=list.length?list.map(function(v){
+    return '<tr><td><strong>'+scpH(v.name)+'</strong></td><td>'+scpH(v.category)+'</td><td>'+scpH(v.contact||'--')+'</td>'+
+      '<td>'+scpH(v.terms||'--')+'</td><td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenVendorModal(\''+v.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748B;padding:20px">No vendors on file</td></tr>';
+}
+function scpOpenVendorModal(id){
+  scpVendid=id||null;
+  var v=id?scpVendors().find(function(x){return x.id===id;}):null;
+  scp$('scp-vendname').value=v?v.name:'';scp$('scp-vendcat').value=v?v.category:'irrigation';
+  scp$('scp-vendcontact').value=v?v.contact||'':'';scp$('scp-vendphone').value=v?v.phone||'':'';
+  scp$('scp-vendemail').value=v?v.email||'':'';scp$('scp-vendterms').value=v?v.terms||'':'';
+  scp$('scp-vendnotes').value=v?v.notes||'':'';
+  scp$('scp-vendormodal').classList.add('on');
+}
+function scpCloseVendorModal(){scp$('scp-vendormodal').classList.remove('on');}
+function scpSaveVendor(){
+  var name=scp$('scp-vendname').value.trim();
+  if(!name){scpToast('Vendor name is required');return;}
+  var list=scpVendors();
+  var rec={id:scpVendid||('VEND-'+Date.now()),name:name,category:scp$('scp-vendcat').value,
+    contact:scp$('scp-vendcontact').value.trim(),phone:scp$('scp-vendphone').value.trim(),email:scp$('scp-vendemail').value.trim(),
+    terms:scp$('scp-vendterms').value.trim(),notes:scp$('scp-vendnotes').value.trim()};
+  if(scpVendid){list=list.map(function(x){return x.id===scpVendid?rec:x;});}else{list.push(rec);}
+  scpSt('scp_vendors',list);scpCloseVendorModal();scpRVendors();scpToast('Vendor saved');
+  scpData('write','vendors',rec);
 }
 
 function scpSendAI(){var inp=scp$('scp-ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';scpAddMsg(m,'u');scpCallAI(m);}

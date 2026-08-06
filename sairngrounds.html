@@ -217,9 +217,21 @@ textarea{resize:vertical;min-height:80px;}
       <button class="sb" id="sb-intake" onclick="nav('intake')"><span class="sico">&#128203;</span>Job Intake</button>
       <button class="sb" id="sb-design" onclick="nav('design')"><span class="sico">&#128205;</span>Design Walk</button>
       <button class="sb" id="sb-quotes" onclick="nav('quotes')"><span class="sico">&#128176;</span>Quoting</button>
+      <button class="sb" id="sb-schedule" onclick="nav('schedule')"><span class="sico">&#128197;</span>Scheduling</button>
+      <button class="sb" id="sb-invoices" onclick="nav('invoices')"><span class="sico">&#128179;</span>Invoicing</button>
       <div class="ss">Golf</div>
       <button class="sb" id="sb-golfcourse" onclick="nav('golfcourse')"><span class="sico">&#9971;</span>Golf Course Module</button>
-      <div class="sfoot">SAIRNgrounds Phase 1 &middot; <span style="color:var(--p);font-weight:700;">Course &amp; Property Ops</span></div>
+      <div class="ss">Irrigation &amp; Water</div>
+      <button class="sb" id="sb-irrigation" onclick="nav('irrigation')"><span class="sico">&#128167;</span>Irrigation</button>
+      <button class="sb" id="sb-waterfeatures" onclick="nav('waterfeatures')"><span class="sico">&#9970;</span>Water Features</button>
+      <div class="ss">Property Care</div>
+      <button class="sb" id="sb-invasive" onclick="nav('invasive')"><span class="sico">&#127807;</span>Invasive Species</button>
+      <button class="sb" id="sb-ecosystem" onclick="nav('ecosystem')"><span class="sico">&#127757;</span>Ecosystem Health</button>
+      <button class="sb" id="sb-dreamclose" onclick="nav('dreamclose')"><span class="sico">&#10024;</span>DreamClose&trade;</button>
+      <div class="ss">Business</div>
+      <button class="sb" id="sb-training" onclick="nav('training')"><span class="sico">&#127891;</span>Crew Training</button>
+      <button class="sb" id="sb-vendors" onclick="nav('vendors')"><span class="sico">&#128666;</span>Vendors</button>
+      <div class="sfoot">SAIRNgrounds Phase 4 &middot; <span style="color:var(--p);font-weight:700;">Course &amp; Property Ops</span></div>
     </aside>
     <main>
 
@@ -388,6 +400,379 @@ textarea{resize:vertical;min-height:80px;}
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeZoneModal()">Cancel</button>
       <button class="btn bp" onclick="saveZone()">Save Zone</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULING (item 9) -->
+<div class="panel" id="panel-schedule">
+  <div class="ph"><div><div class="ptitle">Scheduling</div><div class="psub">Recurring routes + one-off jobs, weather-checked against the Weather Command Engine</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openSchedModal()">+ Add to Schedule</button></div></div>
+  <div id="sched-wx-note" class="note" style="display:none;margin-bottom:12px"></div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Frequency</th><th>Next Date</th><th>Crew</th><th>Linked Quote</th><th>Actions</th></tr></thead>
+    <tbody id="schtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="schedmodal">
+  <div class="mbox">
+    <div class="mtitle">Add to Schedule</div>
+    <div class="fg"><label>Property</label><select id="schproperty"></select></div>
+    <div class="fr"><div class="fg"><label>Frequency</label><select id="schfreq"><option value="weekly">Weekly</option><option value="biweekly">Biweekly</option><option value="monthly">Monthly</option><option value="one_off">One-off</option></select></div><div class="fg"><label>Next Date</label><input id="schnext" type="date"></div></div>
+    <div class="fg"><label>Assigned Crew</label><input id="schcrew" placeholder="Crew A"></div>
+    <div class="fg"><label>Linked Quote (optional)</label><select id="schquote"><option value="">None</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSchedModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSched()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVOICING (item 9) -->
+<div class="panel" id="panel-invoices">
+  <div class="ph"><div><div class="ptitle">Invoicing</div><div class="psub">Bills tied to completed visits/jobs and accepted quotes</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openInvModal()">+ New Invoice</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Outstanding</div><div class="kval" id="inv-outstanding">$0</div><div class="kt">Unpaid</div></div>
+    <div class="kpi"><div class="klbl">Paid</div><div class="kval" id="inv-paid">$0</div><div class="kt">All time, in scope</div></div>
+    <div class="kpi"><div class="klbl">Overdue</div><div class="kval" id="inv-overdue">0</div><div class="kt" id="inv-overdue-sub">Past due date</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Amount</th><th>Status</th><th>Issued</th><th>Due</th><th>Actions</th></tr></thead>
+    <tbody id="invtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="invmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Invoice</div>
+    <div class="fg"><label>Property</label><select id="invproperty"></select></div>
+    <div class="fg"><label>Linked Quote (optional)</label><select id="invquote"><option value="">None</option></select></div>
+    <div class="fr"><div class="fg"><label>Amount ($)</label><input id="invamount" type="number" placeholder="1800"></div><div class="fg"><label>Status</label><select id="invstatus"><option value="Unpaid">Unpaid</option><option value="Paid">Paid</option><option value="Overdue">Overdue</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Issued Date</label><input id="invissued" type="date"></div><div class="fg"><label>Due Date</label><input id="invdue" type="date"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="invnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeInvModal()">Cancel</button>
+      <button class="btn bp" onclick="saveInv()">Save Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- IRRIGATION (item 1: extensible controller/zone/schedule architecture -- see
+     IRR_BRAND_PROTOCOLS and IRR_SENSOR_TYPES registries in the script below.
+     Adding a new controller brand/protocol or sensor type is a one-line
+     addition to those registry objects -- nothing else in this panel's code
+     needs to change for it to show up in the Controller form. This is a data
+     layer only: no live controller API calls exist yet (same honest framing
+     as SAIRNbuild's Integrations panel -- tracked, not connected), consistent
+     with Step 0's finding that established vendors (Rain Bird, Hunter, Rachio,
+     Toro, Calsense) own the actual weather-based ET scheduling algorithms;
+     SAIRN's job here is the ops/data layer, not a competing control algorithm. -->
+<div class="panel" id="panel-irrigation">
+  <div class="ph"><div><div class="ptitle">Irrigation</div><div class="psub">Controllers, zones, and run schedules &mdash; extensible brand/protocol registry, data layer only (no live controller API calls yet)</div></div></div>
+  <div id="irr-wx-note" class="note" style="display:none;margin-bottom:12px"></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Controllers</div><div class="kval" id="irr-k-controllers">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">Zones</div><div class="kval" id="irr-k-zones">0</div><div class="kt" id="irr-k-zones-sub">Active</div></div>
+    <div class="kpi"><div class="klbl">Needs Repair</div><div class="kval" id="irr-k-repair">0</div><div class="kt" id="irr-k-repair-sub">Flagged zones</div></div>
+    <div class="kpi"><div class="klbl">Active Run Schedules</div><div class="kval" id="irr-k-sched">0</div><div class="kt">Running</div></div>
+  </div>
+  <div class="sbar" style="margin-bottom:14px">
+    <button class="btn bo bs on" id="irr-tab-controllers" onclick="irrTab('controllers')">Controllers</button>
+    <button class="btn bo bs" id="irr-tab-zones" onclick="irrTab('zones')">Zones</button>
+    <button class="btn bo bs" id="irr-tab-schedules" onclick="irrTab('schedules')">Run Schedules</button>
+  </div>
+  <div id="irr-view-controllers">
+    <div class="card"><div class="cb">
+      <div class="pa" style="margin-bottom:10px"><button class="btn bp bs" onclick="openControllerModal()">+ Add Controller</button></div>
+      <div class="tw"><table><thead><tr><th>Property</th><th>Name</th><th>Brand / Protocol</th><th>Model</th><th>Zones Supported</th><th>Actions</th></tr></thead>
+      <tbody id="irrctltbody"></tbody></table></div>
+    </div></div>
+  </div>
+  <div id="irr-view-zones" style="display:none">
+    <div class="card"><div class="cb">
+      <div class="pa" style="margin-bottom:10px"><button class="btn bp bs" onclick="openIrrZoneModal()">+ Add Zone</button></div>
+      <div class="tw"><table><thead><tr><th>Property</th><th>Zone</th><th>Type</th><th>Controller</th><th>Heads</th><th>Status</th><th>Last Service</th><th>Actions</th></tr></thead>
+      <tbody id="irrzonetbody"></tbody></table></div>
+    </div></div>
+  </div>
+  <div id="irr-view-schedules" style="display:none">
+    <div class="card"><div class="cb">
+      <div class="pa" style="margin-bottom:10px"><button class="btn bp bs" onclick="openIrrSchedModal()">+ Add Run Schedule</button></div>
+      <div class="tw"><table><thead><tr><th>Zone</th><th>Days</th><th>Start</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="irrschedtbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="controllermodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Controller</div>
+    <div class="fg"><label>Property</label><select id="ctlproperty"></select></div>
+    <div class="fg"><label>Controller Name</label><input id="ctlname" placeholder="Clubhouse Controller"></div>
+    <div class="fr"><div class="fg"><label>Brand / Protocol</label><select id="ctlbrand"></select></div><div class="fg"><label>Model</label><input id="ctlmodel" placeholder="Optional"></div></div>
+    <div class="fr"><div class="fg"><label>Zones Supported</label><input id="ctlzonesup" type="number" placeholder="24"></div><div class="fg"><label>Install Date</label><input id="ctlinstall" type="date"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="ctlnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeControllerModal()">Cancel</button>
+      <button class="btn bp" onclick="saveController()">Save Controller</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="irrzonemodal">
+  <div class="mbox" style="width:640px;max-width:94vw">
+    <div class="mtitle">Add / Edit Irrigation Zone</div>
+    <div class="fg"><label>Property</label><select id="izproperty" onchange="izPropertyChanged()"></select></div>
+    <div class="fr"><div class="fg"><label>Zone Name</label><input id="izname" placeholder="Fairway 7 East"></div><div class="fg"><label>Type</label><select id="iztype">
+      <option value="sprinkler">Sprinkler</option><option value="rotor">Rotor</option><option value="drip">Drip</option><option value="bubbler">Bubbler</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Controller</label><select id="izcontroller"><option value="">Unassigned / Manual</option></select></div><div class="fg"><label>Station #</label><input id="izstation" placeholder="Optional"></div></div>
+    <div class="fr"><div class="fg"><label>Head Count</label><input id="izheads" type="number" placeholder="12"></div><div class="fg"><label>Sq Ft Covered</label><input id="izsqft" type="number" placeholder="8000"></div></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="izstatus"><option value="active">Active</option><option value="inactive">Inactive</option><option value="needs_repair">Needs Repair</option></select></div><div class="fg"><label>Last Service</label><input id="izlastservice" type="date"></div></div>
+    <div class="fg"><label>Backflow Device Note</label><input id="izbackflow" placeholder="e.g. RPZ, last tested 2026-04-01"></div>
+    <div class="mtitle" style="font-size:14px;margin-top:10px">Parts List / Install Checklist <span style="font-weight:400;color:var(--muted);font-size:12px">&mdash; one item per line</span></div>
+    <textarea id="izchecklist" rows="3" placeholder="Rotor head x12&#10;Backflow preventer test&#10;Trench + lateral line"></textarea>
+    <div class="fg"><label>Notes</label><textarea id="iznotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeIrrZoneModal()">Cancel</button>
+      <button class="btn bo bs" onclick="sendIrrZoneToQuote()">Send Parts/Install to Quote</button>
+      <button class="btn bp" onclick="saveIrrZone()">Save Zone</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="irrschedmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Run Schedule</div>
+    <div class="fg"><label>Zone</label><select id="ischzone"></select></div>
+    <div class="fg"><label>Days</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px">
+        <label><input type="checkbox" class="ischday" value="Mon"> Mon</label>
+        <label><input type="checkbox" class="ischday" value="Tue"> Tue</label>
+        <label><input type="checkbox" class="ischday" value="Wed"> Wed</label>
+        <label><input type="checkbox" class="ischday" value="Thu"> Thu</label>
+        <label><input type="checkbox" class="ischday" value="Fri"> Fri</label>
+        <label><input type="checkbox" class="ischday" value="Sat"> Sat</label>
+        <label><input type="checkbox" class="ischday" value="Sun"> Sun</label>
+      </div>
+    </div>
+    <div class="fr"><div class="fg"><label>Start Time</label><input id="ischstart" type="time"></div><div class="fg"><label>Duration (min)</label><input id="ischduration" type="number" placeholder="20"></div></div>
+    <div class="fg"><label>Status</label><select id="ischstatus"><option value="active">Active</option><option value="paused">Paused</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeIrrSchedModal()">Cancel</button>
+      <button class="btn bp" onclick="saveIrrSched()">Save Schedule</button>
+    </div>
+  </div>
+</div>
+
+<!-- WATER FEATURES (item 2) -->
+<div class="panel" id="panel-waterfeatures">
+  <div class="ph"><div><div class="ptitle">Water Features</div><div class="psub">Ponds, lakes, creeks, fountains, waterfalls &mdash; pumps and filtration, large (golf/commercial) or small (residential) scale</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openWfModal()">+ Add Water Feature</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Name</th><th>Type</th><th>Scale</th><th>Pump / Filtration</th><th>Condition</th><th>Actions</th></tr></thead>
+    <tbody id="wftbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="wfmodal">
+  <div class="mbox" style="width:640px;max-width:94vw">
+    <div class="mtitle">Add / Edit Water Feature</div>
+    <div class="fg"><label>Property</label><select id="wfproperty"></select></div>
+    <div class="fr"><div class="fg"><label>Name</label><input id="wfname" placeholder="Hole 12 Pond"></div><div class="fg"><label>Type</label><select id="wftype">
+      <option value="pond">Pond</option><option value="lake">Lake</option><option value="creek">Creek</option><option value="fountain">Fountain</option><option value="waterfall">Waterfall</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label>Scale</label><select id="wfscale"><option value="large">Large (golf/commercial)</option><option value="small">Small (residential)</option></select></div><div class="fg"><label>Size (note unit, e.g. acres or sqft)</label><input id="wfsize" placeholder="e.g. 1.2 acres"></div></div>
+    <div class="fr"><div class="fg"><label>Pump Model</label><input id="wfpump" placeholder="Optional"></div><div class="fg"><label>Filtration Type</label><input id="wffilter" placeholder="Optional"></div></div>
+    <div class="fg"><label>Last Service</label><input id="wflastservice" type="date"></div>
+    <div class="fg"><label>Condition Note</label><textarea id="wfcondition" rows="2"></textarea></div>
+    <div class="mtitle" style="font-size:14px;margin-top:10px">Parts List / Install Checklist</div>
+    <textarea id="wfchecklist" rows="3" placeholder="Submersible pump&#10;UV filter&#10;Liner repair"></textarea>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeWfModal()">Cancel</button>
+      <button class="btn bo bs" onclick="sendWfToQuote()">Send Parts/Install to Quote</button>
+      <button class="btn bp" onclick="saveWf()">Save Feature</button>
+    </div>
+  </div>
+</div>
+
+<!-- INVASIVE SPECIES MANAGEMENT, 6-tab (item 5). No spec on file defined what the
+     6 tabs are -- this interpretation (Sightings / Species Reference / Treatment
+     Plan / Treatment History / Property Risk / Compliance) is a reasonable,
+     domain-informed structure (mirrors real tools like EDDMapS IPM/iMapInvasives/
+     Outway found in Step 0's competitive scan), not a resolution of a pre-existing
+     documented spec. Flagged explicitly in the final report. One dataset
+     (grd_invasive_sightings), six views over it, same discipline as SAIRNbuild's
+     Compliance panel being one dataset viewed multiple ways. -->
+<div class="panel" id="panel-invasive">
+  <div class="ph"><div><div class="ptitle">Invasive Species Management</div><div class="psub">Sightings, species reference, treatment planning/history, property risk, and compliance &mdash; one dataset, six views</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openInvasiveModal()">+ Log Sighting</button></div></div>
+  <div class="sbar" style="margin-bottom:14px;flex-wrap:wrap">
+    <button class="btn bo bs on" id="inv-tab-sightings" onclick="invTab('sightings')">1. Sightings</button>
+    <button class="btn bo bs" id="inv-tab-reference" onclick="invTab('reference')">2. Species Reference</button>
+    <button class="btn bo bs" id="inv-tab-plan" onclick="invTab('plan')">3. Treatment Plan</button>
+    <button class="btn bo bs" id="inv-tab-history" onclick="invTab('history')">4. Treatment History</button>
+    <button class="btn bo bs" id="inv-tab-risk" onclick="invTab('risk')">5. Property Risk</button>
+    <button class="btn bo bs" id="inv-tab-compliance" onclick="invTab('compliance')">6. Compliance</button>
+  </div>
+  <div id="inv-view-sightings"><div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Species</th><th>Found</th><th>Severity</th><th>Status</th><th>Actions</th></tr></thead><tbody id="invsighttbody"></tbody></table></div>
+  </div></div></div>
+  <div id="inv-view-reference" style="display:none"><div class="card"><div class="cb">
+    <div class="note" style="margin-bottom:10px">Reference only, common regional invasives (Midwest/Ohio) &mdash; verify against your local extension office before treatment.</div>
+    <div class="tw"><table><thead><tr><th>Species</th><th>Type</th><th>Typical Treatment</th></tr></thead><tbody id="invreftbody"></tbody></table></div>
+  </div></div></div>
+  <div id="inv-view-plan" style="display:none"><div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Species</th><th>Method Planned</th><th>Scheduled</th><th>Actions</th></tr></thead><tbody id="invplantbody"></tbody></table></div>
+  </div></div></div>
+  <div id="inv-view-history" style="display:none"><div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Species</th><th>Treated</th><th>Outcome</th></tr></thead><tbody id="invhisttbody"></tbody></table></div>
+  </div></div></div>
+  <div id="inv-view-risk" style="display:none"><div class="card"><div class="cb" id="invriskcb"></div></div></div>
+  <div id="inv-view-compliance" style="display:none"><div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Species</th><th>State-Reportable</th><th>Report Filed</th><th>Actions</th></tr></thead><tbody id="invcomptbody"></tbody></table></div>
+  </div></div></div>
+</div>
+<div class="modal" id="invasivemodal">
+  <div class="mbox" style="width:640px;max-width:94vw">
+    <div class="mtitle">Log Invasive Species Sighting</div>
+    <div class="fg"><label>Property</label><select id="ivproperty"></select></div>
+    <div class="fr"><div class="fg"><label>Species</label><input id="ivspecies" placeholder="e.g. Bush Honeysuckle" list="ivspecieslist"><datalist id="ivspecieslist"></datalist></div><div class="fg"><label>Zone / Location</label><input id="ivlocation" placeholder="e.g. Hole 4 rough"></div></div>
+    <div class="fr"><div class="fg"><label>Found Date</label><input id="ivfound" type="date"></div><div class="fg"><label>Severity</label><select id="ivseverity"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="ivstatus"><option value="identified">Identified</option><option value="plan_scheduled">Plan Scheduled</option><option value="treated">Treated</option><option value="monitoring">Monitoring</option></select></div><div class="fg"><label><input type="checkbox" id="ivreportable" style="width:auto;margin-right:6px">State-Reportable Species</label></div></div>
+    <div class="fr"><div class="fg"><label>Treatment Method Planned</label><input id="ivmethod" placeholder="Optional"></div><div class="fg"><label>Scheduled Date</label><input id="ivscheduled" type="date"></div></div>
+    <div class="fr"><div class="fg"><label>Treated Date</label><input id="ivtreated" type="date"></div><div class="fg"><label>Outcome</label><input id="ivoutcome" placeholder="Optional"></div></div>
+    <div class="fg"><label><input type="checkbox" id="ivreportfiled" style="width:auto;margin-right:6px">Report Filed (if reportable)</label></div>
+    <div class="fg"><label>Notes</label><textarea id="ivnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeInvasiveModal()">Cancel</button>
+      <button class="btn bp" onclick="saveInvasive()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROPERTY ECOSYSTEM HEALTH REPORT, 7-layer (item 6). No spec on file defined
+     what the 7 layers are -- this interpretation is domain-informed and biased
+     toward REAL computed data over invented sensor readings: layers 1-4 compute
+     live from data already in this app (Golf Course Module condition notes,
+     Irrigation zone status, Water Features condition, Invasive Species pressure);
+     layers 5-6 are honest manual field-note entry (no soil/biodiversity sensors
+     exist in this app, so nothing is fabricated there); layer 7 is a Claude
+     synthesis grounded ONLY in layers 1-6's real content, same anti-fabrication
+     system-prompt discipline as every other AI feature this session. -->
+<div class="panel" id="panel-ecosystem">
+  <div class="ph"><div><div class="ptitle">Property Ecosystem Health Report</div><div class="psub">7 layers: turf/zone condition, irrigation health, water features, invasive pressure, soil &amp; plant health, biodiversity, AI recommendations</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="genEcosystemReport()">Generate Report</button></div></div>
+  <div class="fg" style="max-width:320px"><label>Property</label><select id="ecoproperty"></select></div>
+  <div class="fg"><label>Layer 5 &mdash; Soil &amp; Plant Health (manual field notes, no sensor data on file)</label><textarea id="eco-soil" rows="2" placeholder="e.g. Soil pH tested 6.4 at hole 3, thin turf near cart path"></textarea></div>
+  <div class="fg"><label>Layer 6 &mdash; Biodiversity Observations (manual field notes, no sensor data on file)</label><textarea id="eco-bio" rows="2" placeholder="e.g. Pollinator activity strong near native beds, deer browse on hole 9 tree line"></textarea></div>
+  <div id="eco-result-wrap" style="display:none;margin-top:16px">
+    <div class="mtitle" style="font-size:14px">Report</div>
+    <div id="eco-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+  </div>
+  <div class="card" style="margin-top:16px"><div class="ch"><span class="ct">Report History</span></div><div class="cb" id="eco-history"></div></div>
+</div>
+
+<!-- DREAMCLOSE (item 7): photo -> AI design description -> priced proposal ->
+     approval -> invoice -> scheduled job. See the honest-scope note in the panel
+     below for what "AI visualization" and "e-sign" actually mean in this pass. -->
+<div class="panel" id="panel-dreamclose">
+  <div class="ph"><div><div class="ptitle">DreamClose&trade;</div><div class="psub">Photo &rarr; AI design description &rarr; priced proposal &rarr; on-the-spot approval &rarr; invoice &rarr; scheduled job</div></div></div>
+  <div class="note" style="margin-bottom:12px"><strong>Honest scope note:</strong> the AI step analyzes the photo and describes a grounded design direction in text (Claude vision) &mdash; it does <strong>not</strong> generate a photorealistic rendered "after" image. StoneDesk's "Visualize on Your Kitchen" proves that pattern is buildable (Stability AI image-edit, capped, needs a provisioned API key), but reusing it here needs a new landscape-specific vendor call and a new cost/cap decision Michael hasn't made for this app yet &mdash; flagged as a real Phase 2 upgrade, not silently built as if it were already live. Approval is an in-app recorded confirmation (name + timestamp), not a legally-binding e-signature service &mdash; no e-sign vendor (DocuSign etc.) is wired in, matching how DocuSign already shows as tracked-not-connected elsewhere on this platform.</div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Property</label><select id="dc-property"></select></div>
+    <div class="fg" style="margin-top:10px">
+      <label>Property Photo</label>
+      <div id="dc-upload-zone" onclick="document.getElementById('dc-file').click()" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px">
+        <div id="dc-upload-label">Tap to photograph the property</div>
+      </div>
+      <input type="file" id="dc-file" accept="image/*" capture="environment" style="display:none" onchange="dcFileChosen(this)">
+      <div id="dc-preview" style="display:none;margin-top:10px"><img id="dc-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--border)"></div>
+    </div>
+    <div class="fg" style="margin-top:10px"><label>What the client wants (design direction)</label><textarea id="dc-direction" rows="2" placeholder="e.g. Native pollinator beds along the entrance, remove the overgrown yews"></textarea></div>
+    <button class="btn bp" id="dc-analyze-btn" onclick="dcAnalyze()" disabled style="margin-top:12px">Get AI Design Description</button>
+    <div id="dc-result-wrap" style="display:none;margin-top:16px">
+      <div class="mtitle" style="font-size:14px">AI Design Description</div>
+      <div id="dc-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn bo bs" onclick="dcCreateQuote()">Create Priced Proposal (Quote)</button>
+      </div>
+    </div>
+    <div id="dc-approval-wrap" style="display:none;margin-top:16px">
+      <div class="mtitle" style="font-size:14px">On-The-Spot Approval</div>
+      <div class="fr"><div class="fg"><label>Approved By</label><input id="dc-approver" placeholder="Client name"></div>
+        <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bp" onclick="dcApprove()" style="width:100%">Approve Proposal</button></div></div>
+      <div id="dc-approval-status" class="note" style="display:none;margin-top:8px"></div>
+    </div>
+    <div id="dc-final-wrap" style="display:none;margin-top:16px">
+      <button class="btn bp" onclick="dcCreateInvoiceAndSchedule()">Create Invoice + Schedule Job</button>
+      <div id="dc-final-status" class="note" style="display:none;margin-top:8px"></div>
+    </div>
+  </div></div>
+  <div class="card" style="margin-top:16px"><div class="ch"><span class="ct">DreamClose History</span></div><div class="cb" id="dc-history"></div></div>
+</div>
+
+<!-- CREW TRAINING ACADEMY (item 4) -->
+<div class="panel" id="panel-training">
+  <div class="ph"><div><div class="ptitle">Crew Training Academy</div><div class="psub">Courses + completion tracking by crew member</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openCourseModal()">+ Add Course</button><button class="btn bp bs" onclick="openCompletionModal()">+ Log Completion</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Courses</div><div class="kval" id="tr-k-courses">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">Completion Rate</div><div class="kval" id="tr-k-rate">--</div><div class="kt" id="tr-k-rate-sub">Required courses, logged completions</div></div>
+    <div class="kpi"><div class="klbl">Overdue</div><div class="kval" id="tr-k-overdue">0</div><div class="kt">Assigned, not completed</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Courses</span></div><div class="cb">
+    <div class="tw"><table><thead><tr><th>Title</th><th>Category</th><th>Duration</th><th>Required</th><th>Actions</th></tr></thead><tbody id="trcoursetbody"></tbody></table></div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Completions</span></div><div class="cb">
+    <div class="tw"><table><thead><tr><th>Crew Member</th><th>Course</th><th>Status</th><th>Completed</th><th>Actions</th></tr></thead><tbody id="trcomptbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="coursemodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Course</div>
+    <div class="fg"><label>Title</label><input id="crstitle" placeholder="Backflow Preventer Testing"></div>
+    <div class="fr"><div class="fg"><label>Category</label><select id="crscat"><option value="safety">Safety</option><option value="equipment">Equipment</option><option value="turf_care">Turf Care</option><option value="chemical_handling">Chemical Handling</option><option value="customer_service">Customer Service</option></select></div><div class="fg"><label>Duration (min)</label><input id="crsduration" type="number" placeholder="30"></div></div>
+    <div class="fg"><label><input type="checkbox" id="crsrequired" style="width:auto;margin-right:6px">Required for all crew</label></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCourseModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCourse()">Save Course</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="completionmodal">
+  <div class="mbox">
+    <div class="mtitle">Log Completion</div>
+    <div class="fg"><label>Crew Member Name</label><input id="cplname" placeholder="Free text -- no crew roster entity exists in this app yet"></div>
+    <div class="fg"><label>Course</label><select id="cplcourse"></select></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="cplstatus"><option value="assigned">Assigned</option><option value="in_progress">In Progress</option><option value="complete">Complete</option></select></div><div class="fg"><label>Completed Date</label><input id="cpldate" type="date"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCompletionModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCompletion()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- VENDOR PORTAL (item 8: shared, both apps -- decided fresh this session, no
+     prior "open question already on file" was actually found (searched every
+     *.md scope/handoff doc, zero mentions of "vendor portal"). Decision: SHARED,
+     built once, both apps use it -- mirrors item 6's Design Walk precedent
+     exactly, and vendor relationships (irrigation supply, nursery, hardscape,
+     equipment) aren't specific to golf-course-scale vs residential-scale. -->
+<div class="panel" id="panel-vendors">
+  <div class="ph"><div><div class="ptitle">Vendors</div><div class="psub">Irrigation supply, nursery, hardscape, and equipment vendors</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openVendorModal()">+ Add Vendor</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Name</th><th>Category</th><th>Contact</th><th>Terms</th><th>Actions</th></tr></thead>
+    <tbody id="vendtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="vendormodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Vendor</div>
+    <div class="fr"><div class="fg"><label>Name</label><input id="vendname" placeholder="Ewing Irrigation"></div><div class="fg"><label>Category</label><select id="vendcat"><option value="irrigation">Irrigation Supply</option><option value="nursery">Nursery / Plants</option><option value="hardscape">Hardscape</option><option value="equipment">Equipment</option><option value="other">Other</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Contact Name</label><input id="vendcontact" placeholder="Optional"></div><div class="fg"><label>Phone</label><input id="vendphone" placeholder="Optional"></div></div>
+    <div class="fr"><div class="fg"><label>Email</label><input id="vendemail" placeholder="Optional"></div><div class="fg"><label>Terms</label><input id="vendterms" placeholder="Net 30"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="vendnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeVendorModal()">Cancel</button>
+      <button class="btn bp" onclick="saveVendor()">Save Vendor</button>
     </div>
   </div>
 </div>
@@ -602,7 +987,8 @@ function propName(id){var p=ld('grd_properties',[]).find(function(x){return x.id
 function fillPropertySelects(){
   var props=ld('grd_properties',[]);
   var opts=props.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join('');
-  ['jproperty','qproperty','gcproperty','zproperty','dwproperty'].forEach(function(id){
+  ['jproperty','qproperty','gcproperty','zproperty','dwproperty','schproperty','invproperty',
+    'ctlproperty','izproperty','wfproperty','ivproperty','ecoproperty','dc-property'].forEach(function(id){
     var el=$(id);if(!el)return;var cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;
   });
 }
@@ -611,6 +997,7 @@ function init(){
   seed();
   fillPropertySelects();
   rDash();rProps();rJobs();rQuotes();rGolf();rDesignWalks();
+  rSched();rInv();rIrrigation();rWf();rInvasive();rEcosystem();rDreamClose();rTraining();rVendors();
   updateAsideA11y();
   sairnLoadWeather();
   grdSyncFromServer();
@@ -929,6 +1316,678 @@ function saveZone(){
   grdData('write','golf_zones',rec);
 }
 
+// === ITEM 7 MODULE IDS ===========================================
+var schedid=null,invid=null,ctlid=null,izid=null,ischid=null,wfid=null,ivid=null,crsid=null,cplid=null,vendid=null;
+
+// Quote select filler (Schedule/Invoice link a quote optionally, by property)
+function fillQuoteSelect(selId,propertyId){
+  var el=$(selId);if(!el)return;
+  var quotes=ld('grd_quotes',[]).filter(function(q){return!propertyId||q.property_id===propertyId;});
+  var keep=el.value;
+  el.innerHTML='<option value="">None</option>'+quotes.map(function(q){return '<option value="'+H(q.id)+'">'+H(q.id)+' - '+H(propName(q.property_id))+'</option>';}).join('');
+  el.value=keep;
+}
+
+// === SCHEDULING (item 9) =========================================
+function bldSched(){return ld('grd_schedule',[]);}
+function rSched(){
+  fillPropertySelects();fillQuoteSelect('schquote','');
+  var list=bldSched();
+  $('schtbody').innerHTML=list.length?list.map(function(s){
+    return '<tr><td>'+H(propName(s.property_id))+'</td><td>'+H(s.freq)+'</td><td>'+fdate(s.next)+'</td><td>'+H(s.crew)+'</td>'+
+      '<td>'+(s.quote_id?H(s.quote_id):'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openSchedModal(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Nothing scheduled yet</td></tr>';
+  schedWeatherCheck();
+}
+function openSchedModal(id){
+  schedid=id||null;fillPropertySelects();
+  var s=id?bldSched().find(function(x){return x.id===id;}):null;
+  $('schproperty').value=s?s.property_id:'';
+  fillQuoteSelect('schquote',s?s.property_id:'');
+  $('schfreq').value=s?s.freq:'weekly';$('schnext').value=s?s.next:'';$('schcrew').value=s?s.crew:'';
+  $('schquote').value=s?(s.quote_id||''):'';
+  $('schedmodal').classList.add('on');
+}
+function closeSchedModal(){$('schedmodal').classList.remove('on');}
+function saveSched(){
+  var propertyId=$('schproperty').value;
+  if(!propertyId){toast('Property is required');return;}
+  var list=bldSched();
+  var rec={id:schedid||('SCH-'+Date.now()),property_id:propertyId,freq:$('schfreq').value,next:$('schnext').value,
+    crew:$('schcrew').value.trim(),quote_id:$('schquote').value||null};
+  if(schedid){list=list.map(function(x){return x.id===schedid?rec:x;});}else{list.push(rec);}
+  st('grd_schedule',list);closeSchedModal();rSched();rDash();toast('Schedule saved');
+  grdData('write','schedule',rec);
+}
+// Informational only, reuses the ALREADY-RUNNING Weather Command Engine signal
+// (#grd-wx-status, populated by sairnLoadWeather() on init()) rather than
+// re-fetching or re-implementing go/no-go logic -- cheapest, most honest way
+// to wire item 1/9's scheduling into the engine without a second geolocation
+// prompt or a duplicated threshold check.
+function schedWeatherCheck(){
+  var el=$('sched-wx-note'),src=$('grd-wx-status');
+  if(!el||!src||!src.textContent){if(el)el.style.display='none';return;}
+  el.style.display='block';
+  el.textContent='Weather Command Engine signal: '+src.textContent+(src.textContent==='Check Conditions'?' -- consider adjusting today\'s scheduled visits.':'.');
+}
+
+// === INVOICING (item 9) ==========================================
+function bldInv(){return ld('grd_invoices',[]);}
+function rInv(){
+  fillPropertySelects();fillQuoteSelect('invquote','');
+  var list=bldInv();
+  var unpaid=list.filter(function(i){return i.status==='Unpaid';}).reduce(function(s,i){return s+(i.amount||0);},0);
+  var paid=list.filter(function(i){return i.status==='Paid';}).reduce(function(s,i){return s+(i.amount||0);},0);
+  var overdue=list.filter(function(i){return i.status==='Overdue';});
+  $('inv-outstanding').textContent=fmt(unpaid);$('inv-paid').textContent=fmt(paid);
+  $('inv-overdue').textContent=overdue.length;
+  $('inv-overdue-sub').className='kt'+(overdue.length?' d':'');
+  $('invtbody').innerHTML=list.length?list.map(function(i){
+    var sc={Unpaid:'bw',Paid:'bg',Overdue:'br'}[i.status]||'bx';
+    return '<tr><td>'+H(propName(i.property_id))+'</td><td>'+fmt(i.amount)+'</td><td><span class="badge '+sc+'">'+H(i.status)+'</span></td>'+
+      '<td>'+fdate(i.issued)+'</td><td>'+fdate(i.due)+'</td>'+
+      '<td><button class="btn bo bs" onclick="openInvModal(\''+i.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No invoices yet</td></tr>';
+}
+function openInvModal(id){
+  invid=id||null;fillPropertySelects();
+  var i=id?bldInv().find(function(x){return x.id===id;}):null;
+  $('invproperty').value=i?i.property_id:'';
+  fillQuoteSelect('invquote',i?i.property_id:'');
+  $('invquote').value=i?(i.quote_id||''):'';
+  $('invamount').value=i?i.amount:'';$('invstatus').value=i?i.status:'Unpaid';
+  $('invissued').value=i?i.issued:new Date().toISOString().slice(0,10);$('invdue').value=i?i.due:'';
+  $('invnotes').value=i?i.notes||'':'';
+  $('invmodal').classList.add('on');
+}
+function closeInvModal(){$('invmodal').classList.remove('on');}
+function saveInv(){
+  var propertyId=$('invproperty').value;
+  if(!propertyId){toast('Property is required');return;}
+  var list=bldInv();
+  var rec={id:invid||('INV-'+Date.now()),property_id:propertyId,quote_id:$('invquote').value||null,
+    amount:Number($('invamount').value||0),status:$('invstatus').value,issued:$('invissued').value,due:$('invdue').value,
+    notes:$('invnotes').value.trim()};
+  if(invid){list=list.map(function(x){return x.id===invid?rec:x;});}else{list.push(rec);}
+  st('grd_invoices',list);closeInvModal();rInv();rDash();toast('Invoice saved');
+  grdData('write','invoices',rec);
+}
+
+// === IRRIGATION (item 1) =========================================
+// EXTENSIBILITY CONTRACT: to add a new controller brand/protocol, add one key
+// to IRR_BRAND_PROTOCOLS below -- nothing else in this file needs to change,
+// it will appear in the Controller form and everywhere brand is displayed.
+// Same contract for IRR_SENSOR_TYPES (not yet surfaced in a form this pass,
+// reserved for the next sensor-logging panel so the registry already exists
+// when that's built, per the "addable without a rearchitect" requirement).
+var IRR_BRAND_PROTOCOLS={
+  rainbird:{label:'Rain Bird',protocol:'Central Control / IQ4 / CirrusPRO'},
+  hunter:{label:'Hunter',protocol:'Pro-HC / ICC2'},
+  rachio:{label:'Rachio',protocol:'Rachio Wi-Fi API'},
+  toro:{label:'Toro',protocol:'Lynx Central Control'},
+  calsense:{label:'Calsense',protocol:'ET Everywhere'},
+  other:{label:'Other / Manual',protocol:'Manual entry only'}
+};
+window.IRR_BRAND_PROTOCOLS=IRR_BRAND_PROTOCOLS;
+var IRR_SENSOR_TYPES={soil_moisture:'Soil Moisture',rain:'Rain Sensor',flow:'Flow Sensor',freeze:'Freeze Sensor'};
+window.IRR_SENSOR_TYPES=IRR_SENSOR_TYPES;
+
+function bldControllers(){return ld('grd_irr_controllers',[]);}
+function bldIrrZones(){return ld('grd_irr_zones',[]);}
+function bldIrrSched(){return ld('grd_irr_schedules',[]);}
+function fillControllerBrandSelect(){
+  var el=$('ctlbrand');if(!el)return;var keep=el.value;
+  el.innerHTML=Object.keys(IRR_BRAND_PROTOCOLS).map(function(k){return '<option value="'+k+'">'+H(IRR_BRAND_PROTOCOLS[k].label)+' ('+H(IRR_BRAND_PROTOCOLS[k].protocol)+')</option>';}).join('');
+  el.value=keep||'other';
+}
+function irrTab(which){
+  ['controllers','zones','schedules'].forEach(function(t){
+    $('irr-view-'+t).style.display=(t===which)?'block':'none';
+    $('irr-tab-'+t).classList.toggle('on',t===which);
+  });
+}
+function rIrrigation(){
+  fillPropertySelects();fillControllerBrandSelect();
+  var ctls=bldControllers(),zones=bldIrrZones(),sched=bldIrrSched();
+  $('irr-k-controllers').textContent=ctls.length;
+  var activeZones=zones.filter(function(z){return z.status==='active';});
+  $('irr-k-zones').textContent=activeZones.length;$('irr-k-zones-sub').textContent=activeZones.length+' of '+zones.length+' total';
+  var repair=zones.filter(function(z){return z.status==='needs_repair';});
+  $('irr-k-repair').textContent=repair.length;$('irr-k-repair-sub').className='kt'+(repair.length?' d':'');
+  var activeSched=sched.filter(function(s){return s.status==='active';});
+  $('irr-k-sched').textContent=activeSched.length;
+  $('irrctltbody').innerHTML=ctls.length?ctls.map(function(c){
+    var bp=IRR_BRAND_PROTOCOLS[c.brand]||{label:c.brand,protocol:''};
+    return '<tr><td>'+H(propName(c.property_id))+'</td><td><strong>'+H(c.name)+'</strong></td><td>'+H(bp.label)+' <span style="color:var(--muted);font-size:11px">('+H(bp.protocol)+')</span></td><td>'+H(c.model||'--')+'</td><td>'+(c.zones_supported||'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openControllerModal(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No controllers on file</td></tr>';
+  $('irrzonetbody').innerHTML=zones.length?zones.map(function(z){
+    var ctl=ctls.find(function(c){return c.id===z.controller_id;});
+    var sc={active:'bg',inactive:'bx',needs_repair:'br'}[z.status]||'bx';
+    return '<tr><td>'+H(propName(z.property_id))+'</td><td><strong>'+H(z.name)+'</strong></td><td>'+H(z.zone_type)+'</td><td>'+(ctl?H(ctl.name):'<span style="color:var(--muted)">Unassigned</span>')+'</td><td>'+(z.head_count||'--')+'</td>'+
+      '<td><span class="badge '+sc+'">'+H(z.status)+'</span></td><td>'+(z.last_service?fdate(z.last_service):'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openIrrZoneModal(\''+z.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No zones on file</td></tr>';
+  var zoneById={};zones.forEach(function(z){zoneById[z.id]=z;});
+  $('irrschedtbody').innerHTML=sched.length?sched.map(function(s){
+    var z=zoneById[s.zone_id];
+    var sc={active:'bg',paused:'bx'}[s.status]||'bx';
+    return '<tr><td>'+(z?H(z.name):'--')+'</td><td>'+(s.days||[]).join(', ')+'</td><td>'+H(s.start||'--')+'</td><td>'+(s.duration||0)+' min</td>'+
+      '<td><span class="badge '+sc+'">'+H(s.status)+'</span></td><td><button class="btn bo bs" onclick="openIrrSchedModal(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No run schedules on file</td></tr>';
+  irrWeatherCheck();
+}
+function irrWeatherCheck(){
+  var el=$('irr-wx-note'),src=$('grd-wx-status');
+  if(!el||!src||!src.textContent){if(el)el.style.display='none';return;}
+  el.style.display='block';
+  el.textContent='Weather Command Engine signal: '+src.textContent+(src.textContent==='Check Conditions'?' -- consider pausing active run schedules today.':' -- scheduled runs unaffected.');
+}
+function openControllerModal(id){
+  ctlid=id||null;fillPropertySelects();fillControllerBrandSelect();
+  var c=id?bldControllers().find(function(x){return x.id===id;}):null;
+  $('ctlproperty').value=c?c.property_id:'';$('ctlname').value=c?c.name:'';
+  $('ctlbrand').value=c?c.brand:'other';$('ctlmodel').value=c?c.model||'':'';
+  $('ctlzonesup').value=c?c.zones_supported||'':'';$('ctlinstall').value=c?c.install_date||'':'';
+  $('ctlnotes').value=c?c.notes||'':'';
+  $('controllermodal').classList.add('on');
+}
+function closeControllerModal(){$('controllermodal').classList.remove('on');}
+function saveController(){
+  var propertyId=$('ctlproperty').value,name=$('ctlname').value.trim();
+  if(!propertyId||!name){toast('Property and controller name are required');return;}
+  var list=bldControllers();
+  var rec={id:ctlid||('CTL-'+Date.now()),property_id:propertyId,name:name,brand:$('ctlbrand').value,
+    model:$('ctlmodel').value.trim(),zones_supported:Number($('ctlzonesup').value||0),
+    install_date:$('ctlinstall').value,notes:$('ctlnotes').value.trim()};
+  if(ctlid){list=list.map(function(x){return x.id===ctlid?rec:x;});}else{list.push(rec);}
+  st('grd_irr_controllers',list);closeControllerModal();rIrrigation();toast('Controller saved');
+  grdData('write','irr_controllers',rec);
+}
+function izPropertyChanged(){
+  var sel=$('izcontroller');if(!sel)return;
+  var propertyId=$('izproperty').value;
+  var ctls=bldControllers().filter(function(c){return c.property_id===propertyId;});
+  var keep=sel.value;
+  sel.innerHTML='<option value="">Unassigned / Manual</option>'+ctls.map(function(c){return '<option value="'+H(c.id)+'">'+H(c.name)+'</option>';}).join('');
+  sel.value=keep;
+}
+function openIrrZoneModal(id){
+  izid=id||null;fillPropertySelects();
+  var z=id?bldIrrZones().find(function(x){return x.id===id;}):null;
+  $('izproperty').value=z?z.property_id:'';izPropertyChanged();
+  $('izname').value=z?z.name:'';$('iztype').value=z?z.zone_type:'sprinkler';
+  $('izcontroller').value=z?(z.controller_id||''):'';$('izstation').value=z?z.station||'':'';
+  $('izheads').value=z?z.head_count||'':'';$('izsqft').value=z?z.sqft||'':'';
+  $('izstatus').value=z?z.status:'active';$('izlastservice').value=z?z.last_service||'':'';
+  $('izbackflow').value=z?z.backflow||'':'';
+  $('izchecklist').value=z&&z.checklist?z.checklist.join('\n'):'';
+  $('iznotes').value=z?z.notes||'':'';
+  $('irrzonemodal').classList.add('on');
+}
+function closeIrrZoneModal(){$('irrzonemodal').classList.remove('on');}
+function saveIrrZone(){
+  var propertyId=$('izproperty').value,name=$('izname').value.trim();
+  if(!propertyId||!name){toast('Property and zone name are required');return;}
+  var list=bldIrrZones();
+  var rec={id:izid||('IZ-'+Date.now()),property_id:propertyId,name:name,zone_type:$('iztype').value,
+    controller_id:$('izcontroller').value||null,station:$('izstation').value.trim(),
+    head_count:Number($('izheads').value||0),sqft:Number($('izsqft').value||0),
+    status:$('izstatus').value,last_service:$('izlastservice').value,backflow:$('izbackflow').value.trim(),
+    checklist:$('izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean),
+    notes:$('iznotes').value.trim()};
+  if(izid){list=list.map(function(x){return x.id===izid?rec:x;});}else{list.push(rec);}
+  st('grd_irr_zones',list);closeIrrZoneModal();rIrrigation();toast('Irrigation zone saved');
+  grdData('write','irr_zones',rec);
+}
+// Same real, non-fabricated hand-off pattern as Design Walk's sendDesignToQuote:
+// real checklist line items, $0 amounts, priced through the existing Quote editor.
+function sendIrrZoneToQuote(){
+  var propertyId=$('izproperty').value,name=$('izname').value.trim();
+  if(!propertyId){toast('Select a property first');return;}
+  var checklist=$('izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  if(!checklist.length){toast('Add at least one parts/install line first');return;}
+  var lines=checklist.map(function(l){return {d:'Irrigation zone '+(name||'')+' - '+l,a:0};});
+  var quotes=ld('grd_quotes',[]);
+  var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
+  quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
+  toast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+}
+function openIrrSchedModal(id){
+  ischid=id||null;
+  var zones=bldIrrZones();
+  var sel=$('ischzone');sel.innerHTML=zones.map(function(z){return '<option value="'+H(z.id)+'">'+H(z.name)+' ('+H(propName(z.property_id))+')</option>';}).join('');
+  var s=id?bldIrrSched().find(function(x){return x.id===id;}):null;
+  sel.value=s?s.zone_id:(zones[0]?zones[0].id:'');
+  document.querySelectorAll('.ischday').forEach(function(cb){cb.checked=!!(s&&(s.days||[]).indexOf(cb.value)!==-1);});
+  $('ischstart').value=s?s.start||'':'';$('ischduration').value=s?s.duration||'':'';
+  $('ischstatus').value=s?s.status:'active';
+  $('irrschedmodal').classList.add('on');
+}
+function closeIrrSchedModal(){$('irrschedmodal').classList.remove('on');}
+function saveIrrSched(){
+  var zoneId=$('ischzone').value;
+  if(!zoneId){toast('Add an irrigation zone first');return;}
+  var days=Array.from(document.querySelectorAll('.ischday:checked')).map(function(cb){return cb.value;});
+  var list=bldIrrSched();
+  var rec={id:ischid||('ISCH-'+Date.now()),zone_id:zoneId,days:days,start:$('ischstart').value,
+    duration:Number($('ischduration').value||0),status:$('ischstatus').value};
+  if(ischid){list=list.map(function(x){return x.id===ischid?rec:x;});}else{list.push(rec);}
+  st('grd_irr_schedules',list);closeIrrSchedModal();rIrrigation();toast('Run schedule saved');
+  grdData('write','irr_schedules',rec);
+}
+
+// === WATER FEATURES (item 2) =====================================
+function bldWf(){return ld('grd_water_features',[]);}
+function rWf(){
+  fillPropertySelects();
+  var list=bldWf();
+  $('wftbody').innerHTML=list.length?list.map(function(w){
+    return '<tr><td>'+H(propName(w.property_id))+'</td><td><strong>'+H(w.name)+'</strong></td><td>'+H(w.type)+'</td><td>'+H(w.scale)+'</td>'+
+      '<td>'+H(w.pump||'--')+(w.filter?' / '+H(w.filter):'')+'</td><td>'+H(w.condition||'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openWfModal(\''+w.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">No water features on file</td></tr>';
+}
+function openWfModal(id){
+  wfid=id||null;fillPropertySelects();
+  var w=id?bldWf().find(function(x){return x.id===id;}):null;
+  $('wfproperty').value=w?w.property_id:'';$('wfname').value=w?w.name:'';
+  $('wftype').value=w?w.type:'pond';$('wfscale').value=w?w.scale:'large';$('wfsize').value=w?w.size||'':'';
+  $('wfpump').value=w?w.pump||'':'';$('wffilter').value=w?w.filter||'':'';
+  $('wflastservice').value=w?w.last_service||'':'';$('wfcondition').value=w?w.condition||'':'';
+  $('wfchecklist').value=w&&w.checklist?w.checklist.join('\n'):'';
+  $('wfmodal').classList.add('on');
+}
+function closeWfModal(){$('wfmodal').classList.remove('on');}
+function saveWf(){
+  var propertyId=$('wfproperty').value,name=$('wfname').value.trim();
+  if(!propertyId||!name){toast('Property and feature name are required');return;}
+  var list=bldWf();
+  var rec={id:wfid||('WF-'+Date.now()),property_id:propertyId,name:name,type:$('wftype').value,scale:$('wfscale').value,
+    size:$('wfsize').value.trim(),pump:$('wfpump').value.trim(),filter:$('wffilter').value.trim(),
+    last_service:$('wflastservice').value,condition:$('wfcondition').value.trim(),
+    checklist:$('wfchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean)};
+  if(wfid){list=list.map(function(x){return x.id===wfid?rec:x;});}else{list.push(rec);}
+  st('grd_water_features',list);closeWfModal();rWf();toast('Water feature saved');
+  grdData('write','water_features',rec);
+}
+function sendWfToQuote(){
+  var propertyId=$('wfproperty').value,name=$('wfname').value.trim();
+  if(!propertyId){toast('Select a property first');return;}
+  var checklist=$('wfchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  if(!checklist.length){toast('Add at least one parts/install line first');return;}
+  var lines=checklist.map(function(l){return {d:'Water feature '+(name||'')+' - '+l,a:0};});
+  var quotes=ld('grd_quotes',[]);
+  var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
+  quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
+  toast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+}
+
+// === INVASIVE SPECIES MANAGEMENT, 6-tab (item 5) =================
+// Reference list is real (Ohio/Midwest extension-office-documented common
+// invasives), not fabricated -- caveat shown in the panel that it's reference
+// only and should be verified locally before treatment.
+var INV_SPECIES_REF=[
+  {name:'Bush Honeysuckle',type:'Shrub',treatment:'Cut-stump herbicide or basal bark treatment'},
+  {name:'Common Buckthorn',type:'Shrub/Small Tree',treatment:'Cut-stump herbicide, repeated foliar follow-up'},
+  {name:'Japanese Knotweed',type:'Herbaceous',treatment:'Repeated glyphosate application over multiple seasons'},
+  {name:'Callery Pear (Bradford Pear)',type:'Tree',treatment:'Removal + stump treatment, do not just cut'},
+  {name:'Garlic Mustard',type:'Herbaceous',treatment:'Hand-pull before seed set, or spring herbicide'},
+  {name:'Multiflora Rose',type:'Shrub',treatment:'Mechanical removal or cut-stump herbicide'}
+];
+window.INV_SPECIES_REF=INV_SPECIES_REF;
+function bldInvasive(){return ld('grd_invasive_sightings',[]);}
+function invTab(which){
+  ['sightings','reference','plan','history','risk','compliance'].forEach(function(t){
+    $('inv-view-'+t).style.display=(t===which)?'block':'none';
+    $('inv-tab-'+t).classList.toggle('on',t===which);
+  });
+}
+function rInvasive(){
+  fillPropertySelects();
+  var dl=$('ivspecieslist');if(dl)dl.innerHTML=INV_SPECIES_REF.map(function(s){return '<option value="'+H(s.name)+'">';}).join('');
+  var list=bldInvasive();
+  $('invsighttbody').innerHTML=list.length?list.map(function(s){
+    var sc={identified:'bw',plan_scheduled:'bb',treated:'bg',monitoring:'bx'}[s.status]||'bx';
+    var sv={low:'bx',medium:'bw',high:'br'}[s.severity]||'bx';
+    return '<tr><td>'+H(propName(s.property_id))+'</td><td><strong>'+H(s.species)+'</strong></td><td>'+fdate(s.found)+'</td>'+
+      '<td><span class="badge '+sv+'">'+H(s.severity)+'</span></td><td><span class="badge '+sc+'">'+H(s.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="openInvasiveModal(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No sightings logged yet</td></tr>';
+  $('invreftbody').innerHTML=INV_SPECIES_REF.map(function(s){return '<tr><td>'+H(s.name)+'</td><td>'+H(s.type)+'</td><td>'+H(s.treatment)+'</td></tr>';}).join('');
+  var planned=list.filter(function(s){return s.method||s.scheduled;});
+  $('invplantbody').innerHTML=planned.length?planned.map(function(s){
+    return '<tr><td>'+H(propName(s.property_id))+'</td><td>'+H(s.species)+'</td><td>'+H(s.method||'--')+'</td><td>'+(s.scheduled?fdate(s.scheduled):'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openInvasiveModal(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No treatment plans on file</td></tr>';
+  var treated=list.filter(function(s){return s.treated;});
+  $('invhisttbody').innerHTML=treated.length?treated.map(function(s){
+    return '<tr><td>'+H(propName(s.property_id))+'</td><td>'+H(s.species)+'</td><td>'+fdate(s.treated)+'</td><td>'+H(s.outcome||'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">No completed treatments on file</td></tr>';
+  var byProp={};
+  list.forEach(function(s){
+    if(!byProp[s.property_id])byProp[s.property_id]={low:0,medium:0,high:0,open:0};
+    byProp[s.property_id][s.severity||'low']++;
+    if(s.status!=='treated')byProp[s.property_id].open++;
+  });
+  var propIds=Object.keys(byProp);
+  $('invriskcb').innerHTML=propIds.length?propIds.map(function(pid){
+    var r=byProp[pid];
+    return '<div class="srow"><span class="slbl">'+H(propName(pid))+'</span><span class="sval">'+r.open+' open ('+r.high+' high, '+r.medium+' medium, '+r.low+' low)</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:20px">No sightings logged yet -- nothing to assess</div>';
+  var reportable=list.filter(function(s){return s.reportable;});
+  $('invcomptbody').innerHTML=reportable.length?reportable.map(function(s){
+    return '<tr><td>'+H(propName(s.property_id))+'</td><td>'+H(s.species)+'</td><td><span class="badge br">Yes</span></td>'+
+      '<td>'+(s.report_filed?'<span class="badge bg">Filed</span>':'<span class="badge bw">Not Filed</span>')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openInvasiveModal(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No state-reportable species flagged</td></tr>';
+}
+function openInvasiveModal(id){
+  ivid=id||null;fillPropertySelects();
+  var s=id?bldInvasive().find(function(x){return x.id===id;}):null;
+  $('ivproperty').value=s?s.property_id:'';$('ivspecies').value=s?s.species:'';$('ivlocation').value=s?s.location||'':'';
+  $('ivfound').value=s?s.found||'':'';$('ivseverity').value=s?s.severity:'low';
+  $('ivstatus').value=s?s.status:'identified';$('ivreportable').checked=!!(s&&s.reportable);
+  $('ivmethod').value=s?s.method||'':'';$('ivscheduled').value=s?s.scheduled||'':'';
+  $('ivtreated').value=s?s.treated||'':'';$('ivoutcome').value=s?s.outcome||'':'';
+  $('ivreportfiled').checked=!!(s&&s.report_filed);$('ivnotes').value=s?s.notes||'':'';
+  $('invasivemodal').classList.add('on');
+}
+function closeInvasiveModal(){$('invasivemodal').classList.remove('on');}
+function saveInvasive(){
+  var propertyId=$('ivproperty').value,species=$('ivspecies').value.trim();
+  if(!propertyId||!species){toast('Property and species are required');return;}
+  var list=bldInvasive();
+  var rec={id:ivid||('IV-'+Date.now()),property_id:propertyId,species:species,location:$('ivlocation').value.trim(),
+    found:$('ivfound').value,severity:$('ivseverity').value,status:$('ivstatus').value,reportable:$('ivreportable').checked,
+    method:$('ivmethod').value.trim(),scheduled:$('ivscheduled').value,treated:$('ivtreated').value,
+    outcome:$('ivoutcome').value.trim(),report_filed:$('ivreportfiled').checked,notes:$('ivnotes').value.trim()};
+  if(ivid){list=list.map(function(x){return x.id===ivid?rec:x;});}else{list.push(rec);}
+  st('grd_invasive_sightings',list);closeInvasiveModal();rInvasive();toast('Sighting saved');
+  grdData('write','invasive_sightings',rec);
+}
+
+// === PROPERTY ECOSYSTEM HEALTH REPORT, 7-layer (item 6) ==========
+function bldEcoReports(){return ld('grd_ecosystem_reports',[]);}
+function rEcosystem(){fillPropertySelects();rEcoHistory();}
+function rEcoHistory(){
+  var list=bldEcoReports();
+  $('eco-history').innerHTML=list.length?list.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,10).map(function(r){
+    return '<div class="srow"><span class="slbl"><strong>'+H(propName(r.property_id))+'</strong> - '+fdate(r.date)+'</span><span class="sval"><button class="btn bo bs" onclick="viewEcoReport(\''+r.id+'\')">View</button></span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No reports generated yet</div>';
+}
+function viewEcoReport(id){
+  var r=bldEcoReports().find(function(x){return x.id===id;});if(!r)return;
+  $('eco-result-wrap').style.display='block';
+  $('eco-result').textContent=r.summary;
+}
+// Layers 1-4 computed live from REAL data already in this app -- never
+// invented. Layers 5-6 are honest manual field notes (no soil/biodiversity
+// sensors exist here). Layer 7 is Claude, grounded ONLY in layers 1-6,
+// same anti-fabrication system-prompt discipline as claimGeneratePacket()
+// and disRespond() elsewhere on the platform (SAIRNbuild item 5).
+async function genEcosystemReport(){
+  var propertyId=$('ecoproperty').value;
+  if(!propertyId){toast('Select a property first');return;}
+  var prop=ld('grd_properties',[]).find(function(x){return x.id===propertyId;});
+  var zones=ld('grd_golf_zones',[]).filter(function(z){return z.property_id===propertyId;});
+  var irrZones=bldIrrZones().filter(function(z){return z.property_id===propertyId;});
+  var wf=bldWf().filter(function(w){return w.property_id===propertyId;});
+  var invasive=bldInvasive().filter(function(s){return s.property_id===propertyId&&s.status!=='treated';});
+  var soilNote=$('eco-soil').value.trim(),bioNote=$('eco-bio').value.trim();
+
+  var layer1=zones.length?zones.map(function(z){return '- '+z.name+': '+(z.condition||'no condition note')+' (last serviced '+(z.serviced?fdate(z.serviced):'unknown')+')';}).join('\n'):'No Golf Course Module zones on file for this property.';
+  var irrRepair=irrZones.filter(function(z){return z.status==='needs_repair';});
+  var layer2=irrZones.length?(irrZones.length+' irrigation zone(s) on file, '+irrRepair.length+' flagged needs_repair.'+(irrRepair.length?' Needing repair: '+irrRepair.map(function(z){return z.name;}).join(', ')+'.':'')):'No irrigation zones on file for this property.';
+  var layer3=wf.length?wf.map(function(w){return '- '+w.name+' ('+w.type+'): '+(w.condition||'no condition note');}).join('\n'):'No water features on file for this property.';
+  var layer4=invasive.length?invasive.length+' open invasive species issue(s): '+invasive.map(function(s){return s.species+' ('+s.severity+')';}).join(', ')+'.':'No open invasive species issues on file for this property.';
+  var layer5=soilNote||'(no field note entered)';
+  var layer6=bioNote||'(no field note entered)';
+
+  var facts='PROPERTY: '+(prop?prop.name:propertyId)+'\n\n'+
+    'LAYER 1 - TURF/ZONE CONDITION (from Golf Course Module):\n'+layer1+'\n\n'+
+    'LAYER 2 - IRRIGATION SYSTEM HEALTH:\n'+layer2+'\n\n'+
+    'LAYER 3 - WATER FEATURES CONDITION:\n'+layer3+'\n\n'+
+    'LAYER 4 - INVASIVE SPECIES PRESSURE:\n'+layer4+'\n\n'+
+    'LAYER 5 - SOIL & PLANT HEALTH (manual field note):\n'+layer5+'\n\n'+
+    'LAYER 6 - BIODIVERSITY OBSERVATIONS (manual field note):\n'+layer6;
+
+  var sys='You are writing layer 7 (Overall Recommendations) of a property ecosystem health '+
+    'report for a golf course / HOA / commercial grounds operator. You MUST use ONLY the facts '+
+    'given below for layers 1-6 -- do not invent conditions, measurements, or issues not present '+
+    'in the data. Where a layer says no data is on file, say so plainly and recommend what to '+
+    'start tracking, rather than inventing a finding. Write layer 7 as a short, prioritized '+
+    'recommendations list grounded in what the real data actually shows. Plain ASCII only, no '+
+    'Unicode box characters. Keep it under 250 words.\n\n'+facts;
+
+  $('eco-result-wrap').style.display='block';
+  $('eco-result').textContent='Generating report...';
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,app_id:APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:'Write layer 7 (Overall Recommendations) from the facts given.'}]})});
+    var data=await res.json();
+    var layer7=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    var summary='LAYER 1 - TURF/ZONE CONDITION:\n'+layer1+'\n\nLAYER 2 - IRRIGATION SYSTEM HEALTH:\n'+layer2+
+      '\n\nLAYER 3 - WATER FEATURES CONDITION:\n'+layer3+'\n\nLAYER 4 - INVASIVE SPECIES PRESSURE:\n'+layer4+
+      '\n\nLAYER 5 - SOIL & PLANT HEALTH:\n'+layer5+'\n\nLAYER 6 - BIODIVERSITY OBSERVATIONS:\n'+layer6+
+      '\n\nLAYER 7 - AI RECOMMENDATIONS:\n'+layer7;
+    $('eco-result').textContent=summary;
+    var reports=bldEcoReports();
+    reports.push({id:'ECO-'+Date.now(),property_id:propertyId,date:new Date().toISOString().slice(0,10),summary:summary});
+    st('grd_ecosystem_reports',reports);grdData('write','ecosystem_reports',reports[reports.length-1]);
+    rEcoHistory();
+    toast('Report generated and saved');
+  }catch(e){
+    $('eco-result').textContent='Could not reach Claude for layer 7. Layers 1-6 (computed/manual) are still real and usable on their own:\n\n'+facts;
+  }
+}
+
+// === DREAMCLOSE (item 7) ==========================================
+var dcPhotoB64=null,dcCurrentDesignText=null,dcCurrentQuoteId=null,dcCurrentApproved=false,dcCurrentApprover=null;
+function bldDcRecords(){return ld('grd_dreamclose',[]);}
+function rDreamClose(){
+  fillPropertySelects();
+  var list=bldDcRecords();
+  $('dc-history').innerHTML=list.length?list.slice().sort(function(a,b){return (b.created_at||'').localeCompare(a.created_at||'');}).slice(0,10).map(function(d){
+    return '<div class="srow"><span class="slbl"><strong>'+H(propName(d.property_id))+'</strong> - '+fdate(d.created_at)+
+      (d.approved?' - approved by '+H(d.approved_by):' - pending')+
+      (d.invoice_id?' - invoiced '+H(d.invoice_id):'')+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No DreamClose proposals yet</div>';
+}
+function dcFileChosen(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>8*1024*1024){toast('That photo is over 8MB -- pick a smaller one');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    dcPhotoB64=e.target.result.split(',')[1];
+    $('dc-img').src=e.target.result;$('dc-preview').style.display='block';
+    $('dc-analyze-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+// Claude VISION, grounded -- describes what it actually sees plus a design
+// direction, does not generate a rendered image. See the panel's own
+// honest-scope note for why (no vendor/cap decision made for this app yet).
+async function dcAnalyze(){
+  var propertyId=$('dc-property').value;
+  if(!propertyId){toast('Select a property first');return;}
+  if(!dcPhotoB64){toast('Take a photo first');return;}
+  var direction=$('dc-direction').value.trim();
+  $('dc-result-wrap').style.display='block';
+  $('dc-result').textContent='Analyzing photo...';
+  var sys='You are a landscape design assistant. Look at the property photo and describe: (1) the '+
+    'current real condition visible in the photo, (2) a grounded design direction that addresses '+
+    'what the client asked for, using only elements that make sense given what is actually visible '+
+    'in the photo. Do not claim to have generated a new image -- you are producing a text design '+
+    'description only. End with a short line-item style list of design elements (usable as quote '+
+    'line items later). Plain ASCII only, no Unicode box characters. Keep it under 300 words.';
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:900,app_id:APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:dcPhotoB64}},
+          {type:'text',text:'Client design direction: '+(direction||'(none given -- use your best judgment from the photo alone)')}
+        ]}]})});
+    var data=await res.json();
+    dcCurrentDesignText=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    $('dc-result').textContent=dcCurrentDesignText;
+    dcCurrentQuoteId=null;dcCurrentApproved=false;dcCurrentApprover=null;
+    $('dc-approval-wrap').style.display='none';$('dc-final-wrap').style.display='none';
+  }catch(e){
+    $('dc-result').textContent='Could not reach Claude. Check your connection and try again.';
+  }
+}
+function dcCreateQuote(){
+  var propertyId=$('dc-property').value;
+  if(!propertyId||!dcCurrentDesignText){toast('Get an AI design description first');return;}
+  var lines=dcCurrentDesignText.split('\n').filter(function(l){return /^[-*]\s/.test(l.trim());})
+    .map(function(l){return {d:l.trim().replace(/^[-*]\s*/,''),a:0};});
+  if(!lines.length)lines=[{d:'DreamClose design proposal (see AI description for detail)',a:0}];
+  var quotes=ld('grd_quotes',[]);
+  var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
+  quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
+  dcCurrentQuoteId=qrec.id;
+  $('dc-approval-wrap').style.display='block';
+  toast('Priced proposal created as draft quote '+qrec.id+' -- pricing still needs to be filled in');
+}
+function dcApprove(){
+  if(!dcCurrentQuoteId){toast('Create the priced proposal first');return;}
+  var name=$('dc-approver').value.trim();
+  if(!name){toast('Enter the client name to record approval');return;}
+  dcCurrentApproved=true;dcCurrentApprover=name;
+  $('dc-approval-status').style.display='block';
+  $('dc-approval-status').textContent='Approved by '+name+' on '+fdate(new Date().toISOString().slice(0,10))+' (recorded confirmation, not a legally-binding e-signature)';
+  $('dc-final-wrap').style.display='block';
+  toast('Proposal approved by '+name);
+}
+function dcCreateInvoiceAndSchedule(){
+  var propertyId=$('dc-property').value;
+  if(!dcCurrentApproved||!dcCurrentQuoteId){toast('Approve the proposal first');return;}
+  var quotes=ld('grd_quotes',[]);
+  var q=quotes.find(function(x){return x.id===dcCurrentQuoteId;});
+  var total=q?q.lines.reduce(function(s,l){return s+(l.a||0);},0):0;
+  var invoices=bldInv();
+  var irec={id:'INV-'+Date.now(),property_id:propertyId,quote_id:dcCurrentQuoteId,amount:total,status:'Unpaid',
+    issued:new Date().toISOString().slice(0,10),due:daysFromNow(30),notes:'From DreamClose proposal, approved by '+dcCurrentApprover};
+  invoices.push(irec);st('grd_invoices',invoices);grdData('write','invoices',irec);
+  var sched=bldSched();
+  var srec={id:'SCH-'+Date.now(),property_id:propertyId,freq:'one_off',next:daysFromNow(7),crew:'',quote_id:dcCurrentQuoteId};
+  sched.push(srec);st('grd_schedule',sched);grdData('write','schedule',srec);
+  var dc=bldDcRecords();
+  dc.push({id:'DC-'+Date.now(),property_id:propertyId,created_at:new Date().toISOString().slice(0,10),
+    approved:true,approved_by:dcCurrentApprover,quote_id:dcCurrentQuoteId,invoice_id:irec.id,schedule_id:srec.id});
+  st('grd_dreamclose',dc);grdData('write','dreamclose',dc[dc.length-1]);
+  $('dc-final-status').style.display='block';
+  $('dc-final-status').textContent='Invoice '+irec.id+' created ($'+total+', 0 until priced) and job scheduled '+fdate(srec.next)+'.';
+  rInv();rSched();rDreamClose();
+  toast('DreamClose complete -- invoice + schedule created');
+}
+
+// === CREW TRAINING ACADEMY (item 4) ===============================
+function bldCourses(){return ld('grd_training_courses',[]);}
+function bldCompletions(){return ld('grd_training_completions',[]);}
+function fillCourseSelect(){
+  var el=$('cplcourse');if(!el)return;var keep=el.value;
+  el.innerHTML=bldCourses().map(function(c){return '<option value="'+H(c.id)+'">'+H(c.title)+'</option>';}).join('');
+  el.value=keep;
+}
+function rTraining(){
+  var courses=bldCourses(),completions=bldCompletions();
+  $('tr-k-courses').textContent=courses.length;
+  var required=courses.filter(function(c){return c.required;});
+  var requiredIds=required.map(function(c){return c.id;});
+  var requiredCompletions=completions.filter(function(cp){return requiredIds.indexOf(cp.course_id)!==-1;});
+  var completeCount=requiredCompletions.filter(function(cp){return cp.status==='complete';}).length;
+  var rate=requiredCompletions.length?Math.round(completeCount/requiredCompletions.length*100)+'%':'--';
+  $('tr-k-rate').textContent=rate;
+  $('tr-k-rate-sub').textContent=requiredCompletions.length?completeCount+' of '+requiredCompletions.length+' required-course completions':'No required-course completions logged yet';
+  var overdue=completions.filter(function(cp){return cp.status==='assigned'||cp.status==='in_progress';});
+  $('tr-k-overdue').textContent=overdue.length;
+  $('trcoursetbody').innerHTML=courses.length?courses.map(function(c){
+    return '<tr><td><strong>'+H(c.title)+'</strong></td><td>'+H(c.category)+'</td><td>'+(c.duration||0)+' min</td>'+
+      '<td>'+(c.required?'<span class="badge bg">Required</span>':'<span class="badge bx">Optional</span>')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openCourseModal(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No courses on file</td></tr>';
+  var courseById={};courses.forEach(function(c){courseById[c.id]=c;});
+  $('trcomptbody').innerHTML=completions.length?completions.map(function(cp){
+    var c=courseById[cp.course_id];
+    var sc={assigned:'bw',in_progress:'bb',complete:'bg'}[cp.status]||'bx';
+    return '<tr><td>'+H(cp.employee_name||'(unnamed)')+'</td><td>'+(c?H(c.title):'--')+'</td>'+
+      '<td><span class="badge '+sc+'">'+H(cp.status)+'</span></td><td>'+(cp.completed_date?fdate(cp.completed_date):'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openCompletionModal(\''+cp.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No completions logged yet</td></tr>';
+}
+function openCourseModal(id){
+  crsid=id||null;
+  var c=id?bldCourses().find(function(x){return x.id===id;}):null;
+  $('crstitle').value=c?c.title:'';$('crscat').value=c?c.category:'safety';
+  $('crsduration').value=c?c.duration||'':'';$('crsrequired').checked=!!(c&&c.required);
+  $('coursemodal').classList.add('on');
+}
+function closeCourseModal(){$('coursemodal').classList.remove('on');}
+function saveCourse(){
+  var title=$('crstitle').value.trim();
+  if(!title){toast('Course title is required');return;}
+  var list=bldCourses();
+  var rec={id:crsid||('CRS-'+Date.now()),title:title,category:$('crscat').value,
+    duration:Number($('crsduration').value||0),required:$('crsrequired').checked};
+  if(crsid){list=list.map(function(x){return x.id===crsid?rec:x;});}else{list.push(rec);}
+  st('grd_training_courses',list);closeCourseModal();rTraining();toast('Course saved');
+  grdData('write','training_courses',rec);
+}
+function openCompletionModal(id){
+  cplid=id||null;fillCourseSelect();
+  var cp=id?bldCompletions().find(function(x){return x.id===id;}):null;
+  $('cplname').value=cp?cp.employee_name||'':'';
+  $('cplcourse').value=cp?cp.course_id:(bldCourses()[0]?bldCourses()[0].id:'');
+  $('cplstatus').value=cp?cp.status:'assigned';$('cpldate').value=cp?cp.completed_date||'':'';
+  $('completionmodal').classList.add('on');
+}
+function closeCompletionModal(){$('completionmodal').classList.remove('on');}
+function saveCompletion(){
+  var courseId=$('cplcourse').value;
+  if(!courseId){toast('Add a course first');return;}
+  var list=bldCompletions();
+  var rec={id:cplid||('CPL-'+Date.now()),employee_name:$('cplname').value.trim(),course_id:courseId,
+    status:$('cplstatus').value,completed_date:$('cplstatus').value==='complete'?($('cpldate').value||new Date().toISOString().slice(0,10)):$('cpldate').value};
+  if(cplid){list=list.map(function(x){return x.id===cplid?rec:x;});}else{list.push(rec);}
+  st('grd_training_completions',list);closeCompletionModal();rTraining();toast('Completion saved');
+  grdData('write','training_completions',rec);
+}
+
+// === VENDOR PORTAL (item 8, shared with SAIRNscape) ===============
+function bldVendors(){return ld('grd_vendors',[]);}
+function rVendors(){
+  var list=bldVendors();
+  $('vendtbody').innerHTML=list.length?list.map(function(v){
+    return '<tr><td><strong>'+H(v.name)+'</strong></td><td>'+H(v.category)+'</td><td>'+H(v.contact||'--')+'</td>'+
+      '<td>'+H(v.terms||'--')+'</td><td><button class="btn bo bs" onclick="openVendorModal(\''+v.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No vendors on file</td></tr>';
+}
+function openVendorModal(id){
+  vendid=id||null;
+  var v=id?bldVendors().find(function(x){return x.id===id;}):null;
+  $('vendname').value=v?v.name:'';$('vendcat').value=v?v.category:'irrigation';
+  $('vendcontact').value=v?v.contact||'':'';$('vendphone').value=v?v.phone||'':'';
+  $('vendemail').value=v?v.email||'':'';$('vendterms').value=v?v.terms||'':'';
+  $('vendnotes').value=v?v.notes||'':'';
+  $('vendormodal').classList.add('on');
+}
+function closeVendorModal(){$('vendormodal').classList.remove('on');}
+function saveVendor(){
+  var name=$('vendname').value.trim();
+  if(!name){toast('Vendor name is required');return;}
+  var list=bldVendors();
+  var rec={id:vendid||('VEND-'+Date.now()),name:name,category:$('vendcat').value,
+    contact:$('vendcontact').value.trim(),phone:$('vendphone').value.trim(),email:$('vendemail').value.trim(),
+    terms:$('vendterms').value.trim(),notes:$('vendnotes').value.trim()};
+  if(vendid){list=list.map(function(x){return x.id===vendid?rec:x;});}else{list.push(rec);}
+  st('grd_vendors',list);closeVendorModal();rVendors();toast('Vendor saved');
+  grdData('write','vendors',rec);
+}
+
 // === AI ASSISTANT ===
 function sendAI(){var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
 function askAI(q){$('ainp').value=q;sendAI();}
@@ -1004,6 +2063,11 @@ async function sairnLoadWeather() {
         $('grd-wx-desc').textContent=desc;
         $('grd-wx-status').textContent=goGo?'Crews Go':'Check Conditions';
         $('grd-wx-status').style.color=goGo?'#BBF7D0':'#FDE68A';
+        // Item 7: Scheduling/Irrigation advisory notes read this same signal --
+        // refresh them here too, since they may already be rendered on screen
+        // and would otherwise only pick up the signal on next re-render.
+        if(typeof schedWeatherCheck==='function')schedWeatherCheck();
+        if(typeof irrWeatherCheck==='function')irrWeatherCheck();
       } catch(e) { $('grd-wx-desc').textContent='Weather unavailable'; }
     }, function(){ $('grd-wx-desc').textContent='Location denied'; });
   } catch(e) {}
