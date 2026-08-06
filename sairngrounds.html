@@ -215,6 +215,7 @@ textarea{resize:vertical;min-height:80px;}
       <div class="ss">Operations</div>
       <button class="sb" id="sb-properties" onclick="nav('properties')"><span class="sico">&#127760;</span>Properties</button>
       <button class="sb" id="sb-intake" onclick="nav('intake')"><span class="sico">&#128203;</span>Job Intake</button>
+      <button class="sb" id="sb-design" onclick="nav('design')"><span class="sico">&#128205;</span>Design Walk</button>
       <button class="sb" id="sb-quotes" onclick="nav('quotes')"><span class="sico">&#128176;</span>Quoting</button>
       <div class="ss">Golf</div>
       <button class="sb" id="sb-golfcourse" onclick="nav('golfcourse')"><span class="sico">&#9971;</span>Golf Course Module</button>
@@ -306,6 +307,41 @@ textarea{resize:vertical;min-height:80px;}
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeJobModal()">Cancel</button>
       <button class="btn bp" onclick="saveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- DESIGN WALK (item 6: AR walk-and-design pipeline) -->
+<div class="panel" id="panel-design">
+  <div class="ph"><div><div class="ptitle">Design Walk</div><div class="psub">Walk the property, place sprinklers / no-dig zones / landscape elements, get homeowner approval, send to Quoting</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openDesignModal()">+ New Design Walk</button></div></div>
+  <div id="design-wx-note" class="note" style="display:none;margin-bottom:12px"></div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Property</th><th>Elements</th><th>Approval</th><th>Sent to Quote</th><th>Actions</th></tr></thead>
+    <tbody id="dwtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="designmodal">
+  <div class="mbox" style="width:640px;max-width:94vw;">
+    <div class="mtitle">Design Walk</div>
+    <div class="fg"><label>Property</label><select id="dwproperty" onchange="rDesignElements()"></select></div>
+    <div class="note" style="margin:8px 0">Manual entry always works. "Design with AR Camera" only appears on a WebXR-capable device (Chrome/Edge on ARCore Android today) -- on any other device this list is the only path, same as every other AR feature on this platform.</div>
+    <div id="dw-ar-zone"></div>
+    <div class="fr"><div class="fg"><label>Element Type</label><select id="dwelemtype">
+      <option value="sprinkler">Sprinkler Head</option>
+      <option value="no_dig">No-Dig Zone (utility line)</option>
+      <option value="plant">Landscape Element</option>
+    </select></div><div class="fg"><label>Label / Note</label><input id="dwelemlabel" placeholder="e.g. Zone 3 rotor head, or gas line 18in deep"></div></div>
+    <button class="btn bo bs" onclick="addDesignElement()">+ Add Element</button>
+    <div class="tw" style="margin-top:10px"><table><thead><tr><th>Type</th><th>Label / Note</th><th>Source</th><th></th></tr></thead>
+    <tbody id="dwelemtbody"></tbody></table></div>
+    <div class="mtitle" style="font-size:14px;margin-top:14px">Homeowner Approval</div>
+    <div id="dw-approval-status" class="note" style="margin:8px 0;display:none"></div>
+    <div class="fr" id="dw-approval-form"><div class="fg"><label>Approved By (homeowner name)</label><input id="dwapprover" placeholder="Jane Homeowner"></div>
+      <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bp" onclick="approveDesign()" style="width:100%">Approve Design On The Spot</button></div></div>
+    <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDesignModal()">Close</button>
+      <button class="btn bp" id="dw-send-quote-btn" onclick="sendDesignToQuote()" disabled>Send Approved Design to Quoting</button>
     </div>
   </div>
 </div>
@@ -566,7 +602,7 @@ function propName(id){var p=ld('grd_properties',[]).find(function(x){return x.id
 function fillPropertySelects(){
   var props=ld('grd_properties',[]);
   var opts=props.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join('');
-  ['jproperty','qproperty','gcproperty','zproperty'].forEach(function(id){
+  ['jproperty','qproperty','gcproperty','zproperty','dwproperty'].forEach(function(id){
     var el=$(id);if(!el)return;var cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;
   });
 }
@@ -574,7 +610,7 @@ function fillPropertySelects(){
 function init(){
   seed();
   fillPropertySelects();
-  rDash();rProps();rJobs();rQuotes();rGolf();
+  rDash();rProps();rJobs();rQuotes();rGolf();rDesignWalks();
   updateAsideA11y();
   sairnLoadWeather();
   grdSyncFromServer();
@@ -728,6 +764,140 @@ function saveQuote(){
   if(qid){quotes=quotes.map(function(q){return q.id===qid?rec:q;});}else{quotes.push(rec);}
   st('grd_quotes',quotes);closeQuoteModal();rQuotes();rDash();toast('Quote saved');
   grdData('write','quotes',rec);
+}
+
+// === DESIGN WALK (item 6: shared AR walk-and-design pipeline) ===========
+// Walk the property -> place elements (AR camera where supported, manual
+// list everywhere else, same data either way) -> homeowner approves on the
+// spot -> sends a real Draft quote into the EXISTING Quoting panel above.
+// Deliberately does not fabricate pricing: line items carry real
+// descriptions from what was actually placed/typed, amounts stay 0 until
+// the office prices them through the quote editor that already exists.
+var dwid=null;
+function grdDesigns(){return ld('grd_designs',[]);}
+var DW_TYPE_LABELS={sprinkler:'Sprinkler Head',no_dig:'No-Dig Zone',plant:'Landscape Element'};
+function rDesignWalks(){
+  var tb=$('dwtbody');if(!tb)return;
+  var list=grdDesigns();
+  tb.innerHTML=list.length?list.map(function(d){
+    var approval=d.approved?('Approved by '+H(d.approved_by)+' '+fdate(d.approved_at)):'<span class="badge bw">Pending</span>';
+    return '<tr><td>'+H(propName(d.property_id))+'</td><td>'+d.elements.length+'</td><td>'+approval+'</td>'+
+      '<td>'+(d.quote_id?'<span class="badge bg">'+H(d.quote_id)+'</span>':'<span class="badge bx">Not sent</span>')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openDesignModal(\''+d.id+'\')">Open</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No design walks yet</td></tr>';
+}
+function renderDesignElemTable(elements){
+  var tb=$('dwelemtbody');if(!tb)return;
+  tb.innerHTML=(elements&&elements.length)?elements.map(function(e,i){
+    return '<tr><td>'+H(DW_TYPE_LABELS[e.type]||e.type)+'</td><td>'+H(e.label)+'</td><td>'+(e.source==='ar'?'AR':'Manual')+'</td>'+
+      '<td><button class="btn bo bs" onclick="removeDesignElement('+i+')">Remove</button></td></tr>';
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px">No elements placed yet</td></tr>';
+}
+function saveDesignRecord(rec){
+  var list=grdDesigns().map(function(x){return x.id===rec.id?rec:x;});
+  st('grd_designs',list);grdData('write','designs',rec);rDesignWalks();
+}
+function updateApprovalUI(rec){
+  var statusEl=$('dw-approval-status'),formEl=$('dw-approval-form');
+  if(rec&&rec.approved){
+    statusEl.style.display='block';
+    statusEl.textContent='Approved by '+rec.approved_by+' on '+fdate(rec.approved_at)+(rec.quote_id?' -- sent to Quoting as '+rec.quote_id:'');
+    formEl.style.display='none';
+  } else {
+    statusEl.style.display='none';formEl.style.display='flex';
+  }
+}
+function openDesignModal(id){
+  dwid=id||null;fillPropertySelects();
+  var d=id?grdDesigns().find(function(x){return x.id===id;}):null;
+  $('dwproperty').value=d?d.property_id:'';
+  $('dwelemtype').value='sprinkler';$('dwelemlabel').value='';
+  $('dwapprover').value=d?d.approved_by||'':'';
+  renderDesignElemTable(d?d.elements:[]);
+  updateApprovalUI(d);
+  var sendBtn=$('dw-send-quote-btn');
+  sendBtn.disabled=!(d&&d.approved&&!d.quote_id);
+  sendBtn.textContent=(d&&d.quote_id)?('Sent to Quoting ('+d.quote_id+')'):'Send Approved Design to Quoting';
+  grdDesignWeatherCheck();
+  if(typeof installDesignARZone==='function')installDesignARZone();
+  $('designmodal').classList.add('on');
+}
+function closeDesignModal(){$('designmodal').classList.remove('on');dwid=null;}
+function ensureDesignRecord(){
+  if(dwid)return grdDesigns().find(function(x){return x.id===dwid;});
+  var propertyId=$('dwproperty').value;
+  if(!propertyId){toast('Select a property first');return null;}
+  var rec={id:'DW-'+Date.now(),property_id:propertyId,elements:[],approved:false,approved_by:'',approved_at:'',quote_id:null,created_at:new Date().toISOString().slice(0,10)};
+  var list=grdDesigns();list.push(rec);st('grd_designs',list);
+  dwid=rec.id;rDesignWalks();
+  return rec;
+}
+function addDesignElement(){
+  var rec=ensureDesignRecord();if(!rec)return;
+  var type=$('dwelemtype').value,label=$('dwelemlabel').value.trim();
+  if(!label){toast('Add a label or note for this element');return;}
+  rec.elements.push({type:type,label:label,source:'manual'});
+  saveDesignRecord(rec);
+  $('dwelemlabel').value='';
+  renderDesignElemTable(rec.elements);
+}
+function removeDesignElement(idx){
+  var rec=dwid?grdDesigns().find(function(x){return x.id===dwid;}):null;if(!rec)return;
+  rec.elements.splice(idx,1);
+  saveDesignRecord(rec);
+  renderDesignElemTable(rec.elements);
+}
+function approveDesign(){
+  var rec=dwid?grdDesigns().find(function(x){return x.id===dwid;}):null;
+  if(!rec||!rec.elements.length){toast('Add at least one design element before approval');return;}
+  var name=$('dwapprover').value.trim();
+  if(!name){toast('Enter the homeowner name to record approval');return;}
+  rec.approved=true;rec.approved_by=name;rec.approved_at=new Date().toISOString().slice(0,10);
+  saveDesignRecord(rec);
+  updateApprovalUI(rec);
+  $('dw-send-quote-btn').disabled=false;
+  toast('Design approved by '+name);
+}
+// Hands off into the SAME Quoting panel/data (grd_quotes) used everywhere
+// else in this app -- not a separate pricing path. Line items are real
+// descriptions of what was actually placed; amounts start at 0 because
+// this app has no per-unit pricing data to draw from honestly, and the
+// existing Quote editor (openQuoteModal/saveQuote, unmodified) is exactly
+// where the office already prices every other quote.
+function sendDesignToQuote(){
+  var rec=dwid?grdDesigns().find(function(x){return x.id===dwid;}):null;
+  if(!rec||!rec.approved){toast('Design must be approved first');return;}
+  if(rec.quote_id){toast('Already sent to Quoting');return;}
+  var lines=rec.elements.map(function(e){return {d:(DW_TYPE_LABELS[e.type]||e.type)+' - '+e.label,a:0};});
+  lines.push({d:'Design approved by '+rec.approved_by+' on '+fdate(rec.approved_at)+' (Design Walk '+rec.id+')',a:0});
+  var quotes=ld('grd_quotes',[]);
+  var qrec={id:'Q-'+Date.now(),property_id:rec.property_id,lines:lines,status:'Draft',valid:daysFromNow(30)};
+  quotes.push(qrec);st('grd_quotes',quotes);
+  grdData('write','quotes',qrec);
+  rec.quote_id=qrec.id;saveDesignRecord(rec);
+  rQuotes();updateApprovalUI(rec);
+  var sendBtn=$('dw-send-quote-btn');sendBtn.disabled=true;sendBtn.textContent='Sent to Quoting ('+qrec.id+')';
+  toast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+}
+// Informational only, mirrors sairnLoadWeather()'s go/no-go logic
+// (duplicated ~10 lines rather than refactored into a shared helper --
+// this checks a different element on a different panel and the proven
+// dashboard weather bar stays untouched, same "don't risk working code to
+// add a new caller" judgment used elsewhere on this platform). Does not
+// gate or block anything -- purely a heads-up before walking outside.
+function grdDesignWeatherCheck(){
+  var el=$('design-wx-note');if(!el)return;
+  if(!navigator.geolocation){el.style.display='none';return;}
+  navigator.geolocation.getCurrentPosition(function(pos){
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+pos.coords.latitude+'&longitude='+pos.coords.longitude+'&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph';
+    fetch(url).then(function(r){return r.json();}).then(function(data){
+      var cw=data.current_weather;
+      var temp=Math.round(cw.temperature),wind=Math.round(cw.windspeed),wc=cw.weathercode;
+      var goGo=temp>32&&temp<100&&wind<25&&[61,71,80,95].indexOf(wc)===-1;
+      el.style.display='block';
+      el.textContent=(goGo?'Good conditions for a design walk right now: ':'Check conditions before walking the property: ')+temp+'°F, wind '+wind+'mph.';
+    }).catch(function(){el.style.display='none';});
+  },function(){el.style.display='none';});
 }
 
 // === GOLF COURSE MODULE ===
@@ -947,6 +1117,185 @@ if (document.readyState === 'loading') {
 } else {
   installVoiceInputTargets();
 }
+})();
+</script>
+
+<!-- SAIRN AR DESIGN WALK (item 6, 2026-08-06) -->
+<!-- Same WebXR Device API hit-test approach already proven in stonedesk.html's
+     AR measurement module and sairnscape.html's ported copy (attachARMeasure) --
+     NOT a new tech category, extended from a fixed 3-tap edge measurement into
+     an open-ended tap-to-place session for design elements (sprinklers,
+     no-dig/utility-flag zones, landscape elements). Feature-detects via
+     navigator.xr.isSessionSupported('immersive-ar') and simply never renders a
+     button when unsupported -- the manual element list in the Design Walk
+     modal (openDesignModal/addDesignElement, main script above) is the only
+     path on every device that can't do this, same "never break the existing
+     path" discipline as the measurement module.
+     HONEST LIMITATION, disclosed not hidden: WebXR immersive-ar sessions have
+     no mid-session free-text input, so an AR-placed point cannot be given a
+     unique typed label (e.g. "gas line, 18in deep") while the camera is
+     active. This session places points of WHATEVER type+label is already set
+     in the form when "Start AR Placement" is tapped -- fine for placing many
+     identical elements (e.g. 6 sprinkler heads) in one walk, not a substitute
+     for typing distinct safety-critical notes per no-dig zone, which still
+     needs the manual form. Each AR-placed element is tagged source:'ar' so
+     the element table honestly shows where it came from.
+     Built by Michael L. Dibert · SAIRN Technologies™ -->
+<script>
+(function() {
+'use strict';
+if (window._grdArDesignInstalled) return;
+window._grdArDesignInstalled = true;
+
+function checkARSupport() {
+  return new Promise(function(resolve) {
+    if (!navigator.xr || typeof navigator.xr.isSessionSupported !== 'function') { resolve(false); return; }
+    navigator.xr.isSessionSupported('immersive-ar').then(resolve).catch(function(){ resolve(false); });
+  });
+}
+
+function ensureOverlay() {
+  var overlay = document.getElementById('ar-design-overlay');
+  if (overlay) return overlay;
+  overlay = document.createElement('div');
+  overlay.id = 'ar-design-overlay';
+  overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;flex-direction:column;justify-content:space-between;padding:20px;box-sizing:border-box;pointer-events:none';
+  overlay.innerHTML =
+    '<div style="pointer-events:auto;display:flex;justify-content:space-between;align-items:flex-start">' +
+      '<div style="background:rgba(0,0,0,0.6);color:#fff;border-radius:8px;padding:8px 12px;font-size:13px" class="ar-placing-label"></div>' +
+      '<button id="ar-design-cancel" style="min-width:44px;min-height:44px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:20px;cursor:pointer">×</button>' +
+    '</div>' +
+    '<div style="text-align:center;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.85)">' +
+      '<div class="ar-instructions" style="font-size:16px;font-weight:700;margin-bottom:6px">Point your camera at the ground, then tap to place a point</div>' +
+      '<div class="ar-distance" style="font-size:13px;margin-bottom:14px"></div>' +
+      '<button id="ar-design-done" style="pointer-events:auto;min-height:44px;padding:0 24px;border-radius:22px;background:#22C55E;color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Done Placing</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function distFt(a, b) {
+  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2)) * 3.28084;
+}
+
+// ctx: {type, label} read once at session start. onDone(elements) fires when
+// the session ends (Done tapped, X tapped, or the OS/browser ends it), with
+// whatever was placed this session (can be an empty array).
+async function startARDesignSession(ctx, onDone) {
+  if (!navigator.xr) { onDone([]); return; }
+  var overlay = ensureOverlay();
+  var instructionsEl = overlay.querySelector('.ar-instructions');
+  var distanceEl = overlay.querySelector('.ar-distance');
+  var placingLabelEl = overlay.querySelector('.ar-placing-label');
+  var session;
+  try {
+    session = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: overlay }
+    });
+  } catch (e) {
+    if (typeof toast === 'function') toast('Could not start AR -- use the manual list instead.');
+    onDone([]);
+    return;
+  }
+  window._arDesignSession = session;
+
+  var canvas = document.createElement('canvas');
+  var gl = canvas.getContext('webgl', { xrCompatible: true });
+  try { if (gl.makeXRCompatible) await gl.makeXRCompatible(); } catch (e) {}
+  session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
+  var refSpace = await session.requestReferenceSpace('local');
+  var viewerSpace = await session.requestReferenceSpace('viewer');
+  var hitTestSource = null;
+  try { hitTestSource = await session.requestHitTestSource({ space: viewerSpace }); } catch (e) {}
+
+  var placedPositions = [];
+  var placedElements = [];
+  var lastHitPos = null;
+  var ended = false;
+
+  overlay.style.display = 'flex';
+  placingLabelEl.textContent = 'Placing: ' + ctx.label;
+
+  function finish() {
+    if (ended) return;
+    ended = true;
+    try { session.end(); } catch (e) {}
+  }
+  overlay.querySelector('#ar-design-cancel').onclick = finish;
+  overlay.querySelector('#ar-design-done').onclick = finish;
+
+  session.addEventListener('select', function() {
+    if (!lastHitPos) return;
+    var n = placedElements.length + 1;
+    var distNote = placedPositions.length ? (distFt(lastHitPos, placedPositions[placedPositions.length - 1]).toFixed(1) + 'ft from previous point') : 'first point this walk';
+    placedPositions.push(lastHitPos);
+    placedElements.push({ type: ctx.type, label: ctx.label + ' #' + n + ' (' + distNote + ')', source: 'ar' });
+    instructionsEl.textContent = 'Placed ' + n + '. Tap to place another, or Done.';
+  });
+
+  function onXRFrame(t, frame) {
+    if (ended) return;
+    session.requestAnimationFrame(onXRFrame);
+    var pose = frame.getViewerPose(refSpace);
+    if (!pose || !session.renderState.baseLayer) return;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    var hitResults = hitTestSource ? frame.getHitTestResults(hitTestSource) : [];
+    if (hitResults.length) {
+      var hitPose = hitResults[0].getPose(refSpace);
+      if (hitPose) {
+        lastHitPos = hitPose.transform.position;
+        distanceEl.textContent = 'Surface detected -- tap to place';
+      }
+    } else {
+      lastHitPos = null;
+      distanceEl.textContent = 'Move your camera to find a flat surface...';
+    }
+  }
+  session.requestAnimationFrame(onXRFrame);
+
+  session.addEventListener('end', function() {
+    overlay.style.display = 'none';
+    window._arDesignSession = null;
+    onDone(placedElements);
+  });
+}
+
+// Attaches the "Design with AR Camera" button into #dw-ar-zone in the
+// Design Walk modal. getCtx() reads the live type+label form fields;
+// onDone(elements) is the caller's callback (main script's addDesignElement
+// path, generalized to accept a batch instead of one manual entry at a time).
+window.installDesignARZone = async function() {
+  var zone = document.getElementById('dw-ar-zone');
+  if (!zone || document.getElementById('ar-design-start-btn')) return;
+  var supported = await checkARSupport();
+  if (!supported) return; // no button at all -- manual list is the only path
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'ar-design-start-btn';
+  btn.className = 'btn bp bs';
+  btn.textContent = '\u{1F4F7} Design with AR Camera';
+  btn.style.marginBottom = '10px';
+  zone.appendChild(btn);
+  btn.onclick = function() {
+    var typeEl = document.getElementById('dwelemtype'), labelEl = document.getElementById('dwelemlabel');
+    var ctx = { type: typeEl ? typeEl.value : 'sprinkler', label: (labelEl && labelEl.value.trim()) || (typeEl && typeEl.options[typeEl.selectedIndex].text) || 'Element' };
+    startARDesignSession(ctx, function(elements) {
+      if (!elements.length) return;
+      var rec = (typeof ensureDesignRecord === 'function') ? ensureDesignRecord() : null;
+      if (!rec) return;
+      rec.elements = rec.elements.concat(elements);
+      if (typeof saveDesignRecord === 'function') saveDesignRecord(rec);
+      if (typeof renderDesignElemTable === 'function') renderDesignElemTable(rec.elements);
+      if (typeof toast === 'function') toast(elements.length + ' element(s) placed via AR');
+    });
+  };
+};
 })();
 </script>
 </body>

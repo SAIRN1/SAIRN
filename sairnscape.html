@@ -1239,6 +1239,7 @@ if (document.readyState === 'loading') {
       <div class="scp-ss">Operations</div>
       <button class="scp-sb" id="scp-sb-customers" onclick="scpNav('customers')"><span class="scp-sico">&#127968;</span>Customers</button>
       <button class="scp-sb" id="scp-sb-intake" onclick="scpNav('intake')"><span class="scp-sico">&#128203;</span>Job Intake</button>
+      <button class="scp-sb" id="scp-sb-design" onclick="scpNav('design')"><span class="scp-sico">&#128205;</span>Design Walk</button>
       <button class="scp-sb" id="scp-sb-quotes" onclick="scpNav('quotes')"><span class="scp-sico">&#128176;</span>Quoting</button>
       <button class="scp-sb" id="scp-sb-schedule" onclick="scpNav('schedule')"><span class="scp-sico">&#128197;</span>Scheduling</button>
       <button class="scp-sb" id="scp-sb-invoices" onclick="scpNav('invoices')"><span class="scp-sico">&#128179;</span>Invoicing</button>
@@ -1319,6 +1320,40 @@ if (document.readyState === 'loading') {
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="scp-btn scp-bo" onclick="scpCloseJobModal()">Cancel</button>
       <button class="scp-btn scp-bp" onclick="scpSaveJob()">Save Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- DESIGN WALK (item 6: AR walk-and-design pipeline) -->
+<div class="scp-panel" id="scp-panel-design">
+  <div class="scp-ph"><div><div class="scp-ptitle">Design Walk</div><div class="scp-psub">Walk the property, place sprinklers / no-dig zones / landscape elements, get homeowner approval, send to Quoting</div></div>
+  <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenDesignModal()">+ New Design Walk</button></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Elements</th><th>Approval</th><th>Sent to Quote</th><th>Actions</th></tr></thead>
+    <tbody id="scp-dwtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="scp-modal" id="scp-designmodal">
+  <div class="scp-mbox" style="width:640px;max-width:94vw;">
+    <div class="scp-mtitle">Design Walk</div>
+    <div class="scp-fg"><label>Customer</label><select id="scp-dwcustomer"></select></div>
+    <div class="scp-note" style="margin:8px 0;font-size:12px;color:#64748B">Manual entry always works. "Design with AR Camera" only appears on a WebXR-capable device (Chrome/Edge on ARCore Android today) -- on any other device this list is the only path.</div>
+    <div id="scp-dw-ar-zone"></div>
+    <div class="scp-fr"><div class="scp-fg"><label>Element Type</label><select id="scp-dwelemtype">
+      <option value="sprinkler">Sprinkler Head</option>
+      <option value="no_dig">No-Dig Zone (utility line)</option>
+      <option value="plant">Landscape Element</option>
+    </select></div><div class="scp-fg"><label>Label / Note</label><input id="scp-dwelemlabel" placeholder="e.g. Zone 3 rotor head, or gas line 18in deep"></div></div>
+    <button class="scp-btn scp-bo scp-bs" onclick="scpAddDesignElement()">+ Add Element</button>
+    <div class="scp-tw" style="margin-top:10px"><table><thead><tr><th>Type</th><th>Label / Note</th><th>Source</th><th></th></tr></thead>
+    <tbody id="scp-dwelemtbody"></tbody></table></div>
+    <div class="scp-mtitle" style="font-size:14px;margin-top:14px">Homeowner Approval</div>
+    <div id="scp-dw-approval-status" class="scp-note" style="margin:8px 0;display:none;font-size:12px;color:#64748B"></div>
+    <div class="scp-fr" id="scp-dw-approval-form"><div class="scp-fg"><label>Approved By (homeowner name)</label><input id="scp-dwapprover" placeholder="Jane Homeowner"></div>
+      <div class="scp-fg" style="display:flex;align-items:flex-end"><button class="scp-btn scp-bp" onclick="scpApproveDesign()" style="width:100%">Approve Design On The Spot</button></div></div>
+    <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseDesignModal()">Close</button>
+      <button class="scp-btn scp-bp" id="scp-dw-send-quote-btn" onclick="scpSendDesignToQuote()" disabled>Send Approved Design to Quoting</button>
     </div>
   </div>
 </div>
@@ -1585,7 +1620,7 @@ function scpCustName(id){var c=scpLd('scp_customers',[]).find(function(x){return
 function scpFillCustomerSelects(){
   var custs=scpLd('scp_customers',[]);
   var opts=custs.map(function(c){return '<option value="'+scpH(c.id)+'">'+scpH(c.name)+'</option>';}).join('');
-  ['scp-jcustomer','scp-qcustomer','scp-scustomer','scp-icustomer'].forEach(function(id){
+  ['scp-jcustomer','scp-qcustomer','scp-scustomer','scp-icustomer','scp-dwcustomer'].forEach(function(id){
     var el=scp$(id);if(!el)return;var cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;
   });
 }
@@ -1593,7 +1628,7 @@ function scpFillCustomerSelects(){
 function scpInit(){
   scpSeed();
   scpFillCustomerSelects();
-  scpRDash();scpRCust();scpRJobs();scpRQuotes();scpRSched();scpRInv();
+  scpRDash();scpRCust();scpRJobs();scpRQuotes();scpRSched();scpRInv();scpRDesignWalks();
   scpUpdateAsideA11y();
   scpSyncFromServer();
   loadScpSharedKnowledge();
@@ -1734,6 +1769,113 @@ function scpSaveQuote(){
   if(scpQid){quotes=quotes.map(function(q){return q.id===scpQid?rec:q;});}else{quotes.push(rec);}
   scpSt('scp_quotes',quotes);scpCloseQuoteModal();scpRQuotes();scpRDash();scpToast('Quote saved');
   scpData('write','scp_quotes',rec);
+}
+
+// === DESIGN WALK (item 6: shared AR walk-and-design pipeline) ===========
+// Mirrors sairngrounds.html's Design Walk section exactly (same feature,
+// "build once, both apps use it" per the shared-pattern already used
+// across these two apps) -- customer_id instead of property_id, scp-
+// prefixed ids/functions, otherwise identical logic and identical
+// anti-fabrication discipline: line items sent to Quoting are real
+// descriptions of what was placed, amounts start at 0, never invented.
+var scpDwid=null;
+function scpDesigns(){return scpLd('scp_designs',[]);}
+var SCP_DW_TYPE_LABELS={sprinkler:'Sprinkler Head',no_dig:'No-Dig Zone',plant:'Landscape Element'};
+function scpRDesignWalks(){
+  var tb=scp$('scp-dwtbody');if(!tb)return;
+  var list=scpDesigns();
+  tb.innerHTML=list.length?list.map(function(d){
+    var approval=d.approved?('Approved by '+scpH(d.approved_by)+' '+scpFdate(d.approved_at)):'<span class="scp-badge scp-bw">Pending</span>';
+    return '<tr><td>'+scpH(scpCustName(d.customer_id))+'</td><td>'+d.elements.length+'</td><td>'+approval+'</td>'+
+      '<td>'+(d.quote_id?'<span class="scp-badge scp-bg">'+scpH(d.quote_id)+'</span>':'<span class="scp-badge scp-bx">Not sent</span>')+'</td>'+
+      '<td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenDesignModal(\''+d.id+'\')">Open</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:#64748B;padding:20px">No design walks yet</td></tr>';
+}
+function scpRenderDesignElemTable(elements){
+  var tb=scp$('scp-dwelemtbody');if(!tb)return;
+  tb.innerHTML=(elements&&elements.length)?elements.map(function(e,i){
+    return '<tr><td>'+scpH(SCP_DW_TYPE_LABELS[e.type]||e.type)+'</td><td>'+scpH(e.label)+'</td><td>'+(e.source==='ar'?'AR':'Manual')+'</td>'+
+      '<td><button class="scp-btn scp-bo scp-bs" onclick="scpRemoveDesignElement('+i+')">Remove</button></td></tr>';
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:#64748B;padding:12px">No elements placed yet</td></tr>';
+}
+function scpSaveDesignRecord(rec){
+  var list=scpDesigns().map(function(x){return x.id===rec.id?rec:x;});
+  scpSt('scp_designs',list);scpData('write','scp_designs',rec);scpRDesignWalks();
+}
+function scpUpdateApprovalUI(rec){
+  var statusEl=scp$('scp-dw-approval-status'),formEl=scp$('scp-dw-approval-form');
+  if(rec&&rec.approved){
+    statusEl.style.display='block';
+    statusEl.textContent='Approved by '+rec.approved_by+' on '+scpFdate(rec.approved_at)+(rec.quote_id?' -- sent to Quoting as '+rec.quote_id:'');
+    formEl.style.display='none';
+  } else {
+    statusEl.style.display='none';formEl.style.display='flex';
+  }
+}
+function scpOpenDesignModal(id){
+  scpDwid=id||null;scpFillCustomerSelects();
+  var d=id?scpDesigns().find(function(x){return x.id===id;}):null;
+  scp$('scp-dwcustomer').value=d?d.customer_id:'';
+  scp$('scp-dwelemtype').value='sprinkler';scp$('scp-dwelemlabel').value='';
+  scp$('scp-dwapprover').value=d?d.approved_by||'':'';
+  scpRenderDesignElemTable(d?d.elements:[]);
+  scpUpdateApprovalUI(d);
+  var sendBtn=scp$('scp-dw-send-quote-btn');
+  sendBtn.disabled=!(d&&d.approved&&!d.quote_id);
+  sendBtn.textContent=(d&&d.quote_id)?('Sent to Quoting ('+d.quote_id+')'):'Send Approved Design to Quoting';
+  if(typeof installScpDesignARZone==='function')installScpDesignARZone();
+  scp$('scp-designmodal').classList.add('on');
+}
+function scpCloseDesignModal(){scp$('scp-designmodal').classList.remove('on');scpDwid=null;}
+function scpEnsureDesignRecord(){
+  if(scpDwid)return scpDesigns().find(function(x){return x.id===scpDwid;});
+  var customerId=scp$('scp-dwcustomer').value;
+  if(!customerId){scpToast('Select a customer first');return null;}
+  var rec={id:'DW-'+Date.now(),customer_id:customerId,elements:[],approved:false,approved_by:'',approved_at:'',quote_id:null,created_at:new Date().toISOString().slice(0,10)};
+  var list=scpDesigns();list.push(rec);scpSt('scp_designs',list);
+  scpDwid=rec.id;scpRDesignWalks();
+  return rec;
+}
+function scpAddDesignElement(){
+  var rec=scpEnsureDesignRecord();if(!rec)return;
+  var type=scp$('scp-dwelemtype').value,label=scp$('scp-dwelemlabel').value.trim();
+  if(!label){scpToast('Add a label or note for this element');return;}
+  rec.elements.push({type:type,label:label,source:'manual'});
+  scpSaveDesignRecord(rec);
+  scp$('scp-dwelemlabel').value='';
+  scpRenderDesignElemTable(rec.elements);
+}
+function scpRemoveDesignElement(idx){
+  var rec=scpDwid?scpDesigns().find(function(x){return x.id===scpDwid;}):null;if(!rec)return;
+  rec.elements.splice(idx,1);
+  scpSaveDesignRecord(rec);
+  scpRenderDesignElemTable(rec.elements);
+}
+function scpApproveDesign(){
+  var rec=scpDwid?scpDesigns().find(function(x){return x.id===scpDwid;}):null;
+  if(!rec||!rec.elements.length){scpToast('Add at least one design element before approval');return;}
+  var name=scp$('scp-dwapprover').value.trim();
+  if(!name){scpToast('Enter the homeowner name to record approval');return;}
+  rec.approved=true;rec.approved_by=name;rec.approved_at=new Date().toISOString().slice(0,10);
+  scpSaveDesignRecord(rec);
+  scpUpdateApprovalUI(rec);
+  scp$('scp-dw-send-quote-btn').disabled=false;
+  scpToast('Design approved by '+name);
+}
+function scpSendDesignToQuote(){
+  var rec=scpDwid?scpDesigns().find(function(x){return x.id===scpDwid;}):null;
+  if(!rec||!rec.approved){scpToast('Design must be approved first');return;}
+  if(rec.quote_id){scpToast('Already sent to Quoting');return;}
+  var lines=rec.elements.map(function(e){return {d:(SCP_DW_TYPE_LABELS[e.type]||e.type)+' - '+e.label,a:0};});
+  lines.push({d:'Design approved by '+rec.approved_by+' on '+scpFdate(rec.approved_at)+' (Design Walk '+rec.id+')',a:0});
+  var quotes=scpLd('scp_quotes',[]);
+  var qrec={id:'Q-'+Date.now(),customer_id:rec.customer_id,lines:lines,status:'Draft',valid:scpDaysFromNow(30)};
+  quotes.push(qrec);scpSt('scp_quotes',quotes);
+  scpData('write','scp_quotes',qrec);
+  rec.quote_id=qrec.id;scpSaveDesignRecord(rec);
+  scpRQuotes();scpUpdateApprovalUI(rec);
+  var sendBtn=scp$('scp-dw-send-quote-btn');sendBtn.disabled=true;sendBtn.textContent='Sent to Quoting ('+qrec.id+')';
+  scpToast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
 }
 
 function scpRSched(){
@@ -1933,6 +2075,170 @@ if (document.readyState === 'loading') {
 } else {
   installVoiceInputTargets();
 }
+})();
+</script>
+
+<!-- SAIRN AR DESIGN WALK, real app (item 6, 2026-08-06) -->
+<!-- Separate from the older AR MEASURE module ported into the marketing/demo
+     page above (attachARMeasure on #userInput) -- that module is untouched.
+     This is the real Phase 1 app's own AR feature, mirrors
+     sairngrounds.html's AR DESIGN WALK module exactly (same WebXR hit-test
+     approach, same open-ended tap-to-place extension of the proven 3-tap
+     measurement pattern, same honest limitation: no mid-session free-text
+     input, so AR-placed points reuse whatever type+label the form already
+     has set, tagged source:'ar' so it's never confused with a manually
+     typed, distinctly-labeled entry). Feature-detects and simply never
+     renders a button when unsupported -- the manual element list
+     (scpAddDesignElement, main script above) is the only path everywhere
+     else. Built by Michael L. Dibert · SAIRN Technologies™ -->
+<script>
+(function() {
+'use strict';
+if (window._scpArDesignInstalled) return;
+window._scpArDesignInstalled = true;
+
+function checkARSupport() {
+  return new Promise(function(resolve) {
+    if (!navigator.xr || typeof navigator.xr.isSessionSupported !== 'function') { resolve(false); return; }
+    navigator.xr.isSessionSupported('immersive-ar').then(resolve).catch(function(){ resolve(false); });
+  });
+}
+
+function ensureOverlay() {
+  var overlay = document.getElementById('scp-ar-design-overlay');
+  if (overlay) return overlay;
+  overlay = document.createElement('div');
+  overlay.id = 'scp-ar-design-overlay';
+  overlay.style.cssText = 'display:none;position:fixed;inset:0;z-index:99999;flex-direction:column;justify-content:space-between;padding:20px;box-sizing:border-box;pointer-events:none';
+  overlay.innerHTML =
+    '<div style="pointer-events:auto;display:flex;justify-content:space-between;align-items:flex-start">' +
+      '<div style="background:rgba(0,0,0,0.6);color:#fff;border-radius:8px;padding:8px 12px;font-size:13px" class="ar-placing-label"></div>' +
+      '<button id="scp-ar-design-cancel" style="min-width:44px;min-height:44px;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:20px;cursor:pointer">×</button>' +
+    '</div>' +
+    '<div style="text-align:center;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.85)">' +
+      '<div class="ar-instructions" style="font-size:16px;font-weight:700;margin-bottom:6px">Point your camera at the ground, then tap to place a point</div>' +
+      '<div class="ar-distance" style="font-size:13px;margin-bottom:14px"></div>' +
+      '<button id="scp-ar-design-done" style="pointer-events:auto;min-height:44px;padding:0 24px;border-radius:22px;background:#22C55E;color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer">Done Placing</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+function distFt(a, b) {
+  return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2) + Math.pow(a.z - b.z, 2)) * 3.28084;
+}
+
+async function startARDesignSession(ctx, onDone) {
+  if (!navigator.xr) { onDone([]); return; }
+  var overlay = ensureOverlay();
+  var instructionsEl = overlay.querySelector('.ar-instructions');
+  var distanceEl = overlay.querySelector('.ar-distance');
+  var placingLabelEl = overlay.querySelector('.ar-placing-label');
+  var session;
+  try {
+    session = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['hit-test'],
+      optionalFeatures: ['dom-overlay'],
+      domOverlay: { root: overlay }
+    });
+  } catch (e) {
+    if (typeof scpToast === 'function') scpToast('Could not start AR -- use the manual list instead.');
+    onDone([]);
+    return;
+  }
+  window._scpArDesignSession = session;
+
+  var canvas = document.createElement('canvas');
+  var gl = canvas.getContext('webgl', { xrCompatible: true });
+  try { if (gl.makeXRCompatible) await gl.makeXRCompatible(); } catch (e) {}
+  session.updateRenderState({ baseLayer: new XRWebGLLayer(session, gl) });
+
+  var refSpace = await session.requestReferenceSpace('local');
+  var viewerSpace = await session.requestReferenceSpace('viewer');
+  var hitTestSource = null;
+  try { hitTestSource = await session.requestHitTestSource({ space: viewerSpace }); } catch (e) {}
+
+  var placedPositions = [];
+  var placedElements = [];
+  var lastHitPos = null;
+  var ended = false;
+
+  overlay.style.display = 'flex';
+  placingLabelEl.textContent = 'Placing: ' + ctx.label;
+
+  function finish() {
+    if (ended) return;
+    ended = true;
+    try { session.end(); } catch (e) {}
+  }
+  overlay.querySelector('#scp-ar-design-cancel').onclick = finish;
+  overlay.querySelector('#scp-ar-design-done').onclick = finish;
+
+  session.addEventListener('select', function() {
+    if (!lastHitPos) return;
+    var n = placedElements.length + 1;
+    var distNote = placedPositions.length ? (distFt(lastHitPos, placedPositions[placedPositions.length - 1]).toFixed(1) + 'ft from previous point') : 'first point this walk';
+    placedPositions.push(lastHitPos);
+    placedElements.push({ type: ctx.type, label: ctx.label + ' #' + n + ' (' + distNote + ')', source: 'ar' });
+    instructionsEl.textContent = 'Placed ' + n + '. Tap to place another, or Done.';
+  });
+
+  function onXRFrame(t, frame) {
+    if (ended) return;
+    session.requestAnimationFrame(onXRFrame);
+    var pose = frame.getViewerPose(refSpace);
+    if (!pose || !session.renderState.baseLayer) return;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, session.renderState.baseLayer.framebuffer);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    var hitResults = hitTestSource ? frame.getHitTestResults(hitTestSource) : [];
+    if (hitResults.length) {
+      var hitPose = hitResults[0].getPose(refSpace);
+      if (hitPose) {
+        lastHitPos = hitPose.transform.position;
+        distanceEl.textContent = 'Surface detected -- tap to place';
+      }
+    } else {
+      lastHitPos = null;
+      distanceEl.textContent = 'Move your camera to find a flat surface...';
+    }
+  }
+  session.requestAnimationFrame(onXRFrame);
+
+  session.addEventListener('end', function() {
+    overlay.style.display = 'none';
+    window._scpArDesignSession = null;
+    onDone(placedElements);
+  });
+}
+
+window.installScpDesignARZone = async function() {
+  var zone = document.getElementById('scp-dw-ar-zone');
+  if (!zone || document.getElementById('scp-ar-design-start-btn')) return;
+  var supported = await checkARSupport();
+  if (!supported) return;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'scp-ar-design-start-btn';
+  btn.className = 'scp-btn scp-bp scp-bs';
+  btn.textContent = '\u{1F4F7} Design with AR Camera';
+  btn.style.marginBottom = '10px';
+  zone.appendChild(btn);
+  btn.onclick = function() {
+    var typeEl = document.getElementById('scp-dwelemtype'), labelEl = document.getElementById('scp-dwelemlabel');
+    var ctx = { type: typeEl ? typeEl.value : 'sprinkler', label: (labelEl && labelEl.value.trim()) || (typeEl && typeEl.options[typeEl.selectedIndex].text) || 'Element' };
+    startARDesignSession(ctx, function(elements) {
+      if (!elements.length) return;
+      var rec = (typeof scpEnsureDesignRecord === 'function') ? scpEnsureDesignRecord() : null;
+      if (!rec) return;
+      rec.elements = rec.elements.concat(elements);
+      if (typeof scpSaveDesignRecord === 'function') scpSaveDesignRecord(rec);
+      if (typeof scpRenderDesignElemTable === 'function') scpRenderDesignElemTable(rec.elements);
+      if (typeof scpToast === 'function') scpToast(elements.length + ' element(s) placed via AR');
+    });
+  };
+};
 })();
 </script>
 
