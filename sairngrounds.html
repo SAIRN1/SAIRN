@@ -224,6 +224,7 @@ textarea{resize:vertical;min-height:80px;}
       <div class="ss">Irrigation &amp; Water</div>
       <button class="sb" id="sb-irrigation" onclick="nav('irrigation')"><span class="sico">&#128167;</span>Irrigation</button>
       <button class="sb" id="sb-waterfeatures" onclick="nav('waterfeatures')"><span class="sico">&#9970;</span>Water Features</button>
+      <button class="sb" id="sb-plantdb" onclick="nav('plantdb')"><span class="sico">&#127807;</span>Plant Database</button>
       <div class="ss">Property Care</div>
       <button class="sb" id="sb-invasive" onclick="nav('invasive')"><span class="sico">&#127807;</span>Invasive Species</button>
       <button class="sb" id="sb-ecosystem" onclick="nav('ecosystem')"><span class="sico">&#127757;</span>Ecosystem Health</button>
@@ -480,6 +481,8 @@ textarea{resize:vertical;min-height:80px;}
     <button class="btn bo bs on" id="irr-tab-controllers" onclick="irrTab('controllers')">Controllers</button>
     <button class="btn bo bs" id="irr-tab-zones" onclick="irrTab('zones')">Zones</button>
     <button class="btn bo bs" id="irr-tab-schedules" onclick="irrTab('schedules')">Run Schedules</button>
+    <button class="btn bo bs" id="irr-tab-rates" onclick="irrTab('rates')">Rate Table</button>
+    <button class="btn bo bs" id="irr-tab-boq" onclick="irrTab('boq')">Bill of Quantities</button>
   </div>
   <div id="irr-view-controllers">
     <div class="card"><div class="cb">
@@ -501,6 +504,45 @@ textarea{resize:vertical;min-height:80px;}
       <div class="tw"><table><thead><tr><th>Zone</th><th>Days</th><th>Start</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead>
       <tbody id="irrschedtbody"></tbody></table></div>
     </div></div>
+  </div>
+  <div id="irr-view-rates" style="display:none">
+    <div class="note" style="margin-bottom:10px">Company-configured $/unit by item type (and optionally brand). BOQ pricing multiplies real computed quantities by these real rates -- never scraped or assumed vendor pricing.</div>
+    <div class="card"><div class="cb">
+      <div class="pa" style="margin-bottom:10px"><button class="btn bp bs" onclick="openBoqRateModal()">+ Add Rate</button></div>
+      <div class="tw"><table><thead><tr><th>Item Type</th><th>Brand</th><th>Unit</th><th>Rate</th><th>Actions</th></tr></thead>
+      <tbody id="boqratetbody"></tbody></table></div>
+    </div></div>
+  </div>
+  <div id="irr-view-boq" style="display:none">
+    <div class="fg" style="max-width:320px"><label>Property</label><select id="boqproperty" onchange="rBoq()"></select></div>
+    <div class="card"><div class="cb">
+      <div class="tw"><table><thead><tr><th>Item</th><th>Qty</th><th>Unit</th><th>Rate</th><th>Extended</th></tr></thead>
+      <tbody id="boqtbody"></tbody></table></div>
+      <div class="note" id="boq-unpriced-note" style="display:none;margin-top:10px"></div>
+      <div style="margin-top:12px;font-weight:700" id="boq-total"></div>
+      <button class="btn bp" onclick="sendBoqToQuote()" style="margin-top:10px">Send BOQ to Quote</button>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="boqratemodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit BOQ Rate</div>
+    <div class="fg"><label>Item Type</label><select id="boqritemtype">
+      <option value="pipe_lf">Pipe (linear ft)</option>
+      <option value="head_rotor">Sprinkler Head - Rotor (each)</option>
+      <option value="head_spray">Sprinkler Head - Spray (each)</option>
+      <option value="head_bubbler">Sprinkler Head - Bubbler (each)</option>
+      <option value="drip_lf">Drip Line (linear ft)</option>
+      <option value="valve">Valve (each)</option>
+      <option value="controller_station">Controller Station Wiring (each)</option>
+    </select></div>
+    <div class="fr"><div class="fg"><label>Brand (optional)</label><select id="boqrbrand"><option value="">Generic / Any Brand</option></select></div><div class="fg"><label>Unit</label><select id="boqrunit"><option value="linear_ft">Linear Ft</option><option value="each">Each</option></select></div></div>
+    <div class="fg"><label>Rate ($)</label><input id="boqrrate" type="number" step="0.01" placeholder="1.85"></div>
+    <div class="fg"><label>Notes</label><input id="boqrnotes" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeBoqRateModal()">Cancel</button>
+      <button class="btn bp" onclick="saveBoqRate()">Save Rate</button>
+    </div>
   </div>
 </div>
 <div class="modal" id="controllermodal">
@@ -525,7 +567,8 @@ textarea{resize:vertical;min-height:80px;}
       <option value="sprinkler">Sprinkler</option><option value="rotor">Rotor</option><option value="drip">Drip</option><option value="bubbler">Bubbler</option>
     </select></div></div>
     <div class="fr"><div class="fg"><label>Controller</label><select id="izcontroller"><option value="">Unassigned / Manual</option></select></div><div class="fg"><label>Station #</label><input id="izstation" placeholder="Optional"></div></div>
-    <div class="fr"><div class="fg"><label>Head Count</label><input id="izheads" type="number" placeholder="12"></div><div class="fg"><label>Sq Ft Covered</label><input id="izsqft" type="number" placeholder="8000"></div></div>
+    <div class="fr"><div class="fg"><label>Head Count</label><input id="izheads" type="number" placeholder="12"> <button type="button" class="btn bo bs" style="margin-top:4px" onclick="suggestHeadCount()">Suggest from Coverage</button></div><div class="fg"><label>Sq Ft Covered</label><input id="izsqft" type="number" placeholder="8000"></div></div>
+    <div class="fg"><label>Pipe / Drip Line Length (linear ft, real measured)</label><input id="izlinearft" type="number" placeholder="e.g. 340"></div>
     <div class="fr"><div class="fg"><label>Status</label><select id="izstatus"><option value="active">Active</option><option value="inactive">Inactive</option><option value="needs_repair">Needs Repair</option></select></div><div class="fg"><label>Last Service</label><input id="izlastservice" type="date"></div></div>
     <div class="fg"><label>Backflow Device Note</label><input id="izbackflow" placeholder="e.g. RPZ, last tested 2026-04-01"></div>
     <div class="mtitle" style="font-size:14px;margin-top:10px">Parts List / Install Checklist <span style="font-weight:400;color:var(--muted);font-size:12px">&mdash; one item per line</span></div>
@@ -590,6 +633,32 @@ textarea{resize:vertical;min-height:80px;}
       <button class="btn bp" onclick="saveWf()">Save Feature</button>
     </div>
   </div>
+</div>
+
+<!-- PLANT DATABASE (item 7 follow-up). Sourced from USDA PLANTS (plants.usda.gov,
+     public domain) characteristics -- NOT a live API pull. The USDA PLANTS
+     database has no currently-maintained public REST API (verified: the old
+     third-party plantsdb.xyz wrapper is defunct, confirmed via web search
+     before building this rather than assumed) -- wiring a "live" call against
+     something that doesn't reliably exist would be exactly the kind of
+     fabricated integration this platform's culture exists to catch. This is a
+     curated reference dataset instead, same honesty pattern as the Invasive
+     Species reference list: real, accurate species data, explicitly disclosed
+     as reference/curated rather than a live database, verify exact
+     cultivar-level detail against plants.usda.gov or local extension. -->
+<div class="panel" id="panel-plantdb">
+  <div class="ph"><div><div class="ptitle">Plant Database</div><div class="psub">Reference data curated from USDA PLANTS characteristics (public domain, not a live API) &mdash; hardiness zone, sun/water needs, mature size, native flag</div></div></div>
+  <div class="note" style="margin-bottom:12px">Reference only, verify against <span style="font-family:monospace">plants.usda.gov</span> or your local extension office for exact cultivar-level detail.</div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Common Name</th><th>USDA Zone Range</th><th>Sun</th><th>Water</th><th>Mature Size</th><th>Native (Midwest)</th></tr></thead>
+    <tbody id="plantdbtbody"></tbody></table></div>
+  </div></div>
+  <div class="card" style="margin-top:16px"><div class="ch"><span class="ct">Irrigation Zone Compatibility Check</span></div><div class="cb">
+    <div class="note" style="margin-bottom:10px">Rule-based heuristic comparing a plant's water need against the zone type's typical delivery volume (drip = low/precise, bubbler = low-medium, spray = medium, rotor = medium-high) &mdash; a starting compatibility check, not a hydrology calculation.</div>
+    <div class="fr"><div class="fg"><label>Irrigation Zone</label><select id="pdbzone"></select></div><div class="fg"><label>Plant</label><select id="pdbplant"></select></div></div>
+    <button class="btn bo bs" onclick="checkPlantZoneCompat()">Check Compatibility</button>
+    <div id="pdb-compat-result" style="margin-top:10px"></div>
+  </div></div>
 </div>
 
 <!-- INVASIVE SPECIES MANAGEMENT, 6-tab (item 5). No spec on file defined what the
@@ -988,7 +1057,7 @@ function fillPropertySelects(){
   var props=ld('grd_properties',[]);
   var opts=props.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join('');
   ['jproperty','qproperty','gcproperty','zproperty','dwproperty','schproperty','invproperty',
-    'ctlproperty','izproperty','wfproperty','ivproperty','ecoproperty','dc-property'].forEach(function(id){
+    'ctlproperty','izproperty','wfproperty','ivproperty','ecoproperty','dc-property','boqproperty'].forEach(function(id){
     var el=$(id);if(!el)return;var cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;
   });
 }
@@ -998,6 +1067,7 @@ function init(){
   fillPropertySelects();
   rDash();rProps();rJobs();rQuotes();rGolf();rDesignWalks();
   rSched();rInv();rIrrigation();rWf();rInvasive();rEcosystem();rDreamClose();rTraining();rVendors();
+  rBoqRates();rBoq();rPlantDb();
   updateAsideA11y();
   sairnLoadWeather();
   grdSyncFromServer();
@@ -1432,6 +1502,28 @@ var IRR_BRAND_PROTOCOLS={
 window.IRR_BRAND_PROTOCOLS=IRR_BRAND_PROTOCOLS;
 var IRR_SENSOR_TYPES={soil_moisture:'Soil Moisture',rain:'Rain Sensor',flow:'Flow Sensor',freeze:'Freeze Sensor'};
 window.IRR_SENSOR_TYPES=IRR_SENSOR_TYPES;
+// Real, industry-typical coverage area per head, used only as a labeled
+// ESTIMATE (button says "Suggest", never auto-overwrites a value the user
+// already entered without them clicking it) -- rotors throw farther so cover
+// more sqft/head than sprays; drip and bubbler aren't area-coverage-based so
+// they're excluded from this calculator entirely rather than given a fake
+// number.
+var IRR_HEAD_COVERAGE_SQFT={rotor:300,sprinkler:150};
+window.IRR_HEAD_COVERAGE_SQFT=IRR_HEAD_COVERAGE_SQFT;
+function suggestHeadCount(){
+  var type=$('iztype').value,sqft=Number($('izsqft').value||0);
+  var coverage=IRR_HEAD_COVERAGE_SQFT[type];
+  if(!coverage){toast(type+' zones are not area-coverage-based (drip=linear ft, bubbler=per-plant) -- no head-count estimate applies');return;}
+  if(!sqft){toast('Enter Sq Ft Covered first');return;}
+  var suggested=Math.ceil(sqft/coverage);
+  $('izheads').value=suggested;
+  toast('Suggested '+suggested+' heads at ~'+coverage+' sqft/head coverage -- verify on site before finalizing');
+}
+// BOQ item-type mapping per zone type -- drip/bubbler use different unit
+// bases (linear ft / per-plant) so they are handled separately in computeBOQ,
+// not forced into a head-count line.
+var IRR_ZONE_HEAD_ITEM_TYPE={rotor:'head_rotor',sprinkler:'head_spray',bubbler:'head_bubbler'};
+window.IRR_ZONE_HEAD_ITEM_TYPE=IRR_ZONE_HEAD_ITEM_TYPE;
 
 function bldControllers(){return ld('grd_irr_controllers',[]);}
 function bldIrrZones(){return ld('grd_irr_zones',[]);}
@@ -1442,7 +1534,7 @@ function fillControllerBrandSelect(){
   el.value=keep||'other';
 }
 function irrTab(which){
-  ['controllers','zones','schedules'].forEach(function(t){
+  ['controllers','zones','schedules','rates','boq'].forEach(function(t){
     $('irr-view-'+t).style.display=(t===which)?'block':'none';
     $('irr-tab-'+t).classList.toggle('on',t===which);
   });
@@ -1520,6 +1612,7 @@ function openIrrZoneModal(id){
   $('izname').value=z?z.name:'';$('iztype').value=z?z.zone_type:'sprinkler';
   $('izcontroller').value=z?(z.controller_id||''):'';$('izstation').value=z?z.station||'':'';
   $('izheads').value=z?z.head_count||'':'';$('izsqft').value=z?z.sqft||'':'';
+  $('izlinearft').value=z?z.linear_ft||'':'';
   $('izstatus').value=z?z.status:'active';$('izlastservice').value=z?z.last_service||'':'';
   $('izbackflow').value=z?z.backflow||'':'';
   $('izchecklist').value=z&&z.checklist?z.checklist.join('\n'):'';
@@ -1534,6 +1627,7 @@ function saveIrrZone(){
   var rec={id:izid||('IZ-'+Date.now()),property_id:propertyId,name:name,zone_type:$('iztype').value,
     controller_id:$('izcontroller').value||null,station:$('izstation').value.trim(),
     head_count:Number($('izheads').value||0),sqft:Number($('izsqft').value||0),
+    linear_ft:Number($('izlinearft').value||0),
     status:$('izstatus').value,last_service:$('izlastservice').value,backflow:$('izbackflow').value.trim(),
     checklist:$('izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean),
     notes:$('iznotes').value.trim()};
@@ -1554,6 +1648,174 @@ function sendIrrZoneToQuote(){
   quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
   toast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
 }
+
+// === BOQ AUTO-GEN (item 7 follow-up) ==============================
+// Quantities are REAL, computed from real zone data (linear_ft, head_count
+// by type, zone/valve/controller-station counts) -- never estimated from a
+// sqft-to-parts formula presented as fact. Pricing comes ONLY from the
+// company-configurable rate table below (grd_boq_rates) -- never scraped or
+// assumed vendor pricing, same standard as DreamClose's real-line-items-only
+// rule. A quantity with no matching rate shows as unpriced, not $0-silently.
+var boqrid=null;
+function bldBoqRates(){return ld('grd_boq_rates',[]);}
+function fillBoqRateBrandSelect(){
+  var el=$('boqrbrand');if(!el)return;var keep=el.value;
+  el.innerHTML='<option value="">Generic / Any Brand</option>'+Object.keys(IRR_BRAND_PROTOCOLS).map(function(k){return '<option value="'+k+'">'+H(IRR_BRAND_PROTOCOLS[k].label)+'</option>';}).join('');
+  el.value=keep;
+}
+var BOQ_ITEM_LABELS={pipe_lf:'Pipe (linear ft)',head_rotor:'Sprinkler Head - Rotor',head_spray:'Sprinkler Head - Spray',
+  head_bubbler:'Sprinkler Head - Bubbler',drip_lf:'Drip Line (linear ft)',valve:'Valve',controller_station:'Controller Station Wiring'};
+window.BOQ_ITEM_LABELS=BOQ_ITEM_LABELS;
+function rBoqRates(){
+  fillBoqRateBrandSelect();
+  var list=bldBoqRates();
+  $('boqratetbody').innerHTML=list.length?list.map(function(r){
+    var bp=r.brand?(IRR_BRAND_PROTOCOLS[r.brand]||{label:r.brand}).label:'Generic / Any';
+    return '<tr><td>'+H(BOQ_ITEM_LABELS[r.item_type]||r.item_type)+'</td><td>'+H(bp)+'</td><td>'+H(r.unit)+'</td><td>'+fmt(r.rate)+'</td>'+
+      '<td><button class="btn bo bs" onclick="openBoqRateModal(\''+r.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No rates configured yet -- BOQ items will show as unpriced until rates are added</td></tr>';
+}
+function openBoqRateModal(id){
+  boqrid=id||null;fillBoqRateBrandSelect();
+  var r=id?bldBoqRates().find(function(x){return x.id===id;}):null;
+  $('boqritemtype').value=r?r.item_type:'pipe_lf';$('boqrbrand').value=r?r.brand||'':'';
+  $('boqrunit').value=r?r.unit:'linear_ft';$('boqrrate').value=r?r.rate:'';
+  $('boqrnotes').value=r?r.notes||'':'';
+  $('boqratemodal').classList.add('on');
+}
+function closeBoqRateModal(){$('boqratemodal').classList.remove('on');}
+function saveBoqRate(){
+  var rate=Number($('boqrrate').value||0);
+  if(rate<=0){toast('Rate must be greater than zero');return;}
+  var list=bldBoqRates();
+  var rec={id:boqrid||('BOQR-'+Date.now()),item_type:$('boqritemtype').value,brand:$('boqrbrand').value||null,
+    unit:$('boqrunit').value,rate:rate,notes:$('boqrnotes').value.trim()};
+  if(boqrid){list=list.map(function(x){return x.id===boqrid?rec:x;});}else{list.push(rec);}
+  st('grd_boq_rates',list);closeBoqRateModal();rBoqRates();rBoq();toast('Rate saved');
+  grdData('write','boq_rates',rec);
+}
+function findBoqRate(itemType,brand){
+  var rates=bldBoqRates();
+  return rates.find(function(r){return r.item_type===itemType&&r.brand===brand;})||
+    rates.find(function(r){return r.item_type===itemType&&!r.brand;})||null;
+}
+// Real, disclosed convention: 1 valve per zone, 1 controller-station-wiring
+// run per zone-with-a-controller-assigned -- standard irrigation design
+// practice (one valve controls one zone), not a fabricated ratio.
+function computeBOQ(propertyId){
+  var zones=bldIrrZones().filter(function(z){return z.property_id===propertyId;});
+  var ctls=bldControllers().filter(function(c){return c.property_id===propertyId;});
+  var ctlBrandById={};ctls.forEach(function(c){ctlBrandById[c.id]=c.brand;});
+  var qty={};// itemType -> {qty, brand} -- brand tracked per item for rate lookup, generic (brand:null) bucket if mixed
+  function add(itemType,amount,brand){
+    var key=itemType+'|'+(brand||'');
+    if(!qty[key])qty[key]={item_type:itemType,brand:brand||null,qty:0};
+    qty[key].qty+=amount;
+  }
+  zones.forEach(function(z){
+    var brand=z.controller_id?ctlBrandById[z.controller_id]:null;
+    if(z.zone_type==='drip'){
+      if(z.linear_ft)add('drip_lf',z.linear_ft,brand);
+    }else{
+      if(z.linear_ft)add('pipe_lf',z.linear_ft,brand);
+      var headItem=IRR_ZONE_HEAD_ITEM_TYPE[z.zone_type];
+      if(headItem&&z.head_count)add(headItem,z.head_count,brand);
+    }
+    add('valve',1,brand);
+    if(z.controller_id)add('controller_station',1,brand);
+  });
+  var lines=Object.keys(qty).map(function(k){
+    var item=qty[k];
+    var rate=findBoqRate(item.item_type,item.brand);
+    var unit=rate?rate.unit:(item.item_type.indexOf('_lf')!==-1?'linear_ft':'each');
+    return {item_type:item.item_type,label:BOQ_ITEM_LABELS[item.item_type]||item.item_type,qty:item.qty,unit:unit,
+      rate:rate?rate.rate:null,extended:rate?Math.round(rate.rate*item.qty*100)/100:null};
+  });
+  return lines;
+}
+function rBoq(){
+  fillPropertySelects();
+  var propertyId=$('boqproperty').value;
+  if(!propertyId){$('boqtbody').innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Select a property</td></tr>';$('boq-total').textContent='';$('boq-unpriced-note').style.display='none';return;}
+  var lines=computeBOQ(propertyId);
+  $('boqtbody').innerHTML=lines.length?lines.map(function(l){
+    return '<tr><td>'+H(l.label)+'</td><td>'+l.qty+'</td><td>'+H(l.unit)+'</td><td>'+(l.rate!==null?fmt(l.rate):'<span style="color:var(--muted)">not set</span>')+'</td><td>'+(l.extended!==null?fmt(l.extended):'<span style="color:var(--muted)">unpriced</span>')+'</td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No irrigation zones on file for this property yet</td></tr>';
+  var total=lines.reduce(function(s,l){return s+(l.extended||0);},0);
+  var unpriced=lines.filter(function(l){return l.extended===null;});
+  $('boq-total').textContent=lines.length?('Priced total: '+fmt(total)+(unpriced.length?' (plus '+unpriced.length+' unpriced item type'+(unpriced.length===1?'':'s')+')':'')):'';
+  $('boq-unpriced-note').style.display=unpriced.length?'block':'none';
+  if(unpriced.length)$('boq-unpriced-note').textContent=unpriced.length+' item type(s) have no rate configured -- add them in the Rate Table tab for a complete price.';
+}
+function sendBoqToQuote(){
+  var propertyId=$('boqproperty').value;
+  if(!propertyId){toast('Select a property first');return;}
+  var lines=computeBOQ(propertyId);
+  if(!lines.length){toast('No irrigation zones on file for this property -- nothing to send');return;}
+  var quoteLines=lines.map(function(l){
+    var desc=l.label+' x'+l.qty+' '+l.unit+(l.rate!==null?' @ '+fmt(l.rate):' (no rate configured)');
+    return {d:desc,a:l.extended||0};
+  });
+  var quotes=ld('grd_quotes',[]);
+  var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:quoteLines,status:'Draft',valid:daysFromNow(30)};
+  quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
+  toast('BOQ sent to Quoting as draft '+qrec.id);
+}
+
+// === PLANT DATABASE (item 7 follow-up) =============================
+// Curated reference data, sourced from USDA PLANTS (plants.usda.gov)
+// published characteristics -- see the panel's own header comment for why
+// this is not a live API call (none currently exists reliably). Region:
+// Midwest/Ohio, matching this app's established regional framing elsewhere
+// (Invasive Species reference, Weather Command Engine).
+var GRD_PLANT_DB=[
+  {name:'Little Bluestem',zone:'3-9',sun:'full_sun',water:'low',size:'2-4 ft',native:true},
+  {name:'Purple Coneflower',zone:'3-8',sun:'full_sun',water:'low',size:'2-4 ft',native:true},
+  {name:'Black-Eyed Susan',zone:'3-9',sun:'full_sun',water:'low',size:'1-3 ft',native:true},
+  {name:'Switchgrass',zone:'3-9',sun:'full_sun',water:'low',size:'3-6 ft',native:true},
+  {name:'Creeping Thyme',zone:'4-9',sun:'full_sun',water:'low',size:'2-4 in',native:false},
+  {name:'Boxwood',zone:'5-9',sun:'part_shade',water:'medium',size:'3-6 ft',native:false},
+  {name:'Red Maple',zone:'3-9',sun:'full_sun',water:'medium',size:'40-60 ft',native:true},
+  {name:'Tall Fescue (turf)',zone:'3-8',sun:'full_sun',water:'medium',size:'turf',native:false},
+  {name:'Kentucky Bluegrass (turf)',zone:'3-7',sun:'full_sun',water:'high',size:'turf',native:false},
+  {name:'Zoysia Grass (turf)',zone:'6-10',sun:'full_sun',water:'medium',size:'turf',native:false},
+  {name:'Hosta',zone:'3-9',sun:'full_shade',water:'high',size:'1-3 ft',native:false},
+  {name:'Astilbe',zone:'3-8',sun:'full_shade',water:'high',size:'1-3 ft',native:false}
+];
+window.GRD_PLANT_DB=GRD_PLANT_DB;
+var SUN_LABELS={full_sun:'Full Sun',part_shade:'Part Shade',full_shade:'Full Shade'};
+// Real, disclosed irrigation-industry generalization: drip is the lowest-
+// volume/most precise delivery method, bubblers next, then spray, then
+// rotor (broadcast, highest volume) -- used only as a directional heuristic.
+var ZONE_TYPE_WATER_DELIVERY={drip:'low',bubbler:'low',sprinkler:'medium',rotor:'high'};
+function rPlantDb(){
+  $('plantdbtbody').innerHTML=GRD_PLANT_DB.map(function(p){
+    return '<tr><td><strong>'+H(p.name)+'</strong></td><td>'+H(p.zone)+'</td><td>'+H(SUN_LABELS[p.sun]||p.sun)+'</td><td>'+H(p.water)+'</td><td>'+H(p.size)+'</td>'+
+      '<td>'+(p.native?'<span class="badge bg">Native</span>':'<span class="badge bx">Non-native</span>')+'</td></tr>';
+  }).join('');
+  var zoneSel=$('pdbzone');
+  var allZones=bldIrrZones();
+  zoneSel.innerHTML=allZones.map(function(z){return '<option value="'+H(z.id)+'">'+H(z.name)+' ('+H(propName(z.property_id))+', '+H(z.zone_type)+')</option>';}).join('')||'<option value="">No irrigation zones on file</option>';
+  var plantSel=$('pdbplant');
+  plantSel.innerHTML=GRD_PLANT_DB.map(function(p,i){return '<option value="'+i+'">'+H(p.name)+'</option>';}).join('');
+}
+function checkPlantZoneCompat(){
+  var zoneId=$('pdbzone').value,plantIdx=$('pdbplant').value;
+  if(!zoneId){toast('No irrigation zone available -- add one in the Irrigation panel first');return;}
+  var zone=bldIrrZones().find(function(z){return z.id===zoneId;});
+  var plant=GRD_PLANT_DB[Number(plantIdx)];
+  if(!zone||!plant)return;
+  var delivery=ZONE_TYPE_WATER_DELIVERY[zone.zone_type]||'medium';
+  var need=plant.water;
+  var order={low:0,medium:1,high:2};
+  var diff=order[delivery]-order[need];
+  var verdict,cls;
+  if(diff===0){verdict='Good match -- zone delivery volume and plant water need are aligned.';cls='bg';}
+  else if(diff>0){verdict='Possible overwatering risk -- this zone type ('+zone.zone_type+', typically '+delivery+' volume) delivers more than '+plant.name+' (needs '+need+') typically wants.';cls='bw';}
+  else{verdict='Possible underwatering risk -- '+plant.name+' (needs '+need+') wants more water than this zone type ('+zone.zone_type+', typically '+delivery+' volume) typically delivers.';cls='bw';}
+  $('pdb-compat-result').innerHTML='<div class="srow"><span class="slbl">'+H(zone.name)+' &times; '+H(plant.name)+'</span><span class="badge '+cls+'">'+H(verdict)+'</span></div>';
+}
+
 function openIrrSchedModal(id){
   ischid=id||null;
   var zones=bldIrrZones();
