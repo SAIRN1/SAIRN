@@ -26546,6 +26546,16 @@ document.addEventListener('DOMContentLoaded', function() {
       </select>
       <input id="emp-login-pin" type="password" inputmode="numeric" maxlength="8" placeholder="6-8 digit PIN for them to sign in with" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <div id="emp-login-error" role="alert" style="display:none;color:#dc2626;font-size:12px;margin-bottom:8px"></div>
+      <!-- PERSISTENT SUCCESS CONFIRMATION (2026-08-06) -- the existing showToast()
+           call on success (bottom-center, auto-fades after 3s) genuinely fires, but
+           Michael reported not being able to tell for certain the grant went through
+           -- a 3-second fading toast at the bottom of the screen is easy to miss
+           entirely while looking at the form itself. This is a second, persistent,
+           inline confirmation IN the card, right where the button was just clicked --
+           stays visible until the next grant attempt starts, not timed. The toast
+           call stays too (harmless, consistent with the rest of the app), this is
+           additive, not a replacement. -->
+      <div id="emp-login-success" role="status" aria-live="polite" style="display:none;color:#15803D;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:8px"></div>
       <button class="q-btn primary" id="emp-login-submit-btn" style="width:100%" onclick="sdGrantLoginAccess()">Grant Access</button>
     </div>
     <!-- AI COMMUNICATION PROFILES (2026-08-06) -- deliberately a real, manager-set
@@ -26734,12 +26744,14 @@ document.addEventListener('DOMContentLoaded', function() {
     var roleEl=document.getElementById('emp-login-role');
     var pinEl=document.getElementById('emp-login-pin');
     var errEl=document.getElementById('emp-login-error');
+    var successEl=document.getElementById('emp-login-success');
     var btn=document.getElementById('emp-login-submit-btn');
     var employeeId=idEl.value.trim();
     var displayName=nameEl.value.trim();
     var role=roleEl.value;
     var pin=pinEl.value.trim();
     errEl.style.display='none';
+    if(successEl)successEl.style.display='none';
     if(!employeeId){errEl.textContent='Enter an Employee ID for sign-in';errEl.style.display='block';return;}
     if(!/^\d{6,8}$/.test(pin)){errEl.textContent='PIN must be 6-8 digits';errEl.style.display='block';return;}
     var lic=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
@@ -26760,6 +26772,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       showToast('Login access granted to '+employeeId+' ('+role+') — share the PIN with them directly, never in writing','success');
+      if(successEl){
+        var roleLabel={install:'Install',sales:'Sales',admin:'Manager (admin)',owner:'Owner'}[role]||role;
+        successEl.innerHTML='&#9989; Access granted &mdash; <strong>'+escHtml(displayName||employeeId)+'</strong> (Employee ID: <strong>'+escHtml(employeeId)+'</strong>, role: '+escHtml(roleLabel)+'). Share the PIN with them directly, never in writing.';
+        successEl.style.display='block';
+      }
       [idEl,nameEl,pinEl].forEach(function(el){el.value='';});
       roleEl.value='install';
     }).catch(function(){
