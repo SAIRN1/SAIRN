@@ -1601,7 +1601,7 @@ function scpSt(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function scpLd(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
 function scp$(s){return document.getElementById(s);}
 function scpFmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
-function scpFdate(d){if(!d)return'--';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function scpFdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
 function scpToast(m,d){var t=scp$('scp-toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 
 // === SERVER DATA SYNC (api/sd-data.js scp_* resources) -- Phase 2 ===

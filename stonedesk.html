@@ -18993,7 +18993,7 @@ function runAlertScan() {
   // Scan warranties expiring
   sdWarranties.forEach(w => {
     if (w.expiry) {
-      const daysLeft = (new Date(w.expiry).getTime() - now) / 86400000;
+      const daysLeft = (new Date(w.expiry+'T00:00:00').getTime() - now) / 86400000;
       if (daysLeft < 0) {
         alerts.push({level:'red', msg:'🔴 Warranty EXPIRED — ' + w.customer + ' (' + w.package + ')', panel:'warranty', id:w.id});
       } else if (daysLeft <= 30) {
@@ -19670,11 +19670,11 @@ function renderWarranties() {
   }
   const now = Date.now();
   el.innerHTML = sdWarranties.map(w => {
-    const daysLeft = w.years >= 90 ? 99999 : Math.ceil((new Date(w.expiry).getTime() - now) / 86400000);
+    const daysLeft = w.years >= 90 ? 99999 : Math.ceil((new Date(w.expiry+'T00:00:00').getTime() - now) / 86400000);
     const expired = daysLeft < 0;
     const soon = !expired && daysLeft <= 30;
     const urgency = expired ? 'red' : soon ? 'yellow' : 'green';
-    const expiryStr = w.years >= 90 ? 'Lifetime' : (expired ? 'EXPIRED' : 'Expires '+new Date(w.expiry).toLocaleDateString());
+    const expiryStr = w.years >= 90 ? 'Lifetime' : (expired ? 'EXPIRED' : 'Expires '+new Date(w.expiry+'T00:00:00').toLocaleDateString());
     return '<div class="warranty-card" style="border-left:4px solid ' + (urgency==='red'?'#dc2626':urgency==='yellow'?'#ca8a04':'#16a34a') + '">' +
       '<div class="warranty-icon">' + (w.years>=90?'🥇':w.years>=3?'🥈':'🥉') + '</div>' +
       '<div class="warranty-info">' +
@@ -19683,7 +19683,7 @@ function renderWarranties() {
         '<span class="item-urgency ' + urgency + '">' + (expired?'Expired':soon?daysLeft+'d left':'Active') + '</span>' +
       '</div>' +
       '<div style="font-size:12px;color:var(--muted)">' + escHtml(w.package) + (w.material?' · '+escHtml(w.material):'') + '</div>' +
-      '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate).toLocaleDateString() + ' · ' + expiryStr + '</div>' +
+      '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate+'T00:00:00').toLocaleDateString() + ' · ' + expiryStr + '</div>' +
       '<div style="margin-top:8px;display:flex;gap:8px">' +
         '<span style="font-size:13px;font-weight:700;color:var(--a)">$' + w.price + '</span>' +
         '<button onclick="warrantyDelete(\'' + w.id + '\')" style="font-size:11px;padding:2px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
@@ -19695,10 +19695,10 @@ function renderWarranties() {
 // -- WARRANTY KPIs + EXTRAS -------------------------------------
 function warrUpdateKPIs() {
   var now = Date.now();
-  var total = sdWarranties.filter(function(w){return new Date(w.expiry).getTime()>now||w.years>=90;}).length;
-  var expired = sdWarranties.filter(function(w){return w.years<90&&new Date(w.expiry).getTime()<now;}).length;
+  var total = sdWarranties.filter(function(w){return new Date(w.expiry+'T00:00:00').getTime()>now||w.years>=90;}).length;
+  var expired = sdWarranties.filter(function(w){return w.years<90&&new Date(w.expiry+'T00:00:00').getTime()<now;}).length;
   var expiring = sdWarranties.filter(function(w){
-    var d=(new Date(w.expiry).getTime()-now)/86400000;
+    var d=(new Date(w.expiry+'T00:00:00').getTime()-now)/86400000;
     return w.years<90&&d>=0&&d<=30;
   }).length;
   var value = sdWarranties.reduce(function(s,w){return s+(w.price||0);},0);
@@ -19712,8 +19712,8 @@ function warrExportCSV() {
   var rows=[['Customer','Package','Material','Price','Install Date','Expiry','Status']];
   var now=Date.now();
   sdWarranties.forEach(function(w){
-    var d=w.years>=90?'Lifetime':new Date(w.expiry).toLocaleDateString();
-    var status=w.years>=90?'Active (Lifetime)':new Date(w.expiry).getTime()<now?'Expired':Math.ceil((new Date(w.expiry).getTime()-now)/86400000)+'d left';
+    var d=w.years>=90?'Lifetime':new Date(w.expiry+'T00:00:00').toLocaleDateString();
+    var status=w.years>=90?'Active (Lifetime)':new Date(w.expiry+'T00:00:00').getTime()<now?'Expired':Math.ceil((new Date(w.expiry+'T00:00:00').getTime()-now)/86400000)+'d left';
     rows.push([w.customer,w.package,w.material||'',w.price,w.installDate,d,status]);
   });
   var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
@@ -20160,8 +20160,8 @@ function renderSchedule(){
           '<span style="font-size:11px;padding:1px 7px;border-radius:20px;background:rgba(27,58,107,0.1);color:var(--a);font-weight:600">'+stageLabels[j.stage]+'</span>' +
         '</div>' +
         '<div style="font-size:12px;color:var(--muted)">'+
-          (j.material?escHtml(j.material)+' · ':'')+(j.sqft?j.sqft+'sqft · ':'')+'Template: '+new Date(j.templateDate).toLocaleDateString()+
-          (j.targetDate?' · Target: '+new Date(j.targetDate).toLocaleDateString():'') +
+          (j.material?escHtml(j.material)+' · ':'')+(j.sqft?j.sqft+'sqft · ':'')+'Template: '+new Date(j.templateDate+'T00:00:00').toLocaleDateString()+
+          (j.targetDate?' · Target: '+new Date(j.targetDate+'T00:00:00').toLocaleDateString():'') +
           (j.installer?' · Crew: '+escHtml(j.installer):'') +
         '</div>' +
         (urg!=='done'?'<div class="progress-bar" style="margin-top:6px"><div class="progress-fill" style="width:'+pct+'%;background:'+fillColor+'"></div></div>':'') +
@@ -20182,7 +20182,7 @@ function renderSchedule(){
   var yellow=all.filter(j=>schedUrgency(j)==='yellow').length;
   var red=all.filter(j=>schedUrgency(j)==='red').length;
   var installed=sdJobs.filter(j=>j.stage==='installed');
-  var avgDays=installed.length?Math.round(installed.filter(j=>j.installedAt&&j.templateDate).reduce((s,j)=>s+Math.floor((new Date(j.installedAt)-new Date(j.templateDate))/86400000),0)/Math.max(1,installed.length)):null;
+  var avgDays=installed.length?Math.round(installed.filter(j=>j.installedAt&&j.templateDate).reduce((s,j)=>s+Math.floor((new Date(j.installedAt)-new Date(j.templateDate+'T00:00:00'))/86400000),0)/Math.max(1,installed.length)):null;
   var sv=(id,v)=>{var el=document.getElementById(id);if(el)el.textContent=v;};
   sv('sched-total',sdJobs.length);sv('sched-green',green);sv('sched-yellow',yellow);sv('sched-red',red);
   sv('sched-avg',avgDays!=null?avgDays+'d avg':'—');
@@ -21152,10 +21152,10 @@ function safetyUpdateKPIs() {
   var now = new Date();
   var trained = sdSafetyData.training.filter(function(t){
     if(!t.expiry) return true;
-    return new Date(t.expiry) > now;
+    return new Date(t.expiry+'T00:00:00') > now;
   });
   var overdue = sdSafetyData.training.filter(function(t){
-    return t.expiry && new Date(t.expiry) < now;
+    return t.expiry && new Date(t.expiry+'T00:00:00') < now;
   });
   var ytdStart = new Date(now.getFullYear(), 0, 1);
   var incidents = sdSafetyData.incidents.filter(function(i){ return new Date(i.datetime) > ytdStart; }).length;
@@ -21223,8 +21223,8 @@ function safetyRenderTraining() {
   if(!sdSafetyData.training.length){el.innerHTML='<div style="text-align:center;padding:32px;color:var(--muted)"><div style="font-size:36px;margin-bottom:10px">&#128218;</div><div style="font-size:15px;font-weight:700">No training records yet</div><div style="font-size:13px;margin-top:6px">Add records to track employee safety training compliance.</div></div>';return;}
   var now=new Date();
   el.innerHTML=sdSafetyData.training.map(function(t){
-    var expired=t.expiry&&new Date(t.expiry)<now;
-    var expiringSoon=t.expiry&&!expired&&(new Date(t.expiry)-now)<30*86400000;
+    var expired=t.expiry&&new Date(t.expiry+'T00:00:00')<now;
+    var expiringSoon=t.expiry&&!expired&&(new Date(t.expiry+'T00:00:00')-now)<30*86400000;
     var statusColor=expired?'#dc2626':expiringSoon?'#ca8a04':'#16a34a';
     var statusLabel=expired?'EXPIRED':expiringSoon?'Expiring Soon':'Current';
     return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+statusColor+';border-radius:10px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">' +
@@ -22278,7 +22278,7 @@ function renderExecKPIs(){
   var pendingApprovals=customers.filter(c=>c.status==='quoted');
   var avgDays='—';
   var installed=jobs.filter(j=>j.stage==='installed'&&j.installedAt&&j.templateDate);
-  if(installed.length) avgDays=Math.round(installed.reduce((s,j)=>s+Math.floor((new Date(j.installedAt)-new Date(j.templateDate))/86400000),0)/installed.length)+'d';
+  if(installed.length) avgDays=Math.round(installed.reduce((s,j)=>s+Math.floor((new Date(j.installedAt)-new Date(j.templateDate+'T00:00:00'))/86400000),0)/installed.length)+'d';
   var tiles=[
     {label:'Open Jobs',val:openJobs.length,sub:overdueJobs.length+' overdue',color:overdueJobs.length?'#dc2626':'var(--a)'},
     {label:'Avg Turnaround',val:avgDays,sub:'template to install',color:'var(--a)'},
@@ -28788,7 +28788,7 @@ function agPrint(id) {
 
   // Header
   win.document.write('<div class="header"><div><div class="logo">SAIRN Technologies LLC</div><div class="tagline">sairn.vercel.app &nbsp;|&nbsp; michael@sairn.com &nbsp;|&nbsp; (220) 228-3890</div></div>');
-  win.document.write('<div class="doc-num"><strong>' + ag.num + '</strong><br>' + new Date(ag.date).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) + '</div></div>');
+  win.document.write('<div class="doc-num"><strong>' + ag.num + '</strong><br>' + new Date(ag.date+'T00:00:00').toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) + '</div></div>');
 
   // Title
   win.document.write('<div class="title">STONEDESK SERVICE AGREEMENT</div>');
@@ -28881,7 +28881,7 @@ function agRender() {
           '<span style="font-size:10px;background:' + (sc[ag.status] || '#6b7280') + ';color:#fff;padding:2px 8px;border-radius:100px;font-weight:700">' + ag.status + '</span>' +
         '</div>' +
         '<div style="font-size:12px;color:var(--muted)">' + ag.num + ' &nbsp;·&nbsp; ' + escHtml(ag.contact || '') + ' &nbsp;·&nbsp; ' + escHtml(ag.planLabel || '') + '</div>' +
-        '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + new Date(ag.date).toLocaleDateString() + (ag.signedAt ? ' &nbsp;·&nbsp; Signed ' + new Date(ag.signedAt).toLocaleDateString() : '') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + new Date(ag.date+'T00:00:00').toLocaleDateString() + (ag.signedAt ? ' &nbsp;·&nbsp; Signed ' + new Date(ag.signedAt).toLocaleDateString() : '') + '</div>' +
       '</div>' +
       '<div style="font-size:18px;font-weight:800;color:var(--brand2)">$' + (ag.price || 0) + '/mo</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
@@ -28920,7 +28920,7 @@ function agEsigOpen(id) {
   if (shopEl) shopEl.textContent = ag.shop + ' — ' + ag.planLabel;
   if (sumEl) sumEl.innerHTML =
     '<strong>Agreement:</strong> ' + ag.num + '<br>' +
-    '<strong>Date:</strong> ' + new Date(ag.date).toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) + '<br>' +
+    '<strong>Date:</strong> ' + new Date(ag.date+'T00:00:00').toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) + '<br>' +
     '<strong>Plan:</strong> ' + ag.planLabel + ' — <strong style="color:var(--brand2)">$' + ag.price + '/month</strong>' + (ag.plan === 'founding' ? ' (locked for life)' : '') + '<br>' +
     '<strong>Customer:</strong> ' + escHtml(ag.shop) + (ag.contact ? ' / ' + escHtml(ag.contact) : '') + '<br>' +
     '<strong>Provider:</strong> SAIRN Technologies LLC, Westlake OH<br>' +
