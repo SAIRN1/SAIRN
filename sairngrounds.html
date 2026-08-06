@@ -388,11 +388,11 @@ textarea{resize:vertical;min-height:80px;}
 
 <!-- GOLF COURSE MODULE -->
 <div class="panel" id="panel-golfcourse">
-  <div class="ph"><div><div class="ptitle">Golf Course Module</div><div class="psub">Per-hole / per-zone status board &mdash; Phase 1: manual entry, GPS walk-mapping deferred (see scope doc)</div></div>
+  <div class="ph"><div><div class="ptitle">Golf Course Module</div><div class="psub">Per-hole / per-zone status board, plus self-service course mapping (item 10 foundation) &mdash; no paid course-data vendor</div></div>
   <div class="pa"><button class="btn bp bs" onclick="openZoneModal()">+ Add Zone</button></div></div>
   <div class="card"><div class="cb">
     <div class="fg" style="max-width:280px"><label>Property</label><select id="gcproperty" onchange="rGolf()"></select></div>
-    <div class="tw"><table><thead><tr><th>Hole / Zone</th><th>Acreage</th><th>Last Serviced</th><th>Condition</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Hole / Zone</th><th>Acreage</th><th>Last Serviced</th><th>Condition</th><th>Mapped</th><th>Actions</th></tr></thead>
     <tbody id="gtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -406,6 +406,41 @@ textarea{resize:vertical;min-height:80px;}
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeZoneModal()">Cancel</button>
       <button class="btn bp" onclick="saveZone()">Save Zone</button>
+    </div>
+  </div>
+</div>
+
+<!-- COURSE MAPPING (item 10 foundation, 2026-08-06) -->
+<!-- Self-service replacement for the paid iGolf Connect vendor path (dropped
+     by Michael the same day it was researched -- see project memory). A
+     course maps its own layout once: staff walks each hole/zone, placing
+     tee-box/pin/hazard points. Reuses the EXACT SAME WebXR AR session as
+     Design Walk (window.startARDesignSession, item 6) for the tap-to-place
+     camera UX -- not a second AR implementation. Deliberately does NOT
+     derive lat/lng from that session's relative hit-test coordinates
+     (no heading/compass data is exposed by the dom-overlay flow, so any
+     such conversion would be fabricated precision dressed up as real GPS).
+     Instead each point -- AR-placed or manually added -- takes its own
+     independent navigator.geolocation.getCurrentPosition() reading at the
+     moment of placement, the same real GPS primitive already used
+     elsewhere in this file (schedWeatherCheck's location read), with its
+     reported accuracy_m shown honestly rather than hidden. -->
+<div class="modal" id="coursemapmodal">
+  <div class="mbox" style="width:640px;max-width:94vw;">
+    <div class="mtitle">Map Hole / Zone: <span id="cm-zone-name"></span></div>
+    <div class="note" style="margin:8px 0">Each point gets its own real GPS reading (device location, consumer-grade accuracy -- shown per point). "Map with AR Camera" only appears on a WebXR-capable device; the manual button is always available and is the only path everywhere else.</div>
+    <div id="cm-ar-zone"></div>
+    <div class="fr"><div class="fg"><label>Point Type</label><select id="cmpttype">
+      <option value="tee">Tee Box</option>
+      <option value="pin">Pin / Green</option>
+      <option value="hazard">Hazard</option>
+      <option value="other">Other</option>
+    </select></div><div class="fg"><label>Label / Note</label><input id="cmptlabel" placeholder="e.g. Back tee, or fairway bunker left"></div></div>
+    <button class="btn bo bs" onclick="addCoursePoint()">+ Capture GPS Point</button>
+    <div class="tw" style="margin-top:10px"><table><thead><tr><th>Type</th><th>Label</th><th>Lat, Lng</th><th>Accuracy</th><th>Source</th><th></th></tr></thead>
+    <tbody id="cmpttbody"></tbody></table></div>
+    <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCourseMapModal()">Close</button>
     </div>
   </div>
 </div>
@@ -1567,8 +1602,12 @@ function rGolf(){
   var propFilter=$('gcproperty')?$('gcproperty').value:'';
   var filtered=propFilter?zones.filter(function(z){return z.property_id===propFilter;}):zones;
   $('gtbody').innerHTML=filtered.map(function(z){
-    return '<tr><td><strong>'+H(z.name)+'</strong></td><td>'+H(z.acreage)+' ac</td><td>'+fdate(z.serviced)+'</td><td>'+H(z.condition)+'</td><td><button class="btn bo bs" onclick="openZoneModal(\''+z.id+'\')">Edit</button></td></tr>';
-  }).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No zones tracked yet</td></tr>';
+    var n=(z.points||[]).length;
+    return '<tr><td><strong>'+H(z.name)+'</strong></td><td>'+H(z.acreage)+' ac</td><td>'+fdate(z.serviced)+'</td><td>'+H(z.condition)+'</td>'+
+      '<td><span class="badge '+(n?'bg':'bx')+'">'+n+' point'+(n===1?'':'s')+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="openZoneModal(\''+z.id+'\')">Edit</button> '+
+      '<button class="btn bo bs" onclick="openCourseMapModal(\''+z.id+'\')">Map</button></td></tr>';
+  }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No zones tracked yet</td></tr>';
 }
 function openZoneModal(id){
   zid=id||null;fillPropertySelects();
@@ -1583,12 +1622,126 @@ function saveZone(){
   var propertyId=$('zproperty').value,name=$('zname').value.trim();
   if(!propertyId||!name){toast('Property and zone name are required');return;}
   var zones=ld('grd_golf_zones',[]);
+  var existing=zid?zones.find(function(z){return z.id===zid;}):null;
   var rec={id:zid||('Z-'+Date.now()),property_id:propertyId,name:name,acreage:Number($('zacreage').value||0),
-    serviced:$('zserviced').value,condition:$('zcondition').value.trim()};
+    serviced:$('zserviced').value,condition:$('zcondition').value.trim(),points:existing?(existing.points||[]):[]};
   if(zid){zones=zones.map(function(z){return z.id===zid?rec:z;});}else{zones.push(rec);}
   st('grd_golf_zones',zones);closeZoneModal();rGolf();rDash();toast('Zone saved');
   grdData('write','golf_zones',rec);
 }
+
+// === ITEM 10: SELF-SERVICE COURSE MAPPING =================================
+// Free replacement for the paid iGolf Connect vendor path (decision dropped
+// 2026-08-06 -- see project memory). A course maps its own layout once:
+// walk each hole/zone, place tee-box/pin/hazard points. Points attach to
+// the EXISTING grd_golf_zones record for that hole (Check-0e: reuses the
+// Golf Course Module's existing per-hole entity rather than inventing a
+// parallel "holes" table). Real GPS per point (navigator.geolocation, same
+// primitive already used by schedWeatherCheck's location read elsewhere in
+// this file), with reported accuracy_m always shown -- never dressed up as
+// more precise than a consumer device actually delivers.
+var CM_TYPE_LABELS={tee:'Tee Box',pin:'Pin / Green',hazard:'Hazard',other:'Other'};
+var cmZoneId=null;
+function cmCurrentZone(){return cmZoneId?ld('grd_golf_zones',[]).find(function(z){return z.id===cmZoneId;}):null;}
+function openCourseMapModal(zoneId){
+  cmZoneId=zoneId;
+  var z=cmCurrentZone();
+  if(!z){toast('Zone not found');return;}
+  $('cm-zone-name').textContent=z.name;
+  $('cmpttype').value='tee';$('cmptlabel').value='';
+  renderCoursePointsTable(z.points||[]);
+  if(typeof installCourseARZone==='function')installCourseARZone();
+  $('coursemapmodal').classList.add('on');
+}
+function closeCourseMapModal(){$('coursemapmodal').classList.remove('on');cmZoneId=null;}
+function renderCoursePointsTable(points){
+  var tb=$('cmpttbody');if(!tb)return;
+  tb.innerHTML=(points&&points.length)?points.map(function(p,i){
+    return '<tr><td>'+H(CM_TYPE_LABELS[p.type]||p.type)+'</td><td>'+H(p.label)+'</td>'+
+      '<td>'+(p.lat!=null?(p.lat.toFixed(6)+', '+p.lng.toFixed(6)):'no GPS fix')+'</td>'+
+      '<td>'+(p.accuracy_m!=null?('±'+Math.round(p.accuracy_m)+'m'):'--')+'</td>'+
+      '<td>'+(p.source==='ar'?'AR':'Manual')+'</td>'+
+      '<td><button class="btn bo bs" onclick="removeCoursePoint('+i+')">Remove</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:12px">No points captured yet for this hole</td></tr>';
+}
+// One real GPS reading, taken fresh at the moment of placement -- never
+// derived/estimated from a prior reading or from AR relative coordinates.
+function cmCaptureGps(){
+  return new Promise(function(resolve){
+    if(!navigator.geolocation){resolve(null);return;}
+    navigator.geolocation.getCurrentPosition(
+      function(pos){resolve({lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy_m:pos.coords.accuracy});},
+      function(){resolve(null);},
+      {enableHighAccuracy:true,timeout:8000}
+    );
+  });
+}
+function cmSavePoints(z){
+  var zones=ld('grd_golf_zones',[]).map(function(x){return x.id===z.id?z:x;});
+  st('grd_golf_zones',zones);rGolf();
+  grdData('write','golf_zones',z);
+}
+async function addCoursePoint(){
+  var z=cmCurrentZone();if(!z)return;
+  var type=$('cmpttype').value,label=$('cmptlabel').value.trim();
+  if(!label){toast('Add a label for this point');return;}
+  toast('Getting GPS fix...');
+  var gps=await cmCaptureGps();
+  if(!gps){toast('Could not get a GPS fix -- check location permission and try again',5000);return;}
+  var pt={id:'CMP-'+Date.now(),type:type,label:label,lat:gps.lat,lng:gps.lng,accuracy_m:gps.accuracy_m,source:'manual',created_at:new Date().toISOString()};
+  z.points=(z.points||[]).concat([pt]);
+  cmSavePoints(z);
+  renderCoursePointsTable(z.points);
+  $('cmptlabel').value='';
+  toast('Point captured (±'+Math.round(gps.accuracy_m)+'m)');
+}
+function removeCoursePoint(index){
+  var z=cmCurrentZone();if(!z)return;
+  z.points=(z.points||[]).filter(function(p,i){return i!==index;});
+  cmSavePoints(z);
+  renderCoursePointsTable(z.points);
+}
+// Attaches "Map with AR Camera" into #cm-ar-zone, same feature-detect
+// discipline as Design Walk's installDesignARZone (item 6) -- no button at
+// all on a non-WebXR device, manual capture is the only path there. Reuses
+// window.startARDesignSession directly rather than a second AR session
+// implementation. Each AR-placed point still gets its own independent GPS
+// reading (see module comment above for why lat/lng is never derived from
+// the AR session's relative hit-test coordinates).
+window.installCourseARZone=async function(){
+  var zone=document.getElementById('cm-ar-zone');
+  if(!zone||document.getElementById('ar-course-start-btn'))return;
+  if(typeof startARDesignSession!=='function')return;
+  var supported=await new Promise(function(resolve){
+    if(!navigator.xr||typeof navigator.xr.isSessionSupported!=='function'){resolve(false);return;}
+    navigator.xr.isSessionSupported('immersive-ar').then(resolve).catch(function(){resolve(false);});
+  });
+  if(!supported)return;
+  var btn=document.createElement('button');
+  btn.type='button';btn.id='ar-course-start-btn';btn.className='btn bp bs';
+  btn.textContent='\u{1F4F7} Map with AR Camera';btn.style.marginBottom='10px';
+  zone.appendChild(btn);
+  btn.onclick=function(){
+    var typeEl=document.getElementById('cmpttype'),labelEl=document.getElementById('cmptlabel');
+    var ctx={type:typeEl.value,label:(labelEl.value.trim())||(CM_TYPE_LABELS[typeEl.value]||'Point')};
+    startARDesignSession(ctx,async function(elements){
+      if(!elements.length)return;
+      var z=cmCurrentZone();if(!z)return;
+      toast('Getting GPS fix for '+elements.length+' placed point(s)...');
+      for(var i=0;i<elements.length;i++){
+        var gps=await cmCaptureGps();
+        z.points=(z.points||[]).concat([{
+          id:'CMP-'+Date.now()+'-'+i,type:elements[i].type,label:elements[i].label,
+          lat:gps?gps.lat:null,lng:gps?gps.lng:null,accuracy_m:gps?gps.accuracy_m:null,
+          source:'ar',created_at:new Date().toISOString()
+        }]);
+      }
+      cmSavePoints(z);
+      renderCoursePointsTable(z.points);
+      toast(elements.length+' point(s) placed via AR');
+    });
+  };
+};
 
 // === ITEM 7 MODULE IDS ===========================================
 var schedid=null,invid=null,ctlid=null,izid=null,ischid=null,wfid=null,ivid=null,crsid=null,cplid=null,vendid=null;
@@ -3505,6 +3658,11 @@ async function startARDesignSession(ctx, onDone) {
     onDone(placedElements);
   });
 }
+// Exported for reuse by the Golf Course Module's hole-mapping tool (item 10)
+// -- same WebXR session, not a second copy. See that module's own comment
+// for why it also takes an independent GPS reading per point rather than
+// deriving lat/lng from this session's relative hit-test coordinates.
+window.startARDesignSession = startARDesignSession;
 
 // Attaches the "Design with AR Camera" button into #dw-ar-zone in the
 // Design Walk modal. getCtx() reads the live type+label form fields;
