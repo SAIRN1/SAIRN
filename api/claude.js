@@ -34,6 +34,27 @@ const KNOWN_APP_IDS = [
   'sairnmechanical', 'sairnhr', 'sairnacc', 'sairngrounds'
 ];
 
+// Server tools a frontend is allowed to request. Whitelisted by exact type
+// string (not passed through unchecked) because this endpoint has no other
+// auth beyond a client-supplied app_id -- an unrestricted `tools` passthrough
+// would let any caller run billed web searches against our Anthropic key.
+// max_uses is also server-capped below regardless of what the client sends.
+const ALLOWED_TOOL_TYPES = ['web_search_20250305'];
+const MAX_TOOL_USES_CEILING = 5;
+
+function sanitizeTools(tools) {
+  if (!Array.isArray(tools)) return undefined;
+  const clean = tools
+    .filter((t) => t && ALLOWED_TOOL_TYPES.includes(t.type))
+    .map((t) => {
+      const out = { type: t.type, name: t.name || 'web_search' };
+      const requested = Number(t.max_uses) || MAX_TOOL_USES_CEILING;
+      out.max_uses = Math.max(1, Math.min(requested, MAX_TOOL_USES_CEILING));
+      return out;
+    });
+  return clean.length ? clean : undefined;
+}
+
 // Best-effort only — see limitation note above. Resets on cold start / differs per instance.
 const demoCallCounts = {};
 const DEMO_DAILY_LIMIT = 200;
@@ -61,7 +82,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const { app_id, is_demo, system, messages, max_tokens } = body;
+  const { app_id, is_demo, system, messages, max_tokens, tools } = body;
 
   if (!app_id || !KNOWN_APP_IDS.includes(app_id)) {
     res.status(400).json({ error: { message: 'Missing or unrecognized app_id' } });
@@ -101,7 +122,8 @@ module.exports = async (req, res) => {
         model: 'claude-sonnet-4-6',
         max_tokens: max_tokens || 1000,
         system: system || undefined,
-        messages: messages
+        messages: messages,
+        tools: sanitizeTools(tools)
       })
     });
 

@@ -5855,6 +5855,10 @@ async function aiAsk(){
     'If a question touches build sequencing, scheduling order, or trade timing, use the '+
     'trade-sequence knowledge below to proactively flag any real violation even if the '+
     'question does not explicitly ask about it. '+
+    'If a question depends on current information -- specific products, materials, pricing, '+
+    'availability, codes, or trends that could have changed since training -- use the web '+
+    'search tool rather than answering from memory alone, so the trade-knowledge base stays '+
+    'current without manual upkeep. '+
     'Always end with a one-line reminder that code/legal answers must be verified with the '+
     'local building department or contract counsel before being relied on. Plain ASCII only, '+
     'no Unicode box characters. Keep it under 200 words.\n\n'+SB_TRADE_SEQUENCE_KNOWLEDGE;
@@ -5864,11 +5868,23 @@ async function aiAsk(){
   try{
     var res=await fetch(PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,messages:msgs})
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,messages:msgs,
+        tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}]})
     });
     if(!res.ok)throw new Error('Claude error '+res.status);
     var data=await res.json();
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    // A web-search turn returns text interleaved with server_tool_use/
+    // web_search_tool_result blocks, not just content[0] -- join every
+    // text block in order instead of assuming the old single-block shape.
+    var content=data.content||[];
+    var text=content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    var sources=[];
+    content.forEach(function(b){
+      if(b.type==='text'&&Array.isArray(b.citations)){
+        b.citations.forEach(function(c){if(c.url&&sources.indexOf(c.url)===-1)sources.push(c.url);});
+      }
+    });
+    if(sources.length) text+='\n\nSources:\n'+sources.map(function(u){return '- '+u;}).join('\n');
     var answer=text||'No response text returned.';
     $('ai-answer').textContent=answer;
     var list=bldAiChat();
