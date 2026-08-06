@@ -2568,6 +2568,24 @@ function saveMsbProduct(){
   if(msbpid){list=list.map(function(x){return x.id===msbpid?rec:x;});}else{list.push(rec);}
   st('msb_products',list);closeMsbProductModal();
   if(isNew)msbLogInventoryChange(rec.id,'received',rec.qty,'New product added');
+  // Real bug found+fixed via live testing: a NEW alcohol product created
+  // from "Add as New Product" on an unmatched scan left that FIRST scan's
+  // product_id permanently null, so cost-of-usage could never compute from
+  // a bottle's very first reading -- exactly the primary onboarding path
+  // (scan -> no match -> create product). Retroactively link any unmatched
+  // scan(s) whose brand_read matches this new product's name, same
+  // substring match msbHandleScanResult already uses for a live match.
+  if(isNew&&cat==='alcohol'){
+    var scans=bldMsbBottleScans();
+    var linkedAny=false;
+    var lowerName=name.toLowerCase();
+    scans.forEach(function(s){
+      if(!s.product_id&&s.brand_read&&lowerName.indexOf(s.brand_read.toLowerCase())!==-1){
+        s.product_id=rec.id;linkedAny=true;
+      }
+    });
+    if(linkedAny){st('msb_bottle_scans',scans);rMsbBottleScan();}
+  }
   rMsbProShop();rMsbBarCompliance();rMsbBottleScan();
   toast('Product saved');
   grdData('write','msb_products',rec);
