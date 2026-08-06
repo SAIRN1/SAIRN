@@ -1632,7 +1632,13 @@ function saveIrrZone(){
     checklist:$('izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean),
     notes:$('iznotes').value.trim()};
   if(izid){list=list.map(function(x){return x.id===izid?rec:x;});}else{list.push(rec);}
-  st('grd_irr_zones',list);closeIrrZoneModal();rIrrigation();toast('Irrigation zone saved');
+  st('grd_irr_zones',list);closeIrrZoneModal();rIrrigation();
+  // Plant DB's zone-compatibility selector reads bldIrrZones() too -- refresh
+  // it here since nav() is a pure panel-toggle in this app (no per-panel
+  // render dispatch), so without this the dropdown would go stale the moment
+  // a zone is added/edited anywhere except right before a fresh page load.
+  if(typeof rPlantDb==='function')rPlantDb();
+  toast('Irrigation zone saved');
   grdData('write','irr_zones',rec);
 }
 // Same real, non-fabricated hand-off pattern as Design Walk's sendDesignToQuote:
