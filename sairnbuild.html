@@ -5787,6 +5787,44 @@ function saveInteg(){
 }
 
 // ── AI ASSISTANT ──────────────────────────────────────────────────────────
+// Baked-in trade-sequence knowledge (residential/light-commercial GC build
+// order), used to proactively flag scheduling questions that violate real
+// sequencing/curing dependencies -- not just answer them literally. Source:
+// standard GC phase order + the specific violations called out for this
+// build (30-day drywall-mud cure, rough-in inspection gate, HVAC-before-trim
+// for wood movement, etc). Kept as one constant so Parts B/C/D can extend it
+// without touching aiAsk() again.
+var SB_TRADE_SEQUENCE_KNOWLEDGE=
+  'CONSTRUCTION TRADE SEQUENCE KNOWLEDGE (residential/light-commercial):\n'+
+  'Standard build order: structural (foundation/framing) -> roofing/building '+
+  'envelope (dried-in before interior work is exposed to weather) -> rough-in '+
+  'MEP in this order: plumbing, then HVAC, then electrical, then low-voltage '+
+  '-> rough-in inspections MUST pass before walls close -> insulation -> '+
+  'drywall (hang, tape, mud, sand) -> drywall mud must fully cure 30+ days '+
+  'before painting (painting too early causes ghosting/shadow lines through '+
+  'the paint) -> interior priming -> paint walls/ceilings -> trim/millwork -> '+
+  'cabinets (mounted through finished drywall, drywall must be complete '+
+  'first) -> flooring (after drywall is done -- installing flooring before '+
+  'drywall risks damage and bad wall-floor junctions) -> tile -> final '+
+  'touch-up paint (always last -- every other trade after paint damages it) '+
+  '-> punch list closeout (mechanical trades on day 1-2, hardest to '+
+  'reschedule; finish carpenters day 3-5; paint touch-ups day 5-7, always '+
+  'last; final clean day 7) -> final grade/landscaping/gutters -> final '+
+  'municipal inspections -> final walkthrough/sign-off.\n'+
+  'Proactively flag these real sequencing violations if a question implies '+
+  'one: painting before drywall mud has cured 30+ days; flooring installed '+
+  'before drywall is complete; cabinets installed before drywall is '+
+  'finished; trim/finish carpentry done before HVAC has been run long '+
+  'enough to balance humidity (wood moves with humidity swings, causing '+
+  'gaps later); walls closed up before the rough-in inspection has passed; '+
+  'a painter sent in before other finish trades are done (causes repeat '+
+  'touch-up costs).\n'+
+  'Punch list vs change order: a punch list item is incomplete or incorrect '+
+  'work already in scope (no extra cost); a change order is new or '+
+  'different work outside scope (real cost). These get blurred in the '+
+  'field and that costs GCs money -- flag it when a question conflates the '+
+  'two.';
+window.SB_TRADE_SEQUENCE_KNOWLEDGE=SB_TRADE_SEQUENCE_KNOWLEDGE;
 function bldAiChat(){return ld('bld_ai_chat',[]);}
 function rAi(){fillJobSelects();rAiHistory();}
 function rAiHistory(){
@@ -5814,9 +5852,12 @@ async function aiAsk(){
     'light-commercial general contractor in the Cleveland/Westlake OH area. Answer scope '+
     'questions, help draft contract language, and give general building-code reference '+
     'pointers. '+(j?('Current job context: '+(j.client||j.address)+', stage '+j.stage+'. '):'')+
+    'If a question touches build sequencing, scheduling order, or trade timing, use the '+
+    'trade-sequence knowledge below to proactively flag any real violation even if the '+
+    'question does not explicitly ask about it. '+
     'Always end with a one-line reminder that code/legal answers must be verified with the '+
     'local building department or contract counsel before being relied on. Plain ASCII only, '+
-    'no Unicode box characters. Keep it under 200 words.';
+    'no Unicode box characters. Keep it under 200 words.\n\n'+SB_TRADE_SEQUENCE_KNOWLEDGE;
   var sharedCtx=(typeof buildBldSharedCompanyContext==='function')?buildBldSharedCompanyContext():'';
   if(sharedCtx) sys+='\n\n'+sharedCtx;
   var msgs=[{role:'user',content:q}];
