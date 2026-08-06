@@ -327,6 +327,24 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="tw"><table><thead><tr><th>Date</th><th>Job</th><th>Assignee</th><th>Type</th><th>Notes</th><th>Actions</th></tr></thead>
     <tbody id="schtbody"></tbody></table></div>
   </div></div>
+  <div class="card"><div class="ch"><span class="ct">Disruption Response Assistant</span></div><div class="cb">
+    <div class="note" style="margin:0 0 12px">When something disrupts a job -- a delay, a no-show, weather -- this finds who is actually affected from the real Schedule and Timeline data on file, works out the real ripple in days using the same dependency logic as the Timeline panel, and drafts notification emails to the specific subs/crew on this job's Schedule. It does not invent who is affected -- if nobody is scheduled on this job, it says so.</div>
+    <div class="fr">
+      <div class="fg"><label>Job</label><select id="dis-job" onchange="disJobChanged()"></select></div>
+      <div class="fg"><label>Disruption Date</label><input id="dis-date" type="date"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Disrupted Task (optional)</label><select id="dis-task"><option value="">No linked task</option></select></div>
+      <div class="fg"><label>Added Delay (days)</label><input id="dis-days" type="number" placeholder="3"></div>
+    </div>
+    <div class="fg"><label>Disruption Description</label><input id="dis-desc" placeholder="e.g. Sub no-show, 3-day rain delay"></div>
+    <button class="btn bp" id="dis-respond-btn" onclick="disRespond()" style="margin-top:8px">Generate Response</button>
+    <div id="dis-result-wrap" style="display:none;margin-top:16px">
+      <div class="mtitle" style="font-size:14px">Suggested Adjusted Schedule &amp; Notifications</div>
+      <div id="dis-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+      <div class="note" style="margin-top:10px"><strong>Draft only.</strong> Review before sending -- this assistant does not send anything itself.</div>
+    </div>
+  </div></div>
 </div>
 
 <!-- BIDS & PROPOSALS -->
@@ -412,7 +430,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="rejected">Rejected</option>
       </select>
     </div>
-    <div class="tw"><table><thead><tr><th>Job</th><th>Description</th><th>Amount</th><th>Labour hrs</th><th>Requested By</th><th>Status</th><th>Sent</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Description</th><th>Amount</th><th>Labour hrs</th><th>Schedule Impact</th><th>Requested By</th><th>Status</th><th>Sent</th><th>Actions</th></tr></thead>
     <tbody id="cotbody"></tbody></table></div>
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Contract Impact by Job</span></div><div class="cb" id="co-impact"></div></div>
@@ -613,6 +631,24 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="card"><div class="ch"><span class="ct">Analysis History</span></div><div class="cb">
     <div class="tw"><table><thead><tr><th>Job</th><th>Date</th><th>Summary</th><th>Follow-up</th></tr></thead>
     <tbody id="fptbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Insurance Claim Packet Assistant</span></div><div class="cb">
+    <div class="note" style="margin:0 0 12px">When theft, storm damage, or vandalism hits a site, this assembles a claim-ready packet from what is <strong>already logged</strong> on this job -- Daily Logs and Field Photo Analyses -- so nothing new has to be collected under pressure. It does not invent facts: if a data point (e.g. documented security measures) was never logged, the packet says so honestly instead of guessing.</div>
+    <div class="fr">
+      <div class="fg"><label>Job</label><select id="claim-job"></select></div>
+      <div class="fg"><label>Incident Type</label><select id="claim-type">
+        <option value="Theft">Theft</option><option value="Storm Damage">Storm Damage</option>
+        <option value="Vandalism">Vandalism</option><option value="Other">Other</option>
+      </select></div>
+    </div>
+    <div class="fg"><label>Incident Date</label><input id="claim-date" type="date"></div>
+    <button class="btn bp" id="claim-gen-btn" onclick="claimGeneratePacket()" style="margin-top:8px">Generate Claim Packet</button>
+    <div id="claim-result-wrap" style="display:none;margin-top:16px">
+      <div class="mtitle" style="font-size:14px">Claim Documentation Packet</div>
+      <div id="claim-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+      <div class="note" style="margin-top:10px"><strong>Starting packet, not a filed claim.</strong> Review against the actual policy and adjuster requirements before submitting -- this only packages records that already existed in SAIRNbuild.</div>
+      <button class="btn bo bs" onclick="window.print()" style="margin-top:10px">Print / Save Packet</button>
+    </div>
   </div></div>
 </div>
 
@@ -1336,13 +1372,16 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 <div class="modal" id="comodal">
   <div class="mbox">
     <div class="mtitle">Add / Edit Change Order</div>
-    <div class="fr"><div class="fg"><label>Job</label><select id="com-job"></select></div><div class="fg"><label>Status</label><select id="com-status">
+    <div class="fr"><div class="fg"><label>Job</label><select id="com-job" onchange="coJobChanged()"></select></div><div class="fg"><label>Status</label><select id="com-status">
       <option value="draft">Draft</option><option value="sent">Sent</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option>
     </select></div></div>
     <div class="fg"><label>Description</label><input id="com-desc" placeholder="Add heated floor to primary bath"></div>
     <div class="fr"><div class="fg"><label>Amount ($)</label><input id="com-amount" type="number" placeholder="6800"></div><div class="fg"><label>Labour Hours</label><input id="com-hrs" type="number" placeholder="22"></div></div>
     <div class="fr"><div class="fg"><label>Requested By</label><input id="com-by" placeholder="Client / Field"></div><div class="fg"><label>Sent Date</label><input id="com-sent" type="date"></div></div>
     <div class="fr"><div class="fg"><label>Accepted Date</label><input id="com-accepted" type="date"></div><div class="fg"><label>Rejection Reason</label><input id="com-reason" placeholder="Only if rejected"></div></div>
+    <div class="mtitle" style="font-size:14px;margin-top:10px;">Schedule Impact <span style="font-weight:400;color:var(--muted);font-size:12px;">&mdash; optional, computes the real ripple across dependent tasks</span></div>
+    <div class="fr"><div class="fg"><label>Adds Days To Task</label><select id="com-task"><option value="">No schedule impact</option></select></div>
+      <div class="fg"><label>Added Duration (days)</label><input id="com-delaydays" type="number" placeholder="0"></div></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeCOModal()">Cancel</button>
       <button class="btn bp" onclick="saveCO()">Save Change Order</button>
@@ -1476,6 +1515,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="fr"><div class="fg"><label>Safety Record</label><select id="subm-safety">
       <option value="unknown">Unknown</option><option value="clean">Clean</option><option value="minor_incidents">Minor Incidents</option><option value="major_incidents">Major Incidents</option>
     </select></div><div class="fg"><label><input type="checkbox" id="subm-refs" style="width:auto;margin-right:6px;">References Checked</label></div></div>
+    <div class="fr"><div class="fg"><label>Bonding Capacity ($)</label><input id="subm-bonding" type="number" placeholder="Optional -- surety-backed limit"></div>
+      <div class="fg"><label>Current Backlog (% of capacity)</label><input id="subm-backlog" type="number" min="0" max="100" placeholder="0-100, optional"></div></div>
     <div class="fg"><label>Notes</label><input id="subm-notes" placeholder="Optional"></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeSubModal()">Cancel</button>
@@ -2142,11 +2183,11 @@ function seed(){
   // outright (safety history) despite clean paperwork -- proving prequal
   // gates independently of compliance, not just the reverse.
   st('bld_subs',[
-    {id:'SUB-01',company:'Kessler Electric',trade:'Electrical',contact:'Tom Kessler',phone:'(440) 555-0810',email:'tom@kesslerelectric.example',rate_basis:'hourly',rate:85,w9_on_file:true,coi_expiry:'2027-01-15',licence_no:'OH-EL-44210',licence_expiry:'2027-03-01',prequal_status:'qualified',financial_capacity:'strong',safety_record:'clean',references_checked:true,notes:''},
-    {id:'SUB-02',company:'ABC Cabinetry',trade:'Cabinetry / Millwork',contact:'Priya Anand',phone:'(440) 555-0822',email:'priya@abccabinetry.example',rate_basis:'flat',rate:0,w9_on_file:true,coi_expiry:daysAgo(-12),licence_no:'',licence_expiry:'',prequal_status:'qualified',financial_capacity:'adequate',safety_record:'clean',references_checked:true,notes:''},
-    {id:'SUB-03',company:'Midwest Steel Fab',trade:'Structural Steel',contact:'Ray Holloway',phone:'(440) 555-0833',email:'ray@midweststeelfab.example',rate_basis:'flat',rate:0,w9_on_file:true,coi_expiry:daysAgo(20),licence_no:'OH-ST-11750',licence_expiry:'2027-06-01',prequal_status:'qualified',financial_capacity:'strong',safety_record:'clean',references_checked:true,notes:'COI lapsed - not eligible to bid until renewed, despite otherwise qualifying'},
-    {id:'SUB-04',company:'Delgado Plumbing Co',trade:'Plumbing',contact:'Ana Delgado',phone:'(440) 555-0844',email:'ana@delgadoplumbing.example',rate_basis:'hourly',rate:78,w9_on_file:false,coi_expiry:'2026-11-01',licence_no:'OH-PL-29310',licence_expiry:'2026-12-15',prequal_status:'in_progress',financial_capacity:'unknown',safety_record:'unknown',references_checked:false,notes:'Awaiting W-9 and reference checks'},
-    {id:'SUB-05',company:'Bright Path Electrical',trade:'Electrical',contact:'Owen Marsh',phone:'(440) 555-0855',email:'owen@brightpathelectrical.example',rate_basis:'hourly',rate:80,w9_on_file:true,coi_expiry:'2027-02-01',licence_no:'OH-EL-50120',licence_expiry:'2027-02-01',prequal_status:'disqualified',financial_capacity:'adequate',safety_record:'major_incidents',references_checked:true,notes:'Disqualified - OSHA violation history'}
+    {id:'SUB-01',company:'Kessler Electric',trade:'Electrical',contact:'Tom Kessler',phone:'(440) 555-0810',email:'tom@kesslerelectric.example',rate_basis:'hourly',rate:85,w9_on_file:true,coi_expiry:'2027-01-15',licence_no:'OH-EL-44210',licence_expiry:'2027-03-01',prequal_status:'qualified',financial_capacity:'strong',safety_record:'clean',references_checked:true,bonding_capacity:500000,current_backlog_pct:55,notes:''},
+    {id:'SUB-02',company:'ABC Cabinetry',trade:'Cabinetry / Millwork',contact:'Priya Anand',phone:'(440) 555-0822',email:'priya@abccabinetry.example',rate_basis:'flat',rate:0,w9_on_file:true,coi_expiry:daysAgo(-12),licence_no:'',licence_expiry:'',prequal_status:'qualified',financial_capacity:'adequate',safety_record:'clean',references_checked:true,bonding_capacity:0,current_backlog_pct:30,notes:''},
+    {id:'SUB-03',company:'Midwest Steel Fab',trade:'Structural Steel',contact:'Ray Holloway',phone:'(440) 555-0833',email:'ray@midweststeelfab.example',rate_basis:'flat',rate:0,w9_on_file:true,coi_expiry:daysAgo(20),licence_no:'OH-ST-11750',licence_expiry:'2027-06-01',prequal_status:'qualified',financial_capacity:'strong',safety_record:'clean',references_checked:true,bonding_capacity:1200000,current_backlog_pct:70,notes:'COI lapsed - not eligible to bid until renewed, despite otherwise qualifying'},
+    {id:'SUB-04',company:'Delgado Plumbing Co',trade:'Plumbing',contact:'Ana Delgado',phone:'(440) 555-0844',email:'ana@delgadoplumbing.example',rate_basis:'hourly',rate:78,w9_on_file:false,coi_expiry:'2026-11-01',licence_no:'OH-PL-29310',licence_expiry:'2026-12-15',prequal_status:'in_progress',financial_capacity:'unknown',safety_record:'unknown',references_checked:false,bonding_capacity:0,current_backlog_pct:null,notes:'Awaiting W-9 and reference checks'},
+    {id:'SUB-05',company:'Bright Path Electrical',trade:'Electrical',contact:'Owen Marsh',phone:'(440) 555-0855',email:'owen@brightpathelectrical.example',rate_basis:'hourly',rate:80,w9_on_file:true,coi_expiry:'2027-02-01',licence_no:'OH-EL-50120',licence_expiry:'2027-02-01',prequal_status:'disqualified',financial_capacity:'adequate',safety_record:'major_incidents',references_checked:true,bonding_capacity:150000,current_backlog_pct:95,notes:'Disqualified - OSHA violation history'}
   ]);
   // Suppliers: real names already referenced in bld_pos above, so spend-to-
   // date (computed live from those POs, not stored) has genuine non-zero
@@ -2448,6 +2489,73 @@ function fpCreateRFI(){
   if(rec){rec.spawned_rfi=true;st('bld_photo_analyses',bldPhotoAnalyses().map(function(x){return x.id===id?rec:x;}));rFieldPhoto();}
   openRfiModal({job_id:$('fp-job').value,desc:'From field photo analysis: '+fpLastResult.slice(0,160).replace(/\n/g,' ')});
 }
+// ── INSURANCE CLAIM DOCUMENTATION ASSISTANT ─────────────────────────────
+// Packages records that ALREADY EXIST (Daily Logs + Field Photo Analyses)
+// into a claim-ready packet -- deliberately does not collect anything new
+// and does not let Claude invent facts. Every fact handed to the model is
+// pulled from real stored records; the system prompt forbids adding detail
+// beyond what's given, and the packet says so explicitly where the data
+// model has no field for something a real claim might want (e.g. there is
+// no dedicated "security measures" log in this app -- fabricating one would
+// be exactly the kind of fake-KPI-shaped lie this codebase's own guardrails
+// exist to catch).
+async function claimGeneratePacket(){
+  var jobId=$('claim-job').value;
+  if(!jobId){toast('Select a job first');return;}
+  var incidentType=$('claim-type').value;
+  var incidentDate=$('claim-date').value;
+  if(!incidentDate){toast('Incident date required');return;}
+  var job=jobs().find(function(x){return x.id===jobId;});
+  if(!job){toast('Job not found');return;}
+  var logs=bldLogs().filter(function(l){return l.job_id===jobId&&l.log_date<=incidentDate;})
+    .sort(function(a,b){return (b.log_date||'').localeCompare(a.log_date||'');});
+  var analyses=bldPhotoAnalyses().filter(function(a){return a.job_id===jobId&&a.date<=incidentDate;})
+    .sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});
+  if(!logs.length&&!analyses.length){
+    toast('No Daily Logs or Field Photo Analyses on file for this job before the incident date -- nothing to package yet');
+    return;
+  }
+  $('claim-result-wrap').style.display='block';
+  $('claim-result').textContent='Assembling packet...';
+  var logLines=logs.slice(0,15).map(function(l){
+    return '- '+l.log_date+': weather '+(l.weather||'n/a')+', crew '+(l.crew||0)+', '+(l.photos||0)+' photo(s) logged. Work: '+(l.work||'n/a')+(l.delays?'. Delays: '+l.delays:'');
+  }).join('\n')||'(none on file before this date)';
+  var lastAnalysis=analyses[0];
+  var analysisLines=analyses.slice(0,10).map(function(a){
+    return '- '+a.date+': '+a.summary;
+  }).join('\n')||'(none on file before this date)';
+  var facts='JOB: '+(job.client||'')+', '+(job.address||'')+', stage '+job.stage+'\n'+
+    'INCIDENT TYPE (as entered by user): '+incidentType+'\n'+
+    'INCIDENT DATE (as entered by user): '+incidentDate+'\n\n'+
+    'DAILY LOG ENTRIES ON FILE BEFORE INCIDENT DATE (most recent first):\n'+logLines+'\n\n'+
+    'FIELD PHOTO ANALYSES ON FILE BEFORE INCIDENT DATE (most recent first):\n'+analysisLines+'\n\n'+
+    'LAST KNOWN DOCUMENTED CONDITION: '+(lastAnalysis?lastAnalysis.date+' -- '+lastAnalysis.full:'No photo analysis on file before this date.')+'\n\n'+
+    'DOCUMENTED SECURITY MEASURES: this system has no dedicated security-measures field. None on file beyond what may be mentioned in the daily log text above.';
+  var sys='You are assembling an insurance claim documentation packet for a general contractor. '+
+    'You MUST use ONLY the facts given below -- do not invent site conditions, security measures, '+
+    'dollar amounts, or details that are not present in the data. Where the data says something is '+
+    'not on file, say so plainly in the packet rather than filling the gap. Structure the packet with '+
+    'these sections in order: Property/Job Information, Incident Summary, Timeline of Site Activity '+
+    '(chronological, oldest first), Last Known Documented Condition Prior to Incident, Documented '+
+    'Security Measures, and a closing note that this packet is a starting point for the contractor\'s '+
+    'own claim submission, not a substitute for adjuster review. Plain ASCII only, no Unicode box '+
+    'characters.\n\n'+facts;
+  try{
+    var res=await fetch(PROXY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:'Generate the claim documentation packet from the facts provided.'}],
+        max_tokens:1400})
+    });
+    if(!res.ok)throw new Error('Claude error '+res.status);
+    var data=await res.json();
+    var content=data.content||[];
+    var text=content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    $('claim-result').textContent=text||'No response text returned.';
+  }catch(e){
+    $('claim-result').textContent='Could not reach Claude. Check your connection and try again.';
+  }
+}
 function rFieldPhoto(){
   fillJobSelects();
   var jf=$('fp-job');if(jf&&!jf.value){var js=jobs();if(js.length)jf.value=js[0].id;}
@@ -2529,6 +2637,69 @@ function allTaskDates(){
   return cache;
 }
 function fmtD(d){return isNaN(d)?'--':d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+// Parallel to computeTaskDates/allTaskDates above (deliberately not
+// refactored to share code with the live Timeline engine -- this runs
+// against a caller-supplied, possibly-modified task list, and touching the
+// Timeline panel's real cascade logic to make that possible is a bigger,
+// riskier change than duplicating ~15 lines).
+function computeAllTaskDatesFrom(taskList){
+  var byId={};taskList.forEach(function(t){byId[t.id]=t;});
+  var cache={},visiting={};
+  function resolve(t){
+    if(cache[t.id])return cache[t.id];
+    if(visiting[t.id]){var s=new Date(t.start+'T00:00:00');var e=new Date(s.getTime()+(t.duration||1)*86400000);cache[t.id]={start:s,end:e,cyclic:true};return cache[t.id];}
+    visiting[t.id]=true;
+    var start=new Date(t.start+'T00:00:00');
+    if(t.dependency_id&&byId[t.dependency_id]){
+      var depDates=resolve(byId[t.dependency_id]);
+      if(depDates.end>start)start=depDates.end;
+    }
+    var end;
+    if(t.status==='complete'&&t.actual){end=new Date(t.actual+'T00:00:00');if(end<start)end=start;}
+    else{end=new Date(start.getTime()+(t.duration||1)*86400000);}
+    delete visiting[t.id];
+    if(cache[t.id]&&cache[t.id].cyclic)return cache[t.id];
+    cache[t.id]={start:start,end:end,cyclic:false};
+    return cache[t.id];
+  }
+  taskList.forEach(resolve);
+  return cache;
+}
+// Real, deterministic ripple calc -- no AI involved and no invented dollar
+// figure. Extends one task's duration by extraDays, recomputes the same
+// dependency cascade Timeline already uses, and diffs before/after so the
+// caller learns exactly which downstream tasks shift and how many days the
+// job's completion moves. Shared by Change Orders (coScheduleImpact) and
+// the Schedule panel's Disruption Response Assistant -- same real math,
+// two different triggers for needing it.
+function taskScheduleImpact(jobId,taskId,extraDays){
+  if(!jobId||!taskId||!extraDays)return null;
+  var jobTasks=bldTasks().filter(function(t){return t.job_id===jobId;});
+  if(!jobTasks.length)return null;
+  var baseline=computeAllTaskDatesFrom(jobTasks);
+  var modified=jobTasks.map(function(t){
+    var clone={};for(var k in t){clone[k]=t[k];}
+    if(t.id===taskId)clone.duration=(t.duration||1)+extraDays;
+    return clone;
+  });
+  var after=computeAllTaskDatesFrom(modified);
+  var endsBefore=jobTasks.map(function(t){return baseline[t.id].end.getTime();});
+  var endsAfter=modified.map(function(t){return after[t.id].end.getTime();});
+  var jobEndBefore=Math.max.apply(null,endsBefore);
+  var jobEndAfter=Math.max.apply(null,endsAfter);
+  var jobShiftDays=Math.round((jobEndAfter-jobEndBefore)/86400000);
+  var affected=[];
+  jobTasks.forEach(function(t){
+    var shift=Math.round((after[t.id].end.getTime()-baseline[t.id].end.getTime())/86400000);
+    if(shift>0)affected.push({name:t.name,shiftDays:shift});
+  });
+  return{jobShiftDays:jobShiftDays,affected:affected,jobEndBefore:new Date(jobEndBefore),jobEndAfter:new Date(jobEndAfter)};
+}
+function coScheduleImpact(co){
+  if(!co||!co.linked_task_id||!co.schedule_impact_days)return null;
+  return taskScheduleImpact(co.job_id,co.linked_task_id,co.schedule_impact_days);
+}
 
 function rTimeline(){fillJobSelects();taskJobChanged();rTimelineTbl();}
 function taskScope(){
@@ -3304,13 +3475,34 @@ function saveSubBid(){
 // Awarding one bid in a cost-code group un-awards any other bid already
 // marked in that same group -- a cost code can have exactly one awarded
 // sub at a time, not silently two.
+//
+// Prequalification gate happens HERE, not just as a roster-list column --
+// the whole point of the item 5 finding was scoring subs BEFORE award, not
+// discovering a compliance/safety problem after work has already started.
+// Matched by company name since sub bids here are free-text (not linked to
+// a roster SUB- id); a bid for a company not in the roster at all is
+// allowed through with a warning rather than blocked, since not every
+// one-off bid needs to be a formally onboarded sub.
 function awardSubBid(id){
   var list=bldSubBids();
   var target=list.find(function(x){return x.id===id;});if(!target)return;
+  var roster=bldSubs();
+  var match=roster.find(function(s){return (s.company||'').trim().toLowerCase()===(target.sub||'').trim().toLowerCase();});
+  if(match&&!eligibleToBid(match)){
+    var why=match.prequal_status!=='qualified'?'prequal status is "'+(PREQUAL[match.prequal_status]||{l:match.prequal_status}).l+'"':'compliance paperwork (COI/licence) is lapsed or missing';
+    toast('Cannot award to '+match.company+' -- not eligible to bid ('+why+'). Fix on the Subcontractors panel first.',5000);
+    return;
+  }
   list.forEach(function(x){if(x.job_id===target.job_id&&x.cost_code===target.cost_code)x.awarded=(x.id===id);});
   st('bld_sub_bids',list);
   rSubBids();
-  toast('Awarded to '+target.sub);
+  if(match&&match.current_backlog_pct!==null&&match.current_backlog_pct>=90){
+    toast('Awarded to '+target.sub+' -- warning: at '+match.current_backlog_pct+'% backlog capacity, may not have room for this scope',5000);
+  }else if(!match){
+    toast('Awarded to '+target.sub+' -- not in the Subcontractor roster, prequalification unverified');
+  }else{
+    toast('Awarded to '+target.sub);
+  }
 }
 function rSubBids(){
   var list=bldSubBids();
@@ -3349,7 +3541,7 @@ function jobLabel(id){var j=jobs().find(function(x){return x.id===id;});return j
 // select is a one-line addition to one of these two lists, not a new
 // paragraph in this function.
 var FILTER_JOB_SELECTS=['cjob','cojob','rjob','smjob','pljob','insjob','seljob','dljob','tljob','drjob','lwjob','pojob','dvjob','tsjob','chkjob','eqjob','safjob','warjob','docjob','schjob'];
-var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job','warm-job','cp-job','docm-job','schm-job'];
+var MODAL_JOB_SELECTS=['cm-job','com-job','rm-job','smm-job','plm-job','im-job','selm-job','lm-job','tm-job','fp-job','drm-job','lwm-job','pom-job','tsm-job','incm-job','talkm-job','warm-job','cp-job','docm-job','schm-job','claim-job','dis-job'];
 var OPTIONAL_MODAL_JOB_SELECTS=['sbm-job','chkm-job','eqm-job','rvm-job','ai-job'];
 function fillJobSelects(){
   var js=jobs();
@@ -3468,14 +3660,21 @@ function rCOTbl(){
   $('co-pending-sub').className='kt'+(pending>0?' d':'');
 
   var tb=$('cotbody');
-  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No change orders match</td></tr>';}
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No change orders match</td></tr>';}
   else{
     tb.innerHTML=list.map(function(c){
       var s=COSTATUS[c.status]||{l:c.status,c:'bx'};
+      var impact=coScheduleImpact(c);
+      var impactCell=impact?
+        (impact.jobShiftDays>0?
+          '<span class="badge bw">Job +'+impact.jobShiftDays+'d</span><div style="font-size:11px;color:var(--muted);margin-top:3px">'+impact.affected.length+' downstream task'+(impact.affected.length===1?'':'s')+' shift</div>'
+          :'<span class="badge bg">Absorbed, no job slip</span>')
+        :'<span style="color:var(--muted)">--</span>';
       return '<tr><td>'+H(jobLabel(c.job_id))+'</td>'+
         '<td><strong>'+H(c.description)+'</strong>'+(c.status==='rejected'&&c.reason?'<div style="font-size:11px;color:var(--danger);margin-top:3px">'+H(c.reason)+'</div>':'')+'</td>'+
         '<td><strong>'+fmt(c.amount)+'</strong></td>'+
         '<td>'+(c.labour_hrs||0)+' h</td>'+
+        '<td>'+impactCell+'</td>'+
         '<td>'+H(c.requested_by||'')+'</td>'+
         '<td><span class="badge '+s.c+'">'+H(s.l)+'</span></td>'+
         '<td>'+(c.sent_at?fdate(c.sent_at):'--')+'</td>'+
@@ -3501,14 +3700,25 @@ function rCOTbl(){
 // a Change Order directly from an analysis result without duplicating this
 // whole modal-reset flow. Every existing call site still works unchanged;
 // omitting prefill is the same as calling openCOModal() always was.
+function coJobChanged(){
+  var sel=$('com-task');if(!sel)return;
+  var job=($('com-job')||{}).value||'';
+  var keep=sel.value;
+  var opts=bldTasks().filter(function(t){return t.job_id===job;})
+    .map(function(t){return '<option value="'+H(t.id)+'">'+H(t.name)+'</option>';}).join('');
+  sel.innerHTML='<option value="">No schedule impact</option>'+opts;
+  sel.value=keep;
+}
 function openCOModal(prefill){
   if(!jobs().length){toast('Add a job first - a change order must belong to one');return;}
   coeid=null;fillJobSelects();
-  ['com-desc','com-amount','com-hrs','com-by','com-sent','com-accepted','com-reason'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  ['com-desc','com-amount','com-hrs','com-by','com-sent','com-accepted','com-reason','com-delaydays'].forEach(function(f){var el=$(f);if(el)el.value='';});
   $('com-status').value='draft';
+  coJobChanged();$('com-task').value='';
   if(prefill){
     if(prefill.job_id)$('com-job').value=prefill.job_id;
     if(prefill.desc)$('com-desc').value=prefill.desc;
+    coJobChanged();
   }
   $('comodal').classList.add('on');
 }
@@ -3520,6 +3730,7 @@ function editCO(id){
   $('com-desc').value=c.description||'';$('com-amount').value=c.amount||'';
   $('com-hrs').value=c.labour_hrs||'';$('com-by').value=c.requested_by||'';
   $('com-sent').value=c.sent_at||'';$('com-accepted').value=c.accepted_at||'';$('com-reason').value=c.reason||'';
+  coJobChanged();$('com-task').value=c.linked_task_id||'';$('com-delaydays').value=c.schedule_impact_days||'';
   $('comodal').classList.add('on');
 }
 function saveCO(){
@@ -3542,7 +3753,9 @@ function saveCO(){
     labour_hrs:parseFloat($('com-hrs').value)||0,
     status:status,requested_by:$('com-by').value.trim(),
     sent_at:$('com-sent').value,accepted_at:accepted,
-    reason:$('com-reason').value.trim()
+    reason:$('com-reason').value.trim(),
+    linked_task_id:$('com-task').value||'',
+    schedule_impact_days:parseFloat($('com-delaydays').value)||0
   };
   // Same carry-forward guard as saveJob()/saveCost().
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
@@ -3706,6 +3919,17 @@ function rDash(){
   blocked.forEach(function(j){att.push({t:H(j.client)+' - '+H(j.blocked||'blocked'),b:'Blocked',c:'br'});});
   act.forEach(function(j){var m=marginPct(j);if(m<10)att.push({t:H(j.client)+' margin at '+m+'%',b:m<0?'Losing':'Thin',c:m<0?'br':'bw'});});
   js.filter(function(j){return j.stage==='punch';}).forEach(function(j){att.push({t:H(j.client)+' in close-out',b:'Punch',c:'bw'});});
+  // Compliance expiry used to be visible only if someone opened the
+  // Compliance or Reports panel -- passive storage, not an active alert.
+  // Surfacing it here means the first screen after login shows it, same
+  // as every other attention item.
+  bldSubs().forEach(function(s){
+    var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
+    if(coi!==null&&coi<0)att.push({t:H(s.company)+' - COI expired',b:'Expired',c:'br'});
+    else if(coi!==null&&coi<=30)att.push({t:H(s.company)+' - COI expires in '+coi+'d',b:'Expiring',c:'bw'});
+    if(lic!==null&&lic<0)att.push({t:H(s.company)+' - licence expired',b:'Expired',c:'br'});
+    else if(lic!==null&&lic<=30)att.push({t:H(s.company)+' - licence expires in '+lic+'d',b:'Expiring',c:'bw'});
+  });
   $('d-attention').innerHTML=att.length?att.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
 
   rCrew();
@@ -4489,7 +4713,7 @@ function rSubsTbl(){
 var submeid=null;
 function openSubModal(){
   submeid=null;
-  ['subm-company','subm-trade','subm-contact','subm-phone','subm-email','subm-rate','subm-coiexp','subm-licno','subm-licexp','subm-notes'].forEach(function(f){$(f).value='';});
+  ['subm-company','subm-trade','subm-contact','subm-phone','subm-email','subm-rate','subm-coiexp','subm-licno','subm-licexp','subm-bonding','subm-backlog','subm-notes'].forEach(function(f){$(f).value='';});
   $('subm-ratebasis').value='hourly';$('subm-w9').checked=false;
   $('subm-prequal').value='not_started';$('subm-fincap').value='unknown';$('subm-safety').value='unknown';
   $('subm-refs').checked=false;
@@ -4507,6 +4731,7 @@ function editSub(id){
   $('subm-prequal').value=s.prequal_status||'not_started';
   $('subm-fincap').value=s.financial_capacity||'unknown';$('subm-safety').value=s.safety_record||'unknown';
   $('subm-refs').checked=!!s.references_checked;
+  $('subm-bonding').value=s.bonding_capacity||'';$('subm-backlog').value=(s.current_backlog_pct===0||s.current_backlog_pct)?s.current_backlog_pct:'';
   $('subm-notes').value=s.notes||'';
   $('submodal').classList.add('on');
 }
@@ -4526,6 +4751,8 @@ function saveSub(){
     coi_expiry:$('subm-coiexp').value,licence_no:$('subm-licno').value.trim(),licence_expiry:$('subm-licexp').value,
     prequal_status:$('subm-prequal').value,financial_capacity:$('subm-fincap').value,
     safety_record:$('subm-safety').value,references_checked:$('subm-refs').checked,
+    bonding_capacity:parseFloat($('subm-bonding').value)||0,
+    current_backlog_pct:$('subm-backlog').value===''?null:Math.max(0,Math.min(100,parseFloat($('subm-backlog').value)||0)),
     notes:$('subm-notes').value.trim()
   };
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
@@ -5916,7 +6143,7 @@ function scheduleInWindow(e,windowKey){
   if(windowKey==='week')return days>=0&&days<=6;
   return true;
 }
-function rSchedule(){fillJobSelects();rScheduleTbl();}
+function rSchedule(){fillJobSelects();rScheduleTbl();disJobChanged();}
 function scheduleScope(){
   var jf=(($('schjob')||{}).value||''),wf=(($('schwindow')||{}).value||'');
   return bldSchedule().filter(function(e){return(!jf||e.job_id===jf)&&(!wf||scheduleInWindow(e,wf));});
@@ -5946,6 +6173,77 @@ function rScheduleTbl(){
         '<td>'+H(e.notes||'')+'</td>'+
         '<td><button class="btn bo bs" onclick="editSchedule(\''+H(e.id)+'\')">Edit</button></td></tr>';
     }).join('');
+  }
+}
+// ── DISRUPTION RESPONSE ASSISTANT ───────────────────────────────────────
+// Item 5 finding: when a disruption hits, suggest an adjusted schedule AND
+// draft notifications to affected subs, hooking into the Schedule panel
+// (who's actually assigned to this job) and the Timeline dependency engine
+// (the real day-count ripple) rather than inventing either.
+function disJobChanged(){
+  var sel=$('dis-task');if(!sel)return;
+  var job=($('dis-job')||{}).value||'';
+  var keep=sel.value;
+  var opts=bldTasks().filter(function(t){return t.job_id===job;})
+    .map(function(t){return '<option value="'+H(t.id)+'">'+H(t.name)+'</option>';}).join('');
+  sel.innerHTML='<option value="">No linked task</option>'+opts;
+  sel.value=keep;
+}
+async function disRespond(){
+  var jobId=$('dis-job').value;
+  if(!jobId){toast('Select a job first');return;}
+  var job=jobs().find(function(x){return x.id===jobId;});
+  var desc=$('dis-desc').value.trim();
+  if(!desc){toast('Disruption description required');return;}
+  var disDate=$('dis-date').value||new Date().toISOString().slice(0,10);
+  var taskId=$('dis-task').value||'';
+  var days=parseFloat($('dis-days').value)||0;
+  // Real affected people: whoever is actually on this job's Schedule on or
+  // after the disruption date, not a guessed or generic list.
+  var affectedEntries=bldSchedule().filter(function(e){return e.job_id===jobId&&e.date>=disDate;})
+    .sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+  if(!affectedEntries.length){
+    toast('No Schedule assignments on or after '+disDate+' for this job -- nothing to notify yet');
+    return;
+  }
+  var impact=(taskId&&days)?taskScheduleImpact(jobId,taskId,days):null;
+  $('dis-result-wrap').style.display='block';
+  $('dis-result').textContent='Working...';
+  var peopleLines=affectedEntries.map(function(e){
+    return '- '+e.date+': '+e.assignee+' ('+(e.assignee_type==='sub'?'Sub':'Crew')+')'+(e.notes?' -- '+e.notes:'');
+  }).join('\n');
+  var impactLines=impact?
+    ('Linked task duration extended by '+days+' day(s). Job completion moves from '+fmtD(impact.jobEndBefore)+' to '+fmtD(impact.jobEndAfter)+' ('+(impact.jobShiftDays>0?'+'+impact.jobShiftDays:impact.jobShiftDays)+' days). '+
+     (impact.affected.length?'Downstream tasks that shift: '+impact.affected.map(function(a){return a.name+' (+'+a.shiftDays+'d)';}).join(', ')+'.':'No downstream tasks shift -- the delay is absorbed.'))
+    :'No linked task/delay days given, so no dependency-cascade recompute was run for this disruption.';
+  var facts='JOB: '+(job?(job.client||job.address):jobId)+'\n'+
+    'DISRUPTION: '+desc+'\n'+
+    'DISRUPTION DATE: '+disDate+'\n\n'+
+    'SCHEDULE IMPACT (computed, not guessed):\n'+impactLines+'\n\n'+
+    'PEOPLE ACTUALLY ON THIS JOB'+"'"+'S SCHEDULE ON OR AFTER THE DISRUPTION DATE:\n'+peopleLines;
+  var sys='You are helping a general contractor respond to a schedule disruption. '+
+    'You MUST use ONLY the facts given below -- the people listed are the real, actual sub/crew '+
+    'assignments on this job, do not invent additional people, dates, or a schedule impact beyond '+
+    'what is given. Produce two sections: (1) a short suggested adjusted schedule / next steps for '+
+    'the office, grounded only in the computed impact given; (2) one short draft notification email '+
+    'per person listed, addressed to them by name, plain and professional, explaining the disruption '+
+    'and what it means for their part of the job -- if the computed schedule impact is unknown, say '+
+    'the new date is still being worked out rather than inventing one. Plain ASCII only, no Unicode '+
+    'box characters.\n\n'+facts;
+  try{
+    var res=await fetch(PROXY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:'Generate the adjusted-schedule note and the draft notification emails.'}],
+        max_tokens:1600})
+    });
+    if(!res.ok)throw new Error('Claude error '+res.status);
+    var data=await res.json();
+    var content=data.content||[];
+    var text=content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+    $('dis-result').textContent=text||'No response text returned.';
+  }catch(e){
+    $('dis-result').textContent='Could not reach Claude. Check your connection and try again.';
   }
 }
 var schmeid=null;
@@ -6026,8 +6324,8 @@ function csv(type){
   } else if(type==='changeorders'){
     var colist=coScope();
     if(!colist.length){toast('No change orders in scope to export');return;}
-    rows=[['Job','Description','Amount','Labour hrs','Requested By','Status','Sent','Accepted','Rejection Reason']];
-    colist.forEach(function(c){rows.push([jobLabel(c.job_id),c.description,c.amount,c.labour_hrs,c.requested_by,(COSTATUS[c.status]||{l:c.status}).l,c.sent_at,c.accepted_at,c.reason]);});
+    rows=[['Job','Description','Amount','Labour hrs','Schedule Impact Days','Job Completion Shift Days','Requested By','Status','Sent','Accepted','Rejection Reason']];
+    colist.forEach(function(c){var impact=coScheduleImpact(c);rows.push([jobLabel(c.job_id),c.description,c.amount,c.labour_hrs,c.schedule_impact_days||0,impact?impact.jobShiftDays:'',c.requested_by,(COSTATUS[c.status]||{l:c.status}).l,c.sent_at,c.accepted_at,c.reason]);});
   } else if(type==='bids'){
     var blist=bidScope();
     if(!blist.length){toast('No bids in scope to export');return;}
@@ -6111,8 +6409,8 @@ function csv(type){
   } else if(type==='subs'){
     var sublist=subScope();
     if(!sublist.length){toast('No subcontractors in scope to export');return;}
-    rows=[['Company','Trade','Contact','Phone','Email','Rate Basis','Rate','W-9 On File','COI Expiry','Licence #','Licence Expiry','Prequal Status','Financial Capacity','Safety Record','References Checked','Eligible to Bid','Notes']];
-    sublist.forEach(function(s){rows.push([s.company,s.trade,s.contact,s.phone,s.email,s.rate_basis,s.rate,s.w9_on_file?'Yes':'No',s.coi_expiry,s.licence_no,s.licence_expiry,(PREQUAL[s.prequal_status]||{l:s.prequal_status}).l,FINCAP[s.financial_capacity]||s.financial_capacity,SAFETY[s.safety_record]||s.safety_record,s.references_checked?'Yes':'No',eligibleToBid(s)?'Yes':'No',s.notes]);});
+    rows=[['Company','Trade','Contact','Phone','Email','Rate Basis','Rate','W-9 On File','COI Expiry','Licence #','Licence Expiry','Prequal Status','Financial Capacity','Safety Record','References Checked','Bonding Capacity','Current Backlog %','Eligible to Bid','Notes']];
+    sublist.forEach(function(s){rows.push([s.company,s.trade,s.contact,s.phone,s.email,s.rate_basis,s.rate,s.w9_on_file?'Yes':'No',s.coi_expiry,s.licence_no,s.licence_expiry,(PREQUAL[s.prequal_status]||{l:s.prequal_status}).l,FINCAP[s.financial_capacity]||s.financial_capacity,SAFETY[s.safety_record]||s.safety_record,s.references_checked?'Yes':'No',s.bonding_capacity||0,(s.current_backlog_pct===0||s.current_backlog_pct)?s.current_backlog_pct:'',eligibleToBid(s)?'Yes':'No',s.notes]);});
   } else if(type==='compliance'){
     var cplist=bldSubs();
     if(!cplist.length){toast('No subcontractors to export');return;}
