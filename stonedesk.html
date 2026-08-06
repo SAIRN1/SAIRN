@@ -26616,7 +26616,22 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'Lisa Chen',role:'Office Manager',dept:'Office',phone:'(555) 847-3206',start:'2021-01-01',certs:[]},
     {name:'Jake Burns',role:'Installer',dept:'Field',phone:'(555) 847-3207',start:'2022-05-01',certs:['OSHA 10']},
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_employees')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
+  // BUGFIX (2026-08-06): no id field existed on these records at all -- entries were
+  // matched only by array position, which is why there was never a way to remove a
+  // duplicate/mistaken entry (a delete action needs something stable to target).
+  // Self-healing here rather than a one-time migration script: any record missing an
+  // id (every existing entry, including SEED data) gets one assigned and persisted
+  // the first time it's loaded, so sdEmpDelete() below always has something real to
+  // match against regardless of when the record was created.
+  function load(){
+    try{
+      var d=JSON.parse(localStorage.getItem('sd_employees')||'null')||(sdDemoCleared()?[]:SEED);
+      var changed=false;
+      d.forEach(function(x){ if(!x.id){ x.id='E-'+Date.now()+'-'+Math.random().toString(36).slice(2,8); changed=true; } });
+      if(changed) save(d);
+      return d;
+    }catch(e){return sdDemoCleared()?[]:SEED;}
+  }
   function save(d){try{localStorage.setItem('sd_employees',JSON.stringify(d));}catch(e){}}
   function updateKPIs(d){
     document.getElementById('emp-total').textContent=d.length;
@@ -26634,15 +26649,30 @@ document.addEventListener('DOMContentLoaded', function() {
     var bgMap={Field:'#dcfce7',Shop:'#dbeafe',Office:'#fef3c7'};
     document.getElementById('emp-grid').innerHTML=d.map(function(x){
       var yrs=Math.floor((Date.now()-new Date(x.start))/31536000000);
-      return '<div style="background:'+(bgMap[x.dept]||'#f3f4f6')+';border:1px solid var(--border);border-radius:8px;padding:12px">'
+      return '<div style="background:'+(bgMap[x.dept]||'#f3f4f6')+';border:1px solid var(--border);border-radius:8px;padding:12px;position:relative">'
+        +'<button onclick="sdEmpDelete(\''+x.id+'\')" title="Remove from directory" aria-label="Remove '+escHtml(x.name)+' from directory" style="position:absolute;top:8px;right:8px;min-width:28px;min-height:28px;background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;line-height:1;color:#dc2626">&#128465;</button>'
         +'<div style="font-size:24px;margin-bottom:6px">'+(EMOJIS[x.dept]||'👤')+'</div>'
-        +'<div style="font-weight:700;font-size:13px;margin-bottom:2px">'+escHtml(x.name)+'</div>'
+        +'<div style="font-weight:700;font-size:13px;margin-bottom:2px;padding-right:24px">'+escHtml(x.name)+'</div>'
         +'<div style="font-size:12px;color:#555;margin-bottom:4px">'+escHtml(x.role)+'</div>'
         +'<div style="font-size:11px;color:var(--muted)">'+x.phone+'</div>'
         +'<div style="font-size:11px;color:var(--muted)">'+yrs+' yr'+(yrs!==1?'s':'')+'</div>'
         +(x.certs&&x.certs.length?'<div style="margin-top:6px">'+x.certs.map(function(c){return '<span style="background:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-right:3px">'+c+'</span>';}).join('')+'</div>':'')
         +'</div>';
     }).join('')||'<div style="color:var(--muted);padding:20px">No employees found</div>';
+  };
+  window.sdEmpDelete=function(id){
+    var d=load();
+    var rec=d.find(function(x){return x.id===id;});
+    if(!rec)return;
+    // Honest disclosure in the confirm copy: this only removes the directory entry
+    // (name/role/dept card) -- it does NOT touch sd_employee_auth (their actual
+    // StoneDesk sign-in, if they have one), which is a separate system managed
+    // through the Grant App Login Access card above. Conflating the two would
+    // silently overclaim what this button does.
+    if(!confirm('Remove '+rec.name+' from the employee directory?\n\nThis only removes this directory card -- it does NOT revoke their StoneDesk sign-in access if they have one. Use Grant App Login Access separately for that.'))return;
+    d=d.filter(function(x){return x.id!==id;});
+    save(d);sdEmpRender();
+    showToast('Removed '+rec.name+' from the directory');
   };
   window.sdEmpAdd=function(){
     var name=document.getElementById('emp-name').value.trim();
@@ -27205,7 +27235,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('subx-kpi-owed').textContent = '$' + unpaid.reduce(function(s,j){ return s+(parseFloat(j.payAmount)||0); }, 0).toLocaleString();
   }
 
-  subxLoadRoster().then(function(){ subxLoadJobs(); });
+  // BUGFIX (2026-08-06): this used to call subxLoadRoster().then(subxLoadJobs)
+  // unconditionally right here, at SCRIPT-LOAD time -- meaning it fired on
+  // every single page load, before any login, for every visitor, with no
+  // session token yet available. Server-side, api/sd-sub-data.js's roster
+  // read correctly requires a verified employee session and refuses
+  // otherwise -- so this generated a background 403 on every page load,
+  // completely independent of whether anyone ever opened the Subcontractor
+  // Portal panel. Removed as pure redundancy, not just silenced: the
+  // nav(id)/showPage(id) dispatcher already calls both of these exact
+  // functions correctly, gated on the user actually navigating to
+  // id==='subcontractor' (see the `if(id==='subcontractor'...)` branch in
+  // the main panel-switch handler), which is the only time this data is
+  // actually needed.
 })();
 </script>
 </div>
