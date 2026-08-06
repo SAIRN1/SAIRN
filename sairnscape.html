@@ -1390,8 +1390,12 @@ if (document.readyState === 'loading') {
   <div class="scp-ph"><div><div class="scp-ptitle">Scheduling</div><div class="scp-psub">Recurring routes + one-off jobs</div></div>
   <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenSchedModal()">+ Add to Schedule</button></div></div>
   <div class="scp-card"><div class="scp-cb">
-    <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Frequency</th><th>Next Date</th><th>Crew</th><th>Actions</th></tr></thead>
+    <div class="scp-tw"><table><thead><tr><th>Customer</th><th>Frequency</th><th>Next Date</th><th>Crew</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="scp-stbody"></tbody></table></div>
+  </div></div>
+  <div class="scp-card" id="scp-qc-queue-card" style="margin-top:14px;display:none"><div class="scp-cb">
+    <div style="font-weight:700;font-size:14px;margin-bottom:10px">Progress Photo QC Queue</div>
+    <div id="scp-qc-queue-list"><div style="color:#64748B;text-align:center;padding:12px">Nothing pending review</div></div>
   </div></div>
 </div>
 <div class="scp-modal" id="scp-schedmodal">
@@ -1403,6 +1407,33 @@ if (document.readyState === 'loading') {
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="scp-btn scp-bo" onclick="scpCloseSchedModal()">Cancel</button>
       <button class="scp-btn scp-bp" onclick="scpSaveSched()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ITEM 3: PHOTO-VERIFIED COMPLETION GATE (same shape as sairngrounds.html's
+     schedphotomodal/grdCheckCompletionGate -- upload -> AI description ->
+     mark-as-final -> QC review by someone else -> approved -> only then can
+     the job be marked Complete). -->
+<div class="scp-modal" id="scp-schedphotomodal">
+  <div class="scp-mbox">
+    <div class="scp-mtitle">Job Photo</div>
+    <div id="scp-schedphoto-list" style="margin-bottom:12px"></div>
+    <div id="scp-schedphoto-upload-zone" onclick="document.getElementById('scp-schedphoto-file').click()" style="border:2px dashed #E2E8F0;border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:#64748B;font-size:13px">
+      Tap to photograph current progress
+    </div>
+    <input type="file" id="scp-schedphoto-file" accept="image/*" capture="environment" style="display:none" onchange="scpPhotoFileChosen(this)">
+    <div id="scp-schedphoto-preview" style="display:none;margin-top:8px"><img id="scp-schedphoto-img" style="max-width:100%;border-radius:8px;border:1px solid #E2E8F0"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#334155;margin-top:10px;cursor:pointer">
+      <input type="checkbox" id="scp-schedphoto-final" style="width:auto;min-width:18px;min-height:18px">
+      This is the <strong>finished-product photo</strong> (required, with QC approval, before this job can be marked Complete)
+    </label>
+    <button class="scp-btn scp-bp" id="scp-schedphoto-upload-btn" onclick="scpUploadProgressPhoto()" disabled style="margin-top:10px;width:100%">Upload &amp; Analyze</button>
+    <div id="scp-schedphoto-result-wrap" style="display:none;margin-top:10px">
+      <div id="scp-schedphoto-result" style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:10px;font-size:13px;white-space:pre-wrap"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:12px;justify-content:flex-end;">
+      <button class="scp-btn scp-bo" onclick="scpCloseSchedPhotoModal()">Close</button>
     </div>
   </div>
 </div>
@@ -2051,9 +2082,17 @@ function scpSendDesignToQuote(){
 
 function scpRSched(){
   var sched=scpLd('scp_schedule',[]);
-  scp$('scp-stbody').innerHTML=sched.map(function(s){
-    return '<tr><td>'+scpH(scpCustName(s.customer_id))+'</td><td>'+scpH(s.freq)+'</td><td>'+scpFdate(s.next)+'</td><td>'+scpH(s.crew)+'</td><td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenSchedModal(\''+s.id+'\')">Edit</button></td></tr>';
-  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#64748B;padding:20px">Nothing scheduled yet</td></tr>';
+  scp$('scp-stbody').innerHTML=sched.length?sched.map(function(s){
+    var status=s.status||'scheduled';
+    var sc={scheduled:'scp-bw',complete:'scp-bg'}[status]||'scp-bx';
+    return '<tr><td>'+scpH(scpCustName(s.customer_id))+'</td><td>'+scpH(s.freq)+'</td><td>'+scpFdate(s.next)+'</td><td>'+scpH(s.crew)+'</td>'+
+      '<td><span class="scp-badge '+sc+'">'+scpH(status)+'</span></td>'+
+      '<td><button class="scp-btn scp-bo scp-bs" onclick="scpOpenSchedModal(\''+s.id+'\')">Edit</button> '+
+      '<button class="scp-btn scp-bo scp-bs" onclick="scpOpenSchedPhotoModal(\''+s.id+'\')">Photo</button>'+
+      (status==='complete'?'':' <button class="scp-btn scp-bp scp-bs" onclick="scpMarkScheduleComplete(\''+s.id+'\')">Mark Complete</button>')+
+      '</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:#64748B;padding:20px">Nothing scheduled yet</td></tr>';
+  rScpQcQueue();
 }
 function scpOpenSchedModal(id){
   scpSid=id||null;scpFillCustomerSelects();
@@ -2067,10 +2106,159 @@ function scpSaveSched(){
   var customerId=scp$('scp-scustomer').value;
   if(!customerId){scpToast('Customer is required');return;}
   var sched=scpLd('scp_schedule',[]);
-  var rec={id:scpSid||('S-'+Date.now()),customer_id:customerId,freq:scp$('scp-sfreq').value,next:scp$('scp-snext').value,crew:scp$('scp-screw').value.trim()};
+  var existing=scpSid?sched.find(function(s){return s.id===scpSid;}):null;
+  var rec={id:scpSid||('S-'+Date.now()),customer_id:customerId,freq:scp$('scp-sfreq').value,next:scp$('scp-snext').value,crew:scp$('scp-screw').value.trim(),status:existing?existing.status:'scheduled'};
   if(scpSid){sched=sched.map(function(s){return s.id===scpSid?rec:s;});}else{sched.push(rec);}
   scpSt('scp_schedule',sched);scpCloseSchedModal();scpRSched();scpRDash();scpToast('Schedule saved');
   scpData('write','schedule',rec);
+}
+
+// === ITEM 3: PHOTO-VERIFIED COMPLETION GATE ==========================
+// Same shape as sairngrounds.html's grdCheckCompletionGate/grdMarkScheduleComplete/
+// rGrdQcQueue/grdQcDecide (itself mirroring StoneDesk's fmCheckCompletionGate):
+// upload -> AI description -> mark-as-final -> QC review by someone else ->
+// approved -> ONLY THEN can the job be marked Complete.
+function scpCurrentRole(){
+  try{var r=sessionStorage.getItem(SCP_ROLE_KEY);if(r)return r;}catch(e){}
+  return null;
+}
+function scpCurrentEmployeeLabel(){
+  try{var id=sessionStorage.getItem(SCP_EMPLOYEE_KEY);if(id)return id;}catch(e){}
+  return scpCurrentRole()||'Unknown';
+}
+// 'owner' and 'crew_lead' are sairnscape's two roles with operational
+// authority (api/scp-auth.js line ~193) -- 'office' is not QC authority.
+var SCP_QC_AUTHORITY_ROLES=['owner','crew_lead'];
+function scpHasQcAuthority(){
+  var role=scpCurrentRole();
+  return !!(role&&SCP_QC_AUTHORITY_ROLES.indexOf(role)!==-1);
+}
+function bldScpProgressPhotos(){return scpLd('scp_progress_photos',[]);}
+var scpPhotoScheduleId=null,scpPhotoB64=null;
+
+function scpOpenSchedPhotoModal(scheduleId){
+  scpPhotoScheduleId=scheduleId;scpPhotoB64=null;
+  scp$('scp-schedphoto-file').value='';
+  scp$('scp-schedphoto-preview').style.display='none';
+  scp$('scp-schedphoto-final').checked=false;
+  scp$('scp-schedphoto-upload-btn').disabled=true;
+  scp$('scp-schedphoto-result-wrap').style.display='none';
+  rScpScheduledPhotoList();
+  scp$('scp-schedphotomodal').classList.add('on');
+}
+function scpCloseSchedPhotoModal(){scp$('scp-schedphotomodal').classList.remove('on');scpPhotoScheduleId=null;}
+function scpPhotoFileChosen(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>8*1024*1024){scpToast('Photo over 8MB -- pick a smaller one');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    scpPhotoB64=e.target.result.split(',')[1];
+    scp$('scp-schedphoto-img').src=e.target.result;scp$('scp-schedphoto-preview').style.display='block';
+    scp$('scp-schedphoto-upload-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+// Real Claude vision call, same proven pattern as sairngrounds.html's
+// grdUploadProgressPhoto -- describes what is actually visible, does not
+// fabricate a pass/fail scope judgment the model has no real basis for.
+async function scpUploadProgressPhoto(){
+  if(!scpPhotoB64){scpToast('Take a photo first');return;}
+  var sched=scpLd('scp_schedule',[]).find(function(s){return s.id===scpPhotoScheduleId;});
+  var isFinal=scp$('scp-schedphoto-final').checked;
+  scp$('scp-schedphoto-result-wrap').style.display='block';
+  scp$('scp-schedphoto-result').textContent='Analyzing...';
+  var sys='You are reviewing a progress photo for a landscaping job'+(sched?(' for '+(scpCustName(sched.customer_id))):'')+
+    '. Describe plainly what the photo actually shows -- the real visible condition of the work, '+
+    'not a guessed pass/fail verdict. If the photo is blurry, too dark, or does not clearly show '+
+    'finished work, say so directly rather than being generically positive. Plain ASCII only, no '+
+    'Unicode box characters. Keep it under 150 words.';
+  var analysisText='';
+  try{
+    var res=await fetch(SCP_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,app_id:SCP_APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:scpPhotoB64}},
+          {type:'text',text:'Describe what this progress photo shows.'}
+        ]}]})});
+    var data=await res.json();
+    analysisText=(data.content&&data.content[0]&&data.content[0].text)||
+      (data.error&&data.error.message?('AI analysis unavailable: '+data.error.message):'No response text returned.');
+  }catch(e){
+    analysisText='Could not reach Claude for analysis. Photo saved anyway -- QC review can still proceed on the image itself.';
+  }
+  scp$('scp-schedphoto-result').textContent=analysisText;
+  var photos=bldScpProgressPhotos();
+  var rec={id:'SCPPH-'+Date.now(),schedule_id:scpPhotoScheduleId,customer_id:sched?sched.customer_id:null,
+    photo_b64:scpPhotoB64,is_final:isFinal,ai_analysis:analysisText,qc_status:isFinal?'pending':'not_applicable',
+    captured_by:scpCurrentEmployeeLabel(),qc_by:null,qc_at:null,created_at:new Date().toISOString()};
+  photos.push(rec);scpSt('scp_progress_photos',photos);scpData('write','progress_photos',rec);
+  scpToast(isFinal?'Photo uploaded -- awaiting QC approval before this job can be marked Complete':'Photo uploaded');
+  rScpScheduledPhotoList();rScpQcQueue();
+  scpPhotoB64=null;scp$('scp-schedphoto-upload-btn').disabled=true;scp$('scp-schedphoto-preview').style.display='none';
+}
+function rScpScheduledPhotoList(){
+  var el=scp$('scp-schedphoto-list');if(!el)return;
+  var photos=bldScpProgressPhotos().filter(function(p){return p.schedule_id===scpPhotoScheduleId;});
+  el.innerHTML=photos.length?photos.slice().reverse().map(function(p){
+    var qcBadge=p.is_final?('<span class="scp-badge '+({pending:'scp-bw',approved:'scp-bg',rejected:'scp-br'}[p.qc_status]||'scp-bx')+'">'+scpH(p.qc_status)+'</span>'):'<span class="scp-badge scp-bx">progress photo</span>';
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F1F5F9;font-size:12px"><span>'+scpH(p.captured_by)+' &middot; '+new Date(p.created_at).toLocaleString()+(p.is_final?' &middot; final':'')+'</span><span>'+qcBadge+'</span></div>';
+  }).join(''):'<div style="color:#64748B;text-align:center;padding:12px">No photos on file for this job yet</div>';
+}
+// The completion gate itself -- real check, not a formality. Requires a
+// final photo with qc_status==='approved' to exist for this schedule_id.
+function scpCheckCompletionGate(scheduleId){
+  return bldScpProgressPhotos().some(function(p){return p.schedule_id===scheduleId&&p.is_final===true&&p.qc_status==='approved';});
+}
+function scpMarkScheduleComplete(scheduleId){
+  if(!scpCheckCompletionGate(scheduleId)){
+    scpToast('Cannot mark Complete -- this job needs a finished-product photo that has been QC-approved by someone else first. Use the Photo button.',6000);
+    return;
+  }
+  var list=scpLd('scp_schedule',[]);
+  var s=list.find(function(x){return x.id===scheduleId;});
+  if(!s)return;
+  s.status='complete';
+  scpSt('scp_schedule',list);scpData('write','schedule',s);
+  scpRSched();scpRDash();
+  scpToast('Job marked Complete');
+}
+// QC review queue -- client-side visibility gate only, same disclosed
+// limitation as sairngrounds.html's rGrdQcQueue: the self-QC check happens
+// again inside scpQcDecide() itself (the actual state-change point), not
+// just here in what's shown, but there is no server independently
+// re-verifying it the way StoneDesk's api/sd-sub-data.js does.
+function rScpQcQueue(){
+  var card=scp$('scp-qc-queue-card'),listEl=scp$('scp-qc-queue-list');
+  if(!card||!listEl)return;
+  var hasAuth=scpHasQcAuthority();
+  card.style.display=hasAuth?'block':'none';
+  if(!hasAuth)return;
+  var me=scpCurrentEmployeeLabel();
+  var pending=bldScpProgressPhotos().filter(function(p){return p.is_final===true&&p.qc_status==='pending'&&p.captured_by!==me;});
+  listEl.innerHTML=pending.length?pending.map(function(p){
+    var sched=scpLd('scp_schedule',[]).find(function(s){return s.id===p.schedule_id;});
+    return '<div style="display:flex;gap:10px;align-items:flex-start;border:1px solid #E2E8F0;border-radius:8px;padding:10px;margin-bottom:8px">'+
+      '<img src="data:image/jpeg;base64,'+p.photo_b64+'" style="width:64px;height:64px;object-fit:cover;border-radius:6px;flex-shrink:0">'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">'+(sched?scpH(scpCustName(sched.customer_id)):'(job not found)')+' <span style="font-weight:400;color:#64748B;font-size:11px">('+scpH(p.captured_by)+')</span></div>'+
+      '<div style="font-size:11px;color:#334155;margin-top:2px;white-space:pre-wrap">'+scpH((p.ai_analysis||'').slice(0,200))+'</div>'+
+      '<div style="display:flex;gap:8px;margin-top:8px">'+
+      '<button class="scp-btn scp-bp scp-bs" onclick="scpQcDecide(\''+p.id+'\',\'approved\')">Approve</button>'+
+      '<button class="scp-btn scp-bo scp-bs" onclick="scpQcDecide(\''+p.id+'\',\'rejected\')">Reject</button>'+
+      '</div></div></div>';
+  }).join(''):'<div style="color:#64748B;text-align:center;padding:12px">Nothing pending review</div>';
+}
+function scpQcDecide(photoId,qcStatus){
+  // Re-check authority AND self-QC HERE, at the actual state-change point.
+  if(!scpHasQcAuthority()){scpToast('Not authorized to review progress photos');return;}
+  var photos=bldScpProgressPhotos();
+  var photo=photos.find(function(p){return p.id===photoId;});
+  if(!photo)return;
+  var me=scpCurrentEmployeeLabel();
+  if(photo.captured_by===me){scpToast('Cannot QC-approve your own photo');return;}
+  photo.qc_status=qcStatus;photo.qc_by=me;photo.qc_at=new Date().toISOString();
+  scpSt('scp_progress_photos',photos);scpData('write','progress_photos',photo);
+  rScpQcQueue();rScpScheduledPhotoList();
+  scpToast('Marked '+qcStatus);
 }
 
 function scpRInv(){

@@ -415,10 +415,36 @@ textarea{resize:vertical;min-height:80px;}
   <div class="ph"><div><div class="ptitle">Scheduling</div><div class="psub">Recurring routes + one-off jobs, weather-checked against the Weather Command Engine</div></div>
   <div class="pa"><button class="btn bp bs" onclick="openSchedModal()">+ Add to Schedule</button></div></div>
   <div id="sched-wx-note" class="note" style="display:none;margin-bottom:12px"></div>
+  <div class="note" style="margin-bottom:12px"><strong>Completion gate (item 3):</strong> a scheduled job cannot be marked Complete until a finished-product photo exists AND has been QC-approved by someone other than whoever uploaded it -- same shape as StoneDesk's progress-photo hard gate. Honest limitation: this is a client-side check (like every RBAC gate built in these two apps so far), not a server-enforced one -- StoneDesk's real depth uses a dedicated server endpoint (api/sd-sub-data.js) that independently re-verifies role and self-QC on every review call; that server-side piece does not exist for SAIRNgrounds/SAIRNscape yet.</div>
   <div class="card"><div class="cb">
-    <div class="tw"><table><thead><tr><th>Property</th><th>Frequency</th><th>Next Date</th><th>Crew</th><th>Linked Quote</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Property</th><th>Frequency</th><th>Next Date</th><th>Crew</th><th>Linked Quote</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="schtbody"></tbody></table></div>
   </div></div>
+  <div class="card" id="grd-qc-queue-card" style="margin-top:14px;display:none"><div class="ch"><span class="ct">Progress Photo QC Queue</span></div><div class="cb">
+    <div class="note" style="margin-bottom:10px">Visible only to owner/superintendent/manager roles. Shows finished-product photos awaiting review from OTHER employees -- your own uploads never appear here to review, checked again inside the approve/reject action itself, not just this list.</div>
+    <div id="grd-qc-queue-list"><div style="color:var(--muted);text-align:center;padding:12px">Nothing pending review</div></div>
+  </div></div>
+</div>
+<div class="modal" id="schedphotomodal">
+  <div class="mbox" style="width:640px;max-width:94vw">
+    <div class="mtitle">Progress Photo</div>
+    <div id="schedphoto-upload-zone" onclick="document.getElementById('schedphoto-file').click()" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px">
+      <div>Tap to photograph the finished work</div>
+    </div>
+    <input type="file" id="schedphoto-file" accept="image/*" capture="environment" style="display:none" onchange="grdPhotoFileChosen(this)">
+    <div id="schedphoto-preview" style="display:none;margin-top:10px"><img id="schedphoto-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--border)"></div>
+    <div class="fg" style="margin-top:10px"><label><input type="checkbox" id="schedphoto-final" style="width:auto;margin-right:6px">This is the finished-product photo for completion QC</label></div>
+    <button class="btn bp" id="schedphoto-upload-btn" onclick="grdUploadProgressPhoto()" disabled style="margin-top:8px">Upload &amp; Analyze</button>
+    <div id="schedphoto-result-wrap" style="display:none;margin-top:12px">
+      <div class="mtitle" style="font-size:14px">AI Analysis</div>
+      <div id="schedphoto-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+    </div>
+    <div class="mtitle" style="font-size:14px;margin-top:14px">Photos on File</div>
+    <div id="schedphoto-list"></div>
+    <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSchedPhotoModal()">Close</button>
+    </div>
+  </div>
 </div>
 <div class="modal" id="schedmodal">
   <div class="mbox">
@@ -1582,11 +1608,18 @@ function rSched(){
   fillPropertySelects();fillQuoteSelect('schquote','');
   var list=bldSched();
   $('schtbody').innerHTML=list.length?list.map(function(s){
+    var status=s.status||'scheduled';
+    var sc={scheduled:'bw',complete:'bg'}[status]||'bx';
     return '<tr><td>'+H(propName(s.property_id))+'</td><td>'+H(s.freq)+'</td><td>'+fdate(s.next)+'</td><td>'+H(s.crew)+'</td>'+
       '<td>'+(s.quote_id?H(s.quote_id):'--')+'</td>'+
-      '<td><button class="btn bo bs" onclick="openSchedModal(\''+s.id+'\')">Edit</button></td></tr>';
-  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Nothing scheduled yet</td></tr>';
+      '<td><span class="badge '+sc+'">'+H(status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="openSchedModal(\''+s.id+'\')">Edit</button> '+
+      '<button class="btn bo bs" onclick="openSchedPhotoModal(\''+s.id+'\')">Photo</button>'+
+      (status==='complete'?'':' <button class="btn bp bs" onclick="grdMarkScheduleComplete(\''+s.id+'\')">Mark Complete</button>')+
+      '</td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Nothing scheduled yet</td></tr>';
   schedWeatherCheck();
+  rGrdQcQueue();
 }
 function openSchedModal(id){
   schedid=id||null;fillPropertySelects();
@@ -1602,8 +1635,9 @@ function saveSched(){
   var propertyId=$('schproperty').value;
   if(!propertyId){toast('Property is required');return;}
   var list=bldSched();
+  var existing=schedid?list.find(function(x){return x.id===schedid;}):null;
   var rec={id:schedid||('SCH-'+Date.now()),property_id:propertyId,freq:$('schfreq').value,next:$('schnext').value,
-    crew:$('schcrew').value.trim(),quote_id:$('schquote').value||null};
+    crew:$('schcrew').value.trim(),quote_id:$('schquote').value||null,status:existing?existing.status:'scheduled'};
   if(schedid){list=list.map(function(x){return x.id===schedid?rec:x;});}else{list.push(rec);}
   st('grd_schedule',list);closeSchedModal();rSched();rDash();toast('Schedule saved');
   grdData('write','schedule',rec);
@@ -1618,6 +1652,159 @@ function schedWeatherCheck(){
   if(!el||!src||!src.textContent){if(el)el.style.display='none';return;}
   el.style.display='block';
   el.textContent='Weather Command Engine signal: '+src.textContent+(src.textContent==='Check Conditions'?' -- consider adjusting today\'s scheduled visits.':'.');
+}
+
+// === ITEM 3: PHOTO-VERIFIED COMPLETION GATE ==========================
+// Same shape as StoneDesk's progress-photo hard gate (stonedesk.html's
+// fmCheckCompletionGate/fmMarkStopStatus/sdQcQueueRefresh/sdQcDecide):
+// upload -> AI analysis -> mark-as-final -> QC review by someone else ->
+// approved -> ONLY THEN can the job be marked Complete. Deliberately NOT
+// sharing msbCurrentRole()/msbCurrentEmployeeLabel() from the item 9
+// Merchandise/Bar module -- that module is meant to spin out into its own
+// app later, and coupling an unrelated feature to it works against that.
+// Small, accepted duplication instead, same reasoning as
+// computeAllTaskDatesFrom in item 5.
+function grdCurrentRole(){
+  try{var r=sessionStorage.getItem(GRD_ROLE_KEY);if(r)return r;}catch(e){}
+  return ld('grd_role',null);
+}
+function grdCurrentEmployeeLabel(){
+  try{var id=sessionStorage.getItem(GRD_EMPLOYEE_KEY);if(id)return id;}catch(e){}
+  return grdCurrentRole()||'Unknown';
+}
+var GRD_QC_AUTHORITY_ROLES=['owner','superintendent','manager'];
+function grdHasQcAuthority(){
+  var role=grdCurrentRole();
+  return !!(role&&GRD_QC_AUTHORITY_ROLES.indexOf(role)!==-1);
+}
+function bldGrdProgressPhotos(){return ld('grd_progress_photos',[]);}
+var grdPhotoScheduleId=null,grdPhotoB64=null;
+
+function openSchedPhotoModal(scheduleId){
+  grdPhotoScheduleId=scheduleId;grdPhotoB64=null;
+  $('schedphoto-file').value='';
+  $('schedphoto-preview').style.display='none';
+  $('schedphoto-final').checked=false;
+  $('schedphoto-upload-btn').disabled=true;
+  $('schedphoto-result-wrap').style.display='none';
+  rGrdScheduledPhotoList();
+  $('schedphotomodal').classList.add('on');
+}
+function closeSchedPhotoModal(){$('schedphotomodal').classList.remove('on');grdPhotoScheduleId=null;}
+function grdPhotoFileChosen(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>8*1024*1024){toast('Photo over 8MB -- pick a smaller one');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    grdPhotoB64=e.target.result.split(',')[1];
+    $('schedphoto-img').src=e.target.result;$('schedphoto-preview').style.display='block';
+    $('schedphoto-upload-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+// Real Claude vision call, same proven pattern as DreamClose/item 9's
+// bottle+food scanners -- describes what is actually visible, does not
+// fabricate a pass/fail scope judgment the model has no real basis for.
+async function grdUploadProgressPhoto(){
+  if(!grdPhotoB64){toast('Take a photo first');return;}
+  var sched=bldSched().find(function(s){return s.id===grdPhotoScheduleId;});
+  var isFinal=$('schedphoto-final').checked;
+  $('schedphoto-result-wrap').style.display='block';
+  $('schedphoto-result').textContent='Analyzing...';
+  var sys='You are reviewing a progress photo for a landscaping/grounds job'+(sched?(' at '+(propName(sched.property_id))):'')+
+    '. Describe plainly what the photo actually shows -- the real visible condition of the work, '+
+    'not a guessed pass/fail verdict. If the photo is blurry, too dark, or does not clearly show '+
+    'finished work, say so directly rather than being generically positive. Plain ASCII only, no '+
+    'Unicode box characters. Keep it under 150 words.';
+  var analysisText='';
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:400,app_id:APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:grdPhotoB64}},
+          {type:'text',text:'Describe what this progress photo shows.'}
+        ]}]})});
+    var data=await res.json();
+    analysisText=(data.content&&data.content[0]&&data.content[0].text)||
+      (data.error&&data.error.message?('AI analysis unavailable: '+data.error.message):'No response text returned.');
+  }catch(e){
+    analysisText='Could not reach Claude for analysis. Photo saved anyway -- QC review can still proceed on the image itself.';
+  }
+  $('schedphoto-result').textContent=analysisText;
+  var photos=bldGrdProgressPhotos();
+  var rec={id:'GRDPH-'+Date.now(),schedule_id:grdPhotoScheduleId,property_id:sched?sched.property_id:null,
+    photo_b64:grdPhotoB64,is_final:isFinal,ai_analysis:analysisText,qc_status:isFinal?'pending':'not_applicable',
+    captured_by:grdCurrentEmployeeLabel(),qc_by:null,qc_at:null,created_at:new Date().toISOString()};
+  photos.push(rec);st('grd_progress_photos',photos);grdData('write','progress_photos',rec);
+  toast(isFinal?'Photo uploaded -- awaiting QC approval before this job can be marked Complete':'Photo uploaded');
+  rGrdScheduledPhotoList();rGrdQcQueue();
+  grdPhotoB64=null;$('schedphoto-upload-btn').disabled=true;$('schedphoto-preview').style.display='none';
+}
+function rGrdScheduledPhotoList(){
+  var el=$('schedphoto-list');if(!el)return;
+  var photos=bldGrdProgressPhotos().filter(function(p){return p.schedule_id===grdPhotoScheduleId;});
+  el.innerHTML=photos.length?photos.slice().reverse().map(function(p){
+    var qcBadge=p.is_final?('<span class="badge '+({pending:'bw',approved:'bg',rejected:'br'}[p.qc_status]||'bx')+'">'+H(p.qc_status)+'</span>'):'<span class="badge bx">progress photo</span>';
+    return '<div class="srow"><span class="slbl">'+H(p.captured_by)+' &middot; '+new Date(p.created_at).toLocaleString()+(p.is_final?' &middot; final':'')+'</span><span class="sval">'+qcBadge+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No photos on file for this job yet</div>';
+}
+// The completion gate itself -- real check, not a formality. Requires a
+// final photo with qc_status==='approved' to exist for this schedule_id.
+function grdCheckCompletionGate(scheduleId){
+  return bldGrdProgressPhotos().some(function(p){return p.schedule_id===scheduleId&&p.is_final===true&&p.qc_status==='approved';});
+}
+function grdMarkScheduleComplete(scheduleId){
+  if(!grdCheckCompletionGate(scheduleId)){
+    toast('Cannot mark Complete -- this job needs a finished-product photo that has been QC-approved by someone else first. Use the Photo button.',6000);
+    return;
+  }
+  var list=bldSched();
+  var s=list.find(function(x){return x.id===scheduleId;});
+  if(!s)return;
+  s.status='complete';
+  st('grd_schedule',list);grdData('write','schedule',s);
+  rSched();rDash();
+  toast('Job marked Complete');
+}
+// QC review queue -- client-side visibility gate only, same disclosed
+// limitation as item 9's void/override: the self-QC check happens again
+// inside grdQcDecide() itself (the actual state-change point), not just
+// here in what's shown, but there is no server independently re-verifying
+// it the way StoneDesk's api/sd-sub-data.js does.
+function rGrdQcQueue(){
+  var card=$('grd-qc-queue-card'),listEl=$('grd-qc-queue-list');
+  if(!card||!listEl)return;
+  var hasAuth=grdHasQcAuthority();
+  card.style.display=hasAuth?'block':'none';
+  if(!hasAuth)return;
+  var me=grdCurrentEmployeeLabel();
+  var pending=bldGrdProgressPhotos().filter(function(p){return p.is_final===true&&p.qc_status==='pending'&&p.captured_by!==me;});
+  listEl.innerHTML=pending.length?pending.map(function(p){
+    var sched=bldSched().find(function(s){return s.id===p.schedule_id;});
+    return '<div style="display:flex;gap:10px;align-items:flex-start;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px">'+
+      '<img src="data:image/jpeg;base64,'+p.photo_b64+'" style="width:64px;height:64px;object-fit:cover;border-radius:6px;flex-shrink:0">'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px">'+(sched?H(propName(sched.property_id)):'(job not found)')+' <span style="font-weight:400;color:var(--muted);font-size:11px">('+H(p.captured_by)+')</span></div>'+
+      '<div style="font-size:11px;color:var(--text);margin-top:2px;white-space:pre-wrap">'+H((p.ai_analysis||'').slice(0,200))+'</div>'+
+      '<div style="display:flex;gap:8px;margin-top:8px">'+
+      '<button class="btn bp bs" onclick="grdQcDecide(\''+p.id+'\',\'approved\')">Approve</button>'+
+      '<button class="btn bo bs" onclick="grdQcDecide(\''+p.id+'\',\'rejected\')">Reject</button>'+
+      '</div></div></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">Nothing pending review</div>';
+}
+function grdQcDecide(photoId,qcStatus){
+  // Re-check authority AND self-QC HERE, at the actual state-change point --
+  // not just relying on the queue list already having filtered self-uploads
+  // out, same principle as item 9's confirmMsbVoid() re-check.
+  if(!grdHasQcAuthority()){toast('Not authorized to review progress photos');return;}
+  var photos=bldGrdProgressPhotos();
+  var photo=photos.find(function(p){return p.id===photoId;});
+  if(!photo)return;
+  var me=grdCurrentEmployeeLabel();
+  if(photo.captured_by===me){toast('Cannot QC-approve your own photo');return;}
+  photo.qc_status=qcStatus;photo.qc_by=me;photo.qc_at=new Date().toISOString();
+  st('grd_progress_photos',photos);grdData('write','progress_photos',photo);
+  rGrdQcQueue();rGrdScheduledPhotoList();
+  toast('Marked '+qcStatus);
 }
 
 // === INVOICING (item 9) ==========================================
