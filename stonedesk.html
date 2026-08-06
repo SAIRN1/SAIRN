@@ -5283,8 +5283,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
      own button on each job card in the Subcontractor Portal) use the SAME
      modal/module below, reusing the Field Sketch Quote's proven photo-
      capture pattern (capture="environment" input, FileReader, Claude vision
-     via sairnCallClaude's multimodal content block) rather than a new
-     capture UI. -->
+     via the global callClaude()'s multimodal content block) rather than a
+     new capture UI. -->
 <div style="margin-top:16px">
   <div style="font-weight:700;color:var(--text);margin-bottom:8px;font-size:14px">Recent AI Progress Checks</div>
   <div id="sd-progchk-recent" style="display:flex;flex-direction:column;gap:8px">
@@ -32805,7 +32805,18 @@ window.sdProgChkAnalyze = async function() {
     ]
   }];
   try {
-    var r = await sairnCallClaude(sys, msgs);
+    // BUGFIX (2026-08-06, confirmed via a real Playwright test): sairnCallClaude
+    // is declared inside a SEPARATE IIFE (~L13907, the Field Sketch Quote module)
+    // and was never exported to window -- calling it from this module's own,
+    // later, independent <script> block always threw a silent ReferenceError,
+    // caught by this exact try/catch and shown as a generic "Could not reach
+    // Claude" message that looked like a real network failure but never even
+    // attempted one. Same bug class as the SD_AUTH_API/showApp() scope issues
+    // fixed earlier today. Using window.callClaude instead -- the genuinely
+    // global one (top-level function declaration, no IIFE, confirmed live via
+    // typeof window.callClaude === 'function'), whose own header literally says
+    // "THE function. No duplicates... Works everywhere."
+    var r = await callClaude(sys, msgs);
     _pcAnalysisText = r;
     resultEl.textContent = r;
     var m = r.match(/MATCH:\s*(Yes|Partial|No)/i);
