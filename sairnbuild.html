@@ -1810,6 +1810,20 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
 var PROXY='https://sairn.vercel.app/api/claude';
+// Replaces bare `new Date().toISOString().slice(0,10)` call sites (real
+// form-default/record dates, e.g. Field Photo/Task/Log/RFI/PO dates) that
+// meant "today, as YYYY-MM-DD" -- toISOString() extracts the UTC calendar
+// date, wrong side of midnight from roughly late afternoon US time onward.
+// getFullYear()/getMonth()/getDate() read the LOCAL calendar date instead.
+// NOTE: seed()'s own local `daysAgo(n)` helper (used only to generate
+// realistic-looking demo/seed dates) has the same root-cause pattern but is
+// deliberately left as-is -- it only affects cosmetic seed-data realism,
+// not any real stored/displayed date.
+function bldLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+window.bldLocalToday=bldLocalToday;
 
 // Client-side prefix allowlist. FORMAT CHECK ONLY -- this is NOT auth. Real
 // validation is server-side in api/_lib/license.js against the license_keys
@@ -2473,7 +2487,7 @@ function fpSave(){
   if(!fpLastResult){toast('Nothing to save yet - analyze a photo first');return;}
   var job=$('fp-job').value;if(!job){toast('Select a job first');return;}
   var list=bldPhotoAnalyses();
-  var rec={id:'FP-'+Date.now(),job_id:job,date:new Date().toISOString().slice(0,10),
+  var rec={id:'FP-'+Date.now(),job_id:job,date:bldLocalToday(),
     summary:fpLastResult.slice(0,140).replace(/\n/g,' '),full:fpLastResult,spawned_co:false,spawned_rfi:false};
   list.push(rec);
   st('bld_photo_analyses',list);
@@ -2779,7 +2793,7 @@ function openTaskModal(){
   if(!jobs().length){toast('Add a job first - a task must belong to one');return;}
   taskeid=null;fillJobSelects();
   ['tm-name'].forEach(function(f){$(f).value='';});
-  $('tm-status').value='not_started';$('tm-start').value=new Date().toISOString().slice(0,10);
+  $('tm-status').value='not_started';$('tm-start').value=bldLocalToday();
   $('tm-duration').value='';$('tm-actual').value='';
   taskJobChanged();
   $('taskmodal').classList.add('on');
@@ -2945,7 +2959,7 @@ function openLogModal(){
   if(!jobs().length){toast('Add a job first - a daily log must belong to one');return;}
   logeid=null;fillJobSelects();
   ['lm-weather','lm-photos','lm-work','lm-delays'].forEach(function(f){$(f).value='';});
-  $('lm-date').value=new Date().toISOString().slice(0,10);$('lm-crew').value='';
+  $('lm-date').value=bldLocalToday();$('lm-crew').value='';
   $('logmodal').classList.add('on');
 }
 function closeLogModal(){$('logmodal').classList.remove('on');}
@@ -3021,7 +3035,7 @@ function openPunchModal(){
   if(!jobs().length){toast('Add a job first - a punch list item must belong to one');return;}
   pleid=null;fillJobSelects();
   ['plm-item','plm-assigned'].forEach(function(f){$(f).value='';});
-  $('plm-status').value='open';$('plm-noted').value=new Date().toISOString().slice(0,10);
+  $('plm-status').value='open';$('plm-noted').value=bldLocalToday();
   $('punchmodal').classList.add('on');
 }
 function closePunchModal(){$('punchmodal').classList.remove('on');}
@@ -3089,7 +3103,7 @@ function openInspModal(){
   if(!jobs().length){toast('Add a job first - an inspection must belong to one');return;}
   ineid=null;fillJobSelects();
   ['im-type','im-notes'].forEach(function(f){$(f).value='';});
-  $('im-result').value='pending';$('im-scheduled').value=new Date().toISOString().slice(0,10);$('im-reinsp').value='';
+  $('im-result').value='pending';$('im-scheduled').value=bldLocalToday();$('im-reinsp').value='';
   $('im-docref').value='';
   $('inspmodal').classList.add('on');
 }
@@ -3188,7 +3202,7 @@ function openRfiModal(prefill){
   rfieid=null;fillJobSelects();
   ['rm-question','rm-response'].forEach(function(f){$(f).value='';});
   $('rm-askedto').value='Architect';$('rm-status').value='open';
-  $('rm-asked').value=new Date().toISOString().slice(0,10);$('rm-respdate').value='';
+  $('rm-asked').value=bldLocalToday();$('rm-respdate').value='';
   $('rm-docref').value='';
   if(prefill){
     if(prefill.job_id)$('rm-job').value=prefill.job_id;
@@ -3278,7 +3292,7 @@ function openSubmittalModal(){
   if(!jobs().length){toast('Add a job first - a submittal must belong to one');return;}
   smeid=null;fillJobSelects();
   ['smm-item','smm-by','smm-notes'].forEach(function(f){$(f).value='';});
-  $('smm-status').value='submitted';$('smm-submitted').value=new Date().toISOString().slice(0,10);
+  $('smm-status').value='submitted';$('smm-submitted').value=bldLocalToday();
   $('smm-docref').value='';
   $('submittalmodal').classList.add('on');
 }
@@ -4128,7 +4142,7 @@ function openDrawModal(){
   ['drm-no','drm-pct','drm-amount','drm-recamount','drm-notes'].forEach(function(f){$(f).value='';});
   $('drm-retpct').value=bldSettings().default_retainage_pct||10;
   $('drm-status').value='requested';
-  $('drm-reqdate').value=new Date().toISOString().slice(0,10);
+  $('drm-reqdate').value=bldLocalToday();
   $('drm-period').value='';$('drm-recdate').value='';
   drawStatusChanged();
   $('drawmodal').classList.add('on');
@@ -4323,7 +4337,7 @@ function openPoModal(){
   pomeid=null;fillJobSelects();
   ['pom-code','pom-vendor','pom-desc','pom-amount','pom-notes'].forEach(function(f){$(f).value='';});
   $('pom-status').value='open';
-  $('pom-issued').value=new Date().toISOString().slice(0,10);
+  $('pom-issued').value=bldLocalToday();
   $('pomodal').classList.add('on');
 }
 function closePoModal(){$('pomodal').classList.remove('on');}
@@ -4505,7 +4519,7 @@ function openTsModal(){
   if(!jobs().length){toast('Add a job first - a timesheet entry must belong to one');return;}
   tsmeid=null;fillJobSelects();
   ['tsm-employee','tsm-code','tsm-hours','tsm-rate','tsm-notes'].forEach(function(f){$(f).value='';});
-  $('tsm-date').value=new Date().toISOString().slice(0,10);
+  $('tsm-date').value=bldLocalToday();
   $('tsmodal').classList.add('on');
 }
 function closeTsModal(){$('tsmodal').classList.remove('on');}
@@ -4620,7 +4634,7 @@ function openChkModal(){
   chkmeid=null;fillJobSelects();
   ['chkm-no','chkm-payee','chkm-amount','chkm-memo','chkm-cleared'].forEach(function(f){$(f).value='';});
   $('chkm-job').value='';$('chkm-category').value='sub';$('chkm-status').value='outstanding';
-  $('chkm-issued').value=new Date().toISOString().slice(0,10);
+  $('chkm-issued').value=bldLocalToday();
   chkStatusChanged();
   $('chkmodal').classList.add('on');
 }
@@ -5088,7 +5102,7 @@ function openIncidentModal(){
   incmeid=null;fillJobSelects();
   ['incm-desc','incm-corrective'].forEach(function(f){$(f).value='';});
   $('incm-osha').checked=false;$('incm-status').value='open';
-  $('incm-date').value=new Date().toISOString().slice(0,10);
+  $('incm-date').value=bldLocalToday();
   $('incmodal').classList.add('on');
 }
 function closeIncidentModal(){$('incmodal').classList.remove('on');}
@@ -5142,7 +5156,7 @@ function openTalkModal(){
   if(!jobs().length){toast('Add a job first - a toolbox talk must belong to one');return;}
   talkmeid=null;fillJobSelects();
   ['talkm-topic','talkm-by','talkm-attendees'].forEach(function(f){$(f).value='';});
-  $('talkm-date').value=new Date().toISOString().slice(0,10);
+  $('talkm-date').value=bldLocalToday();
   $('talkmodal').classList.add('on');
 }
 function closeTalkModal(){$('talkmodal').classList.remove('on');}
@@ -5227,7 +5241,7 @@ function saveMsg(){
   var job=$('cp-job').value;
   if(!job){toast('Select a job first');return;}
   var list=bldCommLog();
-  list.push({id:'CM-'+String(Date.now()).slice(-5),job_id:job,date:new Date().toISOString().slice(0,10),author:$('msgm-author').value,message:text});
+  list.push({id:'CM-'+String(Date.now()).slice(-5),job_id:job,date:bldLocalToday(),author:$('msgm-author').value,message:text});
   st('bld_comm_log',list);
   closeMsgModal();rClientPortal();
   toast('Message posted');
@@ -5282,7 +5296,7 @@ function openWarrantyModal(){
   warmeid=null;fillJobSelects();
   ['warm-trade','warm-desc','warm-cost','warm-resolved','warm-notes'].forEach(function(f){$(f).value='';});
   $('warm-status').value='open';
-  $('warm-filed').value=new Date().toISOString().slice(0,10);
+  $('warm-filed').value=bldLocalToday();
   warStatusChanged();
   $('warmodal').classList.add('on');
 }
@@ -5373,7 +5387,7 @@ function openDocModal(){
   docmeid=null;fillJobSelects();
   ['docm-name','docm-by','docm-note'].forEach(function(f){$(f).value='';});
   $('docm-category').value='plans';
-  $('docm-date').value=new Date().toISOString().slice(0,10);
+  $('docm-date').value=bldLocalToday();
   $('docm-v1wrap').style.display='block';
   $('docmodal').classList.add('on');
 }
@@ -5407,7 +5421,7 @@ function saveDoc(){
   var rec={
     id:'DOC-'+String(Date.now()).slice(-5),
     job_id:job,name:name,category:$('docm-category').value,
-    versions:[{v:1,uploaded_at:$('docm-date').value||new Date().toISOString().slice(0,10),uploaded_by:$('docm-by').value.trim(),note:$('docm-note').value.trim()}]
+    versions:[{v:1,uploaded_at:$('docm-date').value||bldLocalToday(),uploaded_by:$('docm-by').value.trim(),note:$('docm-note').value.trim()}]
   };
   list.push(rec);
   st('bld_documents',list);
@@ -5420,7 +5434,7 @@ function openDocVersionModal(docId){
   docvTargetId=docId;
   $('docvm-title').textContent='New Version - '+d.name;
   $('docvm-by').value='';$('docvm-note').value='';
-  $('docvm-date').value=new Date().toISOString().slice(0,10);
+  $('docvm-date').value=bldLocalToday();
   $('docvmodal').classList.add('on');
 }
 function closeDocVersionModal(){$('docvmodal').classList.remove('on');docvTargetId=null;}
@@ -5431,7 +5445,7 @@ function saveDocVersion(){
   if(!d){toast('Document no longer exists');return;}
   var cur=docCurrent(d);
   var nextV=(cur?cur.v:0)+1;
-  d.versions.push({v:nextV,uploaded_at:$('docvm-date').value||new Date().toISOString().slice(0,10),uploaded_by:$('docvm-by').value.trim(),note:$('docvm-note').value.trim()});
+  d.versions.push({v:nextV,uploaded_at:$('docvm-date').value||bldLocalToday(),uploaded_by:$('docvm-by').value.trim(),note:$('docvm-note').value.trim()});
   st('bld_documents',list);
   closeDocVersionModal();rDocs();
   toast('Saved version '+nextV);
@@ -5492,7 +5506,7 @@ function openReviewModal(){
   rvmeid=null;fillJobSelects();
   ['rvm-customer','rvm-rating','rvm-text'].forEach(function(f){$(f).value='';});
   $('rvm-source').value='Google';$('rvm-job').value='';$('rvm-responded').checked=false;
-  $('rvm-date').value=new Date().toISOString().slice(0,10);
+  $('rvm-date').value=bldLocalToday();
   $('rvmodal').classList.add('on');
 }
 function closeReviewModal(){$('rvmodal').classList.remove('on');}
@@ -5565,7 +5579,7 @@ var rfmeid=null;
 function openReferralModal(){
   rfmeid=null;
   ['rfm-from','rfm-to','rfm-phone','rfm-value'].forEach(function(f){$(f).value='';});
-  $('rfm-status').value='lead';$('rfm-date').value=new Date().toISOString().slice(0,10);
+  $('rfm-status').value='lead';$('rfm-date').value=bldLocalToday();
   refStatusChanged();
   $('rfmodal').classList.add('on');
 }
@@ -5971,7 +5985,7 @@ var prmeid=null;
 function openPriceModal(){
   prmeid=null;
   ['prm-material','prm-vendor','prm-unit','prm-price'].forEach(function(f){$(f).value='';});
-  $('prm-date').value=new Date().toISOString().slice(0,10);
+  $('prm-date').value=bldLocalToday();
   $('pricemodal').classList.add('on');
 }
 function closePriceModal(){$('pricemodal').classList.remove('on');}
@@ -6216,7 +6230,7 @@ async function aiAsk(){
     var answer=text||'No response text returned.';
     $('ai-answer').textContent=answer;
     var list=bldAiChat();
-    list.push({id:'AIQ-'+String(Date.now()).slice(-5),job_id:jobId,date:new Date().toISOString().slice(0,10),question:q,answer:answer});
+    list.push({id:'AIQ-'+String(Date.now()).slice(-5),job_id:jobId,date:bldLocalToday(),question:q,answer:answer});
     st('bld_ai_chat',list);
     if(typeof recordBldSharedTopics==='function') recordBldSharedTopics(q);
     $('ai-question').value='';
@@ -6293,7 +6307,7 @@ async function disRespond(){
   var job=jobs().find(function(x){return x.id===jobId;});
   var desc=$('dis-desc').value.trim();
   if(!desc){toast('Disruption description required');return;}
-  var disDate=$('dis-date').value||new Date().toISOString().slice(0,10);
+  var disDate=$('dis-date').value||bldLocalToday();
   var taskId=$('dis-task').value||'';
   var days=parseFloat($('dis-days').value)||0;
   // Real affected people: whoever is actually on this job's Schedule on or
@@ -6350,7 +6364,7 @@ function openScheduleModal(){
   schmeid=null;fillJobSelects();
   ['schm-assignee','schm-notes'].forEach(function(f){$(f).value='';});
   $('schm-type').value='crew';
-  $('schm-date').value=new Date().toISOString().slice(0,10);
+  $('schm-date').value=bldLocalToday();
   $('schedulemodal').classList.add('on');
 }
 function closeScheduleModal(){$('schedulemodal').classList.remove('on');}

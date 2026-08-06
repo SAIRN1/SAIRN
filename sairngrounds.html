@@ -853,6 +853,14 @@ textarea{resize:vertical;min-height:80px;}
 <script>
 var APP_ID='sairngrounds';
 var PROXY='https://sairn.vercel.app/api/claude';
+// Replaces bare grdLocalToday() call sites that meant
+// "today, as YYYY-MM-DD" -- toISOString() extracts the UTC calendar date,
+// wrong side of midnight from roughly late afternoon US time onward.
+function grdLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+window.grdLocalToday=grdLocalToday;
 // Client-side prefix allowlist -- cosmetic format check only, per the
 // existing platform convention (see sairnbiz.html's VALID comment). Real
 // validation is server-side in api/_lib/license.js once a GRD- row is
@@ -1050,7 +1058,11 @@ function seed(){
   ]);
   st('grd_seeded',true);
 }
-function daysFromNow(n){var d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+// FIXED: setDate/getDate already compute in local time correctly -- the bug
+// was only in the final .toISOString() extraction, which converts back to
+// the UTC calendar date (wrong side of midnight from roughly late afternoon
+// US time onward). getFullYear/getMonth/getDate read the local date instead.
+function daysFromNow(n){var d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 
 function propName(id){var p=ld('grd_properties',[]).find(function(x){return x.id===id;});return p?p.name:'--';}
 function fillPropertySelects(){
@@ -1284,7 +1296,7 @@ function ensureDesignRecord(){
   if(dwid)return grdDesigns().find(function(x){return x.id===dwid;});
   var propertyId=$('dwproperty').value;
   if(!propertyId){toast('Select a property first');return null;}
-  var rec={id:'DW-'+Date.now(),property_id:propertyId,elements:[],approved:false,approved_by:'',approved_at:'',quote_id:null,created_at:new Date().toISOString().slice(0,10)};
+  var rec={id:'DW-'+Date.now(),property_id:propertyId,elements:[],approved:false,approved_by:'',approved_at:'',quote_id:null,created_at:grdLocalToday()};
   var list=grdDesigns();list.push(rec);st('grd_designs',list);
   dwid=rec.id;rDesignWalks();
   return rec;
@@ -1309,7 +1321,7 @@ function approveDesign(){
   if(!rec||!rec.elements.length){toast('Add at least one design element before approval');return;}
   var name=$('dwapprover').value.trim();
   if(!name){toast('Enter the homeowner name to record approval');return;}
-  rec.approved=true;rec.approved_by=name;rec.approved_at=new Date().toISOString().slice(0,10);
+  rec.approved=true;rec.approved_by=name;rec.approved_at=grdLocalToday();
   saveDesignRecord(rec);
   updateApprovalUI(rec);
   $('dw-send-quote-btn').disabled=false;
@@ -1467,7 +1479,7 @@ function openInvModal(id){
   fillQuoteSelect('invquote',i?i.property_id:'');
   $('invquote').value=i?(i.quote_id||''):'';
   $('invamount').value=i?i.amount:'';$('invstatus').value=i?i.status:'Unpaid';
-  $('invissued').value=i?i.issued:new Date().toISOString().slice(0,10);$('invdue').value=i?i.due:'';
+  $('invissued').value=i?i.issued:grdLocalToday();$('invdue').value=i?i.due:'';
   $('invnotes').value=i?i.notes||'':'';
   $('invmodal').classList.add('on');
 }
@@ -2044,7 +2056,7 @@ async function genEcosystemReport(){
       '\n\nLAYER 7 - AI RECOMMENDATIONS:\n'+layer7;
     $('eco-result').textContent=summary;
     var reports=bldEcoReports();
-    reports.push({id:'ECO-'+Date.now(),property_id:propertyId,date:new Date().toISOString().slice(0,10),summary:summary});
+    reports.push({id:'ECO-'+Date.now(),property_id:propertyId,date:grdLocalToday(),summary:summary});
     st('grd_ecosystem_reports',reports);grdData('write','ecosystem_reports',reports[reports.length-1]);
     rEcoHistory();
     toast('Report generated and saved');
@@ -2128,7 +2140,7 @@ function dcApprove(){
   if(!name){toast('Enter the client name to record approval');return;}
   dcCurrentApproved=true;dcCurrentApprover=name;
   $('dc-approval-status').style.display='block';
-  $('dc-approval-status').textContent='Approved by '+name+' on '+fdate(new Date().toISOString().slice(0,10))+' (recorded confirmation, not a legally-binding e-signature)';
+  $('dc-approval-status').textContent='Approved by '+name+' on '+fdate(grdLocalToday())+' (recorded confirmation, not a legally-binding e-signature)';
   $('dc-final-wrap').style.display='block';
   toast('Proposal approved by '+name);
 }
@@ -2140,13 +2152,13 @@ function dcCreateInvoiceAndSchedule(){
   var total=q?q.lines.reduce(function(s,l){return s+(l.a||0);},0):0;
   var invoices=bldInv();
   var irec={id:'INV-'+Date.now(),property_id:propertyId,quote_id:dcCurrentQuoteId,amount:total,status:'Unpaid',
-    issued:new Date().toISOString().slice(0,10),due:daysFromNow(30),notes:'From DreamClose proposal, approved by '+dcCurrentApprover};
+    issued:grdLocalToday(),due:daysFromNow(30),notes:'From DreamClose proposal, approved by '+dcCurrentApprover};
   invoices.push(irec);st('grd_invoices',invoices);grdData('write','invoices',irec);
   var sched=bldSched();
   var srec={id:'SCH-'+Date.now(),property_id:propertyId,freq:'one_off',next:daysFromNow(7),crew:'',quote_id:dcCurrentQuoteId};
   sched.push(srec);st('grd_schedule',sched);grdData('write','schedule',srec);
   var dc=bldDcRecords();
-  dc.push({id:'DC-'+Date.now(),property_id:propertyId,created_at:new Date().toISOString().slice(0,10),
+  dc.push({id:'DC-'+Date.now(),property_id:propertyId,created_at:grdLocalToday(),
     approved:true,approved_by:dcCurrentApprover,quote_id:dcCurrentQuoteId,invoice_id:irec.id,schedule_id:srec.id});
   st('grd_dreamclose',dc);grdData('write','dreamclose',dc[dc.length-1]);
   $('dc-final-status').style.display='block';
@@ -2221,7 +2233,7 @@ function saveCompletion(){
   if(!courseId){toast('Add a course first');return;}
   var list=bldCompletions();
   var rec={id:cplid||('CPL-'+Date.now()),employee_name:$('cplname').value.trim(),course_id:courseId,
-    status:$('cplstatus').value,completed_date:$('cplstatus').value==='complete'?($('cpldate').value||new Date().toISOString().slice(0,10)):$('cpldate').value};
+    status:$('cplstatus').value,completed_date:$('cplstatus').value==='complete'?($('cpldate').value||grdLocalToday()):$('cpldate').value};
   if(cplid){list=list.map(function(x){return x.id===cplid?rec:x;});}else{list.push(rec);}
   st('grd_training_completions',list);closeCompletionModal();rTraining();toast('Completion saved');
   grdData('write','training_completions',rec);

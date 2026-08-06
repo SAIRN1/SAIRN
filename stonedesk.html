@@ -1779,6 +1779,20 @@ function sdThemeColor(varName, fallback){
   }catch(e){return fallback;}
 }
 window.sdThemeColor=sdThemeColor;
+// Replaces sdLocalToday() / .split('T')[0] everywhere
+// in this file that meant "today, as YYYY-MM-DD" -- toISOString() always
+// extracts the UTC calendar date, which is the wrong side of midnight from
+// roughly late afternoon US time onward (US timezones are all behind UTC).
+// getFullYear()/getMonth()/getDate() read the LOCAL calendar date instead,
+// same fix family as fdate()'s '+T00:00:00' local-midnight anchor. Does NOT
+// cover new Date(Date.now()+/-N).toISOString()... offset patterns (weekAgo,
+// monthAgo, in90, etc.) -- same root cause, different call shape, tracked
+// as a separate follow-up rather than silently folded in here.
+function sdLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+window.sdLocalToday=sdLocalToday;
 function sdLoad(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
 window.sdLoad=sdLoad;
 // sdDemoCleared() -- the one shared gate every ||SEED demo-data fallback
@@ -1954,7 +1968,7 @@ function learnFromResponse(question, answer) {
   try {
     // Extract key facts from Claude's responses about the business
     var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
-    var timestamp = new Date().toISOString().split('T')[0];
+    var timestamp = sdLocalToday();
 
     // Store high-value insights (keep last 50)
     if (answer.length > 100) {
@@ -3290,7 +3304,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     // string 'Q-' id (as this used to) meant every quote saved from here
     // showed up there with blank project/$0 amount and could never have
     // its status updated (parseInt('Q-...') is NaN).
-    h.unshift({id:Date.now(),date:new Date().toISOString().slice(0,10),customer:name,project:stone,amount:total,status:'Pending'});
+    h.unshift({id:Date.now(),date:sdLocalToday(),customer:name,project:stone,amount:total,status:'Pending'});
     if(h.length>200)h=h.slice(0,200);
     try{localStorage.setItem('sd_quote_history',JSON.stringify(h));}catch(e){}
     updateKPIs();
@@ -3645,7 +3659,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var jobName=(document.getElementById('draw-job-name')||{value:'Drawing'}).value||'Drawing';
     var drawings=[];
     try{drawings=JSON.parse(localStorage.getItem('sd_drawings')||'[]');}catch(e){}
-    var entry={id:'DRW-'+Date.now(),date:new Date().toISOString().slice(0,10),name:jobName};
+    var entry={id:'DRW-'+Date.now(),date:sdLocalToday(),name:jobName};
     if(canvas){try{entry.dataUrl=canvas.toDataURL('image/png');}catch(e){}}
     drawings.unshift(entry);
     if(drawings.length>50)drawings=drawings.slice(0,50);
@@ -4073,7 +4087,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     d.forEach(function(x){rows.push([x.customer||'',x.project||x.type||'',(x.amount||0),x.status||'Pending',x.date||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='quote-history-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='quote-history-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   window.sdHistoryPrint=function(){
     var d=load();
@@ -4437,7 +4451,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   // Auto-save snapshot daily
   var lastSnap=null;
   try{var snaps=JSON.parse(localStorage.getItem('sd_business_snapshots')||'[]');lastSnap=snaps[0]&&snaps[0].date?snaps[0].date.slice(0,10):null;}catch(e){}
-  var today=new Date().toISOString().slice(0,10);
+  var today=sdLocalToday();
   if(lastSnap!==today){setTimeout(function(){if(window.sdBizSnapshot)sdBizSnapshot();},2000);}
 })();
 </script>
@@ -4780,15 +4794,15 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 <script>
 (function(){
   var SEED=[
-    {name:'Chris Webb',phone:'(555) 111-2233',email:'cwebb@email.com',type:'Kitchen Countertop',material:'Marble',sqft:42,budget:'$3k - $6k',timeline:'Within 30 days',source:'Referral',date:new Date().toISOString().slice(0,10),converted:true},
-    {name:'Amy Nguyen',phone:'(555) 222-3344',email:'amy@email.com',type:'Bathroom Vanity',material:'Quartz (Engineered)',sqft:18,budget:'Under $3k',timeline:'30-60 days',source:'Google',date:new Date().toISOString().slice(0,10),converted:false},
+    {name:'Chris Webb',phone:'(555) 111-2233',email:'cwebb@email.com',type:'Kitchen Countertop',material:'Marble',sqft:42,budget:'$3k - $6k',timeline:'Within 30 days',source:'Referral',date:sdLocalToday(),converted:true},
+    {name:'Amy Nguyen',phone:'(555) 222-3344',email:'amy@email.com',type:'Bathroom Vanity',material:'Quartz (Engineered)',sqft:18,budget:'Under $3k',timeline:'30-60 days',source:'Google',date:sdLocalToday(),converted:false},
     {name:'Brian Torres',phone:'(555) 333-4455',email:'btorres@email.com',type:'Outdoor Kitchen',material:'Granite',sqft:60,budget:'$6k - $12k',timeline:'ASAP',source:'Contractor',date:new Date(Date.now()-86400000).toISOString().slice(0,10),converted:true},
   ];
   function load(){try{return JSON.parse(localStorage.getItem('sd_intakes')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_intakes',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
-    var today=new Date().toISOString().slice(0,10);
+    var today=sdLocalToday();
     var weekAgo=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
     document.getElementById('int-total').textContent=d.length;
     document.getElementById('int-today').textContent=d.filter(function(x){return x.date===today;}).length;
@@ -4823,7 +4837,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       timeline:document.getElementById('int-timeline').value,
       source:document.getElementById('int-source').value,
       notes:document.getElementById('int-notes').value,
-      date:new Date().toISOString().slice(0,10),converted:false};
+      date:sdLocalToday(),converted:false};
     d.push(entry);save(d);render();
     ['int-fname','int-lname','int-phone','int-email','int-addr','int-sqft','int-notes'].forEach(function(id){document.getElementById(id).value='';});
     showToast('Intake submitted for '+fn+' '+ln+'.');
@@ -4858,7 +4872,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     d.forEach(function(x){rows.push([x.name,x.phone,x.email||'',x.type,x.material,x.sqft||0,x.budget,x.timeline,x.source,x.date,(x.converted?'Yes':'No')]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='intakes-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='intakes-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   var _origRenderInt=render;
   render=function(){
@@ -5048,7 +5062,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     list.forEach(function(c){var s=custComputeStats(c.name);rows.push([c.id,c.name,c.status||'',c.phone||'',c.email||'',c.address||'',s.jobs,(s.ltv||0),s.lastJob||'',(c.rating||0)]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='customers-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='customers-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -5245,8 +5259,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       amount:total,
       deposit:dep,
       balance:Math.max(0,total-dep),
-      date:new Date().toISOString().split('T')[0],
-      due:new Date().toISOString().split('T')[0],
+      date:sdLocalToday(),
+      due:sdLocalToday(),
       method:method,
       checkNum:(document.getElementById('pos-check-num').value||'').trim(),
       bankName:(document.getElementById('pos-bank-name').value||'').trim(),
@@ -5255,7 +5269,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       notes:'Recorded via Mobile POS'+(posReservedSlabId?' — slab '+posReservedSlabId:''),
       status:dep>=total?'Paid':dep>0?'Partial':'Unpaid',
       created:new Date().toISOString(),
-      payments:dep>0?[{amount:dep,date:new Date().toISOString().split('T')[0],method:method,note:'Mobile POS'}]:[],
+      payments:dep>0?[{amount:dep,date:sdLocalToday(),method:method,note:'Mobile POS'}]:[],
       source:'mobile_pos',
       reservedSlabId:posReservedSlabId||null,
       signature:sigDataUrl
@@ -5413,7 +5427,7 @@ window.sdPhotosExport=function(){
   sdPhotos.forEach(function(p){rows.push([p.id,p.job,p.cat,p.name,(p.date||'').slice(0,10)]);});
   var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='photo-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  a.download='photo-log-pinnacle-'+sdLocalToday()+'.csv';a.click();
 };
 </script>
 <div id="photo-ai-result" style="font-size:13px;line-height:1.7;color:var(--text)"></div>
@@ -5509,7 +5523,7 @@ window.sdPhotosExport=function(){
     var stone=prompt('Stone type:','');
     var years=parseInt(prompt('Warranty years:','2')||'2');
     var coverage=prompt('Coverage description:','Fabrication defects and sealing');
-    var install=new Date().toISOString().slice(0,10);
+    var install=sdLocalToday();
     var expires=new Date(Date.now()+years*365*24*3600*1000).toISOString().slice(0,10);
     var id='W-'+String(data.length+1).padStart(3,'0');
     data.push({id:id,job:job,customer:customer||'',stone:stone||'',install:install,expires:expires,years:years,status:'Active',claims:0,claimCost:0,coverage:coverage||''});
@@ -5541,7 +5555,7 @@ window.sdPhotosExport=function(){
     d.forEach(function(w){rows.push([w.id,w.job,w.customer,w.stone,w.install,w.expires,w.years,w.status,w.claims,('$'+(w.claimCost||0)),w.coverage]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='warranties-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='warranties-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   sdWarrantyRender();
 })();
@@ -5871,7 +5885,7 @@ window.sdPhotosExport=function(){
     d.forEach(function(s){rows.push([s.id,s.job,s.customer,s.address,s.type,s.date,s.crew.join('; '),s.status,s.notes||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='schedule-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='schedule-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   sdScheduleRender();
 })();
@@ -5991,7 +6005,7 @@ window.sdPhotosExport=function(){
 </div>
 <script>
 (function(){
-  var today=new Date().toISOString().slice(0,10);
+  var today=sdLocalToday();
   var DISPATCH=[
     {crew:'Carlos M. + Josh T.',job:'J-2024-089',customer:'Jim Hartwell',address:'142 Oak Ridge Dr, Marietta GA',status:'In Progress',eta:'10:30 AM',type:'Install',stone:'Calacatta Gold'},
     {crew:'Mike S. + Dave K.',job:'J-2024-091',customer:'Carla Reyes',address:'87 Peachtree Hills, Atlanta GA',status:'En Route',eta:'1:00 PM',type:'Install',stone:'Statuario Extra'},
@@ -6150,7 +6164,7 @@ function sdInvExport(){
   });
   var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='inventory-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  a.download='inventory-pinnacle-'+sdLocalToday()+'.csv';a.click();
 }
 </script>
 <div id="inv-reorder-items" style="margin-top:12px"></div>
@@ -6523,7 +6537,7 @@ function sdInvExport(){
     d.forEach(function(s){rows.push([s.id,s.stone,s.vendor,s.size,s.thickness,s.finish,s.status,s.location,('$'+s.cost),(s.job||''),s.notes||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='slabs-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='slabs-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   sdSlabsRender();
 })();
@@ -6656,7 +6670,7 @@ function sdInvExport(){
     d.forEach(function(v){rows.push([v.id,v.name,v.type,v.contact,v.phone,v.email||'',('$'+v.ytdSpend.toLocaleString()),v.rating,(v.preferred?'Yes':'No'),v.terms,v.notes||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='vendors-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='vendors-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   sdVendorsRender();
 })();
@@ -6870,7 +6884,7 @@ window.sdRMExport=function(){
   d.forEach(function(x){rows.push([x.customer,x.material,x.reason,x.status,x.notes||'',(x.createdAt||'').slice(0,10)]);});
   var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='remakes-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  a.download='remakes-pinnacle-'+sdLocalToday()+'.csv';a.click();
 };
 </script>
 <div id="remake-trend-bars"></div>
@@ -7199,7 +7213,7 @@ window.sdRMExport=function(){
   function save(d){try{localStorage.setItem('sd_comms',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
-    var today=new Date().toISOString().slice(0,10);
+    var today=sdLocalToday();
     document.getElementById('comms-sent').textContent=d.length;
     document.getElementById('comms-today').textContent=d.filter(function(x){return x.date.startsWith(today);}).length;
     document.getElementById('comms-unread').textContent=0;
@@ -7255,7 +7269,7 @@ window.sdRMExport=function(){
     var tf=(document.getElementById('comms-type-filter')||{}).value||'';
     if(q)d=d.filter(function(x){return (x.to+' '+x.subj+' '+x.body).toLowerCase().includes(q.toLowerCase());});
     if(tf)d=d.filter(function(x){return x.type===tf;});
-    var today=new Date().toISOString().slice(0,10);
+    var today=sdLocalToday();
     document.getElementById('comms-sent').textContent=load().length;
     document.getElementById('comms-today').textContent=load().filter(function(x){return x.date.startsWith(today);}).length;
     var custs=new Set(load().map(function(x){return x.to;}));
@@ -7278,7 +7292,7 @@ window.sdRMExport=function(){
     d.forEach(function(x){rows.push([x.type,x.to,x.subj,x.date,x.body]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='comms-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='comms-log-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -7361,7 +7375,7 @@ window.sdRMExport=function(){
   window.sdInvoicesAI=function(){
     var out=document.getElementById('inv2-ai-out');
     out.style.display='block';out.textContent='Analyzing A/R...';
-    var overdue=sd_invoices.filter(function(i){return i.status!=='Paid'&&i.due&&i.due<new Date().toISOString().slice(0,10);});
+    var overdue=sd_invoices.filter(function(i){return i.status!=='Paid'&&i.due&&i.due<sdLocalToday();});
     var outstanding=sd_invoices.filter(function(i){return i.status!=='Paid';}).reduce(function(a,i){return a+(i.balance||0);},0);
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are an A/R collections advisor for a stone fabrication shop. Invoice data: total outstanding $'+outstanding.toLocaleString()+'. Overdue invoices: '+(overdue.length?overdue.map(function(i){return i.customer+' $'+(i.balance||0)+' (due '+i.due+')';}).join(', '):'none currently overdue')+'. Provide: 1) Collections call script for each overdue account, 2) Escalation recommendations, 3) Payment plan suggestions, 4) Prevention strategies (deposit policy, credit checks), 5) DSO (days sales outstanding) improvement tips.'}]})
@@ -7641,7 +7655,7 @@ window.sdSafetyExport=function(){
   d.forEach(function(i){rows.push([i.id,(i.datetime||'').slice(0,10),i.type,i.employee,i.desc,i.cause||'',i.actions||'',i.oshaReportable||'']);});
   var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='safety-incidents-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  a.download='safety-incidents-pinnacle-'+sdLocalToday()+'.csv';a.click();
 };
 </script>
 </div>
@@ -7735,7 +7749,7 @@ window.sdSafetyExport=function(){
               [w,h,mat,('$'+cost),slabSqFt]];
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='nesting-layout-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='nesting-layout-'+sdLocalToday()+'.csv';a.click();
   };
   window.nestingPrint=function(){
     var w=document.getElementById('nest-slab-w').value;
@@ -8119,7 +8133,7 @@ tmLoad();
 
 function tmOpenUpload(){
   document.getElementById('tm-modal').style.display='flex';
-  document.getElementById('tm-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('tm-date').value=sdLocalToday();
   tmPendingFiles=[];
   document.getElementById('tm-file-list').innerHTML='';
 }
@@ -8322,7 +8336,7 @@ function tmExport(){
   });
   var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='stonedesk-templates-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  a.download='stonedesk-templates-'+sdLocalToday()+'.csv';a.click();
   notify('Templates exported','');
 }
 
@@ -8376,7 +8390,7 @@ function invCreateNew() {
   var form = document.getElementById('inv2-form');
   form.style.display = 'block';
   document.getElementById('inv2-num').value = invGenNum();
-  var today = new Date().toISOString().split('T')[0];
+  var today = sdLocalToday();
   document.getElementById('inv2-date').value = today;
   var due = new Date(); due.setDate(due.getDate() + 30);
   document.getElementById('inv2-due').value = due.toISOString().split('T')[0];
@@ -8404,7 +8418,7 @@ function invFromQuote() {
   document.getElementById('inv2-cust').value = last.client || '';
   document.getElementById('inv2-desc').value = (last.project || '') + (last.quoteNum ? ' — Quote #' + last.quoteNum : '');
   document.getElementById('inv2-amount').value = (last.total || '').toString().replace(/[^0-9.]/g, '');
-  var today = new Date().toISOString().split('T')[0];
+  var today = sdLocalToday();
   document.getElementById('inv2-date').value = today;
   var due = new Date(); due.setDate(due.getDate() + 30);
   document.getElementById('inv2-due').value = due.toISOString().split('T')[0];
@@ -8435,7 +8449,7 @@ function invSave() {
     notes: document.getElementById('inv2-notes').value.trim(),
     status: dep >= amt ? 'Paid' : dep > 0 ? 'Partial' : 'Unpaid',
     created: new Date().toISOString(),
-    payments: dep > 0 ? [{ amount: dep, date: new Date().toISOString().split('T')[0], method: document.getElementById('inv2-method').value, note: 'Deposit' }] : []
+    payments: dep > 0 ? [{ amount: dep, date: sdLocalToday(), method: document.getElementById('inv2-method').value, note: 'Deposit' }] : []
   };
   sd_invoices.unshift(inv);
   invSaveStore();
@@ -8454,7 +8468,7 @@ function invMarkPaid(id) {
   inv.status = 'Paid';
   inv.balance = 0;
   inv.payments = inv.payments || [];
-  inv.payments.push({ amount: inv.balance, date: new Date().toISOString().split('T')[0], method: 'Manual', note: 'Marked paid' });
+  inv.payments.push({ amount: inv.balance, date: sdLocalToday(), method: 'Manual', note: 'Marked paid' });
   invSaveStore();
   document.getElementById('inv2-print-modal').style.display = 'none';
   notify('Invoice marked as Paid', '');
@@ -8537,7 +8551,7 @@ function invRender() {
   var list = document.getElementById('inv2-list');
   if (!list) return;
   var srch = (document.getElementById('inv2-search') ? document.getElementById('inv2-search').value : '').toLowerCase();
-  var today = new Date().toISOString().split('T')[0];
+  var today = sdLocalToday();
   var filtered = sd_invoices.filter(function(inv) {
     if (_invFilter === 'Overdue') return inv.status !== 'Paid' && inv.due && inv.due < today;
     if (_invFilter !== 'all' && inv.status !== _invFilter) return false;
@@ -8580,7 +8594,7 @@ function invRender() {
 }
 
 function invUpdateKPIs() {
-  var today = new Date().toISOString().split('T')[0];
+  var today = sdLocalToday();
   var total = sd_invoices.length;
   var unpaid = sd_invoices.filter(function(i) { return i.status === 'Unpaid'; }).length;
   var partial = sd_invoices.filter(function(i) { return i.status === 'Partial'; }).length;
@@ -8602,7 +8616,7 @@ function invExportCSV() {
   var csv = rows.map(function(r) { return r.map(function(c) { return '"' + (c||'') + '"'; }).join(','); }).join('\n');
   var a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'stonedesk-invoices-' + new Date().toISOString().split('T')[0] + '.csv';
+  a.download = 'stonedesk-invoices-' + sdLocalToday() + '.csv';
   a.click();
 }
 
@@ -8836,12 +8850,12 @@ function fmAllStopsInRange(startStr, endStr){
 
 function fmEnsurePipelineDateDefaults(){
   var s=document.getElementById('fm-pipe-start'), e=document.getElementById('fm-pipe-end');
-  if(s && !s.value) s.value=new Date().toISOString().split('T')[0];
+  if(s && !s.value) s.value=sdLocalToday();
   if(e && !e.value) e.value=fmDateAddDays(s.value, 7);
 }
 
 function fmSetPipelineRange(days){
-  var today=new Date().toISOString().split('T')[0];
+  var today=sdLocalToday();
   document.getElementById('fm-pipe-start').value=today;
   document.getElementById('fm-pipe-end').value=fmDateAddDays(today, days);
   fmRenderPipeline();
@@ -8945,7 +8959,7 @@ function fmPopulatePersonSelect(){
 
 function fmEnsureDateDefault(inputId){
   var el=document.getElementById(inputId);
-  if(el && !el.value) el.value=new Date().toISOString().split('T')[0];
+  if(el && !el.value) el.value=sdLocalToday();
 }
 
 function fmRenderMyDay(){
@@ -9077,7 +9091,7 @@ function fmDeleteStop(manualId){
 function fmAddStop(){
   document.getElementById('fm-form').style.display='block';
   fmEnsureDateDefault('fm-date-select');
-  document.getElementById('fm-s-date').value=document.getElementById('fm-date-select').value||new Date().toISOString().split('T')[0];
+  document.getElementById('fm-s-date').value=document.getElementById('fm-date-select').value||sdLocalToday();
   if(typeof currentUser!=='undefined'&&currentUser&&currentUser.name) document.getElementById('fm-s-person').value=currentUser.name;
   document.getElementById('fm-form').scrollIntoView({behavior:'smooth'});
 }
@@ -13085,7 +13099,7 @@ function printDrawCutSheet() {
   function loadLog(){try{return JSON.parse(localStorage.getItem('sd_stonehub_log')||'[]');}catch(e){return[];}}
   function updateSHKPIs(){
     var log=loadLog();
-    var today=new Date().toISOString().slice(0,10);
+    var today=sdLocalToday();
     var todaySessions=log.filter(function(e){return e.date&&e.date.slice(0,10)===today;}).length;
     var kp=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
     kp('stonehub-kpi1',log.length);
@@ -14495,7 +14509,7 @@ function crSendToBridge() {
   var payee   = (document.getElementById('cr-payee')  || {}).value || '';
   var amount  = parseFloat((document.getElementById('cr-amount') || {}).value || 0);
   var memo    = (document.getElementById('cr-memo')   || {}).value || '';
-  var date    = (document.getElementById('cr-date')   || {}).value || new Date().toISOString().split('T')[0];
+  var date    = (document.getElementById('cr-date')   || {}).value || sdLocalToday();
   var cat     = (document.getElementById('cr-category')|| {}).value || 'other';
   var statusEl = document.getElementById('cr-send-status');
 
@@ -14585,7 +14599,7 @@ window.crPostGL = function(){ crSendToBridge(); };
 
 document.addEventListener('DOMContentLoaded', function() {
   var dateEl = document.getElementById('cr-date');
-  if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
+  if(dateEl) dateEl.value = sdLocalToday();
   var arr = JSON.parse(localStorage.getItem(_crExpKey) || '[]');
   if(arr.length) crRenderExpenses(arr);
 });
@@ -19390,7 +19404,7 @@ function custExportCSV(){
   var rows=[['Name','Phone','Email','Project','Quote','Status','Referral','Material','Added']];
   sdCustomers.forEach(function(c){rows.push([c.name,c.phone,c.email,c.project,c.quote,c.status,c.referral||'',c.material||'',new Date(c.createdAt).toLocaleDateString()]);});
   var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='stonedesk-customers-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='stonedesk-customers-'+sdLocalToday()+'.csv';a.click();
 }
 
 function custUpdateLTV(){
@@ -19624,7 +19638,7 @@ function addWarrantyToJob(name, price, years) {
   _warrPkgName = name; _warrPkgPrice = price; _warrPkgYears = years;
   document.getElementById('warr-pkg').value = name + ' — $' + price;
   document.getElementById('warr-add-form').style.display = 'block';
-  document.getElementById('warr-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('warr-date').value = sdLocalToday();
   document.getElementById('warr-add-form').scrollIntoView({behavior:'smooth'});
 }
 
@@ -19718,7 +19732,7 @@ function warrExportCSV() {
   });
   var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='stonedesk-warranties-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  a.download='stonedesk-warranties-'+sdLocalToday()+'.csv';a.click();
 }
 
 function warrAskClaude() {
@@ -20940,7 +20954,7 @@ function pmExportDeals() {
   Object.entries(sdPricingRules.productOverrides).forEach(function(e){ rows.push(['Product Override',e[0],'','$'+e[1]]); });
   var csv = rows.map(function(r){return r.map(function(x){return '"'+x+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='stonedesk-negotiated-prices-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  a.download='stonedesk-negotiated-prices-'+sdLocalToday()+'.csv';a.click();
 }
 
 function pmClearAll() {
@@ -21194,7 +21208,7 @@ function safetyUpdateKPIs() {
 
 function safetyAddTraining() {
   var f=document.getElementById('safe-form-training');
-  if(f){f.style.display='block';document.getElementById('st-date').value=new Date().toISOString().split('T')[0];}
+  if(f){f.style.display='block';document.getElementById('st-date').value=sdLocalToday();}
 }
 
 function safetySaveTraining() {
@@ -21263,7 +21277,7 @@ function safetyRenderChecklist() {
   if(dateEl) dateEl.textContent=new Date().toLocaleDateString();
   var el=document.getElementById('safe-checklist-items');if(!el)return;
   // Check if today already submitted
-  var today=new Date().toISOString().split('T')[0];
+  var today=sdLocalToday();
   var todaySub=sdSafetyData.checklists.find(function(c){return c.date===today;});
   el.innerHTML=(todaySub?'<div style="background:#F0FEF6;border:1.5px solid #BBF7D0;border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;font-weight:700;color:#15803D">&#9989; Today\'s checklist submitted at '+new Date(todaySub.ts).toLocaleTimeString()+'</div>':'') +
     DAILY_CHECKLIST.map(function(item){
@@ -21278,7 +21292,7 @@ function safetyRenderChecklist() {
 }
 
 function safetySubmitChecklist() {
-  var today=new Date().toISOString().split('T')[0];
+  var today=sdLocalToday();
   var existing=sdSafetyData.checklists.find(function(c){return c.date===today;});
   if(existing){notify('Today\'s checklist already submitted','warn');return;}
   var completed=[];
@@ -21382,7 +21396,7 @@ function safetyAddInspection() {
   var type=prompt('Inspection type (e.g. Water Flow Check, Blade Inspection, HEPA Filter):','Water Flow Check');if(!type)return;
   var result=prompt('Result / Notes:');
   var nextDue=new Date();nextDue.setDate(nextDue.getDate()+7);
-  var rec={id:'INS'+Date.now(),equipment:equip,type:type,result:result||'Pass',date:new Date().toISOString().split('T')[0],nextDue:nextDue.toISOString().split('T')[0],createdAt:new Date().toISOString()};
+  var rec={id:'INS'+Date.now(),equipment:equip,type:type,result:result||'Pass',date:sdLocalToday(),nextDue:nextDue.toISOString().split('T')[0],createdAt:new Date().toISOString()};
   sdSafetyData.inspections.unshift(rec);
   saveSafetyData();safetyRenderInspections();
   notify('Inspection logged','');
@@ -21475,7 +21489,7 @@ function safetyExport() {
   sdSafetyData.inspections.forEach(function(i){rows.push(['Inspection',i.equipment,i.type,i.date,i.result]);});
   var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='stonedesk-safety-report-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  a.download='stonedesk-safety-report-'+sdLocalToday()+'.csv';a.click();
 }
 
 // ================================================================
@@ -21928,7 +21942,7 @@ function finExport(){
   sdFinJobs.forEach(function(j){rows.push([j.customer,j.date.split('T')[0],j.material,j.quote,j.slab,j.hours*j.rate,j.consumables,j.install,j.cogs,j.profit,j.margin,j.sqft]);});
   var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='stonedesk-job-financials-'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  a.download='stonedesk-job-financials-'+sdLocalToday()+'.csv';a.click();
 }
 
 function finAskCFO(){
@@ -22576,7 +22590,7 @@ function commsUpdateKPIs() {
   var unread = sdCommsThreads.filter(function(t){return t.unread&&t.status!=='closed';}).length;
   var open = sdCommsThreads.filter(function(t){return t.status==='open';}).length;
   var safety = sdCommsThreads.filter(function(t){return t.category==='safety'&&t.status!=='closed';}).length;
-  var today = new Date().toISOString().split('T')[0];
+  var today = sdLocalToday();
   var resolved = sdCommsThreads.filter(function(t){return (t.status==='closed'||t.status==='approved')&&(t.closedAt||'').startsWith(today);}).length;
   function s(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
   s('comms-kpi-unread',unread); s('comms-kpi-open',open);
@@ -23039,7 +23053,7 @@ function dlCSV(rows, filename) {
 
 </script>
 <script>
-function checkStoneDesk_SmartFlags(){var f=[];try{var _v=(window.sd_jobs&&sd_jobs.filter(function(j){return j.dueDate&&j.dueDate<new Date().toISOString().split('T')[0];}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"overdue job(s)"});}catch(e){}try{var _v=(window.sd_quotes&&sd_quotes.filter(function(q){return (Date.now()-new Date(q.date||Date.now()).getTime())>30*24*60*60*1000&&q.status==='Open';}).length);if(_v&&_v>0)f.push({t:"a",m:_v+" "+"quote(s) over 30 days old"});}catch(e){}try{var _v=(window.sd_invoices&&sd_invoices.filter(function(i){return i.status==='Unpaid';}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"unpaid invoice(s)"});}catch(e){}var fc=document.getElementById("sairn-flags");if(!fc){fc=document.createElement("div");fc.id="sairn-flags";fc.style.cssText="position:fixed;top:64px;right:12px;z-index:800;max-width:340px;display:flex;flex-direction:column;gap:6px;pointer-events:none";document.body.appendChild(fc);}fc.innerHTML="";f.slice(0,5).forEach(function(fl){var el=document.createElement("div");var bg=fl.t==="r"?"#FEE2E2":fl.t==="a"?"#FEF3C7":"#F0FDF4";var bd=fl.t==="r"?"#FCA5A5":fl.t==="a"?"#FCD34D":"#BBF7D0";var tx=fl.t==="r"?"#991B1B":fl.t==="a"?"#92400E":"#14532D";el.style.cssText="background:"+bg+";border:1px solid "+bd+";color:"+tx+";padding:10px 14px;border-radius:8px;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:all;cursor:pointer";el.textContent=fl.m;el.onclick=function(){el.remove();};fc.appendChild(el);setTimeout(function(){if(el.parentElement)el.remove();},9000);});}
+function checkStoneDesk_SmartFlags(){var f=[];try{var _v=(window.sd_jobs&&sd_jobs.filter(function(j){return j.dueDate&&j.dueDate<sdLocalToday();}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"overdue job(s)"});}catch(e){}try{var _v=(window.sd_quotes&&sd_quotes.filter(function(q){return (Date.now()-new Date(q.date||Date.now()).getTime())>30*24*60*60*1000&&q.status==='Open';}).length);if(_v&&_v>0)f.push({t:"a",m:_v+" "+"quote(s) over 30 days old"});}catch(e){}try{var _v=(window.sd_invoices&&sd_invoices.filter(function(i){return i.status==='Unpaid';}).length);if(_v&&_v>0)f.push({t:"r",m:_v+" "+"unpaid invoice(s)"});}catch(e){}var fc=document.getElementById("sairn-flags");if(!fc){fc=document.createElement("div");fc.id="sairn-flags";fc.style.cssText="position:fixed;top:64px;right:12px;z-index:800;max-width:340px;display:flex;flex-direction:column;gap:6px;pointer-events:none";document.body.appendChild(fc);}fc.innerHTML="";f.slice(0,5).forEach(function(fl){var el=document.createElement("div");var bg=fl.t==="r"?"#FEE2E2":fl.t==="a"?"#FEF3C7":"#F0FDF4";var bd=fl.t==="r"?"#FCA5A5":fl.t==="a"?"#FCD34D":"#BBF7D0";var tx=fl.t==="r"?"#991B1B":fl.t==="a"?"#92400E":"#14532D";el.style.cssText="background:"+bg+";border:1px solid "+bd+";color:"+tx+";padding:10px 14px;border-radius:8px;font-size:11px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,.1);pointer-events:all;cursor:pointer";el.textContent=fl.m;el.onclick=function(){el.remove();};fc.appendChild(el);setTimeout(function(){if(el.parentElement)el.remove();},9000);});}
 setTimeout(function(){if(typeof checkStoneDesk_SmartFlags==="function")checkStoneDesk_SmartFlags();},2000);
 </script>
 
@@ -23645,7 +23659,7 @@ document.addEventListener('DOMContentLoaded', function() {
       val:parseFloat(document.getElementById('crm-val').value)||0,
       stage:document.getElementById('crm-stage').value,
       source:document.getElementById('crm-source').value,
-      date:new Date().toISOString().slice(0,10)});
+      date:sdLocalToday()});
     save(d);render();
     ['crm-name','crm-proj','crm-val'].forEach(function(id){document.getElementById(id).value='';});
   };
@@ -23674,7 +23688,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.name,x.proj||'',('$'+(x.val||0)),x.stage,x.source,x.date,x.notes||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='crm-pipeline-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='crm-pipeline-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   render();
 })();
@@ -23792,7 +23806,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.push({job:job,rev:rev,mat:parseFloat(document.getElementById('jc-mat').value)||0,
       lab:parseFloat(document.getElementById('jc-lab').value)||0,
       oth:parseFloat(document.getElementById('jc-oth').value)||0,
-      status:document.getElementById('jc-stat').value,date:new Date().toISOString().slice(0,10)});
+      status:document.getElementById('jc-stat').value,date:sdLocalToday()});
     save(d);render();
     ['jc-job','jc-rev','jc-mat','jc-lab','jc-oth'].forEach(function(id){document.getElementById(id).value='';});
   };
@@ -23830,7 +23844,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='job-costs-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='job-costs-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   render();
 })();
@@ -23941,7 +23955,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 <script>
 (function(){
-  var today=new Date().toISOString().slice(0,10);
+  var today=sdLocalToday();
   var weekAgo=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
   var monthAgo=new Date(Date.now()-30*86400000).toISOString().slice(0,10);
   document.getElementById("ts-date").value=today;
@@ -24203,7 +24217,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(r){rows.push([r.id,r.stone,r.size,r.sqft,r.location,('$'+r.price),(r.age||0),r.notes||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='remnant-yard-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='remnant-yard-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -24305,7 +24319,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var num='PO-2024-0'+(50+d.length);
     d.unshift({num:num,vendor:vendor,mat:document.getElementById('po-mat').value||'Materials',
-      amt:amt,exp:document.getElementById('po-exp').value||'TBD',status:'Pending',date:new Date().toISOString().slice(0,10)});
+      amt:amt,exp:document.getElementById('po-exp').value||'TBD',status:'Pending',date:sdLocalToday()});
     save(d);render();
     ['po-vendor','po-amt','po-mat','po-exp'].forEach(function(id){document.getElementById(id).value='';});
     showToast('PO created: '+num);
@@ -24336,7 +24350,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.num,x.vendor,x.mat,'$'+x.amt,x.exp,x.status,x.date]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='purchase-orders-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='purchase-orders-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   var _origRenderPO=render;
   render=function(){
@@ -24406,7 +24420,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function save(d){try{localStorage.setItem('sd_receiving',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
-    var today=new Date().toISOString().slice(0,10);
+    var today=sdLocalToday();
     var weekAgo=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
     document.getElementById('recv-today').textContent=d.filter(function(x){return x.date===today;}).length;
     document.getElementById('recv-week').textContent=d.filter(function(x){return x.date>=weekAgo;}).length;
@@ -24433,7 +24447,7 @@ document.addEventListener('DOMContentLoaded', function() {
       vendor:document.getElementById('recv-vendor').value||'Unknown',
       cond:document.getElementById('recv-cond').value,
       notes:document.getElementById('recv-notes').value,
-      date:new Date().toISOString().slice(0,10)});
+      date:sdLocalToday()});
     save(d);render();
     ['recv-mat','recv-qty','recv-val','recv-vendor','recv-notes'].forEach(function(id){document.getElementById(id).value='';});
   };
@@ -24463,7 +24477,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.mat,x.qty,'$'+x.val,x.vendor,x.cond,x.notes||'',x.date]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='receiving-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='receiving-log-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   render();
 })();
@@ -24519,7 +24533,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 <script>
 (function(){
-  var today=new Date().toISOString().slice(0,10);
+  var today=sdLocalToday();
   document.getElementById('mfst-date-hdr').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   var SEED=[
     {cust:'Marcus Webb',addr:'142 Oak Ridge Dr, Springfield',time:'08:00',crew:'Crew A',type:'Install',status:'Completed',date:today},
@@ -24675,7 +24689,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function render(){
     var d=load();
     document.getElementById('sms-sent').textContent=d.length;
-    var today=new Date().toISOString().slice(0,10);
+    var today=sdLocalToday();
     var monthPrefix=today.slice(0,7);
     document.getElementById('sms-today').textContent=d.filter(function(x){return x.date.startsWith(today);}).length;
     document.getElementById('sms-delivered').textContent=d.filter(function(x){return x.date.startsWith(monthPrefix);}).length;
@@ -24737,7 +24751,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var q=(document.getElementById('sms-search')||{}).value||'';
     if(q)d=d.filter(function(x){return (x.to+' '+x.msg).toLowerCase().includes(q.toLowerCase());});
-    var today=new Date().toISOString().slice(0,10);
+    var today=sdLocalToday();
     document.getElementById('sms-sent').textContent=load().length;
     document.getElementById('sms-today').textContent=load().filter(function(x){return x.date.startsWith(today);}).length;
     var rcpts=new Set(load().map(function(x){return x.to;}));
@@ -24767,7 +24781,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.to,x.phone,x.msg,x.date,x.status]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='sms-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='sms-log-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   window.sdSMSRender();
 })();
@@ -24876,7 +24890,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var total=d.reduce(function(a,x){return a+(x.amount||0);},0);
     var avg=d.length?Math.round(total/d.length):0;
     var acc=d.filter(function(x){return x.accepted;}).length;
-    var today2=new Date().toISOString().slice(0,10);
+    var today2=sdLocalToday();
     document.getElementById("aiq-count").textContent=d.length;
     document.getElementById("aiq-avg").textContent="$"+avg.toLocaleString();
     document.getElementById("aiq-total").textContent="$"+total.toLocaleString();
@@ -24982,7 +24996,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       document.getElementById("aiq-actions").style.display="flex";
       var d=load();
-      d.push({id:Date.now(),customer:cust,type:type,tier:tierVal,amount:realTotal,date:new Date().toISOString().slice(0,10),accepted:false,desc:desc});
+      d.push({id:Date.now(),customer:cust,type:type,tier:tierVal,amount:realTotal,date:sdLocalToday(),accepted:false,desc:desc});
       save(d);updateKPIs();
     }catch(e){
       out.innerHTML="<div style='color:#dc2626;padding:12px'>Something went wrong generating this quote. Please try again.</div>";
@@ -24996,7 +25010,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.customer||"",x.type||"",x.tier||"",(x.amount||0),(x.accepted?"Yes":"No"),x.date||""]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
     var a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
-    a.download="ai-quotes-pinnacle-"+new Date().toISOString().slice(0,10)+".csv";a.click();
+    a.download="ai-quotes-pinnacle-"+sdLocalToday()+".csv";a.click();
   };
   window.sdAIQHistory=function(){showPanel("history");};
   window.sdAIQPrint=function(){
@@ -25135,7 +25149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.name,x.brand,x.thickness,x.finish,('$'+x.price),(x.available?'In Stock':'Order Only')]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='sintered-catalog-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='sintered-catalog-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   render();
 })();
@@ -25266,7 +25280,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var txt=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||"Guide generated."));
       out.innerHTML=escHtml(txt).replace(/\n/g,"<br>").replace(/##\s*(.*?)<br>/g,"<h3 style=\"color:#0A3D1F;margin:12px 0 4px\">$1</h3>").replace(/\*\*(.*?)\*\*/g,"<strong>$1</strong>");
       var d=loadGuides();
-      d.push({stone:stone,customer:cust,use:use,level:level,date:new Date().toISOString().slice(0,10),guide:txt,sent:false});
+      d.push({stone:stone,customer:cust,use:use,level:level,date:sdLocalToday(),guide:txt,sent:false});
       saveGuides(d);updateKPIs();
     }).catch(function(){
       out.innerHTML="<h3 style=\"color:#0A3D1F\">"+stone+" "+use+" Care Guide</h3>"
@@ -25387,7 +25401,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }).then(function(r){return r.json();}).then(function(r){
       var txt=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''));
       out.innerHTML=escHtml(txt).replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-      var d=load();d.push({proj:proj,stone:stone,style:style,date:new Date().toISOString().slice(0,10)});
+      var d=load();d.push({proj:proj,stone:stone,style:style,date:sdLocalToday()});
       save(d);updateKPIs();
     }).catch(function(){
       out.innerHTML='<strong>'+style+' Layout — '+stone+'</strong><br><br>'
@@ -25395,7 +25409,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'<strong>Cut Sequence:</strong> Template the left piece first, mirror template for right. Ensure bundle match — use adjacent slabs from same lot.<br><br>'
         +'<strong>Seam Placement:</strong> Center seam at island midpoint, aligned with dominant vein direction.<br><br>'
         +'<strong>Waste Optimization:</strong> Reserve offcuts for waterfall legs if applicable. Expected waste: 12-18%.';
-      var d=load();d.push({proj:proj,stone:stone,style:style,date:new Date().toISOString().slice(0,10)});
+      var d=load();d.push({proj:proj,stone:stone,style:style,date:sdLocalToday()});
       save(d);updateKPIs();
     });
   };
@@ -25413,7 +25427,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.proj||'',x.stone||'',x.style||'',x.date||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='vein-match-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='vein-match-log-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   updateKPIs();
 })();
@@ -25836,7 +25850,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var txt=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''));
       out.innerHTML=escHtml(txt).replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
       var d=load();
-      d.push({job:job,mat:mat,loc:loc,date:new Date().toISOString().slice(0,10),remake:false});
+      d.push({job:job,mat:mat,loc:loc,date:sdLocalToday(),remake:false});
       save(d);updateKPIs();
     }).catch(function(){
       out.innerHTML='<strong>Seam Recommendation for '+loc+':</strong><br><br>'
@@ -25844,7 +25858,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'For '+mat+', match adhesive color to background tone. '
         +'Recommend butterfly joint at corners for maximum strength.<br><br>'
         +'<strong>Technique:</strong> Level slab surfaces to within 1/32", use dual-component epoxy, allow 45-minute cure before polishing.';
-      var d=load();d.push({job:job,mat:mat,loc:loc,date:new Date().toISOString().slice(0,10),remake:false});
+      var d=load();d.push({job:job,mat:mat,loc:loc,date:sdLocalToday(),remake:false});
       save(d);updateKPIs();
     });
   };
@@ -25862,7 +25876,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.job||'',x.mat||'',x.loc||'',x.date||'',(x.remake?'Yes':'No')]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='seam-analysis-log-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='seam-analysis-log-'+sdLocalToday()+'.csv';a.click();
   };
   updateKPIs();
 })();
@@ -25965,7 +25979,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var rating=parseInt(prompt('Rating (1-5):','5')||'5');
     var text=prompt('Review text:','');
     var id='RV-'+String(data.length+1).padStart(3,'0');
-    var date=new Date().toISOString().slice(0,10);
+    var date=sdLocalToday();
     data.push({id:id,customer:customer,source:source||'Google',rating:Math.min(5,Math.max(1,rating)),date:date,text:text||'',responded:false,job:''});
     save(data);
     sdReviewsRender();
@@ -25996,7 +26010,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.customer||'',x.rating||0,x.review||'',x.date||'',x.source||'',x.status||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='reviews-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='reviews-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -26245,7 +26259,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.push({from:from,to:to,phone:document.getElementById('ref-phone').value,
       status:document.getElementById('ref-status').value,
       val:parseFloat(document.getElementById('ref-val').value)||0,
-      date:new Date().toISOString().slice(0,10)});
+      date:sdLocalToday()});
     save(d);render();
     ['ref-from','ref-to','ref-phone','ref-val'].forEach(function(id){document.getElementById(id).value='';});
   };
@@ -26274,7 +26288,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.referrer||'',x.referred||'',x.project||'',('$'+(x.value||0)),x.status||'',x.date||'',x.reward||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='referrals-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='referrals-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -26395,7 +26409,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var ours=parseFloat(document.getElementById('pi-ours').value);
     if(!mat||isNaN(mkt)||isNaN(ours)){showToast('Fill all fields');return;}
     var d=load();
-    d.push({mat:mat,mkt:mkt,ours:ours,source:document.getElementById('pi-source').value||'Manual',date:new Date().toISOString().slice(0,10)});
+    d.push({mat:mat,mkt:mkt,ours:ours,source:document.getElementById('pi-source').value||'Manual',date:sdLocalToday()});
     save(d);render();
     document.getElementById('pi-mat').value='';document.getElementById('pi-mkt').value='';
     document.getElementById('pi-ours').value='';document.getElementById('pi-source').value='';
@@ -26476,7 +26490,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 <script>
 (function(){
-  var today=new Date().toISOString().slice(0,10);
+  var today=sdLocalToday();
   var SEED=[
     {name:'Park Industries CNC Bridge Saw',make:'Park WJ-2000',val:85000,maint:'2024-07-01',status:'Operational'},
     {name:'Waterjet Cutter',make:'Flow Mach 4',val:120000,maint:'2024-06-30',status:'Maintenance Due'},
@@ -26544,7 +26558,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.name||'',x.type||'',x.serial||'',x.lastService||'',x.nextService||'',x.status||'',x.notes||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='equipment-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='equipment-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   window.sdEqRender=render;
   render();
@@ -26794,7 +26808,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.push({name:name,role:document.getElementById('emp-role').value||'Staff',
       dept:document.getElementById('emp-dept').value,
       phone:document.getElementById('emp-phone').value||'',
-      start:document.getElementById('emp-start').value||new Date().toISOString().slice(0,10),
+      start:document.getElementById('emp-start').value||sdLocalToday(),
       certs:[]});
     save(d);sdEmpRender();
     ['emp-name','emp-role','emp-phone','emp-start'].forEach(function(id){document.getElementById(id).value='';});
@@ -26823,7 +26837,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.name||'',x.role||'',x.phone||'',x.email||'',x.hired||'',x.status||'',('$'+(x.rate||0)+'/hr')]);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='employees-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='employees-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   // Client-side visibility gate only -- see the HTML comment above
   // #emp-login-access-card for why this is safe to be UX-only (the server
@@ -27058,7 +27072,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.stone||'',x.size||'',x.location||'',x.status||'',('$'+(x.price||0)),x.job||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='stoneyard-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='stoneyard-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
   sdYardRender();
 })();
@@ -27338,7 +27352,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.subxMarkPaid = async function(jobId){
     var job = _subxJobs.find(function(j){ return j.id === jobId; });
     if (!job) return;
-    var payload = Object.assign({}, job, { paid: true, paidDate: new Date().toISOString().slice(0,10) });
+    var payload = Object.assign({}, job, { paid: true, paidDate: sdLocalToday() });
     var data = await subxCall('write', 'jobs', payload);
     if (!data) return;
     showToast('Marked paid.');
@@ -27467,7 +27481,7 @@ document.addEventListener('DOMContentLoaded', function() {
       val:parseFloat(document.getElementById('bid-val').value)||0,
       stage:document.getElementById('bid-stage').value,
       close:document.getElementById('bid-close-date').value||'TBD',
-      date:new Date().toISOString().slice(0,10)});
+      date:sdLocalToday()});
     save(d);render();
     ['bid-cust','bid-proj','bid-val'].forEach(function(id){document.getElementById(id).value='';});
   };
@@ -27605,7 +27619,7 @@ document.addEventListener('DOMContentLoaded', function() {
     t.unshift({id:'IT-0'+(45+t.length),user:document.getElementById('it-user').value,
       cat:document.getElementById('it-category').value,
       priority:document.getElementById('it-priority').value,
-      desc:desc,status:'Open',date:new Date().toISOString().slice(0,10)});
+      desc:desc,status:'Open',date:sdLocalToday()});
     saveTickets(t);render();document.getElementById('it-desc').value='';
     showToast('Ticket opened!');
   };
@@ -27722,7 +27736,7 @@ document.addEventListener('DOMContentLoaded', function() {
       amount:parseFloat(document.getElementById('dmg-amount').value)||0,
       fault:document.getElementById('dmg-fault').value,
       desc:document.getElementById('dmg-desc').value||'',
-      status:'Open',recovered:0,date:new Date().toISOString().slice(0,10)});
+      status:'Open',recovered:0,date:sdLocalToday()});
     save(d);render();
     ['dmg-job','dmg-amount','dmg-desc'].forEach(function(id){document.getElementById(id).value='';});
   };
@@ -27751,7 +27765,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.job||'',x.customer||'',x.type||'',x.description||'',('$'+(x.amount||0)),x.status||'',x.date||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='damage-claims-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='damage-claims-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -27810,7 +27824,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 <script>
 (function(){
-  var today=new Date().toISOString().slice(0,10);
+  var today=sdLocalToday();
   var in90=new Date(Date.now()+90*86400000).toISOString().slice(0,10);
   var SEED=[
     {emp:'Mike Rodriguez',topic:'OSHA 10 Renewal',type:'Safety',hrs:10,date:'2024-05-15',cert_exp:'2026-05-15'},
@@ -27888,7 +27902,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.employee||'',x.course||'',x.category||'',x.completed||'',x.expires||'',(x.score||''),x.status||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='training-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='training-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -27962,7 +27976,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     document.getElementById('bull-total').textContent=d.length;
     document.getElementById('bull-urgent').textContent=d.filter(function(x){return x.cat==='Urgent';}).length;
-    var now=new Date().toISOString().slice(0,10);
+    var now=sdLocalToday();
     document.getElementById('bull-week').textContent=d.filter(function(x){return x.date>=now.slice(0,7);}).length;
     document.getElementById('bull-pinned').textContent=d.filter(function(x){return x.pinned;}).length;
     var pinned=d.filter(function(x){return x.pinned;});
@@ -27990,7 +28004,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!t||!b){showToast('Enter title and content');return;}
     var d=load();
     d.unshift({id:Date.now(),cat:document.getElementById('bull-cat').value,title:t,body:b,
-      pinned:document.getElementById('bull-pin').checked,date:new Date().toISOString().slice(0,10),author:'You'});
+      pinned:document.getElementById('bull-pin').checked,date:sdLocalToday(),author:'You'});
     save(d);
     document.getElementById('bull-title-inp').value='';
     document.getElementById('bull-body-inp').value='';
@@ -28023,7 +28037,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.title||'',x.category||'',x.author||'',x.date||'',x.priority||'',x.content||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='bulletin-board-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='bulletin-board-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -28121,7 +28135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.push({job:job,material:document.getElementById('waste-material').value||'Mixed',
       lbs:parseFloat(document.getElementById('waste-lbs').value)||0,
       cost:parseFloat(document.getElementById('waste-cost-inp').value)||0,
-      type:document.getElementById('waste-type').value,date:new Date().toISOString().slice(0,10)});
+      type:document.getElementById('waste-type').value,date:sdLocalToday()});
     save(d);render();
     ['waste-job','waste-material','waste-lbs','waste-cost-inp'].forEach(function(id){document.getElementById(id).value='';});
   };
@@ -28150,7 +28164,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.date||'',x.material||'',x.job||'',(x.sqft||0),x.cause||'',('$'+(x.cost||0)),x.notes||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='waste-log-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='waste-log-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -28258,7 +28272,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!cust){showToast('Enter customer name');return;}
     var d=load();
     d.push({customer:cust,score:parseInt(document.getElementById('nps-score-inp').value),
-      comment:document.getElementById('nps-comment').value,date:new Date().toISOString().slice(0,10)});
+      comment:document.getElementById('nps-comment').value,date:sdLocalToday()});
     save(d);render();
     document.getElementById('nps-cust').value='';document.getElementById('nps-comment').value='';
     document.getElementById('nps-score-inp').value=5;document.getElementById('nps-val-disp').textContent='5';
@@ -28288,7 +28302,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.customer||'',x.score||0,x.category||'',x.comment||'',x.date||'',x.job||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='nps-scores-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='nps-scores-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -28359,7 +28373,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function save(d){try{localStorage.setItem('sd_ap',JSON.stringify(d));}catch(e){}}
   function render(){
     var d=load();
-    var today=new Date().toISOString().slice(0,10);
+    var today=sdLocalToday();
     var weekOut=new Date(Date.now()+7*86400000).toISOString().slice(0,10);
     var open=d.filter(function(x){return x.status==='Open'||x.status==='Overdue';});
     var dueWeek=d.filter(function(x){return x.status==='Open'&&x.due<=weekOut;});
@@ -28398,8 +28412,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!vendor||!amt){showToast('Enter vendor and amount');return;}
     var d=load();
     d.unshift({vendor:vendor,desc:document.getElementById('ap-desc').value||'',amt:amt,
-      due:document.getElementById('ap-due').value||new Date().toISOString().slice(0,10),
-      status:'Open',date:new Date().toISOString().slice(0,10)});
+      due:document.getElementById('ap-due').value||sdLocalToday(),
+      status:'Open',date:sdLocalToday()});
     save(d);render();
     ['ap-vendor','ap-desc','ap-amt','ap-due'].forEach(function(id){document.getElementById(id).value='';});
   };
@@ -28428,7 +28442,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.vendor||'',x.invoice||'',('$'+(x.amount||0)),x.due||'',x.status||'',x.category||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'\"\"\"')+'"';}).join(',');}).join('\\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='accounts-payable-pinnacle-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+    a.download='accounts-payable-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
 })();
 </script>
@@ -28697,7 +28711,7 @@ function agNewAgreement() {
   var form = document.getElementById('ag-form');
   form.style.display = 'block';
   var d = document.getElementById('ag-date');
-  if (d) d.value = new Date().toISOString().split('T')[0];
+  if (d) d.value = sdLocalToday();
   ['ag-shop','ag-contact','ag-email','ag-phone','ag-address','ag-notes'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = '';
   });
@@ -28720,7 +28734,7 @@ function agSave(andPrint) {
     plan: plan,
     planLabel: planLabel[plan],
     price: { founding: 199, solo: 299, pro: 499, shop: 799 }[plan],
-    date: document.getElementById('ag-date').value || new Date().toISOString().split('T')[0],
+    date: document.getElementById('ag-date').value || sdLocalToday(),
     status: document.getElementById('ag-status').value || 'pending',
     notes: (document.getElementById('ag-notes').value || '').trim(),
     createdAt: new Date().toISOString()
@@ -28899,7 +28913,7 @@ function agExport() {
     agAgreements.map(function(a) { return [a.num, a.shop, a.contact, a.email, a.phone, a.planLabel, '$' + a.price + '/mo', a.date, a.status, a.signedAt ? new Date(a.signedAt).toLocaleDateString() : '']; })
   );
   var csv = rows.map(function(r) { return r.map(function(c) { return '"' + (String(c || '').replace(/"/g, '""')) + '"'; }).join(','); }).join('\n');
-  var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'StoneDesk_Agreements_' + new Date().toISOString().split('T')[0] + '.csv'; a.click();
+  var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'StoneDesk_Agreements_' + sdLocalToday() + '.csv'; a.click();
 }
 
 
@@ -29187,7 +29201,7 @@ async function sdRunEmailScan() {
       out.innerHTML='<strong>🤖 Security Analysis:</strong><br>'+escHtml(result).replace(/\n/g,'<br>');
       if(risk!=='Low'){
         var threats=loadThreats();
-        threats.unshift({type:lower.includes('phish')?'Phishing':'Suspicious',risk:risk,summary:txt.slice(0,120),date:new Date().toISOString().slice(0,10)});
+        threats.unshift({type:lower.includes('phish')?'Phishing':'Suspicious',risk:risk,summary:txt.slice(0,120),date:sdLocalToday()});
         if(threats.length>100)threats=threats.slice(0,100);
         saveThreats(threats);
         render();
@@ -30272,7 +30286,7 @@ async function intakeAccept(id) {
     var job = {
       id: 'JOB'+Date.now(), customer: s.client_name,
       jobNum: 'J-'+Date.now().toString().slice(-5),
-      material: '', templateDate: new Date().toISOString().split('T')[0],
+      material: '', templateDate: sdLocalToday(),
       targetDate: '', stage: 'templated',
       sqft: Math.round((runAin * 25.5) / 144),
       installer: '', address: '', volume: 'normal',
@@ -30969,12 +30983,12 @@ function esigInit(){
   c.addEventListener('touchstart',function(e){e.preventDefault();_esigDrawing=true;_esigCtx.beginPath();_esigCtx.moveTo(gx(e.touches[0],c),gy(e.touches[0],c));},{passive:false});
   c.addEventListener('touchmove',function(e){e.preventDefault();if(!_esigDrawing)return;_esigCtx.lineTo(gx(e.touches[0],c),gy(e.touches[0],c));_esigCtx.stroke();},{passive:false});
   c.addEventListener('touchend',function(){_esigDrawing=false;});
-  var d=document.getElementById('esig-date');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);
+  var d=document.getElementById('esig-date');if(d&&!d.value)d.value=sdLocalToday();
 }
 function esigClear(){var c=document.getElementById('esig-canvas');if(c&&_esigCtx)_esigCtx.clearRect(0,0,c.width,c.height);}
 function esigApprove(){
   var name=((document.getElementById('esig-name')||{}).value||'').trim();
-  var date=(document.getElementById('esig-date')||{}).value||new Date().toISOString().split('T')[0];
+  var date=(document.getElementById('esig-date')||{}).value||sdLocalToday();
   if(!name){showToast('Please enter client full name.');return;}
 
   // Verify signature drawn
@@ -32062,7 +32076,7 @@ function revRenderLog(){
 // 16. REFERRAL TRACKER
 // ================================================================
 var rfReferrals=sdLoad('sd_referrals',[]);
-function rfAddReferral(){document.getElementById('rf-form').style.display='block';var d=document.getElementById('rf-date');if(d)d.value=new Date().toISOString().split('T')[0];}
+function rfAddReferral(){document.getElementById('rf-form').style.display='block';var d=document.getElementById('rf-date');if(d)d.value=sdLocalToday();}
 function rfSave(){
   var cust=((document.getElementById('rf-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var r={id:'RF'+Date.now(),customer:cust,referredBy:((document.getElementById('rf-referred-by')||{}).value||'').trim(),sourceType:(document.getElementById('rf-source-type')||{}).value||'other',value:parseFloat((document.getElementById('rf-value')||{}).value)||0,status:(document.getElementById('rf-status')||{}).value||'lead',date:(document.getElementById('rf-date')||{}).value||'',createdAt:new Date().toISOString()};
@@ -32156,7 +32170,7 @@ async function piRunAnalysis(){
 function piExport(){
   var rows=[['Material','Your Rate','Market Low','Market Avg','Market High','vs Market']].concat(PI_RATES.filter(function(r){return piMyRates[r.mat];}).map(function(r){var y=piMyRates[r.mat]||0;var pct=Math.round((y-r.avg)/r.avg*100);return [r.mat,y,r.low,r.avg,r.high,(pct>=0?'+':'')+pct+'%'];}));
   var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_PriceIntel_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_PriceIntel_'+sdLocalToday()+'.csv';a.click();
 }
 
 // ================================================================
@@ -32255,7 +32269,7 @@ function itaCheckLicense(){showToast('License active — sairn.vercel.app');itaA
 function itaExportAll(){
   var data={};for(var k in localStorage){if(k.startsWith('sd_'))data[k]=localStorage[k];}
   var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='StoneDesk_Backup_'+new Date().toISOString().split('T')[0]+'.json';a.click();
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='StoneDesk_Backup_'+sdLocalToday()+'.json';a.click();
   itaAudit('Full data export performed');showToast('Data exported');
 }
 function itaImportPrompt(){var inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=function(e){var f=e.target.files[0];if(!f)return;var fr=new FileReader();fr.onload=function(ev){try{var d=JSON.parse(ev.target.result);Object.keys(d).forEach(function(k){localStorage.setItem(k,d[k]);});itaAudit('Data import performed');itaRender();showToast('Data restored — reload to see all changes');}catch(err){showToast('Invalid backup file');}};fr.readAsText(f);};inp.click();}
@@ -32265,7 +32279,7 @@ function itaClearData(){if(!confirm('This will clear all DEMO data. Your real da
 // DAMAGE CLAIMS
 // ================================================================
 var dmgClaims=sdLoad('sd_damage_claims',[]);var dmgFilter='all';
-function dmgAddClaim(){document.getElementById('dmg-form').style.display='block';var d=document.getElementById('dmg-date');if(d)d.value=new Date().toISOString().split('T')[0];}
+function dmgAddClaim(){document.getElementById('dmg-form').style.display='block';var d=document.getElementById('dmg-date');if(d)d.value=sdLocalToday();}
 function dmgSave(){
   var cust=((document.getElementById('dmg-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var claim={id:'DMG'+Date.now(),customer:cust,job:((document.getElementById('dmg-job')||{}).value||'').trim(),date:(document.getElementById('dmg-date')||{}).value||'',type:(document.getElementById('dmg-type')||{}).value||'',fault:(document.getElementById('dmg-fault')||{}).value||'',cost:parseFloat((document.getElementById('dmg-cost')||{}).value)||0,material:((document.getElementById('dmg-mat')||{}).value||'').trim(),assigned:((document.getElementById('dmg-assigned')||{}).value||'').trim(),status:(document.getElementById('dmg-status')||{}).value||'open',description:((document.getElementById('dmg-desc')||{}).value||'').trim(),resolution:((document.getElementById('dmg-resolution')||{}).value||'').trim(),createdAt:new Date().toISOString()};
@@ -32321,7 +32335,7 @@ function bltnSave(){
 }
 function bltnDelete(id){if(!confirm('Remove post?'))return;bltnPosts=bltnPosts.filter(function(x){return x.id!==id;});sdStore('sd_bulletin_posts',bltnPosts);bltnRender();}
 function bltnRender(){
-  var today=new Date().toISOString().split('T')[0];
+  var today=sdLocalToday();
   var active=bltnPosts.filter(function(p){return !p.expires||p.expires>=today;});
   var catIcon={safety:'⚠️',schedule:'📅',policy:'📄',general:'📢',recognition:'⭐',urgent:'🚨'};
   var catColor={safety:'#dc2626',schedule:'#0891b2',policy:'#7c3aed',general:'#16a34a',recognition:'#ca8a04',urgent:'#dc2626'};
@@ -32380,7 +32394,7 @@ var npsFeedback=sdLoad('sd_nps_feedback',[]);
   if(c){c.innerHTML='';for(var i=0;i<=10;i++){(function(score){var btn=document.createElement('button');btn.textContent=score;btn.style.cssText='width:38px;height:38px;border-radius:8px;border:2px solid var(--border);background:var(--card);color:var(--text);font-size:13px;font-weight:700;cursor:pointer';btn.onclick=function(){document.querySelectorAll('#nps-score-btns button').forEach(function(b){b.style.background='var(--card)';b.style.color='var(--text)';b.style.borderColor='var(--border)';});var c=score<=6?'#dc2626':score<=8?'#ca8a04':'#16a34a';btn.style.background=c;btn.style.color='#fff';btn.style.borderColor=c;document.getElementById('nps-score').value=score;};c.appendChild(btn);})(i);}
   }
 })();
-function npsLog(){document.getElementById('nps-form').style.display='block';var d=document.getElementById('nps-date');if(d)d.value=new Date().toISOString().split('T')[0];}
+function npsLog(){document.getElementById('nps-form').style.display='block';var d=document.getElementById('nps-date');if(d)d.value=sdLocalToday();}
 function npsSave(){
   var cust=((document.getElementById('nps-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
   var score=parseInt((document.getElementById('nps-score')||{}).value||'');if(isNaN(score)){showToast('Select a score (0-10)');return;}
@@ -32426,7 +32440,7 @@ function taxAddEntry(){
   var taxable=parseFloat((document.getElementById('tax-taxable')||{}).value)||0;
   var rate=parseFloat((document.getElementById('tax-rate')||{}).value)||0;
   if(!taxable||!rate){showToast('Taxable sales and rate required');return;}
-  taxEntries.push({id:'TX'+Date.now(),state:state,jurisdiction:juris,taxable:taxable,rate:rate,tax:taxable*(rate/100),date:new Date().toISOString().split('T')[0]});
+  taxEntries.push({id:'TX'+Date.now(),state:state,jurisdiction:juris,taxable:taxable,rate:rate,tax:taxable*(rate/100),date:sdLocalToday()});
   sdStore('sd_tax_entries',taxEntries);taxRender();
   ['tax-taxable','tax-rate'].forEach(function(i){var e=document.getElementById(i);if(e)e.value='';});
 }
@@ -32478,7 +32492,7 @@ function taxExport(){
   var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
   var rows=[['Type','Date','Description','Amount']].concat(invs.map(function(i){return['Revenue',i.date,i.customer+' — '+i.desc,i.amount];})).concat(bills.map(function(b){return['Expense',b.due,b.vendor+' — '+(b.category||''),-(b.amt||0)];}));
   var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_TaxReport_'+new Date().toISOString().split('T')[0]+'.csv';a.click();
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_TaxReport_'+sdLocalToday()+'.csv';a.click();
 }
 
 

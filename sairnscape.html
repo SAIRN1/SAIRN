@@ -1748,7 +1748,17 @@ function scpNav(id){
   if(p)p.classList.add('on');if(b)b.classList.add('on');
 }
 
-function scpDaysFromNow(n){var d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+// Replaces bare scpLocalToday() call sites that meant
+// "today, as YYYY-MM-DD" -- same UTC-vs-local bug as scpDaysFromNow below.
+function scpLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+window.scpLocalToday=scpLocalToday;
+// FIXED: setDate/getDate already compute in local time correctly -- the bug
+// was only in the final .toISOString() extraction (UTC calendar date, wrong
+// side of midnight from roughly late afternoon US time onward).
+function scpDaysFromNow(n){var d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 
 function scpSeed(){
   if(scpLd('scp_seeded',false))return;
@@ -1992,7 +2002,7 @@ function scpEnsureDesignRecord(){
   if(scpDwid)return scpDesigns().find(function(x){return x.id===scpDwid;});
   var customerId=scp$('scp-dwcustomer').value;
   if(!customerId){scpToast('Select a customer first');return null;}
-  var rec={id:'DW-'+Date.now(),customer_id:customerId,elements:[],approved:false,approved_by:'',approved_at:'',quote_id:null,created_at:new Date().toISOString().slice(0,10)};
+  var rec={id:'DW-'+Date.now(),customer_id:customerId,elements:[],approved:false,approved_by:'',approved_at:'',quote_id:null,created_at:scpLocalToday()};
   var list=scpDesigns();list.push(rec);scpSt('scp_designs',list);
   scpDwid=rec.id;scpRDesignWalks();
   return rec;
@@ -2017,7 +2027,7 @@ function scpApproveDesign(){
   if(!rec||!rec.elements.length){scpToast('Add at least one design element before approval');return;}
   var name=scp$('scp-dwapprover').value.trim();
   if(!name){scpToast('Enter the homeowner name to record approval');return;}
-  rec.approved=true;rec.approved_by=name;rec.approved_at=new Date().toISOString().slice(0,10);
+  rec.approved=true;rec.approved_by=name;rec.approved_at=scpLocalToday();
   scpSaveDesignRecord(rec);
   scpUpdateApprovalUI(rec);
   scp$('scp-dw-send-quote-btn').disabled=false;

@@ -818,6 +818,15 @@ var SB_URL='https://ejrlrrkvhtllxbbypdjb.supabase.co';
 var SB_KEY='sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
 var PROXY='https://sairn.vercel.app/api/claude';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
+// Replaces sbLocalToday() everywhere in this file that
+// meant "today, as YYYY-MM-DD" -- toISOString() extracts the UTC calendar
+// date, wrong side of midnight from roughly late afternoon US time onward.
+// getFullYear()/getMonth()/getDate() read the LOCAL calendar date instead.
+function sbLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+window.sbLocalToday=sbLocalToday;
 // Client-side prefix allowlist. This is a cosmetic format check only -- the
 // REAL validation is server-side in api/_lib/license.js, which looks the key
 // up in the license_keys table (existence, status==='active', trial/Stripe
@@ -1159,13 +1168,13 @@ function saveEmp(){
   st('sb_emps',emps);closeEmpModal();rEmps();syncEmps(emps);toast('Saved - '+r.fn+' '+r.ln);
 }
 
-function openHireModal(){['hpos','hrate'].forEach(function(f){$(f).value='';});$('hdept').value='Fabrication';$('hstage').value='Screening';$('hstatus').value='Active';$('hposted').value=new Date().toISOString().slice(0,10);$('hiremodal').classList.add('on');}
+function openHireModal(){['hpos','hrate'].forEach(function(f){$(f).value='';});$('hdept').value='Fabrication';$('hstage').value='Screening';$('hstatus').value='Active';$('hposted').value=sbLocalToday();$('hiremodal').classList.add('on');}
 function closeHireModal(){$('hiremodal').classList.remove('on');}
 function saveHire(){
   var pos=$('hpos').value.trim();
   if(!pos){toast('Position title required');return;}
   var h=ld('sb_hire',[]);
-  h.push({pos:pos,dept:$('hdept').value,apps:0,stage:$('hstage').value,posted:$('hposted').value||new Date().toISOString().slice(0,10),rate:$('hrate').value.trim(),status:$('hstatus').value});
+  h.push({pos:pos,dept:$('hdept').value,apps:0,stage:$('hstage').value,posted:$('hposted').value||sbLocalToday(),rate:$('hrate').value.trim(),status:$('hstatus').value});
   st('sb_hire',h);closeHireModal();rHire();rDash();toast('Position opened - '+pos);
 }
 
@@ -1186,7 +1195,7 @@ function saveReview(){
   st('sb_perf',p);closeReviewModal();rPerf();rDash();toast('Review scheduled - '+emp);
 }
 
-function openInvModal(){['ivcust','ivamt','ivpaidamt'].forEach(function(f){$(f).value='';});$('ivdate').value=new Date().toISOString().slice(0,10);$('ivdue2').value='';$('ivstat2').value='Draft';$('ivcat').value='Kitchen Countertops';$('invmodal').classList.add('on');}
+function openInvModal(){['ivcust','ivamt','ivpaidamt'].forEach(function(f){$(f).value='';});$('ivdate').value=sbLocalToday();$('ivdue2').value='';$('ivstat2').value='Draft';$('ivcat').value='Kitchen Countertops';$('invmodal').classList.add('on');}
 function closeInvModal(){$('invmodal').classList.remove('on');}
 function saveInv(){
   var cust=$('ivcust').value.trim(),amt=parseFloat($('ivamt').value)||0;
@@ -1194,25 +1203,25 @@ function saveInv(){
   var status=$('ivstat2').value;
   var paid=parseFloat($('ivpaidamt').value)||(status==='Paid'?amt:0);
   var invs=ld('sb_invs',[]);
-  var r={id:'INV-'+String(Date.now()).slice(-4),cust:cust,date:$('ivdate').value||new Date().toISOString().slice(0,10),due:$('ivdue2').value,amt:amt,paid:paid,status:status,cat:$('ivcat').value};
+  var r={id:'INV-'+String(Date.now()).slice(-4),cust:cust,date:$('ivdate').value||sbLocalToday(),due:$('ivdue2').value,amt:amt,paid:paid,status:status,cat:$('ivcat').value};
   if(status==='Paid')r.paidDate=r.date;
   invs.push(r);st('sb_invs',invs);closeInvModal();rInvs();rDash();rPay();rAR();toast('Invoice created - '+r.id);
 }
 
-function openExpModal(){['exdesc','exvendor','examt'].forEach(function(f){$(f).value='';});$('exdate').value=new Date().toISOString().slice(0,10);$('excat').value='Materials';$('exded').value='Yes';$('exreceipt').value='Yes';$('exstatus').value='Approved';$('expmodal').classList.add('on');}
+function openExpModal(){['exdesc','exvendor','examt'].forEach(function(f){$(f).value='';});$('exdate').value=sbLocalToday();$('excat').value='Materials';$('exded').value='Yes';$('exreceipt').value='Yes';$('exstatus').value='Approved';$('expmodal').classList.add('on');}
 function closeExpModal(){$('expmodal').classList.remove('on');}
 function saveExp(){
   var desc=$('exdesc').value.trim(),amt=parseFloat($('examt').value)||0;
   if(!desc||!amt){toast('Description and amount required');return;}
   var exps=ld('sb_exps',[]);
-  exps.push({date:$('exdate').value||new Date().toISOString().slice(0,10),desc:desc,cat:$('excat').value,vendor:$('exvendor').value.trim(),amt:amt,ded:$('exded').value,receipt:$('exreceipt').value,status:$('exstatus').value});
+  exps.push({date:$('exdate').value||sbLocalToday(),desc:desc,cat:$('excat').value,vendor:$('exvendor').value.trim(),amt:amt,ded:$('exded').value,receipt:$('exreceipt').value,status:$('exstatus').value});
   st('sb_exps',exps);closeExpModal();rExps();rDash();rPay();toast('Expense recorded - '+fmt(amt));
 }
 
 function openBillModal(){
   var v=ld('sb_vends',[]);
   $('blvendor').innerHTML=v.map(function(x){return'<option value="'+H(x.name)+'">'+H(x.name)+'</option>';}).join('')||'<option value="">No vendors on file</option>';
-  $('blinv').value='';$('blamt').value='';$('bldate').value=new Date().toISOString().slice(0,10);$('bldue').value='';$('blstatus').value='Open';
+  $('blinv').value='';$('blamt').value='';$('bldate').value=sbLocalToday();$('bldue').value='';$('blstatus').value='Open';
   $('billmodal').classList.add('on');
 }
 function closeBillModal(){$('billmodal').classList.remove('on');}
@@ -1221,7 +1230,7 @@ function saveBill(){
   if(!vendor||!amt){toast('Vendor and amount required');return;}
   var status=$('blstatus').value;
   var bills=ld('sb_ap',[]);
-  bills.push({vendor:vendor,inv:$('blinv').value.trim(),date:$('bldate').value||new Date().toISOString().slice(0,10),due:$('bldue').value,amt:amt,bal:status==='Paid'?0:amt,status:status});
+  bills.push({vendor:vendor,inv:$('blinv').value.trim(),date:$('bldate').value||sbLocalToday(),due:$('bldue').value,amt:amt,bal:status==='Paid'?0:amt,status:status});
   st('sb_ap',bills);closeBillModal();rAP();rDash();toast('Bill added - '+vendor);
 }
 

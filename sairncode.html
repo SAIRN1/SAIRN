@@ -1253,6 +1253,16 @@
             supabase: 'https://ejrlrrkvhtllxbbypdjb.supabase.co',
             is_demo: true
         };
+        // Replaces scLocalToday()/.split('T')[0]
+        // everywhere in this file that meant "today, as YYYY-MM-DD" --
+        // toISOString() extracts the UTC calendar date, wrong side of
+        // midnight from roughly late afternoon US time onward.
+        // getFullYear()/getMonth()/getDate() read the LOCAL calendar date.
+        function scLocalToday(){
+          var d=new Date();
+          return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+        }
+        window.scLocalToday=scLocalToday;
 
         // ── AUTH GATE (Universal Pattern 1) ─────────────────────────────────
         // Was entirely absent -- app was open by URL, zero protection
@@ -1488,7 +1498,7 @@ How to answer:
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `sairncode-${panel}-${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = `sairncode-${panel}-${scLocalToday()}.csv`;
             link.click();
             window.URL.revokeObjectURL(url);
 
@@ -1545,7 +1555,7 @@ How to answer:
             var date = document.getElementById('rev-add-date').value;
             if (isNaN(charge)) { showToast('Charge amount required'); return; }
             var list = getRevenueEntries();
-            list.push({id:'rv'+Date.now(), payer:payer, charge:charge, collected:isNaN(collected)?0:collected, date:date||new Date().toISOString().slice(0,10)});
+            list.push({id:'rv'+Date.now(), payer:payer, charge:charge, collected:isNaN(collected)?0:collected, date:date||scLocalToday()});
             saveRevenueEntries(list);
             renderRevenue();
             document.getElementById('rev-add-charge').value = '';
@@ -1667,7 +1677,7 @@ How to answer:
             var status = document.getElementById('comp-add-status').value;
             if (!item) { showToast('Item description required'); return; }
             var list = getComplianceItems();
-            list.push({id:'cp'+Date.now(), item:item, cat:cat, status:status, date:new Date().toISOString().slice(0,10)});
+            list.push({id:'cp'+Date.now(), item:item, cat:cat, status:status, date:scLocalToday()});
             saveComplianceItems(list);
             renderCompliance();
             document.getElementById('comp-add-item').value = '';
@@ -2231,7 +2241,7 @@ How to answer:
             var tbody = document.getElementById('auth-tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
-            var today = new Date().toISOString().slice(0,10);
+            var today = scLocalToday();
             var active = 0, expiringSoon = 0, expired = 0, totalUnits = 0;
             list.forEach(function(a){
                 var status = authStatusFor(a.exp, today);
