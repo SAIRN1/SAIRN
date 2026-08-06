@@ -26580,6 +26580,21 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 <script>
 (function(){
+  // BUGFIX (2026-08-06, confirmed via real browser console error from Michael's
+  // repro -- "Uncaught ReferenceError: SD_AUTH_API is not defined" at the old
+  // fetch() call below): SD_AUTH_API was only ever declared as a local `var`
+  // inside the SEPARATE auth-controller IIFE far later in this file (~L29180)
+  // -- var declarations are function/IIFE-scoped, never visible across two
+  // independent <script> blocks. sdGrantLoginAccess() below has always
+  // referenced an undefined name, throwing immediately and crashing BEFORE
+  // reaching the btn.textContent='Grant Access';btn.disabled=false; reset
+  // code -- which is exactly why that reset code (confirmed present and
+  // correct on every path, checked repeatedly) never actually ran: the
+  // function never got that far. Not a hang, not a server issue -- a plain
+  // undefined-reference bug. Declared locally here, matching every other
+  // panel's own convention of a self-contained API constant rather than
+  // relying on cross-IIFE global leakage.
+  var SD_AUTH_API='https://sairn.vercel.app/api/sd-auth';
   var EMOJIS={Field:'🔨',Shop:'⚙️',Office:'💼'};
   var SEED=[
     {name:'Jim Hartwell',role:'Owner / Project Manager',dept:'Office',phone:'(555) 847-3200',start:'2010-01-01',certs:['OSHA 30','Fab Cert']},
