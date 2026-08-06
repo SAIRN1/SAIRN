@@ -2674,6 +2674,14 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       >
       <div class="auth-error" id="auth-error" role="alert" aria-live="polite" style="margin-top:10px"></div>
       <button class="auth-btn" onclick="doLogin()" style="margin-top:14px">Sign In to StoneDesk&#8482;</button>
+      <!-- PASSKEY LOGIN (2026-08-06) -- additional method, not a replacement. Uses the
+           Employee ID field already on this screen (no separate input needed) -- reads
+           its value at click time, same field PIN sign-in uses. display:none by default,
+           only shown once sdCheckPasskeySupport() (called on page load, bottom of this
+           auth controller) confirms window.PublicKeyCredential exists -- browsers/devices
+           without WebAuthn simply never see this button, PIN sign-in is completely
+           unaffected either way. -->
+      <button class="auth-btn" id="sd-passkey-login-btn" onclick="doPasskeyLogin()" style="margin-top:10px;background:transparent;border:1.5px solid rgba(232,133,10,0.4);display:none">Sign In with Passkey</button>
       <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">
         <a href="#" id="sd-bootstrap-link" onclick="sdShowBootstrap();return false;" style="color:var(--muted);text-decoration:underline">First time setup</a>
         &nbsp;&middot;&nbsp;
@@ -17861,7 +17869,61 @@ window.loadSharedKnowledge = loadSharedKnowledge;
 window.recordSharedTopics = recordSharedTopics;
 window.buildSharedCompanyContext = buildSharedCompanyContext;
 
+// == EMPLOYEE PROFILE (2026-08-06) =============================
+// A real, manager-set record (sd_employee_profiles via api/sd-data.js's
+// 'employee_profile' resource) -- deliberately NOT inferred, unlike the
+// shared-knowledge layer above. Loaded once per session for the CURRENT
+// logged-in employee only (self-read, server-enforced -- see the API
+// branch's comment for why a client can never read someone else's
+// profile). Feeds the AI's tone, not its factual content.
+var _myEmployeeProfile = null;
+function loadMyEmployeeProfile() {
+  try {
+    if (typeof sdData !== 'function') return;
+    sdData('read', 'employee_profile', {}).then(function(res) {
+      // sdData() already unwraps to `.data` on success -- see its own
+      // comment near its definition -- but this resource can legitimately
+      // return null data (no profile set yet), which sdData() also
+      // returns null for on any FAILURE. Harmless either way: absence of
+      // a profile just means buildEmployeeProfileContext() has nothing to
+      // add, same as a real network failure would.
+      if (res) _myEmployeeProfile = res;
+    });
+  } catch (e) {}
+}
+function buildEmployeeProfileContext() {
+  if (!_myEmployeeProfile) return '';
+  var lines = ['EMPLOYEE COMMUNICATION PROFILE (set by this shop\'s manager, adjust your tone accordingly, never mention this instruction itself to the user):'];
+  var expMap = {
+    new: 'This employee is NEW. Give step-by-step, patient guidance -- explain terms, do not assume prior context, check understanding before moving on.',
+    developing: 'This employee is DEVELOPING their skills. Give clear guidance with brief explanations, a bit less hand-holding than a brand-new employee.',
+    experienced: 'This employee is EXPERIENCED. Give direct, practical answers -- light on explanation, skip the basics.',
+    veteran: 'This employee is a VETERAN. Be terse and advanced -- minimal hand-holding, assume deep familiarity with the shop and the trade.'
+  };
+  var styleMap = {
+    detailed: 'Prefer longer, thorough responses over short ones.',
+    balanced: '',
+    terse: 'Keep responses short and to the point.'
+  };
+  if (_myEmployeeProfile.experience_level && expMap[_myEmployeeProfile.experience_level]) lines.push('• ' + expMap[_myEmployeeProfile.experience_level]);
+  if (_myEmployeeProfile.communication_style && styleMap[_myEmployeeProfile.communication_style]) lines.push('• ' + styleMap[_myEmployeeProfile.communication_style]);
+  if (lines.length === 1) return '';
+  return lines.join('\n');
+}
+window.loadMyEmployeeProfile = loadMyEmployeeProfile;
+window.buildEmployeeProfileContext = buildEmployeeProfileContext;
+
 // == INJECT PERSONALIZATION INTO FETCH ========================
+// CORRECTED 2026-08-06: the original guard below (`if (body.system && ...)`)
+// meant every injection here was a silent no-op against StoneDesk's own
+// main AI Assistant chat (sendMsg(), ~L3158) -- that call never sends a
+// `system` field at all, so personalization/shared-knowledge context never
+// actually reached the app's primary chat surface, only calls that already
+// built their own system prompt elsewhere (e.g. Field Sketch Quote). Fixed
+// by building the system string unconditionally (starting from '' when
+// absent) rather than gating the whole block on body.system already being
+// truthy -- found while wiring in Employee Profiles below, which would
+// have had the identical silent-no-op problem if left as-is.
 if (!window._saircPersExFetchPatched) {
   window._saircPersExFetchPatched = true;
   var _orig = window.fetch;
@@ -17869,19 +17931,22 @@ if (!window._saircPersExFetchPatched) {
     if (url && url.includes('sairn.vercel.app/api/claude') && opts && opts.body) {
       try {
         var body = JSON.parse(opts.body);
-        if (body.system && !body.system.includes('LEARNED USER PREFERENCES')) {
+        var sys = body.system || '';
+        if (!sys.includes('LEARNED USER PREFERENCES')) {
           var ctx = buildPersonalizationContext();
-          if (ctx) {
-            body.system = ctx + '\n\n---\n\n' + body.system;
-            opts = Object.assign({}, opts, { body: JSON.stringify(body) });
-          }
+          if (ctx) sys = ctx + '\n\n---\n\n' + sys;
         }
-        if (body.system && !body.system.includes('SHARED COMPANY KNOWLEDGE')) {
+        if (!sys.includes('SHARED COMPANY KNOWLEDGE')) {
           var sharedCtx = buildSharedCompanyContext();
-          if (sharedCtx) {
-            body.system = sharedCtx + '\n\n---\n\n' + body.system;
-            opts = Object.assign({}, opts, { body: JSON.stringify(body) });
-          }
+          if (sharedCtx) sys = sharedCtx + '\n\n---\n\n' + sys;
+        }
+        if (!sys.includes('EMPLOYEE COMMUNICATION PROFILE')) {
+          var profCtx = buildEmployeeProfileContext();
+          if (profCtx) sys = profCtx + '\n\n---\n\n' + sys;
+        }
+        if (sys !== (body.system || '')) {
+          body.system = sys;
+          opts = Object.assign({}, opts, { body: JSON.stringify(body) });
         }
       } catch(e) {}
     }
@@ -26459,6 +26524,18 @@ document.addEventListener('DOMContentLoaded', function() {
          session token server-side (owner/admin only, and only an Owner can grant Owner), so a
          Sales/Install employee who forces this card visible via devtools still gets a 403 from
          the server, same as always. -->
+    <!-- PASSKEY SELF-SERVICE (2026-08-06) -- visible to every logged-in employee, not
+         role-gated, since this registers a passkey for the CURRENT person's own account
+         only (api/sd-webauthn.js's reg-options/reg-verify actions always operate on the
+         caller's own verified session, never a client-supplied employee_id). Additional
+         login method alongside PIN, not a replacement -- PIN sign-in stays exactly as-is. -->
+    <div id="emp-passkey-card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--text)">Passkey Sign-In</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Register this device's Face ID, Touch ID, or Windows Hello so you can sign in without typing your PIN. StoneDesk never sees your biometric data -- only your device confirms it's you, locally.</div>
+      <div id="emp-passkey-unsupported" style="display:none;font-size:12px;color:var(--muted)">Passkeys aren't supported in this browser. Your PIN still works normally.</div>
+      <div id="emp-passkey-error" role="alert" style="display:none;color:#dc2626;font-size:12px;margin-bottom:8px"></div>
+      <button class="q-btn primary" id="emp-passkey-register-btn" style="width:100%" onclick="sdRegisterPasskey()">Register a Passkey on This Device</button>
+    </div>
     <div id="emp-login-access-card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:none">
       <div style="font-weight:700;margin-bottom:4px;color:var(--text)">Grant App Login Access</div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Creates a real StoneDesk sign-in for this person -- separate from the directory entry above. They'll use this Employee ID + PIN at the login screen, never your PIN.</div>
@@ -26470,6 +26547,32 @@ document.addEventListener('DOMContentLoaded', function() {
       <input id="emp-login-pin" type="password" inputmode="numeric" maxlength="8" placeholder="6-8 digit PIN for them to sign in with" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <div id="emp-login-error" role="alert" style="display:none;color:#dc2626;font-size:12px;margin-bottom:8px"></div>
       <button class="q-btn primary" id="emp-login-submit-btn" style="width:100%" onclick="sdGrantLoginAccess()">Grant Access</button>
+    </div>
+    <!-- AI COMMUNICATION PROFILES (2026-08-06) -- deliberately a real, manager-set
+         record (sd_employee_profiles via api/sd-data.js), not an inferred one, per
+         the standing distinction from the shared-knowledge layer. Same client-side
+         role-gate-is-UX-only pattern as the Grant Access card above it -- the real
+         enforcement is api/sd-data.js's employee_profile write branch (owner/admin
+         session token required server-side), this display:none is convenience only. -->
+    <div id="emp-profile-card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--text)">AI Communication Profiles</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Sets how the AI Assistant talks to this person -- step-by-step for someone new, terse and advanced for a veteran. Separate from the shared shop-wide knowledge the AI already learns from everyone.</div>
+      <input id="emp-prof-id" placeholder="Employee ID, e.g. jsmith" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <select id="emp-prof-exp" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)">
+        <option value="new">New -- step-by-step, patient guidance</option>
+        <option value="developing" selected>Developing -- clear guidance, brief explanations</option>
+        <option value="experienced">Experienced -- direct, practical answers</option>
+        <option value="veteran">Veteran -- terse, minimal hand-holding</option>
+      </select>
+      <select id="emp-prof-style" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)">
+        <option value="detailed">Detailed responses</option>
+        <option value="balanced" selected>Balanced</option>
+        <option value="terse">Terse responses</option>
+      </select>
+      <textarea id="emp-prof-notes" placeholder="Notes (optional)" rows="2" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box;resize:vertical"></textarea>
+      <div id="emp-prof-error" role="alert" style="display:none;color:#dc2626;font-size:12px;margin-bottom:8px"></div>
+      <button class="q-btn primary" style="width:100%;margin-bottom:12px" onclick="sdSaveEmployeeProfile()">Save Profile</button>
+      <div id="emp-prof-list" style="display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
     </div>
     <div id="emp-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
   </div>
@@ -26564,9 +26667,52 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!card)return;
     var role='';
     try{role=sessionStorage.getItem('sd_session_role')||'';}catch(e){}
-    card.style.display=(role==='owner'||role==='admin')?'block':'none';
+    var isManager=(role==='owner'||role==='admin');
+    card.style.display=isManager?'block':'none';
+    var profCard=document.getElementById('emp-profile-card');
+    if(profCard){
+      profCard.style.display=isManager?'block':'none';
+      if(isManager&&typeof sdRenderEmployeeProfiles==='function')sdRenderEmployeeProfiles();
+    }
   }
   window.sdRefreshLoginAccessGate=sdRefreshLoginAccessGate;
+  function sdRenderEmployeeProfiles(){
+    var listEl=document.getElementById('emp-prof-list');
+    if(!listEl||typeof sdData!=='function')return;
+    listEl.textContent='Loading...';
+    sdData('read','employee_profile',{all:true}).then(function(rows){
+      if(!rows||!rows.length){listEl.innerHTML='<div style="color:var(--muted)">No profiles set yet.</div>';return;}
+      var expLbl={new:'New',developing:'Developing',experienced:'Experienced',veteran:'Veteran'};
+      var styLbl={detailed:'Detailed',balanced:'Balanced',terse:'Terse'};
+      listEl.innerHTML=rows.map(function(p){
+        return '<div style="display:flex;justify-content:space-between;padding:6px 8px;background:var(--bg);border-radius:6px"><span><strong>'+escHtml(p.employee_id)+'</strong> &mdash; '+(expLbl[p.experience_level]||p.experience_level)+' / '+(styLbl[p.communication_style]||p.communication_style)+'</span><a href="#" onclick="sdEditEmployeeProfile(\''+escHtml(p.employee_id)+'\',\''+p.experience_level+'\',\''+p.communication_style+'\');return false;" style="color:var(--muted)">Edit</a></div>';
+      }).join('');
+    });
+  }
+  window.sdRenderEmployeeProfiles=sdRenderEmployeeProfiles;
+  window.sdEditEmployeeProfile=function(id,exp,style){
+    document.getElementById('emp-prof-id').value=id;
+    document.getElementById('emp-prof-exp').value=exp;
+    document.getElementById('emp-prof-style').value=style;
+    document.getElementById('emp-prof-id').scrollIntoView({behavior:'smooth',block:'center'});
+  };
+  window.sdSaveEmployeeProfile=function(){
+    var idEl=document.getElementById('emp-prof-id');
+    var expEl=document.getElementById('emp-prof-exp');
+    var styleEl=document.getElementById('emp-prof-style');
+    var notesEl=document.getElementById('emp-prof-notes');
+    var errEl=document.getElementById('emp-prof-error');
+    var employeeId=idEl.value.trim();
+    errEl.style.display='none';
+    if(!employeeId){errEl.textContent='Enter an Employee ID';errEl.style.display='block';return;}
+    if(typeof sdData!=='function'){errEl.textContent='Not available right now -- try again';errEl.style.display='block';return;}
+    sdData('write','employee_profile',{employee_id:employeeId,experience_level:expEl.value,communication_style:styleEl.value,notes:notesEl.value.trim()||undefined}).then(function(res){
+      if(!res){errEl.textContent='Save failed -- try again';errEl.style.display='block';return;}
+      idEl.value='';notesEl.value='';
+      if(typeof showToast==='function')showToast('Profile saved for '+employeeId,'success');
+      sdRenderEmployeeProfiles();
+    });
+  };
   window.sdGrantLoginAccess=function(){
     var idEl=document.getElementById('emp-login-id');
     var nameEl=document.getElementById('emp-login-name');
@@ -29140,11 +29286,28 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       if (pinEl) pinEl.value = '';
       showApp();
       if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
+      if (typeof loadMyEmployeeProfile === 'function') loadMyEmployeeProfile();
     }).catch(function() {
       if (errEl) { errEl.textContent = 'Network error — check your connection and try again'; errEl.style.display = 'block'; }
     });
   }
   window.doLogin = doLogin;
+
+  // Exposed for the separate SAIRN PASSKEY LOGIN module (bottom of file) to call after a
+  // successful api/sd-webauthn.js auth-verify -- showApp() below reads the currentRole
+  // closure variable declared in THIS IIFE, so a login success from outside this closure
+  // (a different <script> block/IIFE) can't just call window.showApp() directly even if
+  // that were exposed; it needs to set currentRole here first, in the scope that
+  // actually owns it. Found while wiring in passkey login, not a pre-existing export --
+  // showApp() itself was never exposed on window at all (a latent gap; one other call
+  // site elsewhere in this file already defensively checks `typeof window.showApp ===
+  // 'function'` and silently no-ops when it's absent).
+  window.sdApplyLoggedInSession = function(role) {
+    currentRole = role;
+    showApp();
+    if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
+    if (typeof loadMyEmployeeProfile === 'function') loadMyEmployeeProfile();
+  };
 
   function sdShowBootstrap() {
     var lv = document.getElementById('sd-login-view');
@@ -32221,6 +32384,197 @@ function taxExport(){
   }
 })();
 
+</script>
+
+<!-- SAIRN PASSKEY LOGIN (2026-08-06) -->
+<!-- WebAuthn/passkeys -- ADDITIONAL login method alongside PIN (api/sd-auth.js),
+     never a replacement. Not facial recognition, not biometric data collection --
+     the device's own Face ID/Touch ID/Windows Hello verifies the person locally;
+     this module and api/sd-webauthn.js only ever see a public key and a signed
+     challenge. Deliberately avoids BIPA-class biometric-privacy exposure the same
+     way api/sd-webauthn.js's own header explains. Uses the browser's native
+     navigator.credentials API -- zero new client-side dependency, matching this
+     app's "no build step" convention; the only new dependency this feature adds
+     lives entirely server-side (api/sd-webauthn.js's @simplewebauthn/server). -->
+<script>
+(function() {
+'use strict';
+if (window._saircPasskeyInstalled) return;
+window._saircPasskeyInstalled = true;
+
+var SD_WEBAUTHN_API = 'https://sairn.vercel.app/api/sd-webauthn';
+var PASSKEY_SUPPORTED = !!(window.PublicKeyCredential && navigator.credentials && navigator.credentials.create && navigator.credentials.get);
+
+function b64urlToBuf(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  var bin = atob(s);
+  var buf = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return buf.buffer;
+}
+function bufToB64url(buf) {
+  var bytes = new Uint8Array(buf);
+  var bin = '';
+  for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function serializeCredentialForRegistration(cred) {
+  return {
+    id: cred.id, rawId: bufToB64url(cred.rawId), type: cred.type,
+    response: {
+      clientDataJSON: bufToB64url(cred.response.clientDataJSON),
+      attestationObject: bufToB64url(cred.response.attestationObject),
+      transports: (cred.response.getTransports ? cred.response.getTransports() : [])
+    },
+    clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {}
+  };
+}
+function serializeCredentialForAuthentication(cred) {
+  return {
+    id: cred.id, rawId: bufToB64url(cred.rawId), type: cred.type,
+    response: {
+      clientDataJSON: bufToB64url(cred.response.clientDataJSON),
+      authenticatorData: bufToB64url(cred.response.authenticatorData),
+      signature: bufToB64url(cred.response.signature),
+      userHandle: cred.response.userHandle ? bufToB64url(cred.response.userHandle) : undefined
+    },
+    clientExtensionResults: cred.getClientExtensionResults ? cred.getClientExtensionResults() : {}
+  };
+}
+
+// -- REGISTRATION (self-service, requires an existing PIN-authenticated session) --
+window.sdRegisterPasskey = function() {
+  var btn = document.getElementById('emp-passkey-register-btn');
+  var errEl = document.getElementById('emp-passkey-error');
+  if (errEl) errEl.style.display = 'none';
+  if (!PASSKEY_SUPPORTED) {
+    var unsup = document.getElementById('emp-passkey-unsupported');
+    if (unsup) unsup.style.display = 'block';
+    return;
+  }
+  var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+  var token = '';
+  try { token = sessionStorage.getItem('sd_session_token') || ''; } catch (e) {}
+  if (!lic || !token) {
+    if (errEl) { errEl.textContent = 'Your session has expired -- sign out and back in, then try again'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (btn) { btn.textContent = 'Registering...'; btn.disabled = true; }
+  fetch(SD_WEBAUTHN_API, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + lic, 'X-SD-Auth': token },
+    body: JSON.stringify({ action: 'reg-options' })
+  }).then(function(r) { return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; }); })
+  .then(function(res) {
+    if (!res.ok || !res.body || !res.body.ok) {
+      throw new Error((res.body && res.body.error && res.body.error.message) || 'Could not start passkey registration');
+    }
+    var options = res.body.options;
+    var challengeToken = res.body.challengeToken;
+    var publicKey = Object.assign({}, options, {
+      challenge: b64urlToBuf(options.challenge),
+      user: Object.assign({}, options.user, { id: b64urlToBuf(options.user.id) }),
+      excludeCredentials: (options.excludeCredentials || []).map(function(c) { return Object.assign({}, c, { id: b64urlToBuf(c.id) }); })
+    });
+    return navigator.credentials.create({ publicKey: publicKey }).then(function(cred) {
+      return fetch(SD_WEBAUTHN_API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + lic, 'X-SD-Auth': token },
+        body: JSON.stringify({ action: 'reg-verify', response: serializeCredentialForRegistration(cred), challengeToken: challengeToken })
+      }).then(function(r2) { return r2.json().catch(function() { return null; }).then(function(d2) { return { ok: r2.ok, body: d2 }; }); });
+    });
+  }).then(function(verifyRes) {
+    if (btn) { btn.textContent = 'Register a Passkey on This Device'; btn.disabled = false; }
+    if (!verifyRes.ok || !verifyRes.body || !verifyRes.body.ok) {
+      var msg = (verifyRes.body && verifyRes.body.error && verifyRes.body.error.message) || 'Could not register passkey -- try again';
+      if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+      return;
+    }
+    if (typeof showToast === 'function') showToast('Passkey registered -- you can sign in with it next time', 'success');
+  }).catch(function(err) {
+    if (btn) { btn.textContent = 'Register a Passkey on This Device'; btn.disabled = false; }
+    var msg = (err && err.name === 'NotAllowedError') ? 'Cancelled or not completed' : ((err && err.message) || 'Could not register passkey -- try again');
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+  });
+};
+
+// -- LOGIN (no session yet -- reads the Employee ID field already on the login screen) --
+window.doPasskeyLogin = function() {
+  var empEl = document.getElementById('sd-employee-input');
+  var errEl = document.getElementById('auth-error');
+  var btn = document.getElementById('sd-passkey-login-btn');
+  var employeeId = empEl ? empEl.value.trim() : '';
+  var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+  if (!employeeId) {
+    if (errEl) { errEl.textContent = 'Enter your Employee ID, then tap Sign In with Passkey'; errEl.style.display = 'block'; }
+    return;
+  }
+  if (!lic) {
+    if (typeof sdShowLicenseEntry === 'function') { sdShowLicenseEntry(); return; }
+    return;
+  }
+  if (errEl) errEl.style.display = 'none';
+  if (btn) btn.disabled = true;
+  fetch(SD_WEBAUTHN_API, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + lic },
+    body: JSON.stringify({ action: 'auth-options', employee_id: employeeId })
+  }).then(function(r) { return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; }); })
+  .then(function(res) {
+    if (!res.ok || !res.body || !res.body.ok) {
+      throw new Error((res.body && res.body.error && res.body.error.message) || 'Could not start passkey sign-in');
+    }
+    var options = res.body.options;
+    var challengeToken = res.body.challengeToken;
+    var publicKey = Object.assign({}, options, {
+      challenge: b64urlToBuf(options.challenge),
+      allowCredentials: (options.allowCredentials || []).map(function(c) { return Object.assign({}, c, { id: b64urlToBuf(c.id) }); })
+    });
+    return navigator.credentials.get({ publicKey: publicKey }).then(function(assertion) {
+      return fetch(SD_WEBAUTHN_API, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + lic },
+        body: JSON.stringify({ action: 'auth-verify', employee_id: employeeId, response: serializeCredentialForAuthentication(assertion), challengeToken: challengeToken })
+      }).then(function(r2) { return r2.json().catch(function() { return null; }).then(function(d2) { return { ok: r2.ok, body: d2 }; }); });
+    });
+  }).then(function(verifyRes) {
+    if (btn) btn.disabled = false;
+    if (!verifyRes.ok || !verifyRes.body || !verifyRes.body.ok) {
+      var msg = (verifyRes.body && verifyRes.body.error && verifyRes.body.error.message) || 'Passkey sign-in failed -- try your PIN instead';
+      if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+      return;
+    }
+    try {
+      sessionStorage.setItem('sd_session_token', verifyRes.body.token);
+      sessionStorage.setItem('sd_session_role', verifyRes.body.role);
+      sessionStorage.setItem('sd_session_employee_id', verifyRes.body.employee_id);
+    } catch (e) {}
+    // sdApplyLoggedInSession (not showApp directly) -- see its own definition
+    // comment in the main auth controller for why: showApp() depends on that
+    // IIFE's local currentRole variable, which this separate script block
+    // can't set directly.
+    if (typeof window.sdApplyLoggedInSession === 'function') window.sdApplyLoggedInSession(verifyRes.body.role);
+  }).catch(function(err) {
+    if (btn) btn.disabled = false;
+    var msg = (err && err.name === 'NotAllowedError') ? 'Cancelled or no passkey found on this device -- use your PIN instead' : ((err && err.message) || 'Passkey sign-in failed -- try your PIN instead');
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+  });
+};
+
+function installPasskeyUI() {
+  if (!PASSKEY_SUPPORTED) {
+    var unsup = document.getElementById('emp-passkey-unsupported');
+    var regBtn = document.getElementById('emp-passkey-register-btn');
+    if (unsup) unsup.style.display = 'block';
+    if (regBtn) regBtn.style.display = 'none';
+    return; // no login button shown at all -- PIN sign-in is the only path, unaffected
+  }
+  var loginBtn = document.getElementById('sd-passkey-login-btn');
+  if (loginBtn) loginBtn.style.display = 'block';
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installPasskeyUI);
+} else {
+  installPasskeyUI();
+}
+})();
 </script>
 
 </body></html>

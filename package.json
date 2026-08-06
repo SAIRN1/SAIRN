@@ -1,0 +1,9 @@
+{
+  "name": "sairn-platform",
+  "private": true,
+  "version": "1.0.0",
+  "description": "SAIRN platform Vercel serverless API functions. This is the FIRST package.json in this repo -- every api/*.js file before 2026-08-06 deliberately used zero npm dependencies (see api/_lib/auth.js's own header). Introduced specifically for @simplewebauthn/server, needed for StoneDesk's passkey login (api/sd-webauthn.js) -- hand-rolling WebAuthn attestation/assertion verification (COSE key parsing, CBOR decoding, signature verification) is exactly the class of security-critical crypto code that should use an audited library, not custom code. Vercel auto-detects this file and runs npm install before building serverless functions; no change to vercel.json's buildCommand was needed since that only builds the static HTML dist output, a separate step from API function bundling.",
+  "dependencies": {
+    "@simplewebauthn/server": "^13.3.2"
+  }
+}

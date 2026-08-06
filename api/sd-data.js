@@ -42,8 +42,15 @@ const RESOURCES = {
   // resource names would each need an `if (resource==='jobs' && action==='read')` branch, and
   // only the first one in file order would ever match, silently routing SAIRNscape calls into
   // SAIRNgrounds' grd_jobs table. Caught before writing any branch, not after.
-  customers: true, scp_jobs: true, scp_quotes: true, schedule: true, invoices: true
+  customers: true, scp_jobs: true, scp_quotes: true, schedule: true, invoices: true,
+  // StoneDesk Employee Profiles (2026-08-06) -- see sql/sd_employee_profiles_schema.sql.
+  employee_profile: true
 };
+// Roles allowed to list every profile or write any profile -- mirrors the
+// EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
+// from the caller's own verified token) is allowed for every role and does
+// not consult this list -- see the employee_profile branch below.
+const EMPLOYEE_PROFILE_MANAGE_ROLES = { owner: true, admin: true };
 // Word-frequency cap for the shared_knowledge topics map (2026-08-05) -- pruned to the top N by
 // count on every write so a shop's row can't grow unbounded over the account's lifetime. See
 // sql/sd_shared_knowledge_schema.sql for the full design/scope note.
@@ -355,6 +362,74 @@ module.exports = async (req, res) => {
       const out = await r.json();
       if (!r.ok) return upstream(res, out);
       res.status(200).json({ ok: true, data: (out || []).map(function (x) { return x.data; }), written: (out || []).length });
+      return;
+    }
+
+    // ── EMPLOYEE PROFILE (sd_employee_profiles, 2026-08-06) ─────────────────
+    // Read has two modes: self-read (default -- any authenticated role reads
+    // ONLY their own profile, derived from their own verified token, never a
+    // client-supplied employee_id) and list-all (payload.all===true, owner/
+    // admin only -- the management view). Write is always owner/admin only,
+    // and always targets payload.employee_id explicitly (a manager setting
+    // someone else's profile, never a self-write -- keeps "how should the AI
+    // treat me" out of the hands of the person it describes).
+    if (resource === 'employee_profile' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'A valid employee session is required' } });
+        return;
+      }
+      if (payload && payload.all === true) {
+        if (!EMPLOYEE_PROFILE_MANAGE_ROLES[session.role]) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can view every employee profile' } });
+          return;
+        }
+        const r = await fetch(rest('sd_employee_profiles?license_hash=eq.' + enc(licHash) + '&select=employee_id,experience_level,communication_style,notes'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: rows || [], provisioned: true });
+        return;
+      }
+      const r = await fetch(rest('sd_employee_profiles?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(session.employee_id) + '&select=employee_id,experience_level,communication_style,notes&limit=1'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: null, provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const row = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: row || null, provisioned: true });
+      return;
+    }
+    if (resource === 'employee_profile' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session || !EMPLOYEE_PROFILE_MANAGE_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can set employee profiles' } });
+        return;
+      }
+      const employee_id = String((payload.employee_id || '')).trim();
+      const experience_level = payload.experience_level;
+      const communication_style = payload.communication_style;
+      const EXP_LEVELS = ['new', 'developing', 'experienced', 'veteran'];
+      const STYLES = ['detailed', 'balanced', 'terse'];
+      if (!employee_id || EXP_LEVELS.indexOf(experience_level) === -1 || STYLES.indexOf(communication_style) === -1) {
+        res.status(400).json({ error: { message: 'employee_id, a valid experience_level (' + EXP_LEVELS.join('|') + '), and a valid communication_style (' + STYLES.join('|') + ') are required' } });
+        return;
+      }
+      if (payload.notes && String(payload.notes).length > 2000) {
+        res.status(400).json({ error: { message: 'notes max 2000 chars' } });
+        return;
+      }
+      const r = await fetch(rest('sd_employee_profiles?on_conflict=license_hash,employee_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, employee_id, experience_level, communication_style,
+          notes: payload.notes || null, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Employee profiles table is not set up yet — run sql/sd_employee_profiles_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0] : payload });
       return;
     }
 
