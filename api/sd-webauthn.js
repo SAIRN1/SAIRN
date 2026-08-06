@@ -174,7 +174,21 @@ module.exports = async (req, res) => {
         rpName: RP_NAME,
         rpID: RP_ID,
         userName: session.employee_id,
-        userID: Buffer.from(licHash + ':' + session.employee_id),
+        // BUGFIX (2026-08-06, confirmed via a real navigator.credentials.create()
+        // call against a CDP virtual authenticator -- "TypeError: User handle
+        // exceeds 64 bytes."): the raw concatenation licHash + ':' + employee_id
+        // is 64 bytes (the hex-encoded sha256 hash alone) plus a colon plus the
+        // employee_id itself -- always over the WebAuthn spec's 64-byte user.id
+        // ceiling, for every real employee_id, not just long ones. The spec limit
+        // is enforced by the browser/authenticator at navigator.credentials.create()
+        // time, not by this library's option-generation step, which is why this
+        // didn't surface until an actual ceremony ran. Fixed with a fixed-size
+        // (32-byte) sha256 digest of the same identifier instead of the raw
+        // string -- still deterministic per (license, employee) pair, which is
+        // what matters for excludeCredentials/resident-key matching to work
+        // correctly across repeat registrations, well under the limit regardless
+        // of employee_id length.
+        userID: crypto.createHash('sha256').update(licHash + ':' + session.employee_id).digest(),
         attestationType: 'none',
         excludeCredentials,
         authenticatorSelection: { residentKey: 'preferred', userVerification: 'preferred' }
