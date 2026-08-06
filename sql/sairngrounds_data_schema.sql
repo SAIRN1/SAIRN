@@ -2,11 +2,28 @@
 -- SAIRNgrounds application data — Supabase schema
 --
 -- Run this once in the Supabase SQL editor before api/sd-data.js's
--- properties/jobs/quotes/golf_zones resources will work for SAIRNgrounds.
--- Until this runs, sairngrounds.html falls back to its existing Phase 1
--- localStorage-only behavior (see SAIRNGROUNDS-SCOPE.md section 3) — the
--- client is written to degrade to that, not to hard-fail, the same pattern
--- sd_render_usage/sd_shared_knowledge use for "migration not run yet".
+-- properties/jobs/quotes/golf_zones/grd_schedule/grd_progress_photos
+-- resources will work for SAIRNgrounds. Until this runs, sairngrounds.html
+-- falls back to its existing Phase 1 localStorage-only behavior (see
+-- SAIRNGROUNDS-SCOPE.md section 3) — the client is written to degrade to
+-- that, not to hard-fail, the same pattern sd_render_usage/sd_shared_knowledge
+-- use for "migration not run yet".
+--
+-- grd_schedule + grd_progress_photos added 2026-08-06: grd_schedule closes a
+-- related bug (SAIRNgrounds' schedule writes were silently hitting
+-- SAIRNscape's 'schedule' handler and 400ing -- see api/sd-data.js's own
+-- comment on that block). grd_progress_photos closes item 3's disclosed
+-- cross-device gap: a QC reviewer on a different device could never
+-- previously see the crew's uploaded photo, because no route for that
+-- resource existed at all. grd_progress_photos keeps this file's usual
+-- 64KB cap (api/sd-data.js's MAX_PAYLOAD_BYTES rejects anything over that
+-- for EVERY resource on this endpoint, not per-resource-overridable — see
+-- that constant's own comment — so a looser DB constraint here would never
+-- actually be reachable). sairngrounds.html's photo-upload path was updated
+-- in the same push to compress each photo (same canvas-resize + JPEG-
+-- quality-ladder technique as stonedesk.html's bsuCompressUnderBudget,
+-- referenced directly in that comment as this endpoint's own documented
+-- fix for exactly this problem) to comfortably fit under 64KB before send.
 --
 -- KEYING: license_hash = sha256(license_key), matching every other app's
 -- tables (sd_slabs, bld_jobs, etc.) — the raw license key never lands in
@@ -81,16 +98,48 @@ create table if not exists public.grd_golf_zones (
 );
 create index if not exists idx_grdzones_license on public.grd_golf_zones(license_hash);
 
+create table if not exists public.grd_schedule (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'sairngrounds',
+  schedule_id  text not null,
+  property_id  text not null,
+  data         jsonb not null default '{}'::jsonb,    -- freq, next, crew, quote_id, status
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, schedule_id),
+  constraint grdsched_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_grdsched_license on public.grd_schedule(license_hash);
+
+create table if not exists public.grd_progress_photos (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'sairngrounds',
+  photo_id     text not null,
+  schedule_id  text not null,
+  data         jsonb not null default '{}'::jsonb,    -- photo_b64, is_final, ai_analysis, qc_status, captured_by, qc_by, qc_at
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, photo_id),
+  constraint grdphotos_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_grdphotos_license_sched on public.grd_progress_photos(license_hash, schedule_id);
+
 -- ── RLS: service-role only (mirror stonedesk_data_schema.sql) ────────────
-alter table public.grd_properties  enable row level security;
-alter table public.grd_jobs        enable row level security;
-alter table public.grd_quotes      enable row level security;
-alter table public.grd_golf_zones  enable row level security;
+alter table public.grd_properties       enable row level security;
+alter table public.grd_jobs             enable row level security;
+alter table public.grd_quotes           enable row level security;
+alter table public.grd_golf_zones       enable row level security;
+alter table public.grd_schedule         enable row level security;
+alter table public.grd_progress_photos  enable row level security;
 
 drop policy if exists "svc only grd_properties" on public.grd_properties;
 drop policy if exists "svc only grd_jobs"       on public.grd_jobs;
 drop policy if exists "svc only grd_quotes"     on public.grd_quotes;
 drop policy if exists "svc only grd_golf_zones" on public.grd_golf_zones;
+drop policy if exists "svc only grd_schedule" on public.grd_schedule;
+drop policy if exists "svc only grd_progress_photos" on public.grd_progress_photos;
 
 create policy "svc only grd_properties" on public.grd_properties
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
@@ -100,3 +149,11 @@ create policy "svc only grd_quotes" on public.grd_quotes
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 create policy "svc only grd_golf_zones" on public.grd_golf_zones
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only grd_schedule" on public.grd_schedule
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only grd_progress_photos" on public.grd_progress_photos
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+
+grant usage on schema public to service_role;
+grant select, insert, update, delete on public.grd_schedule        to service_role;
+grant select, insert, update, delete on public.grd_progress_photos to service_role;

@@ -2,10 +2,18 @@
 -- SAIRNscape application data — Supabase schema
 --
 -- Run this once in the Supabase SQL editor before api/sd-data.js's
--- customers/jobs/quotes/schedule/invoices resources will work for
--- SAIRNscape. Until this runs, sairnscape.html falls back to its existing
--- Phase 1 localStorage-only behavior — same graceful degrade as
--- SAIRNgrounds (see sql/sairngrounds_data_schema.sql for the precedent).
+-- customers/jobs/quotes/schedule/invoices/scp_progress_photos resources
+-- will work for SAIRNscape. Until this runs, sairnscape.html falls back to
+-- its existing Phase 1 localStorage-only behavior — same graceful degrade
+-- as SAIRNgrounds (see sql/sairngrounds_data_schema.sql for the precedent).
+--
+-- scp_progress_photos added 2026-08-06: closes item 3's disclosed
+-- cross-device gap, same fix and reasoning as SAIRNgrounds'
+-- grd_progress_photos (see that table's comment in
+-- sql/sairngrounds_data_schema.sql) — a QC reviewer on a different device
+-- could never previously see the crew's uploaded photo. Kept at this
+-- file's usual 64KB cap; sairnscape.html's photo-upload path was updated
+-- in the same push to compress each photo under that budget first.
 --
 -- KEYING: license_hash = sha256(license_key), matching every other app's
 -- tables. app_id is stamped 'sairnscape' explicitly on every write.
@@ -92,18 +100,34 @@ create table if not exists public.scp_invoices (
 );
 create index if not exists idx_scpinv_license on public.scp_invoices(license_hash);
 
+create table if not exists public.scp_progress_photos (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'sairnscape',
+  photo_id     text not null,
+  schedule_id  text not null,
+  data         jsonb not null default '{}'::jsonb,    -- photo_b64, is_final, ai_analysis, qc_status, captured_by, qc_by, qc_at
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, photo_id),
+  constraint scpphotos_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_scpphotos_license_sched on public.scp_progress_photos(license_hash, schedule_id);
+
 -- ── RLS: service-role only ────────────────────────────────────────────────
-alter table public.scp_customers enable row level security;
-alter table public.scp_jobs      enable row level security;
-alter table public.scp_quotes    enable row level security;
-alter table public.scp_schedule  enable row level security;
-alter table public.scp_invoices  enable row level security;
+alter table public.scp_customers        enable row level security;
+alter table public.scp_jobs             enable row level security;
+alter table public.scp_quotes           enable row level security;
+alter table public.scp_schedule         enable row level security;
+alter table public.scp_invoices         enable row level security;
+alter table public.scp_progress_photos  enable row level security;
 
 drop policy if exists "svc only scp_customers" on public.scp_customers;
 drop policy if exists "svc only scp_jobs"      on public.scp_jobs;
 drop policy if exists "svc only scp_quotes"    on public.scp_quotes;
 drop policy if exists "svc only scp_schedule"  on public.scp_schedule;
 drop policy if exists "svc only scp_invoices"  on public.scp_invoices;
+drop policy if exists "svc only scp_progress_photos" on public.scp_progress_photos;
 
 create policy "svc only scp_customers" on public.scp_customers
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
@@ -115,6 +139,8 @@ create policy "svc only scp_schedule" on public.scp_schedule
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 create policy "svc only scp_invoices" on public.scp_invoices
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "svc only scp_progress_photos" on public.scp_progress_photos
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
 -- ── GRANTs: explicit, not left to the RLS-bypass default alone ─────────────
 grant usage on schema public to service_role;
@@ -123,3 +149,4 @@ grant select, insert, update, delete on public.scp_jobs      to service_role;
 grant select, insert, update, delete on public.scp_quotes    to service_role;
 grant select, insert, update, delete on public.scp_schedule  to service_role;
 grant select, insert, update, delete on public.scp_invoices  to service_role;
+grant select, insert, update, delete on public.scp_progress_photos to service_role;

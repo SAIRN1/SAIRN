@@ -44,7 +44,13 @@ const RESOURCES = {
   // SAIRNgrounds' grd_jobs table. Caught before writing any branch, not after.
   customers: true, scp_jobs: true, scp_quotes: true, schedule: true, invoices: true,
   // StoneDesk Employee Profiles (2026-08-06) -- see sql/sd_employee_profiles_schema.sql.
-  employee_profile: true
+  employee_profile: true,
+  // SAIRNgrounds schedule + progress-photo QC (2026-08-06, related-bug + item-3 cross-device fix)
+  // -- see the block comments below for why these are prefixed rather than reusing 'schedule'/
+  // 'progress_photos' bare.
+  grd_schedule: true, grd_progress_photos: true,
+  // SAIRNscape progress-photo QC (2026-08-06) -- same fix, same prefixing reason.
+  scp_progress_photos: true
 };
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
@@ -123,7 +129,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos' } });
     return;
   }
 
@@ -551,6 +557,76 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // === SAIRNGROUNDS: SCHEDULE (2026-08-06, related-bug fix) ===
+    // (this project's house style is plain === headers, not the Unicode
+    // box-drawing dashes the surrounding sections in this file already use
+    // -- not fixing those pre-existing ones here, out of scope for this fix)
+    // sairngrounds.html's saveSched()/grdMarkScheduleComplete() called grdData('write','schedule',...)
+    // -- the bare resource name 'schedule' was already claimed by SAIRNscape's block below
+    // (parented by customer_id), so every SAIRNgrounds schedule write has been silently 400ing
+    // since Item 9 shipped (grdData/scpData both swallow a non-ok response and return null,
+    // and neither caller checked the return value, so nothing ever surfaced this). Found while
+    // building the progress_photos route below and confirming which resource names were safe to
+    // reuse as a template. Fixed here by giving SAIRNgrounds its own 'grd_schedule' resource name,
+    // same disambiguation SAIRNscape's 'scp_jobs'/'scp_quotes' already use -- see the RESOURCES
+    // comment above. sairngrounds.html's three call sites and grdSyncFromServer()'s resources
+    // list were updated to match in the same push.
+    if (resource === 'grd_schedule' && action === 'read') {
+      const r = await fetch(rest('grd_schedule?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'grd_schedule' && action === 'write') {
+      if (!payload || !payload.id || !payload.property_id) { res.status(400).json({ error: { message: 'schedule payload.id and payload.property_id are required' } }); return; }
+      const r = await fetch(rest('grd_schedule?on_conflict=license_hash,schedule_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', schedule_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // === SAIRNGROUNDS: PROGRESS PHOTOS / COMPLETION-GATE QC (2026-08-06, item 3 cross-device fix) ===
+    // Real fix for the disclosed gap: grdData('write','progress_photos',...) had no route here at
+    // all (only StoneDesk's separate api/sd-sub-data.js had a 'progress_photos' handler, scoped to
+    // its own sd_progress_photos table/app). Every upload was localStorage-only, so a QC reviewer
+    // on a different device never saw the crew's photo -- silently defeating the whole point of
+    // the completion gate. Named 'grd_progress_photos' (not bare 'progress_photos') for the same
+    // collision reason as grd_schedule above -- SAIRNscape needs the identical resource shape and
+    // must not share a name with it. No qc-review-specific action: sairngrounds.html's
+    // grdQcDecide() already reads the record, mutates qc_status/qc_by/qc_at locally, and re-sends
+    // the WHOLE record through 'write' (same read-modify-write-the-whole-blob shape every other
+    // resource in this file already uses) -- a separate action type would just be a second way to
+    // do the same upsert.
+    if (resource === 'grd_progress_photos' && action === 'read') {
+      const r = await fetch(rest('grd_progress_photos?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'grd_progress_photos' && action === 'write') {
+      if (!payload || !payload.id || !payload.schedule_id) { res.status(400).json({ error: { message: 'photo payload.id and payload.schedule_id are required' } }); return; }
+      const r = await fetch(rest('grd_progress_photos?on_conflict=license_hash,photo_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     // ── SAIRNSCAPE: CUSTOMERS / JOBS / QUOTES / SCHEDULE / INVOICES (2026-08-06) ────────────
     // Same shape and graceful-degrade pattern as the SAIRNgrounds block above -- see
     // sql/sairnscape_data_schema.sql. Resource names 'scp_jobs'/'scp_quotes' (not plain
@@ -653,6 +729,32 @@ module.exports = async (req, res) => {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', invoice_id: String(payload.id), customer_id: String(payload.customer_id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // === SAIRNSCAPE: PROGRESS PHOTOS / COMPLETION-GATE QC (2026-08-06, item 3 cross-device fix) ===
+    // Same fix and same reasoning as SAIRNgrounds' grd_progress_photos block above -- see that
+    // block's comment. 'scp_progress_photos' (not bare 'progress_photos') for the same collision
+    // reason 'scp_jobs'/'scp_quotes' already exist.
+    if (resource === 'scp_progress_photos' && action === 'read') {
+      const r = await fetch(rest('scp_progress_photos?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'scp_progress_photos' && action === 'write') {
+      if (!payload || !payload.id || !payload.schedule_id) { res.status(400).json({ error: { message: 'photo payload.id and payload.schedule_id are required' } }); return; }
+      const r = await fetch(rest('scp_progress_photos?on_conflict=license_hash,photo_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnscape', photo_id: String(payload.id), schedule_id: String(payload.schedule_id), data: payload, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
