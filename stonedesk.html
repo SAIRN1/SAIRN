@@ -2845,6 +2845,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
           '<span style="font-weight:800;color:'+(j.paid?'#16a34a':'#92400E')+'">$'+(parseFloat(j.payAmount)||0).toLocaleString()+'</span>' +
         '</div>' +
         (photosHtml ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+photosHtml+'</div>' : '') +
+        '<button onclick="sdOpenProgressPhoto(\'sub\',\''+subEsc((j.address||j.id||'').replace(/\x27/g,''))+'\')" style="width:100%;margin-top:10px;background:#111827;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">📷 AI Progress Check</button>' +
       '</div>';
     }).join('');
   };
@@ -5270,9 +5271,24 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div style="font-size:13px;color:var(--muted);margin-top:2px">Before/after, progress shots, portfolio, damage documentation</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdPhotosAdd()">+ Log Photo Entry</button>
+    <button class="q-btn primary" onclick="sdOpenProgressPhoto('employee')">🤖 AI Progress Check</button>
     <button class="q-btn" onclick="sdPhotosAI()">🤖 AI Portfolio Tips</button>
     <button class="q-btn" onclick="sdPhotosExport()">📊 Export CSV</button>
     <button class="q-btn" onclick="sdPhotosPrint()">🖨️ Print Gallery Log</button>
+  </div>
+</div>
+<!-- PROGRESS-REPORT PHOTOS WITH AI SCOPE ANALYSIS (2026-08-06) -- real,
+     job-linked records (sd_progress_photos via api/sd-sub-data.js), not a
+     one-off chat response. Both employees (here) and subcontractors (their
+     own button on each job card in the Subcontractor Portal) use the SAME
+     modal/module below, reusing the Field Sketch Quote's proven photo-
+     capture pattern (capture="environment" input, FileReader, Claude vision
+     via sairnCallClaude's multimodal content block) rather than a new
+     capture UI. -->
+<div style="margin-top:16px">
+  <div style="font-weight:700;color:var(--text);margin-bottom:8px;font-size:14px">Recent AI Progress Checks</div>
+  <div id="sd-progchk-recent" style="display:flex;flex-direction:column;gap:8px">
+    <div style="color:var(--muted);font-size:13px">No progress checks logged yet.</div>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -32648,6 +32664,230 @@ if (document.readyState === 'loading') {
 } else {
   installPasskeyUI();
 }
+})();
+</script>
+
+<!-- SAIRN PROGRESS-REPORT PHOTOS (2026-08-06) -->
+<!-- Shared by both employees (Job Photo Gallery panel's "AI Progress Check"
+     button) and subcontractors (a matching button on each job card in the
+     Subcontractor Portal) -- one modal, one module, mode-parameterized
+     rather than two separate builds. Real record via api/sd-sub-data.js's
+     'progress_photos' resource, not a one-off chat response. -->
+<div id="sd-progchk-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:9500;align-items:center;justify-content:center;padding:16px">
+  <div style="background:#fff;border-radius:14px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-sizing:border-box">
+    <div style="font-size:17px;font-weight:800;margin-bottom:4px;color:#111827">AI Progress Check</div>
+    <div style="font-size:12px;color:#6B7280;margin-bottom:16px">Photograph the current state of the work -- Claude checks it against what was scoped.</div>
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:4px;display:block">Job</label>
+    <input id="sd-progchk-job" placeholder="Job # or address" style="width:100%;padding:9px 12px;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:12px;box-sizing:border-box;font-size:14px">
+    <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6B7280;margin-bottom:4px;display:block">What was scoped for this visit</label>
+    <textarea id="sd-progchk-scope" rows="2" placeholder="e.g. Install kitchen island countertop, quartz, waterfall edge both sides" style="width:100%;padding:9px 12px;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:12px;box-sizing:border-box;font-size:14px;resize:vertical"></textarea>
+    <div id="sd-progchk-upload" onclick="document.getElementById('sd-progchk-file').click()" style="border:2px dashed #E5E7EB;border-radius:10px;padding:24px 12px;text-align:center;cursor:pointer;margin-bottom:12px">
+      <div style="font-size:28px;margin-bottom:4px">📷</div>
+      <div style="font-size:13px;font-weight:600;color:#374151" id="sd-progchk-upload-lbl">Tap to photograph current progress</div>
+      <input type="file" id="sd-progchk-file" accept="image/*" capture="environment" style="display:none" onchange="sdProgChkHandleFile(this)">
+    </div>
+    <div id="sd-progchk-preview-wrap" style="display:none;margin-bottom:12px">
+      <img id="sd-progchk-preview" style="max-width:100%;border-radius:8px;border:1px solid #E5E7EB">
+    </div>
+    <div id="sd-progchk-error" role="alert" style="display:none;color:#dc2626;font-size:12px;margin-bottom:8px"></div>
+    <button id="sd-progchk-analyze-btn" onclick="sdProgChkAnalyze()" disabled style="width:100%;background:#111827;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;min-height:44px">Analyze with Claude</button>
+    <div id="sd-progchk-result" style="display:none;background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:12px;font-size:13px;line-height:1.6;color:#111827;white-space:pre-wrap;margin-bottom:12px;max-height:220px;overflow-y:auto"></div>
+    <button id="sd-progchk-save-btn" onclick="sdProgChkSave()" style="display:none;width:100%;background:#16A34A;color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:10px;min-height:44px">Save to Job Record</button>
+    <button onclick="sdCloseProgressPhoto()" style="width:100%;background:#fff;border:1px solid #E5E7EB;color:#374151;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;min-height:44px">Close</button>
+  </div>
+</div>
+<script>
+(function() {
+'use strict';
+if (window._saircProgChkInstalled) return;
+window._saircProgChkInstalled = true;
+
+var _pcMode = 'employee'; // 'employee' | 'sub'
+var _pcJobIdFixed = null; // when opened from a sub's own job card, job is fixed, not typed
+var _pcImg64 = null;
+var _pcAnalysisText = '';
+var _pcMatchStatus = '';
+
+window.sdOpenProgressPhoto = function(mode, jobId) {
+  _pcMode = mode === 'sub' ? 'sub' : 'employee';
+  _pcJobIdFixed = jobId || null;
+  _pcImg64 = null; _pcAnalysisText = ''; _pcMatchStatus = '';
+  var jobEl = document.getElementById('sd-progchk-job');
+  if (jobEl) { jobEl.value = _pcJobIdFixed || ''; jobEl.disabled = !!_pcJobIdFixed; }
+  var scopeEl = document.getElementById('sd-progchk-scope'); if (scopeEl) scopeEl.value = '';
+  var prevWrap = document.getElementById('sd-progchk-preview-wrap'); if (prevWrap) prevWrap.style.display = 'none';
+  var uploadLbl = document.getElementById('sd-progchk-upload-lbl'); if (uploadLbl) uploadLbl.textContent = 'Tap to photograph current progress';
+  var analyzeBtn = document.getElementById('sd-progchk-analyze-btn'); if (analyzeBtn) analyzeBtn.disabled = true;
+  var resultEl = document.getElementById('sd-progchk-result'); if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
+  var saveBtn = document.getElementById('sd-progchk-save-btn'); if (saveBtn) saveBtn.style.display = 'none';
+  var errEl = document.getElementById('sd-progchk-error'); if (errEl) errEl.style.display = 'none';
+  document.getElementById('sd-progchk-modal').style.display = 'flex';
+};
+window.sdCloseProgressPhoto = function() {
+  document.getElementById('sd-progchk-modal').style.display = 'none';
+};
+
+// Compress via canvas resize + JPEG quality ladder, same technique as this
+// file's existing bulk-slab-upload compressor (bsuCompressUnderBudget,
+// IIFE-local there so not reusable directly) -- kept self-contained here
+// rather than reaching into that module's closure.
+function pcCompressOnce(dataUrl, maxDim, quality) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = function() { resolve(dataUrl); };
+    img.src = dataUrl;
+  });
+}
+async function pcCompressUnderBudget(dataUrl, budgetBytes) {
+  var attempts = [[1000, 0.7], [800, 0.6], [640, 0.5], [480, 0.4], [360, 0.32]];
+  var out = dataUrl;
+  for (var i = 0; i < attempts.length; i++) {
+    out = await pcCompressOnce(dataUrl, attempts[i][0], attempts[i][1]);
+    var b64Len = out.length - (out.indexOf(',') + 1);
+    if (b64Len <= budgetBytes) return out;
+  }
+  return out;
+}
+
+window.sdProgChkHandleFile = function(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var errEl = document.getElementById('sd-progchk-error'); if (errEl) errEl.style.display = 'none';
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    var compressed = await pcCompressUnderBudget(e.target.result, 900000); // ~900KB budget, well under the 1.5MB record cap once other fields join it
+    _pcImg64 = compressed.split(',')[1];
+    var prevWrap = document.getElementById('sd-progchk-preview-wrap');
+    var prevImg = document.getElementById('sd-progchk-preview');
+    if (prevWrap) prevWrap.style.display = 'block';
+    if (prevImg) prevImg.src = compressed;
+    var lbl = document.getElementById('sd-progchk-upload-lbl'); if (lbl) lbl.innerHTML = '<strong>Photo captured</strong> -- tap Analyze to continue';
+    var analyzeBtn = document.getElementById('sd-progchk-analyze-btn'); if (analyzeBtn) analyzeBtn.disabled = false;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.sdProgChkAnalyze = async function() {
+  var jobEl = document.getElementById('sd-progchk-job');
+  var scopeEl = document.getElementById('sd-progchk-scope');
+  var errEl = document.getElementById('sd-progchk-error');
+  var resultEl = document.getElementById('sd-progchk-result');
+  var saveBtn = document.getElementById('sd-progchk-save-btn');
+  var jobId = (jobEl.value || '').trim();
+  var scope = (scopeEl.value || '').trim();
+  if (!jobId) { errEl.textContent = 'Enter a job number or address'; errEl.style.display = 'block'; return; }
+  if (!_pcImg64) { errEl.textContent = 'Capture a photo first'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  resultEl.style.display = 'block';
+  resultEl.textContent = 'Analyzing photo against scope...';
+  saveBtn.style.display = 'none';
+  var sys = 'You are the StoneDesk Field Progress Inspector. A '+(_pcMode==='sub'?'subcontractor':'employee')+' has photographed the current state of a job. '
+    + 'Compare what the photo actually shows against what was scoped. Be specific and practical -- a foreman reading this needs to know if there is a real problem, not vague commentary.\n\n'
+    + 'Respond in exactly this format:\n'
+    + 'MATCH: [Yes / Partial / No]\n'
+    + 'SUMMARY: one or two sentences on what the photo shows\n'
+    + 'ISSUES: bullet list of anything that does not match scope (wrong material, missed step, off-scope work) -- write "None found" if there are none\n'
+    + 'NOTE: keep the whole response under 150 words, plain text, no markdown symbols.';
+  var msgs = [{
+    role: 'user',
+    content: [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: _pcImg64 } },
+      { type: 'text', text: 'Scope for this visit: ' + (scope || '(not provided)') + '\n\nDoes this photo match the scope? Follow the exact response format from your instructions.' }
+    ]
+  }];
+  try {
+    var r = await sairnCallClaude(sys, msgs);
+    _pcAnalysisText = r;
+    resultEl.textContent = r;
+    var m = r.match(/MATCH:\s*(Yes|Partial|No)/i);
+    _pcMatchStatus = m ? m[1] : 'Unknown';
+    saveBtn.style.display = 'block';
+  } catch (e) {
+    resultEl.textContent = 'Could not reach Claude. Check your connection and try again.';
+  }
+};
+
+window.sdProgChkSave = async function() {
+  var jobEl = document.getElementById('sd-progchk-job');
+  var scopeEl = document.getElementById('sd-progchk-scope');
+  var saveBtn = document.getElementById('sd-progchk-save-btn');
+  var jobId = (jobEl.value || '').trim();
+  if (!jobId || !_pcAnalysisText) return;
+  var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+  var headers = { 'Content-Type': 'application/json' };
+  if (lic) headers['Authorization'] = 'Bearer ' + lic;
+  var tokenKey = _pcMode === 'sub' ? 'sd_sub_session_token' : 'sd_session_token';
+  try { var tok = sessionStorage.getItem(tokenKey); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
+  saveBtn.textContent = 'Saving...'; saveBtn.disabled = true;
+  try {
+    var res = await fetch('https://sairn.vercel.app/api/sd-sub-data', {
+      method: 'POST', headers: headers,
+      body: JSON.stringify({
+        action: 'write', resource: 'progress_photos',
+        payload: { job_id: jobId, photo_base64: _pcImg64, scope_notes: scopeEl.value.trim(), ai_analysis: _pcAnalysisText, match_status: _pcMatchStatus }
+      })
+    });
+    var data = await res.json();
+    saveBtn.textContent = 'Save to Job Record'; saveBtn.disabled = false;
+    if (!res.ok || !data || !data.ok) {
+      var errEl = document.getElementById('sd-progchk-error');
+      errEl.textContent = (data && data.error && data.error.message) || 'Could not save -- try again';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (typeof showToast === 'function') showToast('Progress check saved to job ' + jobId, 'success');
+    sdProgChkRenderRecent();
+    window.sdCloseProgressPhoto();
+  } catch (e) {
+    saveBtn.textContent = 'Save to Job Record'; saveBtn.disabled = false;
+    var errEl2 = document.getElementById('sd-progchk-error');
+    errEl2.textContent = 'Network error -- check your connection and try again';
+    errEl2.style.display = 'block';
+  }
+};
+
+// Simple review surface -- recent progress checks across jobs, rendered
+// into the Job Photo Gallery panel (employee side). Kept intentionally
+// simple (chronological list, no search/filter) -- the point is "not lost
+// after the single interaction," not a full reporting panel.
+window.sdProgChkRenderRecent = async function() {
+  var listEl = document.getElementById('sd-progchk-recent');
+  if (!listEl) return;
+  var lic = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+  var headers = { 'Content-Type': 'application/json' };
+  if (lic) headers['Authorization'] = 'Bearer ' + lic;
+  try { var tok = sessionStorage.getItem('sd_session_token'); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
+  try {
+    var res = await fetch('https://sairn.vercel.app/api/sd-sub-data', {
+      method: 'POST', headers: headers,
+      body: JSON.stringify({ action: 'read', resource: 'progress_photos', payload: {} })
+    });
+    var data = await res.json();
+    if (!res.ok || !data || !data.ok || !data.data || !data.data.length) return; // leave the "No progress checks logged yet" default in place
+    var badgeColor = { Yes: '#16A34A', Partial: '#D97706', No: '#DC2626' };
+    listEl.innerHTML = data.data.slice(0, 10).map(function(p) {
+      var color = badgeColor[p.match_status] || '#6B7280';
+      return '<div style="background:#F9FAFB;border:1px solid #E5E7EB;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start">'
+        + '<div><div style="font-weight:700;font-size:13px">' + escHtml(p.job_id) + ' <span style="font-weight:400;color:#6B7280;font-size:11px">(' + escHtml(p.captured_by_type === 'sub' ? 'sub: ' + p.captured_by_id : p.captured_by_id) + ')</span></div>'
+        + '<div style="font-size:12px;color:#374151;margin-top:2px">' + escHtml((p.ai_analysis || '').replace(/^MATCH:.*\n/, '').slice(0, 140)) + '</div></div>'
+        + '<span style="background:' + color + '22;color:' + color + ';font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;white-space:nowrap">' + escHtml(p.match_status || '?') + '</span>'
+        + '</div>';
+    }).join('');
+  } catch (e) { /* leave default message in place */ }
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  if (typeof window.sdProgChkRenderRecent === 'function') window.sdProgChkRenderRecent();
+});
 })();
 </script>
 

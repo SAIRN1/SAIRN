@@ -35,7 +35,7 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 
-const RESOURCES = { roster: true, jobs: true };
+const RESOURCES = { roster: true, jobs: true, progress_photos: true };
 const WRITE_ALLOWED_ROLES = { owner: true, admin: true };
 // Per-job photo/JSON cap — see sql/sd_sub_portal_schema.sql's size-cap note
 // for why this is the ONLY enforced limit (no matching DB-level CHECK to
@@ -74,7 +74,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: roster, jobs' } });
+    res.status(400).json({ error: { message: 'resource must be one of: roster, jobs, progress_photos' } });
     return;
   }
 
@@ -218,6 +218,64 @@ module.exports = async (req, res) => {
       if (!r.ok) return upstream(res, rows);
       const row = Array.isArray(rows) && rows[0];
       res.status(200).json({ ok: true, data: row ? Object.assign({ id: row.id, sub_id: row.sub_id }, row.data) : payload });
+      return;
+    }
+
+    // ── PROGRESS PHOTOS (sd_progress_photos, 2026-08-06) ────────────────────
+    // Read: employee sees every submission for a job (or the whole shop if no
+    // job_id filter given); a sub sees only their OWN submissions, same
+    // discipline as 'jobs' read above -- captured_by_id filter for a sub comes
+    // ONLY from their verified token, never the request body.
+    // Write: any employee role may log a progress photo (unlike roster/jobs,
+    // this isn't payroll-sensitive) OR a sub may log one for themselves --
+    // captured_by_type/captured_by_id are ALWAYS derived from the verified
+    // caller, never accepted from the client, so nobody can log a photo
+    // under someone else's name.
+    if (resource === 'progress_photos' && action === 'read') {
+      if (subCaller) {
+        const jobFilter = payload && payload.job_id ? '&job_id=eq.' + enc(String(payload.job_id)) : '';
+        const r = await fetch(rest('sd_progress_photos?license_hash=eq.' + enc(licHash) + jobFilter + '&captured_by_type=eq.sub&captured_by_id=eq.' + enc(subCaller.employee_id) + '&select=id,job_id,captured_by_type,captured_by_id,data,created_at&order=created_at.desc'), { headers: sbHeaders });
+        const rows = await r.json();
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (!r.ok) return upstream(res, rows);
+        const out = (rows || []).map((row) => Object.assign({ id: row.id, job_id: row.job_id, captured_by_type: row.captured_by_type, captured_by_id: row.captured_by_id, created_at: row.created_at }, row.data));
+        res.status(200).json({ ok: true, data: out });
+        return;
+      }
+      if (employeeCaller) {
+        const jobFilter = payload && payload.job_id ? '&job_id=eq.' + enc(String(payload.job_id)) : '';
+        const r = await fetch(rest('sd_progress_photos?license_hash=eq.' + enc(licHash) + jobFilter + '&select=id,job_id,captured_by_type,captured_by_id,data,created_at&order=created_at.desc'), { headers: sbHeaders });
+        const rows = await r.json();
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (!r.ok) return upstream(res, rows);
+        const out = (rows || []).map((row) => Object.assign({ id: row.id, job_id: row.job_id, captured_by_type: row.captured_by_type, captured_by_id: row.captured_by_id, created_at: row.created_at }, row.data));
+        res.status(200).json({ ok: true, data: out });
+        return;
+      }
+      res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Sign in to view progress photos' } });
+      return;
+    }
+    if (resource === 'progress_photos' && action === 'write') {
+      if (!employeeCaller && !subCaller) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Sign in to log a progress photo' } }); return; }
+      const job_id = String(payload.job_id || '').trim();
+      if (!job_id) { res.status(400).json({ error: { message: 'job_id is required' } }); return; }
+      const capturedByType = subCaller ? 'sub' : 'employee';
+      const capturedById = subCaller ? subCaller.employee_id : employeeCaller.employee_id;
+      const recordData = Object.assign({}, payload);
+      delete recordData.job_id;
+      delete recordData.id;
+      delete recordData.captured_by_type;
+      delete recordData.captured_by_id;
+      const r = await fetch(rest('sd_progress_photos'), {
+        method: 'POST',
+        headers: Object.assign({}, sbHeaders, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, job_id, captured_by_type: capturedByType, captured_by_id: capturedById, data: recordData })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Progress photo storage is not set up yet — run sql/sd_progress_photos_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const row = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: row ? Object.assign({ id: row.id, job_id: row.job_id, captured_by_type: row.captured_by_type, captured_by_id: row.captured_by_id, created_at: row.created_at }, row.data) : payload });
       return;
     }
 
