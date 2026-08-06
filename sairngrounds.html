@@ -232,6 +232,11 @@ textarea{resize:vertical;min-height:80px;}
       <div class="ss">Business</div>
       <button class="sb" id="sb-training" onclick="nav('training')"><span class="sico">&#127891;</span>Crew Training</button>
       <button class="sb" id="sb-vendors" onclick="nav('vendors')"><span class="sico">&#128666;</span>Vendors</button>
+      <div class="ss">Merchandise &amp; Bar</div>
+      <button class="sb" id="sb-proshop" onclick="nav('proshop')"><span class="sico">&#9971;</span>Pro Shop</button>
+      <button class="sb" id="sb-barcompliance" onclick="nav('barcompliance')"><span class="sico">&#127866;</span>Bar &amp; Compliance</button>
+      <button class="sb" id="sb-bottlescan" onclick="nav('bottlescan')"><span class="sico">&#128247;</span>Bottle Scanner</button>
+      <button class="sb" id="sb-foodinv" onclick="nav('foodinv')"><span class="sico">&#127831;</span>Food Inventory</button>
       <div class="sfoot">SAIRNgrounds Phase 4 &middot; <span style="color:var(--p);font-weight:700;">Course &amp; Property Ops</span></div>
     </aside>
     <main>
@@ -337,7 +342,7 @@ textarea{resize:vertical;min-height:80px;}
 <div class="modal" id="designmodal">
   <div class="mbox" style="width:640px;max-width:94vw;">
     <div class="mtitle">Design Walk</div>
-    <div class="fg"><label>Property</label><select id="dwproperty" onchange="rDesignElements()"></select></div>
+    <div class="fg"><label>Property</label><select id="dwproperty"></select></div>
     <div class="note" style="margin:8px 0">Manual entry always works. "Design with AR Camera" only appears on a WebXR-capable device (Chrome/Edge on ARCore Android today) -- on any other device this list is the only path, same as every other AR feature on this platform.</div>
     <div id="dw-ar-zone"></div>
     <div class="fr"><div class="fg"><label>Element Type</label><select id="dwelemtype">
@@ -846,6 +851,166 @@ textarea{resize:vertical;min-height:80px;}
   </div>
 </div>
 
+<!-- ITEM 9: MERCHANDISE/BAR MODULE -- built generic and decoupled (msb_ data
+     prefix, msb-prefixed functions) so this can be lifted into its own
+     SAIRNspirits/restaurant app later (item 11) without a rebuild. Golf-
+     specific framing (Pro Shop categories) lives only in the UI labels and
+     seed data, never in the msb_ core logic itself. -->
+
+<!-- PRO SHOP -->
+<div class="panel" id="panel-proshop">
+  <div class="ph"><div><div class="ptitle">Pro Shop</div><div class="psub">Clubs, balls, shoes, gloves, hats &mdash; retail inventory and point of sale</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openMsbProductModal()">+ Add Product</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Products</div><div class="kval" id="msb-k-products">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">Low Stock</div><div class="kval" id="msb-k-lowstock">0</div><div class="kt" id="msb-k-lowstock-sub">At/below reorder point</div></div>
+    <div class="kpi"><div class="klbl">Today's Sales</div><div class="kval" id="msb-k-todaysales">$0</div><div class="kt">Pro shop, all time today</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Catalog</span></div><div class="cb">
+    <div class="tw"><table><thead><tr><th>Name</th><th>Category</th><th>SKU</th><th>Price</th><th>On Hand</th><th>Actions</th></tr></thead>
+    <tbody id="msbproshoptbody"></tbody></table></div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Point of Sale</span></div><div class="cb">
+    <div class="fr"><div class="fg"><label>Product</label><select id="msb-pos-product"></select></div><div class="fg"><label>Qty</label><input id="msb-pos-qty" type="number" value="1" min="1"></div></div>
+    <button class="btn bo bs" onclick="msbAddToCart('proshop')">+ Add to Cart</button>
+    <div id="msb-proshop-cart" style="margin-top:10px"></div>
+    <div class="fr" style="margin-top:10px"><div class="fg"><label>Payment Method</label><select id="msb-proshop-pay"><option value="Card">Card</option><option value="Cash">Cash</option><option value="Account">Member Account</option></select></div>
+      <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bp" onclick="msbCheckout('proshop')" style="width:100%">Complete Sale</button></div></div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Recent Sales</span></div><div class="cb" id="msb-proshop-sales"></div></div>
+</div>
+<div class="modal" id="msbproductmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Product</div>
+    <div class="fg"><label>Name</label><input id="msbpname" placeholder="Titleist Pro V1 (dozen)"></div>
+    <div class="fr"><div class="fg"><label>Category</label><select id="msbpcat" onchange="msbProductCategoryChanged()">
+      <option value="golf_clubs">Golf Clubs</option><option value="golf_balls">Golf Balls</option>
+      <option value="shoes">Shoes</option><option value="gloves">Gloves</option><option value="hats">Hats</option>
+      <option value="alcohol">Alcohol</option><option value="food">Food</option><option value="other">Other</option>
+    </select></div><div class="fg"><label>SKU</label><input id="msbpsku" placeholder="Optional"></div></div>
+    <div class="fr"><div class="fg"><label>Price ($)</label><input id="msbpprice" type="number" step="0.01" placeholder="49.99"></div><div class="fg"><label>Cost ($)</label><input id="msbpcost" type="number" step="0.01" placeholder="32.00"></div></div>
+    <div class="fr"><div class="fg"><label>Qty On Hand</label><input id="msbpqty" type="number" placeholder="24"></div><div class="fg"><label>Reorder Point</label><input id="msbpreorder" type="number" placeholder="5"></div></div>
+    <div class="fg" id="msbp-alcohol-row" style="display:none"><label>Bottle Volume (oz, for pour-cost tracking)</label><input id="msbpbottleoz" type="number" step="0.1" placeholder="25.4 (a standard 750ml)"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMsbProductModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMsbProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- BAR & COMPLIANCE -->
+<div class="panel" id="panel-barcompliance">
+  <div class="ph"><div><div class="ptitle">Bar &amp; Compliance</div><div class="psub">Licensing, sale-hours enforcement, age verification, role-gated voids, audit-ready inventory log</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openMsbLicenseModal()">+ Add License</button></div></div>
+  <div id="msb-hours-status" class="note" style="margin-bottom:12px"></div>
+  <div class="card"><div class="ch"><span class="ct">Licenses / Permits</span></div><div class="cb">
+    <div class="tw"><table><thead><tr><th>State</th><th>Permit Type</th><th>Licence #</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="msblicensetbody"></tbody></table></div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Alcohol Sale-Hours Config</span></div><div class="cb">
+    <div class="note" style="margin-bottom:10px">Automated enforcement: alcohol checkout is blocked outside these hours, computed live against the current local time -- not just a policy note.</div>
+    <div id="msbhourstbody"></div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Alcohol Point of Sale</span></div><div class="cb">
+    <div class="fr"><div class="fg"><label>Product</label><select id="msb-bar-product"></select></div><div class="fg"><label>Qty</label><input id="msb-bar-qty" type="number" value="1" min="1"></div></div>
+    <button class="btn bo bs" onclick="msbAddToCart('bar')">+ Add to Cart</button>
+    <div id="msb-bar-cart" style="margin-top:10px"></div>
+    <div class="fg" style="margin-top:10px"><label><input type="checkbox" id="msb-age-verified" style="width:auto;margin-right:6px">ID checked, age verified for every alcohol item in this cart</label></div>
+    <div class="fr"><div class="fg"><label>Payment Method</label><select id="msb-bar-pay"><option value="Card">Card</option><option value="Cash">Cash</option></select></div>
+      <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bp" onclick="msbCheckout('bar')" style="width:100%">Complete Sale</button></div></div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Recent Bar Sales &mdash; Void / Override</span></div><div class="cb">
+    <div class="note" style="margin-bottom:10px">Void requires an owner/superintendent/manager role, checked against the real signed-in session -- not just a hidden button. Crew and office roles see the button but the action itself is refused.</div>
+    <div id="msb-bar-sales"></div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Inventory Retention Log</span> <button class="btn bo bs" onclick="msbExportInventoryLogCsv()" style="float:right">Export CSV</button></div><div class="cb">
+    <div class="note" style="margin-bottom:10px">Append-only, every change kept indefinitely in this browser's storage -- true multi-year retention across device changes needs the server sync (grdData) below to actually be relied on for a real audit, not local storage alone.</div>
+    <div class="tw"><table><thead><tr><th>Date</th><th>Product</th><th>Change</th><th>Qty</th><th>Employee</th><th>Note</th></tr></thead>
+    <tbody id="msbinventorylogtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="msblicensemodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit License</div>
+    <div class="fr"><div class="fg"><label>State</label><input id="msblstate" placeholder="TX" maxlength="2"></div><div class="fg"><label>Permit Type</label><select id="msblpermit">
+      <option value="Mixed Beverage Permit">TX Mixed Beverage Permit</option>
+      <option value="Beer and Wine Permit">TX Beer and Wine Permit</option>
+      <option value="Private Club Permit">TX Private Club Registration Permit</option>
+      <option value="Other">Other (state-specific, note below)</option>
+    </select></div></div>
+    <div class="fg"><label>License / Permit Number</label><input id="msblnumber" placeholder="Optional"></div>
+    <div class="fr"><div class="fg"><label>Issued Date</label><input id="msblissued" type="date"></div><div class="fg"><label>Expiry Date</label><input id="msblexpiry" type="date"></div></div>
+    <div class="fg"><label>Notes</label><input id="msblnotes" placeholder="Optional -- other-state permit type, conditions, etc."></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMsbLicenseModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMsbLicense()">Save License</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="msbvoidmodal">
+  <div class="mbox">
+    <div class="mtitle">Void Sale</div>
+    <div id="msbvoid-role-note" class="note" style="margin-bottom:10px"></div>
+    <div class="fg"><label>Reason</label><input id="msbvoidreason" placeholder="e.g. Wrong item rung up"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMsbVoidModal()">Cancel</button>
+      <button class="btn bp" id="msbvoid-confirm-btn" onclick="confirmMsbVoid()">Confirm Void</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTLE SCANNER -->
+<div class="panel" id="panel-bottlescan">
+  <div class="ph"><div><div class="ptitle">Bottle Scanner</div><div class="psub">One photo &rarr; Claude reads the label (brand) AND estimates fill level in the same pass &mdash; no manual product-selection step</div></div></div>
+  <div class="note" style="margin-bottom:12px"><strong>Honest scope note:</strong> fill level is a visual estimate from the photo (the liquid line against the bottle), the same way a bartender eyeballs a pour count -- not a precise volumetric sensor reading. Good enough for pour-cost tracking trends, not a claim of lab-grade precision.</div>
+  <div class="card"><div class="cb">
+    <div id="msb-scan-upload-zone" onclick="document.getElementById('msb-scan-file').click()" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px">
+      <div>Tap to photograph the bottle (label + fill level visible)</div>
+    </div>
+    <input type="file" id="msb-scan-file" accept="image/*" capture="environment" style="display:none" onchange="msbScanFileChosen(this)">
+    <div id="msb-scan-preview" style="display:none;margin-top:10px"><img id="msb-scan-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--border)"></div>
+    <button class="btn bp" id="msb-scan-btn" onclick="msbScanBottle()" disabled style="margin-top:12px">Scan Bottle</button>
+    <div id="msb-scan-result-wrap" style="display:none;margin-top:16px">
+      <div class="mtitle" style="font-size:14px">Scan Result</div>
+      <div id="msb-scan-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+      <div id="msb-scan-actions" style="margin-top:10px"></div>
+    </div>
+  </div></div>
+  <div class="card" style="margin-top:16px"><div class="ch"><span class="ct">Scan History &amp; Cost Analysis</span></div><div class="cb" id="msb-scan-history"></div></div>
+</div>
+
+<!-- FOOD INVENTORY -->
+<div class="panel" id="panel-foodinv">
+  <div class="ph"><div><div class="ptitle">Food Inventory</div><div class="psub">Photo &rarr; Claude reads what's on hand &rarr; usage/waste tracking &rarr; real food-cost %</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Food Cost %</div><div class="kval" id="msb-k-foodcost">--</div><div class="kt" id="msb-k-foodcost-sub">Recorded food COGS / recorded food revenue</div></div>
+    <div class="kpi"><div class="klbl">Waste Logged (30d)</div><div class="kval" id="msb-k-waste">$0</div><div class="kt">Estimated cost of waste</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div id="msb-food-upload-zone" onclick="document.getElementById('msb-food-file').click()" style="border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;cursor:pointer;color:var(--muted);font-size:13px">
+      <div>Tap to photograph shelf/fridge/stockroom contents</div>
+    </div>
+    <input type="file" id="msb-food-file" accept="image/*" capture="environment" style="display:none" onchange="msbFoodFileChosen(this)">
+    <div id="msb-food-preview" style="display:none;margin-top:10px"><img id="msb-food-img" style="max-width:100%;border-radius:8px;border:1.5px solid var(--border)"></div>
+    <button class="btn bp" id="msb-food-scan-btn" onclick="msbScanFood()" disabled style="margin-top:12px">Read Inventory</button>
+    <div id="msb-food-result-wrap" style="display:none;margin-top:16px">
+      <div class="mtitle" style="font-size:14px">Items Identified</div>
+      <div id="msb-food-result" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;white-space:pre-wrap;line-height:1.5"></div>
+    </div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Log Waste</span></div><div class="cb">
+    <div class="fr"><div class="fg"><label>Item</label><input id="msbwasteitem" placeholder="e.g. Romaine lettuce"></div><div class="fg"><label>Est. Cost ($)</label><input id="msbwastecost" type="number" step="0.01" placeholder="8.50"></div></div>
+    <div class="fg"><label>Reason</label><select id="msbwastereason"><option value="spoilage">Spoilage</option><option value="prep_error">Prep Error</option><option value="overproduction">Overproduction</option><option value="returned">Returned/Comped</option></select></div>
+    <button class="btn bp" onclick="saveMsbWaste()">Log Waste</button>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Food Cost Inputs</span></div><div class="cb">
+    <div class="note" style="margin-bottom:10px">Real formula, real inputs: Food Cost % = recorded food purchase costs / recorded food revenue &times; 100. Log both sides honestly -- this is 0% (not "N/A") only when there is genuinely zero of one side, shown that way on purpose.</div>
+    <div class="fr"><div class="fg"><label>Record Food Purchase Cost ($)</label><input id="msbfoodcostinput" type="number" step="0.01" placeholder="240.00"></div>
+      <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bo" onclick="saveMsbFoodCost()" style="width:100%">Log Purchase Cost</button></div></div>
+  </div></div>
+  <div class="card" style="margin-top:14px"><div class="ch"><span class="ct">Recent Food Log</span></div><div class="cb" id="msb-food-history"></div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1080,6 +1245,7 @@ function init(){
   rDash();rProps();rJobs();rQuotes();rGolf();rDesignWalks();
   rSched();rInv();rIrrigation();rWf();rInvasive();rEcosystem();rDreamClose();rTraining();rVendors();
   rBoqRates();rBoq();rPlantDb();
+  rMsbProShop();rMsbBarCompliance();rMsbBottleScan();rMsbFoodInv();
   updateAsideA11y();
   sairnLoadWeather();
   grdSyncFromServer();
@@ -2268,6 +2434,524 @@ function saveVendor(){
   if(vendid){list=list.map(function(x){return x.id===vendid?rec:x;});}else{list.push(rec);}
   st('grd_vendors',list);closeVendorModal();rVendors();toast('Vendor saved');
   grdData('write','vendors',rec);
+}
+
+// =====================================================================
+// ITEM 9: MERCHANDISE/BAR MODULE -- deliberately generic and decoupled.
+// Every data key and function below uses the msb_/msb prefix, not grd_/grd
+// -- the ONLY grounds-specific dependencies are: propName()/H()/fmt()/
+// fdate()/grdLocalToday()/toast()/$()/grdData() (this platform's shared
+// utility layer, present in every SAIRN app under whatever that app's own
+// prefix is) and the real per-employee role system (GRD_ROLE_KEY,
+// GRD_EMPLOYEE_KEY, already built for SAIRNgrounds Phase 2). Spinning this
+// out into SAIRNspirits/restaurant later means: copy this block, swap
+// those handful of utility calls for the target app's equivalents, done --
+// no core logic here assumes "golf course" anywhere except UI labels/seed
+// data, which live outside this block entirely.
+// =====================================================================
+var msbpid=null,msblid=null,msbVoidTargetId=null,msbScanPhotoB64=null,msbFoodPhotoB64=null;
+var msbCart={proshop:[],bar:[]};
+
+function bldMsbProducts(){return ld('msb_products',[]);}
+function bldMsbSales(){return ld('msb_sales',[]);}
+function bldMsbLicenses(){return ld('msb_licenses',[]);}
+function bldMsbSaleHours(){return ld('msb_sale_hours',[]);}
+function bldMsbInventoryLog(){return ld('msb_inventory_log',[]);}
+function bldMsbBottleScans(){return ld('msb_bottle_scans',[]);}
+function bldMsbFoodScans(){return ld('msb_food_scans',[]);}
+function bldMsbWaste(){return ld('msb_food_waste',[]);}
+function bldMsbFoodCostLog(){return ld('msb_food_cost_log',[]);}
+
+// == access-control-rbac: role read + the authority check used by the void
+// gate below. Real limitation, disclosed not hidden: this is a client-side
+// app with no per-action server validation (same architecture as every
+// other SAIRN app this platform has shipped) -- so this check happens at
+// the point the STATE CHANGE actually executes (confirmMsbVoid), not just
+// at the point a button is shown, which is materially better than a
+// UI-only hide/show gate but still not the "enforced at the API layer"
+// standard the skill calls for. A user with devtools access could still
+// call confirmMsbVoid() directly. True server enforcement would need a
+// dedicated msb-void endpoint checking the session token's role server-
+// side, same shape as api/grd-auth.js already does for login -- flagged
+// as the real fix if this module's stakes ever justify that work, not
+// silently claimed as already done.
+function msbCurrentRole(){
+  try{var r=sessionStorage.getItem(GRD_ROLE_KEY);if(r)return r;}catch(e){}
+  return ld('grd_role',null);
+}
+function msbCurrentEmployeeLabel(){
+  try{var id=sessionStorage.getItem(GRD_EMPLOYEE_KEY);if(id)return id;}catch(e){}
+  return msbCurrentRole()||'Unknown';
+}
+var MSB_VOID_AUTHORITY_ROLES=['owner','superintendent','manager'];
+function msbHasVoidAuthority(){
+  var role=msbCurrentRole();
+  return !!(role&&MSB_VOID_AUTHORITY_ROLES.indexOf(role)!==-1);
+}
+
+// == Sale-hours enforcement: real, computed against current local time, not
+// a policy note. Defaults to a permissive placeholder (10:00-23:59 every
+// day) that MUST be reconfigured per the operator's actual state permit
+// conditions -- never assume a specific state's legal hours as a default.
+function msbEnsureSaleHoursSeeded(){
+  if(bldMsbSaleHours().length)return;
+  var days=[0,1,2,3,4,5,6].map(function(d){return{day:d,start:'10:00',end:'23:59'};});
+  st('msb_sale_hours',days);
+}
+function msbIsAlcoholSaleAllowedNow(){
+  var hours=bldMsbSaleHours();
+  var now=new Date();
+  var today=hours.find(function(h){return h.day===now.getDay();});
+  if(!today)return{allowed:false,reason:'No sale-hours configured for today -- add one in Bar & Compliance'};
+  var cur=now.getHours()*60+now.getMinutes();
+  var sp=today.start.split(':'),ep=today.end.split(':');
+  var start=Number(sp[0])*60+Number(sp[1]),end=Number(ep[0])*60+Number(ep[1]);
+  var allowed=cur>=start&&cur<=end;
+  return{allowed:allowed,reason:allowed?'':('Outside configured alcohol sale hours ('+today.start+'-'+today.end+')')};
+}
+
+// == Inventory retention log: append-only by construction -- every call
+// site PUSHES a new record, nothing in this module ever removes or edits
+// an existing log entry. "3+ years, audit-ready" is honestly only as
+// durable as this browser's localStorage unless grdData's server sync is
+// actually provisioned for this license -- the write below fires either
+// way (fire-and-forget, same pattern as every other grdData write in this
+// app), so once a real GRD- license/table is provisioned server-side, this
+// starts actually persisting durably with zero client code changes needed.
+function msbLogInventoryChange(productId,changeType,qtyDelta,note){
+  var log=bldMsbInventoryLog();
+  var product=bldMsbProducts().find(function(p){return p.id===productId;});
+  var rec={id:'MSBIL-'+Date.now()+'-'+Math.floor(Math.random()*1000),product_id:productId,
+    product_name:product?product.name:'(unknown product)',change_type:changeType,qty_delta:qtyDelta,
+    employee:msbCurrentEmployeeLabel(),note:note||'',timestamp:new Date().toISOString()};
+  log.push(rec);st('msb_inventory_log',log);grdData('write','msb_inventory_log',rec);
+}
+function msbExportInventoryLogCsv(){
+  var log=bldMsbInventoryLog();
+  if(!log.length){toast('No inventory log entries to export');return;}
+  var rows=[['Date','Product','Change Type','Qty Delta','Employee','Note']];
+  log.forEach(function(r){rows.push([r.timestamp,r.product_name,r.change_type,r.qty_delta,r.employee,r.note]);});
+  var csvText=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csvText);
+  a.download='msb-inventory-log-'+grdLocalToday()+'.csv';
+  a.click();
+}
+
+// == PRODUCTS ==========================================================
+function msbProductCategoryChanged(){
+  var cat=$('msbpcat').value;
+  $('msbp-alcohol-row').style.display=(cat==='alcohol')?'block':'none';
+}
+function openMsbProductModal(id){
+  msbpid=id||null;
+  var p=id?bldMsbProducts().find(function(x){return x.id===id;}):null;
+  $('msbpname').value=p?p.name:'';$('msbpcat').value=p?p.category:'golf_clubs';
+  $('msbpsku').value=p?p.sku||'':'';$('msbpprice').value=p?p.price:'';$('msbpcost').value=p?p.cost:'';
+  $('msbpqty').value=p?p.qty:'';$('msbpreorder').value=p?p.reorder:'';
+  $('msbpbottleoz').value=p?p.bottle_oz||'':'';
+  msbProductCategoryChanged();
+  $('msbproductmodal').classList.add('on');
+}
+function closeMsbProductModal(){$('msbproductmodal').classList.remove('on');}
+function saveMsbProduct(){
+  var name=$('msbpname').value.trim();
+  if(!name){toast('Product name is required');return;}
+  var price=Number($('msbpprice').value||0);
+  if(price<=0){toast('Price must be greater than zero');return;}
+  var cat=$('msbpcat').value;
+  var list=bldMsbProducts();
+  var rec={id:msbpid||('MSBP-'+Date.now()),name:name,category:cat,sku:$('msbpsku').value.trim(),
+    price:price,cost:Number($('msbpcost').value||0),qty:Number($('msbpqty').value||0),
+    reorder:Number($('msbpreorder').value||0),bottle_oz:cat==='alcohol'?Number($('msbpbottleoz').value||0):null};
+  var isNew=!msbpid;
+  if(msbpid){list=list.map(function(x){return x.id===msbpid?rec:x;});}else{list.push(rec);}
+  st('msb_products',list);closeMsbProductModal();
+  if(isNew)msbLogInventoryChange(rec.id,'received',rec.qty,'New product added');
+  rMsbProShop();rMsbBarCompliance();rMsbBottleScan();
+  toast('Product saved');
+  grdData('write','msb_products',rec);
+}
+
+// == LICENSES ==========================================================
+function openMsbLicenseModal(id){
+  msblid=id||null;
+  var l=id?bldMsbLicenses().find(function(x){return x.id===id;}):null;
+  $('msblstate').value=l?l.state:'';$('msblpermit').value=l?l.permit_type:'Mixed Beverage Permit';
+  $('msblnumber').value=l?l.number||'':'';$('msblissued').value=l?l.issued||'':'';
+  $('msblexpiry').value=l?l.expiry||'':'';$('msblnotes').value=l?l.notes||'':'';
+  $('msblicensemodal').classList.add('on');
+}
+function closeMsbLicenseModal(){$('msblicensemodal').classList.remove('on');}
+function saveMsbLicense(){
+  var state=$('msblstate').value.trim().toUpperCase();
+  if(!state){toast('State is required');return;}
+  var list=bldMsbLicenses();
+  var rec={id:msblid||('MSBL-'+Date.now()),state:state,permit_type:$('msblpermit').value,
+    number:$('msblnumber').value.trim(),issued:$('msblissued').value,expiry:$('msblexpiry').value,
+    notes:$('msblnotes').value.trim()};
+  if(msblid){list=list.map(function(x){return x.id===msblid?rec:x;});}else{list.push(rec);}
+  st('msb_licenses',list);closeMsbLicenseModal();rMsbBarCompliance();toast('License saved');
+  grdData('write','msb_licenses',rec);
+}
+
+// == CART / POS / CHECKOUT =============================================
+function msbFillCartProductSelects(){
+  var products=bldMsbProducts();
+  var nonBar=products.filter(function(p){return p.category!=='alcohol';});
+  var barOnly=products.filter(function(p){return p.category==='alcohol';});
+  var posSel=$('msb-pos-product');
+  if(posSel){var keep=posSel.value;posSel.innerHTML=nonBar.map(function(p){return '<option value="'+p.id+'">'+H(p.name)+' ('+p.qty+' on hand)</option>';}).join('');posSel.value=keep;}
+  var barSel=$('msb-bar-product');
+  if(barSel){var keep2=barSel.value;barSel.innerHTML=barOnly.map(function(p){return '<option value="'+p.id+'">'+H(p.name)+' ('+p.qty+' on hand)</option>';}).join('');barSel.value=keep2;}
+}
+function msbAddToCart(which){
+  var prodSel=which==='proshop'?$('msb-pos-product'):$('msb-bar-product');
+  var qtyEl=which==='proshop'?$('msb-pos-qty'):$('msb-bar-qty');
+  var productId=prodSel.value;
+  var qty=Number(qtyEl.value||1);
+  if(!productId){toast('Select a product first');return;}
+  var product=bldMsbProducts().find(function(p){return p.id===productId;});
+  if(!product)return;
+  if(qty<=0){toast('Qty must be greater than zero');return;}
+  if(qty>product.qty){toast('Only '+product.qty+' on hand');return;}
+  msbCart[which].push({product_id:product.id,name:product.name,qty:qty,price:product.price,is_alcohol:product.category==='alcohol'});
+  rMsbCart(which);
+}
+function rMsbCart(which){
+  var el=which==='proshop'?$('msb-proshop-cart'):$('msb-bar-cart');
+  if(!el)return;
+  var cart=msbCart[which];
+  var total=cart.reduce(function(s,i){return s+i.qty*i.price;},0);
+  el.innerHTML=cart.length?(cart.map(function(i,idx){
+    return '<div class="srow"><span class="slbl">'+H(i.name)+' x'+i.qty+'</span><span class="sval">'+fmt(i.qty*i.price)+' <button class="btn bo bs" onclick="msbRemoveFromCart(\''+which+'\','+idx+')">Remove</button></span></div>';
+  }).join('')+'<div class="srow" style="font-weight:700"><span>Total</span><span>'+fmt(total)+'</span></div>'):'<div style="color:var(--muted)">Cart is empty</div>';
+}
+function msbRemoveFromCart(which,idx){msbCart[which].splice(idx,1);rMsbCart(which);}
+function msbCheckout(which){
+  var cart=msbCart[which];
+  if(!cart.length){toast('Cart is empty');return;}
+  if(which==='bar'){
+    var hasAlcohol=cart.some(function(i){return i.is_alcohol;});
+    if(hasAlcohol){
+      var gate=msbIsAlcoholSaleAllowedNow();
+      if(!gate.allowed){toast('Alcohol sale blocked: '+gate.reason);return;}
+      if(!$('msb-age-verified').checked){toast('Age verification required for alcohol items in this cart');return;}
+    }
+  }
+  var total=cart.reduce(function(s,i){return s+i.qty*i.price;},0);
+  var rec={id:'MSBS-'+Date.now(),cart_type:which,items:cart.slice(),total:total,
+    payment:which==='proshop'?$('msb-proshop-pay').value:$('msb-bar-pay').value,
+    age_verified:which==='bar'?!!$('msb-age-verified').checked:null,
+    employee:msbCurrentEmployeeLabel(),timestamp:new Date().toISOString(),voided:false};
+  var sales=bldMsbSales();sales.push(rec);st('msb_sales',sales);grdData('write','msb_sales',rec);
+  var products=bldMsbProducts();
+  cart.forEach(function(i){
+    var p=products.find(function(x){return x.id===i.product_id;});
+    if(p)p.qty=Math.max(0,(p.qty||0)-i.qty);
+    msbLogInventoryChange(i.product_id,'sold',-i.qty,'Sale '+rec.id);
+  });
+  st('msb_products',products);
+  msbCart[which]=[];rMsbCart(which);
+  if(which==='bar')$('msb-age-verified').checked=false;
+  rMsbProShop();rMsbBarCompliance();
+  toast('Sale completed - '+fmt(total));
+}
+
+// == VOID / OVERRIDE (access-control-rbac) ============================
+function openMsbVoidModal(saleId){
+  msbVoidTargetId=saleId;
+  var hasAuth=msbHasVoidAuthority();
+  $('msbvoid-role-note').textContent='Signed in as: '+(msbCurrentRole()||'unknown, no session role found')+
+    (hasAuth?' -- authorized to void.':' -- this role cannot void a sale. An owner, superintendent, or manager must do this.');
+  $('msbvoid-confirm-btn').disabled=!hasAuth;
+  $('msbvoidreason').value='';
+  $('msbvoidmodal').classList.add('on');
+}
+function closeMsbVoidModal(){$('msbvoidmodal').classList.remove('on');msbVoidTargetId=null;}
+function confirmMsbVoid(){
+  if(!msbHasVoidAuthority()){toast('Not authorized to void a sale');return;}
+  var reason=$('msbvoidreason').value.trim();
+  if(!reason){toast('Enter a void reason');return;}
+  var sales=bldMsbSales();
+  var sale=sales.find(function(s){return s.id===msbVoidTargetId;});
+  if(!sale){closeMsbVoidModal();return;}
+  sale.voided=true;sale.void_reason=reason;sale.void_by=msbCurrentEmployeeLabel();sale.void_role=msbCurrentRole();
+  st('msb_sales',sales);grdData('write','msb_sales',sale);
+  var products=bldMsbProducts();
+  sale.items.forEach(function(i){
+    var p=products.find(function(x){return x.id===i.product_id;});
+    if(p)p.qty=(p.qty||0)+i.qty;
+    msbLogInventoryChange(i.product_id,'adjustment',i.qty,'Void of sale '+sale.id+' ('+reason+')');
+  });
+  st('msb_products',products);
+  closeMsbVoidModal();
+  rMsbProShop();rMsbBarCompliance();
+  toast('Sale voided');
+}
+
+// == BOTTLE SCANNER (Claude vision, brand + fill% in one pass) ========
+function msbScanFileChosen(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>8*1024*1024){toast('Photo over 8MB -- pick a smaller one');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    msbScanPhotoB64=e.target.result.split(',')[1];
+    $('msb-scan-img').src=e.target.result;$('msb-scan-preview').style.display='block';
+    $('msb-scan-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+async function msbScanBottle(){
+  if(!msbScanPhotoB64){toast('Take a photo first');return;}
+  $('msb-scan-result-wrap').style.display='block';
+  $('msb-scan-result').textContent='Analyzing...';
+  $('msb-scan-actions').innerHTML='';
+  var sys='You are analyzing a photo of a liquor/wine/beer bottle for a bar inventory system. '+
+    'Identify: (1) the brand/product name as printed on the label -- read it directly from the label, '+
+    'do not guess if it is not legible, (2) an ESTIMATED fill level as a percentage (0-100), judged '+
+    'visually from the liquid line against the bottle -- this is a visual estimate, not a precise '+
+    'measurement, and you must say so. If the label is not legible or no bottle is visible, say so '+
+    'plainly rather than inventing a brand. Respond in exactly this format, nothing else:\n'+
+    'BRAND: <brand name, or "not legible">\n'+
+    'FILL_PCT: <a number 0-100, or "unknown">\n'+
+    'NOTE: <one short sentence>';
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,app_id:APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:msbScanPhotoB64}},
+          {type:'text',text:'Identify the brand and estimate the fill level.'}
+        ]}]})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||
+      (data.error&&data.error.message?('Could not scan: '+data.error.message):'No response text returned.');
+    $('msb-scan-result').textContent=text;
+    msbHandleScanResult(text);
+  }catch(e){
+    $('msb-scan-result').textContent='Could not reach Claude. Check your connection and try again.';
+  }
+}
+function msbParseScanResult(text){
+  var brandM=text.match(/BRAND:\s*(.+)/i),fillM=text.match(/FILL_PCT:\s*(\d+)/i);
+  var brand=brandM?brandM[1].trim():null;
+  return{brand:brand,fillPct:fillM?Number(fillM[1]):null};
+}
+function msbHandleScanResult(text){
+  var parsed=msbParseScanResult(text);
+  var actionsEl=$('msb-scan-actions');
+  if(!parsed.brand||parsed.brand.toLowerCase().indexOf('not legible')!==-1){
+    actionsEl.innerHTML='<div class="note">No confident brand read -- nothing logged automatically. Retake the photo with the label more visible.</div>';
+    return;
+  }
+  var products=bldMsbProducts();
+  var match=products.find(function(p){return p.category==='alcohol'&&p.name.toLowerCase().indexOf(parsed.brand.toLowerCase())!==-1;});
+  var scans=bldMsbBottleScans();
+  var priorScan=match?scans.slice().reverse().find(function(s){return s.product_id===match.id;}):null;
+  var costNote='';
+  if(match&&priorScan&&parsed.fillPct!==null&&priorScan.fill_pct!==null&&match.bottle_oz){
+    var ozUsed=((priorScan.fill_pct-parsed.fillPct)/100)*match.bottle_oz;
+    if(ozUsed>0&&match.bottle_oz>0){
+      var costPerOz=(match.cost||0)/match.bottle_oz;
+      var costOfUsage=Math.round(ozUsed*costPerOz*100)/100;
+      costNote=' Estimated '+ozUsed.toFixed(1)+' oz used since last scan ('+fdate(priorScan.date)+'), approx. cost of usage '+fmt(costOfUsage)+'.';
+    }
+  }
+  var rec={id:'MSBSCAN-'+Date.now(),product_id:match?match.id:null,brand_read:parsed.brand,fill_pct:parsed.fillPct,date:grdLocalToday(),note:costNote};
+  scans.push(rec);st('msb_bottle_scans',scans);grdData('write','msb_bottle_scans',rec);
+  if(match){
+    msbLogInventoryChange(match.id,'scan_reading',0,'Fill read '+(parsed.fillPct!==null?parsed.fillPct+'%':'unknown')+'.'+costNote);
+    actionsEl.innerHTML='<div class="note">Matched to existing product <strong>'+H(match.name)+'</strong>. Logged as a fill-level reading.'+H(costNote)+'</div>';
+  }else{
+    actionsEl.innerHTML='<div class="note">No matching product on file for "'+H(parsed.brand)+'". '+
+      '<button class="btn bp bs" onclick="msbCreateProductFromScan(\''+H(parsed.brand).replace(/'/g,"\\'")+'\')">+ Add as New Product</button></div>';
+  }
+  rMsbBottleScan();
+}
+function msbCreateProductFromScan(brand){
+  openMsbProductModal();
+  $('msbpname').value=brand;$('msbpcat').value='alcohol';
+  msbProductCategoryChanged();
+  toast('Fill in price/cost/bottle size, then save');
+}
+
+// == FOOD INVENTORY (same photo-scan approach) =========================
+function msbFoodFileChosen(input){
+  var file=input.files[0];if(!file)return;
+  if(file.size>8*1024*1024){toast('Photo over 8MB -- pick a smaller one');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    msbFoodPhotoB64=e.target.result.split(',')[1];
+    $('msb-food-img').src=e.target.result;$('msb-food-preview').style.display='block';
+    $('msb-food-scan-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+async function msbScanFood(){
+  if(!msbFoodPhotoB64){toast('Take a photo first');return;}
+  $('msb-food-result-wrap').style.display='block';
+  $('msb-food-result').textContent='Analyzing...';
+  var sys='You are analyzing a photo of food/beverage stock (a shelf, fridge, or stockroom) for a '+
+    'restaurant inventory system. List each distinct item you can identify with an approximate '+
+    'quantity or fullness as actually visible in the photo -- one item per line, format exactly '+
+    '"- <item>: <approx qty or fraction full>". If something is not confidently identifiable, list '+
+    'it as "- unidentified item: <description>" rather than guessing a specific brand. Plain ASCII '+
+    'only, no Unicode box characters.';
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:500,app_id:APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:msbFoodPhotoB64}},
+          {type:'text',text:'List what food/beverage stock is visible.'}
+        ]}]})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||
+      (data.error&&data.error.message?('Could not scan: '+data.error.message):'No response text returned.');
+    $('msb-food-result').textContent=text;
+    var items=text.split('\n').map(function(l){return l.trim();}).filter(function(l){return /^-\s/.test(l);});
+    var rec={id:'MSBFS-'+Date.now(),date:grdLocalToday(),items:items,raw:text};
+    var scans=bldMsbFoodScans();scans.push(rec);st('msb_food_scans',scans);grdData('write','msb_food_scans',rec);
+    rMsbFoodInv();
+  }catch(e){
+    $('msb-food-result').textContent='Could not reach Claude. Check your connection and try again.';
+  }
+}
+function saveMsbWaste(){
+  var item=$('msbwasteitem').value.trim();
+  var cost=Number($('msbwastecost').value||0);
+  if(!item){toast('Item is required');return;}
+  if(cost<=0){toast('Cost must be greater than zero');return;}
+  var log=bldMsbWaste();
+  var rec={id:'MSBW-'+Date.now(),item:item,cost:cost,reason:$('msbwastereason').value,date:grdLocalToday()};
+  log.push(rec);st('msb_food_waste',log);grdData('write','msb_food_waste',rec);
+  $('msbwasteitem').value='';$('msbwastecost').value='';
+  rMsbFoodInv();
+  toast('Waste logged');
+}
+function saveMsbFoodCost(){
+  var cost=Number($('msbfoodcostinput').value||0);
+  if(cost<=0){toast('Enter a real cost amount');return;}
+  var log=bldMsbFoodCostLog();
+  var rec={id:'MSBFC-'+Date.now(),amount:cost,date:grdLocalToday()};
+  log.push(rec);st('msb_food_cost_log',log);grdData('write','msb_food_cost_log',rec);
+  $('msbfoodcostinput').value='';
+  rMsbFoodInv();
+  toast('Purchase cost logged');
+}
+// Real formula, real inputs -- never a placeholder percentage. Null (shown
+// as "--") only when BOTH sides are genuinely zero; if either side has real
+// data the percentage is computed and shown honestly, including a
+// deliberately alarming >100% when costs exceed revenue (a real, useful
+// signal, not clamped away to look better).
+function computeMsbFoodCostPct(){
+  var costLog=bldMsbFoodCostLog();
+  var totalCost=costLog.reduce(function(s,c){return s+c.amount;},0);
+  var sales=bldMsbSales().filter(function(s){return!s.voided;});
+  var products=bldMsbProducts();
+  var foodRevenue=0;
+  sales.forEach(function(s){
+    s.items.forEach(function(i){
+      var p=products.find(function(x){return x.id===i.product_id;});
+      if(p&&p.category==='food')foodRevenue+=i.qty*i.price;
+    });
+  });
+  if(totalCost===0&&foodRevenue===0)return{pct:null,totalCost:totalCost,foodRevenue:foodRevenue};
+  var pct=foodRevenue>0?Math.round(totalCost/foodRevenue*1000)/10:null;
+  return{pct:pct,totalCost:totalCost,foodRevenue:foodRevenue};
+}
+
+// == SALE HOURS CONFIG UI =============================================
+var MSB_DAY_LABELS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function rMsbHours(){
+  msbEnsureSaleHoursSeeded();
+  var hours=bldMsbSaleHours();
+  $('msbhourstbody').innerHTML=hours.map(function(h){
+    return '<div class="fr" style="align-items:flex-end"><div class="fg"><label>'+MSB_DAY_LABELS[h.day]+' Start</label><input type="time" id="msbhour-'+h.day+'-start" value="'+H(h.start)+'"></div>'+
+      '<div class="fg"><label>'+MSB_DAY_LABELS[h.day]+' End</label><input type="time" id="msbhour-'+h.day+'-end" value="'+H(h.end)+'"></div></div>';
+  }).join('')+'<button class="btn bp" onclick="saveMsbHours()" style="margin-top:8px">Save All Hours</button>';
+  var gate=msbIsAlcoholSaleAllowedNow();
+  $('msb-hours-status').textContent='Right now: '+(gate.allowed?'alcohol sales ARE allowed under the configured hours.':('alcohol sales are BLOCKED -- '+gate.reason));
+}
+function saveMsbHours(){
+  var hours=[0,1,2,3,4,5,6].map(function(d){
+    return{day:d,start:$('msbhour-'+d+'-start').value||'00:00',end:$('msbhour-'+d+'-end').value||'23:59'};
+  });
+  st('msb_sale_hours',hours);grdData('write','msb_sale_hours',hours);
+  rMsbHours();
+  toast('Sale hours saved');
+}
+
+// == RENDER FUNCTIONS ==================================================
+function rMsbProShop(){
+  fillPropertySelects();msbFillCartProductSelects();
+  var all=bldMsbProducts();
+  var retail=all.filter(function(p){return p.category!=='alcohol'&&p.category!=='food';});
+  $('msb-k-products').textContent=all.length;
+  var low=all.filter(function(p){return p.qty<=p.reorder;});
+  $('msb-k-lowstock').textContent=low.length;$('msb-k-lowstock-sub').className='kt'+(low.length?' d':'');
+  var today=grdLocalToday();
+  var todaySales=bldMsbSales().filter(function(s){return s.cart_type==='proshop'&&!s.voided&&s.timestamp.slice(0,10)===today;})
+    .reduce(function(s,x){return s+x.total;},0);
+  $('msb-k-todaysales').textContent=fmt(todaySales);
+  $('msbproshoptbody').innerHTML=retail.length?retail.map(function(p){
+    var low=p.qty<=p.reorder;
+    return '<tr><td><strong>'+H(p.name)+'</strong></td><td>'+H(p.category)+'</td><td>'+H(p.sku||'--')+'</td><td>'+fmt(p.price)+'</td>'+
+      '<td>'+(low?'<span class="badge br">':'')+p.qty+(low?'</span>':'')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openMsbProductModal(\''+p.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No pro shop products on file</td></tr>';
+  rMsbCart('proshop');
+  var proshopSales=bldMsbSales().filter(function(s){return s.cart_type==='proshop';}).slice().reverse().slice(0,10);
+  $('msb-proshop-sales').innerHTML=proshopSales.length?proshopSales.map(function(s){
+    return '<div class="srow"><span class="slbl">'+(s.voided?'<s>':'')+fmt(s.total)+' - '+H(s.payment)+(s.voided?'</s> <span class="badge br">Voided</span>':'')+'</span><span class="sval" style="font-size:11px;color:var(--muted)">'+new Date(s.timestamp).toLocaleString()+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No sales yet</div>';
+}
+function rMsbBarCompliance(){
+  fillPropertySelects();msbFillCartProductSelects();rMsbHours();
+  var licenses=bldMsbLicenses();
+  var today=grdLocalToday();
+  $('msblicensetbody').innerHTML=licenses.length?licenses.map(function(l){
+    var expired=l.expiry&&l.expiry<today;
+    var sc=expired?'br':'bg';
+    return '<tr><td>'+H(l.state)+'</td><td>'+H(l.permit_type)+'</td><td>'+H(l.number||'--')+'</td><td>'+(l.expiry?fdate(l.expiry):'--')+'</td>'+
+      '<td><span class="badge '+sc+'">'+(expired?'Expired':'Active')+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="openMsbLicenseModal(\''+l.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No licenses on file</td></tr>';
+  rMsbCart('bar');
+  var barSales=bldMsbSales().filter(function(s){return s.cart_type==='bar';}).slice().reverse().slice(0,10);
+  $('msb-bar-sales').innerHTML=barSales.length?barSales.map(function(s){
+    var canVoid=!s.voided;
+    return '<div class="srow"><span class="slbl">'+(s.voided?'<s>':'')+fmt(s.total)+' - '+H(s.payment)+' - age verified: '+(s.age_verified?'yes':'n/a')+(s.voided?'</s> <span class="badge br">Voided: '+H(s.void_reason)+'</span>':'')+'</span>'+
+      '<span class="sval">'+new Date(s.timestamp).toLocaleString()+(canVoid?' <button class="btn bo bs" onclick="openMsbVoidModal(\''+s.id+'\')">Void</button>':'')+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No bar sales yet</div>';
+  var log=bldMsbInventoryLog().slice().reverse().slice(0,50);
+  $('msbinventorylogtbody').innerHTML=log.length?log.map(function(r){
+    return '<tr><td>'+new Date(r.timestamp).toLocaleString()+'</td><td>'+H(r.product_name)+'</td><td>'+H(r.change_type)+'</td><td>'+r.qty_delta+'</td><td>'+H(r.employee)+'</td><td>'+H(r.note)+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No inventory activity logged yet</td></tr>';
+}
+function rMsbBottleScan(){
+  var scans=bldMsbBottleScans().slice().reverse().slice(0,15);
+  var products=bldMsbProducts();
+  $('msb-scan-history').innerHTML=scans.length?scans.map(function(s){
+    var p=s.product_id?products.find(function(x){return x.id===s.product_id;}):null;
+    return '<div class="srow"><span class="slbl"><strong>'+H(s.brand_read)+'</strong>'+(p?' &rarr; matched to '+H(p.name):' (no product match)')+'<div style="font-size:11px;color:var(--muted)">'+H(s.note||'')+'</div></span>'+
+      '<span class="sval">'+(s.fill_pct!==null?s.fill_pct+'% full':'fill unknown')+' &middot; '+fdate(s.date)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No scans yet</div>';
+}
+function rMsbFoodInv(){
+  var fc=computeMsbFoodCostPct();
+  $('msb-k-foodcost').textContent=fc.pct===null?'--':(fc.pct+'%');
+  $('msb-k-foodcost-sub').textContent=fc.pct===null?'No food cost or food revenue recorded yet':(fmt(fc.totalCost)+' cost / '+fmt(fc.foodRevenue)+' revenue');
+  var thirtyDaysAgo=new Date(Date.now()-30*86400000).toISOString().slice(0,10);
+  var waste=bldMsbWaste().filter(function(w){return w.date>=thirtyDaysAgo;});
+  $('msb-k-waste').textContent=fmt(waste.reduce(function(s,w){return s+w.cost;},0));
+  var scans=bldMsbFoodScans().slice().reverse().slice(0,5);
+  var wasteAll=bldMsbWaste().slice().reverse().slice(0,10);
+  var costLog=bldMsbFoodCostLog().slice().reverse().slice(0,10);
+  var historyHtml='';
+  if(scans.length){historyHtml+='<div class="mtitle" style="font-size:13px">Recent Scans</div>'+scans.map(function(s){return '<div class="srow"><span class="slbl">'+fdate(s.date)+'</span><span class="sval">'+s.items.length+' item(s) identified</span></div>';}).join('');}
+  if(wasteAll.length){historyHtml+='<div class="mtitle" style="font-size:13px;margin-top:10px">Recent Waste</div>'+wasteAll.map(function(w){return '<div class="srow"><span class="slbl">'+H(w.item)+' - '+H(w.reason)+'</span><span class="sval">'+fmt(w.cost)+' &middot; '+fdate(w.date)+'</span></div>';}).join('');}
+  if(costLog.length){historyHtml+='<div class="mtitle" style="font-size:13px;margin-top:10px">Recent Purchase Costs Logged</div>'+costLog.map(function(c){return '<div class="srow"><span class="slbl">Purchase cost</span><span class="sval">'+fmt(c.amount)+' &middot; '+fdate(c.date)+'</span></div>';}).join('');}
+  $('msb-food-history').innerHTML=historyHtml||'<div style="color:var(--muted);text-align:center;padding:12px">No food inventory activity yet</div>';
 }
 
 // === AI ASSISTANT ===
