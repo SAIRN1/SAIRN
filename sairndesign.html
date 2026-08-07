@@ -243,7 +243,15 @@ label.chk input{width:auto;}
       <div class="ss">Studio</div>
       <button class="sb" id="sb-team" onclick="nav('team')"><span class="sico">&#128188;</span>Team &amp; Roles</button>
       <button class="sb" id="sb-time" onclick="nav('time')"><span class="sico">&#9201;</span>Time Tracking</button>
-      <div class="sfoot">SAIRNdesign v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 2</span></div>
+      <button class="sb" id="sb-samples" onclick="nav('samples')"><span class="sico">&#129525;</span>Sample Library</button>
+      <button class="sb" id="sb-contracts" onclick="nav('contracts')"><span class="sico">&#128220;</span>Contracts</button>
+      <div class="ss">Growth</div>
+      <button class="sb" id="sb-referrals" onclick="nav('referrals')"><span class="sico">&#129309;</span>Referrals</button>
+      <button class="sb" id="sb-discounts" onclick="nav('discounts')"><span class="sico">&#127991;</span>Trade Discounts</button>
+      <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reporting</button>
+      <div class="ss">Admin</div>
+      <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;</span>Settings</button>
+      <div class="sfoot">SAIRNdesign v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 3</span></div>
     </aside>
     <main>
 
@@ -351,8 +359,10 @@ label.chk input{width:auto;}
   <div class="mbox">
     <div class="mtitle">Add / Edit Spec Item</div>
     <div class="fg"><label>Project</label><select id="spproject"></select></div>
-    <div class="fr"><div class="fg"><label>Item</label><input id="spitem" placeholder="Vintage Persian Rug, 9x12"></div><div class="fg"><label>Vendor</label><input id="spvendor" placeholder="Restoration Hardware"></div></div>
+    <div class="fr"><div class="fg"><label>Item</label><input id="spitem" placeholder="Vintage Persian Rug, 9x12"></div><div class="fg"><label>Vendor</label><input id="spvendor" placeholder="Restoration Hardware" oninput="specDiscountHint()"></div></div>
     <div class="fr"><div class="fg"><label>SKU</label><input id="spsku" placeholder="RH-4471"></div><div class="fg"><label>Lead Time (weeks)</label><input id="spleadtime" type="number" placeholder="6"></div></div>
+    <div class="fg"><label>List Price ($, optional)</label><input id="splistprice" type="number" placeholder="4000" oninput="specDiscountHint()"></div>
+    <div class="fg" id="spdiscount-hint" style="font-size:12px;color:var(--muted);margin-top:-8px"></div>
     <div class="fr"><div class="fg"><label>Cost ($, wholesale)</label><input id="spcost" type="number" placeholder="2400" oninput="specMarkupPreview()"></div><div class="fg"><label>Retail ($, client price)</label><input id="spretail" type="number" placeholder="4200" oninput="specMarkupPreview()"></div></div>
     <div class="fg"><div class="srow" style="border:none;padding:0"><span class="slbl">Markup</span><span class="sval" id="spmarkup-preview">0%</span></div></div>
     <div class="fg"><label>Status</label><select id="spstatus"><option>Specified</option><option>Ordered</option><option>Received</option><option>Installed</option></select></div>
@@ -612,6 +622,197 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<!-- SAMPLE & SWATCH LIBRARY -->
+<div class="panel" id="panel-samples">
+  <div class="ph"><div><div class="ptitle">Sample &amp; Swatch Library</div><div class="psub">Fabric and material sample check-out tracking</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('samples')">Export CSV</button><button class="btn bp bs" onclick="openSampleModal()">+ Add Sample</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Samples</div><div class="kval" id="sm-total">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">Checked Out</div><div class="kval" id="sm-out">0</div><div class="kt">Not yet returned</div></div>
+    <div class="kpi"><div class="klbl">Overdue</div><div class="kval" id="sm-overdue">0</div><div class="kt d">Past due-back date</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Sample</th><th>Category</th><th>Vendor</th><th>Checked Out To</th><th>Project</th><th>Due Back</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="smtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="samplemodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Sample</div>
+    <div class="fr"><div class="fg"><label>Sample Name</label><input id="smname" placeholder="Belgian Linen, Oatmeal"></div><div class="fg"><label>Category</label><select id="smcat"><option>Fabric</option><option>Tile/Stone</option><option>Paint</option><option>Wallpaper</option><option>Flooring</option><option>Other</option></select></div></div>
+    <div class="fg"><label>Vendor</label><select id="smvendor"><option value="">(none)</option></select></div>
+    <div class="fr"><div class="fg"><label>Checked Out To</label><input id="smcheckedout" placeholder="Team member or client name, blank if in-library"></div><div class="fg"><label>Project</label><select id="smproject"><option value="">(none)</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Checkout Date</label><input id="smcheckoutdate" type="date"></div><div class="fg"><label>Due Back</label><input id="smdue" type="date"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSampleModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSample()">Save Sample</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTRACTS -->
+<div class="panel" id="panel-contracts">
+  <div class="ph"><div><div class="ptitle">Contracts / Letters of Agreement</div><div class="psub">Formal signed engagement per project &middot; distinct from pre-sale Proposals</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openContractModal()">+ New Contract</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Signed</div><div class="kval" id="ct-signed">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Awaiting Signature</div><div class="kval" id="ct-pending">0</div><div class="kt">Sent, not yet signed</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Title</th><th>Project</th><th>Client</th><th>Fee Structure</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="cttbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="contractmodal">
+  <div class="mbox">
+    <div class="mtitle">New Contract / Letter of Agreement</div>
+    <div class="fg"><label>Project</label><select id="ctmproject"></select></div>
+    <div class="fg"><label>Title</label><input id="cttitle" placeholder="Letter of Agreement - Whitfield Living Room"></div>
+    <div class="fg"><label>Scope of Work</label><textarea id="ctscope" rows="3" placeholder="Full-service interior design for the living room, including..."></textarea></div>
+    <div class="fg"><label>Fee Structure</label><select id="ctfee"><option>Flat Fee</option><option>Hourly</option><option>Cost-Plus (Trade Markup)</option><option>Percentage of Project</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeContractModal()">Cancel</button>
+      <button class="btn bp" onclick="saveContract()">Create Contract</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="contractdetailmodal">
+  <div class="mbox" style="width:640px">
+    <div class="mtitle">Contract</div>
+    <div id="ct-detail-body"></div>
+  </div>
+</div>
+
+<!-- REFERRAL TRACKING -->
+<!-- Same pattern as StoneDesk's live Referral Program panel (sdRefAdd/save/
+     render, sairnbiz-family from/to/status/val/date shape) -- deliberately
+     NOT the shape of StoneDesk's second, orphaned-duplicate referral system
+     that was found and deleted earlier this session (rfSave/rfReferrals,
+     customer/referredBy/sourceType/value/lowercase-status): that duplicate
+     existed specifically because a second build never checked what the
+     live one already used. Checked here before writing this. -->
+<div class="panel" id="panel-referrals">
+  <div class="ph"><div><div class="ptitle">Referral Program</div><div class="psub">Client referrals, rewards &amp; source attribution</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openReferralModal()">+ Log Referral</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Referrals</div><div class="kval" id="rf-total">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Converted</div><div class="kval" id="rf-converted">0</div><div class="kt">Became clients</div></div>
+    <div class="kpi"><div class="klbl">Revenue from Referrals</div><div class="kval" id="rf-value">$0</div><div class="kt">Converted, project budgets</div></div>
+    <div class="kpi"><div class="klbl">Conversion Rate</div><div class="kval" id="rf-rate">0%</div><div class="kt">Of all referrals logged</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Referral Log</span></div><div class="cb" id="rf-list"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Top Referrers</span></div><div class="cb" id="rf-top"></div></div>
+  </div>
+  <div class="card"><div class="cb" style="background:#F0FDF4;border-radius:10px">
+    <div style="font-weight:700;color:#166534;margin-bottom:8px">&#127873; Referral Rewards</div>
+    <div style="font-size:13px;color:#166534;line-height:1.8">
+      <div>1 Referral: $50 gift card</div>
+      <div>3 Referrals: $175 gift card</div>
+      <div>5+ Referrals: $350 + recognition</div>
+      <div style="margin-top:6px;font-style:italic">Reward issued on conversion</div>
+    </div>
+  </div></div>
+</div>
+<div class="modal" id="referralmodal">
+  <div class="mbox">
+    <div class="mtitle">Log Referral</div>
+    <div class="fg"><label>Referred By</label><input id="rffrom" placeholder="Sarah Whitfield"></div>
+    <div class="fg"><label>Referred Prospect</label><input id="rfto" placeholder="Chris Webb"></div>
+    <div class="fg"><label>Phone (optional)</label><input id="rfphone" placeholder="(440) 555-0100"></div>
+    <div class="fg"><label>Status</label><select id="rfstatus"><option>Lead</option><option>Quoted</option><option>Converted</option><option>Lost</option></select></div>
+    <div class="fg"><label>Potential Project Value ($, if converted)</label><input id="rfval" type="number" placeholder="45000"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeReferralModal()">Cancel</button>
+      <button class="btn bp" onclick="saveReferral()">Log Referral</button>
+    </div>
+  </div>
+</div>
+
+<!-- VENDOR TRADE DISCOUNTS -->
+<div class="panel" id="panel-discounts">
+  <div class="ph"><div><div class="ptitle">Vendor Trade Discounts</div><div class="psub">Formal discount schedule per vendor &middot; feeds cost suggestions on new Spec Sheet items</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openDiscountModal()">+ Add Discount</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Vendor</th><th>Category</th><th>Trade Discount</th><th>Effective Date</th><th>Notes</th><th>Actions</th></tr></thead>
+    <tbody id="dctbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="discountmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Trade Discount</div>
+    <div class="fg"><label>Vendor</label><select id="dcvendor"></select></div>
+    <div class="fr"><div class="fg"><label>Category (optional, blank = all)</label><input id="dccat" placeholder="Furniture"></div><div class="fg"><label>Trade Discount (% off list price)</label><input id="dcpct" type="number" placeholder="40"></div></div>
+    <div class="fg"><label>Effective Date</label><input id="dceff" type="date"></div>
+    <div class="fg"><label>Notes</label><input id="dcnotes" placeholder="Standard trade account rate"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDiscountModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDiscount()">Save Discount</button>
+    </div>
+  </div>
+</div>
+
+<!-- REPORTING / ANALYTICS -->
+<div class="panel" id="panel-reports">
+  <div class="ph"><div><div class="ptitle">Reporting &amp; Analytics</div><div class="psub">Firm-wide profitability and team utilization &middot; all computed live from real records</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('reportspl')">Export CSV</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Revenue Invoiced</div><div class="kval" id="rp-revenue">$0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Total Margin</div><div class="kval" id="rp-margin">$0</div><div class="kt">Retail less wholesale cost</div></div>
+    <div class="kpi"><div class="klbl">Avg Margin %</div><div class="kval" id="rp-marginpct">0%</div><div class="kt">Across invoiced projects</div></div>
+    <div class="kpi"><div class="klbl">Team Utilization</div><div class="kval" id="rp-util">0%</div><div class="kt">Billable / total hours logged</div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Project Profitability</span></div>
+    <div class="cb"><div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Project</th><th>Client</th><th>Revenue (Invoiced)</th><th>Cost Basis</th><th>Margin $</th><th>Margin %</th></tr></thead>
+    <tbody id="rp-pltbody"></tbody></table></div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Team Utilization</span></div>
+    <div class="cb"><div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Team Member</th><th>Billable Hours</th><th>Total Hours</th><th>Utilization</th></tr></thead>
+    <tbody id="rp-utiltbody"></tbody></table></div></div>
+  </div>
+</div>
+
+<!-- SETTINGS / ADMIN -->
+<div class="panel" id="panel-settings">
+  <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">License, branding, and role PINs</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">License Key</div><div class="kval" id="set-license" style="font-size:15px">--</div><div class="kt">This install</div></div>
+    <div class="kpi"><div class="klbl">PIN-Protected Roles</div><div class="kval" id="set-roles">0</div><div class="kt">Owner / Designer / Office</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Branding</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openBrandingModal()">Edit</button></div></div>
+      <div class="cb" id="set-branding"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Role PINs</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openPinsModal()">Edit PINs</button></div></div>
+      <div class="cb" id="set-pins"></div></div>
+  </div>
+</div>
+<div class="modal" id="brandingmodal">
+  <div class="mbox">
+    <div class="mtitle">Edit Branding</div>
+    <div class="fg"><label>Studio Name</label><input id="brname" placeholder="Pinnacle Interior Design"></div>
+    <div class="fg"><label>Demo Company (shown on Dashboard)</label><input id="brcompany" placeholder="Pinnacle Interior Design"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeBrandingModal()">Cancel</button>
+      <button class="btn bp" onclick="saveBranding()">Save Branding</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="pinsmodal">
+  <div class="mbox">
+    <div class="mtitle">Edit Role PINs</div>
+    <div class="fg"><label>Owner PIN (4 digits)</label><input id="pm-owner" maxlength="4" inputmode="numeric"></div>
+    <div class="fg"><label>Designer PIN (4 digits)</label><input id="pm-designer" maxlength="4" inputmode="numeric"></div>
+    <div class="fg"><label>Office PIN (4 digits)</label><input id="pm-office" maxlength="4" inputmode="numeric"></div>
+    <div class="perr" id="pins-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePinsModal()">Cancel</button>
+      <button class="btn bp" onclick="savePins()">Save PINs</button>
+    </div>
+  </div>
+</div>
+
     </main>
   </div>
 </div>
@@ -743,6 +944,12 @@ function nav(id){
   if(id==='time')rTime();
   if(id==='schedule')rScheduleEvents();
   if(id==='clientportal')rClientPortal();
+  if(id==='samples')rSamples();
+  if(id==='contracts')rContracts();
+  if(id==='referrals')rReferrals();
+  if(id==='discounts')rDiscounts();
+  if(id==='reports')rReports();
+  if(id==='settings')rSettings();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -813,6 +1020,18 @@ function seed(){
   st('sdn_schedule',[
     {id:'SC-1',project_id:'PJ-1',type:'Site Visit',date:sdnLocalToday(),assignee:'TM-2',status:'Scheduled',notes:'Measure final furniture placement',created_at:sdnLocalToday()}
   ]);
+  st('sdn_samples',[
+    {id:'SM-1',name:'Belgian Linen, Oatmeal',category:'Fabric',vendor_id:'VN-2',checked_out_to:'Priya Nair',project_id:'PJ-1',checkout_date:sdnLocalToday(),due_back_date:'2026-08-20',returned_date:'',created_at:sdnLocalToday()},
+    {id:'SM-2',name:'Honed Carrara Tile, 12x24',category:'Tile/Stone',vendor_id:'',checked_out_to:'',project_id:'',checkout_date:'',due_back_date:'',returned_date:'',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_contracts',[]);
+  st('sdn_referrals',[
+    {id:'RF-1',from:'Sarah Whitfield',to:'Chris Webb',phone:'(440) 555-0155',status:'Lead',val:0,date:sdnLocalToday()}
+  ]);
+  st('sdn_discounts',[
+    {id:'DC-1',vendor_id:'VN-1',category:'',discount_pct:40,effective_date:'2026-01-01',notes:'Standard trade account rate',created_at:sdnLocalToday()},
+    {id:'DC-2',vendor_id:'VN-4',category:'',discount_pct:15,effective_date:'2026-01-01',notes:'Custom commissions, lower margin by design',created_at:sdnLocalToday()}
+  ]);
   st('sdn_seeded',true);
 }
 
@@ -846,6 +1065,17 @@ function csv(kind){
   }else if(kind==='schedule'){
     rows=[['Date','Type','Project','Assignee','Status','Notes']].concat(scheduleEvents().map(function(s){return [s.date,s.type,projectLabel(s.project_id),employeeLabel(s.assignee),s.status,s.notes];}));
     name='schedule';
+  }else if(kind==='samples'){
+    rows=[['Sample','Category','Vendor','Checked Out To','Project','Due Back','Returned']].concat(samples().map(function(s){return [s.name,s.category,vendorLabel(s.vendor_id),s.checked_out_to,s.project_id?projectLabel(s.project_id):'',s.due_back_date,s.returned_date];}));
+    name='samples';
+  }else if(kind==='reportspl'){
+    rows=[['Project','Client','Revenue','Cost','Margin','Margin %']].concat(projects().map(function(p){
+      var pjInvoices=invoices().filter(function(i){return i.project_id===p.id;});
+      var revenue=pjInvoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0);
+      var cost=pjInvoices.reduce(function(s,i){return s+(Number(i.cost_basis)||0);},0);
+      return [p.name,projectClientName(p),revenue,cost,revenue-cost,revenue>0?Math.round((revenue-cost)/revenue*100):0];
+    }));
+    name='project-profitability';
   }else return;
   var text=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(text);
@@ -900,11 +1130,35 @@ function specMarkupPreview(){
   var cost=Number($('spcost').value)||0,retail=Number($('spretail').value)||0;
   $('spmarkup-preview').textContent=itemMarkupPct(cost,retail)+'%';
 }
+// Real feed from Vendor Trade Discounts into the Spec Sheet's cost math:
+// matches the typed vendor name against the Vendor Directory (Spec Sheet
+// stores vendor as free text, not a vendor_id reference, so name match is
+// the real join available here), looks up that vendor's on-file discount,
+// and offers -- never forces -- a suggested Cost from a typed List Price.
+// The existing Cost field stays the actual source of truth; this only
+// pre-fills it when it's still empty.
+function specDiscountHint(){
+  var hintEl=$('spdiscount-hint');
+  var vendorName=($('spvendor').value||'').trim().toLowerCase();
+  var listPrice=Number($('splistprice').value)||0;
+  if(!vendorName){hintEl.textContent='';return;}
+  var vendor=vendors().find(function(v){return v.name.toLowerCase()===vendorName;});
+  if(!vendor){hintEl.textContent='';return;}
+  var disc=applicableDiscount(vendor.id,'');
+  if(!disc){hintEl.textContent='No trade discount on file for '+H(vendor.name)+'.';return;}
+  if(listPrice>0){
+    var suggestedCost=Math.round(listPrice*(1-disc.discount_pct/100));
+    hintEl.textContent=disc.discount_pct+'% trade discount on file -- suggested cost '+fmt(suggestedCost)+' from this list price.';
+    if(!$('spcost').value){$('spcost').value=suggestedCost;specMarkupPreview();}
+  }else{
+    hintEl.textContent=disc.discount_pct+'% trade discount on file for '+H(vendor.name)+'. Enter a list price to get a suggested cost.';
+  }
+}
 
 function openSpecModal(){
   speid=null;fillProjectSelects();
-  ['spitem','spvendor','spsku','spleadtime','spcost','spretail','spnotes'].forEach(function(f){var el=$(f);if(el)el.value='';});
-  $('spstatus').value='Specified';$('spooak').checked=false;$('spec-err').textContent='';
+  ['spitem','spvendor','spsku','spleadtime','spcost','spretail','spnotes','splistprice'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('spstatus').value='Specified';$('spooak').checked=false;$('spec-err').textContent='';$('spdiscount-hint').textContent='';
   var pj=$('specproject').value;if(pj)$('spproject').value=pj;
   specMarkupPreview();
   $('specmodal').classList.add('on');
@@ -915,8 +1169,8 @@ function editSpec(id){
   speid=id;fillProjectSelects();
   $('spproject').value=s.project_id;$('spitem').value=s.item;$('spvendor').value=s.vendor;
   $('spsku').value=s.sku;$('spleadtime').value=s.lead_time_weeks;$('spcost').value=s.cost;$('spretail').value=s.retail;
-  $('spstatus').value=s.status;$('spooak').checked=!!s.one_of_a_kind;$('spnotes').value=s.notes||'';
-  $('spec-err').textContent='';specMarkupPreview();
+  $('spstatus').value=s.status;$('spooak').checked=!!s.one_of_a_kind;$('spnotes').value=s.notes||'';$('splistprice').value='';
+  $('spec-err').textContent='';specMarkupPreview();specDiscountHint();
   $('specmodal').classList.add('on');
 }
 async function saveSpec(){
@@ -996,15 +1250,15 @@ async function runComplianceCheck(){
 
 function fillProjectSelects(){
   var opts=projects().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+' ('+H(projectClientName(p))+')</option>';}).join('');
-  var needsBlank={specproject:1,mbproject:1,pogenproject:1,ttproject:1,cpproject:1};
-  ['spproject','specproject','qproject','pjclient','mbproject','mbmproject','pogenproject','ttproject','ttprojectm','schproject','cpproject'].forEach(function(id){
+  var needsBlank={specproject:1,mbproject:1,pogenproject:1,ttproject:1,cpproject:1,smproject:1};
+  ['spproject','specproject','qproject','pjclient','mbproject','mbmproject','pogenproject','ttproject','ttprojectm','schproject','cpproject','smproject','ctmproject'].forEach(function(id){
     var el=$(id);if(!el)return;
     if(id==='pjclient'){
       el.innerHTML=clients().map(function(c){return '<option value="'+c.id+'">'+H(c.name)+'</option>';}).join('');
       return;
     }
     var cur=el.value;
-    el.innerHTML=(needsBlank[id]?'<option value="">'+(id==='ttproject'?'All Projects':'Select a project...')+'</option>':'')+opts;
+    el.innerHTML=(needsBlank[id]?'<option value="">'+(id==='ttproject'?'All Projects':id==='smproject'?'(none)':'Select a project...')+'</option>':'')+opts;
     if(cur)el.value=cur;
   });
   var memberOpts=team().filter(function(t){return t.status==='Active';}).map(function(t){return '<option value="'+t.id+'">'+H(t.name)+'</option>';}).join('');
@@ -1017,6 +1271,13 @@ function fillProjectSelects(){
   var approvedProposalOpts=proposals().filter(function(p){return p.status==='Approved';}).map(function(p){return '<option value="'+p.id+'">'+H(p.title)+' -- '+fmt(proposalTotal(p))+'</option>';}).join('');
   var invEl=$('invproposal');
   if(invEl){var cur2=invEl.value;invEl.innerHTML=approvedProposalOpts||'<option value="">No approved proposals yet</option>';if(cur2)invEl.value=cur2;}
+  var vendorOpts=vendors().map(function(v){return '<option value="'+v.id+'">'+H(v.name)+'</option>';}).join('');
+  ['smvendor','dcvendor'].forEach(function(id){
+    var el=$(id);if(!el)return;
+    var cur3=el.value;
+    el.innerHTML=(id==='smvendor'?'<option value="">(none)</option>':'')+vendorOpts;
+    if(cur3)el.value=cur3;
+  });
 }
 
 function rSpec(){
@@ -1717,12 +1978,325 @@ async function cpEsignApprove(){
   toast('Approval recorded for '+name);
 }
 
+// Shared typed-name e-sign stamp -- the same real, honest mechanism the
+// Client Portal already uses for mood board / proposal approval (a typed
+// name + timestamp, not a fabricated cryptographic signature). Contracts
+// below calls this same helper rather than re-implementing its own
+// version, per the standing instruction to reuse it.
+function sdnRecordEsign(name){
+  return {esign_name:name,esign_at:new Date().toISOString()};
+}
+
+// ── SAMPLE & SWATCH LIBRARY ───────────────────────────────────────────────
+function samples(){return ld('sdn_samples',[]);}
+function openSampleModal(){
+  ceid=null;fillProjectSelects();
+  ['smname','smcheckedout','smcheckoutdate','smdue'].forEach(function(f){$(f).value='';});
+  $('smcat').value='Fabric';$('smvendor').value='';$('smproject').value='';
+  $('samplemodal').classList.add('on');
+}
+function closeSampleModal(){$('samplemodal').classList.remove('on');}
+function editSample(id){
+  var s=samples().find(function(x){return x.id===id;});if(!s)return;
+  ceid=id;fillProjectSelects();
+  $('smname').value=s.name;$('smcat').value=s.category;$('smvendor').value=s.vendor_id||'';
+  $('smcheckedout').value=s.checked_out_to||'';$('smproject').value=s.project_id||'';
+  $('smcheckoutdate').value=s.checkout_date||'';$('smdue').value=s.due_back_date||'';
+  $('samplemodal').classList.add('on');
+}
+async function saveSample(){
+  var name=$('smname').value.trim();
+  if(!name){toast('Sample name required');return;}
+  var rec={id:ceid||newId('SM'),name:name,category:$('smcat').value,vendor_id:$('smvendor').value,
+    checked_out_to:$('smcheckedout').value.trim(),project_id:$('smproject').value,
+    checkout_date:$('smcheckoutdate').value,due_back_date:$('smdue').value,returned_date:'',created_at:sdnLocalToday()};
+  var list=samples();
+  if(ceid){var existing=list.find(function(x){return x.id===ceid;});rec.returned_date=existing?existing.returned_date:'';list=list.map(function(x){return x.id===ceid?rec:x;});}
+  else{list.push(rec);}
+  st('sdn_samples',list);
+  closeSampleModal();rSamples();
+  var syncResult=await sdnData('write','samples',rec);
+  toast(syncResult?'Sample saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+async function markSampleReturned(id){
+  var list=samples();
+  var s=list.find(function(x){return x.id===id;});if(!s)return;
+  s.returned_date=sdnLocalToday();s.checked_out_to='';
+  st('sdn_samples',list);rSamples();
+  var syncResult=await sdnData('write','samples',s);
+  toast('Marked returned');
+}
+function vendorLabel(id){var v=vendors().find(function(x){return x.id===id;});return v?v.name:'--';}
+function rSamples(){
+  fillProjectSelects();
+  var list=samples();
+  var out=list.filter(function(s){return s.checked_out_to&&!s.returned_date;});
+  var today=sdnLocalToday();
+  var overdue=out.filter(function(s){return s.due_back_date&&s.due_back_date<today;});
+  $('sm-total').textContent=list.length;
+  $('sm-out').textContent=out.length;
+  $('sm-overdue').textContent=overdue.length;
+  var tb=$('smtbody');
+  tb.innerHTML=list.length?list.map(function(s){
+    var isOut=s.checked_out_to&&!s.returned_date;
+    var isOverdue=isOut&&s.due_back_date&&s.due_back_date<today;
+    return '<tr><td>'+H(s.name)+'</td><td>'+H(s.category)+'</td><td>'+H(vendorLabel(s.vendor_id))+'</td>'+
+      '<td>'+H(s.checked_out_to||'--')+'</td><td>'+H(s.project_id?projectLabel(s.project_id):'--')+'</td>'+
+      '<td'+(isOverdue?' style="color:var(--danger);font-weight:700"':'')+'>'+(s.due_back_date?fdate(s.due_back_date):'--')+'</td>'+
+      '<td><span class="badge '+(isOverdue?'br':isOut?'bw':'bg')+'">'+(isOverdue?'Overdue':isOut?'Checked Out':'Available')+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editSample(\''+s.id+'\')">Edit</button>'+(isOut?' <button class="btn bp bs" onclick="markSampleReturned(\''+s.id+'\')">Returned</button>':'')+'</td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No samples on file</td></tr>';
+}
+
+// ── CONTRACTS / LETTERS OF AGREEMENT ─────────────────────────────────────
+function contracts(){return ld('sdn_contracts',[]);}
+function openContractModal(){
+  fillProjectSelects();
+  $('cttitle').value='';$('ctscope').value='';$('ctfee').value='Flat Fee';
+  $('contractmodal').classList.add('on');
+}
+function closeContractModal(){$('contractmodal').classList.remove('on');}
+async function saveContract(){
+  var pjId=$('ctmproject').value,title=$('cttitle').value.trim();
+  if(!pjId){toast('Select a project');return;}
+  if(!title){toast('Title required');return;}
+  var pj=projects().find(function(x){return x.id===pjId;});
+  var rec={id:newId('CT'),project_id:pjId,client_id:pj?pj.client_id:'',title:title,
+    scope_text:$('ctscope').value.trim(),fee_structure:$('ctfee').value,status:'Draft',
+    sent_date:'',esign_name:'',esign_at:'',created_at:sdnLocalToday()};
+  var list=contracts();list.push(rec);st('sdn_contracts',list);
+  closeContractModal();rContracts();
+  var syncResult=await sdnData('write','contracts',rec);
+  toast(syncResult?'Contract created':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function openContractDetail(id){
+  var c=contracts().find(function(x){return x.id===id;});if(!c)return;
+  var statusColors={Draft:'bx',Sent:'bb',Signed:'bg'};
+  $('ct-detail-body').innerHTML=
+    '<div class="ph" style="margin-bottom:12px"><div><div class="ptitle" style="font-size:17px">'+H(c.title)+'</div><div class="psub">'+H(clientLabel(c.client_id))+' &middot; '+H(projectLabel(c.project_id))+'</div></div>'+
+    '<div class="pa"><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></div></div>'+
+    '<div class="srow"><span class="slbl">Fee Structure</span><span class="sval">'+H(c.fee_structure)+'</span></div>'+
+    '<div style="margin:10px 0;color:var(--muted);font-size:13px;white-space:pre-wrap">'+H(c.scope_text||'(no scope text)')+'</div>'+
+    (c.status==='Signed'?'<div class="srow"><span class="slbl">Signed By</span><span class="sval">'+H(c.esign_name)+' on '+fdate((c.esign_at||'').slice(0,10))+'</span></div>':'')+
+    (c.status==='Sent'?'<div class="fg" style="margin-top:14px"><label>Client Typed Name (e-sign)</label><input id="ct-esign-name" placeholder="Sarah Whitfield"></div>':'')+
+    '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'+
+      (c.status==='Draft'?'<button class="btn bo bs" onclick="setContractStatus(\''+c.id+'\',\'Sent\')">Send for Signature</button>':'')+
+      (c.status==='Sent'?'<button class="btn bp bs" onclick="signContract(\''+c.id+'\')">Record Signature</button>':'')+
+      '<button class="btn bo bs" onclick="closeContractDetailModal()">Close</button>'+
+    '</div>';
+  $('contractdetailmodal').classList.add('on');
+}
+function closeContractDetailModal(){$('contractdetailmodal').classList.remove('on');}
+async function setContractStatus(id,status){
+  var list=contracts();
+  var c=list.find(function(x){return x.id===id;});if(!c)return;
+  c.status=status;if(status==='Sent')c.sent_date=sdnLocalToday();
+  st('sdn_contracts',list);
+  var syncResult=await sdnData('write','contracts',c);
+  openContractDetail(id);rContracts();
+}
+// Reuses the shared sdnRecordEsign() helper -- same typed-name mechanism
+// as the Client Portal, not a re-implementation.
+async function signContract(id){
+  var nameEl=$('ct-esign-name');
+  var name=nameEl?nameEl.value.trim():'';
+  if(!name){toast('Enter the client\'s typed name to record the signature');return;}
+  var list=contracts();
+  var c=list.find(function(x){return x.id===id;});if(!c)return;
+  var stamp=sdnRecordEsign(name);
+  c.status='Signed';c.esign_name=stamp.esign_name;c.esign_at=stamp.esign_at;
+  st('sdn_contracts',list);
+  closeContractDetailModal();rContracts();
+  var syncResult=await sdnData('write','contracts',c);
+  toast('Contract signed by '+name);
+}
+function rContracts(){
+  var list=contracts();
+  $('ct-signed').textContent=list.filter(function(c){return c.status==='Signed';}).length;
+  $('ct-pending').textContent=list.filter(function(c){return c.status==='Sent';}).length;
+  var statusColors={Draft:'bx',Sent:'bb',Signed:'bg'};
+  var tb=$('cttbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(c){
+    return '<tr><td>'+H(c.title)+'</td><td>'+H(projectLabel(c.project_id))+'</td><td>'+H(clientLabel(c.client_id))+'</td>'+
+      '<td>'+H(c.fee_structure)+'</td><td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="openContractDetail(\''+c.id+'\')">View</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No contracts yet</td></tr>';
+}
+
+// ── REFERRAL TRACKING ─────────────────────────────────────────────────────
+function referrals(){return ld('sdn_referrals',[]);}
+function openReferralModal(){
+  ['rffrom','rfto','rfphone','rfval'].forEach(function(f){$(f).value='';});
+  $('rfstatus').value='Lead';
+  $('referralmodal').classList.add('on');
+}
+function closeReferralModal(){$('referralmodal').classList.remove('on');}
+async function saveReferral(){
+  var from=$('rffrom').value.trim(),to=$('rfto').value.trim();
+  if(!from||!to){toast('Enter both the referrer and the referred prospect');return;}
+  var rec={id:newId('RF'),from:from,to:to,phone:$('rfphone').value.trim(),
+    status:$('rfstatus').value,val:Number($('rfval').value)||0,date:sdnLocalToday()};
+  var list=referrals();list.push(rec);st('sdn_referrals',list);
+  closeReferralModal();rReferrals();
+  var syncResult=await sdnData('write','referrals',rec);
+  toast(syncResult?'Referral logged':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function rReferrals(){
+  var list=referrals();
+  var converted=list.filter(function(r){return r.status==='Converted';});
+  $('rf-total').textContent=list.length;
+  $('rf-converted').textContent=converted.length;
+  $('rf-value').textContent=fmt(converted.reduce(function(s,r){return s+(Number(r.val)||0);},0));
+  $('rf-rate').textContent=list.length?Math.round(converted.length/list.length*100)+'%':'0%';
+  var colors={Lead:'bb',Quoted:'bw',Converted:'bg',Lost:'br'};
+  $('rf-list').innerHTML=list.length?list.slice().reverse().map(function(r){
+    return '<div class="srow"><span class="slbl">'+H(r.to)+' <span style="color:var(--muted)">via '+H(r.from)+'</span></span><span class="badge '+(colors[r.status]||'bx')+'">'+H(r.status)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No referrals logged yet</div>';
+  var byReferrer={};
+  list.forEach(function(r){byReferrer[r.from]=(byReferrer[r.from]||0)+1;});
+  var top=Object.entries(byReferrer).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+  $('rf-top').innerHTML=top.length?top.map(function(e,i){
+    return '<div class="srow"><span class="slbl">'+(i===0?'&#129351; ':i===1?'&#129352; ':i===2?'&#129353; ':'')+H(e[0])+'</span><span class="sval">'+e[1]+' referral'+(e[1]>1?'s':'')+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No referrals yet</div>';
+}
+
+// ── VENDOR TRADE DISCOUNTS ────────────────────────────────────────────────
+function discounts(){return ld('sdn_discounts',[]);}
+function openDiscountModal(){
+  ceid=null;fillProjectSelects();
+  ['dccat','dcpct','dceff','dcnotes'].forEach(function(f){$(f).value='';});
+  $('discountmodal').classList.add('on');
+}
+function closeDiscountModal(){$('discountmodal').classList.remove('on');}
+function editDiscount(id){
+  var d=discounts().find(function(x){return x.id===id;});if(!d)return;
+  ceid=id;fillProjectSelects();
+  $('dcvendor').value=d.vendor_id;$('dccat').value=d.category||'';$('dcpct').value=d.discount_pct;
+  $('dceff').value=d.effective_date||'';$('dcnotes').value=d.notes||'';
+  $('discountmodal').classList.add('on');
+}
+async function saveDiscount(){
+  var vendorId=$('dcvendor').value,pct=Number($('dcpct').value)||0;
+  if(!vendorId){toast('Select a vendor');return;}
+  if(pct<=0||pct>=100){toast('Discount must be between 1 and 99 percent');return;}
+  var rec={id:ceid||newId('DC'),vendor_id:vendorId,category:$('dccat').value.trim(),discount_pct:pct,
+    effective_date:$('dceff').value||sdnLocalToday(),notes:$('dcnotes').value.trim(),created_at:sdnLocalToday()};
+  var list=discounts();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('sdn_discounts',list);
+  closeDiscountModal();rDiscounts();
+  var syncResult=await sdnData('write','discounts',rec);
+  toast(syncResult?'Discount saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+// Feeds the Spec Sheet's cost math -- given a vendor and (optionally) a
+// category, returns the applicable trade discount, or null if none is on
+// file. Spec Sheet uses this to suggest Cost from a List Price rather than
+// requiring cost to always be typed in blind.
+function applicableDiscount(vendorId,category){
+  var matches=discounts().filter(function(d){return d.vendor_id===vendorId&&(!d.category||d.category.toLowerCase()===(category||'').toLowerCase());});
+  if(!matches.length)return null;
+  var specific=matches.find(function(d){return d.category;});
+  return specific||matches[0];
+}
+function rDiscounts(){
+  var list=discounts();
+  var tb=$('dctbody');
+  tb.innerHTML=list.length?list.slice().sort(function(a,b){return vendorLabel(a.vendor_id).localeCompare(vendorLabel(b.vendor_id));}).map(function(d){
+    return '<tr><td>'+H(vendorLabel(d.vendor_id))+'</td><td>'+H(d.category||'All')+'</td><td>'+d.discount_pct+'% off list</td>'+
+      '<td>'+fdate(d.effective_date)+'</td><td>'+H(d.notes||'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="editDiscount(\''+d.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No trade discounts on file</td></tr>';
+}
+
+// ── REPORTING / ANALYTICS ─────────────────────────────────────────────────
+// Firm-wide rollups, all computed live from real project/invoice/time
+// records -- no hardcoded or estimated figures, same standard as every
+// KPI in this app.
+function rReports(){
+  var pl=projects().map(function(p){
+    var pjInvoices=invoices().filter(function(i){return i.project_id===p.id;});
+    var revenue=pjInvoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0);
+    var cost=pjInvoices.reduce(function(s,i){return s+(Number(i.cost_basis)||0);},0);
+    return {project:p,revenue:revenue,cost:cost,margin:revenue-cost,marginPct:revenue>0?Math.round((revenue-cost)/revenue*100):0};
+  }).filter(function(r){return r.revenue>0;});
+  var totalRevenue=pl.reduce(function(s,r){return s+r.revenue;},0);
+  var totalMargin=pl.reduce(function(s,r){return s+r.margin;},0);
+  $('rp-revenue').textContent=fmt(totalRevenue);
+  $('rp-margin').textContent=fmt(totalMargin);
+  $('rp-marginpct').textContent=totalRevenue>0?Math.round(totalMargin/totalRevenue*100)+'%':'0%';
+  var tb=$('rp-pltbody');
+  tb.innerHTML=pl.length?pl.map(function(r){
+    return '<tr><td>'+H(r.project.name)+'</td><td>'+H(projectClientName(r.project))+'</td><td>'+fmt(r.revenue)+'</td>'+
+      '<td>'+fmt(r.cost)+'</td><td>'+fmt(r.margin)+'</td><td>'+r.marginPct+'%</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No invoiced projects yet</td></tr>';
+
+  var util=team().filter(function(t){return t.status==='Active';}).map(function(t){
+    var entries=timeEntries().filter(function(x){return x.employee_id===t.id;});
+    var billableHrs=entries.filter(function(x){return x.billable;}).reduce(function(s,x){return s+(Number(x.hours)||0);},0);
+    var totalHrs=entries.reduce(function(s,x){return s+(Number(x.hours)||0);},0);
+    return {member:t,billableHrs:billableHrs,totalHrs:totalHrs,pct:totalHrs>0?Math.round(billableHrs/totalHrs*100):0};
+  });
+  var firmBillable=util.reduce(function(s,u){return s+u.billableHrs;},0);
+  var firmTotal=util.reduce(function(s,u){return s+u.totalHrs;},0);
+  $('rp-util').textContent=firmTotal>0?Math.round(firmBillable/firmTotal*100)+'%':'0%';
+  var utb=$('rp-utiltbody');
+  var utilRows=util.filter(function(u){return u.totalHrs>0;});
+  utb.innerHTML=utilRows.length?utilRows.map(function(u){
+    return '<tr><td>'+H(u.member.name)+'</td><td>'+u.billableHrs+'</td><td>'+u.totalHrs+'</td><td>'+u.pct+'%</td></tr>';
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No time logged yet</td></tr>';
+}
+
+// ── SETTINGS / ADMIN ──────────────────────────────────────────────────────
+function sdnBranding(){return ld('sdn_branding',{studio_name:'SAIRNdesign',demo_company:'Pinnacle Interior Design'});}
+function openBrandingModal(){
+  var b=sdnBranding();
+  $('brname').value=b.studio_name;$('brcompany').value=b.demo_company;
+  $('brandingmodal').classList.add('on');
+}
+function closeBrandingModal(){$('brandingmodal').classList.remove('on');}
+function saveBranding(){
+  var b={studio_name:$('brname').value.trim()||'SAIRNdesign',demo_company:$('brcompany').value.trim()||'Pinnacle Interior Design'};
+  st('sdn_branding',b);
+  closeBrandingModal();rSettings();rDash();
+  toast('Branding saved');
+}
+function openPinsModal(){
+  $('pm-owner').value=PINS.owner||'';$('pm-designer').value=PINS.designer||'';$('pm-office').value=PINS.office||'';
+  $('pins-err').textContent='';
+  $('pinsmodal').classList.add('on');
+}
+function closePinsModal(){$('pinsmodal').classList.remove('on');}
+function savePins(){
+  var owner=$('pm-owner').value.trim(),designer=$('pm-designer').value.trim(),office=$('pm-office').value.trim();
+  var re=/^\d{4}$/;
+  if(!re.test(owner)||!re.test(designer)||!re.test(office)){$('pins-err').textContent='Each PIN must be exactly 4 digits';return;}
+  if(owner===designer||owner===office||designer===office){$('pins-err').textContent='Each role needs a different PIN';return;}
+  PINS={owner:owner,designer:designer,office:office};
+  st('sdn_pins',PINS);
+  $('pins-err').textContent='';
+  closePinsModal();rSettings();
+  toast('PINs updated');
+}
+function rSettings(){
+  var lic=sdnLicenseKey();
+  $('set-license').textContent=lic?lic.slice(0,3)+'-***-'+lic.slice(-4):'--';
+  $('set-roles').textContent=Object.keys(PINS).length;
+  var b=sdnBranding();
+  $('set-branding').innerHTML=
+    '<div class="srow"><span class="slbl">Studio Name</span><span class="sval">'+H(b.studio_name)+'</span></div>'+
+    '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(b.demo_company)+'</span></div>';
+  $('set-pins').innerHTML=Object.keys(PINS).map(function(r){
+    return '<div class="srow"><span class="slbl">'+H(r.charAt(0).toUpperCase()+r.slice(1))+'</span><span class="sval">&bull;&bull;&bull;&bull;</span></div>';
+  }).join('');
+}
+
 // ── WIRE EVERYTHING ON DOM READY ──────────────────────────────────────────
 function init(){
   seed();
   fillProjectSelects();
   rDash();rClients();rSpec();rProposals();rVendors();
   rMoodboards();rPOs();rInvoicing();rTeam();rTime();rScheduleEvents();rClientPortal();
+  rSamples();rContracts();rReferrals();rDiscounts();rReports();rSettings();
 }
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('sdn_license_key');
