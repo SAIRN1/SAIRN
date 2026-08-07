@@ -166,6 +166,38 @@ remaining blockers are Supabase-side and need dashboard access plus, for
 blocker 3, a deliberate authorization-model decision. **Do not mark this
 item closed on the strength of `16fbb31` alone.**
 
+**Correction (2026-08-07):** Blocker 2 was already fixed by the time this
+line was written, just never reported back here. Commit `1f721b5`
+(2026-07-30 07:49, ~14 min after this handoff's own "NOT FIXED" claim
+above) migrated `syncEmps()` onto a real server route with conflict
+target `(customer_email, employee_id)` — NOT bare `employee_id`, per
+`api/sd-data.js`'s own comment at that write branch: employees is a
+shared, multi-tenant table, so a bare `unique(employee_id)` would have
+been the WRONG fix (it would block two different shops from ever having
+an employee with the same ID). That composite unique constraint already
+exists live — confirmed 2026-08-07 by directly probing
+`POST .../employees?on_conflict=customer_email,employee_id` with the
+real publishable/anon key: response is `42501 permission denied` (a
+row-security check), not `42P10 no unique or exclusion constraint`
+(the query-planning check that fires when the constraint is missing).
+42P10 only still reproduces for the bare `employee_id` target this
+handoff originally tested — which nothing in the live codebase actually
+uses anymore. **No new migration was written or needed** — writing one
+for bare `employee_id` would have been wrong (multi-tenant collision
+risk); writing one for the composite would have duplicated an existing
+constraint. Blocker 2: closed. Blocker 3 (`anon` has zero SELECT/INSERT/
+UPDATE on `employees`) independently re-confirmed still closed the same
+day via 6 direct live requests — see the security-verification note this
+session's StoneDesk/SAIRNbuild handoff chain carries; not duplicated
+here.
+
+**What's still actually unverified:** a full authenticated write
+succeeding end-to-end (200 OK, real row written) — every probe above
+deliberately used the anon key, which is permission-blocked by design,
+so a real success response was never observed. That requires a genuine
+SAIRNbiz owner/hr session token, which no session so far has had. Do not
+mark this item closed on that basis either.
+
 **Downstream implication (unchanged, still holds):** before this
 session's badge fix, this failure was invisible — the old hardcoded
 "Synced" badge and fire-and-forget upsert meant a user would never know
