@@ -349,6 +349,12 @@ label.chk input{width:auto;}
     <div class="kpi"><div class="klbl">Avg Markup</div><div class="kval" id="s-markup">0%</div><div class="kt">Retail over cost</div></div>
     <div class="kpi"><div class="klbl">One-of-a-Kind</div><div class="kval" id="s-ooak">0</div><div class="kt">On this project</div></div>
   </div>
+  <div class="card"><div class="ch"><span class="ct">Room Dimensions</span></div><div class="cb">
+    <div style="color:var(--muted);font-size:12px;margin-bottom:10px">AR camera capture uses the browser's WebXR hit-test API -- real, but device-dependent: works today on ARCore-capable Android in Chrome/Edge. <strong>iOS Safari does not expose WebXR AR sessions</strong> (Apple's RoomPlan/LiDAR capture is a native-app-only framework, not reachable from any web page, on any browser) -- on iPhone/iPad this always falls back to manual entry below, same as any unsupported device. The Capture button only appears at all where the browser reports real support.</div>
+    <div id="room-ar-btn-wrap"></div>
+    <div class="fr" style="margin-top:10px"><div class="fg"><label>Width (ft)</label><input id="room-width" type="number" step="0.1" oninput="saveRoomDimensions()"></div><div class="fg"><label>Length (ft)</label><input id="room-length" type="number" step="0.1" oninput="saveRoomDimensions()"></div></div>
+    <div class="srow"><span class="slbl">Computed Area</span><span class="sval" id="room-sqft">--</span></div>
+  </div></div>
   <div class="card"><div class="ch"><span class="ct">AI Compliance Check</span></div><div class="cb" id="s-compliance"><div style="color:var(--muted)">Run a check to review this project's spec list against budget, lead times, and install sequencing before the proposal ships.</div></div></div>
   <div class="card"><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Item</th><th>Vendor</th><th>SKU</th><th>Cost</th><th>Retail</th><th>Markup</th><th>Lead Time</th><th>Status</th><th>Actions</th></tr></thead>
@@ -372,6 +378,17 @@ label.chk input{width:auto;}
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeSpecModal()">Cancel</button>
       <button class="btn bp" onclick="saveSpec()">Save Item</button>
+    </div>
+  </div>
+</div>
+<div id="xr-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:transparent;">
+  <div style="position:absolute;top:50%;left:50%;width:24px;height:24px;margin:-12px 0 0 -12px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 2px rgba(0,0,0,.5);pointer-events:none;"></div>
+  <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;background:rgba(0,0,0,.75);color:#fff;">
+    <div id="xr-instruction" style="margin-bottom:4px;font-weight:600"></div>
+    <div id="xr-status-dot" style="font-size:12px;opacity:.85;margin-bottom:10px"></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn bp" onclick="markRoomARPoint()" style="flex:1">Mark Point</button>
+      <button class="btn bo" onclick="endRoomAR()">Cancel</button>
     </div>
   </div>
 </div>
@@ -424,6 +441,23 @@ label.chk input{width:auto;}
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>Typical Lead Time</th><th>Rating</th><th>Actions</th></tr></thead>
     <tbody id="vtbody"></tbody></table></div>
   </div></div>
+  <div class="card"><div class="ch"><span class="ct">Sample Requests</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Item</th><th>Vendor</th><th>Project</th><th>Requested</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="srtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="samplereqmodal">
+  <div class="mbox">
+    <div class="mtitle">Request Sample</div>
+    <div class="fg"><label>Vendor</label><select id="srvendor"></select></div>
+    <div class="fg"><label>Item / Material</label><input id="sritem" placeholder="Belgian Linen swatch, oatmeal colorway"></div>
+    <div class="fg"><label>Project (optional)</label><select id="srproject"><option value="">(none)</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="srnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSampleRequestModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSampleRequest()">Submit Request</button>
+    </div>
+  </div>
 </div>
 <div class="modal" id="vendormodal">
   <div class="mbox">
@@ -451,6 +485,26 @@ label.chk input{width:auto;}
     <div class="kpi"><div class="klbl">Approved</div><div class="kval" id="mb-approved">0</div><div class="kt">Client signed off</div></div>
   </div>
   <div id="mb-list"></div>
+  <div class="card"><div class="ch"><span class="ct">Paint &amp; Color Code Library</span></div><div class="cb">
+    <div class="sbar"><input id="ccsrch" placeholder="Search by brand, code, name..." oninput="rColorCodes()"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Swatch</th><th>Brand</th><th>Code</th><th>Name</th><th>Actions</th></tr></thead>
+    <tbody id="cctbody"></tbody></table></div>
+    <button class="btn bo bs" style="margin-top:10px" onclick="openColorCodeModal()">+ Add Color Code</button>
+  </div></div>
+</div>
+<div class="modal" id="colorcodemodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Color Code</div>
+    <div class="fr"><div class="fg"><label>Brand</label><input id="ccbrand" placeholder="Sherwin-Williams"></div><div class="fg"><label>Code</label><input id="cccode" placeholder="SW-7005"></div></div>
+    <div class="fg"><label>Name</label><input id="ccname" placeholder="Pure White"></div>
+    <div class="fg"><label>Hex (optional, if known)</label><input id="cchex" placeholder="#EDEAE0"></div>
+    <div class="fg"><label>Notes</label><textarea id="ccnotes" rows="2"></textarea></div>
+    <div class="perr" id="colorcode-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeColorCodeModal()">Cancel</button>
+      <button class="btn bp" onclick="saveColorCode()">Save Color</button>
+    </div>
+  </div>
 </div>
 <div class="modal" id="moodboardmodal">
   <div class="mbox">
@@ -460,6 +514,7 @@ label.chk input{width:auto;}
     <div class="fg"><label>Concept Description</label><textarea id="mbdesc" rows="3" placeholder="Warm neutrals, natural textures, brass accents..."></textarea></div>
     <div class="fg"><label>Reference Image URLs (one per line, optional)</label><textarea id="mbimages" rows="2" placeholder="https://..."></textarea></div>
     <div class="fg"><label>Status</label><select id="mbstatus"><option>Draft</option><option>Sent to Client</option><option>Approved</option><option>Revise</option></select></div>
+    <div class="fg"><label>Attached Colors (optional)</label><div id="mbcolors-list" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeMoodboardModal()">Cancel</button>
       <button class="btn bp" onclick="saveMoodboard()">Save Board</button>
@@ -632,9 +687,17 @@ label.chk input{width:auto;}
     <div class="kpi"><div class="klbl">Overdue</div><div class="kval" id="sm-overdue">0</div><div class="kt d">Past due-back date</div></div>
   </div>
   <div class="card"><div class="cb">
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Sample</th><th>Category</th><th>Vendor</th><th>Checked Out To</th><th>Project</th><th>Due Back</th><th>Status</th><th>Actions</th></tr></thead>
+    <div id="sample-qr-wrap" style="margin-bottom:10px"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Code</th><th>Sample</th><th>Category</th><th>Vendor</th><th>Checked Out To</th><th>Project</th><th>Due Back</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="smtbody"></tbody></table></div>
   </div></div>
+</div>
+<div id="qr-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#000;">
+  <video id="qr-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover"></video>
+  <div style="position:absolute;bottom:0;left:0;right:0;padding:16px;background:rgba(0,0,0,.75);color:#fff;">
+    <div id="qr-result" style="margin-bottom:10px;font-size:13px"></div>
+    <button class="btn bo" onclick="stopSampleQRScan()" style="width:100%">Cancel Scan</button>
+  </div>
 </div>
 <div class="modal" id="samplemodal">
   <div class="mbox">
@@ -846,6 +909,9 @@ var DEFAULT_PINS={owner:'1234',designer:'2345',office:'3456'};
 var PINS=ld('sdn_pins',null)||DEFAULT_PINS;
 
 var pbuf='',prole='owner',ceid=null,pjeid=null,speid=null,veid=null,qcurrentProjectId=null;
+var xrSession=null,xrHitTestSource=null,xrRefSpace=null,xrPoints=[],xrCaptureTarget='width',xrLastHitPose=null;
+var qrStream=null,qrDetector=null,qrLoopId=null;
+var cceid=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -1250,8 +1316,8 @@ async function runComplianceCheck(){
 
 function fillProjectSelects(){
   var opts=projects().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+' ('+H(projectClientName(p))+')</option>';}).join('');
-  var needsBlank={specproject:1,mbproject:1,pogenproject:1,ttproject:1,cpproject:1,smproject:1};
-  ['spproject','specproject','qproject','pjclient','mbproject','mbmproject','pogenproject','ttproject','ttprojectm','schproject','cpproject','smproject','ctmproject'].forEach(function(id){
+  var needsBlank={specproject:1,mbproject:1,pogenproject:1,ttproject:1,cpproject:1,smproject:1,srproject:1};
+  ['spproject','specproject','qproject','pjclient','mbproject','mbmproject','pogenproject','ttproject','ttprojectm','schproject','cpproject','smproject','ctmproject','srproject'].forEach(function(id){
     var el=$(id);if(!el)return;
     if(id==='pjclient'){
       el.innerHTML=clients().map(function(c){return '<option value="'+c.id+'">'+H(c.name)+'</option>';}).join('');
@@ -1282,7 +1348,9 @@ function fillProjectSelects(){
 
 function rSpec(){
   fillProjectSelects();
+  initRoomAR();
   var pjId=$('specproject').value;
+  loadRoomDimsForProject(pjId);
   var list=pjId?specItems().filter(function(s){return s.project_id===pjId;}):[];
   var totalCost=list.reduce(function(s,x){return s+(Number(x.cost)||0);},0);
   var totalRetail=list.reduce(function(s,x){return s+(Number(x.retail)||0);},0);
@@ -1314,6 +1382,111 @@ function rSpec(){
       '<td><span class="badge bx">'+H(s.status)+'</span></td>'+
       '<td><button class="btn bo bs" onclick="editSpec(\''+s.id+'\')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">'+(pjId?'No spec items on this project yet':'Select a project above')+'</td></tr>';
+}
+
+// ── ROOM DIMENSIONS / AR CAPTURE ─────────────────────────────────────────
+// Item 1, Phase 4. WebXR hit-test is real and works today on ARCore-capable
+// Android in Chrome/Edge -- it does NOT work on iOS Safari (no WebXR AR
+// sessions exposed to the web there; Apple's RoomPlan/LiDAR is native-app
+// only). Feature-detected every time the panel renders -- if unsupported,
+// initRoomAR() leaves the button wrapper empty and the manual width/length
+// inputs (already in the DOM) are the only path, same as any other device.
+// Not live-tested on a real ARCore device in this environment -- no such
+// device is reachable here. The code follows the WebXR Device API + WebXR
+// Hit Test spec as written; treat as unverified-on-hardware until someone
+// runs it on an actual Android/Chrome phone.
+function roomDims(){return ld('sdn_roomdims',[]);}
+function loadRoomDimsForProject(pjId){
+  var r=pjId?roomDims().find(function(x){return x.project_id===pjId;}):null;
+  $('room-width').value=r&&r.width_ft?r.width_ft:'';
+  $('room-length').value=r&&r.length_ft?r.length_ft:'';
+  $('room-sqft').textContent=r&&r.width_ft&&r.length_ft?(Math.round(r.width_ft*r.length_ft*10)/10)+' sq ft':'--';
+}
+async function saveRoomDimensions(){
+  var pjId=$('specproject').value;
+  if(!pjId){toast('Select a project first');return;}
+  var w=Number($('room-width').value)||0,l=Number($('room-length').value)||0;
+  var list=roomDims();
+  var rec=list.find(function(x){return x.project_id===pjId;});
+  if(!rec){rec={id:newId('RD'),project_id:pjId,width_ft:0,length_ft:0,created_at:sdnLocalToday()};list.push(rec);}
+  rec.width_ft=w;rec.length_ft=l;
+  st('sdn_roomdims',list);
+  $('room-sqft').textContent=w&&l?(Math.round(w*l*10)/10)+' sq ft':'--';
+  await sdnData('write','roomdims',rec);
+}
+function initRoomAR(){
+  var wrap=$('room-ar-btn-wrap');if(!wrap)return;
+  wrap.innerHTML='';
+  if(!('xr' in navigator)||!navigator.xr||!navigator.xr.isSessionSupported)return;
+  navigator.xr.isSessionSupported('immersive-ar').then(function(supported){
+    if(!supported)return;
+    wrap.innerHTML='<button class="btn bp bs" onclick="startRoomAR()">Capture with AR Camera</button>';
+  }).catch(function(){/* leave empty -- honest, no fake capture path offered */});
+}
+async function startRoomAR(){
+  if(!$('specproject').value){toast('Select a project first');return;}
+  if(!('XRWebGLLayer' in window)){toast('This browser does not support WebXR rendering -- use manual entry below');return;}
+  try{
+    xrSession=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['hit-test','dom-overlay'],domOverlay:{root:$('xr-overlay')}});
+  }catch(e){
+    toast('AR session could not start on this device ('+(e&&e.message?e.message:'unknown error')+') -- use manual entry below');
+    return;
+  }
+  xrPoints=[];xrCaptureTarget='width';xrLastHitPose=null;
+  $('xr-overlay').style.display='block';
+  $('xr-instruction').textContent='Aim the center crosshair at one corner of the WIDTH wall and tap Mark Point.';
+  $('xr-status-dot').textContent='Move phone to find a floor surface...';
+  var canvas=document.createElement('canvas');
+  var gl=canvas.getContext('webgl',{xrCompatible:true});
+  try{ if(gl.makeXRCompatible) await gl.makeXRCompatible(); }catch(e){}
+  xrSession.updateRenderState({baseLayer:new XRWebGLLayer(xrSession,gl)});
+  var viewerSpace=await xrSession.requestReferenceSpace('viewer');
+  xrRefSpace=await xrSession.requestReferenceSpace('local');
+  xrHitTestSource=await xrSession.requestHitTestSource({space:viewerSpace});
+  xrSession.addEventListener('end',onRoomAREnd);
+  xrSession.requestAnimationFrame(xrFrame);
+}
+function xrFrame(t,frame){
+  if(!xrSession)return;
+  var hits=frame.getHitTestResults(xrHitTestSource);
+  if(hits.length){
+    var pose=hits[0].getPose(xrRefSpace);
+    xrLastHitPose=pose?pose.transform.position:null;
+    if(xrLastHitPose)$('xr-status-dot').textContent='Surface detected';
+  }else{
+    xrLastHitPose=null;
+    $('xr-status-dot').textContent='Move phone to find a floor surface...';
+  }
+  xrSession.requestAnimationFrame(xrFrame);
+}
+function markRoomARPoint(){
+  if(!xrLastHitPose){toast('No surface detected yet -- aim at the floor and wait for "Surface detected"');return;}
+  xrPoints.push(xrLastHitPose);
+  if(xrPoints.length===2){
+    var dx=xrPoints[0].x-xrPoints[1].x,dy=xrPoints[0].y-xrPoints[1].y,dz=xrPoints[0].z-xrPoints[1].z;
+    var meters=Math.sqrt(dx*dx+dy*dy+dz*dz);
+    var feet=Math.round(meters*3.28084*10)/10;
+    if(xrCaptureTarget==='width'){
+      $('room-width').value=feet;
+      xrPoints=[];xrCaptureTarget='length';
+      $('xr-instruction').textContent='Width captured: '+feet+' ft. Now aim at the LENGTH wall and tap Mark Point twice.';
+    }else{
+      $('room-length').value=feet;
+      endRoomAR();
+      saveRoomDimensions();
+      toast('Room captured -- length '+feet+' ft');
+      return;
+    }
+  }else{
+    toast('First point marked -- now mark the other end');
+  }
+}
+function endRoomAR(){
+  if(xrSession){xrSession.end().catch(function(){});}
+}
+function onRoomAREnd(){
+  xrSession=null;xrHitTestSource=null;xrRefSpace=null;xrPoints=[];xrLastHitPose=null;
+  $('xr-overlay').style.display='none';
 }
 
 // ── PROPOSALS ─────────────────────────────────────────────────────────────
@@ -1549,8 +1722,48 @@ function rVendors(){
   tb.innerHTML=filtered.length?filtered.map(function(v){
     return '<tr><td>'+H(v.name)+'</td><td>'+H(v.category)+'</td><td>'+H(v.contact_name||'--')+'</td><td>'+H(v.phone||'--')+'</td>'+
       '<td>'+v.lead_time_typical_weeks+' wks</td><td>'+(v.rating?'&#9733; '+v.rating:'--')+'</td>'+
-      '<td><button class="btn bo bs" onclick="editVendor(\''+v.id+'\')">Edit</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editVendor(\''+v.id+'\')">Edit</button> <button class="btn bp bs" onclick="openSampleRequestModal(\''+v.id+'\')">Request Sample</button></td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No vendors found</td></tr>';
+  rSampleRequests();
+}
+
+// ── SAMPLE REQUESTS (Vendor Directory) ───────────────────────────────────
+function sampleRequests(){return ld('sdn_samplerequests',[]);}
+function openSampleRequestModal(vendorId){
+  fillProjectSelects();
+  $('srvendor').innerHTML=vendors().map(function(v){return '<option value="'+v.id+'">'+H(v.name)+'</option>';}).join('');
+  if(vendorId)$('srvendor').value=vendorId;
+  $('sritem').value='';$('srnotes').value='';$('srproject').value='';
+  $('samplereqmodal').classList.add('on');
+}
+function closeSampleRequestModal(){$('samplereqmodal').classList.remove('on');}
+async function saveSampleRequest(){
+  var item=$('sritem').value.trim();
+  if(!item){toast('Item / material description required');return;}
+  var rec={id:newId('SR'),vendor_id:$('srvendor').value,item_description:item,project_id:$('srproject').value,
+    requested_date:sdnLocalToday(),status:'Requested',notes:$('srnotes').value.trim(),created_at:sdnLocalToday()};
+  var list=sampleRequests();list.push(rec);
+  st('sdn_samplerequests',list);
+  closeSampleRequestModal();rSampleRequests();
+  var syncResult=await sdnData('write','samplerequests',rec);
+  toast(syncResult?'Sample request logged':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+async function markSampleRequestReceived(id){
+  var list=sampleRequests();
+  var r=list.find(function(x){return x.id===id;});if(!r)return;
+  r.status='Received';
+  st('sdn_samplerequests',list);rSampleRequests();
+  await sdnData('write','samplerequests',r);
+  toast('Marked received');
+}
+function rSampleRequests(){
+  var srtb=$('srtbody');if(!srtb)return;
+  var reqs=sampleRequests();
+  srtb.innerHTML=reqs.length?reqs.slice().reverse().map(function(r){
+    return '<tr><td>'+H(r.item_description)+'</td><td>'+H(vendorLabel(r.vendor_id))+'</td><td>'+H(r.project_id?projectLabel(r.project_id):'--')+'</td>'+
+      '<td>'+fdate(r.requested_date)+'</td><td><span class="badge '+(r.status==='Received'?'bg':'bw')+'">'+H(r.status)+'</span></td>'+
+      '<td>'+(r.status!=='Received'?'<button class="btn bo bs" onclick="markSampleRequestReceived(\''+r.id+'\')">Mark Received</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No sample requests yet</td></tr>';
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────
@@ -1641,6 +1854,7 @@ function openMoodboardModal(){
   ['mbtitle','mbdesc','mbimages'].forEach(function(f){$(f).value='';});
   $('mbstatus').value='Draft';
   var pj=$('mbproject').value;if(pj)$('mbmproject').value=pj;
+  rMoodboardColorPicker([]);
   $('moodboardmodal').classList.add('on');
 }
 function closeMoodboardModal(){$('moodboardmodal').classList.remove('on');}
@@ -1649,14 +1863,25 @@ function editMoodboard(id){
   ceid=id;fillProjectSelects();
   $('mbmproject').value=m.project_id;$('mbtitle').value=m.title;$('mbdesc').value=m.description||'';
   $('mbimages').value=(m.image_urls||[]).join('\n');$('mbstatus').value=m.status;
+  rMoodboardColorPicker(m.color_code_ids||[]);
   $('moodboardmodal').classList.add('on');
+}
+function rMoodboardColorPicker(checkedIds){
+  var wrap=$('mbcolors-list');if(!wrap)return;
+  var list=colorCodes();
+  wrap.innerHTML=list.length?list.map(function(c){
+    return '<label class="chk" style="padding:4px 0"><input type="checkbox" class="mbcpick" value="'+c.id+'"'+(checkedIds.indexOf(c.id)!==-1?' checked':'')+'> '+
+      (c.hex?'<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:'+H(c.hex)+';border:1px solid var(--border);margin-right:4px;vertical-align:middle"></span>':'')+
+      H(c.brand)+' '+H(c.code)+' -- '+H(c.name)+'</label>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px">No colors in the library yet -- add one below.</div>';
 }
 async function saveMoodboard(){
   var title=$('mbtitle').value.trim();
   if(!title){toast('Title required');return;}
+  var colorIds=Array.from(document.querySelectorAll('.mbcpick:checked')).map(function(cb){return cb.value;});
   var rec={id:ceid||newId('MB'),project_id:$('mbmproject').value,title:title,description:$('mbdesc').value.trim(),
     image_urls:$('mbimages').value.split('\n').map(function(s){return s.trim();}).filter(Boolean),
-    status:$('mbstatus').value,created_at:sdnLocalToday()};
+    status:$('mbstatus').value,color_code_ids:colorIds,created_at:sdnLocalToday()};
   var list=moodboards();
   if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
   st('sdn_moodboards',list);
@@ -1673,11 +1898,55 @@ function rMoodboards(){
   $('mb-approved').textContent=list.filter(function(m){return m.status==='Approved';}).length;
   var statusColors={Draft:'bx','Sent to Client':'bb',Approved:'bg',Revise:'bw'};
   $('mb-list').innerHTML=list.length?list.map(function(m){
+    var boardColors=(m.color_code_ids||[]).map(function(cid){return colorCodes().find(function(c){return c.id===cid;});}).filter(Boolean);
     return '<div class="card"><div class="ch"><span class="ct">'+H(m.title)+'</span><span class="badge '+(statusColors[m.status]||'bx')+'" style="margin-left:auto">'+H(m.status)+'</span></div>'+
       '<div class="cb"><div style="margin-bottom:10px">'+H(m.description||'(no description)')+'</div>'+
       (m.image_urls&&m.image_urls.length?'<div style="color:var(--muted);font-size:12px;margin-bottom:10px">'+m.image_urls.length+' reference image(s) linked</div>':'')+
+      (boardColors.length?'<div style="margin-bottom:10px">'+boardColors.map(function(c){
+        return '<span class="badge bx" style="margin-right:4px">'+(c.hex?'<span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:'+H(c.hex)+';margin-right:4px;vertical-align:middle"></span>':'')+H(c.brand)+' '+H(c.code)+'</span>';
+      }).join('')+'</div>':'')+
       '<button class="btn bo bs" onclick="editMoodboard(\''+m.id+'\')">Edit</button></div></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:24px">'+(pjId?'No mood boards on this project yet':'Select a project above')+'</div>';
+  rColorCodes();
+}
+
+// ── PAINT / COLOR CODE LIBRARY ────────────────────────────────────────────
+function colorCodes(){return ld('sdn_colorcodes',[]);}
+function openColorCodeModal(){
+  cceid=null;
+  ['ccbrand','cccode','ccname','cchex','ccnotes'].forEach(function(f){$(f).value='';});
+  $('colorcode-err').textContent='';
+  $('colorcodemodal').classList.add('on');
+}
+function closeColorCodeModal(){$('colorcodemodal').classList.remove('on');}
+function editColorCode(id){
+  var c=colorCodes().find(function(x){return x.id===id;});if(!c)return;
+  cceid=id;$('ccbrand').value=c.brand;$('cccode').value=c.code;$('ccname').value=c.name;
+  $('cchex').value=c.hex||'';$('ccnotes').value=c.notes||'';$('colorcode-err').textContent='';
+  $('colorcodemodal').classList.add('on');
+}
+async function saveColorCode(){
+  var brand=$('ccbrand').value.trim(),code=$('cccode').value.trim(),name=$('ccname').value.trim();
+  if(!brand||!code||!name){$('colorcode-err').textContent='Brand, code, and name are all required.';return;}
+  var hex=$('cchex').value.trim();
+  if(hex&&!/^#[0-9a-fA-F]{6}$/.test(hex)){$('colorcode-err').textContent='Hex must look like #RRGGBB, or leave it blank if unknown.';return;}
+  var rec={id:cceid||newId('CC'),brand:brand,code:code,name:name,hex:hex,notes:$('ccnotes').value.trim(),created_at:sdnLocalToday()};
+  var list=colorCodes();
+  if(cceid){list=list.map(function(x){return x.id===cceid?rec:x;});}else{list.push(rec);}
+  st('sdn_colorcodes',list);
+  closeColorCodeModal();rColorCodes();rMoodboards();
+  var syncResult=await sdnData('write','colorcodes',rec);
+  toast(syncResult?'Color code saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function rColorCodes(){
+  var tb=$('cctbody');if(!tb)return;
+  var q=($('ccsrch')&&$('ccsrch').value||'').toLowerCase();
+  var list=colorCodes().filter(function(c){return !q||c.brand.toLowerCase().indexOf(q)!==-1||c.code.toLowerCase().indexOf(q)!==-1||c.name.toLowerCase().indexOf(q)!==-1;});
+  tb.innerHTML=list.length?list.map(function(c){
+    return '<tr><td>'+(c.hex?'<span style="display:inline-block;width:20px;height:20px;border-radius:4px;background:'+H(c.hex)+';border:1px solid var(--border)"></span>':'<span style="color:var(--muted);font-size:11px">n/a</span>')+'</td>'+
+      '<td>'+H(c.brand)+'</td><td>'+H(c.code)+'</td><td>'+H(c.name)+'</td>'+
+      '<td><button class="btn bo bs" onclick="editColorCode(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No color codes in the library yet</td></tr>';
 }
 
 // ── PURCHASE ORDERS ───────────────────────────────────────────────────────
@@ -2029,6 +2298,7 @@ async function markSampleReturned(id){
 function vendorLabel(id){var v=vendors().find(function(x){return x.id===id;});return v?v.name:'--';}
 function rSamples(){
   fillProjectSelects();
+  initSampleQR();
   var list=samples();
   var out=list.filter(function(s){return s.checked_out_to&&!s.returned_date;});
   var today=sdnLocalToday();
@@ -2040,12 +2310,62 @@ function rSamples(){
   tb.innerHTML=list.length?list.map(function(s){
     var isOut=s.checked_out_to&&!s.returned_date;
     var isOverdue=isOut&&s.due_back_date&&s.due_back_date<today;
-    return '<tr><td>'+H(s.name)+'</td><td>'+H(s.category)+'</td><td>'+H(vendorLabel(s.vendor_id))+'</td>'+
+    return '<tr><td style="font-family:monospace;font-size:11px;color:var(--muted)">'+H(s.id)+'</td><td>'+H(s.name)+'</td><td>'+H(s.category)+'</td><td>'+H(vendorLabel(s.vendor_id))+'</td>'+
       '<td>'+H(s.checked_out_to||'--')+'</td><td>'+H(s.project_id?projectLabel(s.project_id):'--')+'</td>'+
       '<td'+(isOverdue?' style="color:var(--danger);font-weight:700"':'')+'>'+(s.due_back_date?fdate(s.due_back_date):'--')+'</td>'+
       '<td><span class="badge '+(isOverdue?'br':isOut?'bw':'bg')+'">'+(isOverdue?'Overdue':isOut?'Checked Out':'Available')+'</span></td>'+
       '<td><button class="btn bo bs" onclick="editSample(\''+s.id+'\')">Edit</button>'+(isOut?' <button class="btn bp bs" onclick="markSampleReturned(\''+s.id+'\')">Returned</button>':'')+'</td></tr>';
-  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No samples on file</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No samples on file</td></tr>';
+}
+
+// ── QR SCAN CHECK-IN/OUT (Sample & Swatch Library) ───────────────────────
+// Uses the native Shape Detection API (BarcodeDetector), not a bundled
+// library -- real but narrow support (Chrome/Edge desktop + Android; not in
+// Firefox or Safari as of this writing). Feature-detected on every render;
+// if unsupported, the wrapper stays empty and Edit/Save (already existing)
+// is the only path, same honest-fallback pattern as AR room capture. A
+// scanned code is expected to be the sample's own id (SM-...), which is
+// what a real printed QR label for that sample would need to encode -- this
+// app does not generate a printable QR image itself, only reads one back.
+function initSampleQR(){
+  var wrap=$('sample-qr-wrap');if(!wrap)return;
+  if(!('BarcodeDetector' in window)){wrap.innerHTML='';return;}
+  BarcodeDetector.getSupportedFormats().then(function(fmts){
+    if(fmts.indexOf('qr_code')===-1){wrap.innerHTML='';return;}
+    wrap.innerHTML='<button class="btn bo bs" onclick="startSampleQRScan()">Scan QR to Check Out / Return</button>';
+  }).catch(function(){wrap.innerHTML='';});
+}
+async function startSampleQRScan(){
+  try{
+    qrStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  }catch(e){toast('Camera access denied or unavailable: '+(e&&e.message?e.message:'unknown error'));return;}
+  var video=$('qr-video');video.srcObject=qrStream;
+  try{ await video.play(); }catch(e){}
+  $('qr-result').textContent='Point the camera at a sample\'s QR code...';
+  $('qr-overlay').style.display='block';
+  qrDetector=new BarcodeDetector({formats:['qr_code']});
+  qrLoopId=setInterval(function(){
+    qrDetector.detect(video).then(function(codes){
+      if(codes.length)handleScannedSampleCode(codes[0].rawValue);
+    }).catch(function(){});
+  },500);
+}
+function stopSampleQRScan(){
+  if(qrLoopId){clearInterval(qrLoopId);qrLoopId=null;}
+  if(qrStream){qrStream.getTracks().forEach(function(t){t.stop();});qrStream=null;}
+  $('qr-overlay').style.display='none';
+}
+function handleScannedSampleCode(code){
+  var s=samples().find(function(x){return x.id===String(code||'').trim();});
+  if(!s){$('qr-result').textContent='No sample matches scanned code: '+H(code);return;}
+  stopSampleQRScan();
+  if(s.checked_out_to&&!s.returned_date){
+    markSampleReturned(s.id);
+    toast('Returned via QR scan: '+s.name);
+  }else{
+    editSample(s.id);
+    toast('Scanned "'+s.name+'" -- fill in Checked Out To and Save');
+  }
 }
 
 // ── CONTRACTS / LETTERS OF AGREEMENT ─────────────────────────────────────
