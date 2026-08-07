@@ -3982,6 +3982,18 @@ function rDash(){
   blocked.forEach(function(j){att.push({t:H(j.client)+' - '+H(j.blocked||'blocked'),b:'Blocked',c:'br'});});
   act.forEach(function(j){var m=marginPct(j);if(m<10)att.push({t:H(j.client)+' margin at '+m+'%',b:m<0?'Losing':'Thin',c:m<0?'br':'bw'});});
   js.filter(function(j){return j.stage==='punch';}).forEach(function(j){att.push({t:H(j.client)+' in close-out',b:'Punch',c:'bw'});});
+  // AI Budget Early Warning: watch-tier jobs deliberately excluded here
+  // (spec section 4) -- this list is an "act now" surface, not a
+  // low-priority FYI list. Computed against the FULL costs() list, not
+  // costScope(), so this is correct regardless of Job Costing's own
+  // current filter selection.
+  var allCosts=costs();
+  js.forEach(function(j){
+    var t=jobTierFromCosts(j.id, allCosts);
+    if(t==='warning'||t==='critical'){
+      att.push({t:H(j.client)+' cost overrun risk ('+TIER_LABEL[t]+')',b:TIER_LABEL[t],c:t==='critical'?'br':'bw'});
+    }
+  });
   // Compliance expiry used to be visible only if someone opened the
   // Compliance or Reports panel -- passive storage, not an active alert.
   // Surfacing it here means the first screen after login shows it, same
