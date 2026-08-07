@@ -175,6 +175,16 @@ label.chk input{width:auto;}
   body{font-size:12px;}
   .card{box-shadow:none;border:1px solid #ddd;}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  /* GPL Print button fix: .panel{display:block!important} above means
+     printing while the GPL modal is open would otherwise print every
+     panel underneath PLUS the modal's dark backdrop overlay -- not the
+     clean itemized list the button promises. When #gplmodal is open,
+     hide everything else and let the modal print as a normal document
+     instead of a fixed-position overlay. */
+  body:has(#gplmodal.on) header,body:has(#gplmodal.on) aside,body:has(#gplmodal.on) main{display:none!important;}
+  body:has(#gplmodal.on) .modal:not(#gplmodal){display:none!important;}
+  #gplmodal.on{position:static!important;background:#fff!important;display:block!important;}
+  #gplmodal.on .mbox{box-shadow:none!important;width:100%!important;max-height:none!important;padding:0!important;}
 }
 </style>
 </head>
@@ -231,7 +241,17 @@ label.chk input{width:auto;}
       <div class="ss">Documents</div>
       <button class="sb" id="sb-docs" onclick="nav('docs')"><span class="sico">&#128220;</span>Documents &amp; E-Sign</button>
       <button class="sb" id="sb-permits" onclick="nav('permits')"><span class="sico">&#128196;</span>Death Record &amp; Permits</button>
-      <div class="sfoot">SAIRNlegacy v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 1</span></div>
+      <div class="ss">Operations</div>
+      <button class="sb" id="sb-scheduling" onclick="nav('scheduling')"><span class="sico">&#128197;</span>Service &amp; Facility Scheduling</button>
+      <button class="sb" id="sb-cemetery" onclick="nav('cemetery')"><span class="sico">&#127978;</span>Cemetery / Plot Mgmt</button>
+      <button class="sb" id="sb-cremation" onclick="nav('cremation')"><span class="sico">&#128293;</span>Cremation Management</button>
+      <div class="ss">Financial</div>
+      <button class="sb" id="sb-preneed" onclick="nav('preneed')"><span class="sico">&#128176;</span>Pre-Need &amp; Insurance</button>
+      <button class="sb" id="sb-invoicing" onclick="nav('invoicing')"><span class="sico">&#128179;</span>Accounting / Invoicing</button>
+      <div class="ss">Family-Facing</div>
+      <button class="sb" id="sb-obituary" onclick="nav('obituary')"><span class="sico">&#128221;</span>AI Obituary Drafting</button>
+      <button class="sb" id="sb-memorial" onclick="nav('memorial')"><span class="sico">&#128564;</span>Tribute / Memorial Page</button>
+      <div class="sfoot">SAIRNlegacy v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 2</span></div>
     </aside>
     <main>
 
@@ -470,6 +490,254 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<!-- SERVICE & FACILITY SCHEDULING -->
+<div class="panel" id="panel-scheduling">
+  <div class="ph"><div><div class="ptitle">Service &amp; Facility Scheduling</div><div class="psub">Real-time chapel/vehicle/staff availability across all cases &mdash; prevents double-booking</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openFacilityModal()">+ Add Facility</button><button class="btn bp bs" onclick="openBookingModal()">+ New Booking</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Bookings Today</div><div class="kval" id="sc-today">0</div><div class="kt">Scheduled</div></div>
+    <div class="kpi"><div class="klbl">Upcoming (7 Days)</div><div class="kval" id="sc-upcoming">0</div><div class="kt">Not yet started</div></div>
+    <div class="kpi"><div class="klbl">Facilities Tracked</div><div class="kval" id="sc-facilities">0</div><div class="kt">Chapels, vehicles, staff</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Bookings</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Facility</th><th>Case</th><th>Start</th><th>End</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="sctbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Facilities</span></div><div class="cb" id="sc-facility-list"></div></div>
+</div>
+<div class="modal" id="facilitymodal">
+  <div class="mbox">
+    <div class="mtitle">Add Facility</div>
+    <div class="fr"><div class="fg"><label>Type</label><select id="fctype"><option>Chapel</option><option>Vehicle</option><option>Staff</option></select></div><div class="fg"><label>Name</label><input id="fcname" placeholder="Main Chapel, Removal Van 1, J. Okoye..."></div></div>
+    <div class="fg"><label>Notes</label><textarea id="fcnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeFacilityModal()">Cancel</button>
+      <button class="btn bp" onclick="saveFacility()">Save Facility</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="bookingmodal">
+  <div class="mbox">
+    <div class="mtitle">New Booking</div>
+    <div class="fr"><div class="fg"><label>Facility</label><select id="bkfacility"></select></div><div class="fg"><label>Case (optional)</label><select id="bkcase"><option value="">(none)</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Start</label><input id="bkstart" type="datetime-local"></div><div class="fg"><label>End</label><input id="bkend" type="datetime-local"></div></div>
+    <div class="fg"><label>Purpose</label><input id="bkpurpose" placeholder="Viewing, Service, Transport..."></div>
+    <div class="perr" id="booking-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeBookingModal()">Cancel</button>
+      <button class="btn bp" onclick="saveBooking()">Create Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- CEMETERY / PLOT MANAGEMENT -->
+<div class="panel" id="panel-cemetery">
+  <div class="ph"><div><div class="ptitle">Cemetery / Plot Management</div><div class="psub">Structured plot inventory (section/row/number) with deed and availability tracking &mdash; a sortable digital ledger, not a graphical map (no mapping library in this build)</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openPlotModal()">+ Add Plot</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Plots</div><div class="kval" id="cm-total">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">Available</div><div class="kval" id="cm-available">0</div><div class="kt">Not sold</div></div>
+    <div class="kpi"><div class="klbl">Sold</div><div class="kval" id="cm-sold">0</div><div class="kt">Deeded, not occupied</div></div>
+    <div class="kpi"><div class="klbl">Occupied</div><div class="kval" id="cm-occupied">0</div><div class="kt">Interment complete</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar"><input id="cmsrch" placeholder="Search by section, row, plot number, owner..." oninput="rCemetery()"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Section</th><th>Row</th><th>Plot #</th><th>Status</th><th>Owner</th><th>Deed #</th><th>Case</th><th>Actions</th></tr></thead>
+    <tbody id="cmtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="plotmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Plot</div>
+    <div class="fr"><div class="fg"><label>Section</label><input id="pltsection" placeholder="A"></div><div class="fg"><label>Row</label><input id="pltrow" placeholder="12"></div></div>
+    <div class="fr"><div class="fg"><label>Plot Number</label><input id="pltnumber" placeholder="4"></div><div class="fg"><label>Status</label><select id="pltstatus"><option>Available</option><option>Sold</option><option>Occupied</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Owner Name</label><input id="pltowner" placeholder="Optional until sold"></div><div class="fg"><label>Deed Number</label><input id="pltdeed" placeholder="Optional"></div></div>
+    <div class="fr"><div class="fg"><label>Case (if occupied)</label><select id="pltcase"><option value="">(none)</option></select></div><div class="fg"><label>Sale Date</label><input id="pltsaledate" type="date"></div></div>
+    <div class="fg"><label>Price ($)</label><input id="pltprice" type="number" placeholder="1800"></div>
+    <div class="fg"><label>Notes</label><textarea id="pltnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePlotModal()">Cancel</button>
+      <button class="btn bp" onclick="savePlot()">Save Plot</button>
+    </div>
+  </div>
+</div>
+
+<!-- CREMATION MANAGEMENT -->
+<div class="panel" id="panel-cremation">
+  <div class="ph"><div><div class="ptitle">Cremation Management</div><div class="psub">Crematory scheduling, disposition tracking, and compliance fields &mdash; chain of custody continues through the same log used at First Call</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openCremationModal()">+ New Cremation Record</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Scheduled</div><div class="kval" id="cr-scheduled">0</div><div class="kt">Not yet started</div></div>
+    <div class="kpi"><div class="klbl">In Progress</div><div class="kval" id="cr-progress">0</div><div class="kt">At crematory</div></div>
+    <div class="kpi"><div class="klbl">Completed This Month</div><div class="kval" id="cr-completed">0</div><div class="kt">Disposition recorded</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Crematory</th><th>Scheduled</th><th>Status</th><th>Disposition</th><th>Actions</th></tr></thead>
+    <tbody id="crtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="cremationmodal">
+  <div class="mbox">
+    <div class="mtitle">New / Edit Cremation Record</div>
+    <div class="fg"><label>Case</label><select id="crcase"></select></div>
+    <div class="fr"><div class="fg"><label>Crematory Name</label><input id="crname" placeholder="Pinnacle Crematory Services"></div><div class="fg"><label>Scheduled Date/Time</label><input id="crsched" type="datetime-local"></div></div>
+    <div class="fg"><label>Status</label><select id="crstatus"><option>Scheduled</option><option>In Progress</option><option>Completed</option></select></div>
+    <div class="fg"><label class="chk"><input type="checkbox" id="crauth"> Authorization to Cremate is on file</label></div>
+    <div class="fg"><label class="chk"><input type="checkbox" id="cridcheck"> Positive identification verified</label></div>
+    <div class="fg"><label class="chk"><input type="checkbox" id="crwait"> Required state waiting period observed</label></div>
+    <div class="fg"><label class="chk"><input type="checkbox" id="crwitness"> Witness present (if requested by family)</label></div>
+    <div class="fr"><div class="fg"><label>Disposition Type</label><select id="crdisposition"><option>Return to Family</option><option>Scatter</option><option>Inurnment</option><option>Other</option></select></div><div class="fg"><label>Disposition Details</label><input id="crdispositiondetails" placeholder="Optional"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCremationModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCremation()">Save Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRE-NEED & INSURANCE/BENEFIT ASSIGNMENT -->
+<div class="panel" id="panel-preneed">
+  <div class="ph"><div><div class="ptitle">Pre-Need &amp; Insurance / Benefit Assignment</div><div class="psub">Pre-arranged plans and insurance policies assignable as a payment source on an invoice</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openInsuranceModal()">+ Add Insurance Policy</button><button class="btn bp bs" onclick="openPreneedModal()">+ New Pre-Need Plan</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Active Plans</div><div class="kval" id="pn-active">0</div><div class="kt">Not yet fulfilled</div></div>
+    <div class="kpi"><div class="klbl">Total Pre-Need Value</div><div class="kval" id="pn-value">$0</div><div class="kt">Active plans</div></div>
+    <div class="kpi"><div class="klbl">Linked to Open Case</div><div class="kval" id="pn-linked">0</div><div class="kt">Plan holder has passed</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Pre-Need Plans</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Client</th><th>Plan Type</th><th>Total Price</th><th>Paid</th><th>Status</th><th>Linked Case</th><th>Actions</th></tr></thead>
+    <tbody id="pntbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Insurance Policies</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Policy #</th><th>Insurer</th><th>Face Value</th><th>Assignment</th><th>Actions</th></tr></thead>
+    <tbody id="instbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="preneedmodal">
+  <div class="mbox">
+    <div class="mtitle">New / Edit Pre-Need Plan</div>
+    <div class="fr"><div class="fg"><label>Client Name</label><input id="pnname" placeholder="Full name"></div><div class="fg"><label>Client Phone</label><input id="pnphone" placeholder="(440) 555-0100"></div></div>
+    <div class="fg"><label>Client Email</label><input id="pnemail" type="email"></div>
+    <div class="fr"><div class="fg"><label>Plan Type</label><select id="pntype"><option>Prepaid Trust</option><option>Insurance-Funded</option></select></div><div class="fg"><label>Status</label><select id="pnstatus"><option>Active</option><option>Fulfilled</option><option>Cancelled</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Total Price ($)</label><input id="pntotal" type="number" placeholder="8500"></div><div class="fg"><label>Amount Paid ($)</label><input id="pnpaid" type="number" placeholder="8500"></div></div>
+    <div class="fg"><label>Link to Case (once the plan holder has passed)</label><select id="pnlinkedcase"><option value="">(none yet)</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="pnnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePreneedModal()">Cancel</button>
+      <button class="btn bp" onclick="savePreneed()">Save Plan</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="insurancemodal">
+  <div class="mbox">
+    <div class="mtitle">Add Insurance Policy</div>
+    <div class="fg"><label>Case</label><select id="inscase"></select></div>
+    <div class="fr"><div class="fg"><label>Policy Number</label><input id="inspolicy" placeholder="Policy #"></div><div class="fg"><label>Insurer</label><input id="insinsurer" placeholder="Insurer name"></div></div>
+    <div class="fr"><div class="fg"><label>Face Value ($)</label><input id="insvalue" type="number" placeholder="10000"></div><div class="fg"><label>Assignment Status</label><select id="insassign"><option>Not Assigned</option><option>Assigned</option><option>Paid</option></select></div></div>
+    <div class="fg"><label>Assigned Amount ($, if different from face value)</label><input id="insassignedamt" type="number" placeholder="Optional"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeInsuranceModal()">Cancel</button>
+      <button class="btn bp" onclick="saveInsurance()">Save Policy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNTING / INVOICING -->
+<div class="panel" id="panel-invoicing">
+  <div class="ph"><div><div class="ptitle">Accounting / Invoicing</div><div class="psub">Invoices per case with multi-source payments, plus an on-demand FTC-compliant General Price List</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openGplModal()">Generate GPL</button><button class="btn bp bs" onclick="openInvoiceModal()">+ New Invoice</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Outstanding Balance</div><div class="kval" id="iv-outstanding">$0</div><div class="kt">Across all invoices</div></div>
+    <div class="kpi"><div class="klbl">Collected This Month</div><div class="kval" id="iv-collected">$0</div><div class="kt">Payments recorded</div></div>
+    <div class="kpi"><div class="klbl">Open Invoices</div><div class="kval" id="iv-open">0</div><div class="kt">Not fully paid</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Invoice #</th><th>Case</th><th>Total</th><th>Balance Due</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="ivtbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">General Price List Rates</span></div><div class="cb">
+    <div style="color:var(--muted);font-size:12px;margin-bottom:10px">Standard FTC Funeral Rule service categories. Prices are set by the funeral home and editable here &mdash; the GPL export pulls these rates plus the live Merchandise catalog, it does not compute or invent pricing on its own.</div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Service Category</th><th>Price</th><th>Actions</th></tr></thead>
+    <tbody id="gpltbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="invoicemodal">
+  <div class="mbox">
+    <div class="mtitle">New Invoice</div>
+    <div class="fg"><label>Case</label><select id="ivcase" onchange="rInvoiceLineItemPicker()"></select></div>
+    <div class="fg"><label>Merchandise Units (reserved/sold for this case)</label><div id="iv-unit-picker" style="max-height:140px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div></div>
+    <div class="fg"><label>Service Line Items</label><div id="iv-service-picker" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div></div>
+    <div class="fg"><div class="srow" style="border:none;padding:0"><span class="slbl">Invoice Total</span><span class="sval" id="iv-total-preview">$0</span></div></div>
+    <div class="perr" id="invoice-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeInvoiceModal()">Cancel</button>
+      <button class="btn bp" onclick="saveInvoice()">Create Invoice</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="paymentmodal">
+  <div class="mbox">
+    <div class="mtitle">Record Payment</div>
+    <div class="fg" id="payment-invoice-label" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div class="fr"><div class="fg"><label>Source</label><select id="pysource"><option>Cash</option><option>Check</option><option>Credit Card</option><option>Insurance</option><option>Pre-Need Trust</option></select></div><div class="fg"><label>Amount ($)</label><input id="pyamount" type="number" placeholder="1500"></div></div>
+    <div class="perr" id="payment-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePaymentModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmPayment()">Record Payment</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="gplmodal">
+  <div class="mbox" style="width:680px">
+    <div class="mtitle">General Price List &mdash; Pinnacle Family Funeral Home</div>
+    <div id="gpl-preview"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeGplModal()">Close</button>
+      <button class="btn bp" onclick="window.print()">Print</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI OBITUARY DRAFTING -->
+<div class="panel" id="panel-obituary">
+  <div class="ph"><div><div class="ptitle">AI Obituary Drafting</div><div class="psub">Drafts from the vitals already on file in Case Management &mdash; always editable before publishing</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Drafts</div><div class="kval" id="ob-drafts">0</div><div class="kt">Not yet published</div></div>
+    <div class="kpi"><div class="klbl">Published</div><div class="kval" id="ob-published">0</div><div class="kt">Final</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Case</label><select id="obcase" onchange="rObituaryCaseChange()"></select></div>
+    <div class="card" id="ob-vitals" style="margin-bottom:14px"></div>
+    <button class="btn bo bs" onclick="generateObituary()">Generate Draft with AI</button>
+    <div class="fg" style="margin-top:14px"><label>Obituary Text</label><textarea id="obtext" rows="10" placeholder="Generated or hand-written obituary text..."></textarea></div>
+    <div style="display:flex;gap:10px">
+      <button class="btn bo bs" onclick="saveObituaryDraft()">Save Draft</button>
+      <button class="btn bp bs" onclick="publishObituary()">Mark Published</button>
+    </div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">All Obituaries</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="obtbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- TRIBUTE / MEMORIAL PAGE -->
+<div class="panel" id="panel-memorial">
+  <div class="ph"><div><div class="ptitle">Tribute / Memorial Page</div><div class="psub">Family-facing content record per case &mdash; photos, obituary, service details, guestbook</div></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    This builds the content record staff manage (photos, obituary text, service details, guestbook entries) --
+    it does not include a public-facing hosted page or shareable URL yet. That needs real public routing/
+    hosting separate from this license-gated internal tool, and is scoped as future work, not this phase.
+  </div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Memorial Pages</div><div class="kval" id="mm-total">0</div><div class="kt">Created</div></div>
+    <div class="kpi"><div class="klbl">Guestbook Entries</div><div class="kval" id="mm-guestbook">0</div><div class="kt">Across all pages</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Case</label><select id="mmcase" onchange="rMemorialCaseChange()"></select></div>
+    <div id="mm-editor"></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -494,6 +762,7 @@ var DEFAULT_PINS={owner:'1234',director:'2345',staff:'3456'};
 var PINS=ld('leg_pins',null)||DEFAULT_PINS;
 
 var pbuf='',prole='owner',ceid=null,aiHist=[];
+var pyInvoiceId=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -577,6 +846,13 @@ function nav(id){
   if(id==='merch')rMerch();
   if(id==='docs')rDocs();
   if(id==='permits')rPermits();
+  if(id==='scheduling')rScheduling();
+  if(id==='cemetery')rCemetery();
+  if(id==='cremation')rCremation();
+  if(id==='preneed')rPreneed();
+  if(id==='invoicing')rInvoicing();
+  if(id==='obituary')rObituary();
+  if(id==='memorial')rMemorial();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -591,11 +867,11 @@ function caseLabel(id){var c=cases().find(function(x){return x.id===id;});return
 
 function fillCaseSelects(){
   var opts=cases().map(function(c){return '<option value="'+c.id+'">'+H(c.case_number)+' -- '+H(c.decedent_name)+'</option>';}).join('');
-  ['dscase','cclogcase','rvcase','dccase','pmcase'].forEach(function(id){
+  var needsBlank={cclogcase:1,bkcase:1,pltcase:1,pnlinkedcase:1};
+  ['dscase','cclogcase','rvcase','dccase','pmcase','bkcase','pltcase','crcase','pnlinkedcase','inscase','ivcase','obcase','mmcase'].forEach(function(id){
     var el=$(id);if(!el)return;
     var cur=el.value;
-    var needsBlank=(id==='cclogcase');
-    el.innerHTML=(needsBlank?'<option value="">Select a case...</option>':'')+opts;
+    el.innerHTML=(needsBlank[id]?'<option value="">'+(id==='bkcase'||id==='pltcase'?'(none)':'(none yet)')+'</option>':'')+opts;
     if(cur)el.value=cur;
   });
 }
@@ -642,6 +918,39 @@ function seed(){
       county:'Cuyahoga',attending_physician:'Dr. Alan Reyes',cause_pending:false,permit_type:'Burial-Transit',permit_status:'Filed',
       filed_date:legLocalToday(),issued_date:'',notes:'',created_at:legLocalToday()}
   ]);
+  st('leg_facilities',[
+    {id:'FC-1',type:'Chapel',name:'Main Chapel',notes:'Seats 120',created_at:legLocalToday()},
+    {id:'FC-2',type:'Vehicle',name:'Removal Van 1',notes:'',created_at:legLocalToday()},
+    {id:'FC-3',type:'Staff',name:'Maria Chen',notes:'Funeral Director',created_at:legLocalToday()}
+  ]);
+  st('leg_bookings',[
+    {id:'BK-1',facility_id:'FC-1',case_id:'CS-1',start_time:new Date(Date.now()+2*24*60*60*1000).toISOString(),
+      end_time:new Date(Date.now()+2*24*60*60*1000+2*60*60*1000).toISOString(),purpose:'Viewing',status:'Scheduled',created_at:legLocalToday()}
+  ]);
+  st('leg_plots',[
+    {id:'PL-1',section:'A',row:'12',plot_number:'4',status:'Available',owner_name:'',deed_number:'',case_id:'',sale_date:'',price:1800,notes:'',created_at:legLocalToday()},
+    {id:'PL-2',section:'A',row:'12',plot_number:'5',status:'Sold',owner_name:'Susan Pruitt-Lane',deed_number:'DE-4471',case_id:'',sale_date:legLocalToday(),price:1800,notes:'',created_at:legLocalToday()}
+  ]);
+  st('leg_cremations',[]);
+  st('leg_preneed',[
+    {id:'PN-1',client_name:'Harold Weiss',client_phone:'(440) 555-0177',client_email:'',plan_type:'Prepaid Trust',
+      total_price:8500,amount_paid:8500,status:'Active',linked_case_id:'',notes:'',created_at:legLocalToday()}
+  ]);
+  st('leg_insurance',[]);
+  st('leg_invoices',[]);
+  st('leg_gplservices',[
+    {id:'GS-1',category:'Basic Services of Funeral Director and Staff',price:2495,created_at:legLocalToday()},
+    {id:'GS-2',category:'Embalming',price:895,created_at:legLocalToday()},
+    {id:'GS-3',category:'Other Preparation of the Body',price:295,created_at:legLocalToday()},
+    {id:'GS-4',category:'Transfer of Remains to Funeral Home',price:350,created_at:legLocalToday()},
+    {id:'GS-5',category:'Use of Facilities/Staff for Viewing',price:595,created_at:legLocalToday()},
+    {id:'GS-6',category:'Use of Facilities/Staff for Ceremony',price:695,created_at:legLocalToday()},
+    {id:'GS-7',category:'Hearse',price:395,created_at:legLocalToday()},
+    {id:'GS-8',category:'Service Car/Van',price:195,created_at:legLocalToday()}
+  ]);
+  st('leg_obituaries',[]);
+  st('leg_memorials',[]);
+  st('leg_guestbook',[]);
   st('leg_seeded',true);
 }
 
@@ -1097,12 +1406,532 @@ function rPermits(){
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No death records yet</td></tr>';
 }
 
+// ── DATA ACCESSORS (Phase 2) ──────────────────────────────────────────────
+function facilities(){return ld('leg_facilities',[]);}
+function bookings(){return ld('leg_bookings',[]);}
+function plots(){return ld('leg_plots',[]);}
+function cremations(){return ld('leg_cremations',[]);}
+function preneedPlans(){return ld('leg_preneed',[]);}
+function insurancePolicies(){return ld('leg_insurance',[]);}
+function invoices(){return ld('leg_invoices',[]);}
+function gplServices(){return ld('leg_gplservices',[]);}
+function obituaries(){return ld('leg_obituaries',[]);}
+function memorials(){return ld('leg_memorials',[]);}
+function guestbookEntries(){return ld('leg_guestbook',[]);}
+function facilityLabel(id){var f=facilities().find(function(x){return x.id===id;});return f?f.name:'--';}
+
+// ── SERVICE & FACILITY SCHEDULING ─────────────────────────────────────────
+// Real overlap check against every existing non-cancelled booking for the
+// SAME facility -- this is what "prevents double-booking" actually means
+// here: bookingConflict() runs at save time and the modal shows the exact
+// conflicting booking rather than a generic error, same re-check-before-
+// write discipline as the Merchandise reservation panel already uses.
+function bookingConflict(facilityId,startIso,endIso,excludeId){
+  var s=new Date(startIso).getTime(),e=new Date(endIso).getTime();
+  return bookings().find(function(b){
+    if(b.id===excludeId||b.facility_id!==facilityId||b.status==='Cancelled')return false;
+    var bs=new Date(b.start_time).getTime(),be=new Date(b.end_time).getTime();
+    return s<be&&bs<e; // real interval-overlap test
+  })||null;
+}
+function openFacilityModal(){
+  ['fcname','fcnotes'].forEach(function(f){$(f).value='';});
+  $('fctype').value='Chapel';
+  $('facilitymodal').classList.add('on');
+}
+function closeFacilityModal(){$('facilitymodal').classList.remove('on');}
+async function saveFacility(){
+  var name=$('fcname').value.trim();
+  if(!name){toast('Facility name required');return;}
+  var rec={id:newId('FC'),type:$('fctype').value,name:name,notes:$('fcnotes').value.trim(),created_at:legLocalToday()};
+  var list=facilities();list.push(rec);st('leg_facilities',list);
+  closeFacilityModal();rScheduling();
+  var syncResult=await sdnData('write','leg_facilities',rec);
+  toast(syncResult?'Facility added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openBookingModal(){
+  fillCaseSelects();
+  var opts=facilities().map(function(f){return '<option value="'+f.id+'">'+H(f.name)+' ('+H(f.type)+')</option>';}).join('');
+  $('bkfacility').innerHTML=opts;
+  ['bkstart','bkend','bkpurpose'].forEach(function(f){$(f).value='';});
+  $('booking-err').textContent='';
+  $('bookingmodal').classList.add('on');
+}
+function closeBookingModal(){$('bookingmodal').classList.remove('on');}
+async function saveBooking(){
+  var facilityId=$('bkfacility').value,start=$('bkstart').value,end=$('bkend').value;
+  if(!facilityId||!start||!end){$('booking-err').textContent='Facility, start, and end are all required';return;}
+  var startIso=new Date(start).toISOString(),endIso=new Date(end).toISOString();
+  if(new Date(endIso)<=new Date(startIso)){$('booking-err').textContent='End must be after start';return;}
+  var conflict=bookingConflict(facilityId,startIso,endIso,null);
+  if(conflict){$('booking-err').textContent='Conflict: '+facilityLabel(facilityId)+' is already booked '+fdatetime(conflict.start_time)+' - '+fdatetime(conflict.end_time);return;}
+  var rec={id:newId('BK'),facility_id:facilityId,case_id:$('bkcase').value,start_time:startIso,end_time:endIso,
+    purpose:$('bkpurpose').value.trim(),status:'Scheduled',created_at:legLocalToday()};
+  var list=bookings();list.push(rec);st('leg_bookings',list);
+  closeBookingModal();rScheduling();
+  var syncResult=await sdnData('write','leg_bookings',rec);
+  toast(syncResult?'Booking created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function cancelBooking(id){
+  var list=bookings();
+  var b=list.find(function(x){return x.id===id;});if(!b)return;
+  b.status='Cancelled';st('leg_bookings',list);rScheduling();
+  var syncResult=await sdnData('write','leg_bookings',b);
+  toast(syncResult?'Booking cancelled':'Cancelled on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rScheduling(){
+  fillCaseSelects();
+  var list=bookings(),fl=facilities();
+  var today=legLocalToday();
+  $('sc-today').textContent=list.filter(function(b){return b.status!=='Cancelled'&&(b.start_time||'').slice(0,10)===today;}).length;
+  var weekAhead=new Date(Date.now()+7*24*60*60*1000).getTime();
+  $('sc-upcoming').textContent=list.filter(function(b){return b.status==='Scheduled'&&new Date(b.start_time).getTime()>Date.now()&&new Date(b.start_time).getTime()<weekAhead;}).length;
+  $('sc-facilities').textContent=fl.length;
+  var statusColors={Scheduled:'bb',Completed:'bg',Cancelled:'bx'};
+  var tb=$('sctbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(b){
+    return '<tr><td>'+H(facilityLabel(b.facility_id))+'</td><td>'+H(b.case_id?caseLabel(b.case_id):'--')+'</td>'+
+      '<td>'+fdatetime(b.start_time)+'</td><td>'+fdatetime(b.end_time)+'</td><td>'+H(b.purpose||'--')+'</td>'+
+      '<td><span class="badge '+(statusColors[b.status]||'bx')+'">'+H(b.status)+'</span></td>'+
+      '<td>'+(b.status==='Scheduled'?'<button class="btn bo bs" onclick="cancelBooking(\''+b.id+'\')">Cancel</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No bookings yet</td></tr>';
+  $('sc-facility-list').innerHTML=fl.length?fl.map(function(f){
+    return '<div class="srow"><span class="slbl">'+H(f.name)+'</span><span class="badge bx">'+H(f.type)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No facilities tracked yet</div>';
+}
+
+// ── CEMETERY / PLOT MANAGEMENT ────────────────────────────────────────────
+function openPlotModal(){
+  ceid=null;fillCaseSelects();
+  ['pltsection','pltrow','pltnumber','pltowner','pltdeed','pltsaledate','pltprice','pltnotes'].forEach(function(f){$(f).value='';});
+  $('pltstatus').value='Available';$('pltcase').value='';
+  $('plotmodal').classList.add('on');
+}
+function closePlotModal(){$('plotmodal').classList.remove('on');}
+function editPlot(id){
+  var p=plots().find(function(x){return x.id===id;});if(!p)return;
+  ceid=id;fillCaseSelects();
+  $('pltsection').value=p.section;$('pltrow').value=p.row;$('pltnumber').value=p.plot_number;$('pltstatus').value=p.status;
+  $('pltowner').value=p.owner_name||'';$('pltdeed').value=p.deed_number||'';$('pltcase').value=p.case_id||'';
+  $('pltsaledate').value=p.sale_date||'';$('pltprice').value=p.price||'';$('pltnotes').value=p.notes||'';
+  $('plotmodal').classList.add('on');
+}
+async function savePlot(){
+  var section=$('pltsection').value.trim(),number=$('pltnumber').value.trim();
+  if(!section||!number){toast('Section and plot number are required');return;}
+  var rec={id:ceid||newId('PL'),section:section,row:$('pltrow').value.trim(),plot_number:number,status:$('pltstatus').value,
+    owner_name:$('pltowner').value.trim(),deed_number:$('pltdeed').value.trim(),case_id:$('pltcase').value,
+    sale_date:$('pltsaledate').value,price:Number($('pltprice').value)||0,notes:$('pltnotes').value.trim(),created_at:legLocalToday()};
+  var list=plots();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('leg_plots',list);
+  closePlotModal();rCemetery();
+  var syncResult=await sdnData('write','leg_plots',rec);
+  toast(syncResult?'Plot saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rCemetery(){
+  var list=plots();
+  $('cm-total').textContent=list.length;
+  $('cm-available').textContent=list.filter(function(p){return p.status==='Available';}).length;
+  $('cm-sold').textContent=list.filter(function(p){return p.status==='Sold';}).length;
+  $('cm-occupied').textContent=list.filter(function(p){return p.status==='Occupied';}).length;
+  var q=($('cmsrch').value||'').toLowerCase();
+  var filtered=list.filter(function(p){return !q||p.section.toLowerCase().indexOf(q)!==-1||(p.row||'').toLowerCase().indexOf(q)!==-1||p.plot_number.toLowerCase().indexOf(q)!==-1||(p.owner_name||'').toLowerCase().indexOf(q)!==-1;});
+  var statusColors={Available:'bg',Sold:'bw',Occupied:'bx'};
+  var tb=$('cmtbody');
+  tb.innerHTML=filtered.length?filtered.map(function(p){
+    return '<tr><td>'+H(p.section)+'</td><td>'+H(p.row||'--')+'</td><td>'+H(p.plot_number)+'</td>'+
+      '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td>'+
+      '<td>'+H(p.owner_name||'--')+'</td><td>'+H(p.deed_number||'--')+'</td><td>'+H(p.case_id?caseLabel(p.case_id):'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="editPlot(\''+p.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No plots found</td></tr>';
+}
+
+// ── CREMATION MANAGEMENT ──────────────────────────────────────────────────
+function openCremationModal(){
+  ceid=null;fillCaseSelects();
+  ['crname','crsched','crdispositiondetails'].forEach(function(f){$(f).value='';});
+  $('crstatus').value='Scheduled';$('crdisposition').value='Return to Family';
+  ['crauth','cridcheck','crwait','crwitness'].forEach(function(f){$(f).checked=false;});
+  $('cremationmodal').classList.add('on');
+}
+function closeCremationModal(){$('cremationmodal').classList.remove('on');}
+function editCremation(id){
+  var c=cremations().find(function(x){return x.id===id;});if(!c)return;
+  ceid=id;fillCaseSelects();$('crcase').value=c.case_id;
+  $('crname').value=c.crematory_name||'';$('crsched').value=c.scheduled_datetime?c.scheduled_datetime.slice(0,16):'';
+  $('crstatus').value=c.status;$('crauth').checked=!!c.authorization_on_file;
+  $('cridcheck').checked=!!c.id_verified;$('crwait').checked=!!c.waiting_period_observed;$('crwitness').checked=!!c.witness_present;
+  $('crdisposition').value=c.disposition_type;$('crdispositiondetails').value=c.disposition_details||'';
+  $('cremationmodal').classList.add('on');
+}
+async function saveCremation(){
+  var caseId=$('crcase').value;
+  if(!caseId){toast('Select a case');return;}
+  var existing=ceid?cremations().find(function(x){return x.id===ceid;}):null;
+  var rec={id:ceid||newId('CR'),case_id:caseId,crematory_name:$('crname').value.trim(),
+    scheduled_datetime:$('crsched').value?new Date($('crsched').value).toISOString():'',status:$('crstatus').value,
+    authorization_on_file:$('crauth').checked,id_verified:$('cridcheck').checked,
+    waiting_period_observed:$('crwait').checked,witness_present:$('crwitness').checked,
+    disposition_type:$('crdisposition').value,disposition_details:$('crdispositiondetails').value.trim(),
+    completed_datetime:(existing&&existing.completed_datetime)||'',created_at:legLocalToday()};
+  if(rec.status==='Completed'&&!rec.completed_datetime)rec.completed_datetime=new Date().toISOString();
+  var list=cremations();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('leg_cremations',list);
+  closeCremationModal();rCremation();
+  var syncResult=await sdnData('write','leg_cremations',rec);
+  toast(syncResult?'Cremation record saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function logCremationHandoff(caseId){
+  fillCaseSelects();
+  $('cclogcase').value=caseId;
+  nav('dispatch');
+  rCustodyLog();
+  toast('Logging a custody handoff for '+caseLabel(caseId));
+}
+function rCremation(){
+  fillCaseSelects();
+  var list=cremations();
+  $('cr-scheduled').textContent=list.filter(function(c){return c.status==='Scheduled';}).length;
+  $('cr-progress').textContent=list.filter(function(c){return c.status==='In Progress';}).length;
+  var thisMonth=legLocalToday().slice(0,7);
+  $('cr-completed').textContent=list.filter(function(c){return c.status==='Completed'&&(c.completed_datetime||'').slice(0,7)===thisMonth;}).length;
+  var statusColors={Scheduled:'bw','In Progress':'bb',Completed:'bg'};
+  var tb=$('crtbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(c){
+    return '<tr><td>'+H(caseLabel(c.case_id))+'</td><td>'+H(c.crematory_name||'--')+'</td><td>'+(c.scheduled_datetime?fdatetime(c.scheduled_datetime):'--')+'</td>'+
+      '<td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td><td>'+H(c.disposition_type||'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="editCremation(\''+c.id+'\')">Edit</button> <button class="btn bo bs" onclick="logCremationHandoff(\''+c.case_id+'\')">Log Handoff</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No cremation records yet</td></tr>';
+}
+
+// ── PRE-NEED & INSURANCE / BENEFIT ASSIGNMENT ─────────────────────────────
+function openPreneedModal(){
+  ceid=null;fillCaseSelects();
+  ['pnname','pnphone','pnemail','pntotal','pnpaid','pnnotes'].forEach(function(f){$(f).value='';});
+  $('pntype').value='Prepaid Trust';$('pnstatus').value='Active';$('pnlinkedcase').value='';
+  $('preneedmodal').classList.add('on');
+}
+function closePreneedModal(){$('preneedmodal').classList.remove('on');}
+function editPreneed(id){
+  var p=preneedPlans().find(function(x){return x.id===id;});if(!p)return;
+  ceid=id;fillCaseSelects();
+  $('pnname').value=p.client_name;$('pnphone').value=p.client_phone||'';$('pnemail').value=p.client_email||'';
+  $('pntype').value=p.plan_type;$('pnstatus').value=p.status;$('pntotal').value=p.total_price;$('pnpaid').value=p.amount_paid;
+  $('pnlinkedcase').value=p.linked_case_id||'';$('pnnotes').value=p.notes||'';
+  $('preneedmodal').classList.add('on');
+}
+async function savePreneed(){
+  var name=$('pnname').value.trim();
+  if(!name){toast('Client name required');return;}
+  var rec={id:ceid||newId('PN'),client_name:name,client_phone:$('pnphone').value.trim(),client_email:$('pnemail').value.trim(),
+    plan_type:$('pntype').value,status:$('pnstatus').value,total_price:Number($('pntotal').value)||0,amount_paid:Number($('pnpaid').value)||0,
+    linked_case_id:$('pnlinkedcase').value,notes:$('pnnotes').value.trim(),created_at:legLocalToday()};
+  var list=preneedPlans();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('leg_preneed',list);
+  closePreneedModal();rPreneed();
+  var syncResult=await sdnData('write','leg_preneed',rec);
+  toast(syncResult?'Pre-need plan saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openInsuranceModal(){
+  fillCaseSelects();
+  ['inspolicy','insinsurer','insvalue','insassignedamt'].forEach(function(f){$(f).value='';});
+  $('insassign').value='Not Assigned';
+  $('insurancemodal').classList.add('on');
+}
+function closeInsuranceModal(){$('insurancemodal').classList.remove('on');}
+async function saveInsurance(){
+  var caseId=$('inscase').value,policy=$('inspolicy').value.trim();
+  if(!caseId){toast('Select a case');return;}
+  if(!policy){toast('Policy number required');return;}
+  var rec={id:newId('IN'),case_id:caseId,policy_number:policy,insurer_name:$('insinsurer').value.trim(),
+    face_value:Number($('insvalue').value)||0,assignment_status:$('insassign').value,
+    assigned_amount:Number($('insassignedamt').value)||0,created_at:legLocalToday()};
+  var list=insurancePolicies();list.push(rec);st('leg_insurance',list);
+  closeInsuranceModal();rPreneed();
+  var syncResult=await sdnData('write','leg_insurance',rec);
+  toast(syncResult?'Insurance policy saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rPreneed(){
+  fillCaseSelects();
+  var pn=preneedPlans(),ins=insurancePolicies();
+  var active=pn.filter(function(p){return p.status==='Active';});
+  $('pn-active').textContent=active.length;
+  $('pn-value').textContent=fmt(active.reduce(function(s,p){return s+(Number(p.total_price)||0);},0));
+  $('pn-linked').textContent=pn.filter(function(p){return p.linked_case_id;}).length;
+  var statusColors={Active:'bg',Fulfilled:'bx',Cancelled:'br'};
+  var pntb=$('pntbody');
+  pntb.innerHTML=pn.length?pn.slice().reverse().map(function(p){
+    return '<tr><td>'+H(p.client_name)+'</td><td>'+H(p.plan_type)+'</td><td>'+fmt(p.total_price)+'</td><td>'+fmt(p.amount_paid)+'</td>'+
+      '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td><td>'+(p.linked_case_id?H(caseLabel(p.linked_case_id)):'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="editPreneed(\''+p.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No pre-need plans yet</td></tr>';
+  var assignColors={'Not Assigned':'bx',Assigned:'bw',Paid:'bg'};
+  var instb=$('instbody');
+  instb.innerHTML=ins.length?ins.slice().reverse().map(function(i){
+    return '<tr><td>'+H(caseLabel(i.case_id))+'</td><td>'+H(i.policy_number)+'</td><td>'+H(i.insurer_name||'--')+'</td><td>'+fmt(i.face_value)+'</td>'+
+      '<td><span class="badge '+(assignColors[i.assignment_status]||'bx')+'">'+H(i.assignment_status)+'</span></td><td>--</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No insurance policies yet</td></tr>';
+}
+
+// ── ACCOUNTING / INVOICING ────────────────────────────────────────────────
+function invoiceTotal(inv){return (inv.line_items||[]).reduce(function(s,li){return s+(Number(li.amount)||0);},0);}
+function invoicePaid(inv){return (inv.payments||[]).reduce(function(s,p){return s+(Number(p.amount)||0);},0);}
+function rInvoiceLineItemPicker(){
+  var caseId=$('ivcase').value;
+  var caseUnits=caseId?merchUnits().filter(function(u){return u.reserved_for_case_id===caseId;}):[];
+  var unitWrap=$('iv-unit-picker');
+  unitWrap.innerHTML=caseUnits.length?caseUnits.map(function(u){
+    var m=merchCatalog().find(function(x){return x.id===u.merch_id;});
+    return '<label class="chk" style="padding:4px 0"><input type="checkbox" class="ivunitpick" value="'+u.id+'" data-amount="'+(m?m.retail:0)+'" data-label="'+H(m?m.model_name:'Item')+' ('+H(u.unit_serial)+')" onchange="ivTotalPreview()"> '+
+      (m?H(m.model_name):'Item')+' ('+H(u.unit_serial)+') -- '+fmt(m?m.retail:0)+'</label>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px">No reserved/sold merchandise units on this case yet.</div>';
+  var svcWrap=$('iv-service-picker');
+  svcWrap.innerHTML=gplServices().map(function(s){
+    return '<label class="chk" style="padding:4px 0"><input type="checkbox" class="ivsvcpick" value="'+s.id+'" data-amount="'+s.price+'" data-label="'+H(s.category)+'" onchange="ivTotalPreview()"> '+H(s.category)+' -- '+fmt(s.price)+'</label>';
+  }).join('');
+  ivTotalPreview();
+}
+function ivTotalPreview(){
+  var total=0;
+  document.querySelectorAll('.ivunitpick:checked,.ivsvcpick:checked').forEach(function(cb){total+=Number(cb.getAttribute('data-amount'))||0;});
+  $('iv-total-preview').textContent=fmt(total);
+}
+function openInvoiceModal(){
+  fillCaseSelects();
+  $('ivcase').value='';
+  $('iv-unit-picker').innerHTML='';$('iv-service-picker').innerHTML='';$('iv-total-preview').textContent='$0';
+  $('invoice-err').textContent='';
+  $('invoicemodal').classList.add('on');
+}
+function closeInvoiceModal(){$('invoicemodal').classList.remove('on');}
+async function saveInvoice(){
+  var caseId=$('ivcase').value;
+  if(!caseId){$('invoice-err').textContent='Select a case';return;}
+  var lineItems=[];
+  document.querySelectorAll('.ivunitpick:checked,.ivsvcpick:checked').forEach(function(cb){
+    lineItems.push({label:cb.getAttribute('data-label'),amount:Number(cb.getAttribute('data-amount'))||0});
+  });
+  if(!lineItems.length){$('invoice-err').textContent='Select at least one merchandise unit or service line item';return;}
+  var rec={id:newId('IV'),case_id:caseId,invoice_number:'INV-'+Date.now().toString().slice(-6),
+    line_items:lineItems,payments:[],status:'Draft',created_at:legLocalToday()};
+  var list=invoices();list.push(rec);st('leg_invoices',list);
+  closeInvoiceModal();rInvoicing();
+  var syncResult=await sdnData('write','leg_invoices',rec);
+  toast(syncResult?'Invoice created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openPaymentModal(invoiceId){
+  pyInvoiceId=invoiceId;
+  var inv=invoices().find(function(x){return x.id===invoiceId;});if(!inv)return;
+  var total=invoiceTotal(inv),paid=invoicePaid(inv);
+  $('payment-invoice-label').textContent=inv.invoice_number+' -- balance due '+fmt(total-paid);
+  $('pysource').value='Cash';$('pyamount').value='';$('payment-err').textContent='';
+  $('paymentmodal').classList.add('on');
+}
+function closePaymentModal(){$('paymentmodal').classList.remove('on');}
+async function confirmPayment(){
+  var amount=Number($('pyamount').value)||0;
+  if(amount<=0){$('payment-err').textContent='Enter a payment amount greater than 0';return;}
+  var list=invoices();
+  var inv=list.find(function(x){return x.id===pyInvoiceId;});if(!inv)return;
+  inv.payments=inv.payments||[];
+  inv.payments.push({source:$('pysource').value,amount:amount,date:legLocalToday()});
+  var total=invoiceTotal(inv),paid=invoicePaid(inv);
+  inv.status=paid>=total?'Paid':(paid>0?'Partial':'Draft');
+  st('leg_invoices',list);
+  closePaymentModal();rInvoicing();
+  var syncResult=await sdnData('write','leg_invoices',inv);
+  toast(syncResult?'Payment recorded':'Recorded on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function openGplModal(){
+  var services=gplServices(),merch=merchCatalog();
+  var html='<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Service / Item</th><th>Category</th><th>Price</th></tr></thead><tbody>';
+  services.forEach(function(s){html+='<tr><td>'+H(s.category)+'</td><td>Service</td><td>'+fmt(s.price)+'</td></tr>';});
+  merch.forEach(function(m){html+='<tr><td>'+H(m.model_name)+' ('+H(m.sku)+')</td><td>'+H(m.category)+'</td><td>'+fmt(m.retail)+'</td></tr>';});
+  html+='</tbody></table></div><div style="color:var(--muted);font-size:12px;margin-top:12px">Prices shown are those currently on file in this system (General Price List Rates below, and the Merchandise catalog) -- generated live from those records, not a fixed document.</div>';
+  $('gpl-preview').innerHTML=html;
+  $('gplmodal').classList.add('on');
+}
+function closeGplModal(){$('gplmodal').classList.remove('on');}
+async function saveGplServicePrice(id){
+  var input=$('gplprice-'+id);if(!input)return;
+  var price=Number(input.value)||0;
+  var list=gplServices();
+  var s=list.find(function(x){return x.id===id;});if(!s)return;
+  s.price=price;st('leg_gplservices',list);
+  var syncResult=await sdnData('write','leg_gplservices',s);
+  toast(syncResult?'Rate updated':'Updated on this device only -- server sync not yet enabled',syncResult?2000:4000);
+}
+function rInvoicing(){
+  fillCaseSelects();
+  var list=invoices();
+  var outstanding=list.reduce(function(s,i){return s+(invoiceTotal(i)-invoicePaid(i));},0);
+  $('iv-outstanding').textContent=fmt(outstanding);
+  var thisMonth=legLocalToday().slice(0,7);
+  var collected=0;
+  list.forEach(function(i){(i.payments||[]).forEach(function(p){if((p.date||'').slice(0,7)===thisMonth)collected+=Number(p.amount)||0;});});
+  $('iv-collected').textContent=fmt(collected);
+  $('iv-open').textContent=list.filter(function(i){return i.status!=='Paid';}).length;
+  var statusColors={Draft:'bx',Partial:'bw',Paid:'bg'};
+  var tb=$('ivtbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(i){
+    var total=invoiceTotal(i),paid=invoicePaid(i),balance=total-paid;
+    return '<tr><td>'+H(i.invoice_number)+'</td><td>'+H(caseLabel(i.case_id))+'</td><td>'+fmt(total)+'</td><td>'+fmt(balance)+'</td>'+
+      '<td><span class="badge '+(statusColors[i.status]||'bx')+'">'+H(i.status)+'</span></td>'+
+      '<td>'+(balance>0?'<button class="btn bp bs" onclick="openPaymentModal(\''+i.id+'\')">Record Payment</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No invoices yet</td></tr>';
+  var gtb=$('gpltbody');
+  gtb.innerHTML=gplServices().map(function(s){
+    return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice(\''+s.id+'\')"></td><td></td></tr>';
+  }).join('');
+}
+
+// ── AI OBITUARY DRAFTING ──────────────────────────────────────────────────
+// Baseline feature -- not the moat, kept straightforward. Real Claude call
+// pulling only the decedent fields already on file in Case Management;
+// system prompt explicitly instructs the model not to invent biographical
+// details it wasn't given. Always editable before Save/Publish, never
+// auto-published.
+function rObituaryCaseChange(){
+  var caseId=$('obcase').value;
+  var c=cases().find(function(x){return x.id===caseId;});
+  if(!c){$('ob-vitals').innerHTML='';$('obtext').value='';return;}
+  $('ob-vitals').innerHTML='<div class="cb"><div class="srow"><span class="slbl">Decedent</span><span class="sval">'+H(c.decedent_name)+'</span></div>'+
+    '<div class="srow"><span class="slbl">Born</span><span class="sval">'+(c.decedent_dob?fdate(c.decedent_dob):'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Died</span><span class="sval">'+(c.decedent_dod?fdate(c.decedent_dod):'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Service</span><span class="sval">'+H(c.service_type||'--')+(c.service_date?' -- '+fdate(c.service_date):'')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Family Contact</span><span class="sval">'+H(c.family_contact_name||'--')+'</span></div></div>';
+  var existing=obituaries().find(function(o){return o.case_id===caseId;});
+  $('obtext').value=existing?existing.draft_text:'';
+}
+async function generateObituary(){
+  var caseId=$('obcase').value;
+  var c=cases().find(function(x){return x.id===caseId;});
+  if(!c){toast('Select a case first');return;}
+  $('obtext').value='Generating...';
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:700,
+        system:'You write warm, dignified, factual obituaries for a funeral home, using only the facts given. Do not invent biographical details not provided. Keep it to 2-4 short paragraphs.',
+        messages:[{role:'user',content:'Draft an obituary for: '+c.decedent_name+
+          (c.decedent_dob?', born '+c.decedent_dob:'')+(c.decedent_dod?', died '+c.decedent_dod:'')+
+          (c.service_type?'. Service type: '+c.service_type:'')+(c.service_date?' on '+c.service_date:'')+
+          (c.family_contact_name?'. Arrangements by family contact '+c.family_contact_name:'')+
+          '. Notes: '+(c.notes||'none')+'. This is a draft to be reviewed and edited by the family before publishing.'}]})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'Could not generate a draft -- try again.';
+    $('obtext').value=text;
+  }catch(e){$('obtext').value='Could not connect to Claude. Check your connection and try again.';}
+}
+async function saveObituaryDraft(){
+  var caseId=$('obcase').value;
+  if(!caseId){toast('Select a case first');return;}
+  var text=$('obtext').value;
+  var list=obituaries();
+  var existing=list.find(function(o){return o.case_id===caseId;});
+  var rec=existing||{id:newId('OB'),case_id:caseId,status:'Draft',created_at:legLocalToday()};
+  rec.draft_text=text;
+  if(!existing)list.push(rec);
+  st('leg_obituaries',list);rObituary();
+  var syncResult=await sdnData('write','leg_obituaries',rec);
+  toast(syncResult?'Draft saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function publishObituary(){
+  var caseId=$('obcase').value;
+  if(!caseId){toast('Select a case first');return;}
+  await saveObituaryDraft();
+  var list=obituaries();
+  var rec=list.find(function(o){return o.case_id===caseId;});if(!rec)return;
+  rec.status='Published';st('leg_obituaries',list);rObituary();
+  var syncResult=await sdnData('write','leg_obituaries',rec);
+  toast(syncResult?'Marked published':'Marked published on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rObituary(){
+  fillCaseSelects();
+  var list=obituaries();
+  $('ob-drafts').textContent=list.filter(function(o){return o.status==='Draft';}).length;
+  $('ob-published').textContent=list.filter(function(o){return o.status==='Published';}).length;
+  var statusColors={Draft:'bx',Published:'bg'};
+  var tb=$('obtbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(o){
+    return '<tr><td>'+H(caseLabel(o.case_id))+'</td><td><span class="badge '+(statusColors[o.status]||'bx')+'">'+H(o.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="obOpen(\''+o.case_id+'\')">Open</button></td></tr>';
+  }).join(''):'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px;">No obituaries yet</td></tr>';
+}
+function obOpen(caseId){$('obcase').value=caseId;rObituaryCaseChange();}
+
+// ── TRIBUTE / MEMORIAL PAGE ───────────────────────────────────────────────
+// Internal content record only -- deliberately no public URL/hosting (see
+// the panel's own on-screen disclosure). Guestbook entries are logged by
+// staff on the family's behalf until real public hosting exists.
+function rMemorialCaseChange(){
+  var caseId=$('mmcase').value;
+  var wrap=$('mm-editor');
+  if(!caseId){wrap.innerHTML='';return;}
+  var mem=memorials().find(function(m){return m.case_id===caseId;});
+  var ob=obituaries().find(function(o){return o.case_id===caseId;});
+  var photos=mem?(mem.photo_urls||[]).join('\n'):'';
+  var obitText=mem?mem.obituary_text:(ob?ob.draft_text:'');
+  var visible=mem?!!mem.service_details_visible:true;
+  wrap.innerHTML='<div class="fg"><label>Reference Photo URLs (one per line)</label><textarea id="mmphotos" rows="3">'+H(photos)+'</textarea></div>'+
+    '<div class="fg"><label>Obituary Text</label><textarea id="mmobit" rows="6">'+H(obitText)+'</textarea></div>'+
+    '<div class="fg"><label class="chk"><input type="checkbox" id="mmvisible" '+(visible?'checked':'')+'> Show service details on this page</label></div>'+
+    '<button class="btn bp bs" onclick="saveMemorial()">Save Memorial Page</button>'+
+    '<div class="card" style="margin-top:16px"><div class="ch"><span class="ct">Guestbook</span></div><div class="cb">'+
+    '<div class="fr"><div class="fg"><label>Name</label><input id="gbname"></div><div class="fg"><label>Message</label><input id="gbmessage"></div></div>'+
+    '<button class="btn bo bs" onclick="addGuestbookEntry()">+ Add Entry</button>'+
+    '<div id="gb-list" style="margin-top:12px"></div></div></div>';
+  rGuestbook(mem?mem.id:null);
+}
+async function saveMemorial(){
+  var caseId=$('mmcase').value;if(!caseId)return;
+  var list=memorials();
+  var existing=list.find(function(m){return m.case_id===caseId;});
+  var rec=existing||{id:newId('MM'),case_id:caseId,created_at:legLocalToday()};
+  rec.photo_urls=($('mmphotos').value||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+  rec.obituary_text=$('mmobit').value;
+  rec.service_details_visible=$('mmvisible').checked;
+  if(!existing)list.push(rec);
+  st('leg_memorials',list);rMemorial();rMemorialCaseChange();
+  var syncResult=await sdnData('write','leg_memorials',rec);
+  toast(syncResult?'Memorial page saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function addGuestbookEntry(){
+  var caseId=$('mmcase').value;if(!caseId){toast('Select a case first');return;}
+  var name=$('gbname').value.trim(),message=$('gbmessage').value.trim();
+  if(!name||!message){toast('Name and message are both required');return;}
+  var list=memorials();
+  var mem=list.find(function(m){return m.case_id===caseId;});
+  if(!mem){mem={id:newId('MM'),case_id:caseId,photo_urls:[],obituary_text:'',service_details_visible:true,created_at:legLocalToday()};list.push(mem);st('leg_memorials',list);}
+  var rec={id:newId('GB'),memorial_id:mem.id,name:name,message:message,created_at:new Date().toISOString()};
+  var glist=guestbookEntries();glist.push(rec);st('leg_guestbook',glist);
+  $('gbname').value='';$('gbmessage').value='';
+  rGuestbook(mem.id);rMemorial();
+  var syncResult=await sdnData('write','leg_guestbook',rec);
+  toast(syncResult?'Guestbook entry added':'Added on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rGuestbook(memorialId){
+  var wrap=$('gb-list');if(!wrap)return;
+  var entries=memorialId?guestbookEntries().filter(function(g){return g.memorial_id===memorialId;}):[];
+  wrap.innerHTML=entries.length?entries.slice().reverse().map(function(g){
+    return '<div class="srow"><span class="slbl">'+H(g.name)+': '+H(g.message)+'</span><span class="sval" style="font-weight:400;color:var(--muted);font-size:11px">'+fdatetime(g.created_at)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:12px">No guestbook entries yet</div>';
+}
+function rMemorial(){
+  fillCaseSelects();
+  $('mm-total').textContent=memorials().length;
+  $('mm-guestbook').textContent=guestbookEntries().length;
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 function init(){
   seed();
   fillCaseSelects();
   rDash();rCases();rDispatches();rMerch();rDocs();rPermits();
   rCustodyLog();
+  rScheduling();rCemetery();rCremation();rPreneed();rInvoicing();rObituary();rMemorial();
 }
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('leg_license_key');
