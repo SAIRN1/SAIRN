@@ -96,6 +96,15 @@ const EMPLOYEES_READ_DENIED_ROLES = { sales: true, install: true };
 // do not get write access here (a default call, flagged as adjustable
 // rather than blocking on it).
 const EMPLOYEES_WRITE_ALLOWED_ROLES = { owner: true, hr: true };
+// Void/override/QC-decision hard-gate role lists (2026-08-07) -- server-side
+// mirror of each client's own authority-check role arrays (sairngrounds.html's
+// GRD_QC_AUTHORITY_ROLES/MSB_VOID_AUTHORITY_ROLES, sairnscape.html's
+// SCP_QC_AUTHORITY_ROLES), kept as the same values rather than imported
+// from the client file since there's no shared module between them; if a
+// client's role list ever changes, this one needs updating alongside it.
+const GRD_QC_AUTHORITY_ROLES = ['owner', 'superintendent', 'manager'];
+const MSB_VOID_AUTHORITY_ROLES = ['owner', 'superintendent', 'manager'];
+const SCP_QC_AUTHORITY_ROLES = ['owner', 'crew_lead'];
 // 64KB is not just this API's own choice -- sd_slabs has a DB-level CHECK constraint
 // (sdslabs_data_size) enforcing the exact same 65536-byte ceiling on the `data` jsonb blob,
 // confirmed empirically (2026-08-04) while building the bulk slab photo upload flow: a
@@ -623,6 +632,34 @@ module.exports = async (req, res) => {
     }
     if (resource === 'grd_progress_photos' && action === 'write') {
       if (!payload || !payload.id || !payload.schedule_id) { res.status(400).json({ error: { message: 'photo payload.id and payload.schedule_id are required' } }); return; }
+      // QC-decision hard gate (2026-08-07): grdQcDecide() previously read-
+      // modify-wrote the whole photo blob through this same generic 'write'
+      // branch with ONLY grdHasQcAuthority()/self-QC checked client-side --
+      // any valid license holder, any role, could POST a qc_status:'approved'
+      // payload directly and the server would accept it, same gap class
+      // StoneDesk's api/sd-sub-data.js already closed for its own
+      // 'qc-review' action. A qc_status of 'approved'/'rejected' is what
+      // marks THIS write as a QC decision (vs. the initial upload, which is
+      // always 'pending') -- role and self-QC are both re-verified against
+      // the server's own record of who captured the photo, not the client-
+      // supplied payload.captured_by, so a forged captured_by can't be used
+      // to spoof either check.
+      if (payload.qc_status === 'approved' || payload.qc_status === 'rejected') {
+        const grdCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairngrounds');
+        if (!grdCaller || GRD_QC_AUTHORITY_ROLES.indexOf(grdCaller.role) === -1) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner, Superintendent, or Manager can QC-review a progress photo' } });
+          return;
+        }
+        const existingPhoto = await fetch(rest('grd_progress_photos?license_hash=eq.' + enc(licHash) + '&photo_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+        if (existingPhoto.status === 404 || existingPhoto.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds data tables are not set up yet — run sql/sairngrounds_data_schema.sql in Supabase first.' } }); return; }
+        const existingPhotoRows = await existingPhoto.json();
+        if (!existingPhoto.ok) return upstream(res, existingPhotoRows);
+        const existingPhotoRow = Array.isArray(existingPhotoRows) && existingPhotoRows[0];
+        if (existingPhotoRow && existingPhotoRow.data && existingPhotoRow.data.captured_by === grdCaller.employee_id) {
+          res.status(403).json({ error: { code: 'SELF_QC_FORBIDDEN', message: 'You cannot QC-review your own photo -- have someone else review it' } });
+          return;
+        }
+      }
       const r = await fetch(rest('grd_progress_photos?on_conflict=license_hash,photo_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -961,6 +998,20 @@ module.exports = async (req, res) => {
     }
     if (resource === 'msb_sales' && action === 'write') {
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sale payload.id is required' } }); return; }
+      // Void hard gate (2026-08-07): confirmMsbVoid() previously read-modify-
+      // wrote the whole sale blob through this same generic 'write' branch
+      // with ONLY msbHasVoidAuthority() checked client-side -- any valid
+      // license holder, any role, could POST a voided:true payload directly
+      // and the server would accept it. payload.voided===true is what marks
+      // THIS write as a void (a normal sale/checkout write never sets it),
+      // so only that case needs the extra check.
+      if (payload.voided === true) {
+        const msbCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairngrounds');
+        if (!msbCaller || MSB_VOID_AUTHORITY_ROLES.indexOf(msbCaller.role) === -1) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner, Superintendent, or Manager can void a sale' } });
+          return;
+        }
+      }
       const r = await fetch(rest('msb_sales?on_conflict=license_hash,sale_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -1376,6 +1427,26 @@ module.exports = async (req, res) => {
     }
     if (resource === 'scp_progress_photos' && action === 'write') {
       if (!payload || !payload.id || !payload.schedule_id) { res.status(400).json({ error: { message: 'photo payload.id and payload.schedule_id are required' } }); return; }
+      // QC-decision hard gate (2026-08-07) -- same fix, same reasoning as
+      // SAIRNgrounds' grd_progress_photos block above: role and self-QC are
+      // both re-verified against the server's own record of who captured
+      // the photo, not the client-supplied payload.captured_by.
+      if (payload.qc_status === 'approved' || payload.qc_status === 'rejected') {
+        const scpCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairnscape');
+        if (!scpCaller || SCP_QC_AUTHORITY_ROLES.indexOf(scpCaller.role) === -1) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Crew Lead can QC-review a progress photo' } });
+          return;
+        }
+        const existingPhoto = await fetch(rest('scp_progress_photos?license_hash=eq.' + enc(licHash) + '&photo_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+        if (existingPhoto.status === 404 || existingPhoto.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNscape data tables are not set up yet — run sql/sairnscape_data_schema.sql in Supabase first.' } }); return; }
+        const existingPhotoRows = await existingPhoto.json();
+        if (!existingPhoto.ok) return upstream(res, existingPhotoRows);
+        const existingPhotoRow = Array.isArray(existingPhotoRows) && existingPhotoRows[0];
+        if (existingPhotoRow && existingPhotoRow.data && existingPhotoRow.data.captured_by === scpCaller.employee_id) {
+          res.status(403).json({ error: { code: 'SELF_QC_FORBIDDEN', message: 'You cannot QC-review your own photo -- have someone else review it' } });
+          return;
+        }
+      }
       const r = await fetch(rest('scp_progress_photos?on_conflict=license_hash,photo_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
