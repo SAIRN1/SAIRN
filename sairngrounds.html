@@ -1328,9 +1328,22 @@ async function grdSyncFromServer(){
   // grd_invoices + grd_dreamclose added 2026-08-06 (sweep fix) -- same
   // reasoning, same missing-route bug DreamClose's invoice/schedule writes
   // had.
+  // Full resource-name sweep, phase 2 (2026-08-06) -- the remaining 20
+  // resources found by the same sweep. msb_* included even though it
+  // keeps its own naming (see sql/sairngrounds_data_schema_phase2.sql).
   var resources=[['properties','grd_properties'],['jobs','grd_jobs'],['quotes','grd_quotes'],['golf_zones','grd_golf_zones'],
     ['grd_schedule','grd_schedule'],['grd_progress_photos','grd_progress_photos'],
-    ['grd_invoices','grd_invoices'],['grd_dreamclose','grd_dreamclose']];
+    ['grd_invoices','grd_invoices'],['grd_dreamclose','grd_dreamclose'],
+    ['grd_invasive_sightings','grd_invasive_sightings'],['grd_ecosystem_reports','grd_ecosystem_reports'],
+    ['grd_designs','grd_designs'],['grd_irr_controllers','grd_irr_controllers'],
+    ['grd_irr_zones','grd_irr_zones'],['grd_irr_schedules','grd_irr_schedules'],
+    ['grd_water_features','grd_water_features'],['grd_training_courses','grd_training_courses'],
+    ['grd_training_completions','grd_training_completions'],['grd_boq_rates','grd_boq_rates'],
+    ['grd_vendors','grd_vendors'],['msb_products','msb_products'],['msb_sales','msb_sales'],
+    ['msb_licenses','msb_licenses'],['msb_inventory_log','msb_inventory_log'],
+    ['msb_bottle_scans','msb_bottle_scans'],['msb_food_scans','msb_food_scans'],
+    ['msb_food_waste','msb_food_waste'],['msb_food_cost_log','msb_food_cost_log'],
+    ['msb_sale_hours','msb_sale_hours']];
   var changed=false;
   for(var i=0;i<resources.length;i++){
     var res=await grdData('read',resources[i][0],{});
@@ -1338,7 +1351,23 @@ async function grdSyncFromServer(){
       st(resources[i][1],res.data);changed=true;
     }
   }
-  if(changed){fillPropertySelects();rDash();rProps();rJobs();rQuotes();rGolf();rSched();rInv();rDreamClose();}
+  if(changed){
+    fillPropertySelects();rDash();rProps();rJobs();rQuotes();rGolf();rSched();rInv();rDreamClose();
+    if(typeof rInvasive==='function')rInvasive();
+    if(typeof rEcoHistory==='function')rEcoHistory();
+    if(typeof rDesignWalks==='function')rDesignWalks();
+    if(typeof rIrrigation==='function')rIrrigation();
+    if(typeof rWf==='function')rWf();
+    if(typeof rTraining==='function')rTraining();
+    if(typeof rBoqRates==='function')rBoqRates();
+    if(typeof rBoq==='function')rBoq();
+    if(typeof rVendors==='function')rVendors();
+    if(typeof rMsbProShop==='function')rMsbProShop();
+    if(typeof rMsbBarCompliance==='function')rMsbBarCompliance();
+    if(typeof rMsbFoodInv==='function')rMsbFoodInv();
+    if(typeof rMsbBottleScan==='function')rMsbBottleScan();
+    if(typeof rMsbHours==='function')rMsbHours();
+  }
 }
 
 function rDash(){
@@ -1499,9 +1528,15 @@ function renderDesignElemTable(elements){
       '<td><button class="btn bo bs" onclick="removeDesignElement('+i+')">Remove</button></td></tr>';
   }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px">No elements placed yet</td></tr>';
 }
-function saveDesignRecord(rec){
+// Async, returns the sync result -- callers with their own success toast
+// (approveDesign, sendDesignToQuote, the AR-placement callback) await this
+// and make that toast honest; addDesignElement/removeDesignElement never
+// had a success toast of their own, so there's no false claim to fix there
+// and they're left fire-and-forget on purpose.
+async function saveDesignRecord(rec){
   var list=grdDesigns().map(function(x){return x.id===rec.id?rec:x;});
-  st('grd_designs',list);grdData('write','designs',rec);rDesignWalks();
+  st('grd_designs',list);rDesignWalks();
+  return await grdData('write','grd_designs',rec);
 }
 function updateApprovalUI(rec){
   var statusEl=$('dw-approval-status'),formEl=$('dw-approval-form');
@@ -1553,16 +1588,16 @@ function removeDesignElement(idx){
   saveDesignRecord(rec);
   renderDesignElemTable(rec.elements);
 }
-function approveDesign(){
+async function approveDesign(){
   var rec=dwid?grdDesigns().find(function(x){return x.id===dwid;}):null;
   if(!rec||!rec.elements.length){toast('Add at least one design element before approval');return;}
   var name=$('dwapprover').value.trim();
   if(!name){toast('Enter the homeowner name to record approval');return;}
   rec.approved=true;rec.approved_by=name;rec.approved_at=grdLocalToday();
-  saveDesignRecord(rec);
+  var syncResult=await saveDesignRecord(rec);
   updateApprovalUI(rec);
   $('dw-send-quote-btn').disabled=false;
-  toast('Design approved by '+name);
+  toast(syncResult?('Design approved by '+name):('Design approved by '+name+' on this device only -- server sync failed, try again with a connection'),syncResult?3000:7000);
 }
 // Hands off into the SAME Quoting panel/data (grd_quotes) used everywhere
 // else in this app -- not a separate pricing path. Line items are real
@@ -1570,7 +1605,7 @@ function approveDesign(){
 // this app has no per-unit pricing data to draw from honestly, and the
 // existing Quote editor (openQuoteModal/saveQuote, unmodified) is exactly
 // where the office already prices every other quote.
-function sendDesignToQuote(){
+async function sendDesignToQuote(){
   var rec=dwid?grdDesigns().find(function(x){return x.id===dwid;}):null;
   if(!rec||!rec.approved){toast('Design must be approved first');return;}
   if(rec.quote_id){toast('Already sent to Quoting');return;}
@@ -1580,10 +1615,11 @@ function sendDesignToQuote(){
   var qrec={id:'Q-'+Date.now(),property_id:rec.property_id,lines:lines,status:'Draft',valid:daysFromNow(30)};
   quotes.push(qrec);st('grd_quotes',quotes);
   grdData('write','quotes',qrec);
-  rec.quote_id=qrec.id;saveDesignRecord(rec);
+  rec.quote_id=qrec.id;
+  var syncResult=await saveDesignRecord(rec);
   rQuotes();updateApprovalUI(rec);
   var sendBtn=$('dw-send-quote-btn');sendBtn.disabled=true;sendBtn.textContent='Sent to Quoting ('+qrec.id+')';
-  toast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+  toast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Sent to Quoting as draft '+qrec.id+' locally -- the design record itself did not sync to the server, try again with a connection'),syncResult?4000:7000);
 }
 // Informational only, mirrors sairnLoadWeather()'s go/no-go logic
 // (duplicated ~10 lines rather than refactored into a shared helper --
@@ -2164,7 +2200,7 @@ function openControllerModal(id){
   $('controllermodal').classList.add('on');
 }
 function closeControllerModal(){$('controllermodal').classList.remove('on');}
-function saveController(){
+async function saveController(){
   var propertyId=$('ctlproperty').value,name=$('ctlname').value.trim();
   if(!propertyId||!name){toast('Property and controller name are required');return;}
   var list=bldControllers();
@@ -2172,8 +2208,9 @@ function saveController(){
     model:$('ctlmodel').value.trim(),zones_supported:Number($('ctlzonesup').value||0),
     install_date:$('ctlinstall').value,notes:$('ctlnotes').value.trim()};
   if(ctlid){list=list.map(function(x){return x.id===ctlid?rec:x;});}else{list.push(rec);}
-  st('grd_irr_controllers',list);closeControllerModal();rIrrigation();toast('Controller saved');
-  grdData('write','irr_controllers',rec);
+  st('grd_irr_controllers',list);closeControllerModal();rIrrigation();
+  var syncResult=await grdData('write','grd_irr_controllers',rec);
+  toast(syncResult?'Controller saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function izPropertyChanged(){
   var sel=$('izcontroller');if(!sel)return;
@@ -2198,7 +2235,7 @@ function openIrrZoneModal(id){
   $('irrzonemodal').classList.add('on');
 }
 function closeIrrZoneModal(){$('irrzonemodal').classList.remove('on');}
-function saveIrrZone(){
+async function saveIrrZone(){
   var propertyId=$('izproperty').value,name=$('izname').value.trim();
   if(!propertyId||!name){toast('Property and zone name are required');return;}
   var list=bldIrrZones();
@@ -2216,8 +2253,8 @@ function saveIrrZone(){
   // render dispatch), so without this the dropdown would go stale the moment
   // a zone is added/edited anywhere except right before a fresh page load.
   if(typeof rPlantDb==='function')rPlantDb();
-  toast('Irrigation zone saved');
-  grdData('write','irr_zones',rec);
+  var syncResult=await grdData('write','grd_irr_zones',rec);
+  toast(syncResult?'Irrigation zone saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 // Same real, non-fabricated hand-off pattern as Design Walk's sendDesignToQuote:
 // real checklist line items, $0 amounts, priced through the existing Quote editor.
@@ -2268,15 +2305,16 @@ function openBoqRateModal(id){
   $('boqratemodal').classList.add('on');
 }
 function closeBoqRateModal(){$('boqratemodal').classList.remove('on');}
-function saveBoqRate(){
+async function saveBoqRate(){
   var rate=Number($('boqrrate').value||0);
   if(rate<=0){toast('Rate must be greater than zero');return;}
   var list=bldBoqRates();
   var rec={id:boqrid||('BOQR-'+Date.now()),item_type:$('boqritemtype').value,brand:$('boqrbrand').value||null,
     unit:$('boqrunit').value,rate:rate,notes:$('boqrnotes').value.trim()};
   if(boqrid){list=list.map(function(x){return x.id===boqrid?rec:x;});}else{list.push(rec);}
-  st('grd_boq_rates',list);closeBoqRateModal();rBoqRates();rBoq();toast('Rate saved');
-  grdData('write','boq_rates',rec);
+  st('grd_boq_rates',list);closeBoqRateModal();rBoqRates();rBoq();
+  var syncResult=await grdData('write','grd_boq_rates',rec);
+  toast(syncResult?'Rate saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function findBoqRate(itemType,brand){
   var rates=bldBoqRates();
@@ -2412,7 +2450,7 @@ function openIrrSchedModal(id){
   $('irrschedmodal').classList.add('on');
 }
 function closeIrrSchedModal(){$('irrschedmodal').classList.remove('on');}
-function saveIrrSched(){
+async function saveIrrSched(){
   var zoneId=$('ischzone').value;
   if(!zoneId){toast('Add an irrigation zone first');return;}
   var days=Array.from(document.querySelectorAll('.ischday:checked')).map(function(cb){return cb.value;});
@@ -2420,8 +2458,9 @@ function saveIrrSched(){
   var rec={id:ischid||('ISCH-'+Date.now()),zone_id:zoneId,days:days,start:$('ischstart').value,
     duration:Number($('ischduration').value||0),status:$('ischstatus').value};
   if(ischid){list=list.map(function(x){return x.id===ischid?rec:x;});}else{list.push(rec);}
-  st('grd_irr_schedules',list);closeIrrSchedModal();rIrrigation();toast('Run schedule saved');
-  grdData('write','irr_schedules',rec);
+  st('grd_irr_schedules',list);closeIrrSchedModal();rIrrigation();
+  var syncResult=await grdData('write','grd_irr_schedules',rec);
+  toast(syncResult?'Run schedule saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === WATER FEATURES (item 2) =====================================
@@ -2446,7 +2485,7 @@ function openWfModal(id){
   $('wfmodal').classList.add('on');
 }
 function closeWfModal(){$('wfmodal').classList.remove('on');}
-function saveWf(){
+async function saveWf(){
   var propertyId=$('wfproperty').value,name=$('wfname').value.trim();
   if(!propertyId||!name){toast('Property and feature name are required');return;}
   var list=bldWf();
@@ -2455,8 +2494,9 @@ function saveWf(){
     last_service:$('wflastservice').value,condition:$('wfcondition').value.trim(),
     checklist:$('wfchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean)};
   if(wfid){list=list.map(function(x){return x.id===wfid?rec:x;});}else{list.push(rec);}
-  st('grd_water_features',list);closeWfModal();rWf();toast('Water feature saved');
-  grdData('write','water_features',rec);
+  st('grd_water_features',list);closeWfModal();rWf();
+  var syncResult=await grdData('write','grd_water_features',rec);
+  toast(syncResult?'Water feature saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function sendWfToQuote(){
   var propertyId=$('wfproperty').value,name=$('wfname').value.trim();
@@ -2541,7 +2581,7 @@ function openInvasiveModal(id){
   $('invasivemodal').classList.add('on');
 }
 function closeInvasiveModal(){$('invasivemodal').classList.remove('on');}
-function saveInvasive(){
+async function saveInvasive(){
   var propertyId=$('ivproperty').value,species=$('ivspecies').value.trim();
   if(!propertyId||!species){toast('Property and species are required');return;}
   var list=bldInvasive();
@@ -2550,8 +2590,9 @@ function saveInvasive(){
     method:$('ivmethod').value.trim(),scheduled:$('ivscheduled').value,treated:$('ivtreated').value,
     outcome:$('ivoutcome').value.trim(),report_filed:$('ivreportfiled').checked,notes:$('ivnotes').value.trim()};
   if(ivid){list=list.map(function(x){return x.id===ivid?rec:x;});}else{list.push(rec);}
-  st('grd_invasive_sightings',list);closeInvasiveModal();rInvasive();toast('Sighting saved');
-  grdData('write','invasive_sightings',rec);
+  st('grd_invasive_sightings',list);closeInvasiveModal();rInvasive();
+  var syncResult=await grdData('write','grd_invasive_sightings',rec);
+  toast(syncResult?'Sighting saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === PROPERTY ECOSYSTEM HEALTH REPORT, 7-layer (item 6) ==========
@@ -2622,10 +2663,11 @@ async function genEcosystemReport(){
       '\n\nLAYER 7 - AI RECOMMENDATIONS:\n'+layer7;
     $('eco-result').textContent=summary;
     var reports=bldEcoReports();
-    reports.push({id:'ECO-'+Date.now(),property_id:propertyId,date:grdLocalToday(),summary:summary});
-    st('grd_ecosystem_reports',reports);grdData('write','ecosystem_reports',reports[reports.length-1]);
+    var ecoRec={id:'ECO-'+Date.now(),property_id:propertyId,date:grdLocalToday(),summary:summary};
+    reports.push(ecoRec);st('grd_ecosystem_reports',reports);
     rEcoHistory();
-    toast('Report generated and saved');
+    var syncResult=await grdData('write','grd_ecosystem_reports',ecoRec);
+    toast(syncResult?'Report generated and saved':'Report generated and saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
   }catch(e){
     $('eco-result').textContent='Could not reach Claude for layer 7. Layers 1-6 (computed/manual) are still real and usable on their own:\n\n'+facts;
   }
@@ -2791,15 +2833,16 @@ function openCourseModal(id){
   $('coursemodal').classList.add('on');
 }
 function closeCourseModal(){$('coursemodal').classList.remove('on');}
-function saveCourse(){
+async function saveCourse(){
   var title=$('crstitle').value.trim();
   if(!title){toast('Course title is required');return;}
   var list=bldCourses();
   var rec={id:crsid||('CRS-'+Date.now()),title:title,category:$('crscat').value,
     duration:Number($('crsduration').value||0),required:$('crsrequired').checked};
   if(crsid){list=list.map(function(x){return x.id===crsid?rec:x;});}else{list.push(rec);}
-  st('grd_training_courses',list);closeCourseModal();rTraining();toast('Course saved');
-  grdData('write','training_courses',rec);
+  st('grd_training_courses',list);closeCourseModal();rTraining();
+  var syncResult=await grdData('write','grd_training_courses',rec);
+  toast(syncResult?'Course saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function openCompletionModal(id){
   cplid=id||null;fillCourseSelect();
@@ -2810,15 +2853,16 @@ function openCompletionModal(id){
   $('completionmodal').classList.add('on');
 }
 function closeCompletionModal(){$('completionmodal').classList.remove('on');}
-function saveCompletion(){
+async function saveCompletion(){
   var courseId=$('cplcourse').value;
   if(!courseId){toast('Add a course first');return;}
   var list=bldCompletions();
   var rec={id:cplid||('CPL-'+Date.now()),employee_name:$('cplname').value.trim(),course_id:courseId,
     status:$('cplstatus').value,completed_date:$('cplstatus').value==='complete'?($('cpldate').value||grdLocalToday()):$('cpldate').value};
   if(cplid){list=list.map(function(x){return x.id===cplid?rec:x;});}else{list.push(rec);}
-  st('grd_training_completions',list);closeCompletionModal();rTraining();toast('Completion saved');
-  grdData('write','training_completions',rec);
+  st('grd_training_completions',list);closeCompletionModal();rTraining();
+  var syncResult=await grdData('write','grd_training_completions',rec);
+  toast(syncResult?'Completion saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === VENDOR PORTAL (item 8, shared with SAIRNscape) ===============
@@ -2840,7 +2884,7 @@ function openVendorModal(id){
   $('vendormodal').classList.add('on');
 }
 function closeVendorModal(){$('vendormodal').classList.remove('on');}
-function saveVendor(){
+async function saveVendor(){
   var name=$('vendname').value.trim();
   if(!name){toast('Vendor name is required');return;}
   var list=bldVendors();
@@ -2848,8 +2892,9 @@ function saveVendor(){
     contact:$('vendcontact').value.trim(),phone:$('vendphone').value.trim(),email:$('vendemail').value.trim(),
     terms:$('vendterms').value.trim(),notes:$('vendnotes').value.trim()};
   if(vendid){list=list.map(function(x){return x.id===vendid?rec:x;});}else{list.push(rec);}
-  st('grd_vendors',list);closeVendorModal();rVendors();toast('Vendor saved');
-  grdData('write','vendors',rec);
+  st('grd_vendors',list);closeVendorModal();rVendors();
+  var syncResult=await grdData('write','grd_vendors',rec);
+  toast(syncResult?'Vendor saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // =====================================================================
@@ -2928,19 +2973,22 @@ function msbIsAlcoholSaleAllowedNow(){
 
 // == Inventory retention log: append-only by construction -- every call
 // site PUSHES a new record, nothing in this module ever removes or edits
-// an existing log entry. "3+ years, audit-ready" is honestly only as
-// durable as this browser's localStorage unless grdData's server sync is
-// actually provisioned for this license -- the write below fires either
-// way (fire-and-forget, same pattern as every other grdData write in this
-// app), so once a real GRD- license/table is provisioned server-side, this
-// starts actually persisting durably with zero client code changes needed.
-function msbLogInventoryChange(productId,changeType,qtyDelta,note){
+// an existing log entry. Sweep fix (2026-08-06): msb_inventory_log now has
+// a real route (see api/sd-data.js), and this is async + awaits it, so
+// "3+ years, audit-ready" can actually be true server-side once
+// sql/sairngrounds_data_schema_phase2.sql is run, not just a documented
+// caveat. No toast of its own -- this fires in tight loops from checkout/
+// void (never had a user-facing success claim to make honest) -- callers
+// that DO have their own success toast (saveMsbProduct's "Product saved",
+// msbHandleScanResult's match note) await this and factor its result in.
+async function msbLogInventoryChange(productId,changeType,qtyDelta,note){
   var log=bldMsbInventoryLog();
   var product=bldMsbProducts().find(function(p){return p.id===productId;});
   var rec={id:'MSBIL-'+Date.now()+'-'+Math.floor(Math.random()*1000),product_id:productId,
     product_name:product?product.name:'(unknown product)',change_type:changeType,qty_delta:qtyDelta,
     employee:msbCurrentEmployeeLabel(),note:note||'',timestamp:new Date().toISOString()};
-  log.push(rec);st('msb_inventory_log',log);grdData('write','msb_inventory_log',rec);
+  log.push(rec);st('msb_inventory_log',log);
+  return await grdData('write','msb_inventory_log',rec);
 }
 function msbExportInventoryLogCsv(){
   var log=bldMsbInventoryLog();
@@ -2970,7 +3018,7 @@ function openMsbProductModal(id){
   $('msbproductmodal').classList.add('on');
 }
 function closeMsbProductModal(){$('msbproductmodal').classList.remove('on');}
-function saveMsbProduct(){
+async function saveMsbProduct(){
   var name=$('msbpname').value.trim();
   if(!name){toast('Product name is required');return;}
   var price=Number($('msbpprice').value||0);
@@ -2983,7 +3031,7 @@ function saveMsbProduct(){
   var isNew=!msbpid;
   if(msbpid){list=list.map(function(x){return x.id===msbpid?rec:x;});}else{list.push(rec);}
   st('msb_products',list);closeMsbProductModal();
-  if(isNew)msbLogInventoryChange(rec.id,'received',rec.qty,'New product added');
+  if(isNew)await msbLogInventoryChange(rec.id,'received',rec.qty,'New product added');
   // Real bug found+fixed via live testing: a NEW alcohol product created
   // from "Add as New Product" on an unmatched scan left that FIRST scan's
   // product_id permanently null, so cost-of-usage could never compute from
@@ -3003,8 +3051,8 @@ function saveMsbProduct(){
     if(linkedAny){st('msb_bottle_scans',scans);rMsbBottleScan();}
   }
   rMsbProShop();rMsbBarCompliance();rMsbBottleScan();
-  toast('Product saved');
-  grdData('write','msb_products',rec);
+  var syncResult=await grdData('write','msb_products',rec);
+  toast(syncResult?'Product saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // == LICENSES ==========================================================
@@ -3017,7 +3065,7 @@ function openMsbLicenseModal(id){
   $('msblicensemodal').classList.add('on');
 }
 function closeMsbLicenseModal(){$('msblicensemodal').classList.remove('on');}
-function saveMsbLicense(){
+async function saveMsbLicense(){
   var state=$('msblstate').value.trim().toUpperCase();
   if(!state){toast('State is required');return;}
   var list=bldMsbLicenses();
@@ -3025,8 +3073,9 @@ function saveMsbLicense(){
     number:$('msblnumber').value.trim(),issued:$('msblissued').value,expiry:$('msblexpiry').value,
     notes:$('msblnotes').value.trim()};
   if(msblid){list=list.map(function(x){return x.id===msblid?rec:x;});}else{list.push(rec);}
-  st('msb_licenses',list);closeMsbLicenseModal();rMsbBarCompliance();toast('License saved');
-  grdData('write','msb_licenses',rec);
+  st('msb_licenses',list);closeMsbLicenseModal();rMsbBarCompliance();
+  var syncResult=await grdData('write','msb_licenses',rec);
+  toast(syncResult?'License saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // == CART / POS / CHECKOUT =============================================
@@ -3062,7 +3111,7 @@ function rMsbCart(which){
   }).join('')+'<div class="srow" style="font-weight:700"><span>Total</span><span>'+fmt(total)+'</span></div>'):'<div style="color:var(--muted)">Cart is empty</div>';
 }
 function msbRemoveFromCart(which,idx){msbCart[which].splice(idx,1);rMsbCart(which);}
-function msbCheckout(which){
+async function msbCheckout(which){
   var cart=msbCart[which];
   if(!cart.length){toast('Cart is empty');return;}
   if(which==='bar'){
@@ -3078,12 +3127,13 @@ function msbCheckout(which){
     payment:which==='proshop'?$('msb-proshop-pay').value:$('msb-bar-pay').value,
     age_verified:which==='bar'?!!$('msb-age-verified').checked:null,
     employee:msbCurrentEmployeeLabel(),timestamp:new Date().toISOString(),voided:false};
-  var sales=bldMsbSales();sales.push(rec);st('msb_sales',sales);grdData('write','msb_sales',rec);
+  var sales=bldMsbSales();sales.push(rec);st('msb_sales',sales);
   var products=bldMsbProducts();
+  var invLogPromises=[];
   cart.forEach(function(i){
     var p=products.find(function(x){return x.id===i.product_id;});
     if(p)p.qty=Math.max(0,(p.qty||0)-i.qty);
-    msbLogInventoryChange(i.product_id,'sold',-i.qty,'Sale '+rec.id);
+    invLogPromises.push(msbLogInventoryChange(i.product_id,'sold',-i.qty,'Sale '+rec.id));
   });
   st('msb_products',products);
   msbCart[which]=[];rMsbCart(which);
@@ -3094,7 +3144,12 @@ function msbCheckout(which){
   // reads real revenue from EVERY sale, not just food-cart ones) went
   // stale until a manual re-render. Always refresh it here too.
   rMsbProShop();rMsbBarCompliance();rMsbFoodInv();
-  toast('Sale completed - '+fmt(total));
+  // Both awaited in parallel -- the sale record itself and every inventory-
+  // log entry it produced. Only the sale record's own sync status drives
+  // the toast (the inventory log is a background audit trail, same
+  // no-toast-of-its-own treatment as everywhere else it's called).
+  var results=await Promise.all([grdData('write','msb_sales',rec)].concat(invLogPromises));
+  toast(results[0]?('Sale completed - '+fmt(total)):('Sale completed on this device only - '+fmt(total)+' -- server sync failed, try again with a connection'),results[0]?3000:7000);
 }
 
 // == VOID / OVERRIDE (access-control-rbac) ============================
@@ -3108,7 +3163,7 @@ function openMsbVoidModal(saleId){
   $('msbvoidmodal').classList.add('on');
 }
 function closeMsbVoidModal(){$('msbvoidmodal').classList.remove('on');msbVoidTargetId=null;}
-function confirmMsbVoid(){
+async function confirmMsbVoid(){
   if(!msbHasVoidAuthority()){toast('Not authorized to void a sale');return;}
   var reason=$('msbvoidreason').value.trim();
   if(!reason){toast('Enter a void reason');return;}
@@ -3116,17 +3171,19 @@ function confirmMsbVoid(){
   var sale=sales.find(function(s){return s.id===msbVoidTargetId;});
   if(!sale){closeMsbVoidModal();return;}
   sale.voided=true;sale.void_reason=reason;sale.void_by=msbCurrentEmployeeLabel();sale.void_role=msbCurrentRole();
-  st('msb_sales',sales);grdData('write','msb_sales',sale);
+  st('msb_sales',sales);
   var products=bldMsbProducts();
+  var invLogPromises=[];
   sale.items.forEach(function(i){
     var p=products.find(function(x){return x.id===i.product_id;});
     if(p)p.qty=(p.qty||0)+i.qty;
-    msbLogInventoryChange(i.product_id,'adjustment',i.qty,'Void of sale '+sale.id+' ('+reason+')');
+    invLogPromises.push(msbLogInventoryChange(i.product_id,'adjustment',i.qty,'Void of sale '+sale.id+' ('+reason+')'));
   });
   st('msb_products',products);
   closeMsbVoidModal();
   rMsbProShop();rMsbBarCompliance();rMsbFoodInv();
-  toast('Sale voided');
+  var results=await Promise.all([grdData('write','msb_sales',sale)].concat(invLogPromises));
+  toast(results[0]?'Sale voided':'Sale voided on this device only -- server sync failed, try again with a connection',results[0]?3000:6000);
 }
 
 // == BOTTLE SCANNER (Claude vision, brand + fill% in one pass) ========
@@ -3166,7 +3223,7 @@ async function msbScanBottle(){
     var text=(data.content&&data.content[0]&&data.content[0].text)||
       (data.error&&data.error.message?('Could not scan: '+data.error.message):'No response text returned.');
     $('msb-scan-result').textContent=text;
-    msbHandleScanResult(text);
+    await msbHandleScanResult(text);
   }catch(e){
     $('msb-scan-result').textContent='Could not reach Claude. Check your connection and try again.';
   }
@@ -3176,7 +3233,7 @@ function msbParseScanResult(text){
   var brand=brandM?brandM[1].trim():null;
   return{brand:brand,fillPct:fillM?Number(fillM[1]):null};
 }
-function msbHandleScanResult(text){
+async function msbHandleScanResult(text){
   var parsed=msbParseScanResult(text);
   var actionsEl=$('msb-scan-actions');
   if(!parsed.brand||parsed.brand.toLowerCase().indexOf('not legible')!==-1){
@@ -3197,12 +3254,14 @@ function msbHandleScanResult(text){
     }
   }
   var rec={id:'MSBSCAN-'+Date.now(),product_id:match?match.id:null,brand_read:parsed.brand,fill_pct:parsed.fillPct,date:grdLocalToday(),note:costNote};
-  scans.push(rec);st('msb_bottle_scans',scans);grdData('write','msb_bottle_scans',rec);
+  scans.push(rec);st('msb_bottle_scans',scans);
+  var syncResult=await grdData('write','msb_bottle_scans',rec);
+  var syncNote=syncResult?'':' (saved on this device only -- server sync failed)';
   if(match){
-    msbLogInventoryChange(match.id,'scan_reading',0,'Fill read '+(parsed.fillPct!==null?parsed.fillPct+'%':'unknown')+'.'+costNote);
-    actionsEl.innerHTML='<div class="note">Matched to existing product <strong>'+H(match.name)+'</strong>. Logged as a fill-level reading.'+H(costNote)+'</div>';
+    await msbLogInventoryChange(match.id,'scan_reading',0,'Fill read '+(parsed.fillPct!==null?parsed.fillPct+'%':'unknown')+'.'+costNote);
+    actionsEl.innerHTML='<div class="note">Matched to existing product <strong>'+H(match.name)+'</strong>. Logged as a fill-level reading.'+H(costNote)+H(syncNote)+'</div>';
   }else{
-    actionsEl.innerHTML='<div class="note">No matching product on file for "'+H(parsed.brand)+'". '+
+    actionsEl.innerHTML='<div class="note">No matching product on file for "'+H(parsed.brand)+'"'+H(syncNote)+'. '+
       '<button class="btn bp bs" onclick="msbCreateProductFromScan(\''+H(parsed.brand).replace(/'/g,"\\'")+'\')">+ Add as New Product</button></div>';
   }
   rMsbBottleScan();
@@ -3246,36 +3305,39 @@ async function msbScanFood(){
     var data=await res.json();
     var text=(data.content&&data.content[0]&&data.content[0].text)||
       (data.error&&data.error.message?('Could not scan: '+data.error.message):'No response text returned.');
-    $('msb-food-result').textContent=text;
     var items=text.split('\n').map(function(l){return l.trim();}).filter(function(l){return /^-\s/.test(l);});
     var rec={id:'MSBFS-'+Date.now(),date:grdLocalToday(),items:items,raw:text};
-    var scans=bldMsbFoodScans();scans.push(rec);st('msb_food_scans',scans);grdData('write','msb_food_scans',rec);
+    var scans=bldMsbFoodScans();scans.push(rec);st('msb_food_scans',scans);
+    var syncResult=await grdData('write','msb_food_scans',rec);
+    $('msb-food-result').textContent=text+(syncResult?'':'\n\n(Saved on this device only -- server sync failed)');
     rMsbFoodInv();
   }catch(e){
     $('msb-food-result').textContent='Could not reach Claude. Check your connection and try again.';
   }
 }
-function saveMsbWaste(){
+async function saveMsbWaste(){
   var item=$('msbwasteitem').value.trim();
   var cost=Number($('msbwastecost').value||0);
   if(!item){toast('Item is required');return;}
   if(cost<=0){toast('Cost must be greater than zero');return;}
   var log=bldMsbWaste();
   var rec={id:'MSBW-'+Date.now(),item:item,cost:cost,reason:$('msbwastereason').value,date:grdLocalToday()};
-  log.push(rec);st('msb_food_waste',log);grdData('write','msb_food_waste',rec);
+  log.push(rec);st('msb_food_waste',log);
   $('msbwasteitem').value='';$('msbwastecost').value='';
   rMsbFoodInv();
-  toast('Waste logged');
+  var syncResult=await grdData('write','msb_food_waste',rec);
+  toast(syncResult?'Waste logged':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
-function saveMsbFoodCost(){
+async function saveMsbFoodCost(){
   var cost=Number($('msbfoodcostinput').value||0);
   if(cost<=0){toast('Enter a real cost amount');return;}
   var log=bldMsbFoodCostLog();
   var rec={id:'MSBFC-'+Date.now(),amount:cost,date:grdLocalToday()};
-  log.push(rec);st('msb_food_cost_log',log);grdData('write','msb_food_cost_log',rec);
+  log.push(rec);st('msb_food_cost_log',log);
   $('msbfoodcostinput').value='';
   rMsbFoodInv();
-  toast('Purchase cost logged');
+  var syncResult=await grdData('write','msb_food_cost_log',rec);
+  toast(syncResult?'Purchase cost logged':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 // Real formula, real inputs -- never a placeholder percentage. Null (shown
 // as "--") only when BOTH sides are genuinely zero; if either side has real
@@ -3311,13 +3373,14 @@ function rMsbHours(){
   var gate=msbIsAlcoholSaleAllowedNow();
   $('msb-hours-status').textContent='Right now: '+(gate.allowed?'alcohol sales ARE allowed under the configured hours.':('alcohol sales are BLOCKED -- '+gate.reason));
 }
-function saveMsbHours(){
+async function saveMsbHours(){
   var hours=[0,1,2,3,4,5,6].map(function(d){
     return{day:d,start:$('msbhour-'+d+'-start').value||'00:00',end:$('msbhour-'+d+'-end').value||'23:59'};
   });
-  st('msb_sale_hours',hours);grdData('write','msb_sale_hours',hours);
+  st('msb_sale_hours',hours);
   rMsbHours();
-  toast('Sale hours saved');
+  var syncResult=await grdData('write','msb_sale_hours',hours);
+  toast(syncResult?'Sale hours saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // == RENDER FUNCTIONS ==================================================
@@ -3759,14 +3822,14 @@ window.installDesignARZone = async function() {
   btn.onclick = function() {
     var typeEl = document.getElementById('dwelemtype'), labelEl = document.getElementById('dwelemlabel');
     var ctx = { type: typeEl ? typeEl.value : 'sprinkler', label: (labelEl && labelEl.value.trim()) || (typeEl && typeEl.options[typeEl.selectedIndex].text) || 'Element' };
-    startARDesignSession(ctx, function(elements) {
+    startARDesignSession(ctx, async function(elements) {
       if (!elements.length) return;
       var rec = (typeof ensureDesignRecord === 'function') ? ensureDesignRecord() : null;
       if (!rec) return;
       rec.elements = rec.elements.concat(elements);
-      if (typeof saveDesignRecord === 'function') saveDesignRecord(rec);
+      var syncResult = (typeof saveDesignRecord === 'function') ? await saveDesignRecord(rec) : null;
       if (typeof renderDesignElemTable === 'function') renderDesignElemTable(rec.elements);
-      if (typeof toast === 'function') toast(elements.length + ' element(s) placed via AR');
+      if (typeof toast === 'function') toast(syncResult ? (elements.length + ' element(s) placed via AR') : (elements.length + ' element(s) placed via AR, saved on this device only -- server sync failed'), syncResult ? 3000 : 7000);
     });
   };
 };
