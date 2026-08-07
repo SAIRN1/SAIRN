@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNlaw - Legal Practice Management</title>
+<style>
+:root{--p:#15803D;--pd:#14532D;--pt:#F0FDF4;--pb:#86EFAC;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* PIN */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
+.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s;}
+.pdot.on{background:var(--p);border-color:var(--p);}
+.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;}
+.pkey:hover{background:var(--pt);border-color:var(--p);}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+/* SIDEBAR */
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;transition:all .15s;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+/* MAIN */
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--p);}
+.bs{padding:6px 12px;font-size:12px;}
+/* KPIs */
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+/* FORMS */
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;transition:border .2s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--p);}
+textarea{resize:vertical;min-height:80px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+label.chk{display:flex;align-items:center;gap:8px;text-transform:none;font-weight:500;color:var(--text);font-size:13px;}
+label.chk input{width:auto;}
+/* AI */
+.achat{background:var(--bg);border-radius:10px;padding:14px;min-height:180px;max-height:320px;overflow-y:auto;font-size:13px;line-height:1.6;margin-bottom:12px;white-space:pre-wrap;}
+.amu{background:var(--p);color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;margin:6px 0 6px 40px;font-size:13px;}
+.ama{background:#fff;border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:8px 12px;margin:6px 40px 6px 0;font-size:13px;white-space:pre-wrap;}
+.air{display:flex;gap:8px;}
+.air input{flex:1;}
+.qts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.qt{background:var(--pt);border:1px solid var(--pb);color:var(--pd);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.qt:hover{background:var(--p);color:#fff;}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+/* STAT */
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:13px;color:var(--muted);}
+.sval{font-size:14px;font-weight:700;}
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),
+    linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,
+    linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),
+    linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;
+  background-repeat:no-repeat;
+  background-color:#fff;
+  background-size:24px 100%,24px 100%,10px 100%,10px 100%;
+  background-attachment:local,local,scroll,scroll;
+}
+.tw table{min-width:640px;}
+.tw:focus-visible{outline:2px solid var(--p);outline-offset:-2px;}
+.navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+#scrim.on{display:block;}
+
+@media (max-width:768px){
+  .navtog{display:flex;align-items:center;justify-content:center;}
+  aside{position:fixed;top:56px;left:0;bottom:0;width:250px;z-index:50;
+        transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);}
+  aside.on{transform:translateX(0);}
+  main{padding:14px;}
+  header{padding:0 12px;gap:10px;}
+  .hlogo{font-size:17px;}
+  .hbadge{display:none;}
+  .huser{display:none;}
+  .hbtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
+  .sb{min-height:44px;font-size:14px;}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  .btn.bs{min-height:40px;}
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .kval{font-size:20px;}
+  .g2,.g3{grid-template-columns:1fr;}
+  .fr,.fr3{grid-template-columns:1fr;}
+  .sbar{flex-wrap:wrap;}
+  .sbar input,.sbar select{width:100%!important;flex:1 1 100%;}
+  .ph{gap:8px;}
+  .ptitle{font-size:19px;}
+  .pa{margin-left:0;width:100%;}
+  .mbox{width:94%;padding:20px;}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media (max-width:420px){
+  .krow{grid-template-columns:1fr 1fr;}
+}
+@media print{
+  #gate,#pin,aside,header .hr,.pa,.navtog,#scrim{display:none!important;}
+  main{padding:0;}
+  .panel{display:block!important;}
+  body{font-size:12px;}
+  .card{box-shadow:none;border:1px solid #ddd;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNlaw</div>
+    <div class="gsub">Legal Practice Management &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="LAW-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNlaw</div>
+    <div class="prole">Enter your 4-digit PIN</div>
+    <div class="pdots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
+    <div class="ppad">
+      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
+      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
+      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
+      <button class="pkey" onclick="pk('C')">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')">&larr;</button>
+    </div>
+    <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="aside">&#9776;</button>
+    <div class="hlogo">SAIRNlaw</div>
+    <div class="hbadge">Legal Practice Ops</div>
+    <div class="hr">
+      <span class="huser" id="huser">Owner</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div id="scrim" onclick="closeNav()"></div>
+  <div class="wrap">
+    <aside id="aside" aria-label="Main navigation">
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
+      <div class="ss">Matters</div>
+      <button class="sb" id="sb-intake" onclick="nav('intake')"><span class="sico">&#128100;</span>Client / Matter Intake</button>
+      <button class="sb" id="sb-matters" onclick="nav('matters')"><span class="sico">&#128194;</span>Matter / Case Management</button>
+      <button class="sb" id="sb-calendar" onclick="nav('calendar')"><span class="sico">&#128197;</span>Calendaring &amp; Deadlines</button>
+      <div class="ss">Finance</div>
+      <button class="sb" id="sb-trust" onclick="nav('trust')"><span class="sico">&#127974;</span>Trust Accounting (IOLTA)</button>
+      <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128179;</span>Time Tracking &amp; Billing</button>
+      <div class="sfoot">SAIRNlaw v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 1</span></div>
+    </aside>
+    <main>
+
+<!-- DASHBOARD -->
+<div class="panel on" id="panel-dashboard">
+  <div class="ph"><div><div class="ptitle">Dashboard</div><div class="psub">Real-time overview &middot; Pinnacle Legal Group</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open Matters</div><div class="kval" id="k-openmatters">0</div><div class="kt">Active</div></div>
+    <div class="kpi"><div class="klbl">Deadlines This Week</div><div class="kval" id="k-deadlines">0</div><div class="kt">Not yet complete</div></div>
+    <div class="kpi"><div class="klbl">Trust Balance</div><div class="kval" id="k-trustbalance">$0</div><div class="kt">All clients, combined</div></div>
+    <div class="kpi"><div class="klbl">Unbilled Hours</div><div class="kval" id="k-unbilled">0</div><div class="kt">This month</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
+  <div class="card"><div class="ch"><span class="ct">Upcoming Deadlines</span></div><div class="cb" id="d-deadlines"></div></div>
+</div>
+
+<!-- AI ASSISTANT -->
+<div class="panel" id="panel-ai">
+  <div class="ph"><div><div class="ptitle">AI Assistant</div><div class="psub">Powered by Claude &middot; Citation-grounded &mdash; never presents an unverified case citation or statute as fact</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="clrAI()">Clear</button></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    This assistant will not assert a case citation, statute reference, or legal holding as settled fact unless it is
+    traceable to something already on file in this system (a matter, document, or note you entered) -- anything else
+    it says about case law is explicitly flagged as needing independent verification, never presented as confirmed.
+    This is enforced by the system prompt below, not a UI label bolted onto unverified output.
+  </div>
+  <div class="card"><div class="cb">
+    <div class="qts">
+      <span class="qt" onclick="askAI('Draft a client intake memo summarizing a new matter')">Intake Memo</span>
+      <span class="qt" onclick="askAI('What information should a conflict-of-interest check cover before opening a new matter?')">Conflict Check Basics</span>
+      <span class="qt" onclick="askAI('Draft a polite deadline-reminder email to a client')">Deadline Reminder</span>
+      <span class="qt" onclick="askAI('Explain UTBMS litigation billing codes at a high level')">UTBMS Overview</span>
+    </div>
+    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div></div>
+    <div class="air"><input id="ainp" placeholder="Ask about matters, deadlines, trust accounting, billing..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
+  </div></div>
+</div>
+
+<!-- CLIENT / MATTER INTAKE -->
+<div class="panel" id="panel-intake">
+  <div class="ph"><div><div class="ptitle">Client / Matter Intake</div><div class="psub">New matter creation with a real conflict-of-interest check against every existing matter</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openClientModal()">+ Add Client</button><button class="btn bp bs" onclick="openMatterModal()">+ New Matter</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Clients</div><div class="kval" id="in-clients">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">Total Matters</div><div class="kval" id="in-matters">0</div><div class="kt">All time</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Clients</span></div><div class="cb">
+    <div class="sbar"><input id="clsrch" placeholder="Search by name..." oninput="rIntake()"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Name</th><th>Type</th><th>Phone</th><th>Email</th><th>Matters</th><th>Actions</th></tr></thead>
+    <tbody id="cltbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Matters</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Matter #</th><th>Client</th><th>Name</th><th>Practice Area</th><th>Status</th><th>Conflict Check</th></tr></thead>
+    <tbody id="mtintaketbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="clientmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Client</div>
+    <div class="fr"><div class="fg"><label>Name</label><input id="clname" placeholder="Full name or organization"></div><div class="fg"><label>Type</label><select id="cltype"><option>Individual</option><option>Organization</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Phone</label><input id="clphone"></div><div class="fg"><label>Email</label><input id="clemail" type="email"></div></div>
+    <div class="fg"><label>Address</label><input id="claddr"></div>
+    <div class="fg"><label>Notes</label><textarea id="clnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeClientModal()">Cancel</button>
+      <button class="btn bp" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="mattermodal">
+  <div class="mbox">
+    <div class="mtitle">New Matter</div>
+    <div class="fg"><label>Client</label><select id="mtclient" onchange="mtRunConflictCheck()"></select></div>
+    <div class="fg"><label>Matter Name</label><input id="mtname" placeholder="Smith v. Jones -- Contract Dispute" oninput="mtRunConflictCheck()"></div>
+    <div class="fr"><div class="fg"><label>Practice Area</label><input id="mtarea" placeholder="Litigation, Family Law, Estate Planning..."></div><div class="fg"><label>Responsible Attorney</label><input id="mtattorney"></div></div>
+    <div class="fg"><label>Opposing / Other Parties (one per line)</label><textarea id="mtparties" rows="3" placeholder="Jones Manufacturing Inc.&#10;John Jones" oninput="mtRunConflictCheck()"></textarea></div>
+    <div class="card" id="mt-conflict-result" style="margin-bottom:14px"></div>
+    <div class="fg"><label class="chk"><input type="checkbox" id="mtoverride"> I've reviewed the flagged conflict(s) above and confirmed this matter may proceed</label></div>
+    <div class="fg"><label>Notes</label><textarea id="mtnotes" rows="2"></textarea></div>
+    <div class="perr" id="matter-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMatterModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMatter()">Open Matter</button>
+    </div>
+  </div>
+</div>
+
+<!-- MATTER / CASE MANAGEMENT -->
+<div class="panel" id="panel-matters">
+  <div class="ph"><div><div class="ptitle">Matter / Case Management</div><div class="psub">Status, tasks, milestones, and linked documents per matter</div></div></div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Matter</label><select id="mmatter" onchange="rMatterDetail()"></select></div>
+    <div id="matter-detail"></div>
+  </div></div>
+</div>
+<div class="modal" id="taskmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Task</div>
+    <div class="fg"><label>Title</label><input id="tktitle"></div>
+    <div class="fr"><div class="fg"><label>Due Date</label><input id="tkdue" type="date"></div><div class="fg"><label>Assigned To</label><input id="tkassignee"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTaskModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="milestonemodal">
+  <div class="mbox">
+    <div class="mtitle">Add Milestone</div>
+    <div class="fg"><label>Title</label><input id="msttitle"></div>
+    <div class="fg"><label>Date</label><input id="mstdate" type="date"></div>
+    <div class="fg"><label>Notes</label><textarea id="mstnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMilestoneModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMilestone()">Add Milestone</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="matterdocmodal">
+  <div class="mbox">
+    <div class="mtitle">Link Document</div>
+    <div class="fg"><label>Title</label><input id="mdoctitle"></div>
+    <div class="fr"><div class="fg"><label>Type</label><input id="mdoctype" placeholder="Pleading, Contract, Correspondence..."></div><div class="fg"><label>Link / Reference</label><input id="mdocref" placeholder="URL or file reference"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMatterDocModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMatterDoc()">Link Document</button>
+    </div>
+  </div>
+</div>
+
+<!-- CALENDARING & DEADLINES -->
+<div class="panel" id="panel-calendar">
+  <div class="ph"><div><div class="ptitle">Calendaring &amp; Deadlines</div><div class="psub">Statute-of-limitations and court-deadline tracking with real conflict checking</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openDeadlineModal()">+ New Deadline</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Due This Week</div><div class="kval" id="dl-week">0</div><div class="kt">Not yet complete</div></div>
+    <div class="kpi"><div class="klbl">Overdue</div><div class="kval" id="dl-overdue">0</div><div class="kt d">Missed or unmarked</div></div>
+    <div class="kpi"><div class="klbl">Total Tracked</div><div class="kval" id="dl-total">0</div><div class="kt">All statuses</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar"><select id="dlfilter" onchange="rCalendar()"><option value="">All matters</option></select></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Matter</th><th>Type</th><th>Title</th><th>Due</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="dltbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="deadlinemodal">
+  <div class="mbox">
+    <div class="mtitle">New Deadline</div>
+    <div class="fg"><label>Matter</label><select id="dlmatter"></select></div>
+    <div class="fr"><div class="fg"><label>Type</label><select id="dltype"><option>Statute of Limitations</option><option>Court Deadline</option><option>Hearing</option><option>Filing Deadline</option><option>Other</option></select></div><div class="fg"><label>Title</label><input id="dltitle"></div></div>
+    <div class="fr"><div class="fg"><label>Due Date</label><input id="dldate" type="date"></div><div class="fg"><label>Due Time (optional, hearings)</label><input id="dltime" type="time"></div></div>
+    <div class="fg"><label>End Time (optional -- enables conflict checking against other hearings the same day)</label><input id="dlendtime" type="time"></div>
+    <div class="fg"><label>Location</label><input id="dllocation" placeholder="Courtroom, address..."></div>
+    <div class="perr" id="deadline-err" role="alert" aria-live="polite"></div>
+    <div class="fg"><label>Notes</label><textarea id="dlnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDeadlineModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDeadline()">Save Deadline</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRUST ACCOUNTING (IOLTA) -->
+<div class="panel" id="panel-trust">
+  <div class="ph"><div><div class="ptitle">Trust Accounting (IOLTA)</div><div class="psub">Client funds, tracked completely separate from firm operating funds &mdash; append-only, fully audited</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openBankStatementModal()">Enter Bank Statement</button><button class="btn bp bs" onclick="openTrustModal()">+ New Transaction</button></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    No transaction is ever edited or deleted -- entries are append-only. A mistaken entry is corrected by voiding it
+    with a mandatory reason (the void stays visible in the record, it never disappears), never by silent edit or
+    deletion. This is the real audit-trail requirement, not a UI convention.
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Three-Way Reconciliation</span></div><div class="cb">
+    <div style="color:var(--muted);font-size:12px;margin-bottom:12px">
+      The three balances below are computed by exact arithmetic on the real transaction records, never by an AI
+      model -- an LLM verifying its own numeric claim is exactly the failure mode this app's AI Assistant is built
+      to avoid elsewhere. "AI-verified" here means the Explain button below can ask Claude to describe a detected
+      mismatch in plain language after the real computed check has already found it, not that the AI performs the
+      comparison itself.
+    </div>
+    <div class="g3">
+      <div class="srow" style="flex-direction:column;align-items:flex-start;gap:4px"><span class="slbl">Bank Statement Balance</span><span class="sval" id="tr-bankbal" style="font-size:20px">$0</span></div>
+      <div class="srow" style="flex-direction:column;align-items:flex-start;gap:4px"><span class="slbl">Trust Ledger Balance</span><span class="sval" id="tr-ledgerbal" style="font-size:20px">$0</span></div>
+      <div class="srow" style="flex-direction:column;align-items:flex-start;gap:4px"><span class="slbl">Sum of Client Ledgers</span><span class="sval" id="tr-clientsum" style="font-size:20px">$0</span></div>
+    </div>
+    <div id="tr-reconcile-result" style="margin-top:14px"></div>
+    <button class="btn bo bs" id="tr-explain-btn" style="display:none;margin-top:10px" onclick="explainReconciliation()">Explain This Discrepancy (AI)</button>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Client Ledger Balances</span></div><div class="cb" id="tr-client-ledgers"></div></div>
+  <div class="card"><div class="ch"><span class="ct">Transaction Log</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Client</th><th>Matter</th><th>Type</th><th>Amount</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="trtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="trustmodal">
+  <div class="mbox">
+    <div class="mtitle">New Trust Transaction</div>
+    <div class="fg"><label>Matter</label><select id="trmatter" onchange="trMatterChange()"></select></div>
+    <div class="fg"><label>Client</label><input id="trclient" readonly></div>
+    <div class="fr"><div class="fg"><label>Type</label><select id="trtype"><option>Deposit</option><option>Disbursement</option></select></div><div class="fg"><label>Amount ($)</label><input id="tramount" type="number"></div></div>
+    <div class="fr"><div class="fg"><label>Date</label><input id="trdate" type="date"></div><div class="fg"><label>Method</label><select id="trmethod"><option>Check</option><option>Wire</option><option>Cash</option><option>Other</option></select></div></div>
+    <div class="fg"><label>Reference Number</label><input id="trref"></div>
+    <div class="fg"><label>Description</label><input id="trdesc"></div>
+    <div class="perr" id="trust-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTrustModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTrustTransaction()">Record Transaction</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="voidmodal">
+  <div class="mbox">
+    <div class="mtitle">Void Transaction</div>
+    <div class="fg" id="void-label" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div class="fg"><label>Reason (required)</label><textarea id="voidreason" rows="3"></textarea></div>
+    <div class="perr" id="void-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeVoidModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmVoid()">Void Transaction</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="bankstatementmodal">
+  <div class="mbox">
+    <div class="mtitle">Enter Bank Statement Balance</div>
+    <div class="fr"><div class="fg"><label>Statement Date</label><input id="bsdate" type="date"></div><div class="fg"><label>Bank Balance ($)</label><input id="bsbalance" type="number"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeBankStatementModal()">Cancel</button>
+      <button class="btn bp" onclick="saveBankStatement()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- TIME TRACKING & BILLING -->
+<div class="panel" id="panel-billing">
+  <div class="ph"><div><div class="ptitle">Time Tracking &amp; Billing</div><div class="psub">UTBMS-style billing codes, invoice generation, split-fee billing</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openTimeModal()">+ Log Time</button><button class="btn bp bs" onclick="openInvoiceModal()">+ New Invoice</button></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    Billing codes seeded below are a representative subset of the real, publicly-published UTBMS Litigation code set
+    (L100-L700 series), entered from memory of the published standard -- verify against the official UTBMS/LEDES
+    code list before relying on these for real client billing or LEDES export.
+  </div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Unbilled Hours</div><div class="kval" id="bl-unbilled">0</div><div class="kt">This month</div></div>
+    <div class="kpi"><div class="klbl">Unbilled Value</div><div class="kval" id="bl-unbilledvalue">$0</div><div class="kt">This month</div></div>
+    <div class="kpi"><div class="klbl">Outstanding Invoices</div><div class="kval" id="bl-outstanding">$0</div><div class="kt">Not paid</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Time Entries</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Matter</th><th>Attorney</th><th>Code</th><th>Hours</th><th>Billable</th><th>Description</th></tr></thead>
+    <tbody id="tttbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Invoices</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Invoice #</th><th>Matter</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="ivtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="timemodal">
+  <div class="mbox">
+    <div class="mtitle">Log Time</div>
+    <div class="fg"><label>Matter</label><select id="ttmatter"></select></div>
+    <div class="fr"><div class="fg"><label>Attorney</label><input id="ttattorney"></div><div class="fg"><label>Date</label><input id="ttdate" type="date"></div></div>
+    <div class="fg"><label>Billing Code (UTBMS)</label><select id="ttcode"></select></div>
+    <div class="fr"><div class="fg"><label>Hours</label><input id="tthours" type="number" step="0.1"></div><div class="fg"><label>Rate ($/hr)</label><input id="ttrate" type="number"></div></div>
+    <div class="fg"><label>Description</label><textarea id="ttdesc" rows="2"></textarea></div>
+    <div class="fg"><label class="chk"><input type="checkbox" id="ttbillable" checked> Billable</label></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTimeModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTime()">Save Entry</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="invoicemodal">
+  <div class="mbox">
+    <div class="mtitle">New Invoice</div>
+    <div class="fg"><label>Matter</label><select id="ivmatter" onchange="rInvoiceEntryPicker()"></select></div>
+    <div class="fg"><label>Unbilled Time Entries</label><div id="iv-entry-picker" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div></div>
+    <div class="fg"><div class="srow" style="border:none;padding:0"><span class="slbl">Invoice Total</span><span class="sval" id="iv-total-preview">$0</span></div></div>
+    <div class="fg"><label>Split-Fee Billing (optional -- attorney, percentage, one per line, e.g. "J. Ortiz, 70")</label><textarea id="ivsplits" rows="2" placeholder="J. Ortiz, 70&#10;Referring Counsel, 30"></textarea></div>
+    <div class="perr" id="invoice-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeInvoiceModal()">Cancel</button>
+      <button class="btn bp" onclick="saveInvoice()">Create Invoice</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairnlaw';
+var PROXY='https://sairn.vercel.app/api/claude';
+var DATA_API='https://sairn.vercel.app/api/sd-data';
+
+function lawLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
+// validation is server-side in api/_lib/license.js against license_keys.
+var VALID=['LAW-','DEMO-','SAIRN-'];
+var DEFAULT_PINS={owner:'1234',attorney:'2345',paralegal:'3456'};
+var PINS=ld('law_pins',null)||DEFAULT_PINS;
+
+// SESSION INDEPENDENCE (per the build brief -- the named Amicus Attorney
+// bug class: one user's session affecting another logged-in user's
+// session). This app never stores session state anywhere shared across
+// browser instances -- no BroadcastChannel, no server-side single-slot
+// session object, no SharedWorker. pbuf/prole below are plain in-memory
+// JS variables scoped to THIS page load; PINS/license key persist only in
+// THIS browser's own localStorage. Two different users on two different
+// devices (the real, supported usage pattern -- see every other SAIRN
+// app's identical PIN-role scaffold) are fully independent by
+// construction. The one deliberately NOT supported case: two different
+// users sharing the exact same physical browser profile would share that
+// profile's localStorage (true of any localStorage-based app, not a bug
+// introduced here) -- real multi-user-per-device isolation would need
+// per-employee server-auth (the pattern StoneDesk/SAIRNbiz graduated to),
+// out of scope for a Phase 1 scaffold.
+var pbuf='',prole='owner',ceid=null,aiHist=[];
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
+
+function lawLicenseKey(){ return localStorage.getItem('law_license_key') || ''; }
+
+function sdnData(action,resource,payload){
+  var lic=lawLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  return fetch(DATA_API,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      return d.data;
+    });
+  }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
+}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key format. Try LAW-PINNACLE-2026';return;}
+  localStorage.setItem('law_license_key',k);
+  $('gate').style.display='none';$('pin').classList.add('on');
+}
+function pk(k){$('perr').textContent='';
+  if(k==='C'){pbuf='';dots();return;}
+  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
+  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+}
+function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+function chkPin(){
+  var match=null;
+  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
+  if(match){
+    prole=match;st('law_role',prole);
+    $('pin').classList.remove('on');$('app').classList.add('on');
+    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
+    init();
+  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+}
+function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+function toggleNav(){
+  var a=$('aside');if(!a)return;
+  var open=a.classList.toggle('on');
+  $('scrim').classList.toggle('on',open);
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded',open?'true':'false');
+}
+function closeNav(){
+  var a=$('aside');if(a)a.classList.remove('on');
+  $('scrim').classList.remove('on');
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded','false');
+}
+
+function nav(id){
+  closeNav();
+  document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='dashboard')rDash();
+  if(id==='ai'){}
+  if(id==='intake')rIntake();
+  if(id==='matters')rMattersPanel();
+  if(id==='calendar')rCalendar();
+  if(id==='trust')rTrust();
+  if(id==='billing')rBilling();
+}
+
+// ── DATA ACCESSORS ────────────────────────────────────────────────────────
+function clients(){return ld('law_clients',[]);}
+function matters(){return ld('law_matters',[]);}
+function matterTasks(){return ld('law_mattertasks',[]);}
+function matterMilestones(){return ld('law_mattermilestones',[]);}
+function matterDocs(){return ld('law_matterdocs',[]);}
+function deadlines(){return ld('law_deadlines',[]);}
+function trustTransactions(){return ld('law_trusttx',[]);}
+function bankStatements(){return ld('law_bankstatements',[]);}
+function billingCodes(){return ld('law_billingcodes',[]);}
+function timeEntries(){return ld('law_timeentries',[]);}
+function invoices(){return ld('law_invoices',[]);}
+function clientLabel(id){var c=clients().find(function(x){return x.id===id;});return c?c.name:'(unknown client)';}
+function matterLabel(id){var m=matters().find(function(x){return x.id===id;});return m?(m.matter_number+' -- '+m.matter_name):'(unknown matter)';}
+
+function fillMatterSelects(){
+  var opts=matters().map(function(m){return '<option value="'+m.id+'">'+H(m.matter_number)+' -- '+H(m.matter_name)+'</option>';}).join('');
+  var needsBlank={dlfilter:1};
+  ['mmatter','dlmatter','dlfilter','trmatter','ttmatter','ivmatter'].forEach(function(id){
+    var el=$(id);if(!el)return;
+    var cur=el.value;
+    el.innerHTML=(needsBlank[id]?'<option value="">All matters</option>':'')+opts;
+    if(cur)el.value=cur;
+  });
+  var clopts=clients().map(function(c){return '<option value="'+c.id+'">'+H(c.name)+'</option>';}).join('');
+  var el=$('mtclient');if(el){var cur=el.value;el.innerHTML=clopts;if(cur)el.value=cur;}
+}
+
+// ── SEED DATA ─────────────────────────────────────────────────────────────
+function seed(){
+  if(ld('law_seeded',false))return;
+  st('law_clients',[
+    {id:'CL-1',name:'Margaret Ostrander',type:'Individual',phone:'(440) 555-0140',email:'margaret.ostrander@example.com',address:'',notes:'',created_at:lawLocalToday()},
+    {id:'CL-2',name:'Delacroix Manufacturing LLC',type:'Organization',phone:'(440) 555-0166',email:'legal@delacroixmfg.example.com',address:'',notes:'',created_at:lawLocalToday()}
+  ]);
+  st('law_matters',[
+    {id:'MT-1',matter_number:'2026-0001',client_id:'CL-1',matter_name:'Ostrander Estate Planning',practice_area:'Estate Planning',
+      status:'Open',opened_date:lawLocalToday(),closed_date:'',responsible_attorney:'J. Ortiz',opposing_parties:[],notes:'',created_at:lawLocalToday()},
+    {id:'MT-2',matter_number:'2026-0002',client_id:'CL-2',matter_name:'Delacroix v. Reyes Supply Co.',practice_area:'Commercial Litigation',
+      status:'Open',opened_date:lawLocalToday(),closed_date:'',responsible_attorney:'S. Whitfield',opposing_parties:['Reyes Supply Co.','Marcus Reyes'],notes:'',created_at:lawLocalToday()}
+  ]);
+  st('law_mattertasks',[
+    {id:'TK-1',matter_id:'MT-2',title:'Draft initial discovery requests',due_date:lawLocalToday(),status:'Open',assigned_to:'S. Whitfield',created_at:lawLocalToday()}
+  ]);
+  st('law_mattermilestones',[]);
+  st('law_matterdocs',[]);
+  st('law_deadlines',[
+    {id:'DL-1',matter_id:'MT-2',type:'Filing Deadline',title:'Answer to Complaint due',due_date:lawLocalToday(),due_time:'',end_time:'',status:'Pending',location:'',notes:'',created_at:lawLocalToday()}
+  ]);
+  st('law_trusttx',[
+    {id:'TR-1',matter_id:'MT-1',client_id:'CL-1',type:'Deposit',amount:5000,date:lawLocalToday(),method:'Check',reference_number:'1042',description:'Initial retainer',status:'Posted',voided_reason:'',voided_at:'',created_at:lawLocalToday()}
+  ]);
+  st('law_bankstatements',[
+    {id:'BS-1',statement_date:lawLocalToday(),bank_balance:5000,created_at:lawLocalToday()}
+  ]);
+  // Real, publicly-published UTBMS Litigation code set -- see the panel's
+  // own on-screen disclosure: entered from memory of the published
+  // standard, not fabricated, but verify against the official UTBMS/LEDES
+  // list before relying on these for real billing/LEDES export.
+  st('law_billingcodes',[
+    {id:'L100',code:'L100',label:'Case Assessment, Development and Administration'},
+    {id:'L110',code:'L110',label:'Fact Investigation/Development'},
+    {id:'L120',code:'L120',label:'Analysis/Strategy'},
+    {id:'L130',code:'L130',label:'Experts/Consultants'},
+    {id:'L140',code:'L140',label:'Document/File Management'},
+    {id:'L160',code:'L160',label:'Settlement/Non-Binding ADR'},
+    {id:'L190',code:'L190',label:'Other Case Assessment, Development and Administration'},
+    {id:'L210',code:'L210',label:'Pleadings'},
+    {id:'L220',code:'L220',label:'Preliminary Injunctions/Provisional Remedies'},
+    {id:'L230',code:'L230',label:'Court Mandated Conferences'},
+    {id:'L240',code:'L240',label:'Dispositive Motions'},
+    {id:'L250',code:'L250',label:'Other Written Motions and Submissions'},
+    {id:'L310',code:'L310',label:'Written Discovery'},
+    {id:'L320',code:'L320',label:'Document Production'},
+    {id:'L330',code:'L330',label:'Depositions'},
+    {id:'L340',code:'L340',label:'Expert Discovery'},
+    {id:'L350',code:'L350',label:'Discovery Motions'},
+    {id:'L390',code:'L390',label:'Other Discovery'},
+    {id:'L410',code:'L410',label:'Fact Witnesses'},
+    {id:'L420',code:'L420',label:'Expert Witnesses'},
+    {id:'L430',code:'L430',label:'Written Discovery Response/Trial Preparation'},
+    {id:'L440',code:'L440',label:'Other Trial Preparation and Support'},
+    {id:'L450',code:'L450',label:'Trial and Hearing Attendance'},
+    {id:'L460',code:'L460',label:'Post-Trial Motions and Submissions'},
+    {id:'L510',code:'L510',label:'Appellate Motions and Submissions'},
+    {id:'L520',code:'L520',label:'Appellate Briefs'},
+    {id:'L530',code:'L530',label:'Oral Argument'}
+  ]);
+  st('law_timeentries',[]);
+  st('law_invoices',[]);
+  st('law_seeded',true);
+}
+
+// ── AI ASSISTANT ──────────────────────────────────────────────────────────
+function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div>';}
+function askAI(q){$('ainp').value=q;sendAI();}
+async function sendAI(){
+  var inp=$('ainp'),q=(inp.value||'').trim();
+  if(!q)return;
+  inp.value='';
+  var chat=$('achat');
+  if(chat.querySelector('div[style*="text-align:center"]'))chat.innerHTML='';
+  chat.innerHTML+='<div class="amu">'+H(q)+'</div>';
+  chat.scrollTop=chat.scrollHeight;
+  aiHist.push({role:'user',content:q});
+  var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
+  chat.scrollTop=chat.scrollHeight;
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:600,
+        // Citation-grounding instruction -- the actual enforcement mechanism
+        // for this panel's promise, not a UI label. This does not make
+        // hallucination structurally impossible (no system prompt can, for
+        // any LLM) -- it's the same class of mitigation as a disclaimer
+        // plus explicit refusal instruction, not a verification system. A
+        // real citation-verification system (checking a generated citation
+        // against an actual case-law database) is a materially larger
+        // build -- out of scope for Phase 1, flagged here rather than
+        // silently implied as solved.
+        system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). CRITICAL RULE: never state a case citation, statute reference, docket number, or specific legal holding as settled fact unless the user has provided it to you in this conversation or it is already on file in the data you were given. If asked about case law, statutes, or legal holdings you were not given verbatim by the user, you MUST explicitly say the citation/holding needs independent verification (e.g., "I do not have a verified citation for this -- confirm against Westlaw/Lexis or primary sources before relying on it") rather than presenting any generated-sounding citation as real. This rule applies even if you believe you recall a real case -- your training data is not a verified legal database and citation recall from language models has caused real court sanctions (Mata v. Avianca, 2023) from fabricated citations submitted in real filings. Never repeat that failure. Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to this restriction.',
+        messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    thinking.textContent=text;
+    aiHist.push({role:'assistant',content:text});
+  }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
+  chat.scrollTop=chat.scrollHeight;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+function rDash(){
+  var mt=matters(),dl=deadlines(),tx=trustTransactions(),te=timeEntries();
+  $('k-openmatters').textContent=mt.filter(function(m){return m.status==='Open';}).length;
+  var weekAhead=new Date(Date.now()+7*24*60*60*1000).getTime();
+  $('k-deadlines').textContent=dl.filter(function(d){return d.status==='Pending'&&new Date(d.due_date+'T00:00:00').getTime()<=weekAhead;}).length;
+  $('k-trustbalance').textContent=fmt(trustLedgerBalance(tx));
+  var thisMonth=lawLocalToday().slice(0,7);
+  var unbilled=te.filter(function(t){return t.billable&&!t.invoiced&&(t.date||'').slice(0,7)===thisMonth;});
+  $('k-unbilled').textContent=unbilled.reduce(function(s,t){return s+(Number(t.hours)||0);},0).toFixed(1);
+
+  var attention=[];
+  var today=lawLocalToday();
+  dl.forEach(function(d){
+    if(d.status==='Pending'&&d.due_date<today)attention.push({t:H(matterLabel(d.matter_id))+' -- "'+H(d.title)+'" is overdue',b:'Overdue',c:'br'});
+  });
+  var recon=reconcileTrust();
+  if(!recon.matches)attention.push({t:'Trust reconciliation mismatch detected -- see Trust Accounting',b:'Trust Alert',c:'br'});
+  $('d-attention').innerHTML=attention.length?attention.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">Nothing needs attention</div>';
+
+  var upcoming=dl.filter(function(d){return d.status==='Pending';}).slice().sort(function(a,b){return (a.due_date||'').localeCompare(b.due_date||'');}).slice(0,5);
+  $('d-deadlines').innerHTML=upcoming.length?upcoming.map(function(d){
+    return '<div class="srow"><span class="slbl">'+H(matterLabel(d.matter_id))+' -- '+H(d.title)+'</span><span class="sval">'+fdate(d.due_date)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No upcoming deadlines</div>';
+}
+
+// ── CLIENT / MATTER INTAKE ────────────────────────────────────────────────
+// Real conflict-of-interest check: searches every existing matter's client
+// name AND opposing/other-party names against the names being entered on
+// the new matter. Not a fuzzy/AI check -- exact-normalized substring
+// matching against real on-file data, same discipline as SAIRNlegacy's
+// monument inscription cross-check. Blocks opening the matter unless
+// status stays informational or the override box is explicitly checked,
+// and the conflict result is stored on the matter record for the audit
+// trail either way.
+function conflictCheck(namesToCheck,excludeMatterId){
+  var normalized=namesToCheck.map(normalizeCompare).filter(Boolean);
+  if(!normalized.length)return [];
+  var hits=[];
+  matters().forEach(function(m){
+    if(m.id===excludeMatterId)return;
+    var namesOnFile=[clientLabel(m.client_id)].concat(m.opposing_parties||[]).map(normalizeCompare).filter(Boolean);
+    normalized.forEach(function(n){
+      if(namesOnFile.indexOf(n)!==-1){
+        hits.push({name:n,matter:matterLabel(m.id)});
+      }
+    });
+  });
+  return hits;
+}
+function normalizeCompare(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function mtRunConflictCheck(){
+  var clientId=$('mtclient').value;
+  var client=clients().find(function(x){return x.id===clientId;});
+  var parties=($('mtparties').value||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+  var namesToCheck=(client?[client.name]:[]).concat(parties);
+  var hits=conflictCheck(namesToCheck,null);
+  var box=$('mt-conflict-result');
+  if(!namesToCheck.length){box.innerHTML='';return;}
+  if(!hits.length){
+    box.innerHTML='<div class="cb" style="color:var(--ok);font-size:13px">&#10003; No conflicts found against '+matters().length+' existing matter(s) on file</div>';
+  }else{
+    box.innerHTML='<div class="cb" style="color:var(--danger);font-size:13px"><strong>Conflict(s) found:</strong><ul style="margin:6px 0 0 18px">'+
+      hits.map(function(h){return '<li>"'+H(h.name)+'" also appears on '+H(h.matter)+'</li>';}).join('')+'</ul></div>';
+  }
+}
+function openClientModal(){
+  ['clname','clphone','clemail','claddr','clnotes'].forEach(function(f){$(f).value='';});
+  $('cltype').value='Individual';
+  $('clientmodal').classList.add('on');
+}
+function closeClientModal(){$('clientmodal').classList.remove('on');}
+async function saveClient(){
+  var name=$('clname').value.trim();
+  if(!name){toast('Name required');return;}
+  var rec={id:newId('CL'),name:name,type:$('cltype').value,phone:$('clphone').value.trim(),
+    email:$('clemail').value.trim(),address:$('claddr').value.trim(),notes:$('clnotes').value.trim(),created_at:lawLocalToday()};
+  var list=clients();list.push(rec);st('law_clients',list);
+  closeClientModal();rIntake();fillMatterSelects();
+  var syncResult=await sdnData('write','law_clients',rec);
+  toast(syncResult?'Client saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function nextMatterNumber(){
+  var year=new Date().getFullYear();
+  var existing=matters().filter(function(m){return (m.matter_number||'').indexOf(year+'-')===0;});
+  return year+'-'+String(existing.length+1).padStart(4,'0');
+}
+function openMatterModal(){
+  fillMatterSelects();
+  ['mtname','mtarea','mtattorney','mtparties','mtnotes'].forEach(function(f){$(f).value='';});
+  $('mtoverride').checked=false;$('mt-conflict-result').innerHTML='';$('matter-err').textContent='';
+  $('mattermodal').classList.add('on');
+}
+function closeMatterModal(){$('mattermodal').classList.remove('on');}
+function newMatterForClient(clientId){
+  openMatterModal();
+  $('mtclient').value=clientId;
+}
+async function saveMatter(){
+  var clientId=$('mtclient').value,name=$('mtname').value.trim();
+  if(!clientId){$('matter-err').textContent='Select a client';return;}
+  if(!name){$('matter-err').textContent='Matter name required';return;}
+  var client=clients().find(function(x){return x.id===clientId;});
+  var parties=($('mtparties').value||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+  var namesToCheck=(client?[client.name]:[]).concat(parties);
+  var hits=conflictCheck(namesToCheck,null);
+  if(hits.length&&!$('mtoverride').checked){
+    $('matter-err').textContent='Conflict(s) found -- review above and check the override box to proceed, or resolve the conflict first';
+    return;
+  }
+  var rec={id:newId('MT'),matter_number:nextMatterNumber(),client_id:clientId,matter_name:name,
+    practice_area:$('mtarea').value.trim(),status:'Open',opened_date:lawLocalToday(),closed_date:'',
+    responsible_attorney:$('mtattorney').value.trim(),opposing_parties:parties,
+    conflict_check_result:hits,notes:$('mtnotes').value.trim(),created_at:lawLocalToday()};
+  var list=matters();list.push(rec);st('law_matters',list);
+  closeMatterModal();rIntake();rDash();fillMatterSelects();
+  var syncResult=await sdnData('write','law_matters',rec);
+  toast(syncResult?'Matter opened':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rIntake(){
+  fillMatterSelects();
+  var cl=clients(),mt=matters();
+  $('in-clients').textContent=cl.length;
+  $('in-matters').textContent=mt.length;
+  var q=($('clsrch').value||'').toLowerCase();
+  var filtered=cl.filter(function(c){return !q||c.name.toLowerCase().indexOf(q)!==-1;});
+  var cltb=$('cltbody');
+  cltb.innerHTML=filtered.length?filtered.map(function(c){
+    var matterCount=mt.filter(function(m){return m.client_id===c.id;}).length;
+    return '<tr><td>'+H(c.name)+'</td><td>'+H(c.type)+'</td><td>'+H(c.phone||'--')+'</td><td>'+H(c.email||'--')+'</td><td>'+matterCount+'</td>'+
+      '<td><button class="btn bo bs" onclick="newMatterForClient(\''+c.id+'\')">New Matter</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No clients found</td></tr>';
+  var statusColors={Open:'bg',Pending:'bw',Closed:'bx'};
+  var mttb=$('mtintaketbody');
+  mttb.innerHTML=mt.length?mt.slice().reverse().map(function(m){
+    var hits=m.conflict_check_result||[];
+    return '<tr><td>'+H(m.matter_number)+'</td><td>'+H(clientLabel(m.client_id))+'</td><td>'+H(m.matter_name)+'</td><td>'+H(m.practice_area||'--')+'</td>'+
+      '<td><span class="badge '+(statusColors[m.status]||'bx')+'">'+H(m.status)+'</span></td>'+
+      '<td>'+(hits.length?'<span class="badge bw">'+hits.length+' flagged, overridden</span>':'<span class="badge bg">Clear</span>')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No matters yet</td></tr>';
+}
+
+// ── MATTER / CASE MANAGEMENT ──────────────────────────────────────────────
+function openTaskModal(){['tktitle','tkdue','tkassignee'].forEach(function(f){$(f).value='';});$('taskmodal').classList.add('on');}
+function closeTaskModal(){$('taskmodal').classList.remove('on');}
+async function saveTask(){
+  var matterId=$('mmatter').value,title=$('tktitle').value.trim();
+  if(!matterId){toast('Select a matter first');return;}
+  if(!title){toast('Title required');return;}
+  var rec={id:newId('TK'),matter_id:matterId,title:title,due_date:$('tkdue').value,status:'Open',assigned_to:$('tkassignee').value.trim(),created_at:lawLocalToday()};
+  var list=matterTasks();list.push(rec);st('law_mattertasks',list);
+  closeTaskModal();rMatterDetail();
+  var syncResult=await sdnData('write','law_mattertasks',rec);
+  toast(syncResult?'Task added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function completeTask(id){
+  var list=matterTasks();
+  var t=list.find(function(x){return x.id===id;});if(!t)return;
+  t.status='Complete';st('law_mattertasks',list);rMatterDetail();
+  var syncResult=await sdnData('write','law_mattertasks',t);
+  toast(syncResult?'Task completed':'Completed on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function openMilestoneModal(){['msttitle','mstdate','mstnotes'].forEach(function(f){$(f).value='';});$('milestonemodal').classList.add('on');}
+function closeMilestoneModal(){$('milestonemodal').classList.remove('on');}
+async function saveMilestone(){
+  var matterId=$('mmatter').value,title=$('msttitle').value.trim();
+  if(!matterId){toast('Select a matter first');return;}
+  if(!title){toast('Title required');return;}
+  var rec={id:newId('MST'),matter_id:matterId,title:title,date:$('mstdate').value,notes:$('mstnotes').value.trim(),created_at:lawLocalToday()};
+  var list=matterMilestones();list.push(rec);st('law_mattermilestones',list);
+  closeMilestoneModal();rMatterDetail();
+  var syncResult=await sdnData('write','law_mattermilestones',rec);
+  toast(syncResult?'Milestone added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openMatterDocModal(){['mdoctitle','mdoctype','mdocref'].forEach(function(f){$(f).value='';});$('matterdocmodal').classList.add('on');}
+function closeMatterDocModal(){$('matterdocmodal').classList.remove('on');}
+async function saveMatterDoc(){
+  var matterId=$('mmatter').value,title=$('mdoctitle').value.trim();
+  if(!matterId){toast('Select a matter first');return;}
+  if(!title){toast('Title required');return;}
+  var rec={id:newId('MDOC'),matter_id:matterId,title:title,doc_type:$('mdoctype').value.trim(),
+    url_or_ref:$('mdocref').value.trim(),uploaded_date:lawLocalToday(),created_at:lawLocalToday()};
+  var list=matterDocs();list.push(rec);st('law_matterdocs',list);
+  closeMatterDocModal();rMatterDetail();
+  var syncResult=await sdnData('write','law_matterdocs',rec);
+  toast(syncResult?'Document linked':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function setMatterStatus(status){
+  var matterId=$('mmatter').value;
+  var list=matters();
+  var m=list.find(function(x){return x.id===matterId;});if(!m)return;
+  m.status=status;if(status==='Closed')m.closed_date=lawLocalToday();
+  st('law_matters',list);rMatterDetail();rIntake();rDash();fillMatterSelects();
+  var syncResult=await sdnData('write','law_matters',m);
+  toast(syncResult?'Matter marked '+status:'Marked '+status+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rMattersPanel(){fillMatterSelects();rMatterDetail();}
+function rMatterDetail(){
+  var matterId=$('mmatter').value;
+  var wrap=$('matter-detail');
+  var m=matters().find(function(x){return x.id===matterId;});
+  if(!m){wrap.innerHTML='<div style="color:var(--muted);text-align:center;padding:24px">Select a matter above</div>';return;}
+  var tasks=matterTasks().filter(function(t){return t.matter_id===matterId;});
+  var milestones=matterMilestones().filter(function(x){return x.matter_id===matterId;});
+  var docs=matterDocs().filter(function(x){return x.matter_id===matterId;});
+  var statusColors={Open:'bg',Pending:'bw',Closed:'bx'};
+  wrap.innerHTML=
+    '<div class="card"><div class="ch"><span class="ct">'+H(m.matter_name)+'</span><span class="badge '+(statusColors[m.status]||'bx')+'" style="margin-left:8px">'+H(m.status)+'</span>'+
+      '<span style="margin-left:auto;display:flex;gap:8px">'+
+        (m.status==='Open'?'<button class="btn bo bs" onclick="setMatterStatus(\'Closed\')">Close Matter</button>':'<button class="btn bo bs" onclick="setMatterStatus(\'Open\')">Reopen</button>')+
+      '</span></div><div class="cb">'+
+      '<div class="srow"><span class="slbl">Client</span><span class="sval">'+H(clientLabel(m.client_id))+'</span></div>'+
+      '<div class="srow"><span class="slbl">Practice Area</span><span class="sval">'+H(m.practice_area||'--')+'</span></div>'+
+      '<div class="srow"><span class="slbl">Responsible Attorney</span><span class="sval">'+H(m.responsible_attorney||'--')+'</span></div>'+
+      '<div class="srow"><span class="slbl">Opened</span><span class="sval">'+fdate(m.opened_date)+'</span></div>'+
+      (m.notes?'<div style="margin-top:10px;color:var(--muted);font-size:13px">'+H(m.notes)+'</div>':'')+
+    '</div></div>'+
+    '<div class="card"><div class="ch"><span class="ct">Tasks</span><button class="btn bo bs" style="margin-left:auto" onclick="openTaskModal()">+ Add Task</button></div><div class="cb">'+
+      (tasks.length?tasks.map(function(t){return '<div class="srow"><span class="slbl">'+H(t.title)+(t.due_date?' -- due '+fdate(t.due_date):'')+(t.assigned_to?' ('+H(t.assigned_to)+')':'')+'</span>'+
+        '<span>'+(t.status==='Open'?'<button class="btn bp bs" onclick="completeTask(\''+t.id+'\')">Complete</button>':'<span class="badge bg">Complete</span>')+'</span></div>';}).join(''):'<div style="color:var(--muted);font-size:13px">No tasks yet</div>')+
+    '</div></div>'+
+    '<div class="card"><div class="ch"><span class="ct">Milestones</span><button class="btn bo bs" style="margin-left:auto" onclick="openMilestoneModal()">+ Add Milestone</button></div><div class="cb">'+
+      (milestones.length?milestones.map(function(x){return '<div class="srow"><span class="slbl">'+H(x.title)+'</span><span class="sval">'+fdate(x.date)+'</span></div>';}).join(''):'<div style="color:var(--muted);font-size:13px">No milestones yet</div>')+
+    '</div></div>'+
+    '<div class="card"><div class="ch"><span class="ct">Linked Documents</span><button class="btn bo bs" style="margin-left:auto" onclick="openMatterDocModal()">+ Link Document</button></div><div class="cb">'+
+      (docs.length?docs.map(function(x){return '<div class="srow"><span class="slbl">'+H(x.title)+(x.doc_type?' ('+H(x.doc_type)+')':'')+'</span><span class="sval">'+(x.url_or_ref?'<a href="'+H(x.url_or_ref)+'" target="_blank" rel="noopener">Link</a>':'--')+'</span></div>';}).join(''):'<div style="color:var(--muted);font-size:13px">No documents linked yet</div>')+
+    '</div></div>';
+}
+
+// ── CALENDARING & DEADLINES ───────────────────────────────────────────────
+// Real overlap-interval-test conflict check, same algorithm every SAIRN
+// scheduling panel already uses (SAIRNlegacy's bookingConflict()/
+// clergyBookingConflict()) -- applied here to hearings/deadlines that
+// carry both a start and end time (a single-date-only SOL/filing deadline
+// has no duration, so the double-booking concept legitimately doesn't
+// apply to it the same way; the check only fires when both times are set).
+function deadlineConflict(dueDate,startTime,endTime,excludeId){
+  if(!startTime||!endTime)return null;
+  var s=new Date(dueDate+'T'+startTime).getTime(),e=new Date(dueDate+'T'+endTime).getTime();
+  return deadlines().find(function(d){
+    if(d.id===excludeId||d.due_date!==dueDate||!d.due_time||!d.end_time||d.status!=='Pending')return false;
+    var ds=new Date(d.due_date+'T'+d.due_time).getTime(),de=new Date(d.due_date+'T'+d.end_time).getTime();
+    return s<de&&ds<e;
+  })||null;
+}
+function openDeadlineModal(){
+  fillMatterSelects();
+  ['dltitle','dldate','dltime','dlendtime','dllocation','dlnotes'].forEach(function(f){$(f).value='';});
+  $('dltype').value='Statute of Limitations';$('deadline-err').textContent='';
+  $('deadlinemodal').classList.add('on');
+}
+function closeDeadlineModal(){$('deadlinemodal').classList.remove('on');}
+async function saveDeadline(){
+  var matterId=$('dlmatter').value,title=$('dltitle').value.trim(),dueDate=$('dldate').value;
+  if(!matterId){$('deadline-err').textContent='Select a matter';return;}
+  if(!title){$('deadline-err').textContent='Title required';return;}
+  if(!dueDate){$('deadline-err').textContent='Due date required';return;}
+  var startTime=$('dltime').value,endTime=$('dlendtime').value;
+  var conflict=deadlineConflict(dueDate,startTime,endTime,null);
+  if(conflict){$('deadline-err').textContent='Conflict: overlaps "'+conflict.title+'" ('+H(matterLabel(conflict.matter_id))+') on the same day';return;}
+  var rec={id:newId('DL'),matter_id:matterId,type:$('dltype').value,title:title,due_date:dueDate,due_time:startTime,
+    end_time:endTime,status:'Pending',location:$('dllocation').value.trim(),notes:$('dlnotes').value.trim(),created_at:lawLocalToday()};
+  var list=deadlines();list.push(rec);st('law_deadlines',list);
+  closeDeadlineModal();rCalendar();rDash();
+  var syncResult=await sdnData('write','law_deadlines',rec);
+  toast(syncResult?'Deadline saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function completeDeadline(id){
+  var list=deadlines();
+  var d=list.find(function(x){return x.id===id;});if(!d)return;
+  d.status='Complete';st('law_deadlines',list);rCalendar();rDash();
+  var syncResult=await sdnData('write','law_deadlines',d);
+  toast(syncResult?'Marked complete':'Marked complete on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rCalendar(){
+  fillMatterSelects();
+  var list=deadlines();
+  var filterMatter=$('dlfilter').value;
+  var filtered=filterMatter?list.filter(function(d){return d.matter_id===filterMatter;}):list;
+  var today=lawLocalToday();
+  var weekAhead=new Date(Date.now()+7*24*60*60*1000).getTime();
+  $('dl-week').textContent=list.filter(function(d){return d.status==='Pending'&&new Date(d.due_date+'T00:00:00').getTime()<=weekAhead;}).length;
+  $('dl-overdue').textContent=list.filter(function(d){return d.status==='Pending'&&d.due_date<today;}).length;
+  $('dl-total').textContent=list.length;
+  var statusColors={Pending:'bw',Complete:'bg',Missed:'br'};
+  var tb=$('dltbody');
+  tb.innerHTML=filtered.length?filtered.slice().sort(function(a,b){return (a.due_date||'').localeCompare(b.due_date||'');}).map(function(d){
+    var overdue=d.status==='Pending'&&d.due_date<today;
+    return '<tr><td>'+H(matterLabel(d.matter_id))+'</td><td>'+H(d.type)+'</td><td>'+H(d.title)+'</td>'+
+      '<td'+(overdue?' style="color:var(--danger);font-weight:700"':'')+'>'+fdate(d.due_date)+(d.due_time?' '+d.due_time:'')+(overdue?' &#9888;':'')+'</td>'+
+      '<td><span class="badge '+(overdue?'br':statusColors[d.status]||'bx')+'">'+(overdue?'Overdue':H(d.status))+'</span></td>'+
+      '<td>'+(d.status==='Pending'?'<button class="btn bo bs" onclick="completeDeadline(\''+d.id+'\')">Mark Complete</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No deadlines tracked yet</td></tr>';
+}
+
+// ── TRUST ACCOUNTING (IOLTA) ──────────────────────────────────────────────
+// Every balance below is real, exact arithmetic on the actual transaction
+// records -- never AI-computed (see the panel's own disclosure). Voided
+// transactions are excluded from every balance but never removed from the
+// log -- the void itself, and its required reason, are permanent parts of
+// the audit trail.
+function trustLedgerBalance(tx){
+  return tx.filter(function(t){return t.status!=='Voided';}).reduce(function(s,t){return s+(t.type==='Deposit'?Number(t.amount)||0:-(Number(t.amount)||0));},0);
+}
+function clientLedgerBalance(clientId,tx){
+  return tx.filter(function(t){return t.client_id===clientId&&t.status!=='Voided';}).reduce(function(s,t){return s+(t.type==='Deposit'?Number(t.amount)||0:-(Number(t.amount)||0));},0);
+}
+function reconcileTrust(){
+  var tx=trustTransactions();
+  var ledgerBal=trustLedgerBalance(tx);
+  var clientIds=Array.from(new Set(tx.map(function(t){return t.client_id;})));
+  var clientSum=clientIds.reduce(function(s,cid){return s+clientLedgerBalance(cid,tx);},0);
+  var statements=bankStatements();
+  var latestStatement=statements.length?statements.slice().sort(function(a,b){return (a.statement_date||'').localeCompare(b.statement_date||'');}).slice(-1)[0]:null;
+  var bankBal=latestStatement?Number(latestStatement.bank_balance)||0:null;
+  // Round to cents before comparing -- floating point arithmetic on money
+  // otherwise produces false-mismatch noise (0.1+0.2!==0.3 class of bug).
+  var round2=function(n){return Math.round(n*100)/100;};
+  var ledgerVsClient=round2(ledgerBal)===round2(clientSum);
+  var ledgerVsBank=bankBal===null?null:round2(ledgerBal)===round2(bankBal);
+  return {ledgerBal:ledgerBal,clientSum:clientSum,bankBal:bankBal,ledgerVsClient:ledgerVsClient,ledgerVsBank:ledgerVsBank,
+    matches:ledgerVsClient&&(ledgerVsBank===null||ledgerVsBank===true)};
+}
+function trMatterChange(){
+  var matterId=$('trmatter').value;
+  var m=matters().find(function(x){return x.id===matterId;});
+  $('trclient').value=m?clientLabel(m.client_id):'';
+}
+function openTrustModal(){
+  fillMatterSelects();
+  ['tramount','trref','trdesc'].forEach(function(f){$(f).value='';});
+  $('trtype').value='Deposit';$('trmethod').value='Check';$('trdate').value=lawLocalToday();
+  $('trclient').value='';$('trust-err').textContent='';
+  $('trustmodal').classList.add('on');
+}
+function closeTrustModal(){$('trustmodal').classList.remove('on');}
+async function saveTrustTransaction(){
+  var matterId=$('trmatter').value,amount=Number($('tramount').value)||0;
+  if(!matterId){$('trust-err').textContent='Select a matter';return;}
+  if(amount<=0){$('trust-err').textContent='Amount must be greater than 0';return;}
+  var m=matters().find(function(x){return x.id===matterId;});
+  var type=$('trtype').value;
+  if(type==='Disbursement'){
+    var currentBal=clientLedgerBalance(m.client_id,trustTransactions());
+    if(amount>currentBal){$('trust-err').textContent='Disbursement of '+fmt(amount)+' exceeds this client\'s trust balance of '+fmt(currentBal)+' -- trust funds can never go negative';return;}
+  }
+  var rec={id:newId('TR'),matter_id:matterId,client_id:m?m.client_id:'',type:type,amount:amount,date:$('trdate').value||lawLocalToday(),
+    method:$('trmethod').value,reference_number:$('trref').value.trim(),description:$('trdesc').value.trim(),
+    status:'Posted',voided_reason:'',voided_at:'',created_at:lawLocalToday()};
+  var list=trustTransactions();list.push(rec);st('law_trusttx',list);
+  closeTrustModal();rTrust();rDash();
+  var syncResult=await sdnData('write','law_trusttx',rec);
+  toast(syncResult?'Transaction recorded':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+var voidTxId=null;
+function openVoidModal(id){
+  var t=trustTransactions().find(function(x){return x.id===id;});if(!t)return;
+  voidTxId=id;
+  $('void-label').textContent=t.type+' '+fmt(t.amount)+' -- '+H(t.description||'(no description)');
+  $('voidreason').value='';$('void-err').textContent='';
+  $('voidmodal').classList.add('on');
+}
+function closeVoidModal(){$('voidmodal').classList.remove('on');}
+async function confirmVoid(){
+  var reason=$('voidreason').value.trim();
+  if(!reason){$('void-err').textContent='A reason is required to void a trust transaction';return;}
+  var list=trustTransactions();
+  var t=list.find(function(x){return x.id===voidTxId;});if(!t)return;
+  t.status='Voided';t.voided_reason=reason;t.voided_at=new Date().toISOString();
+  st('law_trusttx',list);
+  closeVoidModal();rTrust();rDash();
+  var syncResult=await sdnData('write','law_trusttx',t);
+  toast(syncResult?'Transaction voided':'Voided on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function openBankStatementModal(){
+  $('bsdate').value=lawLocalToday();$('bsbalance').value='';
+  $('bankstatementmodal').classList.add('on');
+}
+function closeBankStatementModal(){$('bankstatementmodal').classList.remove('on');}
+async function saveBankStatement(){
+  var balance=$('bsbalance').value;
+  if(balance===''){toast('Enter a bank balance');return;}
+  var rec={id:newId('BS'),statement_date:$('bsdate').value||lawLocalToday(),bank_balance:Number(balance)||0,created_at:lawLocalToday()};
+  var list=bankStatements();list.push(rec);st('law_bankstatements',list);
+  closeBankStatementModal();rTrust();
+  var syncResult=await sdnData('write','law_bankstatements',rec);
+  toast(syncResult?'Bank statement recorded':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function explainReconciliation(){
+  var r=reconcileTrust();
+  $('tr-explain-btn').textContent='Asking Claude...';$('tr-explain-btn').disabled=true;
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:300,
+        system:'You explain trust-accounting reconciliation discrepancies in plain language for a law firm. You are given real, already-computed numbers -- never recompute or second-guess them, never invent additional numbers, only explain what a mismatch of this shape typically means and what to check next (uncleared checks, timing differences, a missed entry).',
+        messages:[{role:'user',content:'Trust ledger balance: '+fmt(r.ledgerBal)+'. Sum of client ledgers: '+fmt(r.clientSum)+'. Bank statement balance: '+(r.bankBal===null?'not yet entered':fmt(r.bankBal))+'. Ledger matches client-ledger sum: '+r.ledgerVsClient+'. Ledger matches bank statement: '+r.ledgerVsBank+'. Explain what this indicates and what to check.'}]})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    $('tr-reconcile-result').innerHTML+='<div class="cb" style="margin-top:10px;background:var(--bg);border-radius:8px;white-space:pre-wrap">'+H(text)+'</div>';
+  }catch(e){toast('Could not connect to Claude');}
+  $('tr-explain-btn').textContent='Explain This Discrepancy (AI)';$('tr-explain-btn').disabled=false;
+}
+function rTrust(){
+  fillMatterSelects();
+  var tx=trustTransactions();
+  var r=reconcileTrust();
+  $('tr-bankbal').textContent=r.bankBal===null?'Not entered':fmt(r.bankBal);
+  $('tr-ledgerbal').textContent=fmt(r.ledgerBal);
+  $('tr-clientsum').textContent=fmt(r.clientSum);
+  var resultBox=$('tr-reconcile-result');
+  var explainBtn=$('tr-explain-btn');
+  if(r.matches){
+    resultBox.innerHTML='<div class="badge bg" style="font-size:13px;padding:6px 14px">&#10003; Reconciled -- all three balances match</div>';
+    explainBtn.style.display='none';
+  }else{
+    var issues=[];
+    if(!r.ledgerVsClient)issues.push('Trust ledger balance does not match the sum of individual client ledgers -- this indicates a data inconsistency and should never happen from normal use.');
+    if(r.ledgerVsBank===false)issues.push('Trust ledger balance does not match the entered bank statement balance -- check for uncleared checks/deposits or a missing entry.');
+    resultBox.innerHTML='<div class="badge br" style="font-size:13px;padding:6px 14px">&#9888; Mismatch detected</div><ul style="margin:10px 0 0 18px;color:var(--danger);font-size:13px">'+
+      issues.map(function(i){return '<li>'+H(i)+'</li>';}).join('')+'</ul>';
+    explainBtn.style.display='inline-block';
+  }
+  var clientIds=Array.from(new Set(tx.map(function(t){return t.client_id;})));
+  $('tr-client-ledgers').innerHTML=clientIds.length?clientIds.map(function(cid){
+    return '<div class="srow"><span class="slbl">'+H(clientLabel(cid))+'</span><span class="sval">'+fmt(clientLedgerBalance(cid,tx))+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No trust transactions yet</div>';
+  var statusColors={Posted:'bg',Voided:'bx'};
+  var tb=$('trtbody');
+  tb.innerHTML=tx.length?tx.slice().reverse().map(function(t){
+    return '<tr'+(t.status==='Voided'?' style="opacity:.55;text-decoration:line-through"':'')+'><td>'+fdate(t.date)+'</td><td>'+H(clientLabel(t.client_id))+'</td><td>'+H(matterLabel(t.matter_id))+'</td>'+
+      '<td>'+H(t.type)+'</td><td>'+fmt(t.amount)+'</td><td>'+H(t.description||'--')+(t.status==='Voided'?' (voided: '+H(t.voided_reason)+')':'')+'</td>'+
+      '<td><span class="badge '+(statusColors[t.status]||'bx')+'">'+H(t.status)+'</span></td>'+
+      '<td>'+(t.status==='Posted'?'<button class="btn bo bs" onclick="openVoidModal(\''+t.id+'\')">Void</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No trust transactions yet</td></tr>';
+}
+
+// ── TIME TRACKING & BILLING ───────────────────────────────────────────────
+function fillBillingCodeSelect(){
+  var el=$('ttcode');if(!el)return;
+  el.innerHTML=billingCodes().map(function(c){return '<option value="'+c.code+'">'+H(c.code)+' -- '+H(c.label)+'</option>';}).join('');
+}
+function openTimeModal(){
+  fillMatterSelects();fillBillingCodeSelect();
+  ['ttattorney','tthours','ttrate','ttdesc'].forEach(function(f){$(f).value='';});
+  $('ttdate').value=lawLocalToday();$('ttbillable').checked=true;
+  $('timemodal').classList.add('on');
+}
+function closeTimeModal(){$('timemodal').classList.remove('on');}
+async function saveTime(){
+  var matterId=$('ttmatter').value,hours=Number($('tthours').value)||0;
+  if(!matterId){toast('Select a matter');return;}
+  if(hours<=0){toast('Hours must be greater than 0');return;}
+  var rec={id:newId('TT'),matter_id:matterId,attorney:$('ttattorney').value.trim(),date:$('ttdate').value||lawLocalToday(),
+    billing_code:$('ttcode').value,hours:hours,rate:Number($('ttrate').value)||0,description:$('ttdesc').value.trim(),
+    billable:$('ttbillable').checked,invoiced:false,created_at:lawLocalToday()};
+  var list=timeEntries();list.push(rec);st('law_timeentries',list);
+  closeTimeModal();rBilling();rDash();
+  var syncResult=await sdnData('write','law_timeentries',rec);
+  toast(syncResult?'Time entry saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rInvoiceEntryPicker(){
+  var matterId=$('ivmatter').value;
+  var entries=matterId?timeEntries().filter(function(t){return t.matter_id===matterId&&t.billable&&!t.invoiced;}):[];
+  var wrap=$('iv-entry-picker');
+  wrap.innerHTML=entries.length?entries.map(function(t){
+    var value=(Number(t.hours)||0)*(Number(t.rate)||0);
+    return '<label class="chk" style="padding:4px 0"><input type="checkbox" class="ivpick" value="'+t.id+'" data-amount="'+value+'" onchange="ivTotalPreview()"> '+
+      fdate(t.date)+' -- '+H(t.billing_code)+' -- '+t.hours+'h @ '+fmt(t.rate)+' = '+fmt(value)+' -- '+H(t.description||'')+'</label>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px">No unbilled time entries on this matter yet.</div>';
+  ivTotalPreview();
+}
+function ivTotalPreview(){
+  var total=0;
+  document.querySelectorAll('.ivpick:checked').forEach(function(cb){total+=Number(cb.getAttribute('data-amount'))||0;});
+  $('iv-total-preview').textContent=fmt(total);
+}
+function openInvoiceModal(){
+  fillMatterSelects();
+  $('ivmatter').value='';$('iv-entry-picker').innerHTML='';$('iv-total-preview').textContent='$0.00';$('ivsplits').value='';
+  $('invoice-err').textContent='';
+  $('invoicemodal').classList.add('on');
+}
+function closeInvoiceModal(){$('invoicemodal').classList.remove('on');}
+async function saveInvoice(){
+  var matterId=$('ivmatter').value;
+  if(!matterId){$('invoice-err').textContent='Select a matter';return;}
+  var entryIds=Array.from(document.querySelectorAll('.ivpick:checked')).map(function(cb){return cb.value;});
+  if(!entryIds.length){$('invoice-err').textContent='Select at least one time entry';return;}
+  var m=matters().find(function(x){return x.id===matterId;});
+  var entries=timeEntries().filter(function(t){return entryIds.indexOf(t.id)!==-1;});
+  var total=entries.reduce(function(s,t){return s+(Number(t.hours)||0)*(Number(t.rate)||0);},0);
+  var splitLines=($('ivsplits').value||'').split('\n').map(function(s){return s.trim();}).filter(Boolean);
+  var splits=[];
+  var splitPctSum=0;
+  for(var i=0;i<splitLines.length;i++){
+    var parts=splitLines[i].split(',');
+    var attorney=(parts[0]||'').trim(),pct=Number((parts[1]||'').trim())||0;
+    if(!attorney||pct<=0){$('invoice-err').textContent='Split-fee line "'+splitLines[i]+'" is malformed -- use "Attorney Name, Percentage"';return;}
+    splitPctSum+=pct;
+    splits.push({attorney:attorney,percentage:pct,amount:0});
+  }
+  if(splits.length&&Math.round(splitPctSum)!==100){$('invoice-err').textContent='Split-fee percentages must sum to 100 (currently '+splitPctSum+')';return;}
+  splits.forEach(function(s){s.amount=Math.round(total*s.percentage)/100;});
+  var rec={id:newId('IV'),matter_id:matterId,client_id:m?m.client_id:'',invoice_number:'INV-'+Date.now().toString().slice(-6),
+    time_entry_ids:entryIds,total:total,split_fees:splits,status:'Draft',issued_date:lawLocalToday(),created_at:lawLocalToday()};
+  var list=invoices();list.push(rec);st('law_invoices',list);
+  var teList=timeEntries();
+  teList.forEach(function(t){if(entryIds.indexOf(t.id)!==-1)t.invoiced=true;});
+  st('law_timeentries',teList);
+  closeInvoiceModal();rBilling();rDash();
+  var syncResult=await sdnData('write','law_invoices',rec);
+  toast(syncResult?'Invoice created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function setInvoiceStatus(id,status){
+  var list=invoices();
+  var i=list.find(function(x){return x.id===id;});if(!i)return;
+  i.status=status;st('law_invoices',list);rBilling();
+  var syncResult=await sdnData('write','law_invoices',i);
+  toast(syncResult?'Invoice marked '+status:'Marked '+status+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rBilling(){
+  fillMatterSelects();fillBillingCodeSelect();
+  var te=timeEntries(),iv=invoices();
+  var thisMonth=lawLocalToday().slice(0,7);
+  var unbilled=te.filter(function(t){return t.billable&&!t.invoiced&&(t.date||'').slice(0,7)===thisMonth;});
+  $('bl-unbilled').textContent=unbilled.reduce(function(s,t){return s+(Number(t.hours)||0);},0).toFixed(1);
+  $('bl-unbilledvalue').textContent=fmt(unbilled.reduce(function(s,t){return s+(Number(t.hours)||0)*(Number(t.rate)||0);},0));
+  $('bl-outstanding').textContent=fmt(iv.filter(function(i){return i.status!=='Paid';}).reduce(function(s,i){return s+(Number(i.total)||0);},0));
+  var tb=$('tttbody');
+  tb.innerHTML=te.length?te.slice().reverse().map(function(t){
+    return '<tr><td>'+fdate(t.date)+'</td><td>'+H(matterLabel(t.matter_id))+'</td><td>'+H(t.attorney||'--')+'</td><td>'+H(t.billing_code||'--')+'</td>'+
+      '<td>'+t.hours+'</td><td>'+(t.billable?(t.invoiced?'<span class="badge bx">Invoiced</span>':'<span class="badge bg">Billable</span>'):'<span class="badge bx">No-charge</span>')+'</td><td>'+H(t.description||'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No time entries yet</td></tr>';
+  var statusColors={Draft:'bx',Sent:'bb',Paid:'bg'};
+  var ivtb=$('ivtbody');
+  ivtb.innerHTML=iv.length?iv.slice().reverse().map(function(i){
+    var actions='';
+    if(i.status==='Draft')actions='<button class="btn bo bs" onclick="setInvoiceStatus(\''+i.id+'\',\'Sent\')">Mark Sent</button>';
+    else if(i.status==='Sent')actions='<button class="btn bp bs" onclick="setInvoiceStatus(\''+i.id+'\',\'Paid\')">Mark Paid</button>';
+    return '<tr><td>'+H(i.invoice_number)+'</td><td>'+H(matterLabel(i.matter_id))+'</td><td>'+fmt(i.total)+'</td>'+
+      '<td><span class="badge '+(statusColors[i.status]||'bx')+'">'+H(i.status)+'</span></td><td>'+actions+'</td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No invoices yet</td></tr>';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+function init(){
+  seed();
+  fillMatterSelects();
+  rDash();rIntake();rMattersPanel();rCalendar();rTrust();rBilling();
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var lic=localStorage.getItem('law_license_key');
+  if(lic){$('gate').style.display='none';$('pin').classList.add('on');}
+});
+</script>
+</body>
+</html>
