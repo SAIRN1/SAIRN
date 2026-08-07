@@ -234,7 +234,16 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-proposals" onclick="nav('proposals')"><span class="sico">&#128196;</span>Proposals</button>
       <div class="ss">Vendors</div>
       <button class="sb" id="sb-vendors" onclick="nav('vendors')"><span class="sico">&#127970;</span>Vendor Directory</button>
-      <div class="sfoot">SAIRNdesign v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 1</span></div>
+      <div class="ss">Project Delivery</div>
+      <button class="sb" id="sb-moodboards" onclick="nav('moodboards')"><span class="sico">&#127912;</span>Mood Boards</button>
+      <button class="sb" id="sb-pos" onclick="nav('pos')"><span class="sico">&#128230;</span>Purchase Orders</button>
+      <button class="sb" id="sb-invoicing" onclick="nav('invoicing')"><span class="sico">&#128179;</span>Invoicing</button>
+      <button class="sb" id="sb-schedule" onclick="nav('schedule')"><span class="sico">&#128197;</span>Scheduling</button>
+      <button class="sb" id="sb-clientportal" onclick="nav('clientportal')"><span class="sico">&#128101;</span>Client Portal</button>
+      <div class="ss">Studio</div>
+      <button class="sb" id="sb-team" onclick="nav('team')"><span class="sico">&#128188;</span>Team &amp; Roles</button>
+      <button class="sb" id="sb-time" onclick="nav('time')"><span class="sico">&#9201;</span>Time Tracking</button>
+      <div class="sfoot">SAIRNdesign v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 2</span></div>
     </aside>
     <main>
 
@@ -421,6 +430,188 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<!-- MOOD BOARDS -->
+<div class="panel" id="panel-moodboards">
+  <div class="ph"><div><div class="ptitle">Mood Boards</div><div class="psub">Client-facing concept boards per project</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openMoodboardModal()">+ New Board</button></div></div>
+  <div class="fg" style="max-width:360px"><label>Project</label><select id="mbproject" onchange="rMoodboards()"></select></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Boards</div><div class="kval" id="mb-count">0</div><div class="kt">Selected project</div></div>
+    <div class="kpi"><div class="klbl">Awaiting Client</div><div class="kval" id="mb-sent">0</div><div class="kt">Sent, not decided</div></div>
+    <div class="kpi"><div class="klbl">Approved</div><div class="kval" id="mb-approved">0</div><div class="kt">Client signed off</div></div>
+  </div>
+  <div id="mb-list"></div>
+</div>
+<div class="modal" id="moodboardmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Mood Board</div>
+    <div class="fg"><label>Project</label><select id="mbmproject"></select></div>
+    <div class="fg"><label>Title</label><input id="mbtitle" placeholder="Living Room - Warm Minimalist"></div>
+    <div class="fg"><label>Concept Description</label><textarea id="mbdesc" rows="3" placeholder="Warm neutrals, natural textures, brass accents..."></textarea></div>
+    <div class="fg"><label>Reference Image URLs (one per line, optional)</label><textarea id="mbimages" rows="2" placeholder="https://..."></textarea></div>
+    <div class="fg"><label>Status</label><select id="mbstatus"><option>Draft</option><option>Sent to Client</option><option>Approved</option><option>Revise</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMoodboardModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMoodboard()">Save Board</button>
+    </div>
+  </div>
+</div>
+
+<!-- PURCHASE ORDERS -->
+<div class="panel" id="panel-pos">
+  <div class="ph"><div><div class="ptitle">Purchase Orders</div><div class="psub">Generated from a project's approved Spec Sheet items, one PO per vendor</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('pos')">Export CSV</button><button class="btn bp bs" onclick="openGeneratePOModal()">Generate POs from Approved Items</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open POs</div><div class="kval" id="po-open">0</div><div class="kt">Draft + Sent</div></div>
+    <div class="kpi"><div class="klbl">Total Committed</div><div class="kval" id="po-total">$0</div><div class="kt">Wholesale, all open POs</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>PO #</th><th>Project</th><th>Vendor</th><th>Items</th><th>Total (Cost)</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="potbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="generatepomodal">
+  <div class="mbox">
+    <div class="mtitle">Generate Purchase Orders</div>
+    <div class="fg"><label>Project</label><select id="pogenproject"></select></div>
+    <div style="color:var(--muted);font-size:13px;margin-bottom:14px">Creates one draft PO per vendor, covering every Spec Sheet item on this project that belongs to an <strong>Approved</strong> proposal and does not already have a PO. Items not yet on an approved proposal are skipped -- nothing is ordered before the client has committed.</div>
+    <div id="pogen-preview" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeGeneratePOModal()">Cancel</button>
+      <button class="btn bp" onclick="generatePOs()">Generate</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="podetailmodal">
+  <div class="mbox" style="width:640px">
+    <div class="mtitle">Purchase Order</div>
+    <div id="po-detail-body"></div>
+  </div>
+</div>
+
+<!-- INVOICING -->
+<div class="panel" id="panel-invoicing">
+  <div class="ph"><div><div class="ptitle">Invoicing</div><div class="psub">Client invoices generated from approved proposals &middot; retail vs cost margin</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('invoices')">Export CSV</button><button class="btn bp bs" onclick="openInvoiceModal()">+ New Invoice</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Outstanding</div><div class="kval" id="inv-outstanding">$0</div><div class="kt" id="inv-outstanding-sub">Sent, unpaid</div></div>
+    <div class="kpi"><div class="klbl">Paid (All Time)</div><div class="kval" id="inv-paid">$0</div><div class="kt">Collected</div></div>
+    <div class="kpi"><div class="klbl">Total Margin Invoiced</div><div class="kval" id="inv-margin">$0</div><div class="kt">Retail less wholesale cost</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Invoice #</th><th>Client</th><th>Project</th><th>Amount</th><th>Margin</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="invtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="invoicemodal">
+  <div class="mbox">
+    <div class="mtitle">New Invoice</div>
+    <div class="fg"><label>Approved Proposal</label><select id="invproposal"></select></div>
+    <div class="fg"><label>Due Date</label><input id="invdue" type="date"></div>
+    <div class="fg"><div class="srow" style="border:none;padding:0"><span class="slbl">Amount (Retail)</span><span class="sval" id="invamount-preview">$0</span></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeInvoiceModal()">Cancel</button>
+      <button class="btn bp" onclick="saveInvoice()">Create Invoice</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEAM & ROLES -->
+<div class="panel" id="panel-team">
+  <div class="ph"><div><div class="ptitle">Team &amp; Roles</div><div class="psub">Studio roster &middot; login stays the shared owner/designer/office PIN, same as every other Phase 1 scaffold</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('team')">Export CSV</button><button class="btn bp bs" onclick="openTeamModal()">+ Add Team Member</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Team Members</div><div class="kval" id="tm-total">0</div><div class="kt">Active</div></div>
+    <div class="kpi"><div class="klbl">Designers</div><div class="kval" id="tm-designers">0</div><div class="kt">Active</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="tmtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="teammodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Team Member</div>
+    <div class="fr"><div class="fg"><label>Name</label><input id="tmname" placeholder="Jordan Lee"></div><div class="fg"><label>Role</label><select id="tmrole"><option value="owner">Owner</option><option value="designer">Designer</option><option value="office">Office</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Email</label><input id="tmemail" type="email"></div><div class="fg"><label>Phone</label><input id="tmphone" placeholder="(440) 555-0100"></div></div>
+    <div class="fr"><div class="fg"><label>Start Date</label><input id="tmstart" type="date"></div><div class="fg"><label>Status</label><select id="tmstatus"><option>Active</option><option>Inactive</option></select></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTeamModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTeam()">Save Team Member</button>
+    </div>
+  </div>
+</div>
+
+<!-- TIME TRACKING -->
+<div class="panel" id="panel-time">
+  <div class="ph"><div><div class="ptitle">Time Tracking</div><div class="psub">Hourly entries per project and team member</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('time')">Export CSV</button><button class="btn bp bs" onclick="openTimeModal()">+ Log Time</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Hours This Month</div><div class="kval" id="tt-hours">0</div><div class="kt">Billable + non-billable</div></div>
+    <div class="kpi"><div class="klbl">Billable Value</div><div class="kval" id="tt-value">$0</div><div class="kt">This month, billable only</div></div>
+  </div>
+  <div class="fg" style="max-width:360px"><label>Filter by Project</label><select id="ttproject" onchange="rTime()"><option value="">All Projects</option></select></div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Team Member</th><th>Project</th><th>Hours</th><th>Rate</th><th>Billable</th><th>Notes</th><th>Actions</th></tr></thead>
+    <tbody id="tttbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="timemodal">
+  <div class="mbox">
+    <div class="mtitle">Log Time</div>
+    <div class="fr"><div class="fg"><label>Team Member</label><select id="ttmember"></select></div><div class="fg"><label>Project</label><select id="ttprojectm"></select></div></div>
+    <div class="fr"><div class="fg"><label>Date</label><input id="ttdate" type="date"></div><div class="fg"><label>Hours</label><input id="tthours" type="number" step="0.25" placeholder="3.5"></div></div>
+    <div class="fr"><div class="fg"><label>Billable Rate ($/hr)</label><input id="ttrate" type="number" placeholder="125"></div><div class="fg"><label>Billable?</label><select id="ttbillable"><option value="true">Yes</option><option value="false">No (internal)</option></select></div></div>
+    <div class="fg"><label>Notes</label><input id="ttnotes" placeholder="Client walkthrough, sourcing calls..."></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTimeModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTime()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCHEDULING -->
+<div class="panel" id="panel-schedule">
+  <div class="ph"><div><div class="ptitle">Project Scheduling</div><div class="psub">Site visits, install dates, punch list items</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('schedule')">Export CSV</button><button class="btn bp bs" onclick="openScheduleModal()">+ Add Event</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Upcoming (14 days)</div><div class="kval" id="sch-upcoming">0</div><div class="kt">All types</div></div>
+    <div class="kpi"><div class="klbl">Open Punch List</div><div class="kval" id="sch-punch">0</div><div class="kt">Not yet complete</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Type</th><th>Project</th><th>Assignee</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+    <tbody id="schtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="schedulemodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Schedule Event</div>
+    <div class="fr"><div class="fg"><label>Project</label><select id="schproject"></select></div><div class="fg"><label>Type</label><select id="schtype"><option>Site Visit</option><option>Install</option><option>Punch List</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Date</label><input id="schdate" type="date"></div><div class="fg"><label>Assignee</label><select id="schassignee"></select></div></div>
+    <div class="fg"><label>Status</label><select id="schstatus"><option>Scheduled</option><option>Complete</option><option>Cancelled</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="schnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeScheduleModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSchedule()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT PORTAL -->
+<div class="panel" id="panel-clientportal">
+  <div class="ph"><div><div class="ptitle">Client Portal</div><div class="psub">Staff view of what the client sees for a project &middot; approvals, invoices, e-sign</div></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:16px;background:var(--pt);border:1px solid var(--pb);border-radius:8px;padding:10px 14px">
+    Phase 2 scope: this is the staff-side view/management of client-facing content for a selected project (mood board approval, proposal status, invoice status, a real typed-name e-sign record) -- not yet a separate client-only login/URL. That would be its own access-control build, logged as a future item, not assumed done here.
+  </div>
+  <div class="fg" style="max-width:360px"><label>Project</label><select id="cpproject" onchange="rClientPortal()"></select></div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Mood Boards</span></div><div class="cb" id="cp-moodboards"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Proposals</span></div><div class="cb" id="cp-proposals"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Invoices</span></div><div class="cb" id="cp-invoices"></div></div>
+    <div class="card"><div class="ch"><span class="ct">E-Sign a Pending Approval</span></div><div class="cb" id="cp-esign"></div></div>
+  </div>
+</div>
+
     </main>
   </div>
 </div>
@@ -545,6 +736,13 @@ function nav(id){
   if(id==='spec')rSpec();
   if(id==='proposals')rProposals();
   if(id==='vendors')rVendors();
+  if(id==='moodboards')rMoodboards();
+  if(id==='pos')rPOs();
+  if(id==='invoicing')rInvoicing();
+  if(id==='team')rTeam();
+  if(id==='time')rTime();
+  if(id==='schedule')rScheduleEvents();
+  if(id==='clientportal')rClientPortal();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -599,6 +797,22 @@ function seed(){
     {id:'VN-4',name:'Local Artisan Woodworks',category:'Furniture',contact_name:'Theo Banks',phone:'(440) 555-0311',email:'theo@artisanwoodworks.example.com',lead_time_typical_weeks:10,rating:5,notes:'Custom commissions only',created_at:sdnLocalToday()},
     {id:'VN-5',name:'Estate Finds Vintage',category:'Antiques & Vintage',contact_name:'Ruth Cole',phone:'(440) 555-0399',email:'ruth@estatefinds.example.com',lead_time_typical_weeks:1,rating:4,notes:'One-of-a-kind pieces, in-stock only',created_at:sdnLocalToday()}
   ]);
+  st('sdn_moodboards',[
+    {id:'MB-1',project_id:'PJ-1',title:'Living Room - Warm Minimalist',description:'Warm neutrals, natural textures, brass accents, layered vintage + new.',image_urls:[],status:'Sent to Client',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_pos',[]);
+  st('sdn_invoices',[]);
+  st('sdn_team',[
+    {id:'TM-1',name:'Jordan Lee',email:'jordan@pinnacleinteriors.example.com',phone:'(440) 555-0500',role:'owner',status:'Active',start_date:'2024-01-15',created_at:sdnLocalToday()},
+    {id:'TM-2',name:'Priya Nair',email:'priya@pinnacleinteriors.example.com',phone:'(440) 555-0501',role:'designer',status:'Active',start_date:'2025-03-01',created_at:sdnLocalToday()},
+    {id:'TM-3',name:'Sam Wu',email:'sam@pinnacleinteriors.example.com',phone:'(440) 555-0502',role:'office',status:'Active',start_date:'2025-06-10',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_timeentries',[
+    {id:'TT-1',employee_id:'TM-2',project_id:'PJ-1',date:sdnLocalToday(),hours:3.5,billable_rate:125,billable:true,notes:'Client walkthrough, sourcing calls',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_schedule',[
+    {id:'SC-1',project_id:'PJ-1',type:'Site Visit',date:sdnLocalToday(),assignee:'TM-2',status:'Scheduled',notes:'Measure final furniture placement',created_at:sdnLocalToday()}
+  ]);
   st('sdn_seeded',true);
 }
 
@@ -617,6 +831,21 @@ function csv(kind){
   }else if(kind==='vendors'){
     rows=[['Vendor','Category','Contact','Phone','Email','Typical Lead Time (wks)','Rating']].concat(vendors().map(function(v){return [v.name,v.category,v.contact_name,v.phone,v.email,v.lead_time_typical_weeks,v.rating];}));
     name='vendors';
+  }else if(kind==='pos'){
+    rows=[['PO #','Project','Vendor','Items','Total Cost','Status']].concat(purchaseOrders().map(function(po){return [po.po_number,projectLabel(po.project_id),po.vendor,(po.item_ids||[]).length,po.total_cost,po.status];}));
+    name='purchase-orders';
+  }else if(kind==='invoices'){
+    rows=[['Invoice #','Client','Project','Amount','Margin','Status','Due Date']].concat(invoices().map(function(i){return [i.invoice_number,clientLabel(i.client_id),projectLabel(i.project_id),i.amount,(Number(i.amount)||0)-(Number(i.cost_basis)||0),i.status,i.due_date];}));
+    name='invoices';
+  }else if(kind==='team'){
+    rows=[['Name','Role','Email','Phone','Status','Start Date']].concat(team().map(function(t){return [t.name,t.role,t.email,t.phone,t.status,t.start_date];}));
+    name='team';
+  }else if(kind==='time'){
+    rows=[['Date','Team Member','Project','Hours','Rate','Billable','Notes']].concat(timeEntries().map(function(t){return [t.date,employeeLabel(t.employee_id),projectLabel(t.project_id),t.hours,t.billable_rate,t.billable?'Yes':'No',t.notes];}));
+    name='time-entries';
+  }else if(kind==='schedule'){
+    rows=[['Date','Type','Project','Assignee','Status','Notes']].concat(scheduleEvents().map(function(s){return [s.date,s.type,projectLabel(s.project_id),employeeLabel(s.assignee),s.status,s.notes];}));
+    name='schedule';
   }else return;
   var text=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(text);
@@ -767,16 +996,27 @@ async function runComplianceCheck(){
 
 function fillProjectSelects(){
   var opts=projects().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+' ('+H(projectClientName(p))+')</option>';}).join('');
-  ['spproject','specproject','qproject','pjclient'].forEach(function(id){
+  var needsBlank={specproject:1,mbproject:1,pogenproject:1,ttproject:1,cpproject:1};
+  ['spproject','specproject','qproject','pjclient','mbproject','mbmproject','pogenproject','ttproject','ttprojectm','schproject','cpproject'].forEach(function(id){
     var el=$(id);if(!el)return;
     if(id==='pjclient'){
       el.innerHTML=clients().map(function(c){return '<option value="'+c.id+'">'+H(c.name)+'</option>';}).join('');
-    }else{
-      var cur=el.value;
-      el.innerHTML=(id==='specproject'?'<option value="">Select a project...</option>':'')+opts;
-      if(cur)el.value=cur;
+      return;
     }
+    var cur=el.value;
+    el.innerHTML=(needsBlank[id]?'<option value="">'+(id==='ttproject'?'All Projects':'Select a project...')+'</option>':'')+opts;
+    if(cur)el.value=cur;
   });
+  var memberOpts=team().filter(function(t){return t.status==='Active';}).map(function(t){return '<option value="'+t.id+'">'+H(t.name)+'</option>';}).join('');
+  ['ttmember','schassignee'].forEach(function(id){
+    var el=$(id);if(!el)return;
+    var cur=el.value;
+    el.innerHTML=memberOpts;
+    if(cur)el.value=cur;
+  });
+  var approvedProposalOpts=proposals().filter(function(p){return p.status==='Approved';}).map(function(p){return '<option value="'+p.id+'">'+H(p.title)+' -- '+fmt(proposalTotal(p))+'</option>';}).join('');
+  var invEl=$('invproposal');
+  if(invEl){var cur2=invEl.value;invEl.innerHTML=approvedProposalOpts||'<option value="">No approved proposals yet</option>';if(cur2)invEl.value=cur2;}
 }
 
 function rSpec(){
@@ -1088,10 +1328,401 @@ function rDash(){
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No proposals yet</div>';
 }
 
+// ── TEAM & ROLES ──────────────────────────────────────────────────────────
+// Login/roles unchanged from Phase 1's simple owner/designer/office PIN
+// picker -- this panel is the studio roster/HR view sitting alongside it,
+// not a migration to per-employee server auth (that's a separate, much
+// larger build -- see StoneDesk/SAIRNbiz/SAIRNgrounds/SAIRNscape's real
+// api/*-auth.js + SQL-schema upgrades for what that actually requires).
+function team(){return ld('sdn_team',[]);}
+function employeeLabel(id){var t=team().find(function(x){return x.id===id;});return t?t.name:'(unknown)';}
+function openTeamModal(){
+  ceid=null;['tmname','tmemail','tmphone','tmstart'].forEach(function(f){$(f).value='';});
+  $('tmrole').value='designer';$('tmstatus').value='Active';
+  $('teammodal').classList.add('on');
+}
+function closeTeamModal(){$('teammodal').classList.remove('on');}
+function editTeam(id){
+  var t=team().find(function(x){return x.id===id;});if(!t)return;
+  ceid=id;$('tmname').value=t.name;$('tmrole').value=t.role;$('tmemail').value=t.email||'';
+  $('tmphone').value=t.phone||'';$('tmstart').value=t.start_date||'';$('tmstatus').value=t.status;
+  $('teammodal').classList.add('on');
+}
+async function saveTeam(){
+  var name=$('tmname').value.trim();
+  if(!name){toast('Name required');return;}
+  var rec={id:ceid||newId('TM'),name:name,role:$('tmrole').value,email:$('tmemail').value.trim(),
+    phone:$('tmphone').value.trim(),start_date:$('tmstart').value,status:$('tmstatus').value,created_at:sdnLocalToday()};
+  var list=team();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('sdn_team',list);
+  closeTeamModal();rTeam();fillProjectSelects();
+  var syncResult=await sdnData('write','team',rec);
+  toast(syncResult?'Team member saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function rTeam(){
+  var list=team();
+  $('tm-total').textContent=list.filter(function(t){return t.status==='Active';}).length;
+  $('tm-designers').textContent=list.filter(function(t){return t.status==='Active'&&t.role==='designer';}).length;
+  var roleLabels={owner:'Owner',designer:'Designer',office:'Office'};
+  var tb=$('tmtbody');
+  tb.innerHTML=list.length?list.map(function(t){
+    return '<tr><td>'+H(t.name)+'</td><td><span class="badge bb">'+H(roleLabels[t.role]||t.role)+'</span></td><td>'+H(t.email||'--')+'</td><td>'+H(t.phone||'--')+'</td>'+
+      '<td><span class="badge '+(t.status==='Active'?'bg':'bx')+'">'+H(t.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editTeam(\''+t.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No team members yet</td></tr>';
+}
+
+// ── MOOD BOARDS ───────────────────────────────────────────────────────────
+function moodboards(){return ld('sdn_moodboards',[]);}
+function openMoodboardModal(){
+  ceid=null;fillProjectSelects();
+  ['mbtitle','mbdesc','mbimages'].forEach(function(f){$(f).value='';});
+  $('mbstatus').value='Draft';
+  var pj=$('mbproject').value;if(pj)$('mbmproject').value=pj;
+  $('moodboardmodal').classList.add('on');
+}
+function closeMoodboardModal(){$('moodboardmodal').classList.remove('on');}
+function editMoodboard(id){
+  var m=moodboards().find(function(x){return x.id===id;});if(!m)return;
+  ceid=id;fillProjectSelects();
+  $('mbmproject').value=m.project_id;$('mbtitle').value=m.title;$('mbdesc').value=m.description||'';
+  $('mbimages').value=(m.image_urls||[]).join('\n');$('mbstatus').value=m.status;
+  $('moodboardmodal').classList.add('on');
+}
+async function saveMoodboard(){
+  var title=$('mbtitle').value.trim();
+  if(!title){toast('Title required');return;}
+  var rec={id:ceid||newId('MB'),project_id:$('mbmproject').value,title:title,description:$('mbdesc').value.trim(),
+    image_urls:$('mbimages').value.split('\n').map(function(s){return s.trim();}).filter(Boolean),
+    status:$('mbstatus').value,created_at:sdnLocalToday()};
+  var list=moodboards();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('sdn_moodboards',list);
+  closeMoodboardModal();rMoodboards();
+  var syncResult=await sdnData('write','moodboards',rec);
+  toast(syncResult?'Mood board saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function rMoodboards(){
+  fillProjectSelects();
+  var pjId=$('mbproject').value;
+  var list=pjId?moodboards().filter(function(m){return m.project_id===pjId;}):[];
+  $('mb-count').textContent=list.length;
+  $('mb-sent').textContent=list.filter(function(m){return m.status==='Sent to Client';}).length;
+  $('mb-approved').textContent=list.filter(function(m){return m.status==='Approved';}).length;
+  var statusColors={Draft:'bx','Sent to Client':'bb',Approved:'bg',Revise:'bw'};
+  $('mb-list').innerHTML=list.length?list.map(function(m){
+    return '<div class="card"><div class="ch"><span class="ct">'+H(m.title)+'</span><span class="badge '+(statusColors[m.status]||'bx')+'" style="margin-left:auto">'+H(m.status)+'</span></div>'+
+      '<div class="cb"><div style="margin-bottom:10px">'+H(m.description||'(no description)')+'</div>'+
+      (m.image_urls&&m.image_urls.length?'<div style="color:var(--muted);font-size:12px;margin-bottom:10px">'+m.image_urls.length+' reference image(s) linked</div>':'')+
+      '<button class="btn bo bs" onclick="editMoodboard(\''+m.id+'\')">Edit</button></div></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:24px">'+(pjId?'No mood boards on this project yet':'Select a project above')+'</div>';
+}
+
+// ── PURCHASE ORDERS ───────────────────────────────────────────────────────
+function purchaseOrders(){return ld('sdn_pos',[]);}
+function openGeneratePOModal(){
+  fillProjectSelects();
+  $('pogen-preview').textContent='';
+  $('generatepomodal').classList.add('on');
+}
+function closeGeneratePOModal(){$('generatepomodal').classList.remove('on');}
+// Real trigger: only Spec Sheet items that belong to an APPROVED proposal
+// are eligible -- nothing gets ordered from a vendor before the client has
+// actually committed to paying for it. One PO per vendor, covering every
+// eligible item on this project not already attached to an existing PO.
+function approvedSpecItemIdsForProject(projectId){
+  var ids={};
+  proposals().filter(function(p){return p.project_id===projectId&&p.status==='Approved';})
+    .forEach(function(p){(p.item_ids||[]).forEach(function(id){ids[id]=true;});});
+  return ids;
+}
+async function generatePOs(){
+  var pjId=$('pogenproject').value;
+  if(!pjId){toast('Select a project first');return;}
+  var approvedIds=approvedSpecItemIdsForProject(pjId);
+  var existingPoItemIds={};
+  purchaseOrders().filter(function(po){return po.project_id===pjId;}).forEach(function(po){(po.item_ids||[]).forEach(function(id){existingPoItemIds[id]=true;});});
+  var eligible=specItems().filter(function(s){return s.project_id===pjId&&approvedIds[s.id]&&!existingPoItemIds[s.id];});
+  if(!eligible.length){toast('No approved, not-yet-ordered items on this project');return;}
+  var byVendor={};
+  eligible.forEach(function(s){(byVendor[s.vendor]=byVendor[s.vendor]||[]).push(s);});
+  var list=purchaseOrders();
+  var created=[];
+  for(var vendor in byVendor){
+    var items=byVendor[vendor];
+    var rec={id:newId('PO'),po_number:'PO-'+Date.now().toString().slice(-6),project_id:pjId,vendor:vendor,
+      item_ids:items.map(function(s){return s.id;}),total_cost:items.reduce(function(s,x){return s+(Number(x.cost)||0);},0),
+      status:'Draft',created_at:sdnLocalToday()};
+    list.push(rec);created.push(rec);
+  }
+  st('sdn_pos',list);
+  closeGeneratePOModal();rPOs();
+  for(var i=0;i<created.length;i++){await sdnData('write','pos',created[i]);}
+  toast(created.length+' PO(s) generated: '+created.map(function(r){return r.vendor;}).join(', '));
+}
+function openPODetail(id){
+  var po=purchaseOrders().find(function(x){return x.id===id;});if(!po)return;
+  var items=(po.item_ids||[]).map(function(iid){return specItems().find(function(s){return s.id===iid;});}).filter(Boolean);
+  var rows=items.map(function(s){return '<tr><td>'+H(s.item)+'</td><td>'+H(s.sku)+'</td><td>'+fmt(s.cost)+'</td></tr>';}).join('');
+  var statusColors={Draft:'bx',Sent:'bb',Confirmed:'bg',Received:'bg'};
+  $('po-detail-body').innerHTML=
+    '<div class="ph" style="margin-bottom:12px"><div><div class="ptitle" style="font-size:17px">'+H(po.po_number)+'</div><div class="psub">'+H(po.vendor)+' &middot; '+H(projectLabel(po.project_id))+'</div></div>'+
+    '<div class="pa"><span class="badge '+(statusColors[po.status]||'bx')+'">'+H(po.status)+'</span></div></div>'+
+    '<table><thead><tr><th>Item</th><th>SKU</th><th>Cost</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div class="srow" style="margin-top:10px"><span class="slbl">Total (Wholesale)</span><span class="sval">'+fmt(po.total_cost)+'</span></div>'+
+    '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'+
+      (po.status==='Draft'?'<button class="btn bo bs" onclick="setPOStatus(\''+po.id+'\',\'Sent\')">Mark Sent</button>':'')+
+      (po.status==='Sent'?'<button class="btn bo bs" onclick="setPOStatus(\''+po.id+'\',\'Confirmed\')">Vendor Confirmed</button>':'')+
+      (po.status==='Confirmed'?'<button class="btn bp bs" onclick="setPOStatus(\''+po.id+'\',\'Received\')">Mark Received</button>':'')+
+      '<button class="btn bo bs" onclick="closePODetailModal()">Close</button>'+
+    '</div>';
+  $('podetailmodal').classList.add('on');
+}
+function closePODetailModal(){$('podetailmodal').classList.remove('on');}
+async function setPOStatus(id,status){
+  var list=purchaseOrders();
+  var po=list.find(function(x){return x.id===id;});if(!po)return;
+  po.status=status;st('sdn_pos',list);
+  closePODetailModal();rPOs();
+  var syncResult=await sdnData('write','pos',po);
+  toast('PO marked '+status);
+}
+function rPOs(){
+  var list=purchaseOrders();
+  var open=list.filter(function(po){return po.status==='Draft'||po.status==='Sent';});
+  $('po-open').textContent=open.length;
+  $('po-total').textContent=fmt(open.reduce(function(s,po){return s+(Number(po.total_cost)||0);},0));
+  var statusColors={Draft:'bx',Sent:'bb',Confirmed:'bg',Received:'bg'};
+  var tb=$('potbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(po){
+    return '<tr><td>'+H(po.po_number)+'</td><td>'+H(projectLabel(po.project_id))+'</td><td>'+H(po.vendor)+'</td>'+
+      '<td>'+(po.item_ids||[]).length+'</td><td>'+fmt(po.total_cost)+'</td>'+
+      '<td><span class="badge '+(statusColors[po.status]||'bx')+'">'+H(po.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="openPODetail(\''+po.id+'\')">View</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No purchase orders yet</td></tr>';
+}
+
+// ── INVOICING ─────────────────────────────────────────────────────────────
+// Tied to an APPROVED proposal (same retail total + cost basis already
+// computed there), not a freestanding amount -- keeps invoice math
+// consistent with the trade-markup numbers the client already agreed to.
+function invoices(){return ld('sdn_invoices',[]);}
+function proposalCostTotal(p){
+  return (p.item_ids||[]).reduce(function(sum,id){var s=specItems().find(function(x){return x.id===id;});return sum+(s?(Number(s.cost)||0):0);},0);
+}
+function openInvoiceModal(){
+  fillProjectSelects();
+  $('invdue').value='';
+  invoiceAmountPreview();
+  $('invoicemodal').classList.add('on');
+}
+function closeInvoiceModal(){$('invoicemodal').classList.remove('on');}
+function invoiceAmountPreview(){
+  var pid=$('invproposal').value;
+  var p=proposals().find(function(x){return x.id===pid;});
+  $('invamount-preview').textContent=fmt(p?proposalTotal(p):0);
+}
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='invproposal')invoiceAmountPreview();});
+async function saveInvoice(){
+  var pid=$('invproposal').value;
+  var p=proposals().find(function(x){return x.id===pid;});
+  if(!p){toast('Select an approved proposal first');return;}
+  var alreadyInvoiced=invoices().some(function(i){return i.proposal_id===pid;});
+  if(alreadyInvoiced){toast('This proposal already has an invoice');return;}
+  var rec={id:newId('INV'),invoice_number:'INV-'+Date.now().toString().slice(-6),proposal_id:pid,
+    project_id:p.project_id,client_id:p.client_id,amount:proposalTotal(p),cost_basis:proposalCostTotal(p),
+    due_date:$('invdue').value,status:'Draft',issued_date:sdnLocalToday(),paid_date:'',created_at:sdnLocalToday()};
+  var list=invoices();list.push(rec);st('sdn_invoices',list);
+  closeInvoiceModal();rInvoicing();
+  var syncResult=await sdnData('write','invoices',rec);
+  toast(syncResult?'Invoice created':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+async function setInvoiceStatus(id,status){
+  var list=invoices();
+  var inv=list.find(function(x){return x.id===id;});if(!inv)return;
+  inv.status=status;
+  if(status==='Paid')inv.paid_date=sdnLocalToday();
+  if(status==='Sent'&&!inv.issued_date)inv.issued_date=sdnLocalToday();
+  st('sdn_invoices',list);rInvoicing();
+  var syncResult=await sdnData('write','invoices',inv);
+  toast('Invoice marked '+status);
+}
+function rInvoicing(){
+  fillProjectSelects();
+  var list=invoices();
+  var outstanding=list.filter(function(i){return i.status==='Sent'||i.status==='Overdue';});
+  var paid=list.filter(function(i){return i.status==='Paid';});
+  $('inv-outstanding').textContent=fmt(outstanding.reduce(function(s,i){return s+(Number(i.amount)||0);},0));
+  $('inv-outstanding-sub').textContent=outstanding.length+' invoice(s)';
+  $('inv-paid').textContent=fmt(paid.reduce(function(s,i){return s+(Number(i.amount)||0);},0));
+  $('inv-margin').textContent=fmt(list.reduce(function(s,i){return s+((Number(i.amount)||0)-(Number(i.cost_basis)||0));},0));
+  var statusColors={Draft:'bx',Sent:'bb',Paid:'bg',Overdue:'br'};
+  var tb=$('invtbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(i){
+    var margin=(Number(i.amount)||0)-(Number(i.cost_basis)||0);
+    var actions='';
+    if(i.status==='Draft')actions='<button class="btn bo bs" onclick="setInvoiceStatus(\''+i.id+'\',\'Sent\')">Mark Sent</button>';
+    else if(i.status==='Sent')actions='<button class="btn bp bs" onclick="setInvoiceStatus(\''+i.id+'\',\'Paid\')">Mark Paid</button>';
+    return '<tr><td>'+H(i.invoice_number)+'</td><td>'+H(clientLabel(i.client_id))+'</td><td>'+H(projectLabel(i.project_id))+'</td>'+
+      '<td>'+fmt(i.amount)+'</td><td>'+fmt(margin)+'</td>'+
+      '<td><span class="badge '+(statusColors[i.status]||'bx')+'">'+H(i.status)+'</span></td><td>'+actions+'</td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No invoices yet</td></tr>';
+}
+
+// ── TIME TRACKING ─────────────────────────────────────────────────────────
+function timeEntries(){return ld('sdn_timeentries',[]);}
+function openTimeModal(){
+  fillProjectSelects();
+  ['tthours','ttrate','ttnotes'].forEach(function(f){$(f).value='';});
+  $('ttdate').value=sdnLocalToday();$('ttbillable').value='true';
+  $('timemodal').classList.add('on');
+}
+function closeTimeModal(){$('timemodal').classList.remove('on');}
+async function saveTime(){
+  var empId=$('ttmember').value,pjId=$('ttprojectm').value,hours=Number($('tthours').value)||0;
+  if(!empId){toast('Select a team member');return;}
+  if(!pjId){toast('Select a project');return;}
+  if(hours<=0){toast('Hours must be greater than 0');return;}
+  var rec={id:newId('TT'),employee_id:empId,project_id:pjId,date:$('ttdate').value||sdnLocalToday(),
+    hours:hours,billable_rate:Number($('ttrate').value)||0,billable:$('ttbillable').value==='true',
+    notes:$('ttnotes').value.trim(),created_at:sdnLocalToday()};
+  var list=timeEntries();list.push(rec);st('sdn_timeentries',list);
+  closeTimeModal();rTime();
+  var syncResult=await sdnData('write','timeentries',rec);
+  toast(syncResult?'Time entry saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function rTime(){
+  fillProjectSelects();
+  var pjFilter=$('ttproject').value;
+  var list=timeEntries().filter(function(t){return !pjFilter||t.project_id===pjFilter;});
+  var thisMonth=sdnLocalToday().slice(0,7);
+  var monthList=list.filter(function(t){return (t.date||'').slice(0,7)===thisMonth;});
+  $('tt-hours').textContent=monthList.reduce(function(s,t){return s+(Number(t.hours)||0);},0);
+  $('tt-value').textContent=fmt(monthList.filter(function(t){return t.billable;}).reduce(function(s,t){return s+(Number(t.hours)||0)*(Number(t.billable_rate)||0);},0));
+  var tb=$('tttbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(t){
+    return '<tr><td>'+fdate(t.date)+'</td><td>'+H(employeeLabel(t.employee_id))+'</td><td>'+H(projectLabel(t.project_id))+'</td>'+
+      '<td>'+t.hours+'</td><td>'+fmt(t.billable_rate)+'/hr</td>'+
+      '<td><span class="badge '+(t.billable?'bg':'bx')+'">'+(t.billable?'Billable':'Internal')+'</span></td>'+
+      '<td>'+H(t.notes||'--')+'</td><td></td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No time logged yet</td></tr>';
+}
+
+// ── SCHEDULING ────────────────────────────────────────────────────────────
+function scheduleEvents(){return ld('sdn_schedule',[]);}
+function openScheduleModal(){
+  ceid=null;fillProjectSelects();
+  $('schdate').value=sdnLocalToday();$('schtype').value='Site Visit';$('schstatus').value='Scheduled';$('schnotes').value='';
+  $('schedulemodal').classList.add('on');
+}
+function closeScheduleModal(){$('schedulemodal').classList.remove('on');}
+function editScheduleEvent(id){
+  var s=scheduleEvents().find(function(x){return x.id===id;});if(!s)return;
+  ceid=id;fillProjectSelects();
+  $('schproject').value=s.project_id;$('schtype').value=s.type;$('schdate').value=s.date;
+  $('schassignee').value=s.assignee||'';$('schstatus').value=s.status;$('schnotes').value=s.notes||'';
+  $('schedulemodal').classList.add('on');
+}
+async function saveSchedule(){
+  var pjId=$('schproject').value;
+  if(!pjId){toast('Select a project');return;}
+  var rec={id:ceid||newId('SC'),project_id:pjId,type:$('schtype').value,date:$('schdate').value||sdnLocalToday(),
+    assignee:$('schassignee').value,status:$('schstatus').value,notes:$('schnotes').value.trim(),created_at:sdnLocalToday()};
+  var list=scheduleEvents();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('sdn_schedule',list);
+  closeScheduleModal();rScheduleEvents();
+  var syncResult=await sdnData('write','schedule',rec);
+  toast(syncResult?'Schedule event saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function rScheduleEvents(){
+  var list=scheduleEvents();
+  var todayMs=new Date(sdnLocalToday()+'T00:00:00').getTime();
+  var upcoming=list.filter(function(s){
+    if(!s.date||s.status!=='Scheduled')return false;
+    var dMs=new Date(s.date+'T00:00:00').getTime();
+    return dMs>=todayMs&&dMs<=todayMs+14*24*60*60*1000;
+  });
+  $('sch-upcoming').textContent=upcoming.length;
+  $('sch-punch').textContent=list.filter(function(s){return s.type==='Punch List'&&s.status!=='Complete';}).length;
+  var statusColors={Scheduled:'bb',Complete:'bg',Cancelled:'bx'};
+  var tb=$('schtbody');
+  tb.innerHTML=list.length?list.slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');}).map(function(s){
+    return '<tr><td>'+fdate(s.date)+'</td><td><span class="badge bb">'+H(s.type)+'</span></td><td>'+H(projectLabel(s.project_id))+'</td>'+
+      '<td>'+H(employeeLabel(s.assignee))+'</td><td><span class="badge '+(statusColors[s.status]||'bx')+'">'+H(s.status)+'</span></td>'+
+      '<td>'+H(s.notes||'--')+'</td><td><button class="btn bo bs" onclick="editScheduleEvent(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No schedule events yet</td></tr>';
+}
+
+// ── CLIENT PORTAL ─────────────────────────────────────────────────────────
+// Staff-side view/management of client-facing content for one project --
+// see the in-panel note: a real separate client-only login/URL is a
+// distinct access-control build, not assumed done here.
+function rClientPortal(){
+  fillProjectSelects();
+  var pjId=$('cpproject').value;
+  if(!pjId){
+    ['cp-moodboards','cp-proposals','cp-invoices','cp-esign'].forEach(function(id){$(id).innerHTML='<div style="color:var(--muted)">Select a project above</div>';});
+    return;
+  }
+  var mbStatusColors={Draft:'bx','Sent to Client':'bb',Approved:'bg',Revise:'bw'};
+  var mbs=moodboards().filter(function(m){return m.project_id===pjId;});
+  $('cp-moodboards').innerHTML=mbs.length?mbs.map(function(m){
+    return '<div class="srow"><span class="slbl">'+H(m.title)+'</span><span class="badge '+(mbStatusColors[m.status]||'bx')+'">'+H(m.status)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted)">No mood boards</div>';
+
+  var prStatusColors={Draft:'bx',Sent:'bb',Approved:'bg',Declined:'br'};
+  var prs=proposals().filter(function(p){return p.project_id===pjId;});
+  $('cp-proposals').innerHTML=prs.length?prs.map(function(p){
+    return '<div class="srow"><span class="slbl">'+H(p.title)+' ('+fmt(proposalTotal(p))+')</span><span class="badge '+(prStatusColors[p.status]||'bx')+'">'+H(p.status)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted)">No proposals</div>';
+
+  var invStatusColors={Draft:'bx',Sent:'bb',Paid:'bg',Overdue:'br'};
+  var invs=invoices().filter(function(i){return i.project_id===pjId;});
+  $('cp-invoices').innerHTML=invs.length?invs.map(function(i){
+    return '<div class="srow"><span class="slbl">'+H(i.invoice_number)+' ('+fmt(i.amount)+')</span><span class="badge '+(invStatusColors[i.status]||'bx')+'">'+H(i.status)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted)">No invoices</div>';
+
+  var pendingBoards=mbs.filter(function(m){return m.status==='Sent to Client';});
+  var pendingProposals=prs.filter(function(p){return p.status==='Sent';});
+  if(!pendingBoards.length&&!pendingProposals.length){
+    $('cp-esign').innerHTML='<div style="color:var(--muted)">Nothing pending client approval</div>';
+    return;
+  }
+  var opts=pendingBoards.map(function(m){return '<option value="mb:'+m.id+'">Mood Board: '+H(m.title)+'</option>';})
+    .concat(pendingProposals.map(function(p){return '<option value="pr:'+p.id+'">Proposal: '+H(p.title)+'</option>';})).join('');
+  $('cp-esign').innerHTML=
+    '<div class="fg"><label>Item</label><select id="cpesign-item">'+opts+'</select></div>'+
+    '<div class="fg"><label>Client Typed Name (e-sign)</label><input id="cpesign-name" placeholder="Sarah Whitfield"></div>'+
+    '<button class="btn bp bs" onclick="cpEsignApprove()">Record Approval</button>';
+}
+// Real, honest, minimal e-sign stand-in -- a typed name + timestamp, not a
+// fabricated cryptographic signature system. Same "honest minimal stand-in,
+// not a fabricated multi-user account system" precedent SAIRNvet's Photo
+// Consult peer-routing already used for its own "who am I" picker.
+async function cpEsignApprove(){
+  var val=$('cpesign-item').value,name=$('cpesign-name').value.trim();
+  if(!name){toast('Enter the client\'s typed name to record the approval');return;}
+  var kind=val.split(':')[0],id=val.split(':')[1];
+  var ts=new Date().toISOString();
+  if(kind==='mb'){
+    var list=moodboards();
+    var m=list.find(function(x){return x.id===id;});
+    if(m){m.status='Approved';m.esign_name=name;m.esign_at=ts;st('sdn_moodboards',list);await sdnData('write','moodboards',m);}
+  }else if(kind==='pr'){
+    await setProposalStatus(id,'Approved');
+  }
+  rClientPortal();rDash();
+  toast('Approval recorded for '+name);
+}
+
 // ── WIRE EVERYTHING ON DOM READY ──────────────────────────────────────────
 function init(){
   seed();
-  rDash();rClients();fillProjectSelects();rSpec();rProposals();rVendors();
+  fillProjectSelects();
+  rDash();rClients();rSpec();rProposals();rVendors();
+  rMoodboards();rPOs();rInvoicing();rTeam();rTime();rScheduleEvents();rClientPortal();
 }
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('sdn_license_key');
