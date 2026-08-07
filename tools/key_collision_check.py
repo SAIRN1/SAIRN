@@ -1,6 +1,8 @@
 """
 key_collision_check.py -- flags any localStorage key written by more than
-one DISTINCT BACKING VARIABLE across stonedesk.html.
+one DISTINCT BACKING VARIABLE, whether written via a direct
+`localStorage.setItem(...)` call or via a detected storage-write wrapper
+function (e.g. `st(k,v)`, `scpSt(k,v)`).
 
 This is the mechanical enforcement of sairn-software-architect's rule
 (added 2026-07-27): "grep for the storage key before creating it." Every
@@ -13,12 +15,13 @@ had an owner.
 
 Method: extract every <script> block (reusing extract_scripts.py's real
 HTML-parser-based extraction), scan each tracking brace depth (skipping
-strings/comments), and capture every
+strings/comments/regex-literals), and capture every
 `localStorage.setItem('KEY', JSON.stringify(VAR))` (or bare
-`localStorage.setItem('KEY', VAR)`) call's VAR. A key is flagged only
-when 2+ DISTINCT NAMED variables write it -- this is the actual signature
-of a real collision. Multiple *functions* writing the SAME variable to
-the SAME key (e.g. an add/edit/delete trio all calling
+`localStorage.setItem('KEY', VAR)`) call's VAR -- PLUS every equivalent
+call through a detected wrapper function (see below). A key is flagged
+only when 2+ DISTINCT NAMED variables write it -- this is the actual
+signature of a real collision. Multiple *functions* writing the SAME
+variable to the SAME key (e.g. an add/edit/delete trio all calling
 `localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions))`)
 is normal CRUD on one cohesive data model, not a bug, and is deliberately
 NOT flagged -- an earlier function-name-based version of this check
@@ -27,9 +30,39 @@ was corrected. Inline literal resets (`'{}'`, `'[]'`, or an inline object/
 array literal) are tracked separately and never counted as a competing
 variable, since clearing state to empty isn't a competing shape.
 
-Known limitation: dynamic keys (localStorage.setItem(someVar, ...)) are
-not resolved -- only string-literal key names are tracked. This mirrors
-the same limitation accepted in this session's manual traces.
+Wrapper detection is AUTOMATIC, not hardcoded (fixed 2026-08-07, was
+CONFIRMED REAL GAP, now closed). The original version of this checker
+only matched literal `localStorage.setItem(...)` text -- running it
+against sairngrounds.html/sairnscape.html, both of which route every
+storage write through `st(k,v){localStorage.setItem(k,JSON.stringify(v))}`
+/ `scpSt(k,v){...}` wrappers instead of calling setItem directly,
+returned a literal `TOTAL_KEY_WRITES:0` on sairngrounds.html -- a blind
+zero, not a clean one; the app has 31 real distinct keys. Generalized
+fix: any function whose body calls `localStorage.setItem(PARAM, ...)`
+using its own first parameter -- by name, not literally -- is
+auto-detected as a storage-write wrapper for THIS file, whatever it
+happens to be named. A call to any detected wrapper is then parsed
+exactly like a direct setItem call (same VAR/literal extraction, same
+collision logic). An app with no such wrapper detects zero and behaves
+exactly as before.
+
+Also fixed the same day: the brace-depth scanner had zero regex-literal
+awareness (the same bug class duplicate_global_check.py already fixed in
+`ce43609`, and that missing_dom_target_check.py's new wrapper-body
+extractor briefly reintroduced before being caught) -- a `.replace(/'/g,
+'&#39;')`-style escape helper (`H()`/`scpH()`, present in every one of
+these apps) has a literal `'` sitting inside regex delimiters, which the
+naive quote scanner mistook for a real string start, silently
+desyncing brace-depth tracking for the rest of the block. Ported the
+same JS-lexer regex/division disambiguation heuristic
+duplicate_global_check.py already uses.
+
+Known limitation: dynamic keys (`localStorage.setItem(someVar, ...)` or
+a wrapper call whose key argument isn't a string literal, including
+concatenated literals like `st('grd_'+kind, ...)`) are not resolved --
+only string-literal key names, immediately followed by a comma, are
+tracked. This mirrors the same limitation accepted in this session's
+manual traces and in missing_dom_target_check.py.
 """
 import sys, os, re
 from collections import defaultdict
@@ -39,24 +72,168 @@ from extract_scripts import ScriptExtractor
 
 FUNC_DECL_RE = re.compile(r'function\s+([A-Za-z_$][\w$]*)\s*\(')
 FUNC_EXPR_RE = re.compile(r'([A-Za-z_$][\w$.]*)\s*=\s*function\s*\(')
-SETITEM_RE = re.compile(
-    r'localStorage\.setItem\s*\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*'
-    r'(?:JSON\.stringify\s*\(\s*([A-Za-z_$][\w$.]*)|([A-Za-z_$][\w$.]*)|(\{|\[|[\'"]))'
+
+# Matches `function NAME(param1[, ...rest]){` -- candidate storage-write
+# wrapper declarations. param1 is captured so the body can be checked for
+# a real localStorage.setItem(param1, ...) reference (by name).
+WRAPPER_DEF_RE = re.compile(
+    r'function\s+([A-Za-z_$][\w$]*)\s*\(\s*([A-Za-z_$][\w$]*)\s*(?:,[^)]*)?\)\s*\{'
 )
 
+# Same heuristic as duplicate_global_check.py's already-fixed scanner,
+# ported here rather than re-derived (see module docstring).
+REGEX_PRECEDING_CHARS = set('([{,;:!&|?=<>+-*%~^\n')
+REGEX_PRECEDING_KEYWORDS = ('return', 'typeof', 'instanceof', 'in', 'of',
+                             'new', 'delete', 'void', 'throw', 'case', 'do',
+                             'else', 'yield', 'await')
 
-def scan_block(content, base_line):
+# Parse as identifiers (match the bare-variable regex group) but are
+# literal values, not a real competing backing variable -- see the
+# JS_LITERAL_KEYWORDS check at the m3 match site below.
+JS_LITERAL_KEYWORDS = {'null', 'true', 'false', 'undefined'}
+
+
+def _is_regex_start(last_sig_char, last_sig_word):
+    if last_sig_char in REGEX_PRECEDING_CHARS:
+        return True
+    if last_sig_char == '/':
+        return False
+    if last_sig_word in REGEX_PRECEDING_KEYWORDS:
+        return True
+    return False
+
+
+def extract_balanced_body(content, open_brace_idx):
+    """Return the substring from open_brace_idx (a '{') through its
+    matching '}', skipping braces inside strings/comments/regex-literals
+    so none of them can desync the depth count."""
+    depth = 0
+    i = open_brace_idx
+    n = len(content)
+    last_sig_char = ''
+    last_sig_word = ''
+    word_buf = ''
+    while i < n:
+        c = content[i]
+        if c == '\n':
+            last_sig_char = '\n'
+            i += 1
+            continue
+        if c.isspace():
+            i += 1
+            continue
+        if c == '/' and i + 1 < n and content[i+1] == '/':
+            j = content.find('\n', i)
+            i = j if j != -1 else n
+            continue
+        if c == '/' and i + 1 < n and content[i+1] == '*':
+            j = content.find('*/', i + 2)
+            i = j + 2 if j != -1 else n
+            continue
+        if c == '/' and _is_regex_start(last_sig_char, last_sig_word):
+            j = i + 1
+            in_class = False
+            while j < n:
+                if content[j] == '\\':
+                    j += 2
+                    continue
+                if content[j] == '\n':
+                    break
+                if content[j] == '[':
+                    in_class = True
+                elif content[j] == ']':
+                    in_class = False
+                elif content[j] == '/' and not in_class:
+                    break
+                j += 1
+            j += 1
+            while j < n and content[j] in 'gimsuy':
+                j += 1
+            i = j
+            last_sig_char = '/'
+            last_sig_word = ''
+            continue
+        if c in ("'", '"', '`'):
+            quote = c
+            i += 1
+            while i < n:
+                if content[i] == '\\':
+                    i += 2
+                    continue
+                if content[i] == quote:
+                    i += 1
+                    break
+                i += 1
+            last_sig_char = quote
+            last_sig_word = ''
+            continue
+        if c == '{':
+            depth += 1
+            i += 1
+            last_sig_char = c
+            last_sig_word = ''
+            continue
+        if c == '}':
+            depth -= 1
+            i += 1
+            if depth == 0:
+                return content[open_brace_idx:i]
+            last_sig_char = c
+            last_sig_word = ''
+            continue
+        if c.isalnum() or c == '_' or c == '$':
+            word_buf = (word_buf + c) if (last_sig_char.isalnum() or last_sig_char in ('_', '$')) else c
+        else:
+            word_buf = ''
+        if word_buf:
+            last_sig_word = word_buf
+        last_sig_char = c
+        i += 1
+    return content[open_brace_idx:]
+
+
+def detect_storage_wrappers(html):
+    """Return the set of function names in this file whose first
+    parameter is passed straight into localStorage.setItem(...)'s key
+    slot -- i.e. a real storage-write wrapper, detected from this file's
+    own code, not assumed from any other app's naming convention."""
+    wrappers = set()
+    for m in WRAPPER_DEF_RE.finditer(html):
+        fname, param = m.group(1), m.group(2)
+        body = extract_balanced_body(html, m.end() - 1)
+        if re.search(r'localStorage\.setItem\s*\(\s*' + re.escape(param) + r'\s*,', body):
+            wrappers.add(fname)
+    return wrappers
+
+
+def make_setitem_re(wrapper_names):
+    names = ['localStorage\\.setItem'] + [re.escape(n) for n in sorted(wrapper_names)]
+    alt = '|'.join(names)
+    return re.compile(
+        r'(?:' + alt + r')\s*\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*'
+        r'(?:JSON\.stringify\s*\(\s*([A-Za-z_$][\w$.]*)|([A-Za-z_$][\w$.]*)|(\{|\[|[\'"]))'
+    )
+
+
+def scan_block(content, base_line, SETITEM_RE):
     depth = 0
     i = 0
     n = len(content)
     line = base_line
     func_stack = []  # [name, depth_of_body_open_brace_or_None]
     results = []  # (key, enclosing_fn, line)
+    last_sig_char = ''
+    last_sig_word = ''
+    word_buf = ''
 
     while i < n:
         c = content[i]
         if c == '\n':
             line += 1
+            i += 1
+            last_sig_char = '\n'
+            continue
+        if c.isspace():
             i += 1
             continue
         if c == '/' and i + 1 < n and content[i+1] == '/':
@@ -72,6 +249,29 @@ def scan_block(content, base_line):
             line += content.count('\n', i, j)
             i = j + 2
             continue
+        if c == '/' and _is_regex_start(last_sig_char, last_sig_word):
+            j = i + 1
+            in_class = False
+            while j < n:
+                if content[j] == '\\':
+                    j += 2
+                    continue
+                if content[j] == '\n':
+                    break
+                if content[j] == '[':
+                    in_class = True
+                elif content[j] == ']':
+                    in_class = False
+                elif content[j] == '/' and not in_class:
+                    break
+                j += 1
+            j += 1
+            while j < n and content[j] in 'gimsuy':
+                j += 1
+            i = j
+            last_sig_char = '/'
+            last_sig_word = ''
+            continue
         if c in ("'", '"', '`'):
             quote = c
             j = i + 1
@@ -84,26 +284,46 @@ def scan_block(content, base_line):
                 j += 1
             line += content.count('\n', i, j)
             i = j + 1
+            last_sig_char = quote
+            last_sig_word = ''
             continue
 
         m = FUNC_DECL_RE.match(content, i)
         if m:
             func_stack.append([m.group(1), None])
             i = m.end()
+            last_sig_char = ')'
+            last_sig_word = ''
             continue
         m2 = FUNC_EXPR_RE.match(content, i)
         if m2:
             func_stack.append([m2.group(1), None])
             i = m2.end()
+            last_sig_char = ')'
+            last_sig_word = ''
             continue
         m3 = SETITEM_RE.match(content, i)
         if m3:
             key = m3.group(1)
             var = m3.group(2) or m3.group(3)  # named variable, if any
             is_literal = m3.group(4) is not None  # '{', '[', or a quote -- inline reset, not a competing var
+            if var in JS_LITERAL_KEYWORDS:
+                # 'null'/'true'/'false'/'undefined' parse as identifiers
+                # but are literal values, not a competing backing
+                # variable -- e.g. `st('sb_role', null)` on logout next
+                # to `st('sb_role', prole)` on login is normal
+                # clear-on-logout, not two independent shapes writing the
+                # same key. Confirmed real false positive: every one of
+                # tonight's 4 apps has a *_role key that follows exactly
+                # this pattern, and all 4 flagged as a "collision" before
+                # this fix.
+                var = None
+                is_literal = True
             fn = func_stack[-1][0] if func_stack else '(top-level)'
             results.append((key, fn, var, is_literal, line))
             i = m3.end()
+            last_sig_char = ')'
+            last_sig_word = ''
             continue
 
         if c == '{':
@@ -111,13 +331,24 @@ def scan_block(content, base_line):
             if func_stack and func_stack[-1][1] is None:
                 func_stack[-1][1] = depth
             i += 1
+            last_sig_char = c
+            last_sig_word = ''
             continue
         if c == '}':
             if func_stack and func_stack[-1][1] == depth:
                 func_stack.pop()
             depth -= 1
             i += 1
+            last_sig_char = c
+            last_sig_word = ''
             continue
+        if c.isalnum() or c == '_' or c == '$':
+            word_buf = (word_buf + c) if (last_sig_char.isalnum() or last_sig_char in ('_', '$')) else c
+        else:
+            word_buf = ''
+        if word_buf:
+            last_sig_word = word_buf
+        last_sig_char = c
         i += 1
     return results
 
@@ -127,12 +358,15 @@ def main():
     with open(path, encoding='utf-8', errors='replace') as f:
         html = f.read()
 
+    wrappers = detect_storage_wrappers(html)
+    SETITEM_RE = make_setitem_re(wrappers)
+
     parser = ScriptExtractor()
     parser.feed(html)
 
     all_writes = []
     for start_line, end_line, content in parser.blocks:
-        all_writes.extend(scan_block(content, start_line))
+        all_writes.extend(scan_block(content, start_line, SETITEM_RE))
 
     by_key_vars = defaultdict(set)      # key -> set of distinct NAMED variables
     by_key_all = defaultdict(list)      # key -> list of (fn, var_or_literal_marker, line)
@@ -144,6 +378,7 @@ def main():
 
     collisions = {k: v for k, v in by_key_vars.items() if len(v) > 1}
 
+    print("DETECTED_STORAGE_WRAPPERS:%s" % (sorted(wrappers) if wrappers else "none"))
     print("TOTAL_KEY_WRITES:%d" % len(all_writes))
     print("DISTINCT_KEYS:%d" % len(by_key_all))
     print("COLLISIONS:%d" % len(collisions))
