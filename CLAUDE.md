@@ -36,9 +36,10 @@ See the `sairn-session-handoff` skill for the template and naming
 convention.
 
 ## Known resolved issues (don't rediscover these)
-- `sairn-app-scaffold` was claimed built in an earlier session's handoff but
-  never actually existed in `.claude/skills/` — if it's referenced anywhere,
-  that reference is false; don't search for it again without checking first.
+- `sairn-app-scaffold` was falsely claimed built in an earlier session's
+  handoff (before 2026-07-30); it was actually created 2026-07-30 and is
+  real and active in `.claude/skills/` as of 2026-08-07 — re-verify its
+  existence before trusting either the old "false" claim or this update.
 - The old `SAIRN1/Fabricor` repo on Railway is an abandoned duplicate
   codebase — StoneDesk's real, current code lives only in `stonedesk.html`
   on `SAIRN1/SAIRN` (Vercel). Don't resurrect or reference Fabricor without
