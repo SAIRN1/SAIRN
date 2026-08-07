@@ -58,7 +58,15 @@ const RESOURCES = {
   // sql/sairngrounds_data_schema_phase2.sql and
   // sql/sairnscape_data_schema_phase2.sql for the complete rationale.
   grd_invasive_sightings: true, grd_ecosystem_reports: true, grd_designs: true, grd_irr_controllers: true, grd_irr_zones: true, grd_irr_schedules: true, grd_water_features: true, grd_training_courses: true, grd_training_completions: true, grd_boq_rates: true, grd_vendors: true, msb_products: true, msb_sales: true, msb_licenses: true, msb_inventory_log: true, msb_bottle_scans: true, msb_food_scans: true, msb_food_waste: true, msb_food_cost_log: true, msb_sale_hours: true,
-  scp_designs: true, scp_irr_controllers: true, scp_irr_zones: true, scp_irr_schedules: true, scp_water_features: true, scp_vendors: true
+  scp_designs: true, scp_irr_controllers: true, scp_irr_zones: true, scp_irr_schedules: true, scp_water_features: true, scp_vendors: true,
+  // SAIRNdesign (2026-08-07) -- see sql/sairndesign_data_schema.sql. sdn_ prefix on every one of
+  // these, not just 'sdn_schedule'/'sdn_invoices' which would otherwise collide with the bare
+  // 'schedule'/'invoices' names already claimed above -- consistency across all 18, not a mixed
+  // scheme. Closes the whole-app sync gap described in that SQL file's header.
+  sdn_clients: true, sdn_projects: true, sdn_specitems: true, sdn_proposals: true, sdn_vendors: true,
+  sdn_samplerequests: true, sdn_team: true, sdn_moodboards: true, sdn_colorcodes: true, sdn_pos: true,
+  sdn_invoices: true, sdn_timeentries: true, sdn_schedule: true, sdn_samples: true, sdn_contracts: true,
+  sdn_referrals: true, sdn_discounts: true, sdn_roomdims: true
 };
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
@@ -146,7 +154,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims' } });
     return;
   }
 
@@ -1554,6 +1562,53 @@ module.exports = async (req, res) => {
       const rows2 = await r2.json();
       if (!r2.ok) return upstream(res, rows2);
       res.status(200).json({ ok: true, data: newData });
+      return;
+    }
+
+    // ── SAIRNDESIGN: 18 resources (2026-08-07, closing the whole-app sync gap) ─────────────
+    // SAIRNdesign shipped Phases 1-4 calling sdnData('write', <bare resource name>, ...) at
+    // ~27 call sites, but no 'sairndesign'-scoped resource was ever added to RESOURCES above --
+    // every one of those writes has been hitting the 400 guard and silently falling back to
+    // local-only storage since Phase 1. Every resource here is prefixed sdn_, not just the two
+    // that would otherwise collide with SAIRNscape's bare 'schedule'/'invoices' below -- see
+    // sql/sairndesign_data_schema.sql's own header for the full reasoning. None of these carry a
+    // required parent-id column (unlike grd_*'s property_id) -- SAIRNdesign has no server-side
+    // filtered read anywhere; every client read is "give me the whole array for this license,"
+    // filtered client-side after, so the parent id living inside payload/data (same as every
+    // other field) is sufficient. Same read/write shape as sd_slabs above (payload.id only, no
+    // second required field) for exactly that reason.
+    const SDN_RESOURCES = {
+      sdn_clients: 'client_id', sdn_projects: 'project_id', sdn_specitems: 'specitem_id',
+      sdn_proposals: 'proposal_id', sdn_vendors: 'vendor_id', sdn_samplerequests: 'samplerequest_id',
+      sdn_team: 'team_id', sdn_moodboards: 'moodboard_id', sdn_colorcodes: 'colorcode_id',
+      sdn_pos: 'po_id', sdn_invoices: 'invoice_id', sdn_timeentries: 'timeentry_id',
+      sdn_schedule: 'schedule_id', sdn_samples: 'sample_id', sdn_contracts: 'contract_id',
+      sdn_referrals: 'referral_id', sdn_discounts: 'discount_id', sdn_roomdims: 'roomdim_id'
+    };
+    if (SDN_RESOURCES[resource] && action === 'read') {
+      const idCol = SDN_RESOURCES[resource];
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (SDN_RESOURCES[resource] && action === 'write') {
+      const idCol = SDN_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndesign', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdesign data tables are not set up yet — run sql/sairndesign_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
       return;
     }
 

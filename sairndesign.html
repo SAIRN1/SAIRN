@@ -967,6 +967,7 @@ function chkPin(){
     $('pin').classList.remove('on');$('app').classList.add('on');
     $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
     init();
+    sdnHydrateAll().then(function(merged){if(merged)init();});
   }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
 }
 function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
@@ -1269,7 +1270,7 @@ async function saveSpec(){
   }
   st('sdn_specitems',list);
   closeSpecModal();rSpec();rDash();
-  var syncResult=await sdnData('write','specitems',rec);
+  var syncResult=await sdnData('write','sdn_specitems',rec);
   toast(syncResult?'Spec item saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
@@ -1412,7 +1413,8 @@ async function saveRoomDimensions(){
   rec.width_ft=w;rec.length_ft=l;
   st('sdn_roomdims',list);
   $('room-sqft').textContent=w&&l?(Math.round(w*l*10)/10)+' sq ft':'--';
-  await sdnData('write','roomdims',rec);
+  var syncResult=await sdnData('write','sdn_roomdims',rec);
+  if(!syncResult)toast('Room dimensions saved on this device only -- server sync failed, try again with a connection',6000);
 }
 function initRoomAR(){
   var wrap=$('room-ar-btn-wrap');if(!wrap)return;
@@ -1530,7 +1532,7 @@ async function saveProposal(){
   var rec={id:newId('PR'),project_id:pjId,client_id:pj?pj.client_id:'',title:title,item_ids:ids,status:'Draft',sent_date:'',decided_date:'',created_at:sdnLocalToday()};
   var list=proposals();list.push(rec);st('sdn_proposals',list);
   closeProposalModal();rProposals();rDash();
-  var syncResult=await sdnData('write','proposals',rec);
+  var syncResult=await sdnData('write','sdn_proposals',rec);
   toast(syncResult?'Proposal created':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function openProposalDetail(id){
@@ -1567,23 +1569,32 @@ async function setProposalStatus(id,status){
   if(status==='Sent')p.sent_date=sdnLocalToday();
   if(status==='Approved'||status==='Declined')p.decided_date=sdnLocalToday();
   st('sdn_proposals',list);
+  var allSynced=true;
   if(status==='Approved'){
     var specList=specItems();
-    var reservedNames=[];
+    var reservedItems=[];
     (p.item_ids||[]).forEach(function(iid){
       var s=specList.find(function(x){return x.id===iid;});
       if(s&&s.one_of_a_kind&&!s.reserved){
         s.reserved=true;s.reserved_for=projectLabel(p.project_id);
-        reservedNames.push(s.item);
+        reservedItems.push(s);
       }
     });
     st('sdn_specitems',specList);
-    if(reservedNames.length)toast(reservedNames.length+' one-of-a-kind item(s) reserved: '+reservedNames.join(', '),5000);
-    var syncSpec=await sdnData('write','specitems_bulk',{project_id:p.project_id});
+    if(reservedItems.length)toast(reservedItems.length+' one-of-a-kind item(s) reserved: '+reservedItems.map(function(s){return s.item;}).join(', '),5000);
+    // Was sdnData('write','specitems_bulk',{project_id:...}) -- a payload with no id and no
+    // actual item data, against a resource that was never registered server-side either. Fixed
+    // to what the intent always was: sync each newly-reserved item's real record individually,
+    // same as every other single-record write in this file.
+    for(var i=0;i<reservedItems.length;i++){
+      var r=await sdnData('write','sdn_specitems',reservedItems[i]);
+      if(!r)allSynced=false;
+    }
   }
-  var syncResult=await sdnData('write','proposals',p);
+  var syncResult=await sdnData('write','sdn_proposals',p);
+  if(!syncResult)allSynced=false;
   closeProposalDetailModal();rProposals();rSpec();rDash();
-  toast('Proposal marked '+status);
+  toast(allSynced?'Proposal marked '+status:'Proposal marked '+status+' on this device only -- server sync failed, try again with a connection',allSynced?3000:6000);
 }
 function rProposals(){
   var list=proposals();
@@ -1627,7 +1638,7 @@ async function saveClient(){
   if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
   st('sdn_clients',list);
   closeClientModal();rClients();rDash();fillProjectSelects();
-  var syncResult=await sdnData('write','clients',rec);
+  var syncResult=await sdnData('write','sdn_clients',rec);
   toast(syncResult?'Client saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function openProjectModal(){
@@ -1653,7 +1664,7 @@ async function saveProject(){
   if(pjeid){list=list.map(function(x){return x.id===pjeid?rec:x;});}else{list.push(rec);}
   st('sdn_projects',list);
   closeProjectModal();rClients();rDash();fillProjectSelects();
-  var syncResult=await sdnData('write','projects',rec);
+  var syncResult=await sdnData('write','sdn_projects',rec);
   toast(syncResult?'Project saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function filterClients(){rClients();}
@@ -1708,7 +1719,7 @@ async function saveVendor(){
   if(veid){list=list.map(function(x){return x.id===veid?rec:x;});}else{list.push(rec);}
   st('sdn_vendors',list);
   closeVendorModal();rVendors();
-  var syncResult=await sdnData('write','vendors',rec);
+  var syncResult=await sdnData('write','sdn_vendors',rec);
   toast(syncResult?'Vendor saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function filterVendors(){rVendors();}
@@ -1745,7 +1756,7 @@ async function saveSampleRequest(){
   var list=sampleRequests();list.push(rec);
   st('sdn_samplerequests',list);
   closeSampleRequestModal();rSampleRequests();
-  var syncResult=await sdnData('write','samplerequests',rec);
+  var syncResult=await sdnData('write','sdn_samplerequests',rec);
   toast(syncResult?'Sample request logged':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 async function markSampleRequestReceived(id){
@@ -1753,8 +1764,8 @@ async function markSampleRequestReceived(id){
   var r=list.find(function(x){return x.id===id;});if(!r)return;
   r.status='Received';
   st('sdn_samplerequests',list);rSampleRequests();
-  await sdnData('write','samplerequests',r);
-  toast('Marked received');
+  var syncResult=await sdnData('write','sdn_samplerequests',r);
+  toast(syncResult?'Marked received':'Marked received on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rSampleRequests(){
   var srtb=$('srtbody');if(!srtb)return;
@@ -1831,7 +1842,7 @@ async function saveTeam(){
   if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
   st('sdn_team',list);
   closeTeamModal();rTeam();fillProjectSelects();
-  var syncResult=await sdnData('write','team',rec);
+  var syncResult=await sdnData('write','sdn_team',rec);
   toast(syncResult?'Team member saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rTeam(){
@@ -1886,7 +1897,7 @@ async function saveMoodboard(){
   if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
   st('sdn_moodboards',list);
   closeMoodboardModal();rMoodboards();
-  var syncResult=await sdnData('write','moodboards',rec);
+  var syncResult=await sdnData('write','sdn_moodboards',rec);
   toast(syncResult?'Mood board saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rMoodboards(){
@@ -1935,7 +1946,7 @@ async function saveColorCode(){
   if(cceid){list=list.map(function(x){return x.id===cceid?rec:x;});}else{list.push(rec);}
   st('sdn_colorcodes',list);
   closeColorCodeModal();rColorCodes();rMoodboards();
-  var syncResult=await sdnData('write','colorcodes',rec);
+  var syncResult=await sdnData('write','sdn_colorcodes',rec);
   toast(syncResult?'Color code saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rColorCodes(){
@@ -1988,8 +1999,10 @@ async function generatePOs(){
   }
   st('sdn_pos',list);
   closeGeneratePOModal();rPOs();
-  for(var i=0;i<created.length;i++){await sdnData('write','pos',created[i]);}
-  toast(created.length+' PO(s) generated: '+created.map(function(r){return r.vendor;}).join(', '));
+  var allSynced=true;
+  for(var i=0;i<created.length;i++){var r=await sdnData('write','sdn_pos',created[i]);if(!r)allSynced=false;}
+  var poMsg=created.length+' PO(s) generated: '+created.map(function(r){return r.vendor;}).join(', ');
+  toast(allSynced?poMsg:poMsg+' -- server sync failed for one or more, saved on this device only',allSynced?4000:7000);
 }
 function openPODetail(id){
   var po=purchaseOrders().find(function(x){return x.id===id;});if(!po)return;
@@ -2015,8 +2028,8 @@ async function setPOStatus(id,status){
   var po=list.find(function(x){return x.id===id;});if(!po)return;
   po.status=status;st('sdn_pos',list);
   closePODetailModal();rPOs();
-  var syncResult=await sdnData('write','pos',po);
-  toast('PO marked '+status);
+  var syncResult=await sdnData('write','sdn_pos',po);
+  toast(syncResult?'PO marked '+status:'PO marked '+status+' on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rPOs(){
   var list=purchaseOrders();
@@ -2065,7 +2078,7 @@ async function saveInvoice(){
     due_date:$('invdue').value,status:'Draft',issued_date:sdnLocalToday(),paid_date:'',created_at:sdnLocalToday()};
   var list=invoices();list.push(rec);st('sdn_invoices',list);
   closeInvoiceModal();rInvoicing();
-  var syncResult=await sdnData('write','invoices',rec);
+  var syncResult=await sdnData('write','sdn_invoices',rec);
   toast(syncResult?'Invoice created':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 async function setInvoiceStatus(id,status){
@@ -2075,8 +2088,8 @@ async function setInvoiceStatus(id,status){
   if(status==='Paid')inv.paid_date=sdnLocalToday();
   if(status==='Sent'&&!inv.issued_date)inv.issued_date=sdnLocalToday();
   st('sdn_invoices',list);rInvoicing();
-  var syncResult=await sdnData('write','invoices',inv);
-  toast('Invoice marked '+status);
+  var syncResult=await sdnData('write','sdn_invoices',inv);
+  toast(syncResult?'Invoice marked '+status:'Invoice marked '+status+' on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rInvoicing(){
   fillProjectSelects();
@@ -2119,7 +2132,7 @@ async function saveTime(){
     notes:$('ttnotes').value.trim(),created_at:sdnLocalToday()};
   var list=timeEntries();list.push(rec);st('sdn_timeentries',list);
   closeTimeModal();rTime();
-  var syncResult=await sdnData('write','timeentries',rec);
+  var syncResult=await sdnData('write','sdn_timeentries',rec);
   toast(syncResult?'Time entry saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rTime(){
@@ -2163,7 +2176,7 @@ async function saveSchedule(){
   if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
   st('sdn_schedule',list);
   closeScheduleModal();rScheduleEvents();
-  var syncResult=await sdnData('write','schedule',rec);
+  var syncResult=await sdnData('write','sdn_schedule',rec);
   toast(syncResult?'Schedule event saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rScheduleEvents(){
@@ -2239,12 +2252,17 @@ async function cpEsignApprove(){
   if(kind==='mb'){
     var list=moodboards();
     var m=list.find(function(x){return x.id===id;});
-    if(m){m.status='Approved';m.esign_name=name;m.esign_at=ts;st('sdn_moodboards',list);await sdnData('write','moodboards',m);}
+    if(m){
+      m.status='Approved';m.esign_name=name;m.esign_at=ts;st('sdn_moodboards',list);
+      var syncResult=await sdnData('write','sdn_moodboards',m);
+      rClientPortal();rDash();
+      toast(syncResult?'Approval recorded for '+name:'Approval recorded for '+name+' on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+    }
+    return;
   }else if(kind==='pr'){
     await setProposalStatus(id,'Approved');
   }
   rClientPortal();rDash();
-  toast('Approval recorded for '+name);
 }
 
 // Shared typed-name e-sign stamp -- the same real, honest mechanism the
@@ -2284,7 +2302,7 @@ async function saveSample(){
   else{list.push(rec);}
   st('sdn_samples',list);
   closeSampleModal();rSamples();
-  var syncResult=await sdnData('write','samples',rec);
+  var syncResult=await sdnData('write','sdn_samples',rec);
   toast(syncResult?'Sample saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 async function markSampleReturned(id){
@@ -2292,8 +2310,8 @@ async function markSampleReturned(id){
   var s=list.find(function(x){return x.id===id;});if(!s)return;
   s.returned_date=sdnLocalToday();s.checked_out_to='';
   st('sdn_samples',list);rSamples();
-  var syncResult=await sdnData('write','samples',s);
-  toast('Marked returned');
+  var syncResult=await sdnData('write','sdn_samples',s);
+  toast(syncResult?'Marked returned':'Marked returned on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function vendorLabel(id){var v=vendors().find(function(x){return x.id===id;});return v?v.name:'--';}
 function rSamples(){
@@ -2386,7 +2404,7 @@ async function saveContract(){
     sent_date:'',esign_name:'',esign_at:'',created_at:sdnLocalToday()};
   var list=contracts();list.push(rec);st('sdn_contracts',list);
   closeContractModal();rContracts();
-  var syncResult=await sdnData('write','contracts',rec);
+  var syncResult=await sdnData('write','sdn_contracts',rec);
   toast(syncResult?'Contract created':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function openContractDetail(id){
@@ -2412,8 +2430,9 @@ async function setContractStatus(id,status){
   var c=list.find(function(x){return x.id===id;});if(!c)return;
   c.status=status;if(status==='Sent')c.sent_date=sdnLocalToday();
   st('sdn_contracts',list);
-  var syncResult=await sdnData('write','contracts',c);
+  var syncResult=await sdnData('write','sdn_contracts',c);
   openContractDetail(id);rContracts();
+  if(!syncResult)toast('Contract marked '+status+' on this device only -- server sync failed, try again with a connection',6000);
 }
 // Reuses the shared sdnRecordEsign() helper -- same typed-name mechanism
 // as the Client Portal, not a re-implementation.
@@ -2427,8 +2446,8 @@ async function signContract(id){
   c.status='Signed';c.esign_name=stamp.esign_name;c.esign_at=stamp.esign_at;
   st('sdn_contracts',list);
   closeContractDetailModal();rContracts();
-  var syncResult=await sdnData('write','contracts',c);
-  toast('Contract signed by '+name);
+  var syncResult=await sdnData('write','sdn_contracts',c);
+  toast(syncResult?'Contract signed by '+name:'Contract signed by '+name+' on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rContracts(){
   var list=contracts();
@@ -2458,7 +2477,7 @@ async function saveReferral(){
     status:$('rfstatus').value,val:Number($('rfval').value)||0,date:sdnLocalToday()};
   var list=referrals();list.push(rec);st('sdn_referrals',list);
   closeReferralModal();rReferrals();
-  var syncResult=await sdnData('write','referrals',rec);
+  var syncResult=await sdnData('write','sdn_referrals',rec);
   toast(syncResult?'Referral logged':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function rReferrals(){
@@ -2505,7 +2524,7 @@ async function saveDiscount(){
   if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
   st('sdn_discounts',list);
   closeDiscountModal();rDiscounts();
-  var syncResult=await sdnData('write','discounts',rec);
+  var syncResult=await sdnData('write','sdn_discounts',rec);
   toast(syncResult?'Discount saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 // Feeds the Spec Sheet's cost math -- given a vendor and (optionally) a
@@ -2617,6 +2636,42 @@ function init(){
   rDash();rClients();rSpec();rProposals();rVendors();
   rMoodboards();rPOs();rInvoicing();rTeam();rTime();rScheduleEvents();rClientPortal();
   rSamples();rContracts();rReferrals();rDiscounts();rReports();rSettings();
+}
+
+// ── SERVER HYDRATION (2026-08-07) ────────────────────────────────────────
+// Closes the read-side half of the sync gap: every sdnData() call in this
+// app was write-only until now -- even once writes started reaching the
+// server (see sql/sairndesign_data_schema.sql), a second device/browser
+// would still show nothing from the first, because nothing ever pulled
+// server data back down. Runs once per login, additive-only merge by id
+// (server records not already present locally get appended; a locally
+// present id is never overwritten by this merge) -- deliberately NOT a
+// full conflict-resolution sync. Two devices editing the SAME record id
+// between hydrations is a real, disclosed limitation this does not solve;
+// two devices each creating DIFFERENT records is the common case this
+// does solve. Runs in the background after init() renders local/seed data
+// immediately, then re-runs init() once merged data lands so panels update
+// without blocking login on 18 sequential network round trips.
+var SDN_SYNC_RESOURCES=['sdn_clients','sdn_projects','sdn_specitems','sdn_proposals','sdn_vendors',
+  'sdn_samplerequests','sdn_team','sdn_moodboards','sdn_colorcodes','sdn_pos','sdn_invoices',
+  'sdn_timeentries','sdn_schedule','sdn_samples','sdn_contracts','sdn_referrals','sdn_discounts','sdn_roomdims'];
+async function sdnHydrateAll(){
+  if(!sdnLicenseKey())return;
+  var results=await Promise.all(SDN_SYNC_RESOURCES.map(function(key){return sdnData('read',key);}));
+  var anyMerged=false;
+  for(var i=0;i<SDN_SYNC_RESOURCES.length;i++){
+    var key=SDN_SYNC_RESOURCES[i],serverRows=results[i];
+    if(!serverRows||!Array.isArray(serverRows))continue; // read failed, no license, or not provisioned -- leave local data as-is
+    var local=ld(key,[]);
+    var localIds={};
+    local.forEach(function(r){if(r&&r.id)localIds[r.id]=true;});
+    var addedHere=false;
+    serverRows.forEach(function(r){
+      if(r&&r.id&&!localIds[r.id]){local.push(r);localIds[r.id]=true;addedHere=true;}
+    });
+    if(addedHere){st(key,local);anyMerged=true;}
+  }
+  return anyMerged;
 }
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('sdn_license_key');
