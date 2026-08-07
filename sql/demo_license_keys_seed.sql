@@ -25,9 +25,25 @@
 --   sairngrounds.html:1094 VALID=['GRD-','DEMO-','SAIRN-']
 --   sairnscape.html:1627   SCP_VALID=['SCP-','DEMO-','SAIRN-']
 --
--- Column set matches api/_lib/license.js's own SELECT list exactly (key,
--- status, customer_email, app_id, plan, trial_ends_at,
--- stripe_subscription_id) -- same shape as BLD-PINNACLE-2026's row.
+-- CORRECTED (first run failed, 42703: column "trial_ends_at" does not
+-- exist) -- the original column list was copied from api/_lib/license.js's
+-- own SELECT/output shape, which turned out to be aspirational for that
+-- one field, not a reliable schema source. Re-derived the REAL column list
+-- directly from the live table via PostgREST's own error-ordering behavior
+-- (the same zero-write column-existence probe already used and documented
+-- in SAIRNBIZ-SESSION1-HANDOFF.md): a single-column anon POST returns
+-- 42501 (permission denied) when the column exists and is merely
+-- permission-blocked, and PGRST204 when the column doesn't exist at all --
+-- distinguishable without ever writing a row. Probed 23 candidate names;
+-- confirmed REAL: key, status, customer_email, app_id, plan,
+-- stripe_subscription_id, id, created_at, updated_at. Confirmed ABSENT:
+-- trial_ends_at, trial_end, trial_expires_at, expires_at, plan_tier,
+-- license_hash, active, notes, tenant_id, org_id, seats, max_seats,
+-- source, created_by, owner_email, raw_key. There is currently no
+-- trial-tracking column on this table at all -- license.js's own
+-- `row.trial_ends_at || null` already degrades gracefully to null (not
+-- expired) when the column is simply absent from the row, so dropping it
+-- here changes no runtime behavior, it just stops the insert from failing.
 --
 -- Verify after running, before writing/re-running any client code against
 -- these keys (same "verify against the deployed endpoint" discipline
@@ -51,14 +67,14 @@
 -- different table). NOT EXISTS has no such requirement and is safe to
 -- re-run regardless.
 
-insert into public.license_keys (key, status, customer_email, app_id, plan, trial_ends_at, stripe_subscription_id)
-select 'SB-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnbiz', 'demo', null, null
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+select 'SB-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnbiz', 'demo', null
 where not exists (select 1 from public.license_keys where key = 'SB-PINNACLE-2026');
 
-insert into public.license_keys (key, status, customer_email, app_id, plan, trial_ends_at, stripe_subscription_id)
-select 'GRD-DEMO-2026', 'active', 'demo@pinnaclestone.example', 'sairngrounds', 'demo', null, null
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+select 'GRD-DEMO-2026', 'active', 'demo@pinnaclestone.example', 'sairngrounds', 'demo', null
 where not exists (select 1 from public.license_keys where key = 'GRD-DEMO-2026');
 
-insert into public.license_keys (key, status, customer_email, app_id, plan, trial_ends_at, stripe_subscription_id)
-select 'SCP-DEMO-2026', 'active', 'demo@pinnaclestone.example', 'sairnscape', 'demo', null, null
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+select 'SCP-DEMO-2026', 'active', 'demo@pinnaclestone.example', 'sairnscape', 'demo', null
 where not exists (select 1 from public.license_keys where key = 'SCP-DEMO-2026');
