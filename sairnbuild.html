@@ -678,6 +678,11 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="sub">Subcontractor</option>
         <option value="other">Other</option>
       </select>
+      <button class="btn bo bs" onclick="costExplain()">Explain This</button>
+    </div>
+    <div id="cost-explain-wrap" style="display:none;margin:0 0 12px;padding:10px 12px;background:var(--pt);border:1px solid var(--pb);border-radius:8px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">AI Budget Explanation (Claude, narrating this job's already-computed tier -- not recomputing it)</div>
+      <div id="cost-explain-result" style="white-space:pre-wrap;font-size:14px;"></div>
     </div>
     <div class="tw"><table><thead><tr><th>Job</th><th>Cost Code</th><th>Kind</th><th>Vendor / Crew</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Variance</th><th>Tier</th><th>Actions</th></tr></thead>
     <tbody id="ctbody"></tbody></table></div>
@@ -3839,6 +3844,52 @@ function jobTierFromCosts(jobId, allCosts){
     if(t&&(!best||order[t]>order[best]))best=t;
   });
   return best;
+}
+
+// "Explain This" (spec section 7, optional) -- Claude narrates the
+// ALREADY-COMPUTED tier data below; it does not calculate or re-derive
+// any number itself. Same PROXY/APP_ID/fetch/try-catch shape as
+// fpAnalyze(); result rendered via textContent, never innerHTML.
+async function costExplain(){
+  var job=$('cjob').value;
+  if(!job){toast('Select a specific job first');return;}
+  var jobRec=jobs().find(function(j){return j.id===job;});
+  var allCosts=costs();
+  var lines=allCosts.filter(function(c){return c.job_id===job;});
+  var tier=jobTierFromCosts(job, allCosts);
+  $('cost-explain-wrap').style.display='block';
+  $('cost-explain-result').textContent='Reading the numbers...';
+  var lineText=lines.map(function(c){
+    var t=costLineTier(c);
+    return '- '+(c.cost_code||'(uncoded)')+' ('+(KIND[c.kind]||c.kind||'')+'): budget $'+
+      (c.budget||0)+', committed $'+(c.committed||0)+', actual $'+(c.actual||0)+
+      ', computed tier: '+(t||'none');
+  }).join('\n')||'(no cost lines on record for this job)';
+  var sys='You are the SAIRNbuild Budget Early Warning narrator. You are given '+
+    'one job\'s cost lines and their tier classification, already computed '+
+    'deterministically by this app\'s own code (watch/warning/critical/none, '+
+    'thresholds 70/80/90% of budget) -- you do not calculate, re-derive, or '+
+    'estimate any dollar figure, percentage, or tier. Explain in plain English '+
+    'why this job is at its current overall tier, referencing only the exact '+
+    'numbers given below. If something needed to explain a line isn\'t in the '+
+    'data provided, say so explicitly instead of guessing or inventing a '+
+    'number. Under 150 words. Plain ASCII only, no Unicode box characters.';
+  var prompt='Job: '+(jobRec?(jobRec.client||jobRec.address||job):job)+'\n'+
+    'Overall job tier (worst of its lines): '+(tier||'none')+'\n'+
+    'Cost lines:\n'+lineText;
+  var msgs=[{role:'user',content:[{type:'text',text:prompt}]}];
+  try{
+    var res=await fetch(PROXY,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,messages:msgs})
+    });
+    if(!res.ok)throw new Error('Claude error '+res.status);
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    $('cost-explain-result').textContent=text||'No response text returned.';
+  }catch(e){
+    $('cost-explain-result').textContent='Could not connect to Claude. Check your connection and try again.';
+  }
 }
 
 function rCostTbl(){
