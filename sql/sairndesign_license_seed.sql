@@ -1,0 +1,58 @@
+-- sql/sairndesign_license_seed.sql
+-- Provisions a demo license_keys row for SAIRNdesign
+--
+-- WHY THIS EXISTS: sairndesign.html's own gate error message already
+-- suggests this exact key ("Invalid key format. Try SDN-PINNACLE-2026"),
+-- and the app's Phase 1 handoff names SDN-PINNACLE-2026 / "Pinnacle
+-- Interior Design" as the intended demo account -- but no license_keys row
+-- for it was ever created. Confirmed absent by checking
+-- sql/demo_license_keys_seed.sql (the only other place any SAIRN demo key
+-- has ever been provisioned): it covers SB-PINNACLE-2026, GRD-DEMO-2026,
+-- and SCP-DEMO-2026 only -- no sairndesign entry, anywhere, ever. Without
+-- this row, every sdnData() call from sairndesign.html hits 401
+-- INVALID_LICENSE before ever reaching a resource table, which also means
+-- it's impossible to verify from outside Supabase whether
+-- sql/sairndesign_data_schema.sql has actually been run yet -- license
+-- validation happens first, ahead of every resource branch (api/sd-data.js
+-- calls validateLicenseKey() before dispatching to any 'sdn_*' branch).
+--
+-- COLUMN LIST: not re-derived here -- reusing the exact column set
+-- sql/demo_license_keys_seed.sql already confirmed live via PostgREST's
+-- column-existence probe (42501 vs PGRST204, documented in that file's own
+-- header): key, status, customer_email, app_id, plan,
+-- stripe_subscription_id. No trial_ends_at -- that column does not exist
+-- on the live table (confirmed there, not reconfirmed independently here;
+-- this file has no live DB access of its own to re-probe with).
+--
+-- customer_email/plan match the exact demo@pinnaclestone.example / 'demo'
+-- pattern the other three rows in demo_license_keys_seed.sql already use --
+-- not a new per-app convention, the same shared demo identity.
+--
+-- Uses WHERE NOT EXISTS rather than ON CONFLICT, same reasoning as
+-- demo_license_keys_seed.sql: no tracked CREATE TABLE for license_keys in
+-- this repo (owned by a separate, not-yet-built generation system per
+-- api/_lib/license.js's own header), so a UNIQUE constraint on `key` can't
+-- be confirmed without live DB access -- ON CONFLICT against a column with
+-- no confirmed matching constraint fails with 42P10. NOT EXISTS has no such
+-- requirement and is safe to re-run regardless.
+--
+-- Verify after running, before trusting any live sairndesign sync test
+-- against this key:
+--
+--   curl -s -X POST https://sairn.vercel.app/api/sd-data \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer SDN-PINNACLE-2026' \
+--     -d '{"action":"read","resource":"sdn_clients"}'
+--
+-- 401 INVALID_LICENSE -> row still absent, this file has not been run.
+-- 403 LICENSE_INACTIVE -> status not 'active' (shouldn't happen, status is
+-- hardcoded 'active' below, but re-check status on the row if it does).
+-- 200 with {"ok":true,"data":[...],"provisioned":false} -> license row is
+-- good, but sql/sairndesign_data_schema.sql has NOT been run yet (table
+-- missing, read branch degrades gracefully rather than erroring).
+-- 200 with "provisioned":true -> both this file and the data-schema
+-- migration are confirmed live.
+
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+select 'SDN-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairndesign', 'demo', null
+where not exists (select 1 from public.license_keys where key = 'SDN-PINNACLE-2026');
