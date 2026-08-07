@@ -5,6 +5,23 @@ if __name__ == '__main__':
     with open(path, encoding='utf-8', errors='replace') as f:
         html = f.read()
 
+    # Strip HTML comments before counting (fixed 2026-08-07, was CONFIRMED
+    # REAL GAP, now closed). This checker previously counted <div>/</div>
+    # as plain substrings anywhere in the raw file, including inside
+    # <!-- --> comments -- so a bug-fix comment that DESCRIBES a past
+    # widget-bleed bug in prose (e.g. "...panel-customers' own closing
+    # </div>...") got counted as a real closing tag. Found live on
+    # stonedesk.html: two historical fix comments (one mentioning </div>
+    # 3 times, one mentioning it once) produced a phantom DIFF:-4 with
+    # zero real defect behind it -- independently confirmed via a real
+    # HTML-parser-based trace (same engine panel_nesting_check.py already
+    # uses), which reported 0 underflow events and 0 unclosed tags on the
+    # exact same file. Comment content is replaced with an equal number
+    # of newlines (not simply deleted) so line numbers reported below
+    # still match the real file.
+    COMMENT_RE = re.compile(r'<!--.*?-->', re.DOTALL)
+    html = COMMENT_RE.sub(lambda m: '\n' * m.group(0).count('\n'), html)
+
     opens = len(re.findall(r'<div\b', html))
     closes = len(re.findall(r'</div>', html))
     print(f"OPEN_DIVS:{opens}")
