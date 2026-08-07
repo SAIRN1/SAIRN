@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNlegacy - Funeral Home Operations</title>
+<style>
+:root{--p:#6B7280;--pd:#4B5563;--pt:#F3F4F6;--pb:#D1D5DB;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* PIN */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
+.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s;}
+.pdot.on{background:var(--p);border-color:var(--p);}
+.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;}
+.pkey:hover{background:var(--pt);border-color:var(--p);}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+/* SIDEBAR */
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;transition:all .15s;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+/* MAIN */
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--p);}
+.bs{padding:6px 12px;font-size:12px;}
+/* KPIs */
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+/* FORMS */
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;transition:border .2s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--p);}
+textarea{resize:vertical;min-height:80px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+label.chk{display:flex;align-items:center;gap:8px;text-transform:none;font-weight:500;color:var(--text);font-size:13px;}
+label.chk input{width:auto;}
+/* AI */
+.achat{background:var(--bg);border-radius:10px;padding:14px;min-height:180px;max-height:320px;overflow-y:auto;font-size:13px;line-height:1.6;margin-bottom:12px;white-space:pre-wrap;}
+.amu{background:var(--p);color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;margin:6px 0 6px 40px;font-size:13px;}
+.ama{background:#fff;border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:8px 12px;margin:6px 40px 6px 0;font-size:13px;white-space:pre-wrap;}
+.air{display:flex;gap:8px;}
+.air input{flex:1;}
+.qts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.qt{background:var(--pt);border:1px solid var(--pb);color:var(--pd);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.qt:hover{background:var(--p);color:#fff;}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+/* STAT */
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:13px;color:var(--muted);}
+.sval{font-size:14px;font-weight:700;}
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),
+    linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,
+    linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),
+    linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;
+  background-repeat:no-repeat;
+  background-color:#fff;
+  background-size:24px 100%,24px 100%,10px 100%,10px 100%;
+  background-attachment:local,local,scroll,scroll;
+}
+.tw table{min-width:640px;}
+.tw:focus-visible{outline:2px solid var(--p);outline-offset:-2px;}
+.navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+#scrim.on{display:block;}
+
+@media (max-width:768px){
+  .navtog{display:flex;align-items:center;justify-content:center;}
+  aside{position:fixed;top:56px;left:0;bottom:0;width:250px;z-index:50;
+        transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);}
+  aside.on{transform:translateX(0);}
+  main{padding:14px;}
+  header{padding:0 12px;gap:10px;}
+  .hlogo{font-size:17px;}
+  .hbadge{display:none;}
+  .huser{display:none;}
+  .hbtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
+  .sb{min-height:44px;font-size:14px;}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  .btn.bs{min-height:40px;}
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .kval{font-size:20px;}
+  .g2{grid-template-columns:1fr;}
+  .fr{grid-template-columns:1fr;}
+  .sbar{flex-wrap:wrap;}
+  .sbar input,.sbar select{width:100%!important;flex:1 1 100%;}
+  .ph{gap:8px;}
+  .ptitle{font-size:19px;}
+  .pa{margin-left:0;width:100%;}
+  .mbox{width:94%;padding:20px;}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media (max-width:420px){
+  .krow{grid-template-columns:1fr 1fr;}
+}
+@media print{
+  #gate,#pin,aside,header .hr,.pa,.navtog,#scrim{display:none!important;}
+  main{padding:0;}
+  .panel{display:block!important;}
+  body{font-size:12px;}
+  .card{box-shadow:none;border:1px solid #ddd;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNlegacy</div>
+    <div class="gsub">Funeral Home Operations &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="LEG-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNlegacy</div>
+    <div class="prole">Enter your 4-digit PIN</div>
+    <div class="pdots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
+    <div class="ppad">
+      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
+      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
+      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
+      <button class="pkey" onclick="pk('C')">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')">&larr;</button>
+    </div>
+    <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="aside">&#9776;</button>
+    <div class="hlogo">SAIRNlegacy</div>
+    <div class="hbadge">Funeral Home Ops</div>
+    <div class="hr">
+      <span class="huser" id="huser">Owner</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div id="scrim" onclick="closeNav()"></div>
+  <div class="wrap">
+    <aside id="aside" aria-label="Main navigation">
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
+      <div class="ss">Cases</div>
+      <button class="sb" id="sb-cases" onclick="nav('cases')"><span class="sico">&#128203;</span>Case Management</button>
+      <button class="sb" id="sb-dispatch" onclick="nav('dispatch')"><span class="sico">&#128657;</span>First Call &amp; Dispatch</button>
+      <div class="ss">Merchandise</div>
+      <button class="sb" id="sb-merch" onclick="nav('merch')"><span class="sico">&#9899;</span>Merchandise &amp; Inventory</button>
+      <div class="ss">Documents</div>
+      <button class="sb" id="sb-docs" onclick="nav('docs')"><span class="sico">&#128220;</span>Documents &amp; E-Sign</button>
+      <button class="sb" id="sb-permits" onclick="nav('permits')"><span class="sico">&#128196;</span>Death Record &amp; Permits</button>
+      <div class="sfoot">SAIRNlegacy v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 1</span></div>
+    </aside>
+    <main>
+
+<!-- DASHBOARD -->
+<div class="panel on" id="panel-dashboard">
+  <div class="ph"><div><div class="ptitle">Dashboard</div><div class="psub">Real-time overview &middot; Pinnacle Family Funeral Home</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open Cases</div><div class="kval" id="k-opencases">0</div><div class="kt">Not yet complete</div></div>
+    <div class="kpi"><div class="klbl">Active Dispatches</div><div class="kval" id="k-dispatch">0</div><div class="kt">In progress</div></div>
+    <div class="kpi"><div class="klbl">Units Reserved</div><div class="kval" id="k-reserved">0</div><div class="kt">Merchandise on hold</div></div>
+    <div class="kpi"><div class="klbl">Permits Pending</div><div class="kval" id="k-permits">0</div><div class="kt">Awaiting filing/issue</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
+  <div class="card"><div class="ch"><span class="ct">Recent Cases</span></div><div class="cb" id="d-cases"></div></div>
+</div>
+
+<!-- AI ASSISTANT -->
+<div class="panel" id="panel-ai">
+  <div class="ph"><div><div class="ptitle">AI Assistant</div><div class="psub">Powered by Claude &middot; Case workflow, documents, family communication</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="clrAI()">Clear</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="qts">
+      <span class="qt" onclick="askAI('Draft a compassionate first-call intake script for the phone')">First-Call Script</span>
+      <span class="qt" onclick="askAI('What information does a General Price List (GPL) legally need to disclose under the FTC Funeral Rule?')">GPL Requirements</span>
+      <span class="qt" onclick="askAI('Draft a gentle follow-up message to a family about outstanding paperwork')">Family Follow-up</span>
+      <span class="qt" onclick="askAI('What is a typical chain-of-custody handoff checklist for a removal?')">Custody Checklist</span>
+    </div>
+    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about cases, documents, merchandise, or operations.</div></div>
+    <div class="air"><input id="ainp" placeholder="Ask about cases, documents, merchandise, permits..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
+  </div></div>
+</div>
+
+<!-- CASE MANAGEMENT -->
+<div class="panel" id="panel-cases">
+  <div class="ph"><div><div class="ptitle">Case Management</div><div class="psub">First-call intake and decedent vitals &middot; entered once here, referenced by documents and permits</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openCaseModal()">+ New Case</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Cases</div><div class="kval" id="cs-total">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Open</div><div class="kval" id="cs-open">0</div><div class="kt">Not complete</div></div>
+    <div class="kpi"><div class="klbl">Service Scheduled</div><div class="kval" id="cs-scheduled">0</div><div class="kt">Date set</div></div>
+    <div class="kpi"><div class="klbl">Completed</div><div class="kval" id="cs-complete">0</div><div class="kt">All time</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar"><input id="cssrch" placeholder="Search by decedent name, case number, family contact..." oninput="rCases()"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case #</th><th>Decedent</th><th>Family Contact</th><th>Director</th><th>Service Date</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="cstbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="casemodal">
+  <div class="mbox">
+    <div class="mtitle">New / Edit Case</div>
+    <div class="fr"><div class="fg"><label>Decedent Name</label><input id="csname" placeholder="Full legal name"></div><div class="fg"><label>Case Number</label><input id="csnumber" placeholder="Auto-generated" readonly></div></div>
+    <div class="fr"><div class="fg"><label>Date of Birth</label><input id="csdob" type="date"></div><div class="fg"><label>Date of Death</label><input id="csdod" type="date"></div></div>
+    <div class="fr"><div class="fg"><label>Family Contact Name</label><input id="csfamname" placeholder="Next of kin"></div><div class="fg"><label>Family Contact Phone</label><input id="csfamphone" placeholder="(440) 555-0100"></div></div>
+    <div class="fg"><label>Family Contact Email</label><input id="csfamemail" type="email"></div>
+    <div class="fr"><div class="fg"><label>Assigned Director</label><input id="csdirector" placeholder="Staff name"></div><div class="fg"><label>Status</label><select id="csstatus"><option>First Call</option><option>Arrangement</option><option>Service Scheduled</option><option>Complete</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Service Type</label><input id="csservicetype" placeholder="Burial, Cremation, Memorial..."></div><div class="fg"><label>Service Date</label><input id="csservicedate" type="date"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="csnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCaseModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCase()">Save Case</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIRST CALL & REMOVAL DISPATCH -->
+<div class="panel" id="panel-dispatch">
+  <div class="ph"><div><div class="ptitle">First Call &amp; Removal Dispatch</div><div class="psub">Vehicle/staff dispatch tracking and chain-of-custody log</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openDispatchModal()">+ New Dispatch</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Active Dispatches</div><div class="kval" id="ds-active">0</div><div class="kt">Not yet completed</div></div>
+    <div class="kpi"><div class="klbl">Completed Today</div><div class="kval" id="ds-today">0</div><div class="kt">Removals finished</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Dispatches</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Vehicle</th><th>Staff</th><th>Pickup Location</th><th>Status</th><th>Last Location</th><th>Actions</th></tr></thead>
+    <tbody id="dstbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Chain of Custody Log</span></div><div class="cb">
+    <div style="color:var(--muted);font-size:12px;margin-bottom:10px">Entries are append-only &mdash; a chain-of-custody record is not edited or removed once logged, only added to.</div>
+    <div class="fg"><label>Case</label><select id="cclogcase" onchange="rCustodyLog()"></select></div>
+    <div class="fr"><div class="fg"><label>From</label><input id="ccfrom" placeholder="e.g. Family residence"></div><div class="fg"><label>To</label><input id="ccto" placeholder="e.g. Pinnacle Family Funeral Home"></div></div>
+    <div class="fr"><div class="fg"><label>Location</label><input id="cclocation" placeholder="Address or facility"></div><div class="fg"><label>Notes</label><input id="ccnotes" placeholder="Optional"></div></div>
+    <button class="btn bo bs" onclick="addCustodyEntry()">+ Log Handoff</button>
+    <div class="tw" style="margin-top:14px" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Timestamp</th><th>From</th><th>To</th><th>Location</th><th>Notes</th></tr></thead>
+    <tbody id="cctbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="dispatchmodal">
+  <div class="mbox">
+    <div class="mtitle">New Dispatch</div>
+    <div class="fg"><label>Case</label><select id="dscase"></select></div>
+    <div class="fr"><div class="fg"><label>Vehicle</label><input id="dsvehicle" placeholder="Removal Van 1"></div><div class="fg"><label>Staff Assigned</label><input id="dsstaff" placeholder="Staff name"></div></div>
+    <div class="fg"><label>Pickup Location</label><input id="dslocation" placeholder="Address or facility"></div>
+    <div class="fg"><label>Pickup Time</label><input id="dstime" type="datetime-local"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDispatchModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDispatch()">Create Dispatch</button>
+    </div>
+  </div>
+</div>
+
+<!-- MERCHANDISE & INVENTORY RESERVATION -->
+<div class="panel" id="panel-merch">
+  <div class="ph"><div><div class="ptitle">Merchandise Selection &amp; Inventory Reservation</div><div class="psub">Catalog of caskets/urns/vaults with real, individually-tracked on-hand units</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openMerchModal()">+ Add Catalog Item</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Catalog Items</div><div class="kval" id="mc-catalog">0</div><div class="kt">Models on file</div></div>
+    <div class="kpi"><div class="klbl">Units On Hand</div><div class="kval" id="mc-units">0</div><div class="kt">Individual pieces tracked</div></div>
+    <div class="kpi"><div class="klbl">Reserved</div><div class="kval" id="mc-reserved">0</div><div class="kt">Held for a specific family</div></div>
+    <div class="kpi"><div class="klbl">Available</div><div class="kval" id="mc-available">0</div><div class="kt">Not committed</div></div>
+  </div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    Selecting a catalog model is not a reservation. Reserving a specific physical unit is &mdash; the same
+    non-fungible-item mechanism as StoneDesk's slab reservation and SAIRNdesign's one-of-a-kind item
+    reservation: once a unit is reserved for one family, it cannot be shown or reserved for a second
+    family at the same time. Checked server-side on every reservation attempt, not just hidden client-side.
+  </div>
+  <div id="mc-catalog-list"></div>
+</div>
+<div class="modal" id="merchmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Catalog Item</div>
+    <div class="fr"><div class="fg"><label>Category</label><select id="mccat"><option>Casket</option><option>Urn</option><option>Vault</option><option>Outer Burial Container</option><option>Other</option></select></div><div class="fg"><label>Model Name</label><input id="mcname" placeholder="Cambridge Oak, 18 Gauge"></div></div>
+    <div class="fr"><div class="fg"><label>SKU</label><input id="mcsku" placeholder="CO-18G"></div><div class="fg"><label>Cost ($)</label><input id="mccost" type="number" placeholder="1800"></div></div>
+    <div class="fg"><label>Retail ($)</label><input id="mcretail" type="number" placeholder="3400"></div>
+    <div class="fg"><label>Notes</label><textarea id="mcnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMerchModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMerch()">Save Item</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="unitmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Physical Unit</div>
+    <div class="fg" id="unit-model-label" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div class="fg"><label>Unit Serial / Identifier</label><input id="unserial" placeholder="Physical unit tag or serial number"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeUnitModal()">Cancel</button>
+      <button class="btn bp" onclick="saveUnit()">Add Unit</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="reservemodal">
+  <div class="mbox">
+    <div class="mtitle">Reserve Unit for a Family</div>
+    <div class="fg" id="reserve-unit-label" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div class="fg"><label>Case</label><select id="rvcase"></select></div>
+    <div class="perr" id="reserve-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeReserveModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmReserve()">Reserve</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENTS & E-SIGNATURE -->
+<div class="panel" id="panel-docs">
+  <div class="ph"><div><div class="ptitle">Documents &amp; E-Signature</div><div class="psub">Contracts, permits, and authorizations per case</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openDocModal()">+ New Document</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Documents</div><div class="kval" id="dc-total">0</div><div class="kt">All cases</div></div>
+    <div class="kpi"><div class="klbl">Awaiting Signature</div><div class="kval" id="dc-sent">0</div><div class="kt">Sent, not signed</div></div>
+    <div class="kpi"><div class="klbl">Signed</div><div class="kval" id="dc-signed">0</div><div class="kt">Complete</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Document</th><th>Status</th><th>Signed By</th><th>Actions</th></tr></thead>
+    <tbody id="dctbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="docmodal">
+  <div class="mbox">
+    <div class="mtitle">New Document</div>
+    <div class="fg"><label>Case</label><select id="dccase"></select></div>
+    <div class="fg"><label>Document Type</label><select id="dctype">
+      <option>Statement of Funeral Goods and Services (GPL)</option>
+      <option>Authorization to Embalm</option>
+      <option>Authorization to Cremate</option>
+      <option>Burial Transit Permit Request</option>
+      <option>General Price List Acknowledgment</option>
+      <option>Service Contract</option>
+    </select></div>
+    <div class="fg"><label>Content / Notes</label><textarea id="dccontent" rows="4" placeholder="Document text or summary"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDocModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDoc()">Create Document</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="docsignmodal">
+  <div class="mbox">
+    <div class="mtitle">Record Signature</div>
+    <div class="fg" id="docsign-label" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div class="fg"><label>Family / Signer Typed Name</label><input id="docsign-name" placeholder="Typed full name"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDocSignModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmDocSign()">Record Signature</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEATH RECORD / PERMIT WORKFLOW -->
+<div class="panel" id="panel-permits">
+  <div class="ph"><div><div class="ptitle">Death Record &amp; Permit Workflow</div><div class="psub">Decedent death-record data and permit status tracking, per case</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openPermitModal()">+ New Death Record</button></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    State Electronic Death Registration System (EDRS) integration is not built. Every state runs its own
+    EDRS with no unified API across states -- a real integration is a state-by-state rollout (planned to
+    start with Ohio), not part of this phase. This panel tracks permit status manually until that lands.
+  </div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Records</div><div class="kval" id="pm-total">0</div><div class="kt">All cases</div></div>
+    <div class="kpi"><div class="klbl">Pending</div><div class="kval" id="pm-pending">0</div><div class="kt">Not yet filed</div></div>
+    <div class="kpi"><div class="klbl">Filed</div><div class="kval" id="pm-filed">0</div><div class="kt">Awaiting issue</div></div>
+    <div class="kpi"><div class="klbl">Issued</div><div class="kval" id="pm-issued">0</div><div class="kt">Complete</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Decedent</th><th>Date of Death</th><th>Permit Type</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="pmtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="permitmodal">
+  <div class="mbox">
+    <div class="mtitle">New / Edit Death Record</div>
+    <div class="fg"><label>Case</label><select id="pmcase" onchange="permitCaseChange()"></select></div>
+    <div class="fg"><label>Decedent Full Legal Name</label><input id="pmname" placeholder="Auto-filled from case"></div>
+    <div class="fr"><div class="fg"><label>Date of Death</label><input id="pmdod" type="date"></div><div class="fg"><label>Place of Death</label><input id="pmplace" placeholder="Facility or address"></div></div>
+    <div class="fr"><div class="fg"><label>County</label><input id="pmcounty" placeholder="County"></div><div class="fg"><label>Attending Physician</label><input id="pmphysician" placeholder="Dr. name"></div></div>
+    <div class="fg"><label class="chk"><input type="checkbox" id="pmcausepending"> Cause of death pending (medical examiner/coroner review)</label></div>
+    <div class="fr"><div class="fg"><label>Permit Type</label><select id="pmtype"><option>Burial-Transit</option><option>Cremation</option></select></div><div class="fg"><label>Permit Status</label><select id="pmstatus"><option>Pending</option><option>Filed</option><option>Issued</option><option>Rejected</option></select></div></div>
+    <div class="fg"><label>Notes</label><textarea id="pmnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePermitModal()">Cancel</button>
+      <button class="btn bp" onclick="savePermit()">Save Record</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairnlegacy';
+var PROXY='https://sairn.vercel.app/api/claude';
+var DATA_API='https://sairn.vercel.app/api/sd-data';
+
+function legLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
+// validation is server-side in api/_lib/license.js against license_keys.
+// No LEG- row is provisioned yet -- same expected state every other SAIRN
+// app's demo key shipped in until sql/demo_license_keys_seed.sql-style
+// provisioning happens for this app too.
+var VALID=['LEG-','DEMO-','SAIRN-'];
+var DEFAULT_PINS={owner:'1234',director:'2345',staff:'3456'};
+var PINS=ld('leg_pins',null)||DEFAULT_PINS;
+
+var pbuf='',prole='owner',ceid=null,aiHist=[];
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function fdatetime(iso){if(!iso)return'--';try{return new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return iso;}}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
+
+function legLicenseKey(){ return localStorage.getItem('leg_license_key') || ''; }
+
+// sdnData()-equivalent, matches every other app's pattern exactly -- see
+// api/sd-data.js. Server routes for leg_ resources are a separate follow-up
+// (same shape as the SAIRNdesign sync fix); this app runs fully on
+// localStorage until that lands, same as every other app's Phase 1 scaffold.
+function sdnData(action,resource,payload){
+  var lic=legLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  return fetch(DATA_API,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      return d.data;
+    });
+  }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
+}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key format. Try LEG-PINNACLE-2026';return;}
+  localStorage.setItem('leg_license_key',k);
+  $('gate').style.display='none';$('pin').classList.add('on');
+}
+function pk(k){$('perr').textContent='';
+  if(k==='C'){pbuf='';dots();return;}
+  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
+  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+}
+function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+function chkPin(){
+  var match=null;
+  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
+  if(match){
+    prole=match;st('leg_role',prole);
+    $('pin').classList.remove('on');$('app').classList.add('on');
+    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
+    init();
+  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+}
+function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+function toggleNav(){
+  var a=$('aside');if(!a)return;
+  var open=a.classList.toggle('on');
+  $('scrim').classList.toggle('on',open);
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded',open?'true':'false');
+}
+function closeNav(){
+  var a=$('aside');if(a)a.classList.remove('on');
+  $('scrim').classList.remove('on');
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded','false');
+}
+
+function nav(id){
+  closeNav();
+  document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='dashboard')rDash();
+  if(id==='ai'){}
+  if(id==='cases')rCases();
+  if(id==='dispatch')rDispatches();
+  if(id==='merch')rMerch();
+  if(id==='docs')rDocs();
+  if(id==='permits')rPermits();
+}
+
+// ── DATA ACCESSORS ────────────────────────────────────────────────────────
+function cases(){return ld('leg_cases',[]);}
+function dispatches(){return ld('leg_dispatches',[]);}
+function custodyLog(){return ld('leg_custodylog',[]);}
+function merchCatalog(){return ld('leg_merch_catalog',[]);}
+function merchUnits(){return ld('leg_merch_units',[]);}
+function documents(){return ld('leg_documents',[]);}
+function deathRecords(){return ld('leg_deathrecords',[]);}
+function caseLabel(id){var c=cases().find(function(x){return x.id===id;});return c?(c.case_number+' -- '+c.decedent_name):'(unknown case)';}
+
+function fillCaseSelects(){
+  var opts=cases().map(function(c){return '<option value="'+c.id+'">'+H(c.case_number)+' -- '+H(c.decedent_name)+'</option>';}).join('');
+  ['dscase','cclogcase','rvcase','dccase','pmcase'].forEach(function(id){
+    var el=$(id);if(!el)return;
+    var cur=el.value;
+    var needsBlank=(id==='cclogcase');
+    el.innerHTML=(needsBlank?'<option value="">Select a case...</option>':'')+opts;
+    if(cur)el.value=cur;
+  });
+}
+
+// ── SEED DATA ─────────────────────────────────────────────────────────────
+function seed(){
+  if(ld('leg_seeded',false))return;
+  st('leg_cases',[
+    {id:'CS-1',decedent_name:'Robert Halloway',case_number:'FH-2026-001',decedent_dob:'1948-03-11',decedent_dod:'2026-08-04',
+      family_contact_name:'Diane Halloway',family_contact_phone:'(440) 555-0110',family_contact_email:'diane.halloway@example.com',
+      assigned_director:'Maria Chen',status:'Arrangement',service_type:'Burial',service_date:'2026-08-10',notes:'',created_at:legLocalToday()},
+    {id:'CS-2',decedent_name:'Eleanor Voss',case_number:'FH-2026-002',decedent_dob:'1955-11-02',decedent_dod:'2026-08-06',
+      family_contact_name:'Mark Voss',family_contact_phone:'(440) 555-0121',family_contact_email:'mark.voss@example.com',
+      assigned_director:'James Okoye',status:'First Call',service_type:'',service_date:'',notes:'Family requested callback this evening',created_at:legLocalToday()},
+    {id:'CS-3',decedent_name:'Walter Pruitt',case_number:'FH-2026-003',decedent_dob:'1939-06-22',decedent_dod:'2026-07-28',
+      family_contact_name:'Susan Pruitt-Lane',family_contact_phone:'(440) 555-0133',family_contact_email:'',
+      assigned_director:'Maria Chen',status:'Complete',service_type:'Cremation',service_date:'2026-08-02',notes:'',created_at:legLocalToday()}
+  ]);
+  st('leg_dispatches',[
+    {id:'DS-1',case_id:'CS-2',vehicle:'Removal Van 1',staff_assigned:'James Okoye',pickup_location:'412 Birchwood Ln, Avon Lake OH',
+      pickup_time:new Date().toISOString(),status:'Dispatched',gps_lat:null,gps_lng:null,gps_accuracy:null,gps_updated_at:'',created_at:legLocalToday()}
+  ]);
+  st('leg_custodylog',[
+    {id:'CC-1',case_id:'CS-1',from_party:'Fairview Hospital',to_party:'Pinnacle Family Funeral Home',location:'Fairview Hospital, Cleveland OH',
+      notes:'Initial transfer',timestamp:new Date(Date.now()-3*24*60*60*1000).toISOString(),created_at:legLocalToday()}
+  ]);
+  st('leg_merch_catalog',[
+    {id:'MC-1',category:'Casket',model_name:'Cambridge Oak, 18 Gauge',sku:'CO-18G',cost:1800,retail:3400,notes:'',created_at:legLocalToday()},
+    {id:'MC-2',category:'Casket',model_name:'Heritage Cherry, Solid Wood',sku:'HC-SW',cost:2600,retail:4800,notes:'',created_at:legLocalToday()},
+    {id:'MC-3',category:'Urn',model_name:'Serenity Bronze Urn',sku:'SB-URN',cost:220,retail:495,notes:'',created_at:legLocalToday()}
+  ]);
+  st('leg_merch_units',[
+    {id:'MU-1',merch_id:'MC-1',unit_serial:'CO18G-0001',status:'Available',reserved_for_case_id:'',reserved_at:'',sold_at:'',created_at:legLocalToday()},
+    {id:'MU-2',merch_id:'MC-1',unit_serial:'CO18G-0002',status:'Reserved',reserved_for_case_id:'CS-1',reserved_at:legLocalToday(),sold_at:'',created_at:legLocalToday()},
+    {id:'MU-3',merch_id:'MC-2',unit_serial:'HCSW-0001',status:'Available',reserved_for_case_id:'',reserved_at:'',sold_at:'',created_at:legLocalToday()},
+    {id:'MU-4',merch_id:'MC-3',unit_serial:'SBURN-0001',status:'Available',reserved_for_case_id:'',reserved_at:'',sold_at:'',created_at:legLocalToday()}
+  ]);
+  st('leg_documents',[
+    {id:'DC-1',case_id:'CS-1',doc_type:'Statement of Funeral Goods and Services (GPL)',status:'Signed',
+      esign_name:'Diane Halloway',esign_at:new Date().toISOString(),content_text:'',created_at:legLocalToday()}
+  ]);
+  st('leg_deathrecords',[
+    {id:'DR-1',case_id:'CS-1',decedent_full_name:'Robert Halloway',date_of_death:'2026-08-04',place_of_death:'Fairview Hospital, Cleveland OH',
+      county:'Cuyahoga',attending_physician:'Dr. Alan Reyes',cause_pending:false,permit_type:'Burial-Transit',permit_status:'Filed',
+      filed_date:legLocalToday(),issued_date:'',notes:'',created_at:legLocalToday()}
+  ]);
+  st('leg_seeded',true);
+}
+
+// ── AI ASSISTANT ──────────────────────────────────────────────────────────
+function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about cases, documents, merchandise, or operations.</div>';}
+function askAI(q){$('ainp').value=q;sendAI();}
+async function sendAI(){
+  var inp=$('ainp'),q=(inp.value||'').trim();
+  if(!q)return;
+  inp.value='';
+  var chat=$('achat');
+  if(chat.querySelector('div[style*="text-align:center"]'))chat.innerHTML='';
+  chat.innerHTML+='<div class="amu">'+H(q)+'</div>';
+  chat.scrollTop=chat.scrollHeight;
+  aiHist.push({role:'user',content:q});
+  var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
+  chat.scrollTop=chat.scrollHeight;
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
+        system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving.',
+        messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    thinking.textContent=text;
+    aiHist.push({role:'assistant',content:text});
+  }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
+  chat.scrollTop=chat.scrollHeight;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+function rDash(){
+  var cs=cases(),ds=dispatches(),mu=merchUnits(),dr=deathRecords();
+  var open=cs.filter(function(c){return c.status!=='Complete';});
+  $('k-opencases').textContent=open.length;
+  $('k-dispatch').textContent=ds.filter(function(d){return d.status!=='Completed';}).length;
+  $('k-reserved').textContent=mu.filter(function(u){return u.status==='Reserved';}).length;
+  $('k-permits').textContent=dr.filter(function(r){return r.permit_status==='Pending'||r.permit_status==='Filed';}).length;
+
+  var attention=[];
+  open.forEach(function(c){
+    if(c.status==='First Call')attention.push({t:H(c.decedent_name)+' -- first call, needs arrangement conference scheduled',b:'First Call',c:'bw'});
+  });
+  dr.forEach(function(r){
+    if(r.permit_status==='Rejected')attention.push({t:H(r.decedent_full_name)+' -- permit rejected, needs correction and refiling',b:'Permit Rejected',c:'br'});
+  });
+  $('d-attention').innerHTML=attention.length?attention.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">Nothing needs attention</div>';
+
+  var recent=cs.slice().reverse().slice(0,5);
+  var statusColors={'First Call':'bw',Arrangement:'bb','Service Scheduled':'bg',Complete:'bx'};
+  $('d-cases').innerHTML=recent.length?recent.map(function(c){
+    return '<div class="srow"><span class="slbl">'+H(c.case_number)+' -- '+H(c.decedent_name)+'</span><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No cases yet</div>';
+}
+
+// ── CASE MANAGEMENT ───────────────────────────────────────────────────────
+function nextCaseNumber(){
+  var year=new Date().getFullYear();
+  var existing=cases().filter(function(c){return (c.case_number||'').indexOf('FH-'+year+'-')===0;});
+  var n=existing.length+1;
+  return 'FH-'+year+'-'+String(n).padStart(3,'0');
+}
+function openCaseModal(){
+  ceid=null;
+  ['csname','csdob','csdod','csfamname','csfamphone','csfamemail','csdirector','csservicetype','csservicedate','csnotes'].forEach(function(f){$(f).value='';});
+  $('csnumber').value=nextCaseNumber();$('csstatus').value='First Call';
+  $('casemodal').classList.add('on');
+}
+function closeCaseModal(){$('casemodal').classList.remove('on');}
+function editCase(id){
+  var c=cases().find(function(x){return x.id===id;});if(!c)return;
+  ceid=id;
+  $('csname').value=c.decedent_name;$('csnumber').value=c.case_number;
+  $('csdob').value=c.decedent_dob||'';$('csdod').value=c.decedent_dod||'';
+  $('csfamname').value=c.family_contact_name||'';$('csfamphone').value=c.family_contact_phone||'';$('csfamemail').value=c.family_contact_email||'';
+  $('csdirector').value=c.assigned_director||'';$('csstatus').value=c.status;
+  $('csservicetype').value=c.service_type||'';$('csservicedate').value=c.service_date||'';$('csnotes').value=c.notes||'';
+  $('casemodal').classList.add('on');
+}
+async function saveCase(){
+  var name=$('csname').value.trim();
+  if(!name){toast('Decedent name required');return;}
+  var rec={id:ceid||newId('CS'),decedent_name:name,case_number:$('csnumber').value,
+    decedent_dob:$('csdob').value,decedent_dod:$('csdod').value,
+    family_contact_name:$('csfamname').value.trim(),family_contact_phone:$('csfamphone').value.trim(),family_contact_email:$('csfamemail').value.trim(),
+    assigned_director:$('csdirector').value.trim(),status:$('csstatus').value,
+    service_type:$('csservicetype').value.trim(),service_date:$('csservicedate').value,notes:$('csnotes').value.trim(),created_at:legLocalToday()};
+  var list=cases();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('leg_cases',list);
+  closeCaseModal();rCases();rDash();fillCaseSelects();
+  var syncResult=await sdnData('write','leg_cases',rec);
+  toast(syncResult?'Case saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rCases(){
+  fillCaseSelects();
+  var list=cases();
+  $('cs-total').textContent=list.length;
+  $('cs-open').textContent=list.filter(function(c){return c.status!=='Complete';}).length;
+  $('cs-scheduled').textContent=list.filter(function(c){return c.status==='Service Scheduled';}).length;
+  $('cs-complete').textContent=list.filter(function(c){return c.status==='Complete';}).length;
+  var q=($('cssrch').value||'').toLowerCase();
+  var filtered=list.filter(function(c){return !q||c.decedent_name.toLowerCase().indexOf(q)!==-1||c.case_number.toLowerCase().indexOf(q)!==-1||(c.family_contact_name||'').toLowerCase().indexOf(q)!==-1;});
+  var statusColors={'First Call':'bw',Arrangement:'bb','Service Scheduled':'bg',Complete:'bx'};
+  var tb=$('cstbody');
+  tb.innerHTML=filtered.length?filtered.slice().reverse().map(function(c){
+    return '<tr><td>'+H(c.case_number)+'</td><td>'+H(c.decedent_name)+'</td><td>'+H(c.family_contact_name||'--')+'</td><td>'+H(c.assigned_director||'--')+'</td>'+
+      '<td>'+(c.service_date?fdate(c.service_date):'--')+'</td><td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editCase(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No cases found</td></tr>';
+}
+
+// ── FIRST CALL & REMOVAL DISPATCH ─────────────────────────────────────────
+// Real GPS via the browser's Geolocation API -- a one-shot "share my
+// location" action by the assigned staff member's own device, not a
+// simulated live tracker. No embedded live map (no mapping library/API key
+// available) -- last-known coordinates are shown as text plus an outbound
+// link to Google Maps, same "real but honestly scoped" pattern as
+// SAIRNdesign's WebXR room capture and QR sample scan. Feature-detected --
+// if navigator.geolocation is unavailable, the Share Location button simply
+// isn't offered.
+function openDispatchModal(){
+  ['dsvehicle','dsstaff','dslocation'].forEach(function(f){$(f).value='';});
+  $('dstime').value='';
+  fillCaseSelects();
+  $('dispatchmodal').classList.add('on');
+}
+function closeDispatchModal(){$('dispatchmodal').classList.remove('on');}
+async function saveDispatch(){
+  var caseId=$('dscase').value;
+  if(!caseId){toast('Select a case');return;}
+  var rec={id:newId('DS'),case_id:caseId,vehicle:$('dsvehicle').value.trim(),staff_assigned:$('dsstaff').value.trim(),
+    pickup_location:$('dslocation').value.trim(),pickup_time:$('dstime').value?new Date($('dstime').value).toISOString():new Date().toISOString(),
+    status:'Dispatched',gps_lat:null,gps_lng:null,gps_accuracy:null,gps_updated_at:'',created_at:legLocalToday()};
+  var list=dispatches();list.push(rec);st('leg_dispatches',list);
+  closeDispatchModal();rDispatches();rDash();
+  var syncResult=await sdnData('write','leg_dispatches',rec);
+  toast(syncResult?'Dispatch created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function setDispatchStatus(id,status){
+  var list=dispatches();
+  var d=list.find(function(x){return x.id===id;});if(!d)return;
+  d.status=status;st('leg_dispatches',list);rDispatches();rDash();
+  var syncResult=await sdnData('write','leg_dispatches',d);
+  toast(syncResult?'Dispatch marked '+status:'Marked '+status+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function shareDispatchLocation(id){
+  if(!('geolocation' in navigator)){toast('This browser does not support location sharing');return;}
+  navigator.geolocation.getCurrentPosition(async function(pos){
+    var list=dispatches();
+    var d=list.find(function(x){return x.id===id;});if(!d)return;
+    d.gps_lat=pos.coords.latitude;d.gps_lng=pos.coords.longitude;d.gps_accuracy=pos.coords.accuracy;d.gps_updated_at=new Date().toISOString();
+    st('leg_dispatches',list);rDispatches();
+    var syncResult=await sdnData('write','leg_dispatches',d);
+    toast(syncResult?'Location shared':'Location saved on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  },function(err){
+    toast('Could not get location: '+(err&&err.message?err.message:'permission denied or unavailable'));
+  },{enableHighAccuracy:true,timeout:10000});
+}
+function rDispatches(){
+  fillCaseSelects();
+  var list=dispatches();
+  $('ds-active').textContent=list.filter(function(d){return d.status!=='Completed';}).length;
+  var today=legLocalToday();
+  $('ds-today').textContent=list.filter(function(d){return d.status==='Completed'&&(d.pickup_time||'').slice(0,10)===today;}).length;
+  var statusColors={Dispatched:'bw','En Route':'bb','On Scene':'bb',Completed:'bg'};
+  var tb=$('dstbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(d){
+    var locText='No location shared yet';
+    if(d.gps_lat&&d.gps_lng){
+      locText='<a href="https://www.google.com/maps?q='+d.gps_lat+','+d.gps_lng+'" target="_blank" rel="noopener">View on Map</a> ('+fdatetime(d.gps_updated_at)+')';
+    }
+    var nextStatus={Dispatched:'En Route','En Route':'On Scene','On Scene':'Completed'}[d.status];
+    return '<tr><td>'+H(caseLabel(d.case_id))+'</td><td>'+H(d.vehicle||'--')+'</td><td>'+H(d.staff_assigned||'--')+'</td><td>'+H(d.pickup_location||'--')+'</td>'+
+      '<td><span class="badge '+(statusColors[d.status]||'bx')+'">'+H(d.status)+'</span></td><td>'+locText+'</td>'+
+      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="setDispatchStatus(\''+d.id+'\',\''+nextStatus+'\')">Mark '+nextStatus+'</button> ':'')+
+      '<button class="btn bo bs" onclick="shareDispatchLocation(\''+d.id+'\')">Share Location</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No dispatches yet</td></tr>';
+}
+async function addCustodyEntry(){
+  var caseId=$('cclogcase').value;
+  if(!caseId){toast('Select a case first');return;}
+  var from=$('ccfrom').value.trim(),to=$('ccto').value.trim();
+  if(!from||!to){toast('From and To are both required for a custody entry');return;}
+  var rec={id:newId('CC'),case_id:caseId,from_party:from,to_party:to,location:$('cclocation').value.trim(),
+    notes:$('ccnotes').value.trim(),timestamp:new Date().toISOString(),created_at:legLocalToday()};
+  var list=custodyLog();list.push(rec);st('leg_custodylog',list);
+  ['ccfrom','ccto','cclocation','ccnotes'].forEach(function(f){$(f).value='';});
+  rCustodyLog();
+  var syncResult=await sdnData('write','leg_custodylog',rec);
+  toast(syncResult?'Handoff logged':'Logged on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rCustodyLog(){
+  var caseId=$('cclogcase').value;
+  var list=caseId?custodyLog().filter(function(c){return c.case_id===caseId;}):[];
+  var tb=$('cctbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(c){
+    return '<tr><td>'+fdatetime(c.timestamp)+'</td><td>'+H(c.from_party)+'</td><td>'+H(c.to_party)+'</td><td>'+H(c.location||'--')+'</td><td>'+H(c.notes||'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">'+(caseId?'No custody entries logged for this case yet':'Select a case above')+'</td></tr>';
+}
+
+// ── MERCHANDISE SELECTION & INVENTORY RESERVATION ─────────────────────────
+// The moat panel. Reservation is checked against the specific physical unit
+// record's own status field -- the same non-fungible-item mechanism as
+// StoneDesk's slab reservation and SAIRNdesign's one-of-a-kind spec-item
+// reservation, reused rather than reinvented. A unit whose status is not
+// 'Available' can never be reserved a second time -- confirmReserve()
+// re-checks the live status immediately before writing, not just at modal-
+// open time, closing the same race a family-facing app must close (two
+// staff members looking at the same unit at once).
+var mcUnitFor=null;
+function openMerchModal(){
+  ceid=null;
+  ['mcname','mcsku','mccost','mcretail','mcnotes'].forEach(function(f){$(f).value='';});
+  $('mccat').value='Casket';
+  $('merchmodal').classList.add('on');
+}
+function closeMerchModal(){$('merchmodal').classList.remove('on');}
+function editMerch(id){
+  var m=merchCatalog().find(function(x){return x.id===id;});if(!m)return;
+  ceid=id;
+  $('mccat').value=m.category;$('mcname').value=m.model_name;$('mcsku').value=m.sku;
+  $('mccost').value=m.cost;$('mcretail').value=m.retail;$('mcnotes').value=m.notes||'';
+  $('merchmodal').classList.add('on');
+}
+async function saveMerch(){
+  var name=$('mcname').value.trim();
+  if(!name){toast('Model name required');return;}
+  var rec={id:ceid||newId('MC'),category:$('mccat').value,model_name:name,sku:$('mcsku').value.trim(),
+    cost:Number($('mccost').value)||0,retail:Number($('mcretail').value)||0,notes:$('mcnotes').value.trim(),created_at:legLocalToday()};
+  var list=merchCatalog();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('leg_merch_catalog',list);
+  closeMerchModal();rMerch();
+  var syncResult=await sdnData('write','leg_merch_catalog',rec);
+  toast(syncResult?'Catalog item saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openUnitModal(merchId){
+  mcUnitFor=merchId;
+  var m=merchCatalog().find(function(x){return x.id===merchId;});
+  $('unit-model-label').textContent=m?('Adding a unit to: '+m.model_name+' ('+m.sku+')'):'';
+  $('unserial').value='';
+  $('unitmodal').classList.add('on');
+}
+function closeUnitModal(){$('unitmodal').classList.remove('on');}
+async function saveUnit(){
+  var serial=$('unserial').value.trim();
+  if(!serial){toast('Unit serial/identifier required');return;}
+  var rec={id:newId('MU'),merch_id:mcUnitFor,unit_serial:serial,status:'Available',reserved_for_case_id:'',reserved_at:'',sold_at:'',created_at:legLocalToday()};
+  var list=merchUnits();list.push(rec);st('leg_merch_units',list);
+  closeUnitModal();rMerch();
+  var syncResult=await sdnData('write','leg_merch_units',rec);
+  toast(syncResult?'Unit added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+var mcReserveUnit=null;
+function openReserveModal(unitId){
+  var u=merchUnits().find(function(x){return x.id===unitId;});if(!u)return;
+  if(u.status!=='Available'){toast('This unit is no longer available -- it may have just been reserved');rMerch();return;}
+  mcReserveUnit=unitId;
+  var m=merchCatalog().find(function(x){return x.id===u.merch_id;});
+  $('reserve-unit-label').textContent=(m?m.model_name+' -- ':'')+u.unit_serial;
+  $('reserve-err').textContent='';
+  fillCaseSelects();
+  $('reservemodal').classList.add('on');
+}
+function closeReserveModal(){$('reservemodal').classList.remove('on');}
+async function confirmReserve(){
+  var caseId=$('rvcase').value;
+  if(!caseId){$('reserve-err').textContent='Select a case';return;}
+  var list=merchUnits();
+  var u=list.find(function(x){return x.id===mcReserveUnit;});
+  if(!u){$('reserve-err').textContent='Unit not found';return;}
+  // Re-check live status immediately before writing -- closes the race
+  // where a second staff member reserved this same unit between this
+  // modal opening and this confirm click.
+  if(u.status!=='Available'){$('reserve-err').textContent='This unit was just reserved by someone else -- pick a different unit';closeReserveModal();rMerch();return;}
+  u.status='Reserved';u.reserved_for_case_id=caseId;u.reserved_at=legLocalToday();
+  st('leg_merch_units',list);
+  closeReserveModal();rMerch();
+  var syncResult=await sdnData('write','leg_merch_units',u);
+  toast(syncResult?'Unit reserved for '+caseLabel(caseId):'Reserved on this device only -- server sync not yet enabled for this app',syncResult?3500:5500);
+}
+async function releaseUnit(unitId){
+  var list=merchUnits();
+  var u=list.find(function(x){return x.id===unitId;});if(!u)return;
+  u.status='Available';u.reserved_for_case_id='';u.reserved_at='';
+  st('leg_merch_units',list);rMerch();
+  var syncResult=await sdnData('write','leg_merch_units',u);
+  toast(syncResult?'Reservation released':'Released on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+async function markUnitSold(unitId){
+  var list=merchUnits();
+  var u=list.find(function(x){return x.id===unitId;});if(!u)return;
+  u.status='Sold';u.sold_at=legLocalToday();
+  st('leg_merch_units',list);rMerch();
+  var syncResult=await sdnData('write','leg_merch_units',u);
+  toast(syncResult?'Marked sold':'Marked sold on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rMerch(){
+  var catalog=merchCatalog(),units=merchUnits();
+  $('mc-catalog').textContent=catalog.length;
+  $('mc-units').textContent=units.length;
+  $('mc-reserved').textContent=units.filter(function(u){return u.status==='Reserved';}).length;
+  $('mc-available').textContent=units.filter(function(u){return u.status==='Available';}).length;
+  var statusColors={Available:'bg',Reserved:'bw',Sold:'bx'};
+  $('mc-catalog-list').innerHTML=catalog.length?catalog.map(function(m){
+    var myUnits=units.filter(function(u){return u.merch_id===m.id;});
+    return '<div class="card"><div class="ch"><span class="ct">'+H(m.model_name)+'</span><span class="badge bx" style="margin-left:8px">'+H(m.category)+'</span>'+
+      '<span style="margin-left:auto;display:flex;gap:8px"><button class="btn bo bs" onclick="editMerch(\''+m.id+'\')">Edit</button><button class="btn bo bs" onclick="openUnitModal(\''+m.id+'\')">+ Add Unit</button></span></div>'+
+      '<div class="cb">'+
+      '<div class="srow"><span class="slbl">SKU</span><span class="sval">'+H(m.sku||'--')+'</span></div>'+
+      '<div class="srow"><span class="slbl">Cost / Retail</span><span class="sval">'+fmt(m.cost)+' / '+fmt(m.retail)+'</span></div>'+
+      (myUnits.length?'<div class="tw" style="margin-top:10px" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Unit Serial</th><th>Status</th><th>Reserved For</th><th>Actions</th></tr></thead><tbody>'+
+        myUnits.map(function(u){
+          return '<tr><td>'+H(u.unit_serial)+'</td><td><span class="badge '+(statusColors[u.status]||'bx')+'">'+H(u.status)+'</span></td>'+
+            '<td>'+(u.reserved_for_case_id?H(caseLabel(u.reserved_for_case_id)):'--')+'</td>'+
+            '<td>'+(u.status==='Available'?'<button class="btn bp bs" onclick="openReserveModal(\''+u.id+'\')">Reserve</button>':'')+
+              (u.status==='Reserved'?'<button class="btn bo bs" onclick="releaseUnit(\''+u.id+'\')">Release</button> <button class="btn bp bs" onclick="markUnitSold(\''+u.id+'\')">Mark Sold</button>':'')+
+              '</td></tr>';
+        }).join('')+'</tbody></table></div>':'<div style="color:var(--muted);font-size:12px;margin-top:10px">No physical units logged yet for this model.</div>')+
+      '</div></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:24px">No catalog items yet -- add one above.</div>';
+}
+
+// ── DOCUMENTS & E-SIGNATURE ────────────────────────────────────────────────
+// Real, honest, minimal e-sign stand-in -- a typed name + timestamp, not a
+// fabricated cryptographic signature system. Same pattern SAIRNdesign's
+// Client Portal/Contracts already use.
+function legRecordEsign(name){
+  return {esign_name:name,esign_at:new Date().toISOString()};
+}
+function openDocModal(){
+  ['dccontent'].forEach(function(f){$(f).value='';});
+  $('dctype').value='Statement of Funeral Goods and Services (GPL)';
+  fillCaseSelects();
+  $('docmodal').classList.add('on');
+}
+function closeDocModal(){$('docmodal').classList.remove('on');}
+async function saveDoc(){
+  var caseId=$('dccase').value;
+  if(!caseId){toast('Select a case');return;}
+  var rec={id:newId('DC'),case_id:caseId,doc_type:$('dctype').value,status:'Draft',
+    esign_name:'',esign_at:'',content_text:$('dccontent').value.trim(),created_at:legLocalToday()};
+  var list=documents();list.push(rec);st('leg_documents',list);
+  closeDocModal();rDocs();
+  var syncResult=await sdnData('write','leg_documents',rec);
+  toast(syncResult?'Document created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function sendDoc(id){
+  var list=documents();
+  var d=list.find(function(x){return x.id===id;});if(!d)return;
+  d.status='Sent';st('leg_documents',list);rDocs();
+  var syncResult=await sdnData('write','leg_documents',d);
+  toast(syncResult?'Document sent':'Marked sent on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+var mcDocSign=null;
+function openDocSignModal(id){
+  var d=documents().find(function(x){return x.id===id;});if(!d)return;
+  mcDocSign=id;
+  $('docsign-label').textContent=d.doc_type+' -- '+caseLabel(d.case_id);
+  $('docsign-name').value='';
+  $('docsignmodal').classList.add('on');
+}
+function closeDocSignModal(){$('docsignmodal').classList.remove('on');}
+async function confirmDocSign(){
+  var name=$('docsign-name').value.trim();
+  if(!name){toast('Enter the signer\'s typed name');return;}
+  var list=documents();
+  var d=list.find(function(x){return x.id===mcDocSign;});if(!d)return;
+  var stamp=legRecordEsign(name);
+  d.status='Signed';d.esign_name=stamp.esign_name;d.esign_at=stamp.esign_at;
+  st('leg_documents',list);
+  closeDocSignModal();rDocs();
+  var syncResult=await sdnData('write','leg_documents',d);
+  toast(syncResult?'Document signed by '+name:'Signed on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rDocs(){
+  fillCaseSelects();
+  var list=documents();
+  $('dc-total').textContent=list.length;
+  $('dc-sent').textContent=list.filter(function(d){return d.status==='Sent';}).length;
+  $('dc-signed').textContent=list.filter(function(d){return d.status==='Signed';}).length;
+  var statusColors={Draft:'bx',Sent:'bb',Signed:'bg'};
+  var tb=$('dctbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(d){
+    var actions='';
+    if(d.status==='Draft')actions='<button class="btn bo bs" onclick="sendDoc(\''+d.id+'\')">Send</button>';
+    else if(d.status==='Sent')actions='<button class="btn bp bs" onclick="openDocSignModal(\''+d.id+'\')">Record Signature</button>';
+    return '<tr><td>'+H(caseLabel(d.case_id))+'</td><td>'+H(d.doc_type)+'</td><td><span class="badge '+(statusColors[d.status]||'bx')+'">'+H(d.status)+'</span></td>'+
+      '<td>'+H(d.esign_name||'--')+'</td><td>'+actions+'</td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No documents yet</td></tr>';
+}
+
+// ── DEATH RECORD / PERMIT WORKFLOW ────────────────────────────────────────
+// Generic internal structure only -- deliberately NOT wired to any state
+// EDRS. Each state runs its own Electronic Death Registration System with
+// no unified API across states; a real integration is separate,
+// incremental, state-by-state work (starting with Ohio), not part of this
+// phase. See the panel's own on-screen disclosure too.
+function permitCaseChange(){
+  var caseId=$('pmcase').value;
+  var c=cases().find(function(x){return x.id===caseId;});
+  if(c){$('pmname').value=c.decedent_name;$('pmdod').value=c.decedent_dod||'';}
+}
+function openPermitModal(){
+  ceid=null;
+  ['pmname','pmdod','pmplace','pmcounty','pmphysician','pmnotes'].forEach(function(f){$(f).value='';});
+  $('pmcausepending').checked=false;$('pmtype').value='Burial-Transit';$('pmstatus').value='Pending';
+  fillCaseSelects();
+  $('permitmodal').classList.add('on');
+}
+function closePermitModal(){$('permitmodal').classList.remove('on');}
+function editPermit(id){
+  var r=deathRecords().find(function(x){return x.id===id;});if(!r)return;
+  ceid=id;
+  fillCaseSelects();$('pmcase').value=r.case_id;
+  $('pmname').value=r.decedent_full_name;$('pmdod').value=r.date_of_death||'';$('pmplace').value=r.place_of_death||'';
+  $('pmcounty').value=r.county||'';$('pmphysician').value=r.attending_physician||'';$('pmcausepending').checked=!!r.cause_pending;
+  $('pmtype').value=r.permit_type;$('pmstatus').value=r.permit_status;$('pmnotes').value=r.notes||'';
+  $('permitmodal').classList.add('on');
+}
+async function savePermit(){
+  var caseId=$('pmcase').value,name=$('pmname').value.trim();
+  if(!caseId){toast('Select a case');return;}
+  if(!name){toast('Decedent name required');return;}
+  var existing=ceid?deathRecords().find(function(x){return x.id===ceid;}):null;
+  var rec={id:ceid||newId('DR'),case_id:caseId,decedent_full_name:name,date_of_death:$('pmdod').value,place_of_death:$('pmplace').value.trim(),
+    county:$('pmcounty').value.trim(),attending_physician:$('pmphysician').value.trim(),cause_pending:$('pmcausepending').checked,
+    permit_type:$('pmtype').value,permit_status:$('pmstatus').value,
+    filed_date:(existing&&existing.filed_date)||($('pmstatus').value!=='Pending'?legLocalToday():''),
+    issued_date:(existing&&existing.issued_date)||($('pmstatus').value==='Issued'?legLocalToday():''),
+    notes:$('pmnotes').value.trim(),created_at:legLocalToday()};
+  var list=deathRecords();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('leg_deathrecords',list);
+  closePermitModal();rPermits();rDash();
+  var syncResult=await sdnData('write','leg_deathrecords',rec);
+  toast(syncResult?'Death record saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rPermits(){
+  fillCaseSelects();
+  var list=deathRecords();
+  $('pm-total').textContent=list.length;
+  $('pm-pending').textContent=list.filter(function(r){return r.permit_status==='Pending';}).length;
+  $('pm-filed').textContent=list.filter(function(r){return r.permit_status==='Filed';}).length;
+  $('pm-issued').textContent=list.filter(function(r){return r.permit_status==='Issued';}).length;
+  var statusColors={Pending:'bw',Filed:'bb',Issued:'bg',Rejected:'br'};
+  var tb=$('pmtbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(r){
+    return '<tr><td>'+H(caseLabel(r.case_id))+'</td><td>'+H(r.decedent_full_name)+'</td><td>'+(r.date_of_death?fdate(r.date_of_death):'--')+'</td>'+
+      '<td>'+H(r.permit_type)+'</td><td><span class="badge '+(statusColors[r.permit_status]||'bx')+'">'+H(r.permit_status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editPermit(\''+r.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No death records yet</td></tr>';
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+function init(){
+  seed();
+  fillCaseSelects();
+  rDash();rCases();rDispatches();rMerch();rDocs();rPermits();
+  rCustodyLog();
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var lic=localStorage.getItem('leg_license_key');
+  if(lic){$('gate').style.display='none';$('pin').classList.add('on');}
+});
+</script>
+</body>
+</html>

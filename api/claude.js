@@ -31,7 +31,7 @@
 const KNOWN_APP_IDS = [
   'stonedesk', 'sairnbiz', 'sairnscape', 'sairncode', 'sairnbuild',
   'sairnlaw', 'sairndesign', 'sairncare', 'sairnvet', 'sairnfuneral',
-  'sairnmechanical', 'sairnhr', 'sairnacc', 'sairngrounds'
+  'sairnmechanical', 'sairnhr', 'sairnacc', 'sairngrounds', 'sairnlegacy'
 ];
 
 // Server tools a frontend is allowed to request. Whitelisted by exact type
