@@ -3808,6 +3808,34 @@ function costScope(){
   return costs().filter(function(c){return(!jf||c.job_id===jf)&&(!kf||c.kind===kf);});
 }
 
+// AI Budget Early Warning -- deterministic, zero API calls (spec: no AI
+// call for what arithmetic already computes reliably). committed+actual,
+// not actual alone, per spec section 3: "early" means before the money
+// moves, not after.
+function costLineTier(c){
+  var budget=c.budget||0;
+  if(budget<=0)return null;
+  var ratio=((c.committed||0)+(c.actual||0))/budget;
+  if(ratio>=0.90)return 'critical';
+  if(ratio>=0.80)return 'warning';
+  if(ratio>=0.70)return 'watch';
+  return null;
+}
+var TIER_LABEL={critical:'Critical',warning:'Warning',watch:'Watch'};
+var TIER_COLOR={critical:'var(--tier-critical)',warning:'var(--tier-warning)',watch:'var(--tier-watch)'};
+// Job-level = the WORST tier among that job's own lines (OR-rollup, not
+// an average) -- a job with one critical line is a critical job, even
+// if its other lines are fine.
+function jobTierFromCosts(jobId, allCosts){
+  var order={critical:3,warning:2,watch:1};
+  var best=null;
+  allCosts.filter(function(c){return c.job_id===jobId;}).forEach(function(c){
+    var t=costLineTier(c);
+    if(t&&(!best||order[t]>order[best]))best=t;
+  });
+  return best;
+}
+
 function rCostTbl(){
   var list=costScope();
   var budget=list.reduce(function(s,c){return s+(c.budget||0);},0);
