@@ -30599,7 +30599,6 @@ function sbNav(id) {
     if(id==='executive'&&typeof renderExecChat==='function')renderExecChat();
     if(id==='executive'&&typeof window.sdExecRender==='function')window.sdExecRender();
     if(id==='contractor'&&typeof window.sdConRender==='function')window.sdConRender();
-    if(id==='referral'&&typeof rfRender==='function')rfRender();
     if(id==='priceintel'&&typeof piInit==='function')piInit();
     if(id==='equipment'&&typeof window.sdEqRender==='function')window.sdEqRender();
     if(id==='stoneyard'&&typeof window.sdYardRender==='function')window.sdYardRender();
@@ -32073,44 +32072,24 @@ function revRenderLog(){
 // ================================================================
 
 // ================================================================
-// 16. REFERRAL TRACKER
+// 16. REFERRAL TRACKER — orphaned duplicate removed (canonical is
+// panel-referral / sdRefAdd()+save()+render() above, wired to the real
+// "Log Referral" button). rf-form/rf-cust/rf-date/rf-referred-by/
+// rf-source-type/rf-value/rf-status/rf-ai-briefing never existed
+// anywhere in this file as real DOM ids, and rfSave()/rfAddReferral()/
+// rfAIBriefing() had zero callers -- confirmed dead, not just unused.
+// rfRender() WAS still wired into both the central nav dispatcher
+// (id==='referral') and the BOOT DOMContentLoaded handler, silently
+// reading the real sd_referrals data in the wrong shape (from/to/val/
+// Title-Case-status vs this block's customer/referredBy/value/
+// lowercase-status) on every visit/load -- harmless today only because
+// every element it targeted (rf-kpi-total, rf-list, etc.) was equally
+// nonexistent, but a real corruption risk if rf-* markup were ever
+// added back without recognizing this as a duplicate. Both call sites
+// removed along with the dead functions -- found via
+// key_collision_check.py flagging sd_referrals as written by two
+// distinct backing variables, traced by hand 2026-08-07.
 // ================================================================
-var rfReferrals=sdLoad('sd_referrals',[]);
-function rfAddReferral(){document.getElementById('rf-form').style.display='block';var d=document.getElementById('rf-date');if(d)d.value=sdLocalToday();}
-function rfSave(){
-  var cust=((document.getElementById('rf-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
-  var r={id:'RF'+Date.now(),customer:cust,referredBy:((document.getElementById('rf-referred-by')||{}).value||'').trim(),sourceType:(document.getElementById('rf-source-type')||{}).value||'other',value:parseFloat((document.getElementById('rf-value')||{}).value)||0,status:(document.getElementById('rf-status')||{}).value||'lead',date:(document.getElementById('rf-date')||{}).value||'',createdAt:new Date().toISOString()};
-  rfReferrals.unshift(r);sdStore('sd_referrals',rfReferrals);document.getElementById('rf-form').style.display='none';rfRender();showToast('Referral logged');
-}
-function rfRender(){
-  var totalRev=rfReferrals.filter(function(r){return r.status==='won';}).reduce(function(s,r){return s+r.value;},0);
-  var sources={};rfReferrals.forEach(function(r){sources[r.sourceType]=(sources[r.sourceType]||0)+1;});
-  var topSrc=Object.entries(sources).sort(function(a,b){return b[1]-a[1];})[0];
-  var won=rfReferrals.filter(function(r){return r.status==='won';}).length;
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  sv('rf-kpi-total',rfReferrals.length);sv('rf-kpi-revenue',sdFmt(totalRev));sv('rf-kpi-top-source',topSrc?topSrc[0].replace('_',' '):'—');sv('rf-kpi-conversion',rfReferrals.length?Math.round(won/rfReferrals.length*100)+'%':'—');
-  var sc=document.getElementById('rf-source-chart');
-  if(sc&&Object.keys(sources).length){var maxS=Math.max.apply(null,Object.values(sources));sc.innerHTML=Object.entries(sources).sort(function(a,b){return b[1]-a[1];}).map(function(e){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="width:90px;font-size:11px;text-transform:capitalize">'+e[0].replace('_',' ')+'</div><div style="flex:1;background:rgba(0,0,0,0.06);border-radius:4px;height:14px"><div style="width:'+Math.round(e[1]/maxS*100)+'%;background:var(--a);height:100%;border-radius:4px"></div></div><span style="font-size:11px;font-weight:700;width:20px">'+e[1]+'</span></div>';}).join('');}
-  var referrers={};rfReferrals.filter(function(r){return r.referredBy;}).forEach(function(r){referrers[r.referredBy]=(referrers[r.referredBy]||0)+1;});
-  var tr=document.getElementById('rf-top-referrers');
-  if(tr)tr.innerHTML=Object.entries(referrers).sort(function(a,b){return b[1]-a[1];}).slice(0,5).map(function(e){return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="font-weight:600">'+escHtml(e[0])+'</span><span style="font-weight:800;color:var(--a)">'+e[1]+' ref</span></div>';}).join('');
-  var scColors={lead:'#6b7280',quoted:'#ca8a04',won:'#16a34a',lost:'#dc2626'};
-  var el=document.getElementById('rf-list');if(!el)return;
-  el.innerHTML=rfReferrals.length?rfReferrals.map(function(r){return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(scColors[r.status]||'#6b7280')+';border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px">'+
-    '<div style="flex:1"><div style="font-size:12px;font-weight:600">'+escHtml(r.customer)+'</div><div style="font-size:11px;color:var(--muted)">From: '+escHtml(r.referredBy||'—')+' · '+r.sourceType.replace('_',' ')+(r.value?' · '+sdFmt(r.value):'')+'</div></div>'+
-    '<select onchange="rfReferrals.find(function(x){return x.id===\''+r.id+'\';}).status=this.value;sdStore(\'sd_referrals\',rfReferrals);rfRender()" style="font-size:10px;padding:3px 6px;border:1px solid var(--border);border-radius:5px;background:var(--card);color:var(--text);outline:none">'+
-    ['lead','quoted','won','lost'].map(function(s){return '<option value="'+s+'"'+(s===r.status?' selected':'')+'>'+s+'</option>';}).join('')+'</select>'+
-  '</div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:24px">No referrals logged yet.</div>';
-}
-async function rfAIBriefing(){
-  if(!rfReferrals.length){showToast('Log referrals first');return;}
-  var el=document.getElementById('rf-ai-briefing');el.style.display='block';el.innerHTML='<div style="color:var(--muted);padding:12px">Generating briefing...</div>';
-  var sources={};rfReferrals.forEach(function(r){sources[r.sourceType]=(sources[r.sourceType]||0)+1;});
-  var referrers={};rfReferrals.filter(function(r){return r.referredBy;}).forEach(function(r){referrers[r.referredBy]=(referrers[r.referredBy]||0)+1;});
-  var won=rfReferrals.filter(function(r){return r.status==='won';});
-  var txt=await sdClaude('You are a stone fabrication business intelligence expert. Give concise, actionable marketing recommendations based on referral data.','Total: '+rfReferrals.length+'. Won: '+won.length+'. Revenue: $'+won.reduce(function(s,r){return s+r.value;},0)+'. Sources: '+JSON.stringify(sources)+'. Top referrers: '+JSON.stringify(Object.entries(referrers).sort(function(a,b){return b[1]-a[1];}).slice(0,5))+'. Give: (1) Best performing source and why to double down, (2) Who to reward with thank-you, (3) Underperforming source to improve, (4) One action this week.',700);
-  el.innerHTML='<div style="background:rgba(124,58,237,0.06);border:1.5px solid rgba(124,58,237,0.2);border-radius:12px;padding:16px;margin-bottom:12px"><div style="font-size:13px;font-weight:800;color:#7c3aed;margin-bottom:8px">&#129504; Referral Intelligence</div><div style="font-size:13px;line-height:1.8">'+sdMarkdown(txt)+'</div></div>';
-}
 
 // ================================================================
 // 17. PRICE INTELLIGENCE
@@ -32180,7 +32159,6 @@ document.addEventListener('DOMContentLoaded',function(){
   setTimeout(function(){
     try{jcRender();}catch(e){}
     try{revUpdateKPIs();revRenderLog();}catch(e){}
-    try{rfRender();}catch(e){}
   },1000);
 });
 
