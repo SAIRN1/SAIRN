@@ -251,7 +251,16 @@ label.chk input{width:auto;}
       <div class="ss">Family-Facing</div>
       <button class="sb" id="sb-obituary" onclick="nav('obituary')"><span class="sico">&#128221;</span>AI Obituary Drafting</button>
       <button class="sb" id="sb-memorial" onclick="nav('memorial')"><span class="sico">&#128564;</span>Tribute / Memorial Page</button>
-      <div class="sfoot">SAIRNlegacy v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 2</span></div>
+      <div class="ss">Follow-Up</div>
+      <button class="sb" id="sb-aftercare" onclick="nav('aftercare')"><span class="sico">&#128172;</span>Aftercare / Grief Support</button>
+      <button class="sb" id="sb-procession" onclick="nav('procession')"><span class="sico">&#128663;</span>Procession GPS</button>
+      <div class="ss">Fleet &amp; Staff</div>
+      <button class="sb" id="sb-fleet" onclick="nav('fleet')"><span class="sico">&#128295;</span>Fleet / Vehicle Maintenance</button>
+      <button class="sb" id="sb-certs" onclick="nav('certs')"><span class="sico">&#128220;</span>Staff Certifications</button>
+      <div class="ss">Additional Services</div>
+      <button class="sb" id="sb-pets" onclick="nav('pets')"><span class="sico">&#128062;</span>Pet Aftercare</button>
+      <button class="sb" id="sb-keepsakes" onclick="nav('keepsakes')"><span class="sico">&#128142;</span>Keepsake / Sympathy Gifts</button>
+      <div class="sfoot">SAIRNlegacy v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 3</span></div>
     </aside>
     <main>
 
@@ -738,6 +747,198 @@ label.chk input{width:auto;}
   </div></div>
 </div>
 
+<!-- AFTERCARE / GRIEF-SUPPORT FOLLOW-UP -->
+<div class="panel" id="panel-aftercare">
+  <div class="ph"><div><div class="ptitle">Aftercare / Grief-Support Follow-up</div><div class="psub">Check-in schedule per case &mdash; 1 week, 1 month, 1 year</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Pending Check-ins</div><div class="kval" id="ac-pending">0</div><div class="kt">Not yet done</div></div>
+    <div class="kpi"><div class="klbl">Due This Week</div><div class="kval" id="ac-dueweek">0</div><div class="kt">Pending, due soon</div></div>
+    <div class="kpi"><div class="klbl">Completed</div><div class="kval" id="ac-completed">0</div><div class="kt">All time</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Case</label><select id="accase"></select></div>
+    <button class="btn bo bs" onclick="generateAftercareSchedule()">Generate Standard Schedule (1wk / 1mo / 1yr)</button>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Check-ins</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Type</th><th>Due</th><th>Status</th><th>Notes</th><th>Actions</th></tr></thead>
+    <tbody id="actbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="aftercarenotemodal">
+  <div class="mbox">
+    <div class="mtitle">Complete Check-in</div>
+    <div class="fg"><label>Notes</label><textarea id="acnote" rows="3" placeholder="How the family is doing, any follow-up needed..."></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeAftercareNoteModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmAftercareComplete()">Mark Completed</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROCESSION GPS -->
+<div class="panel" id="panel-procession">
+  <div class="ph"><div><div class="ptitle">Procession GPS</div><div class="psub">Track the lead vehicle during a service &mdash; same real one-shot Geolocation pattern as First Call Dispatch</div></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    Real location sharing via the browser's Geolocation API (feature-detected, honest fallback where
+    unsupported) -- not a fabricated live map. This is the internal staff view; a separate no-login,
+    family-facing public link (the way FuneralNav works) needs its own public routing/hosting outside
+    this license-gated tool and is not built in this phase.
+  </div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Active Processions</div><div class="kval" id="pr-active">0</div><div class="kt">In progress</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Case</label><select id="prcase"></select></div>
+    <div class="fg"><label>Lead Vehicle</label><input id="prvehicle" placeholder="Hearse 1"></div>
+    <button class="btn bp bs" onclick="startProcession()">Start Procession</button>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Procession Sessions</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Vehicle</th><th>Status</th><th>Last Location</th><th>Actions</th></tr></thead>
+    <tbody id="prtbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- FLEET / VEHICLE MAINTENANCE -->
+<div class="panel" id="panel-fleet">
+  <div class="ph"><div><div class="ptitle">Fleet / Vehicle Maintenance</div><div class="psub">Hearse and transport-van repair log, service intervals, parts sourcing notes</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openVehicleModal()">+ Add Vehicle</button><button class="btn bp bs" onclick="openMaintenanceModal()">+ Log Service</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Vehicles Tracked</div><div class="kval" id="fl-vehicles">0</div><div class="kt">Fleet size</div></div>
+    <div class="kpi"><div class="klbl">Services This Year</div><div class="kval" id="fl-thisyear">0</div><div class="kt">Logged</div></div>
+    <div class="kpi"><div class="klbl">Due Within 30 Days</div><div class="kval" id="fl-due">0</div><div class="kt">Upcoming service</div></div>
+  </div>
+  <div id="fl-vehicle-list"></div>
+</div>
+<div class="modal" id="vehiclemodal">
+  <div class="mbox">
+    <div class="mtitle">Add Vehicle</div>
+    <div class="fr"><div class="fg"><label>Type</label><select id="flvtype"><option>Hearse</option><option>Removal Van</option><option>Family Car</option><option>Flower Car</option><option>Other</option></select></div><div class="fg"><label>Name</label><input id="flvname" placeholder="Hearse 1"></div></div>
+    <div class="fr"><div class="fg"><label>VIN (optional)</label><input id="flvvin"></div><div class="fg"><label>Current Mileage</label><input id="flvmileage" type="number"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="flvnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeVehicleModal()">Cancel</button>
+      <button class="btn bp" onclick="saveVehicle()">Save Vehicle</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="maintenancemodal">
+  <div class="mbox">
+    <div class="mtitle">Log Service</div>
+    <div class="fg"><label>Vehicle</label><select id="mtvehicle"></select></div>
+    <div class="fr"><div class="fg"><label>Service Date</label><input id="mtdate" type="date"></div><div class="fg"><label>Mileage at Service</label><input id="mtmileage" type="number"></div></div>
+    <div class="fg"><label>Service Type</label><input id="mttype" placeholder="Oil change, brake service, inspection..."></div>
+    <div class="fr"><div class="fg"><label>Cost ($)</label><input id="mtcost" type="number"></div><div class="fg"><label>Performed By</label><input id="mtperformedby" placeholder="Shop or staff name"></div></div>
+    <div class="fg"><label>Parts Sourcing Notes</label><input id="mtparts" placeholder="Vendor, part numbers, lead time..."></div>
+    <div class="fr"><div class="fg"><label>Next Service Due Date</label><input id="mtnextdate" type="date"></div><div class="fg"><label>Next Service Due Mileage</label><input id="mtnextmileage" type="number"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="mtnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMaintenanceModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMaintenance()">Save Service Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAFF CERTIFICATIONS / LICENSING -->
+<div class="panel" id="panel-certs">
+  <div class="ph"><div><div class="ptitle">Staff Certifications / Licensing</div><div class="psub">Funeral director/embalmer licenses, expiration tracking, renewal alerts</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openCertModal()">+ Add Certification</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total on File</div><div class="kval" id="ct-total">0</div><div class="kt">All staff</div></div>
+    <div class="kpi"><div class="klbl">Expiring Within 60 Days</div><div class="kval" id="ct-expiring">0</div><div class="kt d">Needs renewal soon</div></div>
+    <div class="kpi"><div class="klbl">Expired</div><div class="kval" id="ct-expired">0</div><div class="kt d">Compliance risk</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Staff</th><th>Certification</th><th>License #</th><th>State</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="cttbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="certmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Certification</div>
+    <div class="fr"><div class="fg"><label>Staff Name</label><input id="ctname" placeholder="Staff member"></div><div class="fg"><label>Certification Type</label><select id="cttype"><option>Funeral Director License</option><option>Embalmer License</option><option>Crematory Operator License</option><option>CPR/First Aid</option><option>Other</option></select></div></div>
+    <div class="fr"><div class="fg"><label>License Number</label><input id="ctlicense"></div><div class="fg"><label>Issuing State</label><input id="ctstate" placeholder="OH"></div></div>
+    <div class="fr"><div class="fg"><label>Issue Date</label><input id="ctissue" type="date"></div><div class="fg"><label>Expiration Date</label><input id="ctexpire" type="date"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="ctnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCertModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCert()">Save Certification</button>
+    </div>
+  </div>
+</div>
+
+<!-- PET AFTERCARE / CREMATION -->
+<div class="panel" id="panel-pets">
+  <div class="ph"><div><div class="ptitle">Pet Aftercare</div><div class="psub">Optional module &mdash; same workflow shape as the human side, scoped down (no death-record/permit panel)</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openPetModal()">+ New Pet Case</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open Cases</div><div class="kval" id="pt-open">0</div><div class="kt">Not complete</div></div>
+    <div class="kpi"><div class="klbl">Completed</div><div class="kval" id="pt-complete">0</div><div class="kt">All time</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Pet</th><th>Species</th><th>Owner</th><th>Service Type</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="pttbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="petmodal">
+  <div class="mbox">
+    <div class="mtitle">New / Edit Pet Case</div>
+    <div class="fr"><div class="fg"><label>Pet Name</label><input id="ptname"></div><div class="fg"><label>Species</label><input id="ptspecies" placeholder="Dog, cat, bird..."></div></div>
+    <div class="fr"><div class="fg"><label>Owner Name</label><input id="ptowner"></div><div class="fg"><label>Owner Phone</label><input id="ptphone"></div></div>
+    <div class="fg"><label>Owner Email</label><input id="ptemail" type="email"></div>
+    <div class="fr"><div class="fg"><label>Date of Death</label><input id="ptdod" type="date"></div><div class="fg"><label>Service Type</label><select id="ptservice"><option>Private Cremation</option><option>Communal Cremation</option><option>Burial</option></select></div></div>
+    <div class="fg"><label>Status</label><select id="ptstatus"><option>Intake</option><option>Scheduled</option><option>In Progress</option><option>Completed</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="ptnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePetModal()">Cancel</button>
+      <button class="btn bp" onclick="savePet()">Save Pet Case</button>
+    </div>
+  </div>
+</div>
+
+<!-- KEEPSAKE / SYMPATHY GIFTS -->
+<div class="panel" id="panel-keepsakes">
+  <div class="ph"><div><div class="ptitle">Keepsake / Sympathy Gifts</div><div class="psub">Internal catalog and order tracking &mdash; jewelry, stationery, memorial cards</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openKeepsakeModal()">+ Add Catalog Item</button><button class="btn bp bs" onclick="openKeepsakeOrderModal()">+ New Order</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Catalog Items</div><div class="kval" id="ks-catalog">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">Open Orders</div><div class="kval" id="ks-open">0</div><div class="kt">Not delivered</div></div>
+    <div class="kpi"><div class="klbl">Delivered</div><div class="kval" id="ks-delivered">0</div><div class="kt">All time</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Catalog</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Category</th><th>Item</th><th>SKU</th><th>Cost</th><th>Retail</th></tr></thead>
+    <tbody id="kstbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Orders</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Item</th><th>Qty</th><th>Status</th><th>Order Date</th><th>Actions</th></tr></thead>
+    <tbody id="ksotbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="keepsakemodal">
+  <div class="mbox">
+    <div class="mtitle">Add Catalog Item</div>
+    <div class="fr"><div class="fg"><label>Category</label><select id="kscat"><option>Jewelry</option><option>Stationery</option><option>Memorial Cards</option><option>Other</option></select></div><div class="fg"><label>Item Name</label><input id="ksname" placeholder="Fingerprint Pendant"></div></div>
+    <div class="fr"><div class="fg"><label>SKU</label><input id="kssku"></div><div class="fg"><label>Cost ($)</label><input id="kscost" type="number"></div></div>
+    <div class="fg"><label>Retail ($)</label><input id="ksretail" type="number"></div>
+    <div class="fg"><label>Notes</label><textarea id="ksnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeKeepsakeModal()">Cancel</button>
+      <button class="btn bp" onclick="saveKeepsake()">Save Item</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="keepsakeordermodal">
+  <div class="mbox">
+    <div class="mtitle">New Order</div>
+    <div class="fg"><label>Case</label><select id="ksordercase"></select></div>
+    <div class="fg"><label>Item</label><select id="ksorderitem"></select></div>
+    <div class="fg"><label>Quantity</label><input id="ksorderqty" type="number" value="1" min="1"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeKeepsakeOrderModal()">Cancel</button>
+      <button class="btn bp" onclick="saveKeepsakeOrder()">Create Order</button>
+    </div>
+  </div>
+</div>
+
     </main>
   </div>
 </div>
@@ -762,7 +963,7 @@ var DEFAULT_PINS={owner:'1234',director:'2345',staff:'3456'};
 var PINS=ld('leg_pins',null)||DEFAULT_PINS;
 
 var pbuf='',prole='owner',ceid=null,aiHist=[];
-var pyInvoiceId=null;
+var pyInvoiceId=null,acCompleteId=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -853,6 +1054,12 @@ function nav(id){
   if(id==='invoicing')rInvoicing();
   if(id==='obituary')rObituary();
   if(id==='memorial')rMemorial();
+  if(id==='aftercare')rAftercare();
+  if(id==='procession')rProcession();
+  if(id==='fleet')rFleet();
+  if(id==='certs')rCerts();
+  if(id==='pets')rPets();
+  if(id==='keepsakes')rKeepsakes();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -868,7 +1075,8 @@ function caseLabel(id){var c=cases().find(function(x){return x.id===id;});return
 function fillCaseSelects(){
   var opts=cases().map(function(c){return '<option value="'+c.id+'">'+H(c.case_number)+' -- '+H(c.decedent_name)+'</option>';}).join('');
   var needsBlank={cclogcase:1,bkcase:1,pltcase:1,pnlinkedcase:1};
-  ['dscase','cclogcase','rvcase','dccase','pmcase','bkcase','pltcase','crcase','pnlinkedcase','inscase','ivcase','obcase','mmcase'].forEach(function(id){
+  ['dscase','cclogcase','rvcase','dccase','pmcase','bkcase','pltcase','crcase','pnlinkedcase','inscase','ivcase','obcase','mmcase',
+   'accase','prcase','ksordercase'].forEach(function(id){
     var el=$(id);if(!el)return;
     var cur=el.value;
     el.innerHTML=(needsBlank[id]?'<option value="">'+(id==='bkcase'||id==='pltcase'?'(none)':'(none yet)')+'</option>':'')+opts;
@@ -951,6 +1159,25 @@ function seed(){
   st('leg_obituaries',[]);
   st('leg_memorials',[]);
   st('leg_guestbook',[]);
+  st('leg_aftercare',[]);
+  st('leg_processions',[]);
+  st('leg_vehicles',[
+    {id:'FV-1',type:'Hearse',name:'Hearse 1',vin:'',mileage:42100,notes:'',created_at:legLocalToday()},
+    {id:'FV-2',type:'Removal Van',name:'Removal Van 1',vin:'',mileage:61300,notes:'',created_at:legLocalToday()}
+  ]);
+  st('leg_maintenance',[]);
+  st('leg_certs',[
+    {id:'CT-1',staff_name:'Maria Chen',cert_type:'Funeral Director License',license_number:'FD-44210',issuing_state:'OH',
+      issue_date:'2022-01-15',expiration_date:'2027-01-15',notes:'',created_at:legLocalToday()},
+    {id:'CT-2',staff_name:'James Okoye',cert_type:'Embalmer License',license_number:'EM-88712',issuing_state:'OH',
+      issue_date:'2024-05-01',expiration_date:'2026-09-01',notes:'',created_at:legLocalToday()}
+  ]);
+  st('leg_petcases',[]);
+  st('leg_keepsakes',[
+    {id:'KS-1',category:'Jewelry',item_name:'Fingerprint Pendant',sku:'FP-PEND',cost:45,retail:120,notes:'',created_at:legLocalToday()},
+    {id:'KS-2',category:'Stationery',item_name:'Memorial Thank You Cards (25ct)',sku:'MTY-25',cost:12,retail:35,notes:'',created_at:legLocalToday()}
+  ]);
+  st('leg_keepsakeorders',[]);
   st('leg_seeded',true);
 }
 
@@ -1925,6 +2152,356 @@ function rMemorial(){
   $('mm-guestbook').textContent=guestbookEntries().length;
 }
 
+// ── DATA ACCESSORS (Phase 3) ──────────────────────────────────────────────
+function aftercareCheckins(){return ld('leg_aftercare',[]);}
+function processions(){return ld('leg_processions',[]);}
+function vehicles(){return ld('leg_vehicles',[]);}
+function maintenanceRecords(){return ld('leg_maintenance',[]);}
+function staffCerts(){return ld('leg_certs',[]);}
+function petCases(){return ld('leg_petcases',[]);}
+function keepsakeCatalog(){return ld('leg_keepsakes',[]);}
+function keepsakeOrders(){return ld('leg_keepsakeorders',[]);}
+function keepsakeLabel(id){var k=keepsakeCatalog().find(function(x){return x.id===id;});return k?k.item_name:'--';}
+
+// ── AFTERCARE / GRIEF-SUPPORT FOLLOW-UP ───────────────────────────────────
+function daysFromNow(days){var d=new Date();d.setDate(d.getDate()+days);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function generateAftercareSchedule(){
+  var caseId=$('accase').value;
+  if(!caseId){toast('Select a case first');return;}
+  var existing=aftercareCheckins().filter(function(a){return a.case_id===caseId;});
+  var plan=[{type:'1 Week',days:7},{type:'1 Month',days:30},{type:'1 Year',days:365}];
+  var list=aftercareCheckins();
+  var created=0;
+  plan.forEach(function(p){
+    if(existing.some(function(a){return a.checkin_type===p.type;}))return;
+    list.push({id:newId('AC'),case_id:caseId,checkin_type:p.type,due_date:daysFromNow(p.days),status:'Pending',completed_date:'',notes:'',created_at:legLocalToday()});
+    created++;
+  });
+  if(!created){toast('Standard schedule already exists for this case');return;}
+  st('leg_aftercare',list);rAftercare();
+  toast(created+' check-in(s) scheduled');
+}
+function openAftercareNoteModal(id){
+  acCompleteId=id;$('acnote').value='';
+  $('aftercarenotemodal').classList.add('on');
+}
+function closeAftercareNoteModal(){$('aftercarenotemodal').classList.remove('on');}
+async function confirmAftercareComplete(){
+  var list=aftercareCheckins();
+  var a=list.find(function(x){return x.id===acCompleteId;});if(!a)return;
+  a.status='Completed';a.completed_date=legLocalToday();a.notes=$('acnote').value.trim();
+  st('leg_aftercare',list);
+  closeAftercareNoteModal();rAftercare();
+  var syncResult=await sdnData('write','leg_aftercare',a);
+  toast(syncResult?'Check-in completed':'Completed on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rAftercare(){
+  fillCaseSelects();
+  var list=aftercareCheckins();
+  var pending=list.filter(function(a){return a.status==='Pending';});
+  $('ac-pending').textContent=pending.length;
+  var weekAhead=new Date(Date.now()+7*24*60*60*1000).getTime();
+  $('ac-dueweek').textContent=pending.filter(function(a){return new Date(a.due_date+'T00:00:00').getTime()<=weekAhead;}).length;
+  $('ac-completed').textContent=list.filter(function(a){return a.status==='Completed';}).length;
+  var today=legLocalToday();
+  var statusColors={Pending:'bw',Completed:'bg',Skipped:'bx'};
+  var tb=$('actbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(a){
+    var overdue=a.status==='Pending'&&a.due_date<today;
+    return '<tr><td>'+H(caseLabel(a.case_id))+'</td><td>'+H(a.checkin_type)+'</td>'+
+      '<td'+(overdue?' style="color:var(--danger);font-weight:700"':'')+'>'+fdate(a.due_date)+(overdue?' &#9888;':'')+'</td>'+
+      '<td><span class="badge '+(statusColors[a.status]||'bx')+'">'+H(a.status)+'</span></td><td>'+H(a.notes||'--')+'</td>'+
+      '<td>'+(a.status==='Pending'?'<button class="btn bp bs" onclick="openAftercareNoteModal(\''+a.id+'\')">Mark Complete</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No check-ins scheduled yet</td></tr>';
+}
+
+// ── PROCESSION GPS ─────────────────────────────────────────────────────────
+// Same real, one-shot Geolocation-API pattern as First Call Dispatch's
+// shareDispatchLocation() -- feature-detected, no fabricated live map, an
+// outbound Google Maps link plus an honest "last updated" timestamp. This
+// is the internal staff-facing view; see the panel's own disclosure about
+// what a real no-login family-facing link would additionally require.
+async function startProcession(){
+  var caseId=$('prcase').value,vehicle=$('prvehicle').value.trim();
+  if(!caseId){toast('Select a case');return;}
+  var rec={id:newId('PR'),case_id:caseId,status:'Active',lead_vehicle_label:vehicle||'Lead Vehicle',
+    started_at:new Date().toISOString(),ended_at:'',last_lat:null,last_lng:null,last_accuracy:null,last_updated_at:'',created_at:legLocalToday()};
+  var list=processions();list.push(rec);st('leg_processions',list);
+  $('prvehicle').value='';
+  rProcession();
+  var syncResult=await sdnData('write','leg_processions',rec);
+  toast(syncResult?'Procession started':'Started on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function shareProcessionLocation(id){
+  if(!('geolocation' in navigator)){toast('This browser does not support location sharing');return;}
+  navigator.geolocation.getCurrentPosition(async function(pos){
+    var list=processions();
+    var p=list.find(function(x){return x.id===id;});if(!p)return;
+    p.last_lat=pos.coords.latitude;p.last_lng=pos.coords.longitude;p.last_accuracy=pos.coords.accuracy;p.last_updated_at=new Date().toISOString();
+    st('leg_processions',list);rProcession();
+    var syncResult=await sdnData('write','leg_processions',p);
+    toast(syncResult?'Location shared':'Location saved on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  },function(err){
+    toast('Could not get location: '+(err&&err.message?err.message:'permission denied or unavailable'));
+  },{enableHighAccuracy:true,timeout:10000});
+}
+async function endProcession(id){
+  var list=processions();
+  var p=list.find(function(x){return x.id===id;});if(!p)return;
+  p.status='Ended';p.ended_at=new Date().toISOString();
+  st('leg_processions',list);rProcession();
+  var syncResult=await sdnData('write','leg_processions',p);
+  toast(syncResult?'Procession ended':'Ended on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rProcession(){
+  fillCaseSelects();
+  var list=processions();
+  $('pr-active').textContent=list.filter(function(p){return p.status==='Active';}).length;
+  var statusColors={Active:'bg',Ended:'bx'};
+  var tb=$('prtbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(p){
+    var locText='No location shared yet';
+    if(p.last_lat&&p.last_lng){
+      locText='<a href="https://www.google.com/maps?q='+p.last_lat+','+p.last_lng+'" target="_blank" rel="noopener">View on Map</a> ('+fdatetime(p.last_updated_at)+')';
+    }
+    return '<tr><td>'+H(caseLabel(p.case_id))+'</td><td>'+H(p.lead_vehicle_label)+'</td>'+
+      '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td><td>'+locText+'</td>'+
+      '<td>'+(p.status==='Active'?'<button class="btn bo bs" onclick="shareProcessionLocation(\''+p.id+'\')">Share Location</button> <button class="btn bo bs" onclick="endProcession(\''+p.id+'\')">End</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No procession sessions yet</td></tr>';
+}
+
+// ── FLEET / VEHICLE MAINTENANCE ───────────────────────────────────────────
+function openVehicleModal(){
+  ['flvname','flvvin','flvmileage','flvnotes'].forEach(function(f){$(f).value='';});
+  $('flvtype').value='Hearse';
+  $('vehiclemodal').classList.add('on');
+}
+function closeVehicleModal(){$('vehiclemodal').classList.remove('on');}
+async function saveVehicle(){
+  var name=$('flvname').value.trim();
+  if(!name){toast('Vehicle name required');return;}
+  var rec={id:newId('FV'),type:$('flvtype').value,name:name,vin:$('flvvin').value.trim(),
+    mileage:Number($('flvmileage').value)||0,notes:$('flvnotes').value.trim(),created_at:legLocalToday()};
+  var list=vehicles();list.push(rec);st('leg_vehicles',list);
+  closeVehicleModal();rFleet();
+  var syncResult=await sdnData('write','leg_vehicles',rec);
+  toast(syncResult?'Vehicle added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openMaintenanceModal(){
+  $('mtvehicle').innerHTML=vehicles().map(function(v){return '<option value="'+v.id+'">'+H(v.name)+'</option>';}).join('');
+  ['mtdate','mtmileage','mttype','mtcost','mtperformedby','mtparts','mtnextdate','mtnextmileage','mtnotes'].forEach(function(f){$(f).value='';});
+  $('mtdate').value=legLocalToday();
+  $('maintenancemodal').classList.add('on');
+}
+function closeMaintenanceModal(){$('maintenancemodal').classList.remove('on');}
+async function saveMaintenance(){
+  var vehicleId=$('mtvehicle').value,type=$('mttype').value.trim();
+  if(!vehicleId){toast('Select a vehicle');return;}
+  if(!type){toast('Service type required');return;}
+  var rec={id:newId('MT'),vehicle_id:vehicleId,service_date:$('mtdate').value||legLocalToday(),
+    service_type:type,mileage_at_service:Number($('mtmileage').value)||0,cost:Number($('mtcost').value)||0,
+    performed_by:$('mtperformedby').value.trim(),parts_sourcing_notes:$('mtparts').value.trim(),
+    next_service_due_date:$('mtnextdate').value,next_service_due_mileage:Number($('mtnextmileage').value)||0,
+    notes:$('mtnotes').value.trim(),created_at:legLocalToday()};
+  var list=maintenanceRecords();list.push(rec);st('leg_maintenance',list);
+  // Keep the vehicle's own mileage current -- the service record IS the
+  // real source for "how many miles does this vehicle have now."
+  if(rec.mileage_at_service){
+    var vlist=vehicles();
+    var v=vlist.find(function(x){return x.id===vehicleId;});
+    if(v&&rec.mileage_at_service>(Number(v.mileage)||0)){v.mileage=rec.mileage_at_service;st('leg_vehicles',vlist);}
+  }
+  closeMaintenanceModal();rFleet();
+  var syncResult=await sdnData('write','leg_maintenance',rec);
+  toast(syncResult?'Service logged':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rFleet(){
+  var vl=vehicles(),ml=maintenanceRecords();
+  $('fl-vehicles').textContent=vl.length;
+  var thisYear=legLocalToday().slice(0,4);
+  $('fl-thisyear').textContent=ml.filter(function(m){return (m.service_date||'').slice(0,4)===thisYear;}).length;
+  var thirtyOut=new Date(Date.now()+30*24*60*60*1000).getTime();
+  var dueSoon=ml.filter(function(m){return m.next_service_due_date&&new Date(m.next_service_due_date+'T00:00:00').getTime()<=thirtyOut;});
+  $('fl-due').textContent=dueSoon.length;
+  $('fl-vehicle-list').innerHTML=vl.length?vl.map(function(v){
+    var records=ml.filter(function(m){return m.vehicle_id===v.id;}).slice().reverse();
+    return '<div class="card"><div class="ch"><span class="ct">'+H(v.name)+'</span><span class="badge bx" style="margin-left:8px">'+H(v.type)+'</span>'+
+      '<span style="margin-left:auto;color:var(--muted);font-size:12px">'+(v.mileage||0).toLocaleString()+' mi</span></div>'+
+      '<div class="cb">'+(records.length?'<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Service</th><th>Mileage</th><th>Cost</th><th>Next Due</th></tr></thead><tbody>'+
+        records.map(function(m){
+          var overdue=m.next_service_due_date&&m.next_service_due_date<legLocalToday();
+          return '<tr><td>'+fdate(m.service_date)+'</td><td>'+H(m.service_type)+'</td><td>'+(m.mileage_at_service||'--')+'</td><td>'+fmt(m.cost)+'</td>'+
+            '<td'+(overdue?' style="color:var(--danger);font-weight:700"':'')+'>'+(m.next_service_due_date?fdate(m.next_service_due_date):'--')+(overdue?' &#9888;':'')+'</td></tr>';
+        }).join('')+'</tbody></table></div>':'<div style="color:var(--muted);font-size:12px">No service logged yet for this vehicle.</div>')+
+      '</div></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:24px">No vehicles tracked yet -- add one above.</div>';
+}
+
+// ── STAFF CERTIFICATIONS / LICENSING ──────────────────────────────────────
+// Status is computed live from today's date vs. expiration_date on every
+// render, not stored -- so it can never go stale the way a cached "status"
+// field would if nobody happened to open the panel around the actual
+// expiration date.
+function certStatus(exp){
+  if(!exp)return {label:'--',cls:'bx'};
+  var days=Math.floor((new Date(exp+'T00:00:00').getTime()-new Date(legLocalToday()+'T00:00:00').getTime())/(24*60*60*1000));
+  if(days<0)return {label:'Expired',cls:'br'};
+  if(days<=60)return {label:'Expiring Soon',cls:'bw'};
+  return {label:'Active',cls:'bg'};
+}
+function openCertModal(){
+  ceid=null;
+  ['ctname','ctlicense','ctstate','ctissue','ctexpire','ctnotes'].forEach(function(f){$(f).value='';});
+  $('cttype').value='Funeral Director License';
+  $('certmodal').classList.add('on');
+}
+function closeCertModal(){$('certmodal').classList.remove('on');}
+function editCert(id){
+  var c=staffCerts().find(function(x){return x.id===id;});if(!c)return;
+  ceid=id;
+  $('ctname').value=c.staff_name;$('cttype').value=c.cert_type;$('ctlicense').value=c.license_number||'';
+  $('ctstate').value=c.issuing_state||'';$('ctissue').value=c.issue_date||'';$('ctexpire').value=c.expiration_date||'';
+  $('ctnotes').value=c.notes||'';
+  $('certmodal').classList.add('on');
+}
+async function saveCert(){
+  var name=$('ctname').value.trim();
+  if(!name){toast('Staff name required');return;}
+  var rec={id:ceid||newId('CT'),staff_name:name,cert_type:$('cttype').value,license_number:$('ctlicense').value.trim(),
+    issuing_state:$('ctstate').value.trim(),issue_date:$('ctissue').value,expiration_date:$('ctexpire').value,
+    notes:$('ctnotes').value.trim(),created_at:legLocalToday()};
+  var list=staffCerts();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('leg_certs',list);
+  closeCertModal();rCerts();
+  var syncResult=await sdnData('write','leg_certs',rec);
+  toast(syncResult?'Certification saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rCerts(){
+  var list=staffCerts();
+  $('ct-total').textContent=list.length;
+  var expiring=0,expired=0;
+  list.forEach(function(c){var s=certStatus(c.expiration_date);if(s.label==='Expiring Soon')expiring++;if(s.label==='Expired')expired++;});
+  $('ct-expiring').textContent=expiring;
+  $('ct-expired').textContent=expired;
+  var tb=$('cttbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(c){
+    var s=certStatus(c.expiration_date);
+    return '<tr><td>'+H(c.staff_name)+'</td><td>'+H(c.cert_type)+'</td><td>'+H(c.license_number||'--')+'</td><td>'+H(c.issuing_state||'--')+'</td>'+
+      '<td>'+(c.expiration_date?fdate(c.expiration_date):'--')+'</td><td><span class="badge '+s.cls+'">'+s.label+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editCert(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No certifications on file yet</td></tr>';
+}
+
+// ── PET AFTERCARE / CREMATION ─────────────────────────────────────────────
+// Optional module, scoped down from the human-side workflow as specified --
+// no death-record/permit sub-panel; status field alone carries the
+// intake-through-disposition workflow instead of splitting into two panels.
+function openPetModal(){
+  ceid=null;
+  ['ptname','ptspecies','ptowner','ptphone','ptemail','ptdod','ptnotes'].forEach(function(f){$(f).value='';});
+  $('ptservice').value='Private Cremation';$('ptstatus').value='Intake';
+  $('petmodal').classList.add('on');
+}
+function closePetModal(){$('petmodal').classList.remove('on');}
+function editPet(id){
+  var p=petCases().find(function(x){return x.id===id;});if(!p)return;
+  ceid=id;
+  $('ptname').value=p.pet_name;$('ptspecies').value=p.species||'';$('ptowner').value=p.owner_name||'';
+  $('ptphone').value=p.owner_phone||'';$('ptemail').value=p.owner_email||'';$('ptdod').value=p.date_of_death||'';
+  $('ptservice').value=p.service_type;$('ptstatus').value=p.status;$('ptnotes').value=p.notes||'';
+  $('petmodal').classList.add('on');
+}
+async function savePet(){
+  var name=$('ptname').value.trim();
+  if(!name){toast('Pet name required');return;}
+  var rec={id:ceid||newId('PT'),pet_name:name,species:$('ptspecies').value.trim(),owner_name:$('ptowner').value.trim(),
+    owner_phone:$('ptphone').value.trim(),owner_email:$('ptemail').value.trim(),date_of_death:$('ptdod').value,
+    service_type:$('ptservice').value,status:$('ptstatus').value,notes:$('ptnotes').value.trim(),created_at:legLocalToday()};
+  var list=petCases();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('leg_petcases',list);
+  closePetModal();rPets();
+  var syncResult=await sdnData('write','leg_petcases',rec);
+  toast(syncResult?'Pet case saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rPets(){
+  var list=petCases();
+  $('pt-open').textContent=list.filter(function(p){return p.status!=='Completed';}).length;
+  $('pt-complete').textContent=list.filter(function(p){return p.status==='Completed';}).length;
+  var statusColors={Intake:'bw',Scheduled:'bb','In Progress':'bb',Completed:'bg'};
+  var tb=$('pttbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(p){
+    return '<tr><td>'+H(p.pet_name)+'</td><td>'+H(p.species||'--')+'</td><td>'+H(p.owner_name||'--')+'</td><td>'+H(p.service_type)+'</td>'+
+      '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editPet(\''+p.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No pet cases yet</td></tr>';
+}
+
+// ── KEEPSAKE / SYMPATHY GIFTS ──────────────────────────────────────────────
+function openKeepsakeModal(){
+  ['ksname','kssku','kscost','ksretail','ksnotes'].forEach(function(f){$(f).value='';});
+  $('kscat').value='Jewelry';
+  $('keepsakemodal').classList.add('on');
+}
+function closeKeepsakeModal(){$('keepsakemodal').classList.remove('on');}
+async function saveKeepsake(){
+  var name=$('ksname').value.trim();
+  if(!name){toast('Item name required');return;}
+  var rec={id:newId('KS'),category:$('kscat').value,item_name:name,sku:$('kssku').value.trim(),
+    cost:Number($('kscost').value)||0,retail:Number($('ksretail').value)||0,notes:$('ksnotes').value.trim(),created_at:legLocalToday()};
+  var list=keepsakeCatalog();list.push(rec);st('leg_keepsakes',list);
+  closeKeepsakeModal();rKeepsakes();
+  var syncResult=await sdnData('write','leg_keepsakes',rec);
+  toast(syncResult?'Catalog item saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openKeepsakeOrderModal(){
+  fillCaseSelects();
+  $('ksorderitem').innerHTML=keepsakeCatalog().map(function(k){return '<option value="'+k.id+'">'+H(k.item_name)+' -- '+fmt(k.retail)+'</option>';}).join('');
+  $('ksorderqty').value=1;
+  $('keepsakeordermodal').classList.add('on');
+}
+function closeKeepsakeOrderModal(){$('keepsakeordermodal').classList.remove('on');}
+async function saveKeepsakeOrder(){
+  var caseId=$('ksordercase').value,itemId=$('ksorderitem').value;
+  if(!caseId){toast('Select a case');return;}
+  if(!itemId){toast('No catalog items exist yet -- add one first');return;}
+  var rec={id:newId('KO'),case_id:caseId,item_id:itemId,quantity:Number($('ksorderqty').value)||1,
+    status:'Ordered',order_date:legLocalToday(),notes:'',created_at:legLocalToday()};
+  var list=keepsakeOrders();list.push(rec);st('leg_keepsakeorders',list);
+  closeKeepsakeOrderModal();rKeepsakes();
+  var syncResult=await sdnData('write','leg_keepsakeorders',rec);
+  toast(syncResult?'Order created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function advanceKeepsakeOrder(id){
+  var list=keepsakeOrders();
+  var o=list.find(function(x){return x.id===id;});if(!o)return;
+  var nextStatus={Ordered:'Received',Received:'Delivered'}[o.status];
+  if(!nextStatus)return;
+  o.status=nextStatus;st('leg_keepsakeorders',list);rKeepsakes();
+  var syncResult=await sdnData('write','leg_keepsakeorders',o);
+  toast(syncResult?'Order marked '+nextStatus:'Marked '+nextStatus+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rKeepsakes(){
+  fillCaseSelects();
+  var catalog=keepsakeCatalog(),orders=keepsakeOrders();
+  $('ks-catalog').textContent=catalog.length;
+  $('ks-open').textContent=orders.filter(function(o){return o.status!=='Delivered';}).length;
+  $('ks-delivered').textContent=orders.filter(function(o){return o.status==='Delivered';}).length;
+  var ktb=$('kstbody');
+  ktb.innerHTML=catalog.length?catalog.map(function(k){
+    return '<tr><td>'+H(k.category)+'</td><td>'+H(k.item_name)+'</td><td>'+H(k.sku||'--')+'</td><td>'+fmt(k.cost)+'</td><td>'+fmt(k.retail)+'</td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No catalog items yet</td></tr>';
+  var statusColors={Ordered:'bw',Received:'bb',Delivered:'bg'};
+  var otb=$('ksotbody');
+  otb.innerHTML=orders.length?orders.slice().reverse().map(function(o){
+    var nextStatus={Ordered:'Received',Received:'Delivered'}[o.status];
+    return '<tr><td>'+H(caseLabel(o.case_id))+'</td><td>'+H(keepsakeLabel(o.item_id))+'</td><td>'+o.quantity+'</td>'+
+      '<td><span class="badge '+(statusColors[o.status]||'bx')+'">'+H(o.status)+'</span></td><td>'+fdate(o.order_date)+'</td>'+
+      '<td>'+(nextStatus?'<button class="btn bo bs" onclick="advanceKeepsakeOrder(\''+o.id+'\')">Mark '+nextStatus+'</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No orders yet</td></tr>';
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 function init(){
   seed();
@@ -1932,6 +2509,7 @@ function init(){
   rDash();rCases();rDispatches();rMerch();rDocs();rPermits();
   rCustodyLog();
   rScheduling();rCemetery();rCremation();rPreneed();rInvoicing();rObituary();rMemorial();
+  rAftercare();rProcession();rFleet();rCerts();rPets();rKeepsakes();
 }
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('leg_license_key');
