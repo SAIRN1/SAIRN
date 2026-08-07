@@ -83,6 +83,7 @@ tr:hover td{background:var(--pt);}
 .bw{background:#FEF3C7;color:#92400E;}
 .br{background:#FEE2E2;color:#991B1B;}
 .bx{background:#F1F5F9;color:#475569;}
+.tw2{background:#EDE9FE;color:#7C3AED;}
 .srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
 .srow:last-child{border-bottom:none;}
 .slbl{font-size:13px;color:var(--muted);}
@@ -661,7 +662,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="kpi"><div class="klbl">Committed</div><div class="kval" id="c-committed">$0</div><div class="kt" id="c-committed-sub">PO'd or contracted</div></div>
     <div class="kpi"><div class="klbl">Actual</div><div class="kval" id="c-actual">$0</div><div class="kt" id="c-actual-sub">Invoiced to date</div></div>
     <div class="kpi"><div class="klbl">Variance</div><div class="kval" id="c-variance">$0</div><div class="kt" id="c-variance-sub">Budget less committed</div></div>
-    <div class="kpi"><div class="klbl">Lines Over</div><div class="kval" id="c-over">0</div><div class="kt" id="c-over-sub">Committed &gt; budget</div></div>
+    <div class="kpi"><div class="klbl">Critical Lines</div><div class="kval" id="c-over">0</div><div class="kt" id="c-over-sub">At or above 90% of budget</div></div>
   </div>
   <div class="card"><div class="cb">
     <div class="sbar">
@@ -676,7 +677,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="other">Other</option>
       </select>
     </div>
-    <div class="tw"><table><thead><tr><th>Job</th><th>Cost Code</th><th>Kind</th><th>Vendor / Crew</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Variance</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Cost Code</th><th>Kind</th><th>Vendor / Crew</th><th>Budget</th><th>Committed</th><th>Actual</th><th>Variance</th><th>Tier</th><th>Actions</th></tr></thead>
     <tbody id="ctbody"></tbody></table></div>
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Cost Code Roll-up</span></div><div class="cb" id="c-rollup"></div></div>
@@ -3842,7 +3843,7 @@ function rCostTbl(){
   var committed=list.reduce(function(s,c){return s+(c.committed||0);},0);
   var actual=list.reduce(function(s,c){return s+(c.actual||0);},0);
   var variance=budget-committed;
-  var over=list.filter(function(c){return (c.committed||0)>(c.budget||0);});
+  var over=list.filter(function(c){return costLineTier(c)==='critical';});
   $('c-budget').textContent=fmt(budget);
   $('c-committed').textContent=fmt(committed);
   $('c-actual').textContent=fmt(actual);
@@ -3853,16 +3854,18 @@ function rCostTbl(){
   $('c-variance-sub').className='kt'+(variance<0?' d':'');
   $('c-variance-sub').textContent=variance<0?'Over budget by '+fmt(Math.abs(variance)):'Budget less committed';
   $('c-over-sub').className='kt'+(over.length?' d':'');
-  $('c-over-sub').textContent=over.length?'Committed > budget':'All lines within budget';
+  $('c-over-sub').textContent=over.length?'Committed+actual at or above 90% of budget':'No lines at critical tier';
   $('c-committed-sub').className='kt'+(committed>budget?' d':'');
   $('c-actual-sub').className='kt'+(actual>budget?' d':'');
 
   var tb=$('ctbody');
-  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No cost lines match</td></tr>';}
+  if(!list.length){tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px;">No cost lines match</td></tr>';}
   else{
     tb.innerHTML=list.map(function(c){
       var v=(c.budget||0)-(c.committed||0);
       var col=v<0?'var(--danger)':'var(--ok)';
+      var tier=costLineTier(c);
+      var tierCell=tier==='critical'?'<span class="badge br">Critical</span>':tier==='warning'?'<span class="badge tw2">Warning</span>':tier==='watch'?'<span class="badge bb">Watch</span>':'<span style="color:var(--muted)">--</span>';
       return '<tr><td>'+H(jobLabel(c.job_id))+'</td>'+
         '<td><strong>'+H(c.cost_code)+'</strong></td>'+
         '<td>'+H(KIND[c.kind]||c.kind||'')+'</td>'+
@@ -3871,6 +3874,7 @@ function rCostTbl(){
         '<td>'+fmt(c.committed)+'</td>'+
         '<td>'+fmt(c.actual)+'</td>'+
         '<td><strong style="color:'+col+'">'+(v<0?'-':'')+fmt(Math.abs(v))+'</strong></td>'+
+        '<td>'+tierCell+'</td>'+
         '<td><button class="btn bo bs" onclick="editCost(\''+H(c.id)+'\')">Edit</button></td></tr>';
     }).join('');
   }
@@ -3885,7 +3889,8 @@ function rCostTbl(){
   $('c-rollup').innerHTML=keys.length?keys.map(function(k){
     var b=byCode[k].budget,cm=byCode[k].committed;
     var pct=b>0?Math.round(cm/b*100):0;
-    var col=cm>b?'var(--danger)':pct>90?'var(--warn)':'var(--ok)';
+    var tier=costLineTier({budget:b,committed:cm,actual:0});
+    var col=tier?TIER_COLOR[tier]:'var(--ok)';
     return '<div class="srow"><span class="slbl">'+H(k)+'</span><span class="sval" style="color:'+col+'">'+fmt(cm)+' / '+fmt(b)+' &middot; '+pct+'%</span></div>'+
       '<div class="pbar"><div class="pfill" style="width:'+Math.min(100,pct)+'%;background:'+col+'"></div></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No cost lines in scope</div>';
