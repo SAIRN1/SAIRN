@@ -28,6 +28,9 @@
     ]
   },
   "model": "sonnet",
+  "env": {
+    "DISABLE_AUTOUPDATER": "1"
+  },
   "hooks": {
     "PostToolUse": [
       {
@@ -90,5 +93,8 @@
       }
     ]
   },
-  "outputStyle": "silent"
+  "outputStyle": "silent",
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
+  }
 }

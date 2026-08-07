@@ -1,13 +1,13 @@
 ---
 name: sairn-guardian-v2
-description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-07-26 — was listed as 11, missing SAIRNhr and SAIRNacc). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNfuneral, SAIRNmechanical, SAIRNhr, SAIRNacc. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 27 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
+description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-07-26 — was listed as 11, missing SAIRNhr and SAIRNacc). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNfuneral, SAIRNmechanical, SAIRNhr, SAIRNacc. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 28 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
 ---
 
 # SAIRN Guardian v2
 
 Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automatic. Zero tolerance.
 
-## The 27 Checks
+## The 28 Checks
 
 ### Architecture (5)
 1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly
@@ -80,9 +80,38 @@ flagged below as a known open item)
     the phrase-list scan (`coming next build`, `TODO`, etc.) stays —
     it's 6-true/1-false and catches real fabricated-honesty gaps.
 
+### Cross-app identifier collisions (1, added 2026-08-03 — numbered 28, not
+27, since 27 above already exists; same known-collision-disclosure pattern
+as the Navigation section's 16/16 and the Non-functional-buttons section's
+27/26 above, not silently overwritten)
+28. **Anywhere a role name, table name, or token/credential value is shared
+    across more than one SAIRN app, verify it's explicitly scoped — not
+    just "the value happens to match."** Found building StoneDesk's
+    per-employee RBAC: `api/sd-data.js`'s employees WRITE branch trusted a
+    client-supplied `body.app_id==='sairnbiz'` string with zero
+    verification (any bearer of a shop's license key could set that field).
+    The real fix (`api/_lib/auth.js`'s `verifySessionToken(token,
+    license_hash, expectedApp)`) still shipped with the SAME bug class
+    twice more in the same session: `api/sd-auth.js`'s `setup` action and
+    `api/sd-data.js`'s employees READ gate both called `verifySessionToken`
+    *without* the `expectedApp` argument — since `'owner'` is a valid role
+    in both StoneDesk's and SAIRNbiz's role vocabularies, a valid SAIRNbiz
+    owner token could have silently passed StoneDesk-only checks. Caught
+    only by manual self-review before push, not by any automated check —
+    hence this entry, plus the companion Semgrep rule
+    (`.semgrep/verify-session-token-app-scope.yml`) that now blocks any
+    `verifySessionToken($TOKEN, $HASH)` call missing the third argument.
+    **Mechanical check:** grep every cross-app-shared table/role/constant
+    name for each call site that reads or checks it, and confirm each site
+    also checks an app-scoping value (an `app_id`/`expectedApp`/equivalent
+    parameter that's cryptographically or structurally tied to a specific
+    app) — not just that the shared name/value matched. A value shared
+    across apps without an explicit scope check is a collision waiting to
+    be found by an attacker instead of a review.
+
 ---
 
-## Check 0 — Run BEFORE the 27 checks, every time, non-negotiable
+## Check 0 — Run BEFORE the 28 checks, every time, non-negotiable
 
 Added 2026-07-26 after finding SAIRNbiz was entirely non-functional in production
 (a parse error broke the whole app's JS) and after finding 14 of ~18 "remaining"
@@ -335,6 +364,9 @@ Guardian v2 blocks the push if any of these fail:
 - Check 22 (API keys in HTML)
 - Check 25 (unescaped user content)
 - Check 26 (unescaped AI-generated content)
+- Check 28 (cross-app identifier collision, added 2026-08-03) — same
+  severity class as 22/25/26: an unscoped shared role/table/token check is
+  an auth bypass waiting to be found, not a style nit.
 - `vercel.json` config check (see below) — a `buildCommand` over Vercel's
   256-char schema limit doesn't just fail loudly, it takes the whole
   production site down while looking like nothing happened.

@@ -1,0 +1,48 @@
+---
+name: sairn-master-orientation
+description: 'Read this FIRST, every session, before anything else. One consolidated index of every real lesson learned across a very long SAIRN build session — not a replacement for the other skills, a map to them plus the handful of cross-cutting rules that apply to literally every task regardless of which app or feature is being touched.'
+---
+
+# SAIRN Master Orientation
+
+## The 10 cross-cutting rules — apply to every task, no exceptions
+
+1. **Verify, never trust.** A "deployed"/"pushed"/"complete" claim — including your own — is unverified until checked against the real source (GitHub, the live site, the actual schema). Compaction and long sessions produce confident-sounding false claims. This cost real time twice tonight (a fabricated "SAIRNbuild deployed" claim, a stale "SAIRNbuild doesn't exist" finding that went stale after real work happened).
+
+2. **Self-review is not independent review.** The session that wrote code checking its own work shares its own blind spot. Anything claimed "complete" needs a genuinely separate review pass. (`sairn-precommit-gate`)
+
+3. **Byte-verification isn't scope-verification.** Confirming final bytes match doesn't confirm the diff was scoped correctly — a whole-file rewrite (encoding change, unintended re-save) can hide inside a byte-verified push. Check diff size against intended scope. (`sairn-guardian-v2`)
+
+4. **Grep before creating.** Before a new storage key or a function targeting a new DOM container: check if it already exists. This single habit would have prevented the majority of real bugs found across every app tonight. (`sairn-software-architect`)
+
+5. **Real function ≠ correct math ≠ honest visual signal.** Three distinct bug classes, all real, all found this session: fabricated data (no function at all), wrong math (a real function, wrong formula), and static/misleading visuals (a real correct number, wrong color). Check all three, not just the first. (`sairn-adversarial-reviewer`, `sairn-visual-review`)
+
+6. **Never type a secret anywhere but its real destination.** A credential typed into chat, a terminal command, or a wrong file is compromised the moment it's typed — revoke and replace, don't just stop using it. Only ever enter a real secret directly into its actual destination file via a text editor.
+
+7. **Canonical checkout only.** Verify working directory matches the one real, current checkout before trusting anything — multiple stale local copies caused real confusion tonight.
+
+8. **"100%" means every known item resolved, not correctly prioritized.** Prioritization order (risk first) governs sequence; it doesn't excuse a known minor bug riding along under a "done" claim. (`sairn-decision-gate`)
+
+9. **Scanners built for one app need portability verification before trusting on another.** An identical alarming result across two different apps is often the tool not recognizing either app's real pattern, not two real matching bugs. (`sairn-portfolio-triage`)
+
+10. **Silence is enforced by convention, not a hard gate — with one real nuance found 2026-08-07.** Two distinct sources of unwanted output exist: model-generated narration (governed by output-style/CLAUDE.md, compliance-based, needs restating when it slips), and a separate Claude Code infrastructure feature — "a periodic progress heartbeat for long-running tool calls that previously went silent" — which is harness-level, not model-generated, and NOT touched by outputStyle at all. No specific disable-toggle for the heartbeat was found in a real search; don't assume one exists without checking again. Separately, a real, relevant bug fix was found in Claude Code's own changelog: "Auto mode boundaries — Fixed auto mode not respecting explicit user boundaries ('don't push', 'wait for X before Y') even when the action would otherwise be allowed." If a session is running a version older than this fix, `claude update` may genuinely help with both narration and general boundary-compliance — check the installed version against the changelog before assuming it's purely a repetition problem.
+
+## Tool index — what to reach for, by task type
+
+| Task | Tools/Skills |
+|---|---|
+| Any code edit | `sairn-guardian-v2` (mandatory), `node --check`, div-balance/nav-panel checks |
+| Merging a real feature/fix | `sairn-adversarial-reviewer` (4 personas), `ponytail-review` |
+| Anything visible/rendered | `sairn-visual-review` (browser must be focused — see its Environment Requirement) |
+| New app/feature architecture | `sairn-software-architect`, `sairn-mobile-sync` (if field/phone-facing) |
+| Should we build this / is this claim true | `sairn-decision-gate` (Bid/No-Bid, Premortem, NIST AI RMF) |
+| Checking another app's real state | `sairn-portfolio-triage` (4 scanners: duplicate_global, missing_dom_target, panel_nesting, key_collision) |
+| End of session / low capacity | `sairn-session-handoff` — write it proactively, before a hard cutoff |
+| Before any commit | `sairn-precommit-gate` — routes to the right skill above for that specific change |
+| Hard, repeated, unclear bug | `systematic-debugging` — after 3+ failed fixes, question the architecture, not the next patch |
+| Greenfield build | `brainstorming` → `writing-plans` → `executing-plans`, spec approved before any code |
+| Simplification pass | `ponytail-review` — finds what to delete, not just what to fix |
+
+## What this skill is NOT
+
+Not a replacement for reading the specific skill relevant to the task at hand — this is the map, not the territory. When a task clearly needs `sairn-visual-review`'s full checklist or `sairn-decision-gate`'s three frameworks, go read that skill directly. This exists so a fresh session (or one recovering from a compaction/context gap) gets oriented in one read, not so the other 10 skills stop mattering.
