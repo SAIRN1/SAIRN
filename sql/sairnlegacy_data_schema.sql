@@ -5,6 +5,17 @@
 -- leg_-prefixed resources will work for SAIRNlegacy. Every statement is
 -- idempotent (create table if not exists), safe to re-run.
 --
+-- CORRECTED (first run failed, 42601: syntax error at "'svc only
+-- leg_aftercare'") -- the RLS-loop DO block below used %L (string-literal
+-- quoting, single quotes) for the policy name passed to DROP POLICY /
+-- CREATE POLICY. Both statements need the policy name as an IDENTIFIER
+-- (double-quote quoting), not a string literal -- `drop policy if exists
+-- 'x' on t` is not valid syntax the same way `drop policy if exists "x"
+-- on t` is. Fixed by using %I (identifier quoting) for the policy-name
+-- placeholder in both statements -- this is the exact same bug for all 36
+-- tables since one loop generates every one of them, not a per-table
+-- issue; fixing the format string once fixes all 36.
+--
 -- WHY THIS FILE EXISTS (2026-08-07): same root gap as SAIRNdesign hit and
 -- fixed the same day. SAIRNlegacy's client (sairnlegacy.html) calls the
 -- shared sdnData() helper -- the same generically-named function every
@@ -327,9 +338,9 @@ begin
   ])
   loop
     execute format('alter table public.%I enable row level security', t);
-    execute format('drop policy if exists %L on public.%I', 'svc only ' || t, t);
+    execute format('drop policy if exists %I on public.%I', 'svc only ' || t, t);
     execute format(
-      'create policy %L on public.%I for all using (auth.role() = ''service_role'') with check (auth.role() = ''service_role'')',
+      'create policy %I on public.%I for all using (auth.role() = ''service_role'') with check (auth.role() = ''service_role'')',
       'svc only ' || t, t
     );
     execute format('grant select, insert, update, delete on public.%I to service_role', t);
