@@ -83,7 +83,9 @@ tr:hover td{background:var(--pt);}
 .bw{background:#FEF3C7;color:#92400E;}
 .br{background:#FEE2E2;color:#991B1B;}
 .bx{background:#F1F5F9;color:#475569;}
-.tw2{background:#EDE9FE;color:#7C3AED;}
+.t-watch{background:#DBEAFE;color:var(--tier-watch);}
+.t-warn{background:#EDE9FE;color:var(--tier-warning);}
+.t-crit{background:#FEE2E2;color:var(--tier-critical);}
 .srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
 .srow:last-child{border-bottom:none;}
 .slbl{font-size:13px;color:var(--muted);}
@@ -3815,8 +3817,9 @@ function costScope(){
 // moves, not after.
 function costLineTier(c){
   var budget=c.budget||0;
-  if(budget<=0)return null;
-  var ratio=((c.committed||0)+(c.actual||0))/budget;
+  var spend=(c.committed||0)+(c.actual||0);
+  if(budget<=0)return spend>0?'critical':null;
+  var ratio=spend/budget;
   if(ratio>=0.90)return 'critical';
   if(ratio>=0.80)return 'warning';
   if(ratio>=0.70)return 'watch';
@@ -3824,6 +3827,7 @@ function costLineTier(c){
 }
 var TIER_LABEL={critical:'Critical',warning:'Warning',watch:'Watch'};
 var TIER_COLOR={critical:'var(--tier-critical)',warning:'var(--tier-warning)',watch:'var(--tier-watch)'};
+var TIER_BADGE={critical:'t-crit',warning:'t-warn',watch:'t-watch'};
 // Job-level = the WORST tier among that job's own lines (OR-rollup, not
 // an average) -- a job with one critical line is a critical job, even
 // if its other lines are fine.
@@ -3861,12 +3865,15 @@ function rCostTbl(){
   var tb=$('ctbody');
   if(!list.length){tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px;">No cost lines match</td></tr>';}
   else{
+    var allCostsForTier=costs();
     tb.innerHTML=list.map(function(c){
       var v=(c.budget||0)-(c.committed||0);
       var col=v<0?'var(--danger)':'var(--ok)';
       var tier=costLineTier(c);
-      var tierCell=tier==='critical'?'<span class="badge br">Critical</span>':tier==='warning'?'<span class="badge tw2">Warning</span>':tier==='watch'?'<span class="badge bb">Watch</span>':'<span style="color:var(--muted)">--</span>';
-      return '<tr><td>'+H(jobLabel(c.job_id))+'</td>'+
+      var tierCell=tier?('<span class="badge '+TIER_BADGE[tier]+'">'+TIER_LABEL[tier]+'</span>'):'<span style="color:var(--muted)">--</span>';
+      var jobTier=jobTierFromCosts(c.job_id, allCostsForTier);
+      var jobTierCell=jobTier?(' <span class="badge '+TIER_BADGE[jobTier]+'">'+TIER_LABEL[jobTier]+'</span>'):'';
+      return '<tr><td>'+H(jobLabel(c.job_id))+jobTierCell+'</td>'+
         '<td><strong>'+H(c.cost_code)+'</strong></td>'+
         '<td>'+H(KIND[c.kind]||c.kind||'')+'</td>'+
         '<td>'+H(c.vendor||'')+'</td>'+
@@ -3988,10 +3995,10 @@ function rDash(){
   // costScope(), so this is correct regardless of Job Costing's own
   // current filter selection.
   var allCosts=costs();
-  js.forEach(function(j){
+  act.forEach(function(j){
     var t=jobTierFromCosts(j.id, allCosts);
     if(t==='warning'||t==='critical'){
-      att.push({t:H(j.client)+' cost overrun risk ('+TIER_LABEL[t]+')',b:TIER_LABEL[t],c:t==='critical'?'br':'bw'});
+      att.push({t:H(j.client)+' cost overrun risk ('+TIER_LABEL[t]+')',b:TIER_LABEL[t],c:TIER_BADGE[t]});
     }
   });
   // Compliance expiry used to be visible only if someone opened the

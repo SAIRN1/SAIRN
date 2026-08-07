@@ -564,6 +564,22 @@ standing "no code without explicit approval" rule.
   (functions) + Task 3 Step 4 (retirement). ✓
 - §4 (surfacing on Job Costing + Dashboard) — Task 3 (panel) + Task 4
   (dashboard), with the attention-list refinement flagged above. ✓
+  **Correction (2026-08-07, post-review fix wave):** this line originally
+  claimed full coverage, but that claim was wrong. §4's third requirement
+  — "wherever jobs are listed/filtered in this panel, each job shows its
+  rolled-up tier flag" — was never actually implemented in Task 3. Task 3
+  added the line-level tier badge and the roll-up card color, but not the
+  job-level rolled-up flag on the Job Costing panel itself. This was an
+  undisclosed gap: Task 3's own review passed it as "complete," and this
+  Self-Review section incorrectly marked §4 as fully covered on top of
+  that. It was caught by the final whole-branch review (Important #5,
+  `.superpowers/sdd/2026-08-07-sairnbuild-ai-budget-early-warning/
+  progress.md`) and fixed in the post-review fix wave (job-level
+  `jobTierFromCosts(c.job_id, costs())` badge added next to `jobLabel()`
+  in `rCostTbl()`'s row template). Leaving the original ✓ unedited would
+  misstate this document's own history — noting the correction here
+  instead, per this project's "corrections are not optional, name what
+  changed" standard.
 - §5 (role gating) — **not implementable as specified; flagged as a
   deviation requiring explicit confirmation before Task 4**, not
   silently dropped or silently faked. ✓ (as a disclosed gap, not a
