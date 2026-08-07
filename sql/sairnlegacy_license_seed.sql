@@ -1,0 +1,43 @@
+-- sql/sairnlegacy_license_seed.sql
+-- Provisions a demo license_keys row for SAIRNlegacy
+--
+-- WHY THIS EXISTS: sairnlegacy.html's own gate error message names this
+-- exact key ("Invalid key format. Try LEG-PINNACLE-2026"), matching the
+-- app's demo company "Pinnacle Family Funeral Home" -- but no license_keys
+-- row for it was ever created. Confirmed absent by checking both
+-- sql/demo_license_keys_seed.sql (SAIRNbiz/SAIRNgrounds/SAIRNscape only)
+-- and sql/sairndesign_license_seed.sql (sairndesign only), and by a live
+-- curl against api/sd-data.js returning 401 INVALID_LICENSE for
+-- LEG-PINNACLE-2026. Same root gap SAIRNdesign had, same fix.
+--
+-- COLUMN LIST: not re-derived here -- reusing the exact column set
+-- sql/demo_license_keys_seed.sql already confirmed live via PostgREST's
+-- column-existence probe: key, status, customer_email, app_id, plan,
+-- stripe_subscription_id. No trial_ends_at -- confirmed absent on the
+-- live table by that same probe.
+--
+-- customer_email/plan match the exact demo@pinnaclestone.example / 'demo'
+-- pattern every other demo row already uses -- not a new convention.
+--
+-- Uses WHERE NOT EXISTS rather than ON CONFLICT, same reasoning as every
+-- other license seed file in this repo: no tracked CREATE TABLE for
+-- license_keys (owned by a separate, not-yet-built generation system per
+-- api/_lib/license.js's own header), so a UNIQUE constraint on `key`
+-- can't be confirmed without live DB access -- ON CONFLICT against a
+-- column with no confirmed matching constraint fails with 42P10.
+--
+-- Verify after running:
+--
+--   curl -s -X POST https://sairn.vercel.app/api/sd-data \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer LEG-PINNACLE-2026' \
+--     -d '{"action":"read","resource":"leg_cases"}'
+--
+-- 401 INVALID_LICENSE -> row still absent, this file has not been run.
+-- 200 with "provisioned":false -> license row is good, but
+-- sql/sairnlegacy_data_schema.sql has NOT been run yet.
+-- 200 with "provisioned":true -> both migrations confirmed live.
+
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+select 'LEG-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnlegacy', 'demo', null
+where not exists (select 1 from public.license_keys where key = 'LEG-PINNACLE-2026');

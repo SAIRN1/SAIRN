@@ -66,7 +66,16 @@ const RESOURCES = {
   sdn_clients: true, sdn_projects: true, sdn_specitems: true, sdn_proposals: true, sdn_vendors: true,
   sdn_samplerequests: true, sdn_team: true, sdn_moodboards: true, sdn_colorcodes: true, sdn_pos: true,
   sdn_invoices: true, sdn_timeentries: true, sdn_schedule: true, sdn_samples: true, sdn_contracts: true,
-  sdn_referrals: true, sdn_discounts: true, sdn_roomdims: true
+  sdn_referrals: true, sdn_discounts: true, sdn_roomdims: true,
+  // SAIRNlegacy (2026-08-07) -- see sql/sairnlegacy_data_schema.sql. All 36 prefixed leg_.
+  leg_aftercare: true, leg_bookings: true, leg_cases: true, leg_catererorders: true, leg_caterers: true,
+  leg_certs: true, leg_clergy: true, leg_clergybookings: true, leg_cremations: true, leg_custodylog: true,
+  leg_deathrecords: true, leg_dispatches: true, leg_documents: true, leg_facilities: true, leg_floristorders: true,
+  leg_florists: true, leg_gplservices: true, leg_guestbook: true, leg_insurance: true, leg_invoices: true,
+  leg_keepsakeorders: true, leg_keepsakes: true, leg_liverybookings: true, leg_liveryvendors: true,
+  leg_maintenance: true, leg_memorials: true, leg_merch_catalog: true, leg_merch_units: true, leg_monuments: true,
+  leg_obituaries: true, leg_petcases: true, leg_plots: true, leg_preneed: true, leg_processions: true,
+  leg_tributes: true, leg_vehicles: true
 };
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
@@ -154,7 +163,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles' } });
     return;
   }
 
@@ -1606,6 +1615,53 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairndesign', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdesign data tables are not set up yet — run sql/sairndesign_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // ── SAIRNLEGACY: 36 resources (2026-08-07, same sync-gap fix as SAIRNdesign) ────────────
+    // sairnlegacy.html already called every one of these leg_-prefixed at 55 call sites across
+    // its 26 panels since Phase 1 -- unlike SAIRNdesign, no client-side resource renaming was
+    // needed here, only this missing backend half. Same generic parametrized read/write pair as
+    // SDN_RESOURCES above (one pair covering all 36, not 36 copy-pasted blocks) -- see that
+    // block's own comment for why. See sql/sairnlegacy_data_schema.sql for the id-column naming
+    // rule (mechanical singularization, not a bespoke name per table -- also logged there).
+    const LEG_RESOURCES = {
+      leg_aftercare: 'aftercare_id', leg_bookings: 'booking_id', leg_cases: 'case_id',
+      leg_catererorders: 'catererorder_id', leg_caterers: 'caterer_id', leg_certs: 'cert_id',
+      leg_clergy: 'clergy_id', leg_clergybookings: 'clergybooking_id', leg_cremations: 'cremation_id',
+      leg_custodylog: 'custodylog_id', leg_deathrecords: 'deathrecord_id', leg_dispatches: 'dispatch_id',
+      leg_documents: 'document_id', leg_facilities: 'facility_id', leg_floristorders: 'floristorder_id',
+      leg_florists: 'florist_id', leg_gplservices: 'gplservice_id', leg_guestbook: 'guestbook_id',
+      leg_insurance: 'insurance_id', leg_invoices: 'invoice_id', leg_keepsakeorders: 'keepsakeorder_id',
+      leg_keepsakes: 'keepsake_id', leg_liverybookings: 'liverybooking_id', leg_liveryvendors: 'liveryvendor_id',
+      leg_maintenance: 'maintenance_id', leg_memorials: 'memorial_id', leg_merch_catalog: 'merch_catalog_id',
+      leg_merch_units: 'merch_unit_id', leg_monuments: 'monument_id', leg_obituaries: 'obituary_id',
+      leg_petcases: 'petcase_id', leg_plots: 'plot_id', leg_preneed: 'preneed_id',
+      leg_processions: 'procession_id', leg_tributes: 'tribute_id', leg_vehicles: 'vehicle_id'
+    };
+    if (LEG_RESOURCES[resource] && action === 'read') {
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (LEG_RESOURCES[resource] && action === 'write') {
+      const idCol = LEG_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlegacy', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });

@@ -1253,6 +1253,7 @@ function chkPin(){
     $('pin').classList.remove('on');$('app').classList.add('on');
     $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
     init();
+    sdnHydrateAll().then(function(merged){if(merged)init();});
   }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
 }
 function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
@@ -3195,6 +3196,42 @@ function init(){
   rScheduling();rCemetery();rCremation();rPreneed();rInvoicing();rObituary();rMemorial();
   rAftercare();rProcession();rFleet();rCerts();rPets();rKeepsakes();
   rMonument();rFlorist();rCaterer();rClergy();rLivery();rTribute();
+}
+
+// ── SERVER HYDRATION (2026-08-07) ────────────────────────────────────────
+// Same read-side fix as SAIRNdesign's sdnHydrateAll(): every sdnData() call
+// in this app was write-only until now -- even once writes reach the
+// server (see sql/sairnlegacy_data_schema.sql), a second device/browser
+// would still show nothing from the first, because nothing ever pulled
+// server data back down. Runs once per login, additive-only merge by id
+// (a locally-present id is never overwritten by this merge -- a real,
+// disclosed limitation: two devices editing the SAME record id between
+// hydrations is not resolved here, only each device's distinct new
+// records showing up on the other is). Runs after init() renders local/
+// seed data immediately, then re-runs init() once merged data lands.
+var LEG_SYNC_RESOURCES=['leg_aftercare','leg_bookings','leg_cases','leg_catererorders','leg_caterers','leg_certs',
+  'leg_clergy','leg_clergybookings','leg_cremations','leg_custodylog','leg_deathrecords','leg_dispatches',
+  'leg_documents','leg_facilities','leg_floristorders','leg_florists','leg_gplservices','leg_guestbook',
+  'leg_insurance','leg_invoices','leg_keepsakeorders','leg_keepsakes','leg_liverybookings','leg_liveryvendors',
+  'leg_maintenance','leg_memorials','leg_merch_catalog','leg_merch_units','leg_monuments','leg_obituaries',
+  'leg_petcases','leg_plots','leg_preneed','leg_processions','leg_tributes','leg_vehicles'];
+async function sdnHydrateAll(){
+  if(!legLicenseKey())return;
+  var results=await Promise.all(LEG_SYNC_RESOURCES.map(function(key){return sdnData('read',key);}));
+  var anyMerged=false;
+  for(var i=0;i<LEG_SYNC_RESOURCES.length;i++){
+    var key=LEG_SYNC_RESOURCES[i],serverRows=results[i];
+    if(!serverRows||!Array.isArray(serverRows))continue; // read failed, no license, or not provisioned -- leave local data as-is
+    var local=ld(key,[]);
+    var localIds={};
+    local.forEach(function(r){if(r&&r.id)localIds[r.id]=true;});
+    var addedHere=false;
+    serverRows.forEach(function(r){
+      if(r&&r.id&&!localIds[r.id]){local.push(r);localIds[r.id]=true;addedHere=true;}
+    });
+    if(addedHere){st(key,local);anyMerged=true;}
+  }
+  return anyMerged;
 }
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('leg_license_key');
