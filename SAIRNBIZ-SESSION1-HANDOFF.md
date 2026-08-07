@@ -198,6 +198,28 @@ so a real success response was never observed. That requires a genuine
 SAIRNbiz owner/hr session token, which no session so far has had. Do not
 mark this item closed on that basis either.
 
+**Same class as SAIRNgrounds/SAIRNscape's blocked round-trip verification
+(`SAIRN-PLATFORM-SESSION1-HANDOFF.md` §4.2) — accepted, external, not
+being chased tonight.** Confirmed via a real test, not assumed: SAIRNbiz's
+own placeholder demo key (`SB-PINNACLE-2026`, matching SAIRNbuild's real,
+provisioned `BLD-PINNACLE-2026`) returns `INVALID_LICENSE: Unknown
+license key` live — no usable SAIRNbiz license exists for this session
+to test with, same root gap (no license-key-generation system yet,
+tied to next week's Stripe work) as the other two apps. One added
+nuance for whoever picks this up: SAIRNbiz also needs a real per-employee
+PIN credential on top of a license (StoneDesk/SAIRNbiz's own auth layer,
+`sb_employee_auth`) — SAIRNgrounds/SAIRNscape don't have that second
+layer, so Stripe/licensing shipping alone won't automatically hand a
+future session a working SAIRNbiz test credential the way it will for
+the other two. Logged, not chased.
+
+**SAIRNbiz status as of 2026-08-07: fully clean.** All CRITICAL/
+visual-review findings fixed (§ above), Blocker 1 fixed, Blocker 2
+confirmed a documentation gap not a real bug (already fixed, corrected
+above), Blocker 3 genuinely closed (live-verified). The only remaining
+item is the license/credential-dependent full round-trip verification,
+accepted and deferred with SAIRNgrounds/SAIRNscape's matching gap.
+
 **Downstream implication (unchanged, still holds):** before this
 session's badge fix, this failure was invisible — the old hardcoded
 "Synced" badge and fire-and-forget upsert meant a user would never know
