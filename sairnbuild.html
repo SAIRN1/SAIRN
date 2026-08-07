@@ -1924,6 +1924,18 @@ function nav(id){
   // Selecting a destination must dismiss the drawer, or on a phone the user
   // taps a panel and is left staring at the menu that covers it.
   closeNav();
+  // Modal-bleed fix (2026-08-07): every one of this app's 37 .modal
+  // instances is only ever hidden by its own close function removing the
+  // 'on' class (.modal.on{display:flex} / .modal{display:none} is the
+  // full mechanism, confirmed -- no modal here uses inline style.display
+  // instead). Since .modal is position:fixed, it was never actually tied
+  // to its parent .panel's visibility, so leaving one open and navigating
+  // away left it floating on top of every subsequently-viewed panel.
+  // Closing generically here (not one call site at a time) covers all 37
+  // uniformly and any future modal added the same way, same fix shape as
+  // StoneDesk's two prior widget-bleed fixes but applied at the single
+  // shared choke point instead of per-modal.
+  document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   var p=$('panel-'+id),b=$('sb-'+id);
