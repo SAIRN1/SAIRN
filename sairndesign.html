@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNdesign - Interior Design Operations</title>
+<style>
+:root{--p:#6366F1;--pd:#4338CA;--pt:#EEF2FF;--pb:#A5B4FC;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* PIN */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
+.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s;}
+.pdot.on{background:var(--p);border-color:var(--p);}
+.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;}
+.pkey:hover{background:var(--pt);border-color:var(--p);}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+.proleselect{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;}
+.prolebtn{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);}
+.prolebtn.sel{background:var(--p);color:#fff;border-color:var(--p);}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+/* SIDEBAR */
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;transition:all .15s;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+/* MAIN */
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--p);}
+.bs{padding:6px 12px;font-size:12px;}
+/* KPIs */
+.krow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+/* FORMS */
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;transition:border .2s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--p);}
+textarea{resize:vertical;min-height:80px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fr3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+label.chk{display:flex;align-items:center;gap:8px;text-transform:none;font-weight:500;color:var(--text);font-size:13px;}
+label.chk input{width:auto;}
+/* AI */
+.achat{background:var(--bg);border-radius:10px;padding:14px;min-height:180px;max-height:320px;overflow-y:auto;font-size:13px;line-height:1.6;margin-bottom:12px;white-space:pre-wrap;}
+.amu{background:var(--p);color:#fff;border-radius:10px 10px 2px 10px;padding:8px 12px;margin:6px 0 6px 40px;font-size:13px;}
+.ama{background:#fff;border:1px solid var(--border);border-radius:10px 10px 10px 2px;padding:8px 12px;margin:6px 40px 6px 0;font-size:13px;white-space:pre-wrap;}
+.air{display:flex;gap:8px;}
+.air input{flex:1;}
+.qts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.qt{background:var(--pt);border:1px solid var(--pb);color:var(--pd);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}
+.qt:hover{background:var(--p);color:#fff;}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+/* STAT */
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:13px;color:var(--muted);}
+.sval{font-size:14px;font-weight:700;}
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),
+    linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,
+    linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),
+    linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;
+  background-repeat:no-repeat;
+  background-color:#fff;
+  background-size:24px 100%,24px 100%,10px 100%,10px 100%;
+  background-attachment:local,local,scroll,scroll;
+}
+.tw table{min-width:640px;}
+.tw:focus-visible{outline:2px solid var(--p);outline-offset:-2px;}
+.navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+#scrim.on{display:block;}
+
+@media (max-width:768px){
+  .navtog{display:flex;align-items:center;justify-content:center;}
+  aside{position:fixed;top:56px;left:0;bottom:0;width:250px;z-index:50;
+        transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);}
+  aside.on{transform:translateX(0);}
+  main{padding:14px;}
+  header{padding:0 12px;gap:10px;}
+  .hlogo{font-size:17px;}
+  .hbadge{display:none;}
+  .huser{display:none;}
+  .hbtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
+  .sb{min-height:44px;font-size:14px;}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  .btn.bs{min-height:40px;}
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .kval{font-size:20px;}
+  .g2,.g3{grid-template-columns:1fr;}
+  .fr,.fr3{grid-template-columns:1fr;}
+  .sbar{flex-wrap:wrap;}
+  .sbar input,.sbar select{width:100%!important;flex:1 1 100%;}
+  .ph{gap:8px;}
+  .ptitle{font-size:19px;}
+  .pa{margin-left:0;width:100%;}
+  .mbox{width:94%;padding:20px;}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media (max-width:420px){
+  .krow{grid-template-columns:1fr 1fr;}
+}
+@media print{
+  #gate,#pin,aside,header .hr,.pa,.navtog,#scrim{display:none!important;}
+  main{padding:0;}
+  .panel{display:block!important;}
+  body{font-size:12px;}
+  .card{box-shadow:none;border:1px solid #ddd;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNdesign</div>
+    <div class="gsub">Interior Design Operations &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="SDN-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNdesign</div>
+    <div class="prole">Enter your 4-digit PIN</div>
+    <div class="pdots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
+    <div class="ppad">
+      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
+      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
+      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
+      <button class="pkey" onclick="pk('C')">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')">&larr;</button>
+    </div>
+    <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="aside">&#9776;</button>
+    <div class="hlogo">SAIRNdesign</div>
+    <div class="hbadge">Interior Design Ops</div>
+    <div class="hr">
+      <span class="huser" id="huser">Owner</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div id="scrim" onclick="closeNav()"></div>
+  <div class="wrap">
+    <aside id="aside" aria-label="Main navigation">
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
+      <div class="ss">Projects</div>
+      <button class="sb" id="sb-clients" onclick="nav('clients')"><span class="sico">&#128100;</span>Clients &amp; Projects</button>
+      <button class="sb" id="sb-spec" onclick="nav('spec')"><span class="sico">&#128203;</span>Spec Sheet</button>
+      <button class="sb" id="sb-proposals" onclick="nav('proposals')"><span class="sico">&#128196;</span>Proposals</button>
+      <div class="ss">Vendors</div>
+      <button class="sb" id="sb-vendors" onclick="nav('vendors')"><span class="sico">&#127970;</span>Vendor Directory</button>
+      <div class="sfoot">SAIRNdesign v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 1</span></div>
+    </aside>
+    <main>
+
+<!-- DASHBOARD -->
+<div class="panel on" id="panel-dashboard">
+  <div class="ph"><div><div class="ptitle">Studio Dashboard</div><div class="psub">Real-time overview &middot; Pinnacle Interior Design</div></div>
+  <div class="pa"><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Active Projects</div><div class="kval" id="k-projects">0</div><div class="kt">In progress</div></div>
+    <div class="kpi"><div class="klbl">Pipeline Value</div><div class="kval" id="k-pipeline">$0</div><div class="kt">Draft + Sent proposals</div></div>
+    <div class="kpi"><div class="klbl">Avg Markup</div><div class="kval" id="k-markup">0%</div><div class="kt">Cost &rarr; retail, all spec items</div></div>
+    <div class="kpi"><div class="klbl">One-of-a-Kind Items</div><div class="kval" id="k-ooak">0</div><div class="kt" id="k-ooak-sub">Reserved / total</div></div>
+    <div class="kpi"><div class="klbl">Total Clients</div><div class="kval" id="k-clients">0</div><div class="kt">All time</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><span class="ct">Projects Needing Attention</span></div><div class="cb" id="d-attention"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Recent Proposals</span></div><div class="cb" id="d-proposals"></div></div>
+  </div>
+</div>
+
+<!-- AI -->
+<div class="panel" id="panel-ai">
+  <div class="ph"><div><div class="ptitle">AI Studio Assistant</div><div class="psub">Powered by Claude &middot; Design ops, vendors, proposals</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="clrAI()">Clear</button></div></div>
+  <div class="card"><div class="cb">
+    <div class="qts">
+      <span class="qt" onclick="askAI('Draft a client intake questionnaire for a new interior design project')">Intake Questionnaire</span>
+      <span class="qt" onclick="askAI('What should a trade markup range look like for FF&E in residential interior design?')">Markup Guidance</span>
+      <span class="qt" onclick="askAI('Write a polite follow-up email to a client who has not responded to a sent proposal')">Follow-up Email</span>
+      <span class="qt" onclick="askAI('What are common install-sequencing mistakes in furniture and finish delivery?')">Sequencing Tips</span>
+    </div>
+    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about clients, vendors, proposals, or studio operations.</div></div>
+    <div class="air"><input id="ainp" placeholder="Ask about clients, specs, vendors, proposals..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
+  </div></div>
+</div>
+
+<!-- CLIENTS & PROJECTS -->
+<div class="panel" id="panel-clients">
+  <div class="ph"><div><div class="ptitle">Clients &amp; Projects</div><div class="psub">Client roster and the projects tied to each</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('clients')">Export CSV</button><button class="btn bo bs" onclick="openProjectModal()">+ Add Project</button><button class="btn bp bs" onclick="openClientModal()">+ Add Client</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Clients</div><div class="kval" id="c-total">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Active Projects</div><div class="kval" id="c-active">0</div><div class="kt">In progress</div></div>
+    <div class="kpi"><div class="klbl">Avg Project Budget</div><div class="kval" id="c-avgbudget">$0</div><div class="kt">Across all projects</div></div>
+    <div class="kpi"><div class="klbl">Completed Projects</div><div class="kval" id="c-completed">0</div><div class="kt">All time</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Clients</span></div><div class="cb">
+    <div class="sbar"><input id="csrch" placeholder="Search by name, company..." oninput="filterClients()"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Name</th><th>Company</th><th>Phone</th><th>Email</th><th>Status</th><th>Projects</th><th>Actions</th></tr></thead>
+    <tbody id="ctbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Projects</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Project</th><th>Client</th><th>Budget</th><th>Spec Total</th><th>Target Install</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="ptbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="clientmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Client</div>
+    <div class="fr"><div class="fg"><label>Name</label><input id="clname" placeholder="Sarah Whitfield"></div><div class="fg"><label>Company (optional)</label><input id="clcompany" placeholder="Whitfield Holdings"></div></div>
+    <div class="fr"><div class="fg"><label>Phone</label><input id="clphone" placeholder="(440) 555-0100"></div><div class="fg"><label>Email</label><input id="clemail" type="email" placeholder="sarah@example.com"></div></div>
+    <div class="fg"><label>Address</label><input id="claddr" placeholder="123 Lakeshore Dr, Avon Lake OH"></div>
+    <div class="fg"><label>Status</label><select id="clstatus"><option>Lead</option><option>Active</option><option>Completed</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="clnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeClientModal()">Cancel</button>
+      <button class="btn bp" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="projectmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Project</div>
+    <div class="fg"><label>Client</label><select id="pjclient"></select></div>
+    <div class="fg"><label>Project Name</label><input id="pjname" placeholder="Lakeshore Living Room Refresh"></div>
+    <div class="fr"><div class="fg"><label>Budget ($)</label><input id="pjbudget" type="number" placeholder="45000"></div><div class="fg"><label>Target Install Date</label><input id="pjtarget" type="date"></div></div>
+    <div class="fg"><label>Status</label><select id="pjstatus"><option>Planning</option><option>In Progress</option><option>Complete</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="pjnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeProjectModal()">Cancel</button>
+      <button class="btn bp" onclick="saveProject()">Save Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPEC SHEET -->
+<div class="panel" id="panel-spec">
+  <div class="ph"><div><div class="ptitle">Spec Sheet</div><div class="psub">FF&amp;E line items per project &middot; cost, retail, lead time, reservation</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('spec')">Export CSV</button><button class="btn bo bs" onclick="runComplianceCheck()">Run Compliance Check</button><button class="btn bp bs" onclick="openSpecModal()">+ Add Item</button></div></div>
+  <div class="fg" style="max-width:360px"><label>Project</label><select id="specproject" onchange="rSpec()"></select></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Line Items</div><div class="kval" id="s-count">0</div><div class="kt">Selected project</div></div>
+    <div class="kpi"><div class="klbl">Total Cost</div><div class="kval" id="s-cost">$0</div><div class="kt">Wholesale</div></div>
+    <div class="kpi"><div class="klbl">Total Retail</div><div class="kval" id="s-retail">$0</div><div class="kt" id="s-budget-sub">vs project budget</div></div>
+    <div class="kpi"><div class="klbl">Avg Markup</div><div class="kval" id="s-markup">0%</div><div class="kt">Retail over cost</div></div>
+    <div class="kpi"><div class="klbl">One-of-a-Kind</div><div class="kval" id="s-ooak">0</div><div class="kt">On this project</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">AI Compliance Check</span></div><div class="cb" id="s-compliance"><div style="color:var(--muted)">Run a check to review this project's spec list against budget, lead times, and install sequencing before the proposal ships.</div></div></div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Item</th><th>Vendor</th><th>SKU</th><th>Cost</th><th>Retail</th><th>Markup</th><th>Lead Time</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="stbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="specmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Spec Item</div>
+    <div class="fg"><label>Project</label><select id="spproject"></select></div>
+    <div class="fr"><div class="fg"><label>Item</label><input id="spitem" placeholder="Vintage Persian Rug, 9x12"></div><div class="fg"><label>Vendor</label><input id="spvendor" placeholder="Restoration Hardware"></div></div>
+    <div class="fr"><div class="fg"><label>SKU</label><input id="spsku" placeholder="RH-4471"></div><div class="fg"><label>Lead Time (weeks)</label><input id="spleadtime" type="number" placeholder="6"></div></div>
+    <div class="fr"><div class="fg"><label>Cost ($, wholesale)</label><input id="spcost" type="number" placeholder="2400" oninput="specMarkupPreview()"></div><div class="fg"><label>Retail ($, client price)</label><input id="spretail" type="number" placeholder="4200" oninput="specMarkupPreview()"></div></div>
+    <div class="fg"><div class="srow" style="border:none;padding:0"><span class="slbl">Markup</span><span class="sval" id="spmarkup-preview">0%</span></div></div>
+    <div class="fg"><label>Status</label><select id="spstatus"><option>Specified</option><option>Ordered</option><option>Received</option><option>Installed</option></select></div>
+    <div class="fg"><label class="chk"><input type="checkbox" id="spooak">One-of-a-kind / limited-stock / vintage item</label></div>
+    <div class="fg"><label>Notes</label><textarea id="spnotes" rows="2"></textarea></div>
+    <div class="perr" id="spec-err" role="alert" aria-live="polite"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeSpecModal()">Cancel</button>
+      <button class="btn bp" onclick="saveSpec()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROPOSALS -->
+<div class="panel" id="panel-proposals">
+  <div class="ph"><div><div class="ptitle">Proposals</div><div class="psub">Client-facing quotes generated from the Spec Sheet</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('proposals')">Export CSV</button><button class="btn bp bs" onclick="openProposalModal()">+ New Proposal</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Open Proposals</div><div class="kval" id="q-open">0</div><div class="kt">Draft + Sent</div></div>
+    <div class="kpi"><div class="klbl">Pipeline Value</div><div class="kval" id="q-pipeline">$0</div><div class="kt">Open, retail total</div></div>
+    <div class="kpi"><div class="klbl">Win Rate</div><div class="kval" id="q-winrate">0%</div><div class="kt" id="q-winrate-sub">Of decided proposals</div></div>
+    <div class="kpi"><div class="klbl">Avg Deal Size</div><div class="kval" id="q-avgdeal">$0</div><div class="kt">Approved proposals</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Title</th><th>Client</th><th>Project</th><th>Items</th><th>Retail Total</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="qtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="proposalmodal">
+  <div class="mbox">
+    <div class="mtitle">New Proposal</div>
+    <div class="fg"><label>Project</label><select id="qproject" onchange="rProposalItemPicker()"></select></div>
+    <div class="fg"><label>Title</label><input id="qtitle" placeholder="Lakeshore Living Room - Proposal 1"></div>
+    <div class="fg"><label>Spec Items to Include</label><div id="qitempicker" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:8px"></div></div>
+    <div class="fg"><div class="srow" style="border:none;padding:0"><span class="slbl">Retail Total</span><span class="sval" id="qtotal-preview">$0</span></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeProposalModal()">Cancel</button>
+      <button class="btn bp" onclick="saveProposal()">Create Proposal</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="proposaldetailmodal">
+  <div class="mbox" style="width:640px">
+    <div class="mtitle">Proposal</div>
+    <div id="qdetail-body"></div>
+  </div>
+</div>
+
+<!-- VENDOR DIRECTORY -->
+<div class="panel" id="panel-vendors">
+  <div class="ph"><div><div class="ptitle">Vendor Directory</div><div class="psub">Suppliers, contacts, and typical lead times</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="csv('vendors')">Export CSV</button><button class="btn bp bs" onclick="openVendorModal()">+ Add Vendor</button></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Vendors</div><div class="kval" id="v-total">0</div><div class="kt">All categories</div></div>
+    <div class="kpi"><div class="klbl">Avg Lead Time</div><div class="kval" id="v-leadtime">0 wks</div><div class="kt">Typical, across vendors</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar"><input id="vsrch" placeholder="Search by name, category..." oninput="filterVendors()"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>Typical Lead Time</th><th>Rating</th><th>Actions</th></tr></thead>
+    <tbody id="vtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="vendormodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Vendor</div>
+    <div class="fr"><div class="fg"><label>Vendor Name</label><input id="vname" placeholder="Restoration Hardware"></div><div class="fg"><label>Category</label><select id="vcat"><option>Furniture</option><option>Lighting</option><option>Textiles</option><option>Flooring</option><option>Art &amp; Accessories</option><option>Antiques &amp; Vintage</option><option>Other</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Contact Name</label><input id="vcontact" placeholder="Jamie Rourke"></div><div class="fg"><label>Phone</label><input id="vphone" placeholder="(800) 555-0100"></div></div>
+    <div class="fr"><div class="fg"><label>Email</label><input id="vemail" type="email"></div><div class="fg"><label>Typical Lead Time (weeks)</label><input id="vleadtime" type="number" placeholder="8"></div></div>
+    <div class="fg"><label>Rating (1-5)</label><input id="vrating" type="number" min="1" max="5" placeholder="4"></div>
+    <div class="fg"><label>Notes</label><textarea id="vnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeVendorModal()">Cancel</button>
+      <button class="btn bp" onclick="saveVendor()">Save Vendor</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairndesign';
+var DATA_API='https://sairn.vercel.app/api/sd-data';
+var PROXY='https://sairn.vercel.app/api/claude';
+
+// Same "today, as YYYY-MM-DD, LOCAL not UTC" fix already applied platform-
+// wide (StoneDesk/SAIRNbuild/SAIRNgrounds/SAIRNscape all hit and fixed the
+// same toISOString() UTC-midnight bug) -- built correctly from the start
+// here instead of repeating that bug a fifth time.
+function sdnLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+window.sdnLocalToday=sdnLocalToday;
+
+// Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
+// validation is server-side in api/_lib/license.js against license_keys.
+// No SDN- row is provisioned yet (same expected state SAIRNbuild shipped
+// in -- see sql/demo_license_keys_seed.sql for the pattern used to
+// provision one when this app is ready to be tested for real).
+var VALID=['SDN-','DEMO-','SAIRN-'];
+// Simple role picker (Phase 1 scaffold, same shape as SAIRNbuild's
+// DEFAULT_PINS -- NOT the later per-employee server-auth upgrade StoneDesk/
+// SAIRNbiz/SAIRNgrounds/SAIRNscape graduated to. Loaded from storage if a
+// Settings panel ever makes these editable, falling back to defaults.
+var DEFAULT_PINS={owner:'1234',designer:'2345',office:'3456'};
+var PINS=ld('sdn_pins',null)||DEFAULT_PINS;
+
+var pbuf='',prole='owner',ceid=null,pjeid=null,speid=null,veid=null,qcurrentProjectId=null;
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
+
+// ── LICENSE IDENTITY -- single source of truth ───────────────────────────
+function sdnLicenseKey(){ return localStorage.getItem('sdn_license_key') || ''; }
+
+// sdnData()-equivalent, matches every other app's pattern exactly. All
+// server access goes through /api/sd-data with the license key as a bearer
+// token. NO client-side Supabase -- the anon key is locked out of every
+// table by design (confirmed platform-wide this session), and StoneDesk/
+// SAIRNbiz/SAIRNbuild all had to abandon or never attempt direct client
+// calls for exactly that reason.
+function sdnData(action,resource,payload){
+  var lic=sdnLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  return fetch(DATA_API,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      return d.data;
+    });
+  }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
+}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key format. Try SDN-PINNACLE-2026';return;}
+  localStorage.setItem('sdn_license_key',k);
+  $('gate').style.display='none';$('pin').classList.add('on');
+}
+function pk(k){$('perr').textContent='';
+  if(k==='C'){pbuf='';dots();return;}
+  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
+  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+}
+function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+function chkPin(){
+  var match=null;
+  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
+  if(match){
+    prole=match;st('sdn_role',prole);
+    $('pin').classList.remove('on');$('app').classList.add('on');
+    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
+    init();
+  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+}
+function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+function toggleNav(){
+  var a=$('aside');if(!a)return;
+  var open=a.classList.toggle('on');
+  $('scrim').classList.toggle('on',open);
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded',open?'true':'false');
+}
+function closeNav(){
+  var a=$('aside');if(a)a.classList.remove('on');
+  $('scrim').classList.remove('on');
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded','false');
+}
+
+function nav(id){
+  // Selecting a destination must dismiss the drawer, or on a phone the user
+  // taps a panel and is left staring at the menu that covers it.
+  closeNav();
+  // Close any open modal on nav -- built in from day one. SAIRNbuild shipped
+  // without this (nav() only ever toggled .panel/.sb, never .modal, which
+  // is position:fixed and independent of panel visibility) and it took a
+  // separate session to find and fix the resulting modal-bleed bug. Same
+  // fix, applied here before the bug could ever ship.
+  document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='dashboard')rDash();
+  if(id==='ai'){}
+  if(id==='clients')rClients();
+  if(id==='spec')rSpec();
+  if(id==='proposals')rProposals();
+  if(id==='vendors')rVendors();
+}
+
+// ── DATA ACCESSORS ────────────────────────────────────────────────────────
+function clients(){return ld('sdn_clients',[]);}
+function projects(){return ld('sdn_projects',[]);}
+function specItems(){return ld('sdn_specitems',[]);}
+function proposals(){return ld('sdn_proposals',[]);}
+function vendors(){return ld('sdn_vendors',[]);}
+
+function projectLabel(id){var p=projects().find(function(x){return x.id===id;});return p?p.name:'(unknown project)';}
+function clientLabel(id){var c=clients().find(function(x){return x.id===id;});return c?c.name:'(unknown client)';}
+function projectClientName(pj){var c=clients().find(function(x){return x.id===pj.client_id;});return c?c.name:'(no client)';}
+
+function itemMarkupPct(cost,retail){
+  cost=Number(cost)||0;retail=Number(retail)||0;
+  if(cost<=0)return 0;
+  return Math.round((retail-cost)/cost*100);
+}
+function projectSpecTotal(projectId){
+  return specItems().filter(function(s){return s.project_id===projectId;})
+    .reduce(function(sum,s){return sum+(Number(s.retail)||0);},0);
+}
+
+// ── SEED DATA ─────────────────────────────────────────────────────────────
+function seed(){
+  if(ld('sdn_seeded',false))return;
+  st('sdn_clients',[
+    {id:'CL-1',name:'Sarah Whitfield',company:'',phone:'(440) 555-0142',email:'sarah.whitfield@example.com',address:'315 Moore Rd, Avon Lake OH',status:'Active',notes:'Referred by Hartley project',created_at:sdnLocalToday()},
+    {id:'CL-2',name:'Marcus Delgado',company:'Delgado Property Group',phone:'(440) 555-0188',email:'marcus@delgadopg.com',address:'88 Lake Rd, Rocky River OH',status:'Active',notes:'Multi-unit, repeat client',created_at:sdnLocalToday()},
+    {id:'CL-3',name:'Priya Okafor',company:'',phone:'(440) 555-0227',email:'priya.okafor@example.com',address:'27 Bradley Rd, Bay Village OH',status:'Lead',notes:'First consult scheduled',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_projects',[
+    {id:'PJ-1',client_id:'CL-1',name:'Whitfield Living Room Refresh',budget:45000,target_install_date:'2026-10-15',status:'In Progress',notes:'',created_at:sdnLocalToday()},
+    {id:'PJ-2',client_id:'CL-2',name:'Delgado Two-Unit Interior',budget:120000,target_install_date:'2026-11-30',status:'Planning',notes:'',created_at:sdnLocalToday()},
+    {id:'PJ-3',client_id:'CL-1',name:'Whitfield Primary Bedroom',budget:18000,target_install_date:'2026-09-01',status:'In Progress',notes:'',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_specitems',[
+    {id:'SP-1',project_id:'PJ-1',item:'Vintage Persian Rug, 9x12',vendor:'Restoration Hardware',sku:'RH-4471',cost:2400,retail:4200,status:'Specified',lead_time_weeks:6,one_of_a_kind:true,reserved:false,reserved_for:'',notes:'',created_at:sdnLocalToday()},
+    {id:'SP-2',project_id:'PJ-1',item:'Sectional Sofa, Performance Velvet',vendor:'CB2 Trade',sku:'CB2-SEC-882',cost:3100,retail:5400,status:'Ordered',lead_time_weeks:14,one_of_a_kind:false,reserved:false,reserved_for:'',notes:'',created_at:sdnLocalToday()},
+    {id:'SP-3',project_id:'PJ-1',item:'Brass Floor Lamp',vendor:'Visual Comfort',sku:'VC-FL-201',cost:640,retail:1150,status:'Specified',lead_time_weeks:4,one_of_a_kind:false,reserved:false,reserved_for:'',notes:'',created_at:sdnLocalToday()},
+    {id:'SP-4',project_id:'PJ-2',item:'Custom Walnut Dining Table',vendor:'Local Artisan Woodworks',sku:'LAW-DT-014',cost:5200,retail:8900,status:'Specified',lead_time_weeks:10,one_of_a_kind:true,reserved:false,reserved_for:'',notes:'One-off commission piece',created_at:sdnLocalToday()},
+    {id:'SP-5',project_id:'PJ-2',item:'Area Rug, Wool Flatweave',vendor:'Restoration Hardware',sku:'RH-2290',cost:1800,retail:3100,status:'Specified',lead_time_weeks:8,one_of_a_kind:false,reserved:false,reserved_for:'',notes:'',created_at:sdnLocalToday()},
+    {id:'SP-6',project_id:'PJ-3',item:'Antique Brass Mirror, 1940s',vendor:'Estate Finds Vintage',sku:'EFV-MIR-009',cost:900,retail:1800,status:'Specified',lead_time_weeks:1,one_of_a_kind:true,reserved:false,reserved_for:'',notes:'True vintage, single piece',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_proposals',[
+    {id:'PR-1',project_id:'PJ-1',client_id:'CL-1',title:'Whitfield Living Room - Proposal 1',item_ids:['SP-1','SP-2','SP-3'],status:'Sent',sent_date:sdnLocalToday(),decided_date:'',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_vendors',[
+    {id:'VN-1',name:'Restoration Hardware',category:'Furniture',contact_name:'Jamie Rourke',phone:'(800) 555-0100',email:'trade@rh.example.com',lead_time_typical_weeks:6,rating:4,notes:'',created_at:sdnLocalToday()},
+    {id:'VN-2',name:'CB2 Trade',category:'Furniture',contact_name:'Alex Chen',phone:'(800) 555-0155',email:'trade@cb2.example.com',lead_time_typical_weeks:12,rating:4,notes:'',created_at:sdnLocalToday()},
+    {id:'VN-3',name:'Visual Comfort',category:'Lighting',contact_name:'Devon Marsh',phone:'(800) 555-0177',email:'trade@visualcomfort.example.com',lead_time_typical_weeks:4,rating:5,notes:'',created_at:sdnLocalToday()},
+    {id:'VN-4',name:'Local Artisan Woodworks',category:'Furniture',contact_name:'Theo Banks',phone:'(440) 555-0311',email:'theo@artisanwoodworks.example.com',lead_time_typical_weeks:10,rating:5,notes:'Custom commissions only',created_at:sdnLocalToday()},
+    {id:'VN-5',name:'Estate Finds Vintage',category:'Antiques & Vintage',contact_name:'Ruth Cole',phone:'(440) 555-0399',email:'ruth@estatefinds.example.com',lead_time_typical_weeks:1,rating:4,notes:'One-of-a-kind pieces, in-stock only',created_at:sdnLocalToday()}
+  ]);
+  st('sdn_seeded',true);
+}
+
+// ── CSV EXPORT ────────────────────────────────────────────────────────────
+function csv(kind){
+  var rows,name;
+  if(kind==='clients'){
+    rows=[['Name','Company','Phone','Email','Status']].concat(clients().map(function(c){return [c.name,c.company||'',c.phone||'',c.email||'',c.status];}));
+    name='clients';
+  }else if(kind==='spec'){
+    rows=[['Project','Item','Vendor','SKU','Cost','Retail','Markup %','Lead Time (wks)','Status','One of a Kind']].concat(specItems().map(function(s){return [projectLabel(s.project_id),s.item,s.vendor,s.sku,s.cost,s.retail,itemMarkupPct(s.cost,s.retail),s.lead_time_weeks,s.status,s.one_of_a_kind?'Yes':'No'];}));
+    name='spec-sheet';
+  }else if(kind==='proposals'){
+    rows=[['Title','Client','Project','Items','Retail Total','Status']].concat(proposals().map(function(p){return [p.title,clientLabel(p.client_id),projectLabel(p.project_id),(p.item_ids||[]).length,proposalTotal(p),p.status];}));
+    name='proposals';
+  }else if(kind==='vendors'){
+    rows=[['Vendor','Category','Contact','Phone','Email','Typical Lead Time (wks)','Rating']].concat(vendors().map(function(v){return [v.name,v.category,v.contact_name,v.phone,v.email,v.lead_time_typical_weeks,v.rating];}));
+    name='vendors';
+  }else return;
+  var text=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(text);
+  a.download='sairndesign-'+name+'-'+sdnLocalToday()+'.csv';a.click();
+}
+
+// ── AI ASSISTANT (generic) ────────────────────────────────────────────────
+var aiHist=[];
+function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about clients, specs, vendors, or studio operations.</div>';}
+function askAI(q){$('ainp').value=q;sendAI();}
+async function sendAI(){
+  var inp=$('ainp'),q=(inp.value||'').trim();
+  if(!q)return;
+  inp.value='';
+  var chat=$('achat');
+  if(chat.querySelector('div[style*="text-align:center"]'))chat.innerHTML='';
+  chat.innerHTML+='<div class="amu">'+H(q)+'</div>';
+  chat.scrollTop=chat.scrollHeight;
+  aiHist.push({role:'user',content:q});
+  var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
+  chat.scrollTop=chat.scrollHeight;
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
+        system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical.',
+        messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    thinking.textContent=text;
+    aiHist.push({role:'assistant',content:text});
+  }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
+  chat.scrollTop=chat.scrollHeight;
+}
+
+// ── SPEC SHEET / RESERVATION ─────────────────────────────────────────────
+// Same mechanism as StoneDesk's slab reservation (sdSlabs' status/
+// reservedFor fields), adapted for one-of-a-kind FF&E: a spec item flagged
+// one_of_a_kind carries its own reserved/reserved_for state. Checked by
+// SKU (the natural unique identifier already required on every line item)
+// rather than a separate item-catalog entity -- the real risk is two
+// different projects' spec sheets both specifying the SAME physical piece,
+// which SKU collision already catches without a bigger data model.
+function specSkuConflict(sku,excludeId){
+  sku=(sku||'').trim().toLowerCase();
+  if(!sku)return null;
+  return specItems().find(function(s){
+    return s.id!==excludeId && s.sku.trim().toLowerCase()===sku && s.reserved===true;
+  })||null;
+}
+
+function specMarkupPreview(){
+  var cost=Number($('spcost').value)||0,retail=Number($('spretail').value)||0;
+  $('spmarkup-preview').textContent=itemMarkupPct(cost,retail)+'%';
+}
+
+function openSpecModal(){
+  speid=null;fillProjectSelects();
+  ['spitem','spvendor','spsku','spleadtime','spcost','spretail','spnotes'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('spstatus').value='Specified';$('spooak').checked=false;$('spec-err').textContent='';
+  var pj=$('specproject').value;if(pj)$('spproject').value=pj;
+  specMarkupPreview();
+  $('specmodal').classList.add('on');
+}
+function closeSpecModal(){$('specmodal').classList.remove('on');}
+function editSpec(id){
+  var s=specItems().find(function(x){return x.id===id;});if(!s)return;
+  speid=id;fillProjectSelects();
+  $('spproject').value=s.project_id;$('spitem').value=s.item;$('spvendor').value=s.vendor;
+  $('spsku').value=s.sku;$('spleadtime').value=s.lead_time_weeks;$('spcost').value=s.cost;$('spretail').value=s.retail;
+  $('spstatus').value=s.status;$('spooak').checked=!!s.one_of_a_kind;$('spnotes').value=s.notes||'';
+  $('spec-err').textContent='';specMarkupPreview();
+  $('specmodal').classList.add('on');
+}
+async function saveSpec(){
+  var item=$('spitem').value.trim(),sku=$('spsku').value.trim();
+  if(!item){toast('Item name required');return;}
+  if(!sku){toast('SKU required (used to detect one-of-a-kind conflicts)');return;}
+  var ooak=$('spooak').checked;
+  if(ooak){
+    var conflict=specSkuConflict(sku,speid);
+    if(conflict){
+      $('spec-err').textContent='SKU "'+sku+'" is already reserved on "'+projectLabel(conflict.project_id)+'" ('+conflict.item+'). A one-of-a-kind item cannot be specified on two projects at once.';
+      return;
+    }
+  }
+  $('spec-err').textContent='';
+  var list=specItems();
+  var rec={
+    id:speid||newId('SP'),project_id:$('spproject').value,item:item,vendor:$('spvendor').value.trim(),
+    sku:sku,cost:Number($('spcost').value)||0,retail:Number($('spretail').value)||0,
+    status:$('spstatus').value,lead_time_weeks:Number($('spleadtime').value)||0,
+    one_of_a_kind:ooak,notes:$('spnotes').value.trim(),created_at:sdnLocalToday()
+  };
+  if(speid){
+    var existing=list.find(function(x){return x.id===speid;});
+    rec.reserved=existing?existing.reserved:false;rec.reserved_for=existing?existing.reserved_for:'';
+    list=list.map(function(x){return x.id===speid?rec:x;});
+  }else{
+    rec.reserved=false;rec.reserved_for='';
+    list.push(rec);
+  }
+  st('sdn_specitems',list);
+  closeSpecModal();rSpec();rDash();
+  var syncResult=await sdnData('write','specitems',rec);
+  toast(syncResult?'Spec item saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+
+async function runComplianceCheck(){
+  var pjId=$('specproject').value;
+  if(!pjId){toast('Select a project first');return;}
+  var pj=projects().find(function(x){return x.id===pjId;});if(!pj)return;
+  var items=specItems().filter(function(s){return s.project_id===pjId;});
+  var out=$('s-compliance');
+  if(!items.length){out.innerHTML='<div style="color:var(--muted)">No spec items on this project yet.</div>';return;}
+  // Deterministic checks first -- an AI call is not what computes the real
+  // numbers here, same "no AI call for what arithmetic already computes
+  // reliably" principle used across this platform (SAIRNbuild's AI Budget
+  // Early Warning, etc). AI reviews and narrates on top of these, it does
+  // not calculate them.
+  var total=items.reduce(function(s,x){return s+(Number(x.retail)||0);},0);
+  var overBudget=pj.budget>0 && total>pj.budget;
+  var todayMs=new Date(sdnLocalToday()+'T00:00:00').getTime();
+  var targetMs=pj.target_install_date?new Date(pj.target_install_date+'T00:00:00').getTime():null;
+  var lateItems=items.filter(function(x){
+    if(!targetMs)return false;
+    var arriveMs=todayMs+(Number(x.lead_time_weeks)||0)*7*24*60*60*1000;
+    return arriveMs>targetMs;
+  });
+  var findings=[];
+  if(overBudget)findings.push('Spec total ('+fmt(total)+') exceeds project budget ('+fmt(pj.budget)+') by '+fmt(total-pj.budget)+'.');
+  if(lateItems.length)findings.push(lateItems.length+' item(s) will not arrive by the target install date ('+fdate(pj.target_install_date)+') at current lead times: '+lateItems.map(function(x){return x.item;}).join(', ')+'.');
+  out.innerHTML='<div style="color:var(--muted)">Checking budget, lead times, and asking Claude to review for install-sequencing conflicts...</div>';
+  var itemLines=items.map(function(x){return '- '+x.item+' (SKU '+x.sku+', vendor '+x.vendor+'): cost '+fmt(x.cost)+', retail '+fmt(x.retail)+', lead time '+x.lead_time_weeks+' wks, status '+x.status+(x.one_of_a_kind?', ONE-OF-A-KIND':'');}).join('\n');
+  var system='You are a compliance and verification layer for an interior design studio\'s Spec Sheet -- decision support only, reviewing what a human designer already specified. You NEVER invent or suggest alternative furniture/products; you only review the exact list given for real conflicts: budget overage, lead times that will miss the install date, and install-sequencing issues a designer would flag (e.g. flooring or wall treatments should generally be scheduled before furniture placement, custom/one-of-a-kind pieces need earlier commitment). Cite the deterministic findings given to you plainly, then add anything else you see. This review must happen before the proposal ships to the client -- say so if you find anything. Keep it under 200 words, plain text, no markdown headers.';
+  var userMsg='Project: '+pj.name+'. Budget: '+fmt(pj.budget)+'. Target install date: '+fdate(pj.target_install_date)+'. Today: '+fdate(sdnLocalToday())+'.\nDeterministic findings already computed: '+(findings.length?findings.join(' '):'none.')+'\nFull spec list:\n'+itemLines;
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:400,system:system,messages:[{role:'user',content:userMsg}]})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    out.innerHTML='<div style="font-weight:700;margin-bottom:8px;'+(findings.length?'color:var(--danger)':'color:var(--ok)')+'">'+(findings.length?findings.length+' deterministic finding(s)':'No deterministic budget/lead-time conflicts')+'</div>'+
+      (findings.length?'<ul style="margin:0 0 10px 18px;padding:0">'+findings.map(function(f){return '<li style="margin-bottom:4px">'+H(f)+'</li>';}).join('')+'</ul>':'')+
+      '<div style="border-top:1px solid var(--border);padding-top:10px;white-space:pre-wrap">'+H(text)+'</div>';
+  }catch(e){
+    out.innerHTML='<div style="color:var(--danger)">Could not reach Claude for the narrative review. Deterministic findings: '+(findings.length?H(findings.join(' ')):'none.')+'</div>';
+  }
+}
+
+function fillProjectSelects(){
+  var opts=projects().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+' ('+H(projectClientName(p))+')</option>';}).join('');
+  ['spproject','specproject','qproject','pjclient'].forEach(function(id){
+    var el=$(id);if(!el)return;
+    if(id==='pjclient'){
+      el.innerHTML=clients().map(function(c){return '<option value="'+c.id+'">'+H(c.name)+'</option>';}).join('');
+    }else{
+      var cur=el.value;
+      el.innerHTML=(id==='specproject'?'<option value="">Select a project...</option>':'')+opts;
+      if(cur)el.value=cur;
+    }
+  });
+}
+
+function rSpec(){
+  fillProjectSelects();
+  var pjId=$('specproject').value;
+  var list=pjId?specItems().filter(function(s){return s.project_id===pjId;}):[];
+  var totalCost=list.reduce(function(s,x){return s+(Number(x.cost)||0);},0);
+  var totalRetail=list.reduce(function(s,x){return s+(Number(x.retail)||0);},0);
+  var avgMarkup=list.length?Math.round(list.reduce(function(s,x){return s+itemMarkupPct(x.cost,x.retail);},0)/list.length):0;
+  var ooakCount=list.filter(function(x){return x.one_of_a_kind;}).length;
+  $('s-count').textContent=list.length;
+  $('s-cost').textContent=fmt(totalCost);
+  $('s-retail').textContent=fmt(totalRetail);
+  var pj=projects().find(function(x){return x.id===pjId;});
+  if(pj&&pj.budget){
+    var over=totalRetail>pj.budget;
+    $('s-budget-sub').textContent=(over?'Over':'Under')+' '+fmt(pj.budget)+' budget by '+fmt(Math.abs(totalRetail-pj.budget));
+    $('s-budget-sub').className='kt'+(over?' d':'');
+  }else{$('s-budget-sub').textContent='No budget set on this project';$('s-budget-sub').className='kt';}
+  $('s-markup').textContent=avgMarkup+'%';
+  $('s-ooak').textContent=ooakCount;
+  var tb=$('stbody');
+  tb.innerHTML=list.length?list.map(function(s){
+    var lateFlag=false;
+    if(pj&&pj.target_install_date){
+      var arriveMs=new Date(sdnLocalToday()+'T00:00:00').getTime()+(Number(s.lead_time_weeks)||0)*7*24*60*60*1000;
+      lateFlag=arriveMs>new Date(pj.target_install_date+'T00:00:00').getTime();
+    }
+    return '<tr><td>'+H(s.item)+(s.one_of_a_kind?' <span class="badge '+(s.reserved?'br':'bb')+'">'+(s.reserved?'Reserved':'1-of-1')+'</span>':'')+'</td>'+
+      '<td>'+H(s.vendor)+'</td><td>'+H(s.sku)+'</td>'+
+      '<td>'+fmt(s.cost)+'</td><td>'+fmt(s.retail)+'</td>'+
+      '<td>'+itemMarkupPct(s.cost,s.retail)+'%</td>'+
+      '<td'+(lateFlag?' style="color:var(--danger);font-weight:700"':'')+'>'+s.lead_time_weeks+' wks'+(lateFlag?' &#9888;':'')+'</td>'+
+      '<td><span class="badge bx">'+H(s.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editSpec(\''+s.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">'+(pjId?'No spec items on this project yet':'Select a project above')+'</td></tr>';
+}
+
+// ── PROPOSALS ─────────────────────────────────────────────────────────────
+function proposalTotal(p){
+  return (p.item_ids||[]).reduce(function(sum,id){
+    var s=specItems().find(function(x){return x.id===id;});
+    return sum+(s?(Number(s.retail)||0):0);
+  },0);
+}
+function openProposalModal(){
+  fillProjectSelects();
+  $('qtitle').value='';
+  rProposalItemPicker();
+  $('proposalmodal').classList.add('on');
+}
+function closeProposalModal(){$('proposalmodal').classList.remove('on');}
+function rProposalItemPicker(){
+  var pjId=$('qproject').value;
+  var list=pjId?specItems().filter(function(s){return s.project_id===pjId;}):[];
+  var wrap=$('qitempicker');
+  wrap.innerHTML=list.length?list.map(function(s){
+    return '<label class="chk" style="padding:4px 0"><input type="checkbox" class="qpick" value="'+s.id+'" onchange="qProposalTotalPreview()"> '+H(s.item)+' &mdash; '+fmt(s.retail)+(s.one_of_a_kind?' <span class="badge bb">1-of-1</span>':'')+'</label>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px">No spec items on this project yet.</div>';
+  qProposalTotalPreview();
+}
+function qProposalTotalPreview(){
+  var total=0;
+  document.querySelectorAll('.qpick:checked').forEach(function(cb){
+    var s=specItems().find(function(x){return x.id===cb.value;});
+    if(s)total+=Number(s.retail)||0;
+  });
+  $('qtotal-preview').textContent=fmt(total);
+}
+async function saveProposal(){
+  var pjId=$('qproject').value,title=$('qtitle').value.trim();
+  if(!pjId){toast('Select a project first');return;}
+  if(!title){toast('Proposal title required');return;}
+  var ids=Array.from(document.querySelectorAll('.qpick:checked')).map(function(cb){return cb.value;});
+  if(!ids.length){toast('Select at least one spec item');return;}
+  var pj=projects().find(function(x){return x.id===pjId;});
+  var rec={id:newId('PR'),project_id:pjId,client_id:pj?pj.client_id:'',title:title,item_ids:ids,status:'Draft',sent_date:'',decided_date:'',created_at:sdnLocalToday()};
+  var list=proposals();list.push(rec);st('sdn_proposals',list);
+  closeProposalModal();rProposals();rDash();
+  var syncResult=await sdnData('write','proposals',rec);
+  toast(syncResult?'Proposal created':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function openProposalDetail(id){
+  var p=proposals().find(function(x){return x.id===id;});if(!p)return;
+  var items=(p.item_ids||[]).map(function(iid){return specItems().find(function(s){return s.id===iid;});}).filter(Boolean);
+  renderProposalDetail(p,items);
+  $('proposaldetailmodal').classList.add('on');
+}
+function closeProposalDetailModal(){$('proposaldetailmodal').classList.remove('on');}
+function renderProposalDetail(p,items){
+  var total=proposalTotal(p);
+  var rows=items.map(function(s){return '<tr><td>'+H(s.item)+(s.one_of_a_kind?' <span class="badge bb">1-of-1</span>':'')+'</td><td>'+H(s.vendor)+'</td><td>'+fmt(s.retail)+'</td></tr>';}).join('');
+  var statusColors={Draft:'bx',Sent:'bb',Approved:'bg',Declined:'br'};
+  $('qdetail-body').innerHTML=
+    '<div class="ph" style="margin-bottom:12px"><div><div class="ptitle" style="font-size:17px">'+H(p.title)+'</div><div class="psub">'+H(clientLabel(p.client_id))+' &middot; '+H(projectLabel(p.project_id))+'</div></div>'+
+    '<div class="pa"><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></div></div>'+
+    '<table><thead><tr><th>Item</th><th>Vendor</th><th>Retail</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+    '<div class="srow" style="margin-top:10px"><span class="slbl">Retail Total</span><span class="sval">'+fmt(total)+'</span></div>'+
+    '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">'+
+      (p.status==='Draft'?'<button class="btn bo bs" onclick="setProposalStatus(\''+p.id+'\',\'Sent\')">Mark Sent</button>':'')+
+      (p.status==='Sent'?'<button class="btn bp bs" onclick="setProposalStatus(\''+p.id+'\',\'Approved\')">Client Approved</button><button class="btn bo bs" onclick="setProposalStatus(\''+p.id+'\',\'Declined\')">Client Declined</button>':'')+
+      '<button class="btn bo bs" onclick="closeProposalDetailModal()">Close</button>'+
+    '</div>';
+}
+// Reservation trigger -- the one-of-a-kind counterpart to StoneDesk's slab
+// reservation. Approval is the real-world moment a client has committed:
+// every one-of-a-kind item on this proposal is reserved from that point on,
+// which specSkuConflict() then enforces the next time ANY project's Spec
+// Sheet tries to add/edit an item with the same SKU.
+async function setProposalStatus(id,status){
+  var list=proposals();
+  var p=list.find(function(x){return x.id===id;});if(!p)return;
+  p.status=status;
+  if(status==='Sent')p.sent_date=sdnLocalToday();
+  if(status==='Approved'||status==='Declined')p.decided_date=sdnLocalToday();
+  st('sdn_proposals',list);
+  if(status==='Approved'){
+    var specList=specItems();
+    var reservedNames=[];
+    (p.item_ids||[]).forEach(function(iid){
+      var s=specList.find(function(x){return x.id===iid;});
+      if(s&&s.one_of_a_kind&&!s.reserved){
+        s.reserved=true;s.reserved_for=projectLabel(p.project_id);
+        reservedNames.push(s.item);
+      }
+    });
+    st('sdn_specitems',specList);
+    if(reservedNames.length)toast(reservedNames.length+' one-of-a-kind item(s) reserved: '+reservedNames.join(', '),5000);
+    var syncSpec=await sdnData('write','specitems_bulk',{project_id:p.project_id});
+  }
+  var syncResult=await sdnData('write','proposals',p);
+  closeProposalDetailModal();rProposals();rSpec();rDash();
+  toast('Proposal marked '+status);
+}
+function rProposals(){
+  var list=proposals();
+  var open=list.filter(function(p){return p.status==='Draft'||p.status==='Sent';});
+  var decided=list.filter(function(p){return p.status==='Approved'||p.status==='Declined';});
+  var approved=list.filter(function(p){return p.status==='Approved';});
+  $('q-open').textContent=open.length;
+  $('q-pipeline').textContent=fmt(open.reduce(function(s,p){return s+proposalTotal(p);},0));
+  $('q-winrate').textContent=decided.length?Math.round(approved.length/decided.length*100)+'%':'0%';
+  $('q-winrate-sub').textContent=approved.length+' of '+decided.length+' decided';
+  $('q-avgdeal').textContent=fmt(approved.length?approved.reduce(function(s,p){return s+proposalTotal(p);},0)/approved.length:0);
+  var statusColors={Draft:'bx',Sent:'bb',Approved:'bg',Declined:'br'};
+  var tb=$('qtbody');
+  tb.innerHTML=list.length?list.slice().reverse().map(function(p){
+    return '<tr><td>'+H(p.title)+'</td><td>'+H(clientLabel(p.client_id))+'</td><td>'+H(projectLabel(p.project_id))+'</td>'+
+      '<td>'+(p.item_ids||[]).length+'</td><td>'+fmt(proposalTotal(p))+'</td>'+
+      '<td><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="openProposalDetail(\''+p.id+'\')">View</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No proposals yet</td></tr>';
+}
+
+// ── CLIENTS / PROJECTS ────────────────────────────────────────────────────
+function openClientModal(){
+  ceid=null;['clname','clcompany','clphone','clemail','claddr','clnotes'].forEach(function(f){$(f).value='';});
+  $('clstatus').value='Lead';
+  $('clientmodal').classList.add('on');
+}
+function closeClientModal(){$('clientmodal').classList.remove('on');}
+function editClient(id){
+  var c=clients().find(function(x){return x.id===id;});if(!c)return;
+  ceid=id;$('clname').value=c.name;$('clcompany').value=c.company||'';$('clphone').value=c.phone||'';
+  $('clemail').value=c.email||'';$('claddr').value=c.address||'';$('clstatus').value=c.status;$('clnotes').value=c.notes||'';
+  $('clientmodal').classList.add('on');
+}
+async function saveClient(){
+  var name=$('clname').value.trim();
+  if(!name){toast('Client name required');return;}
+  var rec={id:ceid||newId('CL'),name:name,company:$('clcompany').value.trim(),phone:$('clphone').value.trim(),
+    email:$('clemail').value.trim(),address:$('claddr').value.trim(),status:$('clstatus').value,notes:$('clnotes').value.trim(),created_at:sdnLocalToday()};
+  var list=clients();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('sdn_clients',list);
+  closeClientModal();rClients();rDash();fillProjectSelects();
+  var syncResult=await sdnData('write','clients',rec);
+  toast(syncResult?'Client saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function openProjectModal(){
+  pjeid=null;fillProjectSelects();
+  $('pjname').value='';$('pjbudget').value='';$('pjtarget').value='';$('pjnotes').value='';$('pjstatus').value='Planning';
+  $('projectmodal').classList.add('on');
+}
+function closeProjectModal(){$('projectmodal').classList.remove('on');}
+function editProject(id){
+  var p=projects().find(function(x){return x.id===id;});if(!p)return;
+  pjeid=id;fillProjectSelects();
+  $('pjclient').value=p.client_id;$('pjname').value=p.name;$('pjbudget').value=p.budget;
+  $('pjtarget').value=p.target_install_date;$('pjstatus').value=p.status;$('pjnotes').value=p.notes||'';
+  $('projectmodal').classList.add('on');
+}
+async function saveProject(){
+  var name=$('pjname').value.trim();
+  if(!name){toast('Project name required');return;}
+  if(!clients().length){toast('Add a client first');return;}
+  var rec={id:pjeid||newId('PJ'),client_id:$('pjclient').value,name:name,budget:Number($('pjbudget').value)||0,
+    target_install_date:$('pjtarget').value,status:$('pjstatus').value,notes:$('pjnotes').value.trim(),created_at:sdnLocalToday()};
+  var list=projects();
+  if(pjeid){list=list.map(function(x){return x.id===pjeid?rec:x;});}else{list.push(rec);}
+  st('sdn_projects',list);
+  closeProjectModal();rClients();rDash();fillProjectSelects();
+  var syncResult=await sdnData('write','projects',rec);
+  toast(syncResult?'Project saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function filterClients(){rClients();}
+function rClients(){
+  var cl=clients(),pj=projects();
+  $('c-total').textContent=cl.length;
+  $('c-active').textContent=pj.filter(function(p){return p.status==='In Progress';}).length;
+  $('c-avgbudget').textContent=fmt(pj.length?pj.reduce(function(s,p){return s+(Number(p.budget)||0);},0)/pj.length:0);
+  $('c-completed').textContent=pj.filter(function(p){return p.status==='Complete';}).length;
+  var q=($('csrch').value||'').toLowerCase();
+  var filtered=cl.filter(function(c){return !q||c.name.toLowerCase().indexOf(q)!==-1||(c.company||'').toLowerCase().indexOf(q)!==-1;});
+  var statusColors={Lead:'bw',Active:'bg',Completed:'bx'};
+  var ctb=$('ctbody');
+  ctb.innerHTML=filtered.length?filtered.map(function(c){
+    var projCount=pj.filter(function(p){return p.client_id===c.id;}).length;
+    return '<tr><td>'+H(c.name)+'</td><td>'+H(c.company||'--')+'</td><td>'+H(c.phone||'--')+'</td><td>'+H(c.email||'--')+'</td>'+
+      '<td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td><td>'+projCount+'</td>'+
+      '<td><button class="btn bo bs" onclick="editClient(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No clients found</td></tr>';
+  var statusColors2={Planning:'bw','In Progress':'bb',Complete:'bg'};
+  var ptb=$('ptbody');
+  ptb.innerHTML=pj.length?pj.map(function(p){
+    var specTotal=projectSpecTotal(p.id);
+    return '<tr><td>'+H(p.name)+'</td><td>'+H(projectClientName(p))+'</td><td>'+fmt(p.budget)+'</td>'+
+      '<td'+(specTotal>p.budget&&p.budget?' style="color:var(--danger);font-weight:700"':'')+'>'+fmt(specTotal)+'</td>'+
+      '<td>'+fdate(p.target_install_date)+'</td><td><span class="badge '+(statusColors2[p.status]||'bx')+'">'+H(p.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editProject(\''+p.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No projects yet</td></tr>';
+}
+
+// ── VENDORS ───────────────────────────────────────────────────────────────
+function openVendorModal(){
+  veid=null;['vname','vcontact','vphone','vemail','vleadtime','vrating','vnotes'].forEach(function(f){$(f).value='';});
+  $('vcat').value='Furniture';
+  $('vendormodal').classList.add('on');
+}
+function closeVendorModal(){$('vendormodal').classList.remove('on');}
+function editVendor(id){
+  var v=vendors().find(function(x){return x.id===id;});if(!v)return;
+  veid=id;$('vname').value=v.name;$('vcat').value=v.category;$('vcontact').value=v.contact_name||'';
+  $('vphone').value=v.phone||'';$('vemail').value=v.email||'';$('vleadtime').value=v.lead_time_typical_weeks;
+  $('vrating').value=v.rating;$('vnotes').value=v.notes||'';
+  $('vendormodal').classList.add('on');
+}
+async function saveVendor(){
+  var name=$('vname').value.trim();
+  if(!name){toast('Vendor name required');return;}
+  var rec={id:veid||newId('VN'),name:name,category:$('vcat').value,contact_name:$('vcontact').value.trim(),
+    phone:$('vphone').value.trim(),email:$('vemail').value.trim(),lead_time_typical_weeks:Number($('vleadtime').value)||0,
+    rating:Number($('vrating').value)||0,notes:$('vnotes').value.trim(),created_at:sdnLocalToday()};
+  var list=vendors();
+  if(veid){list=list.map(function(x){return x.id===veid?rec:x;});}else{list.push(rec);}
+  st('sdn_vendors',list);
+  closeVendorModal();rVendors();
+  var syncResult=await sdnData('write','vendors',rec);
+  toast(syncResult?'Vendor saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+function filterVendors(){rVendors();}
+function rVendors(){
+  var list=vendors();
+  $('v-total').textContent=list.length;
+  $('v-leadtime').textContent=(list.length?Math.round(list.reduce(function(s,v){return s+(Number(v.lead_time_typical_weeks)||0);},0)/list.length):0)+' wks';
+  var q=($('vsrch').value||'').toLowerCase();
+  var filtered=list.filter(function(v){return !q||v.name.toLowerCase().indexOf(q)!==-1||v.category.toLowerCase().indexOf(q)!==-1;});
+  var tb=$('vtbody');
+  tb.innerHTML=filtered.length?filtered.map(function(v){
+    return '<tr><td>'+H(v.name)+'</td><td>'+H(v.category)+'</td><td>'+H(v.contact_name||'--')+'</td><td>'+H(v.phone||'--')+'</td>'+
+      '<td>'+v.lead_time_typical_weeks+' wks</td><td>'+(v.rating?'&#9733; '+v.rating:'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="editVendor(\''+v.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No vendors found</td></tr>';
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+function rDash(){
+  var pj=projects(),cl=clients(),sp=specItems(),pr=proposals();
+  $('k-projects').textContent=pj.filter(function(p){return p.status==='In Progress';}).length;
+  var openProposals=pr.filter(function(p){return p.status==='Draft'||p.status==='Sent';});
+  $('k-pipeline').textContent=fmt(openProposals.reduce(function(s,p){return s+proposalTotal(p);},0));
+  $('k-markup').textContent=(sp.length?Math.round(sp.reduce(function(s,x){return s+itemMarkupPct(x.cost,x.retail);},0)/sp.length):0)+'%';
+  var ooak=sp.filter(function(x){return x.one_of_a_kind;});
+  var ooakReserved=ooak.filter(function(x){return x.reserved;});
+  $('k-ooak').textContent=ooak.length;
+  $('k-ooak-sub').textContent=ooakReserved.length+' reserved / '+ooak.length+' total';
+  $('k-clients').textContent=cl.length;
+
+  var attention=[];
+  pj.forEach(function(p){
+    if(p.status==='Complete')return;
+    var total=projectSpecTotal(p.id);
+    if(p.budget&&total>p.budget)attention.push({t:H(p.name)+' is '+fmt(total-p.budget)+' over budget',b:'Over Budget',c:'br'});
+    if(p.target_install_date){
+      var items=sp.filter(function(x){return x.project_id===p.id;});
+      var late=items.filter(function(x){
+        var arriveMs=new Date(sdnLocalToday()+'T00:00:00').getTime()+(Number(x.lead_time_weeks)||0)*7*24*60*60*1000;
+        return arriveMs>new Date(p.target_install_date+'T00:00:00').getTime();
+      });
+      if(late.length)attention.push({t:H(p.name)+' has '+late.length+' item(s) at risk of missing install date',b:'Lead Time Risk',c:'bw'});
+    }
+  });
+  $('d-attention').innerHTML=attention.length?attention.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">Nothing needs attention</div>';
+
+  var recent=pr.slice().reverse().slice(0,5);
+  var statusColors={Draft:'bx',Sent:'bb',Approved:'bg',Declined:'br'};
+  $('d-proposals').innerHTML=recent.length?recent.map(function(p){
+    return '<div class="srow"><span class="slbl">'+H(p.title)+'</span><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No proposals yet</div>';
+}
+
+// ── WIRE EVERYTHING ON DOM READY ──────────────────────────────────────────
+function init(){
+  seed();
+  rDash();rClients();fillProjectSelects();rSpec();rProposals();rVendors();
+}
+document.addEventListener('DOMContentLoaded',function(){
+  var lic=localStorage.getItem('sdn_license_key');
+  if(lic){$('gate').style.display='none';$('pin').classList.add('on');}
+});
+</script>
+</body>
+</html>
