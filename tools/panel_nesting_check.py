@@ -21,24 +21,82 @@ child's own class/display state.
 
 Method: parse the full document with a real HTML parser (not naive
 <script> or <div> counting), tracking nesting depth of every element.
-Record the depth at which each <div id="panel-X"> opens. The correct
+Record the depth at which each <div id="PREFIXpanel-X"> opens. The correct
 depth is whatever the majority (mode) of panels share -- flag any panel
 whose depth differs from that majority, and name its actual parent
 element so the trapped location is immediately visible.
+
+Panel-ID prefix is DETECTED PER FILE, not hardcoded (fixed 2026-08-07,
+was CONFIRMED REAL GAP, now closed): the original version hardcoded
+`pid.startswith('panel-')`, which silently returned NO_PANELS_FOUND on
+sairnscape.html -- an app with 11 real, structurally fine panels, just
+namespaced `id="scp-panel-X"` instead of StoneDesk/SAIRNbiz/SAIRNgrounds'
+bare `id="panel-X"`. Confirmed by manually re-running the same
+depth-mapping logic with the prefix hardcoded to 'scp-panel-': 11 panels,
+0 trapped, matching what a human inspection of the file already showed.
+A single silent zero is exactly the kind of blind spot
+sairn-portfolio-triage's own "Scanner Portability" section warns about --
+this fix generalizes the same way that section's other two fixes did:
+stop assuming one app's convention, detect the real one from the file
+being scanned.
+
+Detection method: first pass, collect the id of every <div> whose id
+matches `(PREFIX)panel-(NAME)` (case-insensitive, PREFIX may be empty).
+The most common PREFIX across those matches is treated as this file's
+real panel-id prefix -- majority vote, not a fixed guess, so it works
+whether an app uses bare `panel-X` or a namespaced `app-panel-X`. If no
+div id matches the pattern at all, NO_PANELS_FOUND is still a real,
+honest result (the app genuinely doesn't use this convention), not a
+detection failure.
 """
-import sys
+import sys, re
 from collections import Counter
 from html.parser import HTMLParser
 
 VOID_ELEMENTS = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
+PANEL_ID_RE = re.compile(r'^(.*?)panel-([a-zA-Z0-9_]+)$', re.IGNORECASE)
+
+
+class PanelPrefixScanner(HTMLParser):
+    """Pass 1: find every div id shaped like PREFIXpanel-NAME, and tally
+    the PREFIX part so the real, in-use prefix can be detected by
+    majority vote instead of assumed."""
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.in_script = False
+        self.prefix_counts = Counter()
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == 'script':
+            self.in_script = True
+        if self.in_script or tag.lower() != 'div':
+            return
+        pid = dict(attrs).get('id', '')
+        m = PANEL_ID_RE.match(pid)
+        if m:
+            self.prefix_counts[m.group(1)] += 1
+
+    def handle_endtag(self, tag):
+        if tag.lower() == 'script':
+            self.in_script = False
+
+
+def detect_panel_prefix(html):
+    scanner = PanelPrefixScanner()
+    scanner.feed(html)
+    if not scanner.prefix_counts:
+        return None
+    prefix, _ = scanner.prefix_counts.most_common(1)[0]
+    return prefix + 'panel-'
 
 
 class PanelDepthMapper(HTMLParser):
-    def __init__(self):
+    def __init__(self, panel_id_prefix):
         super().__init__(convert_charrefs=False)
         self.stack = []  # list of (tag, id_or_class)
         self.panels = {}  # panel_id -> (depth, line, parent_desc)
         self.in_script = False
+        self.panel_id_prefix = panel_id_prefix
 
     def handle_starttag(self, tag, attrs):
         line = self.getpos()[0]
@@ -50,7 +108,7 @@ class PanelDepthMapper(HTMLParser):
         pid = d.get('id', '')
         if tag.lower() in VOID_ELEMENTS:
             return
-        if pid.startswith('panel-'):
+        if pid.startswith(self.panel_id_prefix):
             parent_desc = '%s#%s' % self.stack[-1] if self.stack else '(document root)'
             self.panels[pid] = (len(self.stack), line, parent_desc)
         ident = pid or ('.' + d.get('class', '').split(' ')[0] if d.get('class') else tag)
@@ -73,12 +131,19 @@ def main():
     with open(path, encoding='utf-8', errors='replace') as f:
         html = f.read()
 
-    parser = PanelDepthMapper()
+    panel_id_prefix = detect_panel_prefix(html)
+    if panel_id_prefix is None:
+        print("NO_PANELS_FOUND")
+        sys.exit(1)
+
+    parser = PanelDepthMapper(panel_id_prefix)
     parser.feed(html)
 
     if not parser.panels:
         print("NO_PANELS_FOUND")
         sys.exit(1)
+
+    print("DETECTED_PANEL_ID_PREFIX:%r" % panel_id_prefix)
 
     # FIXED 2026-07-30 (was hardcoded to StoneDesk's own container class
     # names, {'div#.app-body','div#.panel-wrap'} -- broke completely on
