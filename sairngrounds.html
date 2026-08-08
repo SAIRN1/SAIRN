@@ -1459,7 +1459,7 @@ function openPropModal(id){
   $('propmodal').classList.add('on');
 }
 function closePropModal(){$('propmodal').classList.remove('on');}
-function saveProp(){
+async function saveProp(){
   var name=$('pname').value.trim();
   if(!name){toast('Property name is required');return;}
   var props=ld('grd_properties',[]);
@@ -1467,8 +1467,9 @@ function saveProp(){
     contact:$('pcontact').value.trim(),phone:$('pphone').value.trim(),email:$('pemail').value.trim(),
     address:$('paddress').value.trim(),status:$('pstatus').value,notes:$('pnotes').value.trim()};
   if(pid){props=props.map(function(p){return p.id===pid?rec:p;});}else{props.push(rec);}
-  st('grd_properties',props);closePropModal();fillPropertySelects();rProps();rDash();toast('Property saved');
-  grdData('write','properties',rec); // fire-and-forget server sync -- local save above is already durable
+  st('grd_properties',props);closePropModal();fillPropertySelects();rProps();rDash();
+  var syncResult=await grdData('write','properties',rec);
+  toast(syncResult?'Property saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === JOB INTAKE ===
@@ -1487,14 +1488,15 @@ function openJobModal(id){
   $('jobmodal').classList.add('on');
 }
 function closeJobModal(){$('jobmodal').classList.remove('on');}
-function saveJob(){
+async function saveJob(){
   var propertyId=$('jproperty').value,scope=$('jscope').value.trim();
   if(!propertyId||!scope){toast('Property and scope are required');return;}
   var jobs=ld('grd_jobs',[]);
   var rec={id:jid||('J-'+Date.now()),property_id:propertyId,scope:scope,date:$('jdate').value,status:$('jstatus').value,notes:$('jnotes').value.trim()};
   if(jid){jobs=jobs.map(function(j){return j.id===jid?rec:j;});}else{jobs.push(rec);}
-  st('grd_jobs',jobs);closeJobModal();rJobs();rDash();toast('Job saved');
-  grdData('write','jobs',rec);
+  st('grd_jobs',jobs);closeJobModal();rJobs();rDash();
+  var syncResult=await grdData('write','jobs',rec);
+  toast(syncResult?'Job saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === QUOTING ===
@@ -1515,7 +1517,7 @@ function openQuoteModal(id){
   $('quotemodal').classList.add('on');
 }
 function closeQuoteModal(){$('quotemodal').classList.remove('on');}
-function saveQuote(){
+async function saveQuote(){
   var propertyId=$('qproperty').value;
   if(!propertyId){toast('Property is required');return;}
   var lines=$('qlines').value.split('\n').map(function(l){return l.trim();}).filter(Boolean).map(function(l){
@@ -1524,8 +1526,9 @@ function saveQuote(){
   var quotes=ld('grd_quotes',[]);
   var rec={id:qid||('Q-'+Date.now()),property_id:propertyId,lines:lines,status:$('qstatus').value,valid:$('qvalid').value};
   if(qid){quotes=quotes.map(function(q){return q.id===qid?rec:q;});}else{quotes.push(rec);}
-  st('grd_quotes',quotes);closeQuoteModal();rQuotes();rDash();toast('Quote saved');
-  grdData('write','quotes',rec);
+  st('grd_quotes',quotes);closeQuoteModal();rQuotes();rDash();
+  var syncResult=await grdData('write','quotes',rec);
+  toast(syncResult?'Quote saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === DESIGN WALK (item 6: shared AR walk-and-design pipeline) ===========
@@ -1691,7 +1694,7 @@ function openZoneModal(id){
   $('zonemodal').classList.add('on');
 }
 function closeZoneModal(){$('zonemodal').classList.remove('on');}
-function saveZone(){
+async function saveZone(){
   var propertyId=$('zproperty').value,name=$('zname').value.trim();
   if(!propertyId||!name){toast('Property and zone name are required');return;}
   var zones=ld('grd_golf_zones',[]);
@@ -1699,8 +1702,9 @@ function saveZone(){
   var rec={id:zid||('Z-'+Date.now()),property_id:propertyId,name:name,acreage:Number($('zacreage').value||0),
     serviced:$('zserviced').value,condition:$('zcondition').value.trim(),points:existing?(existing.points||[]):[]};
   if(zid){zones=zones.map(function(z){return z.id===zid?rec:z;});}else{zones.push(rec);}
-  st('grd_golf_zones',zones);closeZoneModal();rGolf();rDash();toast('Zone saved');
-  grdData('write','golf_zones',rec);
+  st('grd_golf_zones',zones);closeZoneModal();rGolf();rDash();
+  var syncResult=await grdData('write','golf_zones',rec);
+  toast(syncResult?'Zone saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === ITEM 10: SELF-SERVICE COURSE MAPPING =================================
@@ -2285,7 +2289,7 @@ async function saveIrrZone(){
 }
 // Same real, non-fabricated hand-off pattern as Design Walk's sendDesignToQuote:
 // real checklist line items, $0 amounts, priced through the existing Quote editor.
-function sendIrrZoneToQuote(){
+async function sendIrrZoneToQuote(){
   var propertyId=$('izproperty').value,name=$('izname').value.trim();
   if(!propertyId){toast('Select a property first');return;}
   var checklist=$('izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -2293,8 +2297,9 @@ function sendIrrZoneToQuote(){
   var lines=checklist.map(function(l){return {d:'Irrigation zone '+(name||'')+' - '+l,a:0};});
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
-  quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
-  toast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+  quotes.push(qrec);st('grd_quotes',quotes);
+  var syncResult=await grdData('write','quotes',qrec);
+  toast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 
 // === BOQ AUTO-GEN (item 7 follow-up) ==============================
@@ -2396,7 +2401,7 @@ function rBoq(){
   $('boq-unpriced-note').style.display=unpriced.length?'block':'none';
   if(unpriced.length)$('boq-unpriced-note').textContent=unpriced.length+' item type(s) have no rate configured -- add them in the Rate Table tab for a complete price.';
 }
-function sendBoqToQuote(){
+async function sendBoqToQuote(){
   var propertyId=$('boqproperty').value;
   if(!propertyId){toast('Select a property first');return;}
   var lines=computeBOQ(propertyId);
@@ -2407,8 +2412,9 @@ function sendBoqToQuote(){
   });
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:quoteLines,status:'Draft',valid:daysFromNow(30)};
-  quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
-  toast('BOQ sent to Quoting as draft '+qrec.id);
+  quotes.push(qrec);st('grd_quotes',quotes);
+  var syncResult=await grdData('write','quotes',qrec);
+  toast(syncResult?('BOQ sent to Quoting as draft '+qrec.id):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 
 // === PLANT DATABASE (item 7 follow-up) =============================
@@ -2525,7 +2531,7 @@ async function saveWf(){
   var syncResult=await grdData('write','grd_water_features',rec);
   toast(syncResult?'Water feature saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
-function sendWfToQuote(){
+async function sendWfToQuote(){
   var propertyId=$('wfproperty').value,name=$('wfname').value.trim();
   if(!propertyId){toast('Select a property first');return;}
   var checklist=$('wfchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -2533,8 +2539,9 @@ function sendWfToQuote(){
   var lines=checklist.map(function(l){return {d:'Water feature '+(name||'')+' - '+l,a:0};});
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
-  quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
-  toast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+  quotes.push(qrec);st('grd_quotes',quotes);
+  var syncResult=await grdData('write','quotes',qrec);
+  toast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 
 // === INVASIVE SPECIES MANAGEMENT, 6-tab (item 5) =================
@@ -2756,7 +2763,7 @@ async function dcAnalyze(){
     $('dc-result').textContent='Could not reach Claude. Check your connection and try again.';
   }
 }
-function dcCreateQuote(){
+async function dcCreateQuote(){
   var propertyId=$('dc-property').value;
   if(!propertyId||!dcCurrentDesignText){toast('Get an AI design description first');return;}
   var lines=dcCurrentDesignText.split('\n').filter(function(l){return /^[-*]\s/.test(l.trim());})
@@ -2764,10 +2771,11 @@ function dcCreateQuote(){
   if(!lines.length)lines=[{d:'DreamClose design proposal (see AI description for detail)',a:0}];
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:propertyId,lines:lines,status:'Draft',valid:daysFromNow(30)};
-  quotes.push(qrec);st('grd_quotes',quotes);grdData('write','quotes',qrec);
+  quotes.push(qrec);st('grd_quotes',quotes);
+  var syncResult=await grdData('write','quotes',qrec);
   dcCurrentQuoteId=qrec.id;
   $('dc-approval-wrap').style.display='block';
-  toast('Priced proposal created as draft quote '+qrec.id+' -- pricing still needs to be filled in');
+  toast(syncResult?('Priced proposal created as draft quote '+qrec.id+' -- pricing still needs to be filled in'):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 function dcApprove(){
   if(!dcCurrentQuoteId){toast('Create the priced proposal first');return;}
