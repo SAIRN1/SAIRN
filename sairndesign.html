@@ -2116,21 +2116,31 @@ function rInvoicing(){
 // ── TIME TRACKING ─────────────────────────────────────────────────────────
 function timeEntries(){return ld('sdn_timeentries',[]);}
 function openTimeModal(){
-  fillProjectSelects();
+  ceid=null;fillProjectSelects();
   ['tthours','ttrate','ttnotes'].forEach(function(f){$(f).value='';});
   $('ttdate').value=sdnLocalToday();$('ttbillable').value='true';
   $('timemodal').classList.add('on');
 }
 function closeTimeModal(){$('timemodal').classList.remove('on');}
+function editTimeEntry(id){
+  var t=timeEntries().find(function(x){return x.id===id;});if(!t)return;
+  ceid=id;fillProjectSelects();
+  $('ttmember').value=t.employee_id;$('ttprojectm').value=t.project_id;$('ttdate').value=t.date;
+  $('tthours').value=t.hours;$('ttrate').value=t.billable_rate;$('ttbillable').value=t.billable?'true':'false';
+  $('ttnotes').value=t.notes||'';
+  $('timemodal').classList.add('on');
+}
 async function saveTime(){
   var empId=$('ttmember').value,pjId=$('ttprojectm').value,hours=Number($('tthours').value)||0;
   if(!empId){toast('Select a team member');return;}
   if(!pjId){toast('Select a project');return;}
   if(hours<=0){toast('Hours must be greater than 0');return;}
-  var rec={id:newId('TT'),employee_id:empId,project_id:pjId,date:$('ttdate').value||sdnLocalToday(),
+  var rec={id:ceid||newId('TT'),employee_id:empId,project_id:pjId,date:$('ttdate').value||sdnLocalToday(),
     hours:hours,billable_rate:Number($('ttrate').value)||0,billable:$('ttbillable').value==='true',
     notes:$('ttnotes').value.trim(),created_at:sdnLocalToday()};
-  var list=timeEntries();list.push(rec);st('sdn_timeentries',list);
+  var list=timeEntries();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('sdn_timeentries',list);
   closeTimeModal();rTime();
   var syncResult=await sdnData('write','sdn_timeentries',rec);
   toast(syncResult?'Time entry saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
@@ -2148,7 +2158,7 @@ function rTime(){
     return '<tr><td>'+fdate(t.date)+'</td><td>'+H(employeeLabel(t.employee_id))+'</td><td>'+H(projectLabel(t.project_id))+'</td>'+
       '<td>'+t.hours+'</td><td>'+fmt(t.billable_rate)+'/hr</td>'+
       '<td><span class="badge '+(t.billable?'bg':'bx')+'">'+(t.billable?'Billable':'Internal')+'</span></td>'+
-      '<td>'+H(t.notes||'--')+'</td><td></td></tr>';
+      '<td>'+H(t.notes||'--')+'</td><td><button class="btn bo bs" onclick="editTimeEntry(\''+t.id+'\')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No time logged yet</td></tr>';
 }
 
