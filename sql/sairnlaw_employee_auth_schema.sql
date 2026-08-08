@@ -64,3 +64,23 @@ create index if not exists idx_sairnlaw_employee_auth_license
 create unique index if not exists idx_sairnlaw_employee_auth_sso_subject
   on sairnlaw_employee_auth (license_hash, sso_subject)
   where sso_subject is not null;
+
+-- ---------------------------------------------------------------------------
+-- GRANTS (added 2026-08-08 after a REAL live failure, not preemptively):
+-- the first live call after this table was created returned Postgres 42501
+-- "permission denied for table sairnlaw_employee_auth" — the table existed
+-- but service_role had no privileges on it, so api/law-auth.js answered a
+-- generic 502. Supabase's ALTER DEFAULT PRIVILEGES normally grants these
+-- automatically for tables created in the SQL editor; it evidently did not
+-- here. Granting explicitly rather than relying on that default, so this
+-- file is self-sufficient and re-runnable. Safe to re-run.
+--
+-- Only the three verbs api/law-auth.js actually uses. No DELETE: nothing in
+-- the codebase deletes a credential row (deactivation is active=false), so
+-- withholding it costs nothing and removes a way to lose an audit subject.
+grant select, insert, update on public.sairnlaw_employee_auth to service_role;
+
+-- anon/authenticated must never touch this table — it holds PIN hashes and
+-- encrypted MFA secrets, and is only ever reached through the server using
+-- the service-role key. Revoking explicitly rather than assuming.
+revoke all on public.sairnlaw_employee_auth from anon, authenticated;

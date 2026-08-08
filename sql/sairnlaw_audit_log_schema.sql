@@ -15,13 +15,23 @@
 -- matter actions requires those features to become server-backed first
 -- (a real sync layer, its own future build) — not done here.
 --
--- IMMUTABLE BY DESIGN: insert-only from api/_lib/audit.js using
--- SUPABASE_SERVICE_ROLE_KEY. No UPDATE/DELETE path exists anywhere in this
--- app's code. RLS is enabled with an insert-only policy for the service
--- role and no update/delete policy at all, so even a compromised anon key
--- (which is never used against this table in the first place) could not
--- alter or remove a row — belt-and-suspenders on top of "the app just
--- never does it."
+-- IMMUTABLE BY DESIGN, enforced at the DATABASE level, not just by
+-- convention. Two independent things make that true:
+--
+--   1. service_role (the ONLY role this app uses against this table) is
+--      granted SELECT and INSERT and nothing else. An UPDATE or DELETE
+--      against this table fails with a Postgres permission error even if
+--      someone later writes code that attempts one. This is the real
+--      guarantee.
+--   2. No UPDATE/DELETE path exists anywhere in the codebase today.
+--
+-- CORRECTION (2026-08-08): an earlier version of this header credited the
+-- RLS insert-only policy below with preventing tampering. That was wrong
+-- and is worth stating plainly rather than quietly editing — service_role
+-- BYPASSES RLS entirely, so that policy does nothing for the only role
+-- that ever reaches this table. The grants in point 1 are what actually
+-- enforce immutability. The RLS policy is kept only as a second layer
+-- against anon/authenticated, which additionally have no grants at all.
 
 create table if not exists sairnlaw_audit_log (
   id uuid primary key default gen_random_uuid(),
@@ -42,12 +52,22 @@ create table if not exists sairnlaw_audit_log (
 create index if not exists idx_sairnlaw_audit_log_license_time
   on sairnlaw_audit_log (license_hash, created_at desc);
 
+-- THE ACTUAL IMMUTABILITY CONTROL. Added 2026-08-08 after a real live
+-- 42501 "permission denied" on the sibling employee_auth table proved
+-- Supabase's default privileges had not been applied here. Safe to re-run.
+--
+-- SELECT + INSERT only. Deliberately NO update, NO delete: an audit trail
+-- that the application can rewrite is not an audit trail, and this is the
+-- line of SQL that makes that structural instead of aspirational.
+grant select, insert on public.sairnlaw_audit_log to service_role;
+revoke update, delete on public.sairnlaw_audit_log from service_role;
+revoke all on public.sairnlaw_audit_log from anon, authenticated;
+
 alter table sairnlaw_audit_log enable row level security;
 
--- Insert-only for the service role (what api/_lib/audit.js uses). No
--- select/update/delete policy is defined for anon/authenticated at all,
--- so this table is unreadable and unwritable except via the service-role
--- key, same as every other *_employee_auth table in this codebase.
+-- Second layer, for anon/authenticated only (service_role bypasses RLS —
+-- see the correction in this file's header). Those roles have no grants
+-- either, so this is defense in depth, not the primary control.
 drop policy if exists sairnlaw_audit_log_service_insert on sairnlaw_audit_log;
 create policy sairnlaw_audit_log_service_insert
   on sairnlaw_audit_log for insert

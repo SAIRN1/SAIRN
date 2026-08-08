@@ -529,10 +529,26 @@ function isMissingTable(detail) {
   return s.indexOf('PGRST205') !== -1 || s.indexOf('does not exist') !== -1;
 }
 
+// A table that EXISTS but has no service_role grant fails with Postgres
+// 42501, not a missing-table code — so the check above doesn't catch it and
+// it fell through to a generic 502. That happened for real on the first
+// live call after these tables were created (2026-08-08): the migration had
+// been run correctly, but Supabase's default privileges hadn't applied, and
+// the response said nothing useful. Detected separately now so the message
+// names the actual fix.
+function isPermissionDenied(detail) {
+  const s = JSON.stringify(detail || '');
+  return s.indexOf('42501') !== -1 || s.indexOf('permission denied') !== -1;
+}
+
 function upstream(res, detail) {
   console.error('law-auth upstream error:', detail);
   if (isMissingTable(detail)) {
     res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw employee accounts are not set up yet — run sql/sairnlaw_employee_auth_schema.sql' } });
+    return;
+  }
+  if (isPermissionDenied(detail)) {
+    res.status(503).json({ error: { code: 'NOT_GRANTED', message: 'The SAIRNlaw tables exist but the server role lacks privileges on them — re-run the GRANT block at the end of sql/sairnlaw_employee_auth_schema.sql' } });
     return;
   }
   res.status(502).json({ error: { message: 'Data store error — try again' } });
