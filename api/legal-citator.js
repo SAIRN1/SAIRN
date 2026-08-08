@@ -26,6 +26,8 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const { tokenFromRequest, verifySessionToken } = require('./_lib/auth');
+const { writeAuditLog } = require('./_lib/audit');
 const cl = require('./_lib/courtlistener');
 
 // The 5 real treatment labels from the brief, plus 'unclear' — added so a
@@ -165,6 +167,21 @@ module.exports = async (req, res) => {
   try { sb = sbClient(); }
   catch (err) { console.error('legal-citator supabase config error:', err.message); res.status(500).json({ error: { message: 'Server configuration error — contact support' } }); return; }
 
+  // AUDIT (2026-08-08, Phase 3): who ran which research lookup. The session
+  // token is OPTIONAL here on purpose -- this endpoint's own access control
+  // is the bearer license (unchanged), and requiring a session token would
+  // break every existing caller. When a valid SAIRNlaw session token IS
+  // present, the log names the actual attorney; when it isn't, employee_id
+  // is logged as null rather than guessed or attributed to anyone.
+  const caller = verifySessionToken(tokenFromRequest(req), lic.license_hash, 'sairnlaw');
+  const auditLookup = (detail) => writeAuditLog(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    license_hash: lic.license_hash,
+    employee_id: caller ? caller.employee_id : null,
+    role: caller ? caller.role : null,
+    event_type: 'citator_lookup',
+    detail
+  });
+
   try {
     // ── REPORT (brief items 3 + 5): return whatever is ALREADY cached, plus
     // an honest coverage statement. Never triggers a new CourtListener call
@@ -178,6 +195,7 @@ module.exports = async (req, res) => {
       const covR = await fetch(sb.rest('cl_coverage?cited_cluster_id=eq.' + encodeURIComponent(citedClusterId) + '&limit=1'), { headers: sb.headers });
       const covRows = await covR.json();
       const coverage = (Array.isArray(covRows) && covRows[0]) || null;
+      await auditLookup({ action: 'report', cited_cluster_id: Number(citedClusterId) });
       const breakdown = {};
       TREATMENT_LABELS.forEach((l) => { breakdown[l] = 0; });
       (treatments || []).forEach((t) => { breakdown[t.final_treatment] = (breakdown[t.final_treatment] || 0) + 1; });
@@ -234,6 +252,7 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: 'process requires cited_cluster_id, cited_opinion_id, case_name' } });
         return;
       }
+      await auditLookup({ action: 'process', cited_cluster_id: Number(citedClusterId), case_name: String(caseName).slice(0, 300) });
 
       // LIVE-VERIFIED 2026-08-08 (real token, real data, first end-to-end
       // run): opinionData.cluster is a plain URL STRING

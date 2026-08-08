@@ -1,0 +1,539 @@
+// api/law-auth.js
+// ---------------------------------------------------------------------------
+// SAIRNlaw per-employee login + MFA (TOTP) + SSO (OIDC) endpoint.
+//
+// Replaces sairnlaw.html's old client-only gate (DEFAULT_PINS = one shared
+// PIN per role, in the page source, zero server involvement — every
+// attorney shared one PIN, so nothing could ever be attributed to an
+// individual and any role was self-assertable by editing the DOM). This is
+// the server side of the real model: each employee has their own PIN,
+// hashed server-side, checked against sairnlaw_employee_auth
+// (sql/sairnlaw_employee_auth_schema.sql), optionally protected by a real
+// RFC 6238 TOTP second factor, with an optional real OIDC SSO path.
+//
+// Modelled directly on api/sd-auth.js (StoneDesk's equivalent) — same
+// license-bearer convention, same lockout design, same generic-error
+// discipline. SAIRNlaw-specific additions are the mfa_* and sso_* actions
+// and audit logging on every event.
+//
+// All actions are POST, license key via Authorization: Bearer.
+//
+//   check_license  {}
+//     Confirms the key is real/active before the client stores it.
+//
+//   bootstrap      { employee_id, display_name, pin }
+//     Only works when this license has ZERO rows yet. Creates the first
+//     credential, always role 'owner'. 409 once any row exists — one-time
+//     setup, not a standing backdoor.
+//
+//   login          { employee_id, pin }
+//     -> { ok, token, role }                    (MFA not enabled)
+//     -> { ok, mfa_required: true, preauth_token } (MFA enabled)
+//     The pre-auth token is NOT a session token and is rejected by
+//     verifySessionToken — see api/_lib/auth.js's typ-claim comment.
+//
+//   mfa_verify     { preauth_token, code }
+//     Second step. Exchanges a valid pre-auth token + a real TOTP code for
+//     a real session token.
+//
+//   mfa_setup      {}                      (session required)
+//     Generates a real 160-bit TOTP secret, stores it ENCRYPTED with
+//     mfa_enabled still false, returns the secret + otpauth:// URI for the
+//     caller to show as a QR code. Enrolling is not enabling.
+//
+//   mfa_enable     { code }                (session required)
+//     Verifies one real code against the stored secret, THEN flips
+//     mfa_enabled. A secret that was never confirmed with a working code
+//     never starts gating logins — that ordering is what stops an employee
+//     locking themselves out with a mis-scanned QR code.
+//
+//   mfa_reset      { employee_id }         (owner session required)
+//     Clears another employee's MFA enrollment. Exists because a lost
+//     phone would otherwise be permanent, unrecoverable lockout. Audit-
+//     logged like everything else; an owner cannot reset their own (see
+//     the check at that action — an attacker who has an owner session
+//     already has everything, but this keeps the log honest about who
+//     reset whom).
+//
+//   setup          { employee_id, display_name, pin, role }  (owner session)
+//     Provisions/updates another employee's credential.
+//
+//   sso_start      {}
+//     -> { ok, authorization_url, state } or 503 NOT_CONFIGURED.
+//
+//   audit_read     { limit }                (owner session required)
+//     Returns this firm's most recent audit-log rows for the security
+//     panel, newest first. Read-only — there is no update or delete path
+//     to this table anywhere in the codebase, by design.
+//
+//   sso_callback   { code, state }
+//     Exchanges the authorization code, CRYPTOGRAPHICALLY VERIFIES the
+//     id_token against the provider's JWKS (api/_lib/auth.js
+//     oidcVerifyIdToken), and issues a session token — but only for an
+//     employee record that ALREADY EXISTS for this license. SSO never
+//     auto-creates accounts: doing so would grant SAIRNlaw access to
+//     everyone in the firm's whole identity-provider tenant.
+//
+// AUDIT: every auth event here writes to sairnlaw_audit_log via
+// api/_lib/audit.js. See that file and the schema header for the honest,
+// deliberately-limited scope of what audit logging covers today.
+//
+// REQUIRES env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SD_AUTH_SECRET.
+// SSO additionally requires OIDC_ISSUER_URL, OIDC_CLIENT_ID,
+// OIDC_CLIENT_SECRET, OIDC_REDIRECT_URI — absent those, sso_* actions
+// return a clear 503 NOT_CONFIGURED, never a raw crash.
+// ---------------------------------------------------------------------------
+
+const { validateLicenseKey } = require('./_lib/license');
+const { writeAuditLog } = require('./_lib/audit');
+const {
+  hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
+  signPreAuthToken, verifyPreAuthToken,
+  generateTotpSecret, verifyTotpCode, totpProvisioningUri,
+  encryptSecret, decryptSecret,
+  oidcConfigured, generatePkcePair, oidcDiscoverEndpoints, oidcAuthorizationUrl,
+  oidcExchangeCode, oidcVerifyIdToken, signSsoState, verifySsoState,
+  ROLES_BY_APP
+} = require('./_lib/auth');
+
+const APP = 'sairnlaw';
+const TABLE = 'sairnlaw_employee_auth';
+const LAW_ROLES = ROLES_BY_APP[APP];
+const LOCKOUT_THRESHOLD = 5;
+const LOCKOUT_MINUTES = 15;
+const ACTIONS = [
+  'check_license', 'bootstrap', 'login', 'setup',
+  'mfa_setup', 'mfa_enable', 'mfa_verify', 'mfa_reset',
+  'sso_start', 'sso_callback', 'audit_read'
+];
+
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
+    return;
+  }
+
+  const authz = req.headers['authorization'] || '';
+  const licenseKey = authz.startsWith('Bearer ') ? authz.slice(7).trim() : null;
+  if (!licenseKey) {
+    res.status(401).json({ error: { code: 'NO_LICENSE', message: 'Missing bearer license key' } });
+    return;
+  }
+
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {
+      res.status(400).json({ error: { message: 'Invalid JSON body' } });
+      return;
+    }
+  }
+  body = body || {};
+  const action = body.action;
+  if (ACTIONS.indexOf(action) === -1) {
+    res.status(400).json({ error: { message: 'action must be one of: ' + ACTIONS.join(', ') } });
+    return;
+  }
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !SERVICE_KEY || !process.env.SD_AUTH_SECRET) {
+    console.error('law-auth: SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / SD_AUTH_SECRET not set');
+    res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
+    return;
+  }
+
+  let lic;
+  try {
+    lic = await validateLicenseKey(licenseKey);
+  } catch (err) {
+    if (err.code === 'CONFIG') {
+      res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
+      return;
+    }
+    res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
+    return;
+  }
+  if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
+  if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
+
+  if (action === 'check_license') {
+    res.status(200).json({ ok: true, active: true, app_id: lic.app_id || null, sso_available: oidcConfigured() });
+    return;
+  }
+
+  const licHash = lic.license_hash;
+  const headers = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' };
+  const rest = (path) => SUPABASE_URL + '/rest/v1/' + path;
+  const enc = encodeURIComponent;
+  const audit = (event_type, fields) => writeAuditLog(SUPABASE_URL, SERVICE_KEY,
+    Object.assign({ license_hash: licHash, event_type }, fields || {}));
+
+  // Loads one employee row, or null. Throws a tagged error if the table
+  // itself is missing so the caller can answer 503 NOT_PROVISIONED instead
+  // of a generic 500 that looks identical to a real outage.
+  async function loadEmployee(employee_id, extraSelect) {
+    const select = 'employee_id,role,pin_hash,pin_salt,failed_attempts,locked_until,mfa_enabled' + (extraSelect ? (',' + extraSelect) : '');
+    const r = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(employee_id) +
+      '&active=eq.true&select=' + select + '&limit=1'), { headers });
+    const rows = await r.json();
+    if (!r.ok) { const e = new Error('lookup failed'); e.detail = rows; e.notProvisioned = isMissingTable(rows); throw e; }
+    return (Array.isArray(rows) && rows[0]) || null;
+  }
+
+  async function patchEmployee(employee_id, patch) {
+    return fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(employee_id)), {
+      method: 'PATCH', headers, body: JSON.stringify(Object.assign({ updated_at: new Date().toISOString() }, patch))
+    });
+  }
+
+  // Shared failure bookkeeping for both PIN and TOTP misses — a 6-digit
+  // TOTP code with a ±1-step acceptance window is brute-forceable at high
+  // request rates without this, so MFA failures count toward the same
+  // lockout as PIN failures rather than being unthrottled.
+  async function recordFailure(row) {
+    if (!row) return false;
+    const attempts = (row.failed_attempts || 0) + 1;
+    const locked = attempts >= LOCKOUT_THRESHOLD;
+    try {
+      await patchEmployee(row.employee_id, locked
+        ? { failed_attempts: 0, locked_until: new Date(Date.now() + LOCKOUT_MINUTES * 60000).toISOString() }
+        : { failed_attempts: attempts });
+    } catch (e) { /* non-fatal — the attempt is refused either way */ }
+    return locked;
+  }
+
+  async function clearFailures(row) {
+    if (!row || (!row.failed_attempts && !row.locked_until)) return;
+    try { await patchEmployee(row.employee_id, { failed_attempts: 0, locked_until: null }); } catch (e) { /* non-fatal */ }
+  }
+
+  function isLocked(row) {
+    return !!(row && row.locked_until && new Date(row.locked_until).getTime() > Date.now());
+  }
+
+  try {
+    if (action === 'bootstrap') {
+      const employee_id = String(body.employee_id || '').trim();
+      const pin = String(body.pin || '').trim();
+      if (!employee_id || employee_id.length > 128 || !/^\d{6,8}$/.test(pin)) {
+        res.status(400).json({ error: { message: 'employee_id (max 128 chars) and a 6-8 digit pin are required' } });
+        return;
+      }
+      if (body.display_name && String(body.display_name).length > 128) {
+        res.status(400).json({ error: { message: 'display_name max 128 chars' } });
+        return;
+      }
+      const existing = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&select=id&limit=1'), { headers });
+      const existingRows = await existing.json();
+      if (!existing.ok) return upstream(res, existingRows);
+      if (Array.isArray(existingRows) && existingRows.length > 0) {
+        res.status(409).json({ error: { code: 'ALREADY_PROVISIONED', message: 'This firm already has employee credentials set up — use action:setup instead' } });
+        return;
+      }
+      const { pin_hash, pin_salt } = hashPin(pin);
+      const r = await fetch(rest(TABLE), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, employee_id, display_name: body.display_name || employee_id,
+          role: 'owner', pin_hash, pin_salt, active: true
+        })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      await audit('pin_bootstrap', { employee_id, role: 'owner' });
+      const token = signSessionToken({ employee_id, role: 'owner', license_hash: licHash, app: APP });
+      res.status(200).json({ ok: true, token, role: 'owner', employee_id, mfa_enabled: false });
+      return;
+    }
+
+    if (action === 'login') {
+      const employee_id = String(body.employee_id || '').trim();
+      const pin = String(body.pin || '').trim();
+      if (!employee_id || !pin) {
+        res.status(400).json({ error: { message: 'employee_id and pin are required' } });
+        return;
+      }
+      const row = await loadEmployee(employee_id);
+
+      if (isLocked(row)) {
+        await audit('lockout', { employee_id, role: row.role, detail: { stage: 'pin' } });
+        res.status(429).json({ error: { code: 'LOCKED', message: 'Too many failed attempts — try again later' } });
+        return;
+      }
+
+      // verifyPin runs at equal cost whether the row exists or not (see
+      // api/_lib/auth.js DUMMY_SALT_FOR_TIMING) — no early return on a
+      // missing row, so employee_id existence can't be timed.
+      const pinOk = row ? verifyPin(pin, row.pin_hash, row.pin_salt) : verifyPin(pin, null, null);
+      if (!pinOk) {
+        const locked = await recordFailure(row);
+        await audit(locked ? 'lockout' : 'login_failed', { employee_id, role: row ? row.role : null, detail: { stage: 'pin' } });
+        res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Incorrect employee ID or PIN' } });
+        return;
+      }
+      await clearFailures(row);
+
+      if (row.mfa_enabled) {
+        // PIN was right, but this is NOT a session yet. The pre-auth token
+        // says only "PIN verified for this employee", expires in 5 minutes,
+        // and is refused by verifySessionToken.
+        const preauth_token = signPreAuthToken({ app: APP, employee_id: row.employee_id, role: row.role, license_hash: licHash });
+        res.status(200).json({ ok: true, mfa_required: true, preauth_token, employee_id: row.employee_id });
+        return;
+      }
+
+      await audit('login_success', { employee_id: row.employee_id, role: row.role, detail: { method: 'pin', mfa: false } });
+      const token = signSessionToken({ employee_id: row.employee_id, role: row.role, license_hash: licHash, app: APP });
+      res.status(200).json({ ok: true, token, role: row.role, employee_id: row.employee_id, mfa_enabled: false });
+      return;
+    }
+
+    if (action === 'mfa_verify') {
+      const pre = verifyPreAuthToken(body.preauth_token, licHash, APP);
+      if (!pre) {
+        res.status(401).json({ error: { code: 'PREAUTH_INVALID', message: 'Login step expired — start again' } });
+        return;
+      }
+      const row = await loadEmployee(pre.employee_id, 'mfa_secret_encrypted');
+      if (!row || !row.mfa_enabled || !row.mfa_secret_encrypted) {
+        res.status(401).json({ error: { code: 'MFA_NOT_ENABLED', message: 'Login step expired — start again' } });
+        return;
+      }
+      if (isLocked(row)) {
+        await audit('lockout', { employee_id: row.employee_id, role: row.role, detail: { stage: 'mfa' } });
+        res.status(429).json({ error: { code: 'LOCKED', message: 'Too many failed attempts — try again later' } });
+        return;
+      }
+      const secret = decryptSecret(row.mfa_secret_encrypted);
+      if (!secret) {
+        // Decrypt failure means the stored ciphertext can't be read with the
+        // current key (tampered, or SD_AUTH_SECRET was rotated). Fail closed
+        // and say so in the log — never fall back to skipping MFA.
+        console.error('law-auth: mfa secret decrypt failed for', row.employee_id);
+        await audit('mfa_failed', { employee_id: row.employee_id, role: row.role, detail: { reason: 'secret_undecryptable' } });
+        res.status(500).json({ error: { code: 'MFA_UNAVAILABLE', message: 'Two-factor verification is unavailable — contact your firm administrator' } });
+        return;
+      }
+      if (!verifyTotpCode(secret, body.code)) {
+        const locked = await recordFailure(row);
+        await audit(locked ? 'lockout' : 'mfa_failed', { employee_id: row.employee_id, role: row.role, detail: { stage: 'mfa' } });
+        res.status(401).json({ error: { code: 'MFA_INVALID', message: 'Incorrect authentication code' } });
+        return;
+      }
+      await clearFailures(row);
+      await audit('mfa_verified', { employee_id: row.employee_id, role: row.role });
+      await audit('login_success', { employee_id: row.employee_id, role: row.role, detail: { method: 'pin', mfa: true } });
+      const token = signSessionToken({ employee_id: row.employee_id, role: row.role, license_hash: licHash, app: APP });
+      res.status(200).json({ ok: true, token, role: row.role, employee_id: row.employee_id, mfa_enabled: true });
+      return;
+    }
+
+    if (action === 'mfa_setup') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const secret = generateTotpSecret();
+      const r = await patchEmployee(caller.employee_id, { mfa_secret_encrypted: encryptSecret(secret), mfa_enabled: false });
+      if (!r.ok) return upstream(res, await r.json());
+      res.status(200).json({
+        ok: true,
+        secret,
+        otpauth_uri: totpProvisioningUri(secret, caller.employee_id, 'SAIRNlaw'),
+        note: 'Scan this in an authenticator app, then confirm one code to turn two-factor on.'
+      });
+      return;
+    }
+
+    if (action === 'mfa_enable') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const row = await loadEmployee(caller.employee_id, 'mfa_secret_encrypted');
+      if (!row || !row.mfa_secret_encrypted) {
+        res.status(409).json({ error: { code: 'NO_ENROLLMENT', message: 'Start two-factor setup first' } });
+        return;
+      }
+      const secret = decryptSecret(row.mfa_secret_encrypted);
+      if (!secret || !verifyTotpCode(secret, body.code)) {
+        await audit('mfa_failed', { employee_id: caller.employee_id, role: caller.role, detail: { stage: 'enrollment' } });
+        res.status(401).json({ error: { code: 'MFA_INVALID', message: 'That code did not match — check your authenticator app and try again' } });
+        return;
+      }
+      const r = await patchEmployee(caller.employee_id, { mfa_enabled: true });
+      if (!r.ok) return upstream(res, await r.json());
+      await audit('mfa_enrolled', { employee_id: caller.employee_id, role: caller.role });
+      res.status(200).json({ ok: true, mfa_enabled: true });
+      return;
+    }
+
+    if (action === 'mfa_reset') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller || caller.role !== 'owner') {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner can reset two-factor for an employee' } });
+        return;
+      }
+      const target = String(body.employee_id || '').trim();
+      if (!target) { res.status(400).json({ error: { message: 'employee_id is required' } }); return; }
+      const r = await patchEmployee(target, { mfa_enabled: false, mfa_secret_encrypted: null });
+      if (!r.ok) return upstream(res, await r.json());
+      await audit('mfa_enrolled', { employee_id: target, role: null, detail: { reset_by: caller.employee_id, enabled: false } });
+      res.status(200).json({ ok: true, employee_id: target, mfa_enabled: false });
+      return;
+    }
+
+    if (action === 'setup') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      // expectedApp:APP matters — without it a valid StoneDesk/SAIRNbiz
+      // owner token ('owner' exists in every app's role list) would pass
+      // this check and be able to provision SAIRNlaw credentials.
+      if (!caller || caller.role !== 'owner') {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner can provision employee credentials' } });
+        return;
+      }
+      const employee_id = String(body.employee_id || '').trim();
+      const pin = String(body.pin || '').trim();
+      const role = body.role;
+      if (!employee_id || employee_id.length > 128 || !/^\d{6,8}$/.test(pin) || LAW_ROLES.indexOf(role) === -1) {
+        res.status(400).json({ error: { message: 'employee_id (max 128 chars), a 6-8 digit pin, and a valid role (' + LAW_ROLES.join('|') + ') are required' } });
+        return;
+      }
+      if (body.display_name && String(body.display_name).length > 128) {
+        res.status(400).json({ error: { message: 'display_name max 128 chars' } });
+        return;
+      }
+      const { pin_hash, pin_salt } = hashPin(pin);
+      const r = await fetch(rest(TABLE + '?on_conflict=license_hash,employee_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, employee_id, display_name: body.display_name || employee_id,
+          role, pin_hash, pin_salt, active: true, updated_at: new Date().toISOString()
+        })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      await audit('pin_setup', { employee_id, role, detail: { by: caller.employee_id } });
+      res.status(200).json({ ok: true, employee_id, role });
+      return;
+    }
+
+    if (action === 'audit_read') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller || caller.role !== 'owner') {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner can view the security audit log' } });
+        return;
+      }
+      const limit = Math.min(Math.max(parseInt(body.limit, 10) || 100, 1), 500);
+      const r = await fetch(rest('sairnlaw_audit_log?license_hash=eq.' + enc(licHash) +
+        '&select=id,employee_id,role,event_type,detail,created_at&order=created_at.desc&limit=' + limit), { headers });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({
+        ok: true,
+        entries: rows || [],
+        // Honest scope, returned with the data itself so a UI can't display
+        // the log as if it covered more than it does. See
+        // sql/sairnlaw_audit_log_schema.sql for the full reasoning.
+        coverage: {
+          covered: ['authentication events', 'two-factor enrollment and verification', 'single sign-on', 'credential provisioning', 'citator research lookups'],
+          not_covered: ['trust/IOLTA transactions', 'document access', 'matter changes'],
+          not_covered_reason: 'Those features store their data in the browser only and never reach the server, so the server cannot observe or attest to them. Server-side auditing of those actions requires them to become server-backed first — a separate, real piece of work that has not been done.'
+        }
+      });
+      return;
+    }
+
+    if (action === 'sso_start') {
+      if (!oidcConfigured()) {
+        res.status(503).json({ error: { code: 'NOT_CONFIGURED', message: 'Single sign-on is not set up for this deployment — your firm administrator must register SAIRNlaw with your identity provider first.' } });
+        return;
+      }
+      const endpoints = await oidcDiscoverEndpoints();
+      const { verifier, challenge } = generatePkcePair();
+      const state = signSsoState({ app: APP, license_hash: licHash, code_verifier: verifier });
+      res.status(200).json({ ok: true, authorization_url: oidcAuthorizationUrl(endpoints, state, challenge), state });
+      return;
+    }
+
+    if (action === 'sso_callback') {
+      if (!oidcConfigured()) {
+        res.status(503).json({ error: { code: 'NOT_CONFIGURED', message: 'Single sign-on is not set up for this deployment' } });
+        return;
+      }
+      const st = verifySsoState(body.state, APP);
+      if (!st || st.license_hash !== licHash) {
+        res.status(401).json({ error: { code: 'STATE_INVALID', message: 'Sign-in link expired — start again' } });
+        return;
+      }
+      const endpoints = await oidcDiscoverEndpoints();
+      const tokens = await oidcExchangeCode(endpoints, String(body.code || ''), st.code_verifier);
+      const claims = await oidcVerifyIdToken(endpoints, tokens.id_token);
+      const sub = claims && claims.sub;
+      const email = claims && claims.email ? String(claims.email).trim().toLowerCase() : null;
+      if (!sub) {
+        res.status(502).json({ error: { code: 'SSO_NO_SUBJECT', message: 'Identity provider returned no subject claim' } });
+        return;
+      }
+
+      // Match an EXISTING employee: by previously-linked sso_subject first,
+      // then by employee_id equal to the verified email claim. Never
+      // auto-create — see this file's header.
+      let row = null;
+      const bySub = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&sso_subject=eq.' + enc(sub) +
+        '&active=eq.true&select=employee_id,role,mfa_enabled&limit=1'), { headers });
+      const subRows = await bySub.json();
+      if (!bySub.ok) return upstream(res, subRows);
+      row = (Array.isArray(subRows) && subRows[0]) || null;
+
+      let linked = false;
+      if (!row && email) {
+        row = await loadEmployee(email);
+        if (row) {
+          const link = await patchEmployee(row.employee_id, { sso_subject: sub });
+          if (link.ok) linked = true;
+        }
+      }
+      if (!row) {
+        await audit('sso_login', { employee_id: email, role: null, detail: { result: 'no_matching_employee', sub_present: true } });
+        res.status(403).json({ error: { code: 'NO_MATCHING_EMPLOYEE', message: 'No SAIRNlaw account is linked to that identity — your firm administrator must create it first.' } });
+        return;
+      }
+      if (linked) await audit('sso_link', { employee_id: row.employee_id, role: row.role });
+      await audit('sso_login', { employee_id: row.employee_id, role: row.role, detail: { result: 'success' } });
+      await audit('login_success', { employee_id: row.employee_id, role: row.role, detail: { method: 'sso' } });
+      const token = signSessionToken({ employee_id: row.employee_id, role: row.role, license_hash: licHash, app: APP });
+      res.status(200).json({ ok: true, token, role: row.role, employee_id: row.employee_id, mfa_enabled: !!row.mfa_enabled });
+      return;
+    }
+  } catch (err) {
+    if (err && err.notProvisioned) {
+      res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw employee accounts are not set up yet — run sql/sairnlaw_employee_auth_schema.sql' } });
+      return;
+    }
+    if (err && err.code === 'NOT_CONFIGURED') {
+      res.status(503).json({ error: { code: 'NOT_CONFIGURED', message: 'Single sign-on is not set up for this deployment' } });
+      return;
+    }
+    console.error('api/law-auth error:', err);
+    res.status(err && err.status === 401 ? 401 : 502).json({
+      error: { message: err && err.status === 401 ? 'Single sign-on verification failed' : 'Upstream connection error — try again' }
+    });
+  }
+};
+
+// PostgREST answers a missing table with a specific code rather than a
+// network error — distinguishing it lets the caller say "run the migration"
+// instead of "upstream error", which is the difference between a 5-second
+// fix and an hour of guessing.
+function isMissingTable(detail) {
+  const s = JSON.stringify(detail || '');
+  return s.indexOf('PGRST205') !== -1 || s.indexOf('does not exist') !== -1;
+}
+
+function upstream(res, detail) {
+  console.error('law-auth upstream error:', detail);
+  if (isMissingTable(detail)) {
+    res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw employee accounts are not set up yet — run sql/sairnlaw_employee_auth_schema.sql' } });
+    return;
+  }
+  res.status(502).json({ error: { message: 'Data store error — try again' } });
+}

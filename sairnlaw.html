@@ -24,12 +24,8 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
 .plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
 .prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
-.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
-.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s;}
-.pdot.on{background:var(--p);border-color:var(--p);}
-.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;}
-.pkey:hover{background:var(--pt);border-color:var(--p);}
+/* .pdots/.pdot/.ppad/.pkey removed 2026-08-08 with the shared-role-PIN
+   keypad they styled -- login is now a real per-employee form. */
 .perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
 /* LAYOUT */
 #app{display:none;}
@@ -196,14 +192,46 @@ label.chk input{width:auto;}
 <div id="pin">
   <div class="pbox">
     <div class="plogo">SAIRNlaw</div>
-    <div class="prole">Enter your 4-digit PIN</div>
-    <div class="pdots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
-    <div class="ppad">
-      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
-      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
-      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
-      <button class="pkey" onclick="pk('C')">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')">&larr;</button>
+
+    <!-- STEP 1: real per-employee credentials, verified server-side by
+         api/law-auth.js. Replaced the old shared-PIN-per-role keypad
+         (DEFAULT_PINS in the page source, no server involvement) on
+         2026-08-08 -- per-person identity is what makes MFA and real
+         audit attribution possible at all. -->
+    <div id="lstep-login">
+      <div class="prole">Sign in</div>
+      <input class="ginp" id="l-eid" placeholder="Employee ID or email" autocomplete="username" style="letter-spacing:0;text-align:left"
+             onkeydown="if(event.key==='Enter')$('l-pin').focus()">
+      <input class="ginp" id="l-pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')lawLogin()">
+      <button class="gbtn" id="l-go" onclick="lawLogin()">Sign In</button>
+      <button class="gbtn" id="l-sso" style="display:none;background:#fff;color:var(--pd);border:2px solid var(--border);margin-top:8px" onclick="lawSsoStart()">Sign in with SSO</button>
+      <div style="margin-top:14px"><button class="hbtn" style="font-size:11px" onclick="lawShowBootstrap()">First-time setup</button></div>
     </div>
+
+    <!-- STEP 2: MFA challenge. Only reachable when the server said
+         mfa_required -- the client never decides this. -->
+    <div id="lstep-mfa" style="display:none">
+      <div class="prole">Two-factor code</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Enter the 6-digit code from your authenticator app.</div>
+      <input class="ginp" id="l-code" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code"
+             onkeydown="if(event.key==='Enter')lawMfaVerify()">
+      <button class="gbtn" onclick="lawMfaVerify()">Verify</button>
+      <div style="margin-top:12px"><button class="hbtn" style="font-size:11px" onclick="lawLoginReset()">Back</button></div>
+    </div>
+
+    <!-- STEP 3: one-time first-owner provisioning. Server refuses this
+         with 409 once any credential exists for the firm. -->
+    <div id="lstep-bootstrap" style="display:none">
+      <div class="prole">First-time setup</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Creates the firm's first Owner account. Only works once.</div>
+      <input class="ginp" id="b-eid" placeholder="Owner employee ID or email" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-name" placeholder="Display name" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-pin" type="password" inputmode="numeric" placeholder="Choose a 6-8 digit PIN">
+      <button class="gbtn" onclick="lawBootstrap()">Create Owner Account</button>
+      <div style="margin-top:12px"><button class="hbtn" style="font-size:11px" onclick="lawLoginReset()">Back to sign in</button></div>
+    </div>
+
     <div class="perr" id="perr" role="alert" aria-live="polite"></div>
   </div>
 </div>
@@ -244,6 +272,8 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-pi" onclick="nav('pi')"><span class="sico">&#129704;</span>Personal Injury</button>
       <div class="ss">Legal Research</div>
       <button class="sb" id="sb-citator" onclick="nav('citator')"><span class="sico">&#128220;</span>Citator (Phase A)</button>
+      <div class="ss">Administration</div>
+      <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Audit</button>
       <div class="sfoot">SAIRNlaw v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 2</span></div>
     </aside>
     <main>
@@ -826,6 +856,52 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<!-- SECURITY & AUDIT -->
+<div class="panel" id="panel-security">
+  <div class="ph"><div><div class="ptitle">Security &amp; Audit</div><div class="psub">Account protection, session model, and the firm's server-side audit trail</div></div></div>
+
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:10px">Your Account</div>
+    <div id="sec-account" style="font-size:13px;color:var(--muted);margin-bottom:12px"></div>
+    <div id="sec-mfa-state"></div>
+    <div id="sec-mfa-enroll" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:13px;margin-bottom:8px">Scan this in Google Authenticator, Authy, 1Password, or Microsoft Authenticator &mdash; then enter one code to turn two-factor on.</div>
+      <div id="sec-mfa-uri" style="font-family:monospace;font-size:11px;word-break:break-all;background:var(--bg);padding:10px;border-radius:6px;margin-bottom:6px"></div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Can't scan? Enter this key manually: <span id="sec-mfa-secret" style="font-family:monospace;font-weight:700"></span></div>
+      <div class="sbar"><input id="sec-mfa-code" inputmode="numeric" maxlength="6" placeholder="6-digit code"><button class="btn bp" onclick="secMfaEnable()">Confirm &amp; Enable</button></div>
+      <div id="sec-mfa-err" style="color:var(--danger);font-size:12px;margin-top:6px"></div>
+    </div>
+  </div></div>
+
+  <div class="card" id="sec-admin-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Employee Accounts</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
+    <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
+    <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="attorney">Attorney</option><option value="paralegal">Paralegal</option><option value="owner">Owner</option></select></div>
+    <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
+    <button class="btn bp" onclick="secProvision()">Save Employee</button>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Lost phone? Clear an employee's two-factor enrollment so they can re-enroll.</div>
+      <div class="sbar"><input id="sec-reset-eid" placeholder="Employee ID or email"><button class="btn bo" onclick="secMfaReset()">Reset Two-Factor</button></div>
+    </div>
+    <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
+  </div></div>
+
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Audit Trail</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Append-only. Nothing in this application can edit or delete an audit entry &mdash; there is no such code path.</div>
+    <div id="sec-audit-coverage"></div>
+    <button class="btn bo" onclick="secLoadAudit()">Refresh</button>
+    <div id="sec-audit-list" style="margin-top:12px"></div>
+  </div></div>
+
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:10px">How Your Data Is Protected</div>
+    <div id="sec-encryption" style="font-size:13px;line-height:1.7"></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -843,25 +919,32 @@ function lawLocalToday(){
 // Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
 // validation is server-side in api/_lib/license.js against license_keys.
 var VALID=['LAW-','DEMO-','SAIRN-'];
-var DEFAULT_PINS={owner:'1234',attorney:'2345',paralegal:'3456'};
-var PINS=ld('law_pins',null)||DEFAULT_PINS;
+var AUTH_API='https://sairn.vercel.app/api/law-auth';
 
 // SESSION INDEPENDENCE (per the build brief -- the named Amicus Attorney
 // bug class: one user's session affecting another logged-in user's
-// session). This app never stores session state anywhere shared across
-// browser instances -- no BroadcastChannel, no server-side single-slot
-// session object, no SharedWorker. pbuf/prole below are plain in-memory
-// JS variables scoped to THIS page load; PINS/license key persist only in
-// THIS browser's own localStorage. Two different users on two different
-// devices (the real, supported usage pattern -- see every other SAIRN
-// app's identical PIN-role scaffold) are fully independent by
-// construction. The one deliberately NOT supported case: two different
-// users sharing the exact same physical browser profile would share that
-// profile's localStorage (true of any localStorage-based app, not a bug
-// introduced here) -- real multi-user-per-device isolation would need
-// per-employee server-auth (the pattern StoneDesk/SAIRNbiz graduated to),
-// out of scope for a Phase 1 scaffold.
-var pbuf='',prole='owner',ceid=null,aiHist=[];
+// session). Graduated 2026-08-08 from the Phase 1 shared-PIN-per-role
+// scaffold to real per-employee server auth. The independence property is
+// now stronger, and holds for a concrete structural reason:
+//
+//   Every session is a SELF-CONTAINED signed token (api/_lib/auth.js).
+//   The server keeps NO session store, no session table, no in-memory
+//   session map, no single-slot "current user" anywhere. There is nothing
+//   for one user's logout, tab close, or browser crash to invalidate,
+//   because no shared object representing "who is logged in" exists.
+//   Logging out here deletes THIS browser's own copy of THIS user's token
+//   and nothing else -- it cannot reach another user's token, which lives
+//   only in that user's own browser storage.
+//
+// This app also uses no BroadcastChannel, no SharedWorker, and no
+// storage-event listener, so two tabs cannot signal each other either.
+// The one case that is still, honestly, NOT isolated: two different people
+// sharing the exact same physical browser profile share that profile's
+// localStorage -- true of any browser-storage app, and the reason logout
+// clears the token rather than leaving it behind.
+var prole='owner',ceid=null,aiHist=[];
+var lawSession=null;   // {token, role, employee_id, mfa_enabled} -- in-memory mirror
+var lawPreauth=null;   // short-lived MFA pre-auth token, in-memory only, never persisted
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 // H() escapes for HTML-attribute context, which is the WRONG escaping for
@@ -901,30 +984,173 @@ function sdnData(action,resource,payload){
   }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
 }
 
+// ── AUTH CLIENT (2026-08-08) ────────────────────────────────────────────
+// Every call below is a real server round trip to api/law-auth.js. The
+// client decides nothing about identity or role -- it displays what the
+// signed token says, and every protected endpoint re-verifies that token
+// server-side regardless of what this page believes.
+function lawAuth(action,payload,withSession){
+  var lic=lawLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&lawSession&&lawSession.token)h['X-SD-Auth']=lawSession.token;
+  return fetch(AUTH_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+function lawLoginErr(m){var e=$('perr');if(e)e.textContent=m||'';}
+function lawShowStep(id){
+  ['lstep-login','lstep-mfa','lstep-bootstrap'].forEach(function(s){
+    var el=$(s);if(el)el.style.display=(s===id?'block':'none');
+  });
+  lawLoginErr('');
+}
+function lawLoginReset(){lawPreauth=null;var c=$('l-code');if(c)c.value='';lawShowStep('lstep-login');}
+function lawShowBootstrap(){lawShowStep('lstep-bootstrap');}
+
 function gateGo(){
   var k=($('gkey').value||'').trim().toUpperCase();
   var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
   if(!ok){$('gerr').textContent='Invalid key format. Try LAW-PINNACLE-2026';return;}
   localStorage.setItem('law_license_key',k);
+  $('gerr').textContent='Checking key…';
+  // Real server-side license check BEFORE moving on -- otherwise a bad key
+  // only surfaces later as a failed login, which misattributes the problem
+  // to a wrong PIN (the exact confusion sd-auth.js's check_license exists
+  // to prevent).
+  lawAuth('check_license',{}).then(function(r){
+    if(!r.ok){
+      localStorage.removeItem('law_license_key');
+      $('gerr').textContent=r.msg||'That license key was not accepted.';
+      return;
+    }
+    $('gerr').textContent='';
+    $('gate').style.display='none';$('pin').classList.add('on');
+    // Only offer SSO if the deployment actually has an identity provider
+    // configured -- showing a button that always 503s would be worse than
+    // not showing it.
+    if(r.data&&r.data.sso_available){var b=$('l-sso');if(b)b.style.display='block';}
+    var e=$('l-eid');if(e)e.focus();
+  });
+}
+
+function lawLogin(){
+  var eid=($('l-eid').value||'').trim();
+  var pin=($('l-pin').value||'').trim();
+  if(!eid||!pin){lawLoginErr('Enter your employee ID and PIN.');return;}
+  lawLoginErr('Signing in…');
+  lawAuth('login',{employee_id:eid,pin:pin}).then(function(r){
+    if(!r.ok){lawLoginErr(r.msg||'Sign-in failed.');return;}
+    if(r.data.mfa_required){
+      lawPreauth=r.data.preauth_token;
+      lawShowStep('lstep-mfa');
+      var c=$('l-code');if(c)c.focus();
+      return;
+    }
+    lawEnterApp(r.data);
+  });
+}
+
+function lawMfaVerify(){
+  var code=($('l-code').value||'').trim();
+  if(!lawPreauth){lawLoginErr('That step expired — sign in again.');lawLoginReset();return;}
+  if(!/^\d{6}$/.test(code)){lawLoginErr('Enter the 6-digit code.');return;}
+  lawLoginErr('Verifying…');
+  lawAuth('mfa_verify',{preauth_token:lawPreauth,code:code}).then(function(r){
+    if(!r.ok){
+      lawLoginErr(r.msg||'Verification failed.');
+      if(r.code==='PREAUTH_INVALID')lawLoginReset();
+      return;
+    }
+    lawPreauth=null;
+    lawEnterApp(r.data);
+  });
+}
+
+function lawBootstrap(){
+  var eid=($('b-eid').value||'').trim(),nm=($('b-name').value||'').trim(),pin=($('b-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){lawLoginErr('Employee ID and a 6-8 digit PIN are required.');return;}
+  lawLoginErr('Creating account…');
+  lawAuth('bootstrap',{employee_id:eid,display_name:nm||eid,pin:pin}).then(function(r){
+    if(!r.ok){lawLoginErr(r.msg||'Setup failed.');return;}
+    lawEnterApp(r.data);
+  });
+}
+
+function lawSsoStart(){
+  lawLoginErr('Redirecting to your identity provider…');
+  lawAuth('sso_start',{}).then(function(r){
+    if(!r.ok){lawLoginErr(r.msg||'Single sign-on is unavailable.');return;}
+    // The state token carries the PKCE verifier across the redirect. It's
+    // stored here (this browser only, sessionStorage so it dies with the
+    // tab) purely to hand back to sso_callback -- it is not a session and
+    // the server refuses it as one.
+    try{sessionStorage.setItem('law_sso_state',r.data.state);}catch(e){}
+    window.location.href=r.data.authorization_url;
+  });
+}
+
+// Handles the identity provider's redirect back (?code=...&state=...).
+function lawSsoCallbackIfPresent(){
+  var q=new URLSearchParams(window.location.search);
+  var code=q.get('code'),state=q.get('state');
+  if(!code||!state)return false;
+  var saved='';try{saved=sessionStorage.getItem('law_sso_state')||'';}catch(e){}
+  // Clean the code out of the address bar immediately -- an authorization
+  // code in browser history/referrer is a real leak, even single-use.
+  try{window.history.replaceState({},document.title,window.location.pathname);}catch(e){}
+  try{sessionStorage.removeItem('law_sso_state');}catch(e){}
+  if(saved&&saved!==state){lawLoginErr('Sign-in could not be verified — start again.');return true;}
   $('gate').style.display='none';$('pin').classList.add('on');
+  lawLoginErr('Completing single sign-on…');
+  lawAuth('sso_callback',{code:code,state:state}).then(function(r){
+    if(!r.ok){lawLoginErr(r.msg||'Single sign-on failed.');return;}
+    lawEnterApp(r.data);
+  });
+  return true;
 }
-function pk(k){$('perr').textContent='';
-  if(k==='C'){pbuf='';dots();return;}
-  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
-  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+
+function lawEnterApp(d){
+  lawSession={token:d.token,role:d.role,employee_id:d.employee_id,mfa_enabled:!!d.mfa_enabled};
+  prole=d.role;ceid=d.employee_id;
+  // Persisted so a refresh doesn't force a re-login. This is THIS browser's
+  // own copy of THIS user's token -- see the session-independence note above.
+  try{localStorage.setItem('law_session',JSON.stringify(lawSession));}catch(e){}
+  st('law_role',prole);
+  $('pin').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=(d.employee_id||prole)+' · '+prole.charAt(0).toUpperCase()+prole.slice(1);
+  lawLoginErr('');
+  var p=$('l-pin');if(p)p.value='';
+  init();
 }
-function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
-function chkPin(){
-  var match=null;
-  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
-  if(match){
-    prole=match;st('law_role',prole);
-    $('pin').classList.remove('on');$('app').classList.add('on');
-    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
-    init();
-  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+
+// Restores a still-valid session on reload. The token's expiry is enforced
+// SERVER-side on every protected call -- this only avoids showing the app
+// shell around a token that is already obviously dead.
+function lawRestoreSession(){
+  var s=null;try{s=JSON.parse(localStorage.getItem('law_session')||'null');}catch(e){}
+  if(!s||!s.token||!s.role)return false;
+  var payload=null;
+  try{payload=JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}
+  if(!payload||!payload.exp||Date.now()>=payload.exp){try{localStorage.removeItem('law_session');}catch(e){}return false;}
+  lawEnterApp(s);
+  return true;
 }
-function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+function doLogout(){
+  // Clears only this browser's own token. No server call and no shared
+  // state is touched, which is exactly why this cannot end anyone else's
+  // session (see the session-independence note above).
+  lawSession=null;lawPreauth=null;
+  try{localStorage.removeItem('law_session');}catch(e){}
+  $('app').classList.remove('on');$('pin').classList.add('on');
+  lawLoginReset();
+  var e=$('l-eid');if(e)e.value='';
+  toast('Logged out');
+}
 
 function toggleNav(){
   var a=$('aside');if(!a)return;
@@ -959,6 +1185,7 @@ function nav(id){
   if(id==='opaccounting')rOpAccounting();
   if(id==='pi')rPi();
   if(id==='citator')rCitator();
+  if(id==='security')rSecurity();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -2415,6 +2642,122 @@ function rCitator(){
   $('citator-report').innerHTML='';
 }
 
+// ── SECURITY & AUDIT PANEL ────────────────────────────────────────────────
+var AUDIT_LABELS={
+  login_success:'Signed in', login_failed:'Failed sign-in attempt', lockout:'Account locked (too many attempts)',
+  pin_bootstrap:'First Owner account created', pin_setup:'Employee credentials provisioned',
+  mfa_enrolled:'Two-factor enrollment changed', mfa_verified:'Two-factor code verified', mfa_failed:'Two-factor code rejected',
+  sso_login:'Single sign-on', sso_link:'Single sign-on identity linked', citator_lookup:'Citator research lookup'
+};
+
+function rSecurity(){
+  var s=lawSession||{};
+  $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(s.role||'--')+'</strong>';
+  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+  rSecMfaState();
+  rSecEncryption();
+  if(s.role==='owner')secLoadAudit();
+  else $('sec-audit-list').innerHTML='<div style="color:var(--muted);font-size:13px">Only an Owner can view the firm\'s audit trail.</div>';
+}
+
+function rSecMfaState(){
+  var on=lawSession&&lawSession.mfa_enabled;
+  $('sec-mfa-state').innerHTML=on
+    ? '<div style="color:var(--ok);font-weight:600;font-size:13px">&#10003; Two-factor authentication is on for this account.</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin-top:4px">Turning it off requires an Owner to reset it, so a stolen PIN alone can\'t disable it.</div>'
+    : '<div style="font-size:13px;margin-bottom:8px">Two-factor authentication is <strong>off</strong>. A PIN alone protects this account.</div>'
+      +'<button class="btn bp" onclick="secMfaSetup()">Set Up Two-Factor</button>';
+}
+
+function secMfaSetup(){
+  lawAuth('mfa_setup',{},true).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not start setup');return;}
+    $('sec-mfa-uri').textContent=r.data.otpauth_uri;
+    $('sec-mfa-secret').textContent=r.data.secret;
+    $('sec-mfa-enroll').style.display='block';
+    $('sec-mfa-err').textContent='';
+  });
+}
+
+function secMfaEnable(){
+  var code=($('sec-mfa-code').value||'').trim();
+  if(!/^\d{6}$/.test(code)){$('sec-mfa-err').textContent='Enter the 6-digit code from your app.';return;}
+  $('sec-mfa-err').textContent='';
+  lawAuth('mfa_enable',{code:code},true).then(function(r){
+    if(!r.ok){$('sec-mfa-err').textContent=r.msg||'That code did not match.';return;}
+    lawSession.mfa_enabled=true;
+    try{localStorage.setItem('law_session',JSON.stringify(lawSession));}catch(e){}
+    $('sec-mfa-enroll').style.display='none';
+    $('sec-mfa-code').value='';
+    rSecMfaState();
+    toast('Two-factor authentication is on');
+    secLoadAudit();
+  });
+}
+
+function secProvision(){
+  var m=$('sec-admin-msg');
+  var eid=($('sec-new-eid').value||'').trim(),nm=($('sec-new-name').value||'').trim();
+  var role=$('sec-new-role').value,pin=($('sec-new-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){m.style.color='var(--danger)';m.textContent='Employee ID and a 6-8 digit PIN are required.';return;}
+  lawAuth('setup',{employee_id:eid,display_name:nm||eid,role:role,pin:pin},true).then(function(r){
+    if(!r.ok){m.style.color='var(--danger)';m.textContent=r.msg||'Could not save.';return;}
+    m.style.color='var(--muted)';m.textContent='Saved '+eid+' as '+role+'.';
+    $('sec-new-pin').value='';
+    secLoadAudit();
+  });
+}
+
+function secMfaReset(){
+  var m=$('sec-admin-msg'),eid=($('sec-reset-eid').value||'').trim();
+  if(!eid){m.style.color='var(--danger)';m.textContent='Enter an employee ID.';return;}
+  lawAuth('mfa_reset',{employee_id:eid},true).then(function(r){
+    if(!r.ok){m.style.color='var(--danger)';m.textContent=r.msg||'Could not reset.';return;}
+    m.style.color='var(--muted)';m.textContent='Two-factor cleared for '+eid+' — they can enroll again at next sign-in.';
+    secLoadAudit();
+  });
+}
+
+function secLoadAudit(){
+  var box=$('sec-audit-list');
+  box.innerHTML='<div style="color:var(--muted);font-size:13px">Loading…</div>';
+  lawAuth('audit_read',{limit:100},true).then(function(r){
+    if(!r.ok){box.innerHTML='<div style="color:var(--muted);font-size:13px">'+H(r.msg||'Could not load the audit trail.')+'</div>';return;}
+    // The coverage statement is rendered from what the SERVER returns, not
+    // from a hardcoded string here, so the UI can never overstate what is
+    // actually being logged.
+    var c=r.data.coverage||{};
+    $('sec-audit-coverage').innerHTML=
+      '<div style="background:var(--pt);border-radius:8px;padding:12px;font-size:12px;line-height:1.6;margin-bottom:12px">'
+      +'<div style="font-weight:700;margin-bottom:4px">What this log covers</div>'
+      +'<div>'+H((c.covered||[]).join(', '))+'.</div>'
+      +'<div style="font-weight:700;margin-top:8px;color:var(--danger)">What it does NOT cover yet</div>'
+      +'<div>'+H((c.not_covered||[]).join(', '))+'.</div>'
+      +'<div style="margin-top:4px;color:var(--muted)">'+H(c.not_covered_reason||'')+'</div>'
+      +'</div>';
+    var rows=r.data.entries||[];
+    if(!rows.length){box.innerHTML='<div style="color:var(--muted);font-size:13px">No audit entries yet.</div>';return;}
+    box.innerHTML='<table><thead><tr><th>When</th><th>Who</th><th>Event</th><th>Detail</th></tr></thead><tbody>'
+      +rows.map(function(e){
+        return '<tr><td>'+H(fdatetime(e.created_at))+'</td><td>'+H(e.employee_id||'--')+(e.role?' <span style="color:var(--muted)">('+H(e.role)+')</span>':'')+'</td>'
+          +'<td>'+H(AUDIT_LABELS[e.event_type]||e.event_type)+'</td>'
+          +'<td style="font-size:11px;color:var(--muted)">'+H(e.detail?JSON.stringify(e.detail):'')+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  });
+}
+
+// Every claim below is a statement about a mechanism that exists in this
+// codebase or in a named, verifiable provider guarantee -- no "military
+// grade" marketing language, and nothing asserted that isn't checkable.
+function rSecEncryption(){
+  $('sec-encryption').innerHTML=
+    '<div><strong>In transit:</strong> every server call this app makes goes to <code>https://sairn.vercel.app</code> over TLS. Vercel serves all deployments over HTTPS and redirects plain HTTP, so no SAIRNlaw request travels unencrypted.</div>'
+    +'<div style="margin-top:8px"><strong>Two-factor secrets at rest:</strong> encrypted with AES-256-GCM before they are stored, and decrypted only in server memory when verifying a code. A tampered or truncated value fails its authentication tag and is rejected rather than silently accepted.</div>'
+    +'<div style="margin-top:8px"><strong>PINs:</strong> never stored. Only a scrypt hash with a per-account random salt is kept, and comparison is constant-time.</div>'
+    +'<div style="margin-top:8px"><strong>Database at rest:</strong> Supabase (this app\'s data store) encrypts its managed Postgres volumes at rest by default. That is the provider\'s guarantee, not something this application implements &mdash; stated separately here for that reason.</div>'
+    +'<div style="margin-top:8px;color:var(--muted);font-size:12px"><strong>Honest limit:</strong> matter, document, trust and calendar records currently live in this browser\'s own local storage, which is <em>not</em> encrypted by this app. Device-level disk encryption is what protects them today. Moving that data server-side is real, separate work that has not been done.</div>';
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 function init(){
   seed();
@@ -2424,7 +2767,19 @@ function init(){
 }
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('law_license_key');
-  if(lic){$('gate').style.display='none';$('pin').classList.add('on');}
+  if(!lic)return;
+  // An identity-provider redirect (?code=&state=) takes priority over both
+  // the stored session and the normal login screen.
+  if(lawSsoCallbackIfPresent())return;
+  $('gate').style.display='none';
+  if(lawRestoreSession())return;
+  $('pin').classList.add('on');
+  lawShowStep('lstep-login');
+  // Re-check whether SSO is available for this deployment on a cold load --
+  // gateGo() only learns that on the run where the key was first entered.
+  lawAuth('check_license',{}).then(function(r){
+    if(r.ok&&r.data&&r.data.sso_available){var b=$('l-sso');if(b)b.style.display='block';}
+  });
 });
 </script>
 </body>
