@@ -2324,12 +2324,23 @@ async function rCitatorReport(){
   var totalProcessed=cov.total_citing_processed||0;
   // HONEST COVERAGE DISCLOSURE (brief item 5) -- states plainly what has
   // actually been analyzed, never implies parity with Shepard's/KeyCite.
-  var coverageText=totalReported===null||totalReported===undefined
-    ? 'Coverage not yet established for this case -- click "Process Citing Opinions" to begin.'
-    : ('Fully processed: '+totalProcessed+' of '+totalReported+' citing opinions CourtListener reports for this case'+
-       (cov.jurisdiction_filter?' (filtered to '+H(cov.jurisdiction_filter)+')':'')+
-       (cov.date_filter_from?' (from '+H(cov.date_filter_from)+' forward)':'')+
-       '. This is NOT the same coverage as Shepard\'s or KeyCite -- it reflects exactly what CourtListener\'s free-tier database contains and what this system has processed so far, nothing implied beyond that.');
+  // FIXED 2026-08-08 (real live-testing found this): the "not yet
+  // established" message used to show even after real processing had
+  // already happened, whenever totalReported was null -- which was the
+  // common case before api/legal-citator.js's own totalReported bug (fixed
+  // same commit) was found. Now branches on totalProcessed first, so a
+  // real in-progress case always shows what's actually been done, and only
+  // falls back to "not yet established" when truly nothing has run.
+  var coverageText;
+  if(totalProcessed>0){
+    coverageText='Processed so far: '+totalProcessed+' citing opinion(s)'+
+      (totalReported!==null&&totalReported!==undefined?(' of '+totalReported+' CourtListener reports for this case'):' (total CourtListener count not available for this case)')+
+      (cov.jurisdiction_filter?' (filtered to '+H(cov.jurisdiction_filter)+')':'')+
+      (cov.date_filter_from?' (from '+H(cov.date_filter_from)+' forward)':'')+
+      '. This is NOT the same coverage as Shepard\'s or KeyCite -- it reflects exactly what CourtListener\'s free-tier database contains and what this system has processed so far, nothing implied beyond that.';
+  }else{
+    coverageText='Coverage not yet established for this case -- click "Process Citing Opinions" to begin.';
+  }
   var breakdown=d.breakdown||{};
   var summaryParts=[];
   ['followed','distinguished','questioned','overruled','criticized','unclear'].forEach(function(l){

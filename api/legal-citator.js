@@ -235,12 +235,65 @@ module.exports = async (req, res) => {
         return;
       }
 
+      // LIVE-VERIFIED 2026-08-08 (real token, real data, first end-to-end
+      // run): opinionData.cluster is a plain URL STRING
+      // ("https://.../clusters/{id}/"), not a nested object -- the earlier
+      // guess (opinionData.cluster.case_name / .docket.court) was wrong,
+      // confirmed via a real /opinions/{id}/ response, and silently
+      // produced null/placeholder values rather than crashing. Real fix:
+      // resolve that URL to a real cluster fetch (cached in cl_case_cache
+      // so repeat lookups of the same citing case don't re-spend budget) to
+      // get the real case_name. Court info requires a SECOND real hop past
+      // that (cluster.docket is ALSO just a URL, to a docket that has no
+      // court field inlined -- confirmed live) -- deferred, not fixed here,
+      // specifically because of the real, very small rate budget: adding a
+      // third real call per citing opinion (opinion text + cluster + docket)
+      // would make MAX_OPINIONS_PER_INVOCATION=3 cost up to 9 CourtListener
+      // calls in one request, dangerously close to blowing the per-minute
+      // safety margin. court_hierarchy_weight stays null until a follow-up
+      // adds a docket-detail helper and the budget math is redone for a
+      // 3-calls-per-opinion cost -- flagged here, not silently left broken.
+      async function resolveClusterCaseName(clusterUrl) {
+        const m = /\/clusters\/(\d+)\//.exec(clusterUrl || '');
+        if (!m) return null;
+        const clusterId = Number(m[1]);
+        const cacheR = await fetch(sb.rest('cl_case_cache?cl_cluster_id=eq.' + clusterId + '&limit=1'), { headers: sb.headers });
+        const cacheRows = await cacheR.json();
+        if (Array.isArray(cacheRows) && cacheRows[0]) return cacheRows[0].case_name;
+        const clusterData = await cl.clCluster(clusterId);
+        if (clusterData && clusterData.case_name) {
+          await fetch(sb.rest('cl_case_cache'), { method: 'POST', headers: Object.assign({}, sb.headers, { Prefer: 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ cl_cluster_id: clusterId, case_name: clusterData.case_name, citation: (clusterData.citations && clusterData.citations[0]) ? (clusterData.citations[0].volume + ' ' + clusterData.citations[0].reporter + ' ' + clusterData.citations[0].page) : null, cite_count: clusterData.citation_count || null }) });
+          return clusterData.case_name;
+        }
+        return null;
+      }
+
       const budget = await cl.remainingBudget();
       const callsAvailable = Math.min(budget.minute, budget.hour, budget.day);
-      if (callsAvailable <= 1) {
+      if (callsAvailable <= 2) {
         res.status(429).json({ error: { code: 'CL_RATE_LIMITED', message: 'CourtListener request budget is exhausted right now (shared across all SAIRNlaw firms) — try again shortly.' } });
         return;
       }
+
+      // Real total_citing_reported (brief item 5): the cited case's own
+      // cluster.citation_count -- NOT opinions-cited's own `count` field,
+      // which live-verified 2026-08-08 does not reliably return a plain
+      // number (returned a cursor-pagination URL string in a real test
+      // against a high-citation-count case). Cached the same way as citing
+      // opinions' case names, so this doesn't re-spend budget on repeat
+      // report views of the same case.
+      let citedCaseCiteCount = null;
+      try {
+        const citedCacheR = await fetch(sb.rest('cl_case_cache?cl_cluster_id=eq.' + citedClusterId + '&limit=1'), { headers: sb.headers });
+        const citedCacheRows = await citedCacheR.json();
+        if (Array.isArray(citedCacheRows) && citedCacheRows[0] && citedCacheRows[0].cite_count !== null) {
+          citedCaseCiteCount = citedCacheRows[0].cite_count;
+        } else {
+          const citedClusterData = await cl.clCluster(citedClusterId);
+          citedCaseCiteCount = (citedClusterData && typeof citedClusterData.citation_count === 'number') ? citedClusterData.citation_count : null;
+          await fetch(sb.rest('cl_case_cache'), { method: 'POST', headers: Object.assign({}, sb.headers, { Prefer: 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ cl_cluster_id: citedClusterId, case_name: caseName, citation: citation || null, cite_count: citedCaseCiteCount }) });
+        }
+      } catch (e) { console.error('cited-case cluster fetch failed:', e.message); }
 
       const citingListData = await cl.clCitingOpinions(citedOpinionId);
       const citingRefs = (citingListData && citingListData.results) || [];
@@ -249,10 +302,14 @@ module.exports = async (req, res) => {
       const alreadyRows = await alreadyR.json();
       const alreadyIds = new Set((Array.isArray(alreadyRows) ? alreadyRows : []).map((r) => r.citing_opinion_id));
 
+      // Each citing opinion now costs 2 real CourtListener calls (opinion
+      // text + cluster, for the real case name) instead of 1 -- budget math
+      // updated accordingly rather than left stale after the fix above.
+      const maxByBudget = Math.floor((callsAvailable - 1) / 2); // -1 reserves the opinions-cited call already spent above
       const toProcess = citingRefs
         .map((ref) => { const m = /\/opinions\/(\d+)\//.exec(ref.citing_opinion || ''); return m ? Number(m[1]) : null; })
         .filter((id) => id && !alreadyIds.has(id))
-        .slice(0, Math.min(MAX_OPINIONS_PER_INVOCATION, callsAvailable - 1)); // -1 reserves budget for the opinion-text fetch itself
+        .slice(0, Math.max(0, Math.min(MAX_OPINIONS_PER_INVOCATION, maxByBudget)));
 
       const processedNow = [];
       for (const citingOpinionId of toProcess) {
@@ -264,12 +321,15 @@ module.exports = async (req, res) => {
         const excerptData = findCitingExcerpt(text, caseName, citation || '');
         if (!excerptData) continue; // cited case name/citation not actually found in the text — do not fabricate a classification with no real excerpt
 
-        const citingCaseName = (opinionData.cluster && opinionData.cluster.case_name) || opinionData.caseName || ('Opinion ' + citingOpinionId);
-        // Field path also unverified pending a real token (same honest
-        // disclosure as extractOpinionText()'s header) -- falls back to
-        // null (skipping hierarchy weight for this citing opinion, not
-        // crashing) if neither guess matches the real response shape.
-        const citingCourtId = (opinionData.cluster && opinionData.cluster.docket && opinionData.cluster.docket.court) || opinionData.court_id || null;
+        let citingCaseName = 'Opinion ' + citingOpinionId;
+        try {
+          const resolvedName = await resolveClusterCaseName(opinionData.cluster);
+          if (resolvedName) citingCaseName = resolvedName;
+        } catch (e) { console.error('cluster case-name resolve failed for', citingOpinionId, e.message); }
+        // Deferred pending a docket-detail helper -- see the header comment
+        // on resolveClusterCaseName() above for exactly why, not silently
+        // left unexplained.
+        const citingCourtId = null;
 
         let courtWeight = null;
         if (citingCourtId) {
@@ -320,7 +380,10 @@ module.exports = async (req, res) => {
         processedNow.push({ citing_opinion_id: citingOpinionId, treatment: agg.treatment, agreement_pct: agg.agreement_pct });
       }
 
-      const totalReported = citingListData && typeof citingListData.count === 'number' ? citingListData.count : null;
+      // citedCaseCiteCount (real cluster.citation_count, resolved above) is
+      // the reliable real total -- opinions-cited's own `count` field is
+      // kept only as a fallback for the rare case the cluster fetch failed.
+      const totalReported = citedCaseCiteCount !== null ? citedCaseCiteCount : (citingListData && typeof citingListData.count === 'number' ? citingListData.count : null);
       const totalProcessedR = await fetch(sb.rest('cl_citing_treatments?cited_cluster_id=eq.' + encodeURIComponent(citedClusterId) + '&select=id'), { headers: sb.headers });
       const totalProcessedRows = await totalProcessedR.json();
       const totalProcessed = Array.isArray(totalProcessedRows) ? totalProcessedRows.length : 0;
