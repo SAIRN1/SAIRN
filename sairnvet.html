@@ -6205,10 +6205,26 @@ function searchDrugs(){
   var flagDiv=document.getElementById('drug-red-flags');
   flagDiv.style.display='none';
 
+  // SAFETY FIX (2026-08-08, platform audit): checkRedFlags()/RED_FLAG_MATRIX
+  // is the same deterministic contraindication gate the AI Dosing Calculator
+  // uses (checkRedFlags(drug, species), ~line 6257) -- it was NEVER called
+  // here. Every sampled fatal/toxic pair (acetaminophen+cat, ivermectin+
+  // chelonian, permethrin+cat, amitraz+cat, penicillin+guinea pig,
+  // aspirin+cat) has ZERO matching VET_DRUGS rows for that species, so this
+  // search screen showed a bare "No drugs found" for every one of them --
+  // no warning at all -- while the calculator screen correctly blocked the
+  // same combination. A user relying on Drug Database search alone (a
+  // plausible real workflow: quickly checking "can I give X to this
+  // species" without running a full dose calculation) got no signal that
+  // the combination is fatal. Checked independently of whether name/species
+  // are both filled in, and independently of whether any VET_DRUGS row
+  // matched, so it fires even on a species-only or drug-only search.
+  var redFlags = checkRedFlags(name, species);
+
   if(filtered.length===0){
     tbody.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);">No drugs found</td></tr>';
   } else {
-    var flags=[];
+    var flags=redFlags.slice();
     filtered.slice(0,300).forEach(function(d){
       if(d.flag){ flags.push(d.name+': '+d.flag); }
       var status = d.needsReview
@@ -6224,6 +6240,12 @@ function searchDrugs(){
       flagDiv.style.display='block';
       document.getElementById('red-flag-text').textContent=flags.join('  |  ');
     }
+  }
+  if(filtered.length===0 && redFlags.length){
+    // The contraindication is real even though nothing matched the formulary --
+    // never let "No drugs found" be the only message shown in that case.
+    flagDiv.style.display='block';
+    document.getElementById('red-flag-text').textContent=redFlags.join('  |  ');
   }
 }
 
