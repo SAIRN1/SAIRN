@@ -2312,11 +2312,16 @@ async function scpMarkScheduleComplete(scheduleId){
   scpRSched();scpRDash();
   scpToast(syncResult?'Job marked Complete':'Marked Complete on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
-// QC review queue -- client-side visibility gate only, same disclosed
-// limitation as sairngrounds.html's rGrdQcQueue: the self-QC check happens
-// again inside scpQcDecide() itself (the actual state-change point), not
-// just here in what's shown, but there is no server independently
-// re-verifying it the way StoneDesk's api/sd-sub-data.js does.
+// QC review queue -- client-side visibility gate only. The self-QC check
+// happens again inside scpQcDecide() itself (the actual state-change
+// point), and as of api/sd-data.js's scp_progress_photos write handler
+// (2026-08-07) the server independently re-verifies it too: it re-checks
+// QC-authority role against the caller's session token and re-fetches the
+// EXISTING photo row's captured_by from the DB (not the client-supplied
+// payload) before allowing an approve/reject, returning 403
+// SELF_QC_FORBIDDEN on a match. Live-verified by reading that handler --
+// this comment previously claimed no server-side re-check existed, which
+// was stale/incorrect as of that fix landing.
 function rScpQcQueue(){
   var card=scp$('scp-qc-queue-card'),listEl=scp$('scp-qc-queue-list');
   if(!card||!listEl)return;
