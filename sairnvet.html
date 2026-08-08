@@ -6377,15 +6377,23 @@ function checkDrugInteraction(){
   }
 }
 
+var doseCalcSeq=0;
 function calculateDoseAI(){
   var drug=document.getElementById('calc-drug').value.trim();
   var weight=parseFloat(document.getElementById('calc-weight').value);
   var species=document.getElementById('calc-species').value;
   if(!drug||!weight||!species){showToast('Fill all required fields','error');return;}
 
+  // Guard against out-of-order async responses: if a slower earlier request resolves after
+  // a faster later one, it must not overwrite the newer request's result on screen.
+  doseCalcSeq++;
+  var mySeq=doseCalcSeq;
+
   document.getElementById('dose-vet-accepted').checked = false;
   document.getElementById('dose-vet-signoff').style.display='none';
   document.getElementById('dose-verified-calc').style.display='none';
+  document.getElementById('dose-result').style.display='none';
+  document.getElementById('dose-result-text').textContent='';
   var banner = document.getElementById('dose-safety-banner');
 
   // STEP 1 — deterministic contraindication check. Runs before anything else, cannot be bypassed by the AI.
@@ -6453,6 +6461,7 @@ function calculateDoseAI(){
 
   showToast('Getting clinical guidance...','info');
   callClaude(system,messages,1500).then(function(result){
+    if(mySeq!==doseCalcSeq) return; // a newer calculation superseded this one — don't show stale results
     document.getElementById('dose-result').style.display='block';
     document.getElementById('dose-result-text').textContent=result;
     document.getElementById('dose-vet-signoff').style.display='block';
