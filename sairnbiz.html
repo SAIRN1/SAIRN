@@ -1442,19 +1442,25 @@ function rPerf(){
 function sendAI(){var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
 function askAI(q){$('ainp').value=q;sendAI();}
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Conversation cleared.</div>';}
-function addMsg(t,role){var c=$('achat');var d=document.createElement('div');d.className=role==='u'?'amu':'ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function addMsg(t,role){var c=$('achat');var d=document.createElement('div');d.className=role==='u'?'amu':'ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
 function callAI(msg){
   var emps=ld('sb_emps',[]);
   var ctx='You are the AI business operations assistant for SAIRNbiz, used by Pinnacle Stone & Design in Westlake, OH. They have '+emps.length+' employees, operate a stone fabrication shop, and use SAIRNbiz for HR and accounting. Be concise, practical, and industry-specific. No fluff.';
   var sharedCtx=(typeof buildSbSharedCompanyContext==='function')?buildSbSharedCompanyContext():'';
   if(sharedCtx)ctx+='\n\n'+sharedCtx;
   if(typeof recordSbSharedTopics==='function')recordSbSharedTopics(msg);
-  aiHist.push({role:'user',content:msg});addMsg('Thinking...','a');
+  aiHist.push({role:'user',content:msg});
+  // Reference this call's OWN placeholder node directly (not "the last .ama in
+  // the DOM") -- if a second question is sent before this one's fetch resolves,
+  // two Thinking placeholders coexist, and "remove the last one" removes
+  // whichever request finishes first's own bubble regardless of which call it
+  // belongs to, permanently orphaning the other and misattributing the answer.
+  var thinkingEl=addMsg('Thinking...','a');
   fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
   .then(function(r){return r.json();}).then(function(d){
-    var c=$('achat');var msgs=c.querySelectorAll('.ama');if(msgs.length)msgs[msgs.length-1].remove();
+    if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
     var rep=(d.content&&d.content[0]&&d.content[0].text)||'No response.';aiHist.push({role:'assistant',content:rep});addMsg(rep,'a');
-  }).catch(function(){var c=$('achat');var msgs=c.querySelectorAll('.ama');if(msgs.length)msgs[msgs.length-1].remove();addMsg('Connection error.','a');});
+  }).catch(function(){if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();addMsg('Connection error.','a');});
 }
 
 function saveCo(){
