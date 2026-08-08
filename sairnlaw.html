@@ -254,10 +254,11 @@ label.chk input{width:auto;}
   <div class="ph"><div><div class="ptitle">AI Assistant</div><div class="psub">Powered by Claude &middot; Citation-grounded &mdash; never presents an unverified case citation or statute as fact</div></div>
   <div class="pa"><button class="btn bo bs" onclick="clrAI()">Clear</button></div></div>
   <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
-    This assistant will not assert a case citation, statute reference, or legal holding as settled fact unless it is
-    traceable to something already on file in this system (a matter, document, or note you entered) -- anything else
-    it says about case law is explicitly flagged as needing independent verification, never presented as confirmed.
-    This is enforced by the system prompt below, not a UI label bolted onto unverified output.
+    This assistant will never output a specific case citation, statute citation, or docket number in citable-
+    reference format (e.g. "384 U.S. 436 (1966)") -- not even for a famous case, not even paired with a disclaimer.
+    It can describe a case narratively (the holding, the parties, the era, the legal principle) but always directs
+    you to Westlaw, Lexis, or the court's own site for the actual citation. This is enforced by the system prompt
+    below, not a UI label bolted onto unverified output.
   </div>
   <div class="card"><div class="cb">
     <div class="qts">
@@ -753,7 +754,20 @@ async function sendAI(){
         // against an actual case-law database) is a materially larger
         // build -- out of scope for Phase 1, flagged here rather than
         // silently implied as solved.
-        system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). CRITICAL RULE: never state a case citation, statute reference, docket number, or specific legal holding as settled fact unless the user has provided it to you in this conversation or it is already on file in the data you were given. If asked about case law, statutes, or legal holdings you were not given verbatim by the user, you MUST explicitly say the citation/holding needs independent verification (e.g., "I do not have a verified citation for this -- confirm against Westlaw/Lexis or primary sources before relying on it") rather than presenting any generated-sounding citation as real. This rule applies even if you believe you recall a real case -- your training data is not a verified legal database and citation recall from language models has caused real court sanctions (Mata v. Avianca, 2023) from fabricated citations submitted in real filings. Never repeat that failure. Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to this restriction.',
+        //
+        // TIGHTENED 2026-08-08: live-testing the first version of this rule
+        // found a real gap -- for a famous case (Miranda v. Arizona) the
+        // model stated a specific citation string ("384 U.S. 436 (1966)")
+        // prefaced with "high confidence" and followed by a verification
+        // disclaimer, rather than withholding the citation itself. A busy
+        // attorney could copy the citation and skip the disclaimer
+        // underneath it. The rule now explicitly forbids outputting the
+        // citable-reference-format string (volume/reporter/page/year, or a
+        // statute section number) under any circumstances regardless of
+        // confidence or fame -- narrative description of a case (holding,
+        // parties, era, principle) is still allowed, only the citation
+        // string itself is withheld.
+        system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). CRITICAL RULE: never output a specific case citation, statute citation, or docket number in citable-reference format (the volume/reporter/page/year pattern, e.g. "384 U.S. 436 (1966)", or a statute section number like "42 U.S.C. Section 1983") under any circumstances -- not even for a universally famous case, not even paired with a disclaimer, regardless of how confident you are. This applies unless the exact citation string was given to you verbatim by the user in this conversation or is already on file in the data you were given, in which case you may repeat it back -- you must never generate a citation string yourself. You MAY describe a case narratively: its general holding, the parties involved, the era or decade, the legal principle it stands for -- without ever producing the citable-reference-format string itself. Always direct the user to Westlaw, Lexis, or the relevant court\'s official site to obtain the actual citation -- every time this comes up, not only for obscure cases, and not only when you are uncertain. This rule applies even for landmark cases like Miranda v. Arizona or Brown v. Board of Education -- your training data is not a verified legal database, and citation recall from language models has caused real court sanctions (Mata v. Avianca, 2023) from fabricated citations submitted in real filings. Never repeat that failure, and never let confidence in a case\'s fame be the reason you output a citation string. Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to this restriction.',
         messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
     var data=await res.json();
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
