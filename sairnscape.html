@@ -1946,7 +1946,7 @@ function scpOpenCustModal(id){
   scp$('scp-custmodal').classList.add('on');
 }
 function scpCloseCustModal(){scp$('scp-custmodal').classList.remove('on');}
-function scpSaveCust(){
+async function scpSaveCust(){
   var name=scp$('scp-cname').value.trim();
   if(!name){scpToast('Customer name is required');return;}
   var custs=scpLd('scp_customers',[]);
@@ -1954,8 +1954,9 @@ function scpSaveCust(){
     recurring:scp$('scp-crecurring').value==='true',phone:scp$('scp-cphone').value.trim(),
     email:scp$('scp-cemail').value.trim(),address:scp$('scp-caddress').value.trim(),notes:scp$('scp-cnotes').value.trim()};
   if(scpCid){custs=custs.map(function(c){return c.id===scpCid?rec:c;});}else{custs.push(rec);}
-  scpSt('scp_customers',custs);scpCloseCustModal();scpFillCustomerSelects();scpRCust();scpRDash();scpToast('Customer saved');
-  scpData('write','customers',rec);
+  scpSt('scp_customers',custs);scpCloseCustModal();scpFillCustomerSelects();scpRCust();scpRDash();
+  var syncResult=await scpData('write','customers',rec);
+  scpToast(syncResult?'Customer saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 function scpRJobs(){
@@ -1973,14 +1974,15 @@ function scpOpenJobModal(id){
   scp$('scp-jobmodal').classList.add('on');
 }
 function scpCloseJobModal(){scp$('scp-jobmodal').classList.remove('on');}
-function scpSaveJob(){
+async function scpSaveJob(){
   var customerId=scp$('scp-jcustomer').value,scope=scp$('scp-jscope').value.trim();
   if(!customerId||!scope){scpToast('Customer and scope are required');return;}
   var jobs=scpLd('scp_jobs',[]);
   var rec={id:scpJid||('J-'+Date.now()),customer_id:customerId,scope:scope,date:scp$('scp-jdate').value,status:scp$('scp-jstatus').value};
   if(scpJid){jobs=jobs.map(function(j){return j.id===scpJid?rec:j;});}else{jobs.push(rec);}
-  scpSt('scp_jobs',jobs);scpCloseJobModal();scpRJobs();scpRDash();scpToast('Job saved');
-  scpData('write','scp_jobs',rec);
+  scpSt('scp_jobs',jobs);scpCloseJobModal();scpRJobs();scpRDash();
+  var syncResult=await scpData('write','scp_jobs',rec);
+  scpToast(syncResult?'Job saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 function scpRQuotes(){
@@ -2000,7 +2002,7 @@ function scpOpenQuoteModal(id){
   scp$('scp-quotemodal').classList.add('on');
 }
 function scpCloseQuoteModal(){scp$('scp-quotemodal').classList.remove('on');}
-function scpSaveQuote(){
+async function scpSaveQuote(){
   var customerId=scp$('scp-qcustomer').value;
   if(!customerId){scpToast('Customer is required');return;}
   var lines=scp$('scp-qlines').value.split('\n').map(function(l){return l.trim();}).filter(Boolean).map(function(l){
@@ -2009,8 +2011,9 @@ function scpSaveQuote(){
   var quotes=scpLd('scp_quotes',[]);
   var rec={id:scpQid||('Q-'+Date.now()),customer_id:customerId,lines:lines,status:scp$('scp-qstatus').value,valid:scp$('scp-qvalid').value};
   if(scpQid){quotes=quotes.map(function(q){return q.id===scpQid?rec:q;});}else{quotes.push(rec);}
-  scpSt('scp_quotes',quotes);scpCloseQuoteModal();scpRQuotes();scpRDash();scpToast('Quote saved');
-  scpData('write','scp_quotes',rec);
+  scpSt('scp_quotes',quotes);scpCloseQuoteModal();scpRQuotes();scpRDash();
+  var syncResult=await scpData('write','scp_quotes',rec);
+  scpToast(syncResult?'Quote saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === DESIGN WALK (item 6: shared AR walk-and-design pipeline) ===========
@@ -2148,15 +2151,16 @@ function scpOpenSchedModal(id){
   scp$('scp-schedmodal').classList.add('on');
 }
 function scpCloseSchedModal(){scp$('scp-schedmodal').classList.remove('on');}
-function scpSaveSched(){
+async function scpSaveSched(){
   var customerId=scp$('scp-scustomer').value;
   if(!customerId){scpToast('Customer is required');return;}
   var sched=scpLd('scp_schedule',[]);
   var existing=scpSid?sched.find(function(s){return s.id===scpSid;}):null;
   var rec={id:scpSid||('S-'+Date.now()),customer_id:customerId,freq:scp$('scp-sfreq').value,next:scp$('scp-snext').value,crew:scp$('scp-screw').value.trim(),status:existing?existing.status:'scheduled'};
   if(scpSid){sched=sched.map(function(s){return s.id===scpSid?rec:s;});}else{sched.push(rec);}
-  scpSt('scp_schedule',sched);scpCloseSchedModal();scpRSched();scpRDash();scpToast('Schedule saved');
-  scpData('write','schedule',rec);
+  scpSt('scp_schedule',sched);scpCloseSchedModal();scpRSched();scpRDash();
+  var syncResult=await scpData('write','schedule',rec);
+  scpToast(syncResult?'Schedule saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === ITEM 3: PHOTO-VERIFIED COMPLETION GATE ==========================
@@ -2294,7 +2298,7 @@ function rScpScheduledPhotoList(){
 function scpCheckCompletionGate(scheduleId){
   return bldScpProgressPhotos().some(function(p){return p.schedule_id===scheduleId&&p.is_final===true&&p.qc_status==='approved';});
 }
-function scpMarkScheduleComplete(scheduleId){
+async function scpMarkScheduleComplete(scheduleId){
   if(!scpCheckCompletionGate(scheduleId)){
     scpToast('Cannot mark Complete -- this job needs a finished-product photo that has been QC-approved by someone else first. Use the Photo button.',6000);
     return;
@@ -2303,9 +2307,10 @@ function scpMarkScheduleComplete(scheduleId){
   var s=list.find(function(x){return x.id===scheduleId;});
   if(!s)return;
   s.status='complete';
-  scpSt('scp_schedule',list);scpData('write','schedule',s);
+  scpSt('scp_schedule',list);
+  var syncResult=await scpData('write','schedule',s);
   scpRSched();scpRDash();
-  scpToast('Job marked Complete');
+  scpToast(syncResult?'Job marked Complete':'Marked Complete on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 // QC review queue -- client-side visibility gate only, same disclosed
 // limitation as sairngrounds.html's rGrdQcQueue: the self-QC check happens
@@ -2363,14 +2368,15 @@ function scpOpenInvModal(id){
   scp$('scp-invmodal').classList.add('on');
 }
 function scpCloseInvModal(){scp$('scp-invmodal').classList.remove('on');}
-function scpSaveInv(){
+async function scpSaveInv(){
   var customerId=scp$('scp-icustomer').value;
   if(!customerId){scpToast('Customer is required');return;}
   var invs=scpLd('scp_invoices',[]);
   var rec={id:scpIid||('I-'+Date.now()),customer_id:customerId,amount:Number(scp$('scp-iamt').value||0),status:scp$('scp-istatus').value,issued:scp$('scp-idate').value};
   if(scpIid){invs=invs.map(function(i){return i.id===scpIid?rec:i;});}else{invs.push(rec);}
-  scpSt('scp_invoices',invs);scpCloseInvModal();scpRInv();scpRDash();scpToast('Invoice saved');
-  scpData('write','invoices',rec);
+  scpSt('scp_invoices',invs);scpCloseInvModal();scpRInv();scpRDash();
+  var syncResult=await scpData('write','invoices',rec);
+  scpToast(syncResult?'Invoice saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
 // === ITEM 7 MODULE IDS ============================================
@@ -2490,7 +2496,7 @@ async function scpSaveIrrZone(){
   var syncResult=await scpData('write','scp_irr_zones',rec);
   scpToast(syncResult?'Irrigation zone saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
-function scpSendIrrZoneToQuote(){
+async function scpSendIrrZoneToQuote(){
   var customerId=scp$('scp-izcustomer').value,name=scp$('scp-izname').value.trim();
   if(!customerId){scpToast('Select a customer first');return;}
   var checklist=scp$('scp-izchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -2498,8 +2504,9 @@ function scpSendIrrZoneToQuote(){
   var lines=checklist.map(function(l){return {d:'Irrigation zone '+(name||'')+' - '+l,a:0};});
   var quotes=scpLd('scp_quotes',[]);
   var qrec={id:'Q-'+Date.now(),customer_id:customerId,lines:lines,status:'Draft',valid:scpDaysFromNow(30)};
-  quotes.push(qrec);scpSt('scp_quotes',quotes);scpData('write','scp_quotes',qrec);
-  scpToast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+  quotes.push(qrec);scpSt('scp_quotes',quotes);
+  var syncResult=await scpData('write','scp_quotes',qrec);
+  scpToast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 function scpOpenIrrSchedModal(id){
   scpIschid=id||null;
@@ -2561,7 +2568,7 @@ async function scpSaveWf(){
   var syncResult=await scpData('write','scp_water_features',rec);
   scpToast(syncResult?'Water feature saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
-function scpSendWfToQuote(){
+async function scpSendWfToQuote(){
   var customerId=scp$('scp-wfcustomer').value,name=scp$('scp-wfname').value.trim();
   if(!customerId){scpToast('Select a customer first');return;}
   var checklist=scp$('scp-wfchecklist').value.split('\n').map(function(l){return l.trim();}).filter(Boolean);
@@ -2569,8 +2576,9 @@ function scpSendWfToQuote(){
   var lines=checklist.map(function(l){return {d:'Water feature '+(name||'')+' - '+l,a:0};});
   var quotes=scpLd('scp_quotes',[]);
   var qrec={id:'Q-'+Date.now(),customer_id:customerId,lines:lines,status:'Draft',valid:scpDaysFromNow(30)};
-  quotes.push(qrec);scpSt('scp_quotes',quotes);scpData('write','scp_quotes',qrec);
-  scpToast('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in');
+  quotes.push(qrec);scpSt('scp_quotes',quotes);
+  var syncResult=await scpData('write','scp_quotes',qrec);
+  scpToast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Saved on this device only -- server sync failed, try again with a connection'),syncResult?3000:6000);
 }
 
 // === VENDOR PORTAL (item 8, shared with SAIRNgrounds) ===============
@@ -2608,19 +2616,25 @@ async function scpSaveVendor(){
 function scpSendAI(){var inp=scp$('scp-ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';scpAddMsg(m,'u');scpCallAI(m);}
 function scpAskAI(q){scp$('scp-ainp').value=q;scpSendAI();}
 function scpClrAI(){scpAiHist=[];scp$('scp-achat').innerHTML='<div style="color:#64748B;text-align:center;padding:40px 0;">Conversation cleared.</div>';}
-function scpAddMsg(t,role){var c=scp$('scp-achat');var d=document.createElement('div');d.className=role==='u'?'scp-amu':'scp-ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;}
+function scpAddMsg(t,role){var c=scp$('scp-achat');var d=document.createElement('div');d.className=role==='u'?'scp-amu':'scp-ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
 function scpCallAI(msg){
   var custs=scpLd('scp_customers',[]);
   var ctx='You are the AI business assistant for SAIRNscape, used by a residential/small-commercial landscaping company with '+custs.length+' active customers. Be concise, practical, and landscaping-industry-specific. No fluff.';
   var sharedCtx=buildScpSharedCompanyContext();
   if(sharedCtx)ctx+='\n\n'+sharedCtx;
   recordScpSharedTopics(msg);
-  scpAiHist.push({role:'user',content:msg});scpAddMsg('Thinking...','a');
+  scpAiHist.push({role:'user',content:msg});
+  // Reference this call's OWN placeholder node directly (not "the last .scp-ama in
+  // the DOM") -- if a second question is sent before this one's fetch resolves,
+  // two Thinking placeholders coexist, and "remove the last one" removes
+  // whichever request finishes first's own bubble regardless of which call it
+  // belongs to, permanently orphaning the other and misattributing the answer.
+  var thinkingEl=scpAddMsg('Thinking...','a');
   fetch(SCP_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:SCP_APP_ID,is_demo:true,system:ctx,messages:scpAiHist.slice(-10)})})
   .then(function(r){return r.json();}).then(function(d){
-    var c=scp$('scp-achat');var msgs=c.querySelectorAll('.scp-ama');if(msgs.length)msgs[msgs.length-1].remove();
+    if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
     var rep=(d.content&&d.content[0]&&d.content[0].text)||'No response.';scpAiHist.push({role:'assistant',content:rep});scpAddMsg(rep,'a');
-  }).catch(function(){var c=scp$('scp-achat');var msgs=c.querySelectorAll('.scp-ama');if(msgs.length)msgs[msgs.length-1].remove();scpAddMsg('Connection error.','a');});
+  }).catch(function(){if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();scpAddMsg('Connection error.','a');});
 }
 
 // === SHARED COMPANY KNOWLEDGE (sd_shared_knowledge, app-agnostic resource
