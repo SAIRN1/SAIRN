@@ -1319,6 +1319,33 @@ function init(){
 // seed/data stays exactly as it was -- an honest, silent no-op, not an
 // error shown to the user (matches render_usage/shared_knowledge's
 // provisioned:false graceful-degrade pattern server-side).
+// SECURITY/DATA-LOSS FIX (2026-08-08, platform audit): merge server records
+// into local BY ID instead of replacing the whole local array. The old
+// behavior (`st(key, res.data)`) silently and permanently deleted any
+// local-only record (seed/demo data, or anything created here but not yet
+// successfully pushed to the server) the moment the server had ANY row for
+// that resource -- confirmed live during the audit: seeded properties
+// (Fairview Golf Club, Rocky River Estates, Lakeshore Corporate Park) were
+// wiped the first time a real write landed server-side, orphaning jobs/
+// quotes that referenced them. Server-side writes already upsert by a real
+// id (on_conflict=license_hash,<resource>_id, see api/sd-data.js) so
+// "server wins for a given id" is a safe, already-true invariant here --
+// this just stops throwing away ids the server has never seen.
+// KNOWN LIMIT, accepted deliberately (interim fix, not the full redesign):
+// a record deleted on another device will still reappear here via this
+// merge, since there's no delete-tombstone yet -- a real but strictly
+// lesser problem than silent permanent deletion, which this closes today.
+// Real conflict resolution (updated_at-based) and tombstoned deletes are
+// tracked as separate, deliberately deferred follow-up work. Identical fix
+// applied to sairnscape.html's scpSyncFromServer the same day.
+function grdMergeById(local, serverArr){
+  var merged=local.slice();
+  serverArr.forEach(function(sr){
+    var idx=merged.findIndex(function(m){return m&&sr&&m.id!=null&&m.id===sr.id;});
+    if(idx>=0)merged[idx]=sr;else merged.push(sr);
+  });
+  return merged;
+}
 async function grdSyncFromServer(){
   // grd_schedule + grd_progress_photos added 2026-08-06 (item 3 cross-device
   // fix) -- without these, a QC reviewer on a different device would never
@@ -1348,7 +1375,7 @@ async function grdSyncFromServer(){
   for(var i=0;i<resources.length;i++){
     var res=await grdData('read',resources[i][0],{});
     if(res&&res.provisioned&&Array.isArray(res.data)&&res.data.length){
-      st(resources[i][1],res.data);changed=true;
+      st(resources[i][1],grdMergeById(ld(resources[i][1],[]),res.data));changed=true;
     }
   }
   if(changed){
