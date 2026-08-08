@@ -332,6 +332,20 @@ module.exports = async (req, res) => {
     if (action === 'mfa_setup') {
       const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
       if (!caller) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      // SECURITY (found 2026-08-08 by real live testing, not code review):
+      // this action writes mfa_enabled:false alongside the new secret, so
+      // calling it on an ALREADY-ENROLLED account silently switched two-
+      // factor OFF. Anyone holding a stolen session token could therefore
+      // disable MFA without presenting a single code -- defeating the exact
+      // protection MFA exists to provide, and contradicting the security
+      // panel's own statement that only an Owner can turn it off. Re-
+      // enrollment now requires an Owner reset (action:mfa_reset), which is
+      // audit-logged and attributable to a person.
+      const existing = await loadEmployee(caller.employee_id);
+      if (existing && existing.mfa_enabled) {
+        res.status(409).json({ error: { code: 'MFA_ALREADY_ENABLED', message: 'Two-factor is already on for this account. An Owner must reset it before it can be set up again.' } });
+        return;
+      }
       const secret = generateTotpSecret();
       const r = await patchEmployee(caller.employee_id, { mfa_secret_encrypted: encryptSecret(secret), mfa_enabled: false });
       if (!r.ok) return upstream(res, await r.json());
