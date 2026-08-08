@@ -227,7 +227,20 @@ module.exports = async (req, res) => {
   }
 };
 
+// A table that exists but has no service_role grant fails with Postgres
+// 42501, not a network error -- surfaced as a real live 502 during the
+// 2026-08-08 platform click-through audit. Named separately so the message
+// points at the actual fix instead of a generic "try again."
+function isPermissionDenied(detail) {
+  const s = JSON.stringify(detail || '');
+  return s.indexOf('42501') !== -1 || s.indexOf('permission denied') !== -1;
+}
+
 function upstream(res, detail) {
   console.error('sb-auth upstream error:', detail);
+  if (isPermissionDenied(detail)) {
+    res.status(503).json({ error: { code: 'NOT_GRANTED', message: 'The SAIRNbiz employee table exists but the server role lacks privileges on it — re-run the GRANT block at the end of sql/sb_employee_auth_schema.sql' } });
+    return;
+  }
   res.status(502).json({ error: { message: 'Data store error — try again' } });
 }

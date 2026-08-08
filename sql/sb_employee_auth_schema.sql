@@ -47,3 +47,20 @@ create table if not exists sb_employee_auth (
 
 create index if not exists idx_sb_employee_auth_license
   on sb_employee_auth (license_hash);
+
+-- ---------------------------------------------------------------------------
+-- GRANTS (added 2026-08-08, found by a real live 502 during the platform
+-- click-through audit, not preemptively): api/sb-auth.js's login and
+-- bootstrap actions both failed against the live deployment with Postgres
+-- 42501 "permission denied for table sb_employee_auth" -- the table existed
+-- but service_role had no privileges on it, so every SAIRNbiz employee
+-- login was broken in production. Identical root cause to the same finding
+-- on sairnlaw_employee_auth the same day (see sql/sairnlaw_employee_auth_
+-- schema.sql) -- Supabase's default privileges evidently didn't apply for
+-- either table. Granting explicitly rather than relying on that default.
+-- Safe to re-run. StoneDesk (sd_employee_auth), SAIRNgrounds
+-- (grd_employee_auth), and SAIRNscape (scp_employee_auth) were probed live
+-- the same day and do NOT have this problem -- this is not a platform-wide
+-- gap, just this one table.
+grant select, insert, update on public.sb_employee_auth to service_role;
+revoke all on public.sb_employee_auth from anon, authenticated;
