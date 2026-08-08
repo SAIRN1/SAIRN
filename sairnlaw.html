@@ -232,7 +232,17 @@ label.chk input{width:auto;}
       <div class="ss">Finance</div>
       <button class="sb" id="sb-trust" onclick="nav('trust')"><span class="sico">&#127974;</span>Trust Accounting (IOLTA)</button>
       <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128179;</span>Time Tracking &amp; Billing</button>
-      <div class="sfoot">SAIRNlaw v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 1</span></div>
+      <div class="ss">Documents</div>
+      <button class="sb" id="sb-docs" onclick="nav('docs')"><span class="sico">&#128193;</span>Document Management</button>
+      <button class="sb" id="sb-drafting" onclick="nav('drafting')"><span class="sico">&#129302;</span>AI Drafting &amp; Review</button>
+      <div class="ss">Client Services</div>
+      <button class="sb" id="sb-portal" onclick="nav('portal')"><span class="sico">&#128101;</span>Client Portal</button>
+      <div class="ss">Firm Operations</div>
+      <button class="sb" id="sb-certs" onclick="nav('certs')"><span class="sico">&#127942;</span>Staff Certifications</button>
+      <button class="sb" id="sb-opaccounting" onclick="nav('opaccounting')"><span class="sico">&#127974;</span>Accounting (Operating)</button>
+      <div class="ss">Practice Modules</div>
+      <button class="sb" id="sb-pi" onclick="nav('pi')"><span class="sico">&#129704;</span>Personal Injury</button>
+      <div class="sfoot">SAIRNlaw v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 2</span></div>
     </aside>
     <main>
 
@@ -519,6 +529,277 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<!-- DOCUMENT MANAGEMENT -->
+<div class="panel" id="panel-docs">
+  <div class="ph"><div><div class="ptitle">Document Management</div><div class="psub">Matter-centric filing, OCR on uploaded scans, email filing, full version control</div></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    OCR runs entirely in your browser via Tesseract.js (loaded on demand, no server upload) -- the extracted text is
+    what gets saved and versioned, not the original image (no cloud file storage is wired up yet, so large binary
+    files aren't persisted here). Email filing is manual logging, not live inbox sync -- paste in what you want
+    filed against the matter.
+  </div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Documents on File</div><div class="kval" id="dc-total">0</div><div class="kt">All matters</div></div>
+    <div class="kpi"><div class="klbl">Filed Emails</div><div class="kval" id="dc-emails">0</div><div class="kt">All matters</div></div>
+    <div class="kpi"><div class="klbl">Revisions Tracked</div><div class="kval" id="dc-revisions">0</div><div class="kt">Across all documents</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Matter</label><select id="docmatter" onchange="rDocMatterChange()"></select></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn bo bs" onclick="openMatterDocModal()">+ Link Document</button>
+      <button class="btn bo bs" onclick="openOcrModal()">+ Upload &amp; OCR Scan</button>
+      <button class="btn bo bs" onclick="openEmailFileModal()">+ File Email</button>
+    </div>
+    <div id="doc-list"></div>
+  </div></div>
+</div>
+<div class="modal" id="ocrmodal">
+  <div class="mbox">
+    <div class="mtitle">Upload &amp; OCR Scan</div>
+    <div class="fg"><label>Title</label><input id="ocrtitle" placeholder="Scanned Contract, page 1"></div>
+    <div class="fg"><label>Image File</label><input id="ocrfile" type="file" accept="image/*" onchange="runOcr()"></div>
+    <div id="ocr-status" style="color:var(--muted);font-size:12px;margin-bottom:10px"></div>
+    <div class="fg"><label>Extracted Text (review/edit before saving)</label><textarea id="ocrtext" rows="8"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeOcrModal()">Cancel</button>
+      <button class="btn bp" onclick="saveOcrDocument()">Save Document</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="emailfilemodal">
+  <div class="mbox">
+    <div class="mtitle">File Email</div>
+    <div class="fr"><div class="fg"><label>From</label><input id="efrom"></div><div class="fg"><label>To</label><input id="eto"></div></div>
+    <div class="fr"><div class="fg"><label>Subject</label><input id="esubject"></div><div class="fg"><label>Date</label><input id="edate" type="date"></div></div>
+    <div class="fg"><label>Body</label><textarea id="ebody" rows="6"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeEmailFileModal()">Cancel</button>
+      <button class="btn bp" onclick="saveEmailFile()">File Email</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="docversionmodal">
+  <div class="mbox">
+    <div class="mtitle">Edit Document (New Version)</div>
+    <div class="fg" id="docversion-label" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div class="fg"><label>Content</label><textarea id="dvcontent" rows="10"></textarea></div>
+    <div class="fg"><label>Edited By</label><input id="dveditor" placeholder="Your name"></div>
+    <div class="fg"><label>Revision Note</label><input id="dvnote" placeholder="What changed"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDocVersionModal()">Cancel</button>
+      <button class="btn bp" onclick="saveDocVersion()">Save New Version</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="dochistorymodal">
+  <div class="mbox">
+    <div class="mtitle">Version History</div>
+    <div id="dochistory-list"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeDocHistoryModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI DOCUMENT DRAFTING & REVIEW -->
+<div class="panel" id="panel-drafting">
+  <div class="ph"><div><div class="ptitle">AI Document Drafting &amp; Review</div><div class="psub">Drafts and reviews using the matter data already on file &mdash; same citation-grounding rule as the AI Assistant</div></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    Same rule as the AI Assistant: this will never output a specific case citation or statute citation in
+    citable-reference format, even for famous cases -- it can discuss case law narratively and will direct you to
+    Westlaw/Lexis/the court's site/Google Scholar for the actual citation.
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Matter</label><select id="draftmatter" onchange="rDraftMatterContext()"></select></div>
+    <div class="card" id="draft-matter-context" style="margin-bottom:14px"></div>
+    <div class="fg"><label>What do you need drafted or reviewed?</label><textarea id="draftrequest" rows="3" placeholder="Draft a demand letter to the opposing party regarding breach of contract..."></textarea></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn bp bs" onclick="runAiDraft()">Draft</button>
+      <button class="btn bo bs" onclick="openReviewPicker()">Review an Existing Document Instead</button>
+    </div>
+    <div class="fg" style="margin-top:14px"><label>Result</label><textarea id="draftresult" rows="10"></textarea></div>
+    <button class="btn bo bs" onclick="saveDraftAsDocument()">Save as Document</button>
+  </div></div>
+</div>
+<div class="modal" id="reviewpickermodal">
+  <div class="mbox">
+    <div class="mtitle">Select a Document to Review</div>
+    <div id="review-picker-list"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeReviewPicker()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLIENT PORTAL -->
+<div class="panel" id="panel-portal">
+  <div class="ph"><div><div class="ptitle">Client Portal</div><div class="psub">Secure messaging, document sharing, and e-signature per matter</div></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    This is the staff-managed view of portal activity -- there is no separate client-authenticated login/URL yet
+    (that needs its own auth system, out of scope this phase). "Client (logged by staff)" entries are messages
+    staff record on the client's behalf (phone call, in-person conversation), clearly labeled as such, not a real
+    client login.
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Matter</label><select id="portalmatter" onchange="rPortalMatterChange()"></select></div>
+    <div id="portal-content"></div>
+  </div></div>
+</div>
+<div class="modal" id="esignmodal">
+  <div class="mbox">
+    <div class="mtitle">Record Signature</div>
+    <div class="fg" id="esign-label" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div class="fg"><label>Signer Typed Name</label><input id="esign-name"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeEsignModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmEsign()">Record Signature</button>
+    </div>
+  </div>
+</div>
+
+<!-- STAFF CERTIFICATIONS -->
+<div class="panel" id="panel-certs">
+  <div class="ph"><div><div class="ptitle">Staff Certifications</div><div class="psub">Bar admission tracking and CLE credit tracking with real requirement checking</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openBarModal()">+ Bar Admission</button><button class="btn bp bs" onclick="openCleModal()">+ Log CLE Credit</button></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    CLE requirements vary by state and change over time -- this app does not hardcode a specific state's real
+    requirement as fact. Set each jurisdiction's actual hours-per-reporting-period below; the shortfall check is
+    computed against whatever you configure, not an assumed number.
+  </div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Bar Admissions</div><div class="kval" id="ct-bars">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">CLE Credits Logged</div><div class="kval" id="ct-cle">0</div><div class="kt">All time</div></div>
+    <div class="kpi"><div class="klbl">Behind on CLE</div><div class="kval" id="ct-behind">0</div><div class="kt d">Under configured requirement</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Bar Admissions</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Staff</th><th>State</th><th>Bar #</th><th>Admitted</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="bartbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">CLE Requirements by Jurisdiction</span></div><div class="cb">
+    <div class="fr"><div class="fg"><label>Jurisdiction</label><input id="clrjurisdiction" placeholder="OH"></div><div class="fg"><label>Hours Required</label><input id="clrhours" type="number"></div></div>
+    <div class="fr"><div class="fg"><label>Period (years)</label><input id="clrperiod" type="number" value="2"></div><div class="fg"><label>&nbsp;</label><button class="btn bo bs" onclick="saveCleRequirement()">Save Requirement</button></div></div>
+    <div id="clr-list" style="margin-top:10px"></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">CLE Credits</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Staff</th><th>Course</th><th>Category</th><th>Jurisdiction</th><th>Hours</th><th>Date</th></tr></thead>
+    <tbody id="cletbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="barmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Bar Admission</div>
+    <div class="fr"><div class="fg"><label>Staff Name</label><input id="brname"></div><div class="fg"><label>State/Jurisdiction</label><input id="brstate" placeholder="OH"></div></div>
+    <div class="fr"><div class="fg"><label>Bar Number</label><input id="brnumber"></div><div class="fg"><label>Admission Date</label><input id="brdate" type="date"></div></div>
+    <div class="fg"><label>Status</label><select id="brstatus"><option>Active</option><option>Inactive</option><option>Suspended</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="brnotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeBarModal()">Cancel</button>
+      <button class="btn bp" onclick="saveBar()">Save Admission</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="clemodal">
+  <div class="mbox">
+    <div class="mtitle">Log CLE Credit</div>
+    <div class="fr"><div class="fg"><label>Staff Name</label><input id="clname2"></div><div class="fg"><label>Jurisdiction</label><input id="cljurisdiction" placeholder="OH"></div></div>
+    <div class="fg"><label>Course Title</label><input id="clcourse"></div>
+    <div class="fr"><div class="fg"><label>Category</label><input id="clcategory" placeholder="Ethics, General..."></div><div class="fg"><label>Hours</label><input id="clhours" type="number" step="0.5"></div></div>
+    <div class="fg"><label>Date</label><input id="cldate" type="date"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCleModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCle()">Save Credit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNTING (OPERATING) -->
+<div class="panel" id="panel-opaccounting">
+  <div class="ph"><div><div class="ptitle">Accounting (Operating)</div><div class="psub">Firm operating accounts &mdash; structurally separate from Trust Accounting, never linked or shared</div></div>
+  <div class="pa"><button class="btn bo bs" onclick="openOpAccountModal()">+ Add Account</button><button class="btn bp bs" onclick="openOpTxModal()">+ Record Transaction</button></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    This panel has no code path into or out of Trust Accounting's data -- separate localStorage keys, separate
+    functions, no shared computation. That separation is deliberate and permanent, not an oversight to "connect
+    later" -- mixing operating and trust funds is exactly what IOLTA rules exist to prevent.
+  </div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Operating Accounts</div><div class="kval" id="op-accounts">0</div><div class="kt">On file</div></div>
+    <div class="kpi"><div class="klbl">Combined Balance</div><div class="kval" id="op-balance">$0</div><div class="kt">All accounts</div></div>
+    <div class="kpi"><div class="klbl">Expenses This Month</div><div class="kval" id="op-expenses">$0</div><div class="kt">Recorded</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Accounts</span></div><div class="cb" id="op-account-list"></div></div>
+  <div class="card"><div class="ch"><span class="ct">Transactions</span></div><div class="cb">
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Account</th><th>Type</th><th>Category</th><th>Amount</th><th>Description</th></tr></thead>
+    <tbody id="optbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="opaccountmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Operating Account</div>
+    <div class="fr"><div class="fg"><label>Name</label><input id="opaname" placeholder="Firm Checking"></div><div class="fg"><label>Type</label><select id="opatype"><option>Checking</option><option>Savings</option><option>Credit Line</option><option>Other</option></select></div></div>
+    <div class="fg"><label>Starting Balance ($)</label><input id="opabalance" type="number"></div>
+    <div class="fg"><label>Notes</label><textarea id="opanotes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeOpAccountModal()">Cancel</button>
+      <button class="btn bp" onclick="saveOpAccount()">Save Account</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="optxmodal">
+  <div class="mbox">
+    <div class="mtitle">Record Operating Transaction</div>
+    <div class="fg"><label>Account</label><select id="optxaccount"></select></div>
+    <div class="fr"><div class="fg"><label>Type</label><select id="optxtype"><option>Income</option><option>Expense</option></select></div><div class="fg"><label>Amount ($)</label><input id="optxamount" type="number"></div></div>
+    <div class="fr"><div class="fg"><label>Category</label><input id="optxcategory" placeholder="Rent, Payroll, Earned Fees..."></div><div class="fg"><label>Date</label><input id="optxdate" type="date"></div></div>
+    <div class="fg"><label>Description</label><input id="optxdesc"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeOpTxModal()">Cancel</button>
+      <button class="btn bp" onclick="saveOpTx()">Record Transaction</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERSONAL INJURY MODULE -->
+<div class="panel" id="panel-pi">
+  <div class="ph"><div><div class="ptitle">Personal Injury Module</div><div class="psub">Case value estimation, medical records/lien tracking, settlement calculation</div></div></div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
+    Case value estimation uses the real, commonly-taught "multiplier method" (non-economic damages estimated as
+    economic damages &times; an editable multiplier) -- an estimation heuristic used in PI practice, not a
+    guaranteed or formulaic settlement value. The multiplier and every input here is editable, never a fixed
+    formula presented as authoritative.
+  </div>
+  <div class="card"><div class="cb">
+    <div class="fg"><label>Matter</label><select id="pimatter" onchange="rPiMatterChange()"></select></div>
+    <div id="pi-content"></div>
+  </div></div>
+</div>
+<div class="modal" id="picasemodal">
+  <div class="mbox">
+    <div class="mtitle">Case Detail</div>
+    <div class="fg"><label>Incident Date</label><input id="piincidentdate" type="date"></div>
+    <div class="fg"><label>Incident Description</label><textarea id="piincidentdesc" rows="2"></textarea></div>
+    <div class="fr"><div class="fg"><label>Injury Severity</label><select id="piseverity"><option>Minor</option><option>Moderate</option><option>Severe</option><option>Catastrophic</option></select></div><div class="fg"><label>Lost Wages ($)</label><input id="pilostwages" type="number"></div></div>
+    <div class="fg"><label>Multiplier (typically 1.5-5 depending on severity -- edit as appropriate)</label><input id="pimultiplier" type="number" step="0.1" value="2"></div>
+    <div class="fg"><label>Status</label><select id="pistatus"><option>Investigating</option><option>Demand Sent</option><option>Negotiating</option><option>Settled</option><option>Litigation</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePiCaseModal()">Cancel</button>
+      <button class="btn bp" onclick="savePiCase()">Save Case Detail</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="pimedmodal">
+  <div class="mbox">
+    <div class="mtitle">Add Medical Record / Lien</div>
+    <div class="fr"><div class="fg"><label>Provider</label><input id="pmprovider"></div><div class="fg"><label>Amount Billed ($)</label><input id="pmbilled" type="number"></div></div>
+    <div class="fr"><div class="fg"><label>Lien Holder</label><input id="pmlienholder" placeholder="Same as provider, or insurer/Medicare/Medicaid"></div><div class="fg"><label>Lien Amount ($)</label><input id="pmlienamount" type="number"></div></div>
+    <div class="fg"><label>Status</label><select id="pmstatus"><option>Outstanding</option><option>Negotiated</option><option>Paid</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="pmnotes2" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closePiMedModal()">Cancel</button>
+      <button class="btn bp" onclick="savePiMed()">Save Record</button>
+    </div>
+  </div>
+</div>
+
     </main>
   </div>
 </div>
@@ -562,6 +843,7 @@ function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function fdatetime(iso){if(!iso)return'--';try{return new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return iso;}}
 function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
 
@@ -633,6 +915,12 @@ function nav(id){
   if(id==='calendar')rCalendar();
   if(id==='trust')rTrust();
   if(id==='billing')rBilling();
+  if(id==='docs')rDocs();
+  if(id==='drafting')rDrafting();
+  if(id==='portal')rPortal();
+  if(id==='certs')rCerts();
+  if(id==='opaccounting')rOpAccounting();
+  if(id==='pi')rPi();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -653,7 +941,8 @@ function matterLabel(id){var m=matters().find(function(x){return x.id===id;});re
 function fillMatterSelects(){
   var opts=matters().map(function(m){return '<option value="'+m.id+'">'+H(m.matter_number)+' -- '+H(m.matter_name)+'</option>';}).join('');
   var needsBlank={dlfilter:1};
-  ['mmatter','dlmatter','dlfilter','trmatter','ttmatter','ivmatter'].forEach(function(id){
+  ['mmatter','dlmatter','dlfilter','trmatter','ttmatter','ivmatter',
+   'docmatter','draftmatter','portalmatter','pimatter'].forEach(function(id){
     var el=$(id);if(!el)return;
     var cur=el.value;
     el.innerHTML=(needsBlank[id]?'<option value="">All matters</option>':'')+opts;
@@ -725,10 +1014,31 @@ function seed(){
   ]);
   st('law_timeentries',[]);
   st('law_invoices',[]);
+  st('law_portalmessages',[]);
+  st('law_portalesign',[]);
+  st('law_barcerts',[
+    {id:'BR-1',staff_name:'S. Whitfield',state:'OH',bar_number:'0088412',admission_date:'2014-11-08',status:'Active',notes:'',good_standing_check_date:'',created_at:lawLocalToday()}
+  ]);
+  st('law_clecredits',[]);
+  st('law_clerequirements',[
+    {id:'CLR-1',jurisdiction:'OH',hours_required:24,period_years:2,created_at:lawLocalToday()}
+  ]);
+  st('law_opaccounts',[
+    {id:'OPA-1',name:'Firm Operating Checking',type:'Checking',starting_balance:15000,notes:'',created_at:lawLocalToday()}
+  ]);
+  st('law_optx',[]);
+  st('law_picases',[]);
+  st('law_pimedical',[]);
   st('law_seeded',true);
 }
 
 // ── AI ASSISTANT ──────────────────────────────────────────────────────────
+// Factored out 2026-08-08 (Phase 2) so AI Document Drafting & Review can
+// share the exact same rule text instead of a second hand-copied string --
+// the citation rule has already needed one real live-tested tightening;
+// a second AI feature duplicating the old text would have silently drifted
+// out of sync with any future fix here.
+var LAW_CITATION_RULE='CRITICAL RULE: never output a specific case citation, statute citation, or docket number in citable-reference format (the volume/reporter/page/year pattern, e.g. "384 U.S. 436 (1966)", or a statute section number like "42 U.S.C. Section 1983") under any circumstances -- not even for a universally famous case, not even paired with a disclaimer, regardless of how confident you are. This applies unless the exact citation string was given to you verbatim by the user in this conversation or is already on file in the data you were given, in which case you may repeat it back -- you must never generate a citation string yourself. You MAY describe a case narratively: its general holding, the parties involved, the era or decade, the legal principle it stands for -- without ever producing the citable-reference-format string itself. Always direct the user to Westlaw, Lexis, or the relevant court\'s official site to obtain the actual citation -- every time this comes up, not only for obscure cases, and not only when you are uncertain. This rule applies even for landmark cases like Miranda v. Arizona or Brown v. Board of Education -- your training data is not a verified legal database, and citation recall from language models has caused real court sanctions (Mata v. Avianca, 2023) from fabricated citations submitted in real filings. Never repeat that failure, and never let confidence in a case\'s fame be the reason you output a citation string.';
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
@@ -767,7 +1077,7 @@ async function sendAI(){
         // confidence or fame -- narrative description of a case (holding,
         // parties, era, principle) is still allowed, only the citation
         // string itself is withheld.
-        system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). CRITICAL RULE: never output a specific case citation, statute citation, or docket number in citable-reference format (the volume/reporter/page/year pattern, e.g. "384 U.S. 436 (1966)", or a statute section number like "42 U.S.C. Section 1983") under any circumstances -- not even for a universally famous case, not even paired with a disclaimer, regardless of how confident you are. This applies unless the exact citation string was given to you verbatim by the user in this conversation or is already on file in the data you were given, in which case you may repeat it back -- you must never generate a citation string yourself. You MAY describe a case narratively: its general holding, the parties involved, the era or decade, the legal principle it stands for -- without ever producing the citable-reference-format string itself. Always direct the user to Westlaw, Lexis, or the relevant court\'s official site to obtain the actual citation -- every time this comes up, not only for obscure cases, and not only when you are uncertain. This rule applies even for landmark cases like Miranda v. Arizona or Brown v. Board of Education -- your training data is not a verified legal database, and citation recall from language models has caused real court sanctions (Mata v. Avianca, 2023) from fabricated citations submitted in real filings. Never repeat that failure, and never let confidence in a case\'s fame be the reason you output a citation string. Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to this restriction.',
+        system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to this restriction.',
         messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
     var data=await res.json();
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
@@ -951,16 +1261,26 @@ async function saveMilestone(){
   var syncResult=await sdnData('write','law_mattermilestones',rec);
   toast(syncResult?'Milestone added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
 }
-function openMatterDocModal(){['mdoctitle','mdoctype','mdocref'].forEach(function(f){$(f).value='';});$('matterdocmodal').classList.add('on');}
+// matterDocContextSelectId lets this one modal serve both Matter/Case
+// Management's "mmatter" selector (Phase 1) and Document Management's own
+// "docmatter" selector (Phase 2) -- set right before opening based on
+// which panel is actually active, so saveMatterDoc() reads the right one.
+var matterDocContextSelectId='mmatter';
+function openMatterDocModal(){
+  matterDocContextSelectId=document.querySelector('#panel-docs.on')?'docmatter':'mmatter';
+  ['mdoctitle','mdoctype','mdocref'].forEach(function(f){$(f).value='';});$('matterdocmodal').classList.add('on');
+}
 function closeMatterDocModal(){$('matterdocmodal').classList.remove('on');}
 async function saveMatterDoc(){
-  var matterId=$('mmatter').value,title=$('mdoctitle').value.trim();
+  var matterId=$(matterDocContextSelectId).value,title=$('mdoctitle').value.trim();
   if(!matterId){toast('Select a matter first');return;}
   if(!title){toast('Title required');return;}
   var rec={id:newId('MDOC'),matter_id:matterId,title:title,doc_type:$('mdoctype').value.trim(),
-    url_or_ref:$('mdocref').value.trim(),uploaded_date:lawLocalToday(),created_at:lawLocalToday()};
+    url_or_ref:$('mdocref').value.trim(),content_text:'',ocr_text:'',source:'Manual Link',shared_with_client:false,
+    revisions:[],uploaded_date:lawLocalToday(),created_at:lawLocalToday()};
   var list=matterDocs();list.push(rec);st('law_matterdocs',list);
   closeMatterDocModal();rMatterDetail();
+  if(document.querySelector('#panel-docs.on'))rDocs();
   var syncResult=await sdnData('write','law_matterdocs',rec);
   toast(syncResult?'Document linked':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
 }
@@ -1321,11 +1641,590 @@ function rBilling(){
   }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No invoices yet</td></tr>';
 }
 
+// ── DOCUMENT MANAGEMENT (Phase 2) ─────────────────────────────────────────
+// law_matterdocs is the SAME store Matter/Case Management's lightweight
+// "Linked Documents" section already uses (Phase 1) -- extended in place
+// with content_text/ocr_text/source/revisions[]/shared_with_client rather
+// than a second, competing store, per the platform's "grep before
+// creating" discipline. Older records without these fields default safely
+// (||'' / ||[]) everywhere they're read.
+var tesseractLoaded=false,tesseractLoading=null;
+function loadTesseract(){
+  if(tesseractLoaded)return Promise.resolve();
+  if(tesseractLoading)return tesseractLoading;
+  tesseractLoading=new Promise(function(resolve,reject){
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload=function(){tesseractLoaded=true;resolve();};
+    s.onerror=function(){tesseractLoading=null;reject(new Error('Could not load OCR library'));};
+    document.head.appendChild(s);
+  });
+  return tesseractLoading;
+}
+function openOcrModal(){
+  ['ocrtitle','ocrtext'].forEach(function(f){$(f).value='';});
+  $('ocrfile').value='';$('ocr-status').textContent='';
+  $('ocrmodal').classList.add('on');
+}
+function closeOcrModal(){$('ocrmodal').classList.remove('on');}
+async function runOcr(){
+  var fileInput=$('ocrfile');
+  if(!fileInput.files||!fileInput.files[0])return;
+  var file=fileInput.files[0];
+  $('ocr-status').textContent='Loading OCR engine...';
+  try{ await loadTesseract(); }
+  catch(e){ $('ocr-status').textContent='Could not load the OCR library (no connection?) -- type the text in manually below instead.'; return; }
+  $('ocr-status').textContent='Reading image... this can take a few seconds.';
+  try{
+    var result=await Tesseract.recognize(file,'eng');
+    $('ocrtext').value=(result&&result.data&&result.data.text)||'';
+    $('ocr-status').textContent='Done -- review the extracted text below before saving (OCR is not perfect, especially on handwriting or low-quality scans).';
+  }catch(e){
+    $('ocr-status').textContent='OCR failed: '+(e&&e.message?e.message:'unknown error')+' -- type the text in manually below instead.';
+  }
+}
+async function saveOcrDocument(){
+  var matterId=$('docmatter').value,title=$('ocrtitle').value.trim();
+  if(!matterId){toast('Select a matter first');return;}
+  if(!title){toast('Title required');return;}
+  var text=$('ocrtext').value;
+  var rec={id:newId('MDOC'),matter_id:matterId,title:title,doc_type:'Scanned Document',url_or_ref:'',
+    content_text:text,ocr_text:text,source:'Upload/OCR',shared_with_client:false,
+    revisions:[{id:newId('REV'),content_snapshot:text,edited_by:'OCR',edited_at:new Date().toISOString(),note:'Initial OCR extraction'}],
+    last_edited_by:'OCR',last_edited_at:new Date().toISOString(),uploaded_date:lawLocalToday(),created_at:lawLocalToday()};
+  var list=matterDocs();list.push(rec);st('law_matterdocs',list);
+  closeOcrModal();rDocs();
+  var syncResult=await sdnData('write','law_matterdocs',rec);
+  toast(syncResult?'Document saved from OCR':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openEmailFileModal(){
+  ['efrom','eto','esubject','ebody'].forEach(function(f){$(f).value='';});
+  $('edate').value=lawLocalToday();
+  $('emailfilemodal').classList.add('on');
+}
+function closeEmailFileModal(){$('emailfilemodal').classList.remove('on');}
+async function saveEmailFile(){
+  var matterId=$('docmatter').value,subject=$('esubject').value.trim();
+  if(!matterId){toast('Select a matter first');return;}
+  if(!subject){toast('Subject required');return;}
+  var body=$('ebody').value;
+  var rec={id:newId('MDOC'),matter_id:matterId,title:subject,doc_type:'Email',url_or_ref:'',
+    content_text:body,ocr_text:'',source:'Email',email_from:$('efrom').value.trim(),email_to:$('eto').value.trim(),
+    email_date:$('edate').value,shared_with_client:false,revisions:[],
+    last_edited_by:'',last_edited_at:'',uploaded_date:lawLocalToday(),created_at:lawLocalToday()};
+  var list=matterDocs();list.push(rec);st('law_matterdocs',list);
+  closeEmailFileModal();rDocs();
+  var syncResult=await sdnData('write','law_matterdocs',rec);
+  toast(syncResult?'Email filed':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+var docVersionTargetId=null;
+function openDocVersionModal(id){
+  var d=matterDocs().find(function(x){return x.id===id;});if(!d)return;
+  docVersionTargetId=id;
+  $('docversion-label').textContent=d.title;
+  $('dvcontent').value=d.content_text||'';
+  $('dveditor').value='';$('dvnote').value='';
+  $('docversionmodal').classList.add('on');
+}
+function closeDocVersionModal(){$('docversionmodal').classList.remove('on');}
+async function saveDocVersion(){
+  var editor=$('dveditor').value.trim();
+  if(!editor){toast('Enter your name in Edited By');return;}
+  var list=matterDocs();
+  var d=list.find(function(x){return x.id===docVersionTargetId;});if(!d)return;
+  d.revisions=d.revisions||[];
+  // Snapshot the version being REPLACED -- its real author/timestamp,
+  // not the new one -- before overwriting content_text. This is what
+  // makes "who edited what when" a real, queryable history instead of
+  // just a counter.
+  d.revisions.push({id:newId('REV'),content_snapshot:d.content_text||'',
+    edited_by:d.last_edited_by||'(initial)',edited_at:d.last_edited_at||d.created_at,note:$('dvnote').value.trim()||'(no note)'});
+  d.content_text=$('dvcontent').value;
+  d.last_edited_by=editor;
+  d.last_edited_at=new Date().toISOString();
+  st('law_matterdocs',list);
+  closeDocVersionModal();rDocs();
+  var syncResult=await sdnData('write','law_matterdocs',d);
+  toast(syncResult?'New version saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openDocHistoryModal(id){
+  var d=matterDocs().find(function(x){return x.id===id;});if(!d)return;
+  var revs=(d.revisions||[]).slice().reverse();
+  $('dochistory-list').innerHTML='<div class="srow"><span class="slbl">Current version</span><span class="sval">'+H(d.last_edited_by||'(original)')+' -- '+(d.last_edited_at?fdatetime(d.last_edited_at):fdate(d.created_at))+'</span></div>'+
+    (revs.length?revs.map(function(r){return '<div class="srow"><span class="slbl">'+H(r.note||'(no note)')+'</span><span class="sval">'+H(r.edited_by)+' -- '+fdatetime(r.edited_at)+'</span></div>';}).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0">No prior versions</div>');
+  $('dochistorymodal').classList.add('on');
+}
+function closeDocHistoryModal(){$('dochistorymodal').classList.remove('on');}
+function rDocMatterChange(){
+  var matterId=$('docmatter').value;
+  var wrap=$('doc-list');
+  var docs=matterId?matterDocs().filter(function(d){return d.matter_id===matterId;}):[];
+  wrap.innerHTML=docs.length?docs.slice().reverse().map(function(d){
+    var revCount=(d.revisions||[]).length;
+    return '<div class="card"><div class="ch"><span class="ct">'+H(d.title)+'</span><span class="badge bx" style="margin-left:8px">'+H(d.source||'Manual Link')+'</span>'+
+      (d.shared_with_client?'<span class="badge bg" style="margin-left:4px">Shared</span>':'')+
+      '<span style="margin-left:auto;display:flex;gap:6px">'+
+        (d.source!=='Email'?'<button class="btn bo bs" onclick="openDocVersionModal(\''+d.id+'\')">Edit (New Version)</button>':'')+
+        (revCount?'<button class="btn bo bs" onclick="openDocHistoryModal(\''+d.id+'\')">History ('+revCount+')</button>':'')+
+      '</span></div><div class="cb">'+
+      (d.source==='Email'?'<div class="srow"><span class="slbl">From</span><span class="sval">'+H(d.email_from||'--')+'</span></div><div class="srow"><span class="slbl">To</span><span class="sval">'+H(d.email_to||'--')+'</span></div>':'')+
+      (d.content_text?'<div style="white-space:pre-wrap;font-size:13px;color:var(--muted);margin-top:8px;max-height:120px;overflow-y:auto">'+H(d.content_text)+'</div>':(d.url_or_ref?'<a href="'+H(d.url_or_ref)+'" target="_blank" rel="noopener">Open Link</a>':'<span style="color:var(--muted);font-size:13px">No content on file</span>'))+
+      '</div></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:24px">'+(matterId?'No documents filed on this matter yet':'Select a matter above')+'</div>';
+}
+function rDocs(){
+  fillMatterSelects();
+  var docs=matterDocs();
+  $('dc-total').textContent=docs.length;
+  $('dc-emails').textContent=docs.filter(function(d){return d.source==='Email';}).length;
+  $('dc-revisions').textContent=docs.reduce(function(s,d){return s+(d.revisions||[]).length;},0);
+  rDocMatterChange();
+}
+
+// ── AI DOCUMENT DRAFTING & REVIEW ─────────────────────────────────────────
+function rDraftMatterContext(){
+  var matterId=$('draftmatter').value;
+  var m=matters().find(function(x){return x.id===matterId;});
+  var wrap=$('draft-matter-context');
+  if(!m){wrap.innerHTML='';return;}
+  wrap.innerHTML='<div class="cb"><div class="srow"><span class="slbl">Client</span><span class="sval">'+H(clientLabel(m.client_id))+'</span></div>'+
+    '<div class="srow"><span class="slbl">Matter</span><span class="sval">'+H(m.matter_name)+'</span></div>'+
+    '<div class="srow"><span class="slbl">Practice Area</span><span class="sval">'+H(m.practice_area||'--')+'</span></div>'+
+    (m.opposing_parties&&m.opposing_parties.length?'<div class="srow"><span class="slbl">Opposing Parties</span><span class="sval">'+H(m.opposing_parties.join(', '))+'</span></div>':'')+'</div>';
+}
+async function runAiDraft(){
+  var matterId=$('draftmatter').value;
+  var request=$('draftrequest').value.trim();
+  if(!matterId){toast('Select a matter first');return;}
+  if(!request){toast('Describe what you need drafted or reviewed');return;}
+  var m=matters().find(function(x){return x.id===matterId;});
+  var context='Matter: '+(m?m.matter_name:'')+'. Client: '+(m?clientLabel(m.client_id):'')+'. Practice area: '+(m&&m.practice_area?m.practice_area:'unspecified')+
+    (m&&m.opposing_parties&&m.opposing_parties.length?'. Opposing parties: '+m.opposing_parties.join(', '):'')+(m&&m.notes?'. Matter notes: '+m.notes:'')+'.';
+  $('draftresult').value='Drafting...';
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:1200,
+        system:'You are a legal document drafting and review assistant for a law firm, working from the real matter data provided below. Draft or review documents professionally and precisely, using the matter facts given -- do not invent facts about the matter you were not given. '+LAW_CITATION_RULE+' Drafting document text itself (letters, contract language, motion structure) is expected and not restricted -- the restriction is specifically on inventing citation numbers, not on legal drafting generally.',
+        messages:[{role:'user',content:'Matter context: '+context+'\n\nRequest: '+request}]})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    $('draftresult').value=text;
+  }catch(e){$('draftresult').value='Could not connect to Claude. Check your connection and try again.';}
+}
+async function saveDraftAsDocument(){
+  var matterId=$('draftmatter').value;
+  var text=$('draftresult').value;
+  if(!matterId){toast('Select a matter first');return;}
+  if(!text||text==='Drafting...'){toast('Nothing to save yet');return;}
+  var rec={id:newId('MDOC'),matter_id:matterId,title:'AI Draft -- '+lawLocalToday(),doc_type:'AI Draft',url_or_ref:'',
+    content_text:text,ocr_text:'',source:'AI Draft',shared_with_client:false,revisions:[],
+    last_edited_by:'AI Draft (unreviewed)',last_edited_at:new Date().toISOString(),
+    uploaded_date:lawLocalToday(),created_at:lawLocalToday()};
+  var list=matterDocs();list.push(rec);st('law_matterdocs',list);
+  rDocs();
+  var syncResult=await sdnData('write','law_matterdocs',rec);
+  toast(syncResult?'Saved as document':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openReviewPicker(){
+  var matterId=$('draftmatter').value;
+  if(!matterId){toast('Select a matter first');return;}
+  var docs=matterDocs().filter(function(d){return d.matter_id===matterId&&d.content_text;});
+  var wrap=$('review-picker-list');
+  wrap.innerHTML=docs.length?docs.map(function(d){
+    return '<div class="srow"><span class="slbl">'+H(d.title)+'</span><button class="btn bo bs" onclick="reviewDocument(\''+d.id+'\')">Review</button></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px;padding:12px 0">No documents with text content on this matter yet -- OCR, file an email, or draft one first.</div>';
+  $('reviewpickermodal').classList.add('on');
+}
+function closeReviewPicker(){$('reviewpickermodal').classList.remove('on');}
+async function reviewDocument(docId){
+  closeReviewPicker();
+  var d=matterDocs().find(function(x){return x.id===docId;});if(!d)return;
+  $('draftresult').value='Reviewing "'+d.title+'"...';
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:800,
+        system:'You are reviewing a legal document for a law firm. Give specific, actionable feedback (clarity, structure, missing elements, risk flags) -- do not rewrite the whole document unless asked. '+LAW_CITATION_RULE,
+        messages:[{role:'user',content:'Please review this document:\n\n'+d.content_text}]})});
+    var data=await res.json();
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    $('draftresult').value='--- REVIEW OF: '+d.title+' ---\n\n'+text;
+  }catch(e){$('draftresult').value='Could not connect to Claude. Check your connection and try again.';}
+}
+function rDrafting(){fillMatterSelects();}
+
+// ── CLIENT PORTAL ──────────────────────────────────────────────────────────
+// Reuses the same typed-name e-sign pattern already proven in
+// SAIRNdesign/SAIRNlegacy (a real timestamp + typed name, never a
+// fabricated cryptographic signature system).
+function portalMessages(){return ld('law_portalmessages',[]);}
+function lawRecordEsign(name){return {esign_name:name,esign_at:new Date().toISOString()};}
+function rPortalMatterChange(){
+  var matterId=$('portalmatter').value;
+  var wrap=$('portal-content');
+  if(!matterId){wrap.innerHTML='';return;}
+  var msgs=portalMessages().filter(function(m){return m.matter_id===matterId;});
+  var docs=matterDocs().filter(function(d){return d.matter_id===matterId;});
+  wrap.innerHTML=
+    '<div class="card"><div class="ch"><span class="ct">Messages</span></div><div class="cb">'+
+      (msgs.length?msgs.slice().reverse().map(function(m){return '<div class="srow"><span class="slbl">['+H(m.sender)+'] '+H(m.message)+'</span><span class="sval" style="font-weight:400;color:var(--muted);font-size:11px">'+fdatetime(m.created_at)+'</span></div>';}).join(''):'<div style="color:var(--muted);font-size:13px">No messages yet</div>')+
+      '<div class="fr" style="margin-top:10px"><div class="fg"><label>Sender</label><select id="pmsender"><option>Staff</option><option>Client (logged by staff)</option></select></div><div class="fg"><label>Message</label><input id="pmmessage"></div></div>'+
+      '<button class="btn bo bs" onclick="sendPortalMessage()">Send</button>'+
+    '</div></div>'+
+    '<div class="card"><div class="ch"><span class="ct">Documents</span></div><div class="cb">'+
+      (docs.length?docs.map(function(d){
+        return '<div class="srow"><span class="slbl">'+H(d.title)+(d.shared_with_client?' <span class="badge bg">Shared</span>':'')+'</span><span>'+
+          '<button class="btn bo bs" onclick="toggleDocShare(\''+d.id+'\')">'+(d.shared_with_client?'Unshare':'Share')+'</button> '+
+          (d.shared_with_client?'<button class="btn bp bs" onclick="openEsignModal(\''+d.id+'\')">Request Signature</button>':'')+
+          '</span></div>';
+      }).join(''):'<div style="color:var(--muted);font-size:13px">No documents on this matter yet</div>')+
+    '</div></div>'+
+    '<div class="card"><div class="ch"><span class="ct">Signatures</span></div><div class="cb" id="portal-esign-list"></div></div>';
+  rPortalEsignList(matterId);
+}
+async function sendPortalMessage(){
+  var matterId=$('portalmatter').value;
+  var message=$('pmmessage').value.trim();
+  if(!matterId||!message)return;
+  var rec={id:newId('PMSG'),matter_id:matterId,sender:$('pmsender').value,message:message,created_at:new Date().toISOString()};
+  var list=portalMessages();list.push(rec);st('law_portalmessages',list);
+  $('pmmessage').value='';
+  rPortalMatterChange();
+  var syncResult=await sdnData('write','law_portalmessages',rec);
+  toast(syncResult?'Message logged':'Saved on this device only -- server sync not yet enabled for this app',syncResult?2500:4500);
+}
+async function toggleDocShare(id){
+  var list=matterDocs();
+  var d=list.find(function(x){return x.id===id;});if(!d)return;
+  d.shared_with_client=!d.shared_with_client;
+  st('law_matterdocs',list);rPortalMatterChange();
+  var syncResult=await sdnData('write','law_matterdocs',d);
+  toast(d.shared_with_client?'Marked shared with client':'Unshared',2500);
+}
+var esignDocId=null;
+function openEsignModal(docId){
+  var d=matterDocs().find(function(x){return x.id===docId;});if(!d)return;
+  esignDocId=docId;
+  $('esign-label').textContent=d.title;
+  $('esign-name').value='';
+  $('esignmodal').classList.add('on');
+}
+function closeEsignModal(){$('esignmodal').classList.remove('on');}
+async function confirmEsign(){
+  var name=$('esign-name').value.trim();
+  if(!name){toast('Enter the signer\'s typed name');return;}
+  var d=matterDocs().find(function(x){return x.id===esignDocId;});if(!d)return;
+  var stamp=lawRecordEsign(name);
+  var rec={id:newId('ESIGN'),matter_id:d.matter_id,document_id:d.id,esign_name:stamp.esign_name,esign_at:stamp.esign_at};
+  var list=ld('law_portalesign',[]);list.push(rec);st('law_portalesign',list);
+  closeEsignModal();rPortalMatterChange();
+  var syncResult=await sdnData('write','law_portalesign',rec);
+  toast(syncResult?'Signature recorded':'Recorded on this device only -- server sync not yet enabled',syncResult?3000:5000);
+}
+function rPortalEsignList(matterId){
+  var esigns=ld('law_portalesign',[]).filter(function(e){return e.matter_id===matterId;});
+  $('portal-esign-list').innerHTML=esigns.length?esigns.map(function(e){
+    var d=matterDocs().find(function(x){return x.id===e.document_id;});
+    return '<div class="srow"><span class="slbl">'+H(d?d.title:'(document)')+' -- signed by '+H(e.esign_name)+'</span><span class="sval" style="font-weight:400;color:var(--muted);font-size:11px">'+fdatetime(e.esign_at)+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px">No signatures recorded yet</div>';
+}
+function rPortal(){fillMatterSelects();rPortalMatterChange();}
+
+// ── STAFF CERTIFICATIONS ──────────────────────────────────────────────────
+function barCerts(){return ld('law_barcerts',[]);}
+function cleCredits(){return ld('law_clecredits',[]);}
+function cleRequirements(){return ld('law_clerequirements',[]);}
+function openBarModal(){
+  ceid=null;
+  ['brname','brstate','brnumber','brdate','brnotes'].forEach(function(f){$(f).value='';});
+  $('brstatus').value='Active';
+  $('barmodal').classList.add('on');
+}
+function closeBarModal(){$('barmodal').classList.remove('on');}
+function editBar(id){
+  var b=barCerts().find(function(x){return x.id===id;});if(!b)return;
+  ceid=id;
+  $('brname').value=b.staff_name;$('brstate').value=b.state;$('brnumber').value=b.bar_number;
+  $('brdate').value=b.admission_date;$('brstatus').value=b.status;$('brnotes').value=b.notes||'';
+  $('barmodal').classList.add('on');
+}
+async function saveBar(){
+  var name=$('brname').value.trim();
+  if(!name){toast('Name required');return;}
+  var rec={id:ceid||newId('BR'),staff_name:name,state:$('brstate').value.trim(),bar_number:$('brnumber').value.trim(),
+    admission_date:$('brdate').value,status:$('brstatus').value,notes:$('brnotes').value.trim(),
+    good_standing_check_date:'',created_at:lawLocalToday()};
+  var list=barCerts();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('law_barcerts',list);
+  closeBarModal();rCerts();
+  var syncResult=await sdnData('write','law_barcerts',rec);
+  toast(syncResult?'Bar admission saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openCleModal(){
+  ['clname2','cljurisdiction','clcourse','clcategory','clhours'].forEach(function(f){$(f).value='';});
+  $('cldate').value=lawLocalToday();
+  $('clemodal').classList.add('on');
+}
+function closeCleModal(){$('clemodal').classList.remove('on');}
+async function saveCle(){
+  var name=$('clname2').value.trim(),hours=Number($('clhours').value)||0;
+  if(!name){toast('Staff name required');return;}
+  if(hours<=0){toast('Hours must be greater than 0');return;}
+  var rec={id:newId('CLE'),staff_name:name,jurisdiction:$('cljurisdiction').value.trim(),course_title:$('clcourse').value.trim(),
+    category:$('clcategory').value.trim(),hours:hours,date:$('cldate').value||lawLocalToday(),created_at:lawLocalToday()};
+  var list=cleCredits();list.push(rec);st('law_clecredits',list);
+  closeCleModal();rCerts();
+  var syncResult=await sdnData('write','law_clecredits',rec);
+  toast(syncResult?'CLE credit logged':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function saveCleRequirement(){
+  var jurisdiction=$('clrjurisdiction').value.trim(),hours=Number($('clrhours').value)||0;
+  if(!jurisdiction){toast('Jurisdiction required');return;}
+  if(hours<=0){toast('Hours required must be greater than 0');return;}
+  var rec={id:newId('CLR'),jurisdiction:jurisdiction,hours_required:hours,period_years:Number($('clrperiod').value)||2,created_at:lawLocalToday()};
+  var list=cleRequirements().filter(function(r){return r.jurisdiction.toLowerCase()!==jurisdiction.toLowerCase();});
+  list.push(rec);st('law_clerequirements',list);
+  ['clrjurisdiction','clrhours'].forEach(function(f){$(f).value='';});$('clrperiod').value=2;
+  rCerts();
+  var syncResult=await sdnData('write','law_clerequirements',rec);
+  toast(syncResult?'Requirement saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+// Real shortfall check: sums CLE hours per staff+jurisdiction pair logged
+// (all time -- a full period-window check would need each entry's
+// reporting-period assignment, not modeled here) and compares against
+// that jurisdiction's configured requirement -- nothing here assumes a
+// specific state's real rule, it only computes against whatever the firm
+// entered above.
+function cleShortfalls(){
+  var reqs=cleRequirements();
+  var credits=cleCredits();
+  var pairs={};
+  credits.forEach(function(c){
+    var key=c.staff_name+'||'+c.jurisdiction;
+    pairs[key]=pairs[key]||{staff_name:c.staff_name,jurisdiction:c.jurisdiction,hours:0};
+    pairs[key].hours+=Number(c.hours)||0;
+  });
+  var shortfalls=[];
+  Object.keys(pairs).forEach(function(key){
+    var p=pairs[key];
+    var req=reqs.find(function(r){return r.jurisdiction.toLowerCase()===p.jurisdiction.toLowerCase();});
+    if(req&&p.hours<req.hours_required)shortfalls.push({staff_name:p.staff_name,jurisdiction:p.jurisdiction,hours:p.hours,required:req.hours_required});
+  });
+  return shortfalls;
+}
+function rCerts(){
+  var bars=barCerts(),credits=cleCredits(),reqs=cleRequirements();
+  $('ct-bars').textContent=bars.length;
+  $('ct-cle').textContent=credits.length;
+  var shortfalls=cleShortfalls();
+  $('ct-behind').textContent=shortfalls.length;
+  var statusColors={Active:'bg',Inactive:'bx',Suspended:'br'};
+  var bartb=$('bartbody');
+  bartb.innerHTML=bars.length?bars.map(function(b){
+    return '<tr><td>'+H(b.staff_name)+'</td><td>'+H(b.state)+'</td><td>'+H(b.bar_number||'--')+'</td><td>'+(b.admission_date?fdate(b.admission_date):'--')+'</td>'+
+      '<td><span class="badge '+(statusColors[b.status]||'bx')+'">'+H(b.status)+'</span></td><td><button class="btn bo bs" onclick="editBar(\''+b.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No bar admissions on file yet</td></tr>';
+  $('clr-list').innerHTML=reqs.length?reqs.map(function(r){
+    var pairsShort=shortfalls.filter(function(s){return s.jurisdiction.toLowerCase()===r.jurisdiction.toLowerCase();});
+    return '<div class="srow"><span class="slbl">'+H(r.jurisdiction)+' -- '+r.hours_required+' hrs / '+r.period_years+' yr(s)</span>'+(pairsShort.length?'<span class="badge br">'+pairsShort.length+' staff behind</span>':'<span class="badge bg">On track</span>')+'</div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px">No jurisdictions configured yet</div>';
+  var cletb=$('cletbody');
+  cletb.innerHTML=credits.length?credits.slice().reverse().map(function(c){
+    return '<tr><td>'+H(c.staff_name)+'</td><td>'+H(c.course_title||'--')+'</td><td>'+H(c.category||'--')+'</td><td>'+H(c.jurisdiction||'--')+'</td><td>'+c.hours+'</td><td>'+fdate(c.date)+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No CLE credits logged yet</td></tr>';
+}
+
+// ── ACCOUNTING (OPERATING) ────────────────────────────────────────────────
+// Deliberately, permanently separate from law_trusttx/law_bankstatements --
+// no shared function, no shared store, no computation that reads both.
+// That separation is the entire point of IOLTA compliance; "connect them
+// later for convenience" is exactly the mistake this structure prevents.
+function opAccounts(){return ld('law_opaccounts',[]);}
+function opTransactions(){return ld('law_optx',[]);}
+function opAccountBalance(accountId){
+  var acc=opAccounts().find(function(a){return a.id===accountId;});
+  var starting=acc?Number(acc.starting_balance)||0:0;
+  var txSum=opTransactions().filter(function(t){return t.account_id===accountId;})
+    .reduce(function(s,t){return s+(t.type==='Income'?Number(t.amount)||0:-(Number(t.amount)||0));},0);
+  return starting+txSum;
+}
+function openOpAccountModal(){
+  ['opaname','opabalance','opanotes'].forEach(function(f){$(f).value='';});
+  $('opatype').value='Checking';
+  $('opaccountmodal').classList.add('on');
+}
+function closeOpAccountModal(){$('opaccountmodal').classList.remove('on');}
+async function saveOpAccount(){
+  var name=$('opaname').value.trim();
+  if(!name){toast('Account name required');return;}
+  var rec={id:newId('OPA'),name:name,type:$('opatype').value,starting_balance:Number($('opabalance').value)||0,
+    notes:$('opanotes').value.trim(),created_at:lawLocalToday()};
+  var list=opAccounts();list.push(rec);st('law_opaccounts',list);
+  closeOpAccountModal();rOpAccounting();
+  var syncResult=await sdnData('write','law_opaccounts',rec);
+  toast(syncResult?'Account added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function openOpTxModal(){
+  $('optxaccount').innerHTML=opAccounts().map(function(a){return '<option value="'+a.id+'">'+H(a.name)+'</option>';}).join('');
+  ['optxamount','optxcategory','optxdesc'].forEach(function(f){$(f).value='';});
+  $('optxtype').value='Income';$('optxdate').value=lawLocalToday();
+  $('optxmodal').classList.add('on');
+}
+function closeOpTxModal(){$('optxmodal').classList.remove('on');}
+async function saveOpTx(){
+  var accountId=$('optxaccount').value,amount=Number($('optxamount').value)||0;
+  if(!accountId){toast('Add an operating account first');return;}
+  if(amount<=0){toast('Amount must be greater than 0');return;}
+  var rec={id:newId('OPTX'),account_id:accountId,type:$('optxtype').value,amount:amount,
+    category:$('optxcategory').value.trim(),date:$('optxdate').value||lawLocalToday(),
+    description:$('optxdesc').value.trim(),created_at:lawLocalToday()};
+  var list=opTransactions();list.push(rec);st('law_optx',list);
+  closeOpTxModal();rOpAccounting();
+  var syncResult=await sdnData('write','law_optx',rec);
+  toast(syncResult?'Transaction recorded':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rOpAccounting(){
+  var accounts=opAccounts(),tx=opTransactions();
+  $('op-accounts').textContent=accounts.length;
+  $('op-balance').textContent=fmt(accounts.reduce(function(s,a){return s+opAccountBalance(a.id);},0));
+  var thisMonth=lawLocalToday().slice(0,7);
+  $('op-expenses').textContent=fmt(tx.filter(function(t){return t.type==='Expense'&&(t.date||'').slice(0,7)===thisMonth;}).reduce(function(s,t){return s+(Number(t.amount)||0);},0));
+  $('op-account-list').innerHTML=accounts.length?accounts.map(function(a){
+    return '<div class="srow"><span class="slbl">'+H(a.name)+' ('+H(a.type)+')</span><span class="sval">'+fmt(opAccountBalance(a.id))+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No operating accounts yet -- add one above.</div>';
+  var accLabel=function(id){var a=accounts.find(function(x){return x.id===id;});return a?a.name:'--';};
+  var tb=$('optbody');
+  tb.innerHTML=tx.length?tx.slice().reverse().map(function(t){
+    return '<tr><td>'+fdate(t.date)+'</td><td>'+H(accLabel(t.account_id))+'</td><td><span class="badge '+(t.type==='Income'?'bg':'br')+'">'+H(t.type)+'</span></td><td>'+H(t.category||'--')+'</td><td>'+fmt(t.amount)+'</td><td>'+H(t.description||'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No transactions yet</td></tr>';
+}
+
+// ── PERSONAL INJURY MODULE ────────────────────────────────────────────────
+function piCases(){return ld('law_picases',[]);}
+function piMedical(){return ld('law_pimedical',[]);}
+function piCaseForMatter(matterId){return piCases().find(function(x){return x.matter_id===matterId;});}
+function piEconomicDamages(piCase){
+  var meds=piMedical().filter(function(m){return m.pi_case_id===piCase.id;});
+  var medTotal=meds.reduce(function(s,m){return s+(Number(m.amount_billed)||0);},0);
+  return medTotal+(Number(piCase.lost_wages)||0);
+}
+function piEstimatedValue(piCase){
+  var econ=piEconomicDamages(piCase);
+  return econ+econ*(Number(piCase.multiplier)||0);
+}
+function openPiCaseModal(){
+  var matterId=$('pimatter').value;
+  var existing=piCaseForMatter(matterId);
+  ['piincidentdate','piincidentdesc','pilostwages'].forEach(function(f){$(f).value='';});
+  $('piseverity').value='Minor';$('pimultiplier').value=2;$('pistatus').value='Investigating';
+  if(existing){
+    $('piincidentdate').value=existing.incident_date||'';$('piincidentdesc').value=existing.incident_description||'';
+    $('piseverity').value=existing.injury_severity;$('pilostwages').value=existing.lost_wages||'';
+    $('pimultiplier').value=existing.multiplier;$('pistatus').value=existing.status;
+  }
+  $('picasemodal').classList.add('on');
+}
+function closePiCaseModal(){$('picasemodal').classList.remove('on');}
+async function savePiCase(){
+  var matterId=$('pimatter').value;
+  if(!matterId){toast('Select a matter first');return;}
+  var existing=piCaseForMatter(matterId);
+  var rec=existing||{id:newId('PIC'),matter_id:matterId,gross_settlement:0,attorney_fee_pct:0,costs:0,created_at:lawLocalToday()};
+  rec.incident_date=$('piincidentdate').value;rec.incident_description=$('piincidentdesc').value.trim();
+  rec.injury_severity=$('piseverity').value;rec.lost_wages=Number($('pilostwages').value)||0;
+  rec.multiplier=Number($('pimultiplier').value)||0;rec.status=$('pistatus').value;
+  var list=piCases();
+  if(!existing)list.push(rec);
+  st('law_picases',list);
+  closePiCaseModal();rPiMatterChange();
+  var syncResult=await sdnData('write','law_picases',rec);
+  toast(syncResult?'Case detail saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+var piMedCaseId=null;
+function openPiMedModal(caseId){
+  piMedCaseId=caseId;
+  ['pmprovider','pmbilled','pmlienholder','pmlienamount','pmnotes2'].forEach(function(f){$(f).value='';});
+  $('pmstatus').value='Outstanding';
+  $('pimedmodal').classList.add('on');
+}
+function closePiMedModal(){$('pimedmodal').classList.remove('on');}
+async function savePiMed(){
+  var provider=$('pmprovider').value.trim();
+  if(!provider){toast('Provider name required');return;}
+  var rec={id:newId('PM'),pi_case_id:piMedCaseId,provider_name:provider,amount_billed:Number($('pmbilled').value)||0,
+    lien_holder:$('pmlienholder').value.trim(),lien_amount:Number($('pmlienamount').value)||0,
+    status:$('pmstatus').value,notes:$('pmnotes2').value.trim(),created_at:lawLocalToday()};
+  var list=piMedical();list.push(rec);st('law_pimedical',list);
+  closePiMedModal();rPiMatterChange();
+  var syncResult=await sdnData('write','law_pimedical',rec);
+  toast(syncResult?'Medical record saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function savePiSettlement(){
+  var caseId=$('pisettle-caseid').value;
+  var list=piCases();
+  var pc=list.find(function(x){return x.id===caseId;});if(!pc)return;
+  pc.gross_settlement=Number($('pisettlegross').value)||0;
+  pc.attorney_fee_pct=Number($('pisettlefeepct').value)||0;
+  pc.costs=Number($('pisettlecosts').value)||0;
+  st('law_picases',list);
+  rPiMatterChange();
+  var syncResult=await sdnData('write','law_picases',pc);
+  toast(syncResult?'Settlement figures saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rPiMatterChange(){
+  var matterId=$('pimatter').value;
+  var wrap=$('pi-content');
+  if(!matterId){wrap.innerHTML='';return;}
+  var pc=piCaseForMatter(matterId);
+  if(!pc){
+    wrap.innerHTML='<div class="card"><div class="cb" style="text-align:center;color:var(--muted);padding:24px">No PI case detail yet for this matter.<br><button class="btn bp bs" style="margin-top:10px" onclick="openPiCaseModal()">+ Add Case Detail</button></div></div>';
+    return;
+  }
+  var meds=piMedical().filter(function(m){return m.pi_case_id===pc.id;});
+  var econ=piEconomicDamages(pc);
+  var estValue=piEstimatedValue(pc);
+  var totalLiens=meds.reduce(function(s,m){return s+(Number(m.lien_amount)||0);},0);
+  var gross=Number(pc.gross_settlement)||0;
+  var feePct=Number(pc.attorney_fee_pct)||0;
+  var costs=Number(pc.costs)||0;
+  var fee=gross*feePct/100;
+  var netToClient=gross-totalLiens-fee-costs;
+  wrap.innerHTML=
+    '<div class="card"><div class="ch"><span class="ct">Case Detail</span><button class="btn bo bs" style="margin-left:auto" onclick="openPiCaseModal()">Edit</button></div><div class="cb">'+
+      '<div class="srow"><span class="slbl">Incident Date</span><span class="sval">'+(pc.incident_date?fdate(pc.incident_date):'--')+'</span></div>'+
+      '<div class="srow"><span class="slbl">Severity</span><span class="sval">'+H(pc.injury_severity)+'</span></div>'+
+      '<div class="srow"><span class="slbl">Status</span><span class="sval">'+H(pc.status)+'</span></div>'+
+      (pc.incident_description?'<div style="margin-top:8px;color:var(--muted);font-size:13px">'+H(pc.incident_description)+'</div>':'')+
+    '</div></div>'+
+    '<div class="card"><div class="ch"><span class="ct">Case Value Estimate</span></div><div class="cb">'+
+      '<div class="srow"><span class="slbl">Economic Damages (medical + lost wages)</span><span class="sval">'+fmt(econ)+'</span></div>'+
+      '<div class="srow"><span class="slbl">Multiplier</span><span class="sval">'+pc.multiplier+'x</span></div>'+
+      '<div class="srow"><span class="slbl">Estimated Non-Economic Damages</span><span class="sval">'+fmt(econ*(Number(pc.multiplier)||0))+'</span></div>'+
+      '<div class="srow"><span class="slbl" style="font-weight:700">Total Estimated Value</span><span class="sval" style="font-size:18px">'+fmt(estValue)+'</span></div>'+
+      '<div style="color:var(--muted);font-size:12px;margin-top:8px">Multiplier method estimate -- not a guaranteed value, edit the multiplier in the case detail as your assessment changes.</div>'+
+    '</div></div>'+
+    '<div class="card"><div class="ch"><span class="ct">Medical Records / Liens</span><button class="btn bo bs" style="margin-left:auto" onclick="openPiMedModal(\''+pc.id+'\')">+ Add Record</button></div><div class="cb">'+
+      (meds.length?'<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Provider</th><th>Billed</th><th>Lien Holder</th><th>Lien Amount</th><th>Status</th></tr></thead><tbody>'+
+        meds.map(function(m){return '<tr><td>'+H(m.provider_name)+'</td><td>'+fmt(m.amount_billed)+'</td><td>'+H(m.lien_holder||'--')+'</td><td>'+fmt(m.lien_amount)+'</td><td><span class="badge '+(m.status==='Paid'?'bg':m.status==='Negotiated'?'bw':'bx')+'">'+H(m.status)+'</span></td></tr>';}).join('')+
+        '</tbody></table></div>':'<div style="color:var(--muted);font-size:13px">No medical records logged yet</div>')+
+    '</div></div>'+
+    '<div class="card"><div class="ch"><span class="ct">Settlement Calculation</span></div><div class="cb">'+
+      '<input type="hidden" id="pisettle-caseid" value="'+pc.id+'">'+
+      '<div class="fr"><div class="fg"><label>Gross Settlement ($)</label><input id="pisettlegross" type="number" value="'+gross+'" onchange="savePiSettlement()"></div><div class="fg"><label>Attorney Fee (%)</label><input id="pisettlefeepct" type="number" value="'+feePct+'" onchange="savePiSettlement()"></div></div>'+
+      '<div class="fg"><label>Costs ($)</label><input id="pisettlecosts" type="number" value="'+costs+'" onchange="savePiSettlement()"></div>'+
+      '<div class="srow"><span class="slbl">Total Liens</span><span class="sval">'+fmt(totalLiens)+'</span></div>'+
+      '<div class="srow"><span class="slbl">Attorney Fee</span><span class="sval">'+fmt(fee)+'</span></div>'+
+      '<div class="srow"><span class="slbl" style="font-weight:700">Net to Client</span><span class="sval" style="font-size:18px">'+fmt(netToClient)+'</span></div>'+
+    '</div></div>';
+}
+function rPi(){fillMatterSelects();rPiMatterChange();}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 function init(){
   seed();
   fillMatterSelects();
   rDash();rIntake();rMattersPanel();rCalendar();rTrust();rBilling();
+  rDocs();rDrafting();rPortal();rCerts();rOpAccounting();rPi();
 }
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('law_license_key');
