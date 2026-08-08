@@ -5473,6 +5473,7 @@ window.sdPhotosExport=function(){
   function load(){try{return JSON.parse(localStorage.getItem('sd_warranty')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){try{localStorage.setItem('sd_warranty',JSON.stringify(d));}catch(e){}}
   var data=load();
+  window.sdWarrantyData=data; // exposed so runAlertScan() reads the real warranty records, not the dead sdWarranties[] store
   var STATUS_COLOR={Active:'var(--brand2)',Expired:'#94a3b8','Claim Open':'#ef4444'};
   function daysUntil(dateStr){
     var d=new Date(dateStr)-new Date();
@@ -18960,7 +18961,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // == DATA STORES ===============================================
 var sdCustomers = [];
 var sdPhotos = [];
-var sdWarranties = [];
 var sdAlertSettings = {};
 var sdQBOConfig = {};
 var _alertWarrPkg = null;
@@ -18968,14 +18968,12 @@ var _alertWarrPkg = null;
 function loadSD3Data() {
   try { sdCustomers = JSON.parse(localStorage.getItem('sd_customers') || '[]'); } catch(e){}
   try { sdPhotos = JSON.parse(localStorage.getItem('sd_photos') || '[]'); } catch(e){}
-  try { sdWarranties = JSON.parse(localStorage.getItem('sd_warranties') || '[]'); } catch(e){}
   try { sdAlertSettings = JSON.parse(localStorage.getItem('sd_alert_settings') || '{}'); } catch(e){}
   try { sdQBOConfig = JSON.parse(localStorage.getItem('sd_qbo') || '{}'); } catch(e){}
 }
 function saveSD3Data() {
   localStorage.setItem('sd_customers', JSON.stringify(sdCustomers));
   localStorage.setItem('sd_photos', JSON.stringify(sdPhotos));
-  localStorage.setItem('sd_warranties', JSON.stringify(sdWarranties));
 }
 
 // == ALERT SYSTEM ==============================================
@@ -19005,11 +19003,11 @@ function runAlertScan() {
     }
   });
   // Scan warranties expiring
-  sdWarranties.forEach(w => {
-    if (w.expiry) {
-      const daysLeft = (new Date(w.expiry+'T00:00:00').getTime() - now) / 86400000;
+  (window.sdWarrantyData||[]).forEach(w => {
+    if (w.expires) {
+      const daysLeft = (new Date(w.expires+'T00:00:00').getTime() - now) / 86400000;
       if (daysLeft < 0) {
-        alerts.push({level:'red', msg:'🔴 Warranty EXPIRED — ' + w.customer + ' (' + w.package + ')', panel:'warranty', id:w.id});
+        alerts.push({level:'red', msg:'🔴 Warranty EXPIRED — ' + w.customer + ' (' + w.stone + ')', panel:'warranty', id:w.id});
       } else if (daysLeft <= 30) {
         alerts.push({level:'yellow', msg:'🟡 Warranty expiring in ' + Math.ceil(daysLeft) + ' days — ' + w.customer, panel:'warranty', id:w.id});
       }
@@ -19632,121 +19630,20 @@ function photoLightbox(id) {
 }
 
 // == WARRANTIES ================================================
-var _warrPkgPrice = 0; var _warrPkgYears = 0; var _warrPkgName = '';
-
-function addWarrantyToJob(name, price, years) {
-  _warrPkgName = name; _warrPkgPrice = price; _warrPkgYears = years;
-  document.getElementById('warr-pkg').value = name + ' — $' + price;
-  document.getElementById('warr-add-form').style.display = 'block';
-  document.getElementById('warr-date').value = sdLocalToday();
-  document.getElementById('warr-add-form').scrollIntoView({behavior:'smooth'});
-}
-
-function saveWarranty() {
-  const cust = document.getElementById('warr-cust').value.trim();
-  if (!cust) { showToast('Customer name required'); return; }
-  const installDate = document.getElementById('warr-date').value;
-  const expiryDate = _warrPkgYears < 90 ? new Date(new Date(installDate).getTime() + _warrPkgYears*365*86400000).toISOString().split('T')[0] : '9999-12-31';
-  const w = {
-    id: 'W' + Date.now(),
-    customer: cust,
-    package: _warrPkgName,
-    price: _warrPkgPrice,
-    years: _warrPkgYears,
-    material: document.getElementById('warr-mat').value.trim(),
-    installDate: installDate,
-    expiry: expiryDate,
-    createdAt: new Date().toISOString()
-  };
-  sdWarranties.unshift(w);
-  saveSD3Data();
-  document.getElementById('warr-add-form').style.display = 'none';
-  renderWarranties();
-  warrUpdateKPIs();
-  runAlertScan();
-  notify('Warranty saved','');
-}
-
-function warrantyDelete(id) {
-  if (!confirm('Delete this warranty record?')) return;
-  sdWarranties = sdWarranties.filter(w => w.id !== id);
-  saveSD3Data();
-  renderWarranties();
-  runAlertScan();
-}
-
-function renderWarranties() {
-  const el = document.getElementById('warr-list');
-  if (!el) return;
-  if (!sdWarranties.length) {
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px">No warranties on file. Add one using a package above.</div>';
-    return;
-  }
-  const now = Date.now();
-  el.innerHTML = sdWarranties.map(w => {
-    const daysLeft = w.years >= 90 ? 99999 : Math.ceil((new Date(w.expiry+'T00:00:00').getTime() - now) / 86400000);
-    const expired = daysLeft < 0;
-    const soon = !expired && daysLeft <= 30;
-    const urgency = expired ? 'red' : soon ? 'yellow' : 'green';
-    const expiryStr = w.years >= 90 ? 'Lifetime' : (expired ? 'EXPIRED' : 'Expires '+new Date(w.expiry+'T00:00:00').toLocaleDateString());
-    return '<div class="warranty-card" style="border-left:4px solid ' + (urgency==='red'?'#dc2626':urgency==='yellow'?'#ca8a04':'#16a34a') + '">' +
-      '<div class="warranty-icon">' + (w.years>=90?'🥇':w.years>=3?'🥈':'🥉') + '</div>' +
-      '<div class="warranty-info">' +
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' +
-        '<div class="warranty-name">' + escHtml(w.customer) + '</div>' +
-        '<span class="item-urgency ' + urgency + '">' + (expired?'Expired':soon?daysLeft+'d left':'Active') + '</span>' +
-      '</div>' +
-      '<div style="font-size:12px;color:var(--muted)">' + escHtml(w.package) + (w.material?' · '+escHtml(w.material):'') + '</div>' +
-      '<div style="font-size:12px;color:var(--muted)">Installed: ' + new Date(w.installDate+'T00:00:00').toLocaleDateString() + ' · ' + expiryStr + '</div>' +
-      '<div style="margin-top:8px;display:flex;gap:8px">' +
-        '<span style="font-size:13px;font-weight:700;color:var(--a)">$' + w.price + '</span>' +
-        '<button onclick="warrantyDelete(\'' + w.id + '\')" style="font-size:11px;padding:2px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
-      '</div>' +
-      '</div></div>';
-  }).join('');
-}
-
-// -- WARRANTY KPIs + EXTRAS -------------------------------------
-function warrUpdateKPIs() {
-  var now = Date.now();
-  var total = sdWarranties.filter(function(w){return new Date(w.expiry+'T00:00:00').getTime()>now||w.years>=90;}).length;
-  var expired = sdWarranties.filter(function(w){return w.years<90&&new Date(w.expiry+'T00:00:00').getTime()<now;}).length;
-  var expiring = sdWarranties.filter(function(w){
-    var d=(new Date(w.expiry+'T00:00:00').getTime()-now)/86400000;
-    return w.years<90&&d>=0&&d<=30;
-  }).length;
-  var value = sdWarranties.reduce(function(s,w){return s+(w.price||0);},0);
-  function s(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
-  s('warr-kpi-total',total);s('warr-kpi-expired',expired);
-  s('warr-kpi-expiring',expiring);s('warr-kpi-value','$'+value.toLocaleString());
-}
-
-function warrExportCSV() {
-  if(!sdWarranties.length){notify('No warranties to export','warn');return;}
-  var rows=[['Customer','Package','Material','Price','Install Date','Expiry','Status']];
-  var now=Date.now();
-  sdWarranties.forEach(function(w){
-    var d=w.years>=90?'Lifetime':new Date(w.expiry+'T00:00:00').toLocaleDateString();
-    var status=w.years>=90?'Active (Lifetime)':new Date(w.expiry+'T00:00:00').getTime()<now?'Expired':Math.ceil((new Date(w.expiry+'T00:00:00').getTime()-now)/86400000)+'d left';
-    rows.push([w.customer,w.package,w.material||'',w.price,w.installDate,d,status]);
-  });
-  var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='stonedesk-warranties-'+sdLocalToday()+'.csv';a.click();
-}
-
-function warrAskClaude() {
-  sbNav('ai');
-  setTimeout(function(){
-    var input=document.getElementById('userInput');
-    var total=sdWarranties.length;
-    var value=sdWarranties.reduce(function(s,w){return s+(w.price||0);},0);
-    if(input){
-      input.value='Give me the most effective 3-sentence sales script for upselling an extended warranty to a stone countertop customer at close. We offer Basic ($249/1yr), Premium ($449/3yr), and Elite Lifetime ($799). We have sold '+total+' warranties totaling $'+value.toLocaleString()+'. What is the single best thing to say to get them to say yes?';
-      sendMessage();
-    }
-  },400);
-}
+// Duplicate/orphaned warranty CRUD system removed 2026-08-08 -- zero
+// callers anywhere in the file (addWarrantyToJob, saveWarranty,
+// renderWarranties, warrUpdateKPIs, warrExportCSV, warrAskClaude,
+// warrantyDelete), and referenced 9 DOM ids (warr-pkg, warr-add-form,
+// warr-cust, warr-date, warr-mat, warr-kpi-total/expired/expiring/value)
+// that never existed in the HTML -- flagged by missing_dom_target_check.py.
+// The real, live Warranty panel is panel-warranty (~line 5441) with its
+// own working sdWarrantyRender/sdWarrantyAdd/etc. This dead code used a
+// separate localStorage key (sd_warranties, plural) that nothing else
+// ever wrote to, and its runAlertScan() hookup always found it empty --
+// producing a false "All warranties current" banner in warr-alerts-zone
+// even when the real panel's data had expired warranties. Fixed by
+// pointing runAlertScan at window.sdWarrantyData (the real panel's data,
+// exposed at its point of load) instead of the dead sdWarranties[] store.
 
 
 // == QUICKBOOKS INTEGRATION -- deleted 2026-07-29: no panel/nav entry ever
@@ -19828,7 +19725,6 @@ function testAlertSMS() {
     setTimeout(function() {
       renderCustomers();
       renderPhotos();
-      renderWarranties();
       loadAlertSettingsUI();
       runAlertScan();
     }, 500);
