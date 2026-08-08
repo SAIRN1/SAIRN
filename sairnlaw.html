@@ -242,6 +242,8 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-opaccounting" onclick="nav('opaccounting')"><span class="sico">&#127974;</span>Accounting (Operating)</button>
       <div class="ss">Practice Modules</div>
       <button class="sb" id="sb-pi" onclick="nav('pi')"><span class="sico">&#129704;</span>Personal Injury</button>
+      <div class="ss">Legal Research</div>
+      <button class="sb" id="sb-citator" onclick="nav('citator')"><span class="sico">&#128220;</span>Citator (Phase A)</button>
       <div class="sfoot">SAIRNlaw v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 2</span></div>
     </aside>
     <main>
@@ -800,6 +802,30 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<!-- LEGAL RESEARCH CITATOR (Phase A -- foundation) -->
+<div class="panel" id="panel-citator">
+  <div class="ph"><div><div class="ptitle">Legal Research Citator</div><div class="psub">Phase A foundation &mdash; real CourtListener case search and citation-treatment analysis</div></div></div>
+  <div class="card" id="citator-config-notice" style="display:none"><div class="cb" style="color:var(--warn)"></div></div>
+  <div class="card"><div class="cb">
+    <div class="sbar"><input id="citsearch" placeholder="Search a case by name or citation..." onkeydown="if(event.key==='Enter')runCitatorSearch()"><button class="btn bp" onclick="runCitatorSearch()">Search</button></div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:10px">Real search against CourtListener's live case database (courtlistener.com, Free Law Project) -- not a local or cached index.</div>
+    <div id="citator-search-results"></div>
+  </div></div>
+  <div id="citator-report"></div>
+</div>
+<div class="modal" id="citatorfeedbackmodal">
+  <div class="mbox">
+    <div class="mtitle">Correct This Classification</div>
+    <div class="fg" id="citfeedback-label" style="color:var(--muted);font-size:13px;margin-bottom:14px"></div>
+    <div class="fg"><label>Correct Treatment</label><select id="citfeedback-treatment"><option>followed</option><option>distinguished</option><option>questioned</option><option>overruled</option><option>criticized</option><option>unclear</option></select></div>
+    <div class="fg"><label>Note (optional)</label><textarea id="citfeedback-note" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCitatorFeedbackModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmCitatorCorrection()">Submit Correction</button>
+    </div>
+  </div>
+</div>
+
     </main>
   </div>
 </div>
@@ -838,6 +864,17 @@ var PINS=ld('law_pins',null)||DEFAULT_PINS;
 var pbuf='',prole='owner',ceid=null,aiHist=[];
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// H() escapes for HTML-attribute context, which is the WRONG escaping for
+// text embedded as a JS string literal inside an onclick="..." attribute --
+// the browser HTML-decodes the attribute value (turning &#39; back into a
+// literal ' ) BEFORE parsing it as JS, so H()'d free text (e.g. a real case
+// name like "O'Brien v. Smith") would silently break the onclick handler
+// with a reintroduced apostrophe. Every prior onclick argument in this file
+// was always a newId()-generated id (never contains a quote), so this never
+// surfaced until the Citator panel started passing real case-name text as
+// a function argument. jsEscape() is the correct escaping for that case --
+// real backslash-escaping of a JS string literal, not HTML entities.
+function jsEscape(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
@@ -921,6 +958,7 @@ function nav(id){
   if(id==='certs')rCerts();
   if(id==='opaccounting')rOpAccounting();
   if(id==='pi')rPi();
+  if(id==='citator')rCitator();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -2218,6 +2256,153 @@ function rPiMatterChange(){
     '</div></div>';
 }
 function rPi(){fillMatterSelects();rPiMatterChange();}
+
+// ── LEGAL RESEARCH CITATOR (Phase A -- foundation) ────────────────────────
+// Real CourtListener v4 integration + real multi-pass classification, both
+// server-side (api/courtlistener.js, api/legal-citator.js) -- this client
+// code only ever renders what those endpoints actually returned, never
+// fabricates a result client-side. See those files' own header comments
+// for exactly what's live-confirmed vs. pending a real API token.
+var CL_API='https://sairn.vercel.app/api/courtlistener';
+var CITATOR_API='https://sairn.vercel.app/api/legal-citator';
+var citatorCurrentCase=null; // {cluster_id, opinion_id, case_name, citation}
+var citatorFeedbackTarget=null;
+function clFetch(action,payload){
+  var lic=lawLicenseKey();
+  if(!lic)return Promise.resolve({error:{message:'No license key'}});
+  return fetch(CL_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().then(function(d){d._httpStatus=r.status;return d;});})
+    .catch(function(e){return {error:{message:'Network error: '+e.message}};});
+}
+function citatorFetch(action,payload){
+  var lic=lawLicenseKey();
+  if(!lic)return Promise.resolve({error:{message:'No license key'}});
+  return fetch(CITATOR_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().then(function(d){d._httpStatus=r.status;return d;});})
+    .catch(function(e){return {error:{message:'Network error: '+e.message}};});
+}
+function citatorShowConfigNotice(message){
+  var box=$('citator-config-notice');
+  box.querySelector('.cb').textContent=message;
+  box.style.display='block';
+}
+async function runCitatorSearch(){
+  var q=$('citsearch').value.trim();
+  if(!q){toast('Enter a search term');return;}
+  $('citator-search-results').innerHTML='<div style="color:var(--muted);padding:12px 0">Searching CourtListener...</div>';
+  var res=await clFetch('search',{q:q});
+  if(res.error){
+    if(res._httpStatus===503||(res.error.code==='NOT_CONFIGURED')){citatorShowConfigNotice(res.error.message);}
+    $('citator-search-results').innerHTML='<div style="color:var(--danger);padding:12px 0">'+H(res.error.message||'Search failed')+'</div>';
+    return;
+  }
+  var results=(res.data&&res.data.results)||[];
+  if(!results.length){$('citator-search-results').innerHTML='<div style="color:var(--muted);padding:12px 0">No results</div>';return;}
+  $('citator-search-results').innerHTML=results.slice(0,15).map(function(r){
+    var opinionId=r.opinions&&r.opinions[0]?r.opinions[0].id:null;
+    var citation=(r.citation&&r.citation[0])||'';
+    return '<div class="srow"><span class="slbl">'+H(r.caseName)+(citation?' -- '+H(citation):'')+' ('+H(r.court||'--')+', '+(r.dateFiled?fdate(r.dateFiled):'--')+')</span>'+
+      '<span><button class="btn bo bs" onclick="openCitatorCase('+r.cluster_id+','+(opinionId||'null')+',\''+jsEscape(r.caseName)+'\',\''+jsEscape(citation)+'\')">View Citator Report</button></span></div>';
+  }).join('');
+}
+async function openCitatorCase(clusterId,opinionId,caseName,citation){
+  citatorCurrentCase={cluster_id:clusterId,opinion_id:opinionId,case_name:caseName,citation:citation};
+  var wrap=$('citator-report');
+  wrap.innerHTML='<div class="card"><div class="cb" style="color:var(--muted)">Loading citator report...</div></div>';
+  await rCitatorReport();
+}
+async function rCitatorReport(){
+  if(!citatorCurrentCase)return;
+  var wrap=$('citator-report');
+  var res=await citatorFetch('report',{cited_cluster_id:citatorCurrentCase.cluster_id});
+  if(res.error){wrap.innerHTML='<div class="card"><div class="cb" style="color:var(--danger)">'+H(res.error.message||'Could not load report')+'</div></div>';return;}
+  var d=res.data;
+  var cov=d.coverage||{};
+  var totalReported=cov.total_citing_reported;
+  var totalProcessed=cov.total_citing_processed||0;
+  // HONEST COVERAGE DISCLOSURE (brief item 5) -- states plainly what has
+  // actually been analyzed, never implies parity with Shepard's/KeyCite.
+  var coverageText=totalReported===null||totalReported===undefined
+    ? 'Coverage not yet established for this case -- click "Process Citing Opinions" to begin.'
+    : ('Fully processed: '+totalProcessed+' of '+totalReported+' citing opinions CourtListener reports for this case'+
+       (cov.jurisdiction_filter?' (filtered to '+H(cov.jurisdiction_filter)+')':'')+
+       (cov.date_filter_from?' (from '+H(cov.date_filter_from)+' forward)':'')+
+       '. This is NOT the same coverage as Shepard\'s or KeyCite -- it reflects exactly what CourtListener\'s free-tier database contains and what this system has processed so far, nothing implied beyond that.');
+  var breakdown=d.breakdown||{};
+  var summaryParts=[];
+  ['followed','distinguished','questioned','overruled','criticized','unclear'].forEach(function(l){
+    if(breakdown[l])summaryParts.push(breakdown[l]+' '+l);
+  });
+  var treatments=(d.treatments||[]).slice().sort(function(a,b){
+    var sev={overruled:0,questioned:1,criticized:2,distinguished:3,unclear:4,followed:5};
+    return (sev[a.final_treatment]||9)-(sev[b.final_treatment]||9);
+  });
+  var badgeClass={followed:'bg',distinguished:'bw',questioned:'bw',overruled:'br',criticized:'br',unclear:'bx'};
+  wrap.innerHTML=
+    '<div class="card"><div class="ch"><span class="ct">'+H(citatorCurrentCase.case_name)+(citatorCurrentCase.citation?' ('+H(citatorCurrentCase.citation)+')':'')+'</span>'+
+      '<button class="btn bp bs" style="margin-left:auto" onclick="processMoreCitations()">Process Citing Opinions</button></div><div class="cb">'+
+      '<div style="font-size:13px;margin-bottom:8px">'+(totalReported!==null&&totalReported!==undefined?('Cited by '+totalReported+' cases. '+(summaryParts.length?summaryParts.join(', ')+'.':'')):'Citation count not yet loaded.')+'</div>'+
+      '<div style="color:var(--muted);font-size:12px">'+coverageText+'</div>'+
+      '<div id="citator-process-status" style="color:var(--muted);font-size:12px;margin-top:8px"></div>'+
+    '</div></div>'+
+    (treatments.length?treatments.map(function(t){
+      return '<div class="card"><div class="ch"><span class="badge '+(badgeClass[t.final_treatment]||'bx')+'">'+H(t.final_treatment)+'</span>'+
+        '<span style="margin-left:8px;font-size:12px;color:var(--muted)">'+Math.round((t.agreement_pct||0)*100)+'% pass agreement'+(t.court_hierarchy_weight!==null&&t.court_hierarchy_weight!==undefined?' -- court rank '+t.court_hierarchy_weight:'')+'</span>'+
+        '<span style="margin-left:auto;display:flex;gap:6px">'+
+          '<button class="btn bo bs" onclick="confirmCitatorTreatment(\''+t.id+'\')">Confirm</button>'+
+          '<button class="btn bo bs" onclick="openCitatorFeedbackModal(\''+t.id+'\',\''+t.final_treatment+'\')">Correct</button>'+
+        '</span></div><div class="cb">'+
+        '<div style="font-weight:700;margin-bottom:4px">'+H(t.citing_case_name||('Opinion '+t.citing_opinion_id))+'</div>'+
+        '<div style="white-space:pre-wrap;font-size:13px;color:var(--muted);border-left:3px solid var(--border);padding-left:10px;margin:8px 0">"'+H(t.supporting_sentence)+'"</div>'+
+        '<a href="'+H(t.source_url)+'" target="_blank" rel="noopener">View real source on CourtListener</a>'+
+        (t.feedback_confirm_count||t.feedback_correct_count?'<div style="color:var(--muted);font-size:11px;margin-top:6px">'+((t.feedback_confirm_count||0))+' confirmed, '+((t.feedback_correct_count||0))+' corrected by reviewing attorneys</div>':'')+
+        '</div></div>';
+    }).join(''):'<div class="card"><div class="cb" style="text-align:center;color:var(--muted);padding:24px">No citing opinions processed yet. Click "Process Citing Opinions" above -- CourtListener\'s real rate limit means this happens gradually, a few opinions per click, not all at once.</div></div>');
+}
+async function processMoreCitations(){
+  if(!citatorCurrentCase)return;
+  if(!citatorCurrentCase.opinion_id){toast('This search result has no linked opinion id to query citations against');return;}
+  var statusEl=$('citator-process-status');
+  if(statusEl)statusEl.textContent='Processing (real CourtListener + Claude calls, respecting the real rate limit -- this can take a moment)...';
+  var res=await citatorFetch('process',{cited_cluster_id:citatorCurrentCase.cluster_id,cited_opinion_id:citatorCurrentCase.opinion_id,case_name:citatorCurrentCase.case_name,citation:citatorCurrentCase.citation});
+  if(res.error){
+    if(res._httpStatus===503){citatorShowConfigNotice(res.error.message);}
+    if(statusEl)statusEl.textContent=res.error.message||'Processing failed';
+    else toast(res.error.message||'Processing failed',6000);
+    return;
+  }
+  await rCitatorReport();
+  var d=res.data||{};
+  toast('Processed '+(d.processed_this_call?d.processed_this_call.length:0)+' citing opinion(s) this round'+(d.more_remaining?' -- more remain, click again to continue':''),4000);
+}
+function openCitatorFeedbackModal(treatmentId,currentLabel){
+  citatorFeedbackTarget=treatmentId;
+  $('citfeedback-label').textContent='Current classification: '+currentLabel;
+  $('citfeedback-treatment').value=currentLabel;
+  $('citfeedback-note').value='';
+  $('citatorfeedbackmodal').classList.add('on');
+}
+function closeCitatorFeedbackModal(){$('citatorfeedbackmodal').classList.remove('on');}
+async function confirmCitatorCorrection(){
+  var res=await citatorFetch('feedback',{treatment_id:citatorFeedbackTarget,feedback_action:'corrected',corrected_to:$('citfeedback-treatment').value,note:$('citfeedback-note').value.trim()});
+  closeCitatorFeedbackModal();
+  if(res.error){toast(res.error.message||'Could not submit correction',5000);return;}
+  toast('Correction logged');
+  await rCitatorReport();
+}
+async function confirmCitatorTreatment(treatmentId){
+  var res=await citatorFetch('feedback',{treatment_id:treatmentId,feedback_action:'confirmed'});
+  if(res.error){toast(res.error.message||'Could not submit confirmation',5000);return;}
+  toast('Confirmed');
+  await rCitatorReport();
+}
+function rCitator(){
+  $('citator-config-notice').style.display='none';
+  $('citator-search-results').innerHTML='';
+  $('citator-report').innerHTML='';
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 function init(){
