@@ -27,6 +27,12 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 /* .pdots/.pdot/.ppad/.pkey removed 2026-08-08 with the shared-role-PIN
    keypad they styled -- login is now a real per-employee form. */
 .perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+/* Secondary text button for the WHITE login card. .hbtn was used here at
+   first -- that is the header's white-on-translucent style, which rendered
+   as invisible white text on white. Caught by a real screenshot of the
+   two-factor step, not by reading the markup. */
+.plink{background:none;border:none;color:var(--p);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:underline;}
+.plink:hover{color:var(--pd);}
 /* LAYOUT */
 #app{display:none;}
 #app.on{display:flex;flex-direction:column;height:100vh;}
@@ -206,7 +212,7 @@ label.chk input{width:auto;}
              onkeydown="if(event.key==='Enter')lawLogin()">
       <button class="gbtn" id="l-go" onclick="lawLogin()">Sign In</button>
       <button class="gbtn" id="l-sso" style="display:none;background:#fff;color:var(--pd);border:2px solid var(--border);margin-top:8px" onclick="lawSsoStart()">Sign in with SSO</button>
-      <div style="margin-top:14px"><button class="hbtn" style="font-size:11px" onclick="lawShowBootstrap()">First-time setup</button></div>
+      <div style="margin-top:14px"><button class="plink" onclick="lawShowBootstrap()">First-time setup</button></div>
     </div>
 
     <!-- STEP 2: MFA challenge. Only reachable when the server said
@@ -217,7 +223,7 @@ label.chk input{width:auto;}
       <input class="ginp" id="l-code" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code"
              onkeydown="if(event.key==='Enter')lawMfaVerify()">
       <button class="gbtn" onclick="lawMfaVerify()">Verify</button>
-      <div style="margin-top:12px"><button class="hbtn" style="font-size:11px" onclick="lawLoginReset()">Back</button></div>
+      <div style="margin-top:12px"><button class="plink" onclick="lawLoginReset()">Back</button></div>
     </div>
 
     <!-- STEP 3: one-time first-owner provisioning. Server refuses this
@@ -229,7 +235,7 @@ label.chk input{width:auto;}
       <input class="ginp" id="b-name" placeholder="Display name" style="letter-spacing:0;text-align:left">
       <input class="ginp" id="b-pin" type="password" inputmode="numeric" placeholder="Choose a 6-8 digit PIN">
       <button class="gbtn" onclick="lawBootstrap()">Create Owner Account</button>
-      <div style="margin-top:12px"><button class="hbtn" style="font-size:11px" onclick="lawLoginReset()">Back to sign in</button></div>
+      <div style="margin-top:12px"><button class="plink" onclick="lawLoginReset()">Back to sign in</button></div>
     </div>
 
     <div class="perr" id="perr" role="alert" aria-live="polite"></div>
