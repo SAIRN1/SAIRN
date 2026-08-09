@@ -47,6 +47,33 @@ Two confirmed, real failures from this exact mistake:
 - **`key_collision_check.py` — same wrapper-blindness class, plus the same regex-literal bug, plus a literal-keyword false positive.** Only matched literal `localStorage.setItem(...)`, so it returned `TOTAL_KEY_WRITES:0` against `sairngrounds.html` (31 real distinct keys, all written through `st(k,v)`) — a blind zero. Fixed with the same auto-detect-the-wrapper-by-tracing-its-body approach as the DOM-target checker, plus the same regex-literal-aware brace scanner. One more real false-positive class surfaced once wrapper detection actually started returning results: `null`/`true`/`false`/`undefined` parse as bare identifiers under the existing "named variable" regex, so a normal `st('sb_role', prole)` on login next to `st('sb_role', null)` on logout was flagged as a fake "collision" (two different backing variables) on `sairnbiz`/`sairngrounds`/`sairnscape` alike — fixed by excluding the four JS literal keywords from the competing-variable check, same treatment as the existing inline-`{}`/`[]`-reset exclusion. Genuine collisions (2+ real named variables writing the same key) still surface: `sairngrounds`/`sairnscape` both showed several after the fix, but manual tracing found most resolve to the SAME underlying `ld('KEY',[])`/wrapper-getter call under two different local variable names (e.g. `grd_schedule`'s `list` vs `sched` both come from `bldSched()`) — a real, still-open limitation of the variable-name-only heuristic, not a new bug this fix introduced; treat any collision report as a lead to trace by hand, not a confirmed bug, same standard this section has always held for scanner output.
 - **`duplicate_global_check.py` — audited, genuinely clean, not changed.** Already fixed for regex-literal desync in `ce43609`; its two declaration patterns (`function NAME(`, `window.NAME = function(`) are generic, not app-specific. Re-run against all 4 apps: 708/86/221/144 depth-0 globals, 0 duplicates each — consistent with known baselines and each other. No hidden assumption found; per this section's own standard, a clean tool doesn't get changed just because its siblings needed fixing.
 
+## `key_collision_check.py`'s dominant false-positive class (added 2026-08-09)
+
+The scanner flags a "collision" whenever two writers of the same storage
+key use **different local variable names** — but a variable name is not
+what actually gets written; what the variable *references* is. Traced
+all 9 leads the scanner raised across 6 apps in one night
+(sairnbuild's `bld_photo_analyses`, sairndesign's `sdn_specitems`,
+sairnlaw's `law_timeentries`, sairnlegacy's `leg_preneed` and
+`leg_vehicles`, sairngrounds' `grd_invoices`/`grd_schedule`/
+`msb_products`/`msb_sale_hours`, sairnscape's `scp_schedule`) and **all
+9 were the same real backing storage getter (e.g. `bldPhotoAnalyses()`,
+`specItems()`, `timeEntries()`) called fresh in each writer, just bound
+to a differently-named local variable** — not two independent,
+possibly-divergent shapes. Zero of the 9 were real bugs.
+
+**Before treating a raw `key_collision_check.py` hit as a real finding**,
+open both writers and check what the two "distinct backing variables"
+actually resolve to: if both are `= someGetter()` (or descend from the
+same getter call) for the same key, it's the false-positive class above,
+not a real collision — the scanner cannot see through that indirection
+today. A genuine collision looks different: one writer builds its object
+from a literal/different shape (e.g. StoneDesk's real `sd_referrals` bug,
+`STONEDESK-SESSION78-HANDOFF.md`) rather than from the same getter. Don't
+skip the trace on the assumption "it's probably fine like last time" —
+trace each one, same as StoneDesk's session did, because the scanner
+itself cannot tell the two cases apart; only reading the code can.
+
 ## Output format
 
 A simple table, one row per app checked:

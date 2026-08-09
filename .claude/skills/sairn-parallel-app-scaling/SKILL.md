@@ -76,6 +76,21 @@ else in the SAIRN skill set.
 | sairndesign.html | done | done | done | Fully treated (built ground-up this portfolio; first full pass `c27a948`) |
 | sairnlegacy.html | done | done | done | Fully treated (built ground-up this portfolio; first full pass `c27a948`) |
 
+**Standing rule: a cell in this table is only real if a corroborating
+commit exists.** "Done" written in this table is not itself evidence —
+it's a claim, exactly as fallible as any other unverified claim this
+skill set warns about elsewhere. Before trusting any "done" here (your
+own prior session's entry included), run `git log --oneline -i
+--grep="<process name>" -- <app>.html` (or search commit bodies if the
+file diff is empty, e.g. a review that found nothing to fix) and confirm
+a real commit backs it. sairngrounds.html and sairnscape.html's
+"Adversarial Review: done" cells passed this exact test with **zero
+hits** — the only commit ever mentioning both "adversarial" and either
+app name was this table's own entry, not a review. Re-running the check
+for real caught a live CRITICAL in sairngrounds that had sat unfound
+since the table first claimed it was clean. Never let this table's own
+prior entry stand in as its own evidence on a later re-check.
+
 **All 10 apps in the portfolio are now genuinely fully treated** — each
 cell above traces to a specific commit, not just an assertion. That
 doesn't mean zero future findings; it means the same standard baseline
