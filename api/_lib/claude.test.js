@@ -1,8 +1,12 @@
-// api/claude.test.js
+// api/_lib/claude.test.js
 // ---------------------------------------------------------------------------
 // Plain node:assert tests — no test framework, matching api/'s existing
 // zero-npm-dependency convention (see api/_lib/auth.test.js).
-// Run: node api/claude.test.js
+// Lives under api/_lib/ (not api/) because Vercel's filesystem routing turns
+// every top-level api/*.js file into a live serverless function, but
+// excludes underscore-prefixed paths -- a test file directly under api/
+// would otherwise be a public endpoint that 500s on every request.
+// Run: node api/_lib/claude.test.js
 //
 // WHY THIS EXISTS: sanitizeTools() is a security boundary (the file's own
 // comment: "this endpoint has no other auth beyond a client-supplied
@@ -13,7 +17,7 @@
 // ---------------------------------------------------------------------------
 
 const assert = require('assert');
-const { sanitizeTools } = require('./claude.js');
+const { sanitizeTools } = require('../claude.js');
 
 let passed = 0;
 function test(name, fn) {
