@@ -3570,13 +3570,13 @@ function convertBidToJob(id){
   var js=jobs();
   var newId='J-'+(2600+js.length+1);
   js.push({id:newId,address:b.notes||b.type||b.client,client:b.client,phone:b.phone,value:bidTotal(b),stage:'awarded',start:'',target:'',permit:'',blocked:'',notes:'Converted from bid '+b.id});
-  st('bld_jobs',js);
+  var savedJob=st('bld_jobs',js);
   var bids=bldBids();
   var rec=bids.find(function(x){return x.id===id;});
   rec.converted_job_id=newId;
-  st('bld_bids',bids);
+  var savedBid=st('bld_bids',bids);
   rBids();
-  toast('Converted to job '+newId+' - see Job Board');
+  toast((savedJob&&savedBid)?('Converted to job '+newId+' - see Job Board'):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── Trade Bid Comparison (sub bids) ─────────────────────────────────────
@@ -3619,10 +3619,11 @@ function awardSubBid(id){
     toast('Cannot award to '+match.company+' -- not eligible to bid ('+why+'). Fix on the Subcontractors panel first.',5000);
     return;
   }
-  list.forEach(function(x){if(x.job_id===target.job_id&&x.cost_code===target.cost_code)x.awarded=(x.id===id);});
-  st('bld_sub_bids',list);
+  var saved=st('bld_sub_bids',list);
   rSubBids();
-  if(match&&match.current_backlog_pct!==null&&match.current_backlog_pct>=90){
+  if(!saved){
+    toast('Could not save -- storage may be full or unavailable, try again');
+  }else if(match&&match.current_backlog_pct!==null&&match.current_backlog_pct>=90){
     toast('Awarded to '+target.sub+' -- warning: at '+match.current_backlog_pct+'% backlog capacity, may not have room for this scope',5000);
   }else if(!match){
     toast('Awarded to '+target.sub+' -- not in the Subcontractor roster, prequalification unverified');
@@ -4770,11 +4771,12 @@ function postTs(id){
   var line=cs.find(function(c){return c.job_id===t.job_id&&c.cost_code===t.cost_code&&c.kind==='labour';});
   if(line){line.committed=(line.committed||0)+amt;line.actual=(line.actual||0)+amt;}
   else{cs.push({id:'C-'+String(Date.now()).slice(-5),job_id:t.job_id,cost_code:t.cost_code,kind:'labour',budget:0,committed:amt,actual:amt,vendor:'In-house crew'});}
-  st('bld_costs',cs);
+  var savedCost=st('bld_costs',cs);
+  if(!savedCost){toast('Could not save -- storage may be full or unavailable, try again');return;}
   t.posted=true;
-  st('bld_timesheet',list);
+  var savedTs=st('bld_timesheet',list);
   rTs();rCost();rJobs();rDash();
-  toast('Posted '+fmt(amt)+' to Job Costing - '+t.cost_code);
+  toast(savedTs?('Posted '+fmt(amt)+' to Job Costing - '+t.cost_code):'Posted to Job Costing, but could not mark timesheet posted -- storage may be full, retrying may double-post');
 }
 
 // ── CHECK REGISTER ────────────────────────────────────────────────────────
@@ -5970,9 +5972,9 @@ function removeCostCode(idx){
   var removed=(s.cost_codes||[])[idx];
   if(!removed)return;
   s.cost_codes.splice(idx,1);
-  st('bld_settings',s);
+  var saved=st('bld_settings',s);
   rSettings();
-  toast('Removed '+removed.code);
+  toast(saved?('Removed '+removed.code):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── REPORTS ───────────────────────────────────────────────────────────────
