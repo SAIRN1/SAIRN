@@ -1329,9 +1329,17 @@
                     btn.disabled = false; btn.textContent = 'Activate';
                     return;
                 }
-                // Any other status (200, or a resource-specific error unrelated
-                // to license validity) means the key passed the real
-                // license-validity check that runs before resource logic.
+                // Fixed (2026-08-09 audit): only res.ok (2xx) means the key
+                // actually passed the license-validity check. Any other status
+                // -- a 500/502/503 or other backend trouble unrelated to license
+                // validity -- was previously treated as "not 401/403, so must be
+                // valid" and silently advanced the user past the gate. That
+                // fails OPEN on infrastructure errors instead of failing closed.
+                if (!res.ok) {
+                    err.textContent = 'License check failed — try again';
+                    btn.disabled = false; btn.textContent = 'Activate';
+                    return;
+                }
                 localStorage.setItem('sc_license_key', key);
                 document.getElementById('gate').style.display = 'none';
                 document.getElementById('pin').classList.add('on');
@@ -1452,7 +1460,12 @@ How to answer:
         function showToast(message) {
             const toast = document.createElement('div');
             toast.className = 'toast';
-            toast.textContent = escHtml(message);
+            // Fixed (2026-08-09 audit): .textContent already auto-escapes and
+            // never decodes HTML entities -- running the string through
+            // escHtml() first (meant for building innerHTML strings) caused an
+            // apostrophe/&/</>/" in any toast message to render literally
+            // escaped, e.g. "Can't save" would show as "Can&#039;t save".
+            toast.textContent = message;
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
         }
@@ -1472,8 +1485,15 @@ How to answer:
                 panel.classList.add('active');
             }
 
+            // Fixed (2026-08-09 audit): fuzzy text-substring matching picked the
+            // wrong button for panels whose label doesn't literally contain the
+            // panelName as a substring after the '-'->' ' replace (e.g. "A/R" vs
+            // "ar" -- "a/r".includes('ar') is false, so it fell through to the
+            // first button whose text happens to contain "ar", which is
+            // "Dashboard"). Every button's onclick is exactly showPanel('name'),
+            // so match on that instead of fuzzy label text.
             const activeBtn = Array.from(buttons).find(b =>
-                b.textContent.toLowerCase().includes(panelName.replace(/-/g, ' '))
+                b.getAttribute('onclick') === "showPanel('" + panelName + "')"
             );
             if (activeBtn) {
                 activeBtn.classList.add('active');
@@ -1483,6 +1503,17 @@ How to answer:
             localStorage.setItem('sc_last_panel', panelName);
         }
 
+        // Fixed (2026-08-09 audit): escHtml() escapes for HTML display, not CSV
+        // structure -- it does nothing about commas/quotes/newlines inside a
+        // field, so any cell containing a comma (e.g. a $47,500 amount via
+        // toLocaleString()) silently broke the column count of the exported
+        // file. Real CSV field quoting: wrap in double-quotes and double any
+        // embedded quote whenever the field contains a comma, quote, or newline.
+        function csvField(text) {
+            const s = String(text == null ? '' : text);
+            if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+            return s;
+        }
         function exportCSV(panel) {
             let csv = 'Panel,Metric,Value\n';
             const panelEl = document.getElementById('panel-' + panel);
@@ -1492,7 +1523,7 @@ How to answer:
             kpiCards.forEach(card => {
                 const label = card.querySelector('.kpi-label')?.textContent || '';
                 const value = card.querySelector('.kpi-value')?.textContent || '';
-                csv += `${panel},${escHtml(label)},${escHtml(value)}\n`;
+                csv += `${csvField(panel)},${csvField(label)},${csvField(value)}\n`;
             });
 
             const tables = panelEl.querySelectorAll('table');
@@ -1500,7 +1531,7 @@ How to answer:
                 const rows = table.querySelectorAll('tr');
                 rows.forEach(row => {
                     const cells = row.querySelectorAll('th, td');
-                    const line = Array.from(cells).map(c => escHtml(c.textContent)).join(',');
+                    const line = Array.from(cells).map(c => csvField(c.textContent)).join(',');
                     csv += line + '\n';
                 });
             });
@@ -1864,18 +1895,27 @@ How to answer:
                 tbody.appendChild(tr);
             });
             var gaps = list.filter(function(h){return h.status==='Gap Identified';});
+            // Fixed (2026-08-09 audit): the add form offers 3 statuses (Gap
+            // Identified/Documented/Captured) but only 2 were ever accounted for
+            // here -- a "Documented" entry counted toward the Total KPI but was
+            // invisible to every other KPI, including its own status having no
+            // card at all. Documented represents progress past "still just
+            // identified," so it's now included in closedOut/captureRate too,
+            // not just given its own visibility card.
+            var documented = list.filter(function(h){return h.status==='Documented';});
             var captured = list.filter(function(h){return h.status==='Captured';});
             var potentialImpact = gaps.reduce(function(s,h){return s+h.value;},0);
-            var closedOut = gaps.length + captured.length;
+            var closedOut = gaps.length + documented.length + captured.length;
             var captureRate = closedOut > 0 ? (captured.length/closedOut*100).toFixed(1)+'%' : '—';
             var kpis = document.getElementById('hcc-kpis');
             if (kpis){
                 kpis.innerHTML =
                     '<div class="kpi-card"><div class="kpi-label">HCC Entries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Gaps Identified</div><div class="kpi-value">'+gaps.length+'</div><div class="kpi-detail">Open</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Documented</div><div class="kpi-value">'+documented.length+'</div><div class="kpi-detail">In progress</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Potential Impact</div><div class="kpi-value">$'+potentialImpact.toLocaleString()+'</div><div class="kpi-detail">From open gaps</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Captured</div><div class="kpi-value">'+captured.length+'</div><div class="kpi-detail">Confirmed</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Capture Rate</div><div class="kpi-value">'+captureRate+'</div><div class="kpi-detail">Captured vs identified</div></div>';
+                    '<div class="kpi-card"><div class="kpi-label">Capture Rate</div><div class="kpi-value">'+captureRate+'</div><div class="kpi-detail">Captured vs identified/documented</div></div>';
             }
         }
         function removeHccEntry(id){
