@@ -864,6 +864,40 @@ var eid=null,prole='owner',aiHist=[];
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function ld(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
+
+// AI tool-calling dispatcher (2026-08-09) -- registry of read-only tools
+// callAI() may request via Claude's tool-use. Every tool is:
+//   - read-only (never creates/modifies/deletes anything)
+//   - wrapped so a thrown error or unexpected data shape becomes an honest
+//     {ok:false} result, never a crash or a silently wrong answer
+//   - checked against the CALLING role before running, if marked sensitive
+// See docs/superpowers/specs/2026-08-09-sairnbiz-ai-tool-calling-design.md
+var SB_TOOLS = {};
+
+function sbRegisterTool(name, description, inputSchema, sensitive, run) {
+  SB_TOOLS[name] = {
+    definition: { name: name, description: description, input_schema: inputSchema },
+    sensitive: !!sensitive,
+    run: run
+  };
+}
+
+// This is the first role-based access check anywhere in SAIRNbiz's client
+// code -- prole is real (server-issued via SB_AUTH_API) but nothing has
+// ever branched on it before now. New pattern, not an established one.
+function sbExecuteTool(name, role) {
+  var tool = SB_TOOLS[name];
+  if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+  if (tool.sensitive && role !== 'owner') {
+    return { ok: false, error: 'This data is restricted to the owner role.' };
+  }
+  try {
+    return { ok: true, result: tool.run() };
+  } catch (e) {
+    return { ok: false, error: 'Could not retrieve that data right now.' };
+  }
+}
+
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
