@@ -859,7 +859,12 @@ var VALID=['SB-','SD-','DEMO-','SAIRN-','BIZ-'];
 // now goes through api/sb-auth.js's per-employee credentials (sbDoLogin
 // below). pbuf (keypad entry buffer) retired with it; eid is unrelated
 // (employee-modal edit-id tracking, still live, do not remove).
-var eid=null,prole='owner',aiHist=[];
+// prole defaults to '' (least-privileged, NOT a real role) until
+// sbApplyLoggedIn() sets it from a real server-issued login. Must never
+// default to 'owner' or any other real role -- sbExecuteTool's role gate
+// checks `role !== 'owner'`, so a privileged default would fail OPEN
+// before login rather than fail closed. (Finding 4, 2026-08-09 fix wave)
+var eid=null,prole='',aiHist=[];
 // Serializes AI exchanges: aiHist requires strict user/assistant alternation
 // per Anthropic's Messages API, and callAI()'s tool-use round trip pushes a
 // 'user' turn mid-flight (the tool_result) before the assistant's final
@@ -893,14 +898,22 @@ function sbRegisterTool(name, description, inputSchema, sensitive, run) {
 // This is the first role-based access check anywhere in SAIRNbiz's client
 // code -- prole is real (server-issued via SB_AUTH_API) but nothing has
 // ever branched on it before now. New pattern, not an established one.
-function sbExecuteTool(name, role) {
+// This gate controls what the AI assistant will SAY, not genuine data
+// confidentiality -- the underlying data is still directly readable from
+// localStorage/SB_TOOLS by anyone with browser console access to this
+// device, regardless of role. Real payroll confidentiality (item 2's
+// sensitive tools) needs server-side enforcement, not just this client gate.
+// run() MUST be synchronous -- the try/catch below only catches thrown
+// errors. An async run() returning a rejected Promise would NOT be caught
+// and would silently report {ok:true, result:<pending Promise>}.
+function sbExecuteTool(name, role, input) {
   var tool = SB_TOOLS[name];
   if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
   if (tool.sensitive && role !== 'owner') {
     return { ok: false, error: 'This data is restricted to the owner role.' };
   }
   try {
-    return { ok: true, result: tool.run() };
+    return { ok: true, result: tool.run(input || {}) };
   } catch (e) {
     return { ok: false, error: 'Could not retrieve that data right now.' };
   }
@@ -911,7 +924,10 @@ sbRegisterTool(
   'Look up the current employee roster: name, role, department, employment type, start date, and status. Does NOT include pay rate or any compensation figures.',
   { type: 'object', properties: {}, required: [] },
   false,
-  function () {
+  function (input) {
+    // input intentionally unused -- this tool takes no real arguments, but
+    // accepts one for interface consistency with sbExecuteTool(name, role,
+    // input) now that argument-forwarding exists for tools that need it.
     return ld('sb_emps', []).map(function (e) {
       return { name: (e.fn || '') + ' ' + (e.ln || ''), role: e.role, dept: e.dept, type: e.type, start: e.start, status: e.status };
     });
@@ -1037,6 +1053,7 @@ window.sbDoBootstrap=sbDoBootstrap;
 
 function doLogout(){
   st('sb_role',null);
+  prole=''; // reset in-memory role too -- session storage alone isn't enough (Finding 4)
   try{sessionStorage.removeItem(SB_SESSION_KEY);sessionStorage.removeItem(SB_ROLE_KEY);sessionStorage.removeItem(SB_EMPLOYEE_KEY);}catch(e){}
   $('app').classList.remove('on');$('pin').classList.add('on');toast('Logged out');
 }
@@ -1561,6 +1578,10 @@ function callAI(msg){
   }
   fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10),tools:toolDefs})})
   .then(function(r){return r.json();}).then(function(d){
+    if(d&&d.error){
+      finish(d.error.message||'The AI proxy returned an error.');
+      return;
+    }
     var blocks=(d&&d.content)||[];
     var toolUses=blocks.filter(function(b){return b.type==='tool_use';});
     if(!toolUses.length){
@@ -1574,7 +1595,7 @@ function callAI(msg){
     // not a real connection error, even though it would land in the
     // second fetch's .catch and get mislabeled as one if left unhandled).
     var toolResults=toolUses.map(function(toolUse){
-      var outcome=sbExecuteTool(toolUse.name,prole);
+      var outcome=sbExecuteTool(toolUse.name,prole,toolUse.input);
       var content=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error);
       return {type:'tool_result',tool_use_id:toolUse.id,content:content};
     });
@@ -1584,15 +1605,18 @@ function callAI(msg){
     aiHist.push({role:'user',content:toolResults});
     fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
     .then(function(r2){return r2.json();}).then(function(d2){
-      var rep2=(d2.content&&d2.content[0]&&d2.content[0].text)||'No response.';
+      var rep2=(d2&&d2.error)?(d2.error.message||'The AI proxy returned an error.'):((d2.content&&d2.content[0]&&d2.content[0].text)||'No response.');
       finish(rep2);
     }).catch(function(){
       finish('Could not reach Claude for the final answer. Connection error.');
     });
   }).catch(function(){
-    sbAiBusy=false;
-    if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
-    addMsg('Connection error.','a');
+    // Must go through finish() (not a bare addMsg()) so aiHist gets a
+    // matching assistant turn -- otherwise the dangling unanswered 'user'
+    // turn desyncs the next exchange's alternation and can produce a real
+    // 400 from the API that renders as a bland "No response." instead of
+    // any visible error (see Finding 3, 2026-08-09 fix wave).
+    finish('Connection error.');
   });
 }
 

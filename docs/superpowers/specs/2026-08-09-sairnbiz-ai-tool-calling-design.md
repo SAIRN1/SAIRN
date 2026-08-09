@@ -137,7 +137,19 @@ model past `sanitizeTools()`, the dispatcher executes and returns real
 data, the round-trip renders a grounded answer, and the concurrency fix
 holds under a slower two-request exchange. Item 2 adds
 `get_payroll_summary`/`get_pl_summary` (both `sensitive:true`) directly
-on top of this same dispatcher and role-gate check — no rework.
+on top of this same dispatcher and role-gate check.
+
+**Correction (2026-08-09 final-review fix wave):** the original "no
+rework" claim above was not quite true as first shipped — `sbExecuteTool()`
+took a `(name, role)` signature with no way to pass tool arguments, and
+`get_employees` (whose schema is `properties: {}`) never exposed the gap.
+A payroll/P&L tool needs a period argument ("last month", "Q2") to be
+useful, so item 2 would have forced a signature change. Argument-passing
+(`sbExecuteTool(name, role, input)` → `tool.run(input || {})`) was added
+in this fix wave specifically so item 2 doesn't have to add it — that part
+of the original claim now holds. `run()` still must be synchronous (see
+the comment at `sbExecuteTool`'s definition); if item 2 needs an async
+tool, that IS still rework this foundation doesn't yet cover.
 
 ## 6. Role gating
 
