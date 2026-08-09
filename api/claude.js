@@ -34,19 +34,30 @@ const KNOWN_APP_IDS = [
   'sairnmechanical', 'sairnhr', 'sairnacc', 'sairngrounds', 'sairnlegacy'
 ];
 
-// Server tools a frontend is allowed to request. Whitelisted by exact type
-// string (not passed through unchecked) because this endpoint has no other
-// auth beyond a client-supplied app_id -- an unrestricted `tools` passthrough
-// would let any caller run billed web searches against our Anthropic key.
-// max_uses is also server-capped below regardless of what the client sends.
-const ALLOWED_TOOL_TYPES = ['web_search_20250305'];
+// Server tools a frontend is allowed to request. Server-executed tool TYPES
+// are whitelisted by exact type string (not passed through unchecked)
+// because this endpoint has no other auth beyond a client-supplied app_id --
+// an unrestricted server-tool passthrough would let any caller run billed
+// actions (web search) against our Anthropic key. max_uses is also
+// server-capped below regardless of what the client sends.
+//
+// CUSTOM (client-executed) tools are a different risk category, added
+// 2026-08-09: Anthropic never executes them -- the model only returns a
+// tool_use request naming the tool + arguments, and the calling app decides
+// locally whether and how to run it. No cost or external call happens from
+// the tool definition alone, so these pass through unmodified rather than
+// being type-whitelisted like server tools. A tool counts as "custom" if it
+// has no `type` field, or an explicit `type: 'custom'` -- both are valid
+// Anthropic custom-tool shapes.
+const ALLOWED_SERVER_TOOL_TYPES = ['web_search_20250305'];
 const MAX_TOOL_USES_CEILING = 5;
 
 function sanitizeTools(tools) {
   if (!Array.isArray(tools)) return undefined;
   const clean = tools
-    .filter((t) => t && ALLOWED_TOOL_TYPES.includes(t.type))
+    .filter((t) => t && (t.type === undefined || t.type === 'custom' || ALLOWED_SERVER_TOOL_TYPES.includes(t.type)))
     .map((t) => {
+      if (t.type === undefined || t.type === 'custom') return t;
       const out = { type: t.type, name: t.name || 'web_search' };
       const requested = Number(t.max_uses) || MAX_TOOL_USES_CEILING;
       out.max_uses = Math.max(1, Math.min(requested, MAX_TOOL_USES_CEILING));
@@ -64,7 +75,7 @@ function getDemoKey(appId) {
   return appId + '|' + day;
 }
 
-module.exports = async (req, res) => {
+async function claudeProxyHandler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
     return;
@@ -140,4 +151,7 @@ module.exports = async (req, res) => {
     console.error('api/claude proxy error:', err);
     res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
   }
-};
+}
+
+claudeProxyHandler.sanitizeTools = sanitizeTools;
+module.exports = claudeProxyHandler;
