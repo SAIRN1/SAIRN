@@ -3,6 +3,37 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNlegacy merchandise reservation needs a real server-side lock
+
+**Logged:** 2026-08-09
+
+**Priority: highest in this backlog** — real risk of the same physical
+casket/urn getting promised to two grieving families. Found by the
+first full silent-failure-sweep + adversarial-review pass on
+`sairnlegacy.html`.
+
+**What:** `confirmReserve()` (merchandise reservation, the "moat" panel)
+re-checks a unit's status right before reserving it, but that check
+reads `merchUnits()` -- this device's own localStorage -- not a server
+round-trip. `leg_` resources have no server route yet. Two staff on two
+different devices, each holding a stale local copy, can both pass the
+check and both reserve the same physical unit. The panel's own UI text
+and an in-code comment both claimed this was "checked server-side" --
+corrected tonight to describe what actually happens (same-device
+safeguard only), but the underlying gap is unfixed.
+
+**Why deferred:** Needs a real server-side atomic check-and-set
+(reserve only succeeds if the row is still `Available` at write time),
+which means `leg_merch_units` needs a real `api/sd-data.js` route with
+that semantics built in -- not a quick patch, same scope-class as the
+SAIRNbuild server-sync gap above.
+
+**Done looks like:** `confirmReserve()`'s actual reservation write goes
+through a server route that atomically fails if another reservation
+already landed first, and the honest failure message tells staff to
+pick a different unit -- not just a local-storage re-check with an
+honest disclaimer bolted on.
+
 ## SAIRNbuild has zero server-side backup for any real business data
 
 **Logged:** 2026-08-09

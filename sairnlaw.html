@@ -1393,6 +1393,16 @@ function rDash(){
 // status stays informational or the override box is explicitly checked,
 // and the conflict result is stored on the matter record for the audit
 // trail either way.
+// FIXED 2026-08-09: this was exact-match only (Array.indexOf is strict
+// equality per element) despite the comment above and the panel's own UI
+// copy explicitly promising substring matching -- "Reyes Supply Co." on
+// file would not flag "Reyes Supply Company" or "Reyes Supply Co, Inc.",
+// giving a false-clean conflict result on a real conflict. Now does a real
+// bidirectional substring check (does either name contain the other) with
+// a minimum-length guard so a 1-2 character fragment can't match
+// everything. A conflict check's safe failure direction is over-flagging
+// (extra manual review), never under-flagging (a missed real conflict),
+// so this is deliberately liberal.
 function conflictCheck(namesToCheck,excludeMatterId){
   var normalized=namesToCheck.map(normalizeCompare).filter(Boolean);
   if(!normalized.length)return [];
@@ -1401,9 +1411,12 @@ function conflictCheck(namesToCheck,excludeMatterId){
     if(m.id===excludeMatterId)return;
     var namesOnFile=[clientLabel(m.client_id)].concat(m.opposing_parties||[]).map(normalizeCompare).filter(Boolean);
     normalized.forEach(function(n){
-      if(namesOnFile.indexOf(n)!==-1){
-        hits.push({name:n,matter:matterLabel(m.id)});
-      }
+      namesOnFile.forEach(function(f){
+        if(n.length<3||f.length<3)return;
+        if(f.indexOf(n)!==-1||n.indexOf(f)!==-1){
+          hits.push({name:n,matter:matterLabel(m.id)});
+        }
+      });
     });
   });
   return hits;
@@ -2399,13 +2412,23 @@ function closePiCaseModal(){$('picasemodal').classList.remove('on');}
 async function savePiCase(){
   var matterId=$('pimatter').value;
   if(!matterId){toast('Select a matter first');return;}
-  var existing=piCaseForMatter(matterId);
-  var rec=existing||{id:newId('PIC'),matter_id:matterId,gross_settlement:0,attorney_fee_pct:0,costs:0,created_at:lawLocalToday()};
+  // FIXED 2026-08-09: previously fetched the existing record via
+  // piCaseForMatter() (its own separate piCases()/ld() call -- ld() returns
+  // a fresh JSON.parse every time, so this was a DIFFERENT object than
+  // anything in `list` below), mutated that orphaned object, then only
+  // pushed it into `list` on create (never on edit). Every edit to an
+  // existing PI case silently saved nothing while showing "Case detail
+  // saved." Now finds-or-creates directly inside the same `list` that
+  // actually gets persisted, so the mutated object IS the saved object.
+  var list=piCases();
+  var rec=list.find(function(x){return x.matter_id===matterId;});
+  if(!rec){
+    rec={id:newId('PIC'),matter_id:matterId,gross_settlement:0,attorney_fee_pct:0,costs:0,created_at:lawLocalToday()};
+    list.push(rec);
+  }
   rec.incident_date=$('piincidentdate').value;rec.incident_description=$('piincidentdesc').value.trim();
   rec.injury_severity=$('piseverity').value;rec.lost_wages=Number($('pilostwages').value)||0;
   rec.multiplier=Number($('pimultiplier').value)||0;rec.status=$('pistatus').value;
-  var list=piCases();
-  if(!existing)list.push(rec);
   st('law_picases',list);
   closePiCaseModal();rPiMatterChange();
   var syncResult=await sdnData('write','law_picases',rec);

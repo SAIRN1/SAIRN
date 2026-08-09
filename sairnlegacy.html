@@ -382,8 +382,12 @@ label.chk input{width:auto;}
   <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
     Selecting a catalog model is not a reservation. Reserving a specific physical unit is &mdash; the same
     non-fungible-item mechanism as StoneDesk's slab reservation and SAIRNdesign's one-of-a-kind item
-    reservation: once a unit is reserved for one family, it cannot be shown or reserved for a second
-    family at the same time. Checked server-side on every reservation attempt, not just hidden client-side.
+    reservation: once a unit is reserved for one family, this app will not knowingly let it be reserved
+    for a second family. <strong>Corrected 2026-08-09:</strong> the re-check right before saving happens
+    against this device's own local data, not a server-side check &mdash; there is no server route for
+    reservation data yet, so two staff on two different devices can still both reserve the same physical
+    unit if their local copies haven't synced with each other. Treat this as a same-device safeguard only
+    until real server-side reservation locking is built.
   </div>
   <div id="mc-catalog-list"></div>
 </div>
@@ -1640,11 +1644,18 @@ function rCustodyLog(){
 // The moat panel. Reservation is checked against the specific physical unit
 // record's own status field -- the same non-fungible-item mechanism as
 // StoneDesk's slab reservation and SAIRNdesign's one-of-a-kind spec-item
-// reservation, reused rather than reinvented. A unit whose status is not
-// 'Available' can never be reserved a second time -- confirmReserve()
-// re-checks the live status immediately before writing, not just at modal-
-// open time, closing the same race a family-facing app must close (two
-// staff members looking at the same unit at once).
+// reservation, reused rather than reinvented.
+// CORRECTED 2026-08-09 (was falsely claimed "checked server-side" here and
+// in the panel's own UI text): confirmReserve()'s re-check right before
+// writing reads merchUnits() -- this device's own localStorage -- not a
+// server round-trip. leg_ resources have no server route yet (see
+// sdnData()'s own header comment), so this only closes the race between
+// this device's modal-open and this device's confirm click. It does NOT
+// close the real risk: two staff on two different devices, each holding a
+// stale local copy, can both pass this check and both reserve the same
+// physical unit. Closing that for real needs a server-side atomic
+// check-and-set on reservation, which does not exist yet -- flagged, not
+// built as part of this fix.
 var mcUnitFor=null;
 function openMerchModal(){
   ceid=null;
