@@ -376,6 +376,7 @@
         <option value="dog">Dog</option><option value="cat">Cat</option><option value="horse">Horse</option>
         <option value="cattle">Cattle</option><option value="sheep">Sheep</option><option value="goat">Goat</option><option value="llama/alpaca">Llama/Alpaca</option>
         <option value="bird">Bird</option><option value="emu/ratite">Emu/Ratite</option><option value="reptile">Reptile</option>
+        <option value="chelonian">Chelonian</option><option value="tortoise">Tortoise</option><option value="turtle">Turtle</option><option value="deer">Deer</option>
         <option value="exotic">Exotic</option><option value="swine">Swine</option>
       </select>
       <button class="btn btn-sm" onclick="searchDrugs()">Search</button>
@@ -413,7 +414,7 @@
       <div><label style="display:block;margin-bottom:8px;">Patient Weight (kg) *</label><input type="number" id="calc-weight" placeholder="e.g., 25" style="width:100%;"></div>
       <div><label style="display:block;margin-bottom:8px;">Species *</label>
         <select id="calc-species" style="width:100%;">
-          <option>Dog</option><option>Cat</option><option>Horse</option><option>Cattle</option><option>Sheep</option><option>Goat</option><option>Llama/Alpaca</option><option>Bird</option><option>Emu/Ratite</option><option>Reptile</option><option>Rabbit</option><option>Guinea Pig</option><option>Ferret</option>
+          <option>Dog</option><option>Cat</option><option>Horse</option><option>Cattle</option><option>Sheep</option><option>Goat</option><option>Llama/Alpaca</option><option>Bird</option><option>Emu/Ratite</option><option>Reptile</option><option>Chelonian</option><option>Tortoise</option><option>Turtle</option><option>Deer</option><option>Rabbit</option><option>Guinea Pig</option><option>Ferret</option>
         </select>
       </div>
       <div><label style="display:block;margin-bottom:8px;">Patient Age</label><input type="text" id="calc-age" placeholder="e.g., 3 years" style="width:100%;"></div>
@@ -6080,8 +6081,12 @@ function renderControlled(){
     kpis.innerHTML =
       '<div class="kpi"><div class="kpi-label">On Hand (Sched II)</div><div class="kpi-value">'+schedIITotal+' units</div></div>'+
       '<div class="kpi"><div class="kpi-label">Discrepancies This Month</div><div class="kpi-value">'+discrepancies+'</div>'+(discrepancies>0?'<div class="kpi-change">Investigate immediately</div>':'')+'</div>'+
-      '<div class="kpi"><div class="kpi-label">Logs Requiring Co-Sign</div><div class="kpi-value">'+needsCoSign+'</div></div>'+
-      '<div class="kpi"><div class="kpi-label">Last DEA Audit</div><div class="kpi-value">2026-04-12</div></div>';
+      '<div class="kpi"><div class="kpi-label">Logs Requiring Co-Sign</div><div class="kpi-value">'+needsCoSign+'</div></div>';
+    // "Last DEA Audit" KPI removed (2026-08-09 audit) -- was a hardcoded
+    // literal date with no backing audit-tracking feature anywhere in this
+    // file. No real audit-date data exists to show here; a placeholder/null
+    // state is safer than an invented one (sairn-adversarial-reviewer
+    // Auditor persona rule 4).
   }
 }
 
@@ -6736,6 +6741,7 @@ function onSoapSignoff(){
   }
 }
 
+var soapGenSeq=0;
 function generateSOAP(){
   var patient=document.getElementById('soap-patient').value.trim();
   var subj=document.getElementById('soap-subj').value.trim();
@@ -6748,7 +6754,16 @@ function generateSOAP(){
   showToast('Generating SOAP note...','info');
   logDoseAudit({type:'soap_generate', patient:patient});
   var genStart = Date.now();
+  // Guard against out-of-order async responses (same pattern as calculateDoseAI's
+  // doseCalcSeq): without this, clicking Generate twice before the first request
+  // resolves persists TWO Draft SOAP notes for one user action, and soapPendingNote
+  // (what sign-off operates on) ends up pointing at whichever resolved last --
+  // silently orphaning the other draft with no error and no visible sign of the
+  // collision.
+  soapGenSeq++;
+  var mySoapSeq=soapGenSeq;
   callClaude(system,messages,1800).then(function(result){
+    if(mySoapSeq!==soapGenSeq) return; // a newer generate superseded this one — don't persist a stale duplicate
     document.getElementById('soap-result').style.display='block';
     document.getElementById('soap-result').textContent=result;
     document.getElementById('soap-signoff').style.display='block';
@@ -7286,7 +7301,12 @@ window.submitPeerConsult = function(){
     patient:patient, species:species, note:note, image:pcCapturedB64, status:'Pending'});
   savePeerConsults(list);
   logDoseAudit({type:'photo_consult_sent', to:to, patient:patient});
-  showToast('Sent to '+to+' — they will see it in the Consult Queue','success');
+  // Honest language (2026-08-09 audit): sv_peerconsults is localStorage-only
+  // -- there is no cross-device sync for this feature, so "they will see it"
+  // was a false delivery promise about a named colleague's visibility on a
+  // different device. Say what actually happened: saved here, on this
+  // device, for someone to hand off or show in person.
+  showToast('Saved to Consult Queue for '+to+' on this device — no cross-device delivery yet, hand off or show them here directly','success',6000);
   closePeerCam();
   renderPeerConsults();
 };
