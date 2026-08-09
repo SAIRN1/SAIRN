@@ -1818,6 +1818,22 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
 var PROXY='https://sairn.vercel.app/api/claude';
+// Added (2026-08-09 audit): api/claude.js returns HTTP 200 with a body like
+// {error:'demo_limit'} or {error:{message:'...'}} on failure (see its own
+// header comment) -- res.ok is true either way, so every one of this file's
+// 7 AI call sites was treating that response as a normal answer: data.content
+// is undefined, text comes out empty, and "No response text returned." got
+// shown (and in aiAsk()'s case, saved into chat history) as if it were a
+// real answer to the user's real question. Same two-shape check already
+// used in sairnvet.html's callClaude(). Returns null when there's no error.
+function bldAiError(data){
+  if(!data||!data.error) return null;
+  if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.indexOf('limit')!==-1)){
+    return 'Demo limit reached for today -- try again tomorrow or contact michael@sairn.com for a license.';
+  }
+  if(data.error&&data.error.message) return data.error.message;
+  return typeof data.error==='string'?data.error:'AI request failed';
+}
 // Replaces bare `new Date().toISOString().slice(0,10)` call sites (real
 // form-default/record dates, e.g. Field Photo/Task/Log/RFI/PO dates) that
 // meant "today, as YYYY-MM-DD" -- toISOString() extracts the UTC calendar
@@ -2466,6 +2482,7 @@ function fpFileChosen(input){
   };
   reader.readAsDataURL(file);
 }
+var fpAnalyzeSeq=0;
 async function fpAnalyze(){
   if(!fpImg64){toast('Take a photo first');return;}
   var job=$('fp-job').value;
@@ -2488,6 +2505,12 @@ async function fpAnalyze(){
     {type:'image',source:{type:'base64',media_type:fpImgType,data:fpImg64}},
     {type:'text',text:'Analyze this site condition for a cost/scope estimate.'}
   ]}];
+  // Guard against out-of-order async responses -- see calculateDoseAI in
+  // sairnvet.html for the same pattern. Without this, re-analyzing before
+  // the first request resolves lets a slower, now-stale response overwrite
+  // a newer one on screen.
+  fpAnalyzeSeq++;
+  var myFpSeq=fpAnalyzeSeq;
   try{
     var res=await fetch(PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -2495,10 +2518,14 @@ async function fpAnalyze(){
     });
     if(!res.ok)throw new Error('Claude error '+res.status);
     var data=await res.json();
+    if(myFpSeq!==fpAnalyzeSeq) return;
+    var aiErr=bldAiError(data);
+    if(aiErr){fpLastResult='';$('fp-result').textContent=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     fpLastResult=text||'No response text returned.';
     $('fp-result').textContent=fpLastResult;
   }catch(e){
+    if(myFpSeq!==fpAnalyzeSeq) return;
     fpLastResult='';
     $('fp-result').textContent='Could not connect to Claude. Check your connection and try again.';
   }
@@ -2549,6 +2576,7 @@ function fpCreateRFI(){
 // no dedicated "security measures" log in this app -- fabricating one would
 // be exactly the kind of fake-KPI-shaped lie this codebase's own guardrails
 // exist to catch).
+var claimGenSeq=0;
 async function claimGeneratePacket(){
   var jobId=$('claim-job').value;
   if(!jobId){toast('Select a job first');return;}
@@ -2590,6 +2618,8 @@ async function claimGeneratePacket(){
     'Security Measures, and a closing note that this packet is a starting point for the contractor\'s '+
     'own claim submission, not a substitute for adjuster review. Plain ASCII only, no Unicode box '+
     'characters.\n\n'+facts;
+  claimGenSeq++;
+  var myClaimSeq=claimGenSeq;
   try{
     var res=await fetch(PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -2599,10 +2629,14 @@ async function claimGeneratePacket(){
     });
     if(!res.ok)throw new Error('Claude error '+res.status);
     var data=await res.json();
+    if(myClaimSeq!==claimGenSeq) return;
+    var aiErr=bldAiError(data);
+    if(aiErr){$('claim-result').textContent=aiErr;return;}
     var content=data.content||[];
     var text=content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     $('claim-result').textContent=text||'No response text returned.';
   }catch(e){
+    if(myClaimSeq!==claimGenSeq) return;
     $('claim-result').textContent='Could not reach Claude. Check your connection and try again.';
   }
 }
@@ -3862,6 +3896,7 @@ function jobTierFromCosts(jobId, allCosts){
 // ALREADY-COMPUTED tier data below; it does not calculate or re-derive
 // any number itself. Same PROXY/APP_ID/fetch/try-catch shape as
 // fpAnalyze(); result rendered via textContent, never innerHTML.
+var costExplainSeq=0;
 async function costExplain(){
   var job=$('cjob').value;
   if(!job){toast('Select a specific job first');return;}
@@ -3890,6 +3925,8 @@ async function costExplain(){
     'Overall job tier (worst of its lines): '+(tier||'none')+'\n'+
     'Cost lines:\n'+lineText;
   var msgs=[{role:'user',content:[{type:'text',text:prompt}]}];
+  costExplainSeq++;
+  var myCostExplainSeq=costExplainSeq;
   try{
     var res=await fetch(PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -3897,9 +3934,13 @@ async function costExplain(){
     });
     if(!res.ok)throw new Error('Claude error '+res.status);
     var data=await res.json();
+    if(myCostExplainSeq!==costExplainSeq) return;
+    var aiErr=bldAiError(data);
+    if(aiErr){$('cost-explain-result').textContent=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     $('cost-explain-result').textContent=text||'No response text returned.';
   }catch(e){
+    if(myCostExplainSeq!==costExplainSeq) return;
     $('cost-explain-result').textContent='Could not connect to Claude. Check your connection and try again.';
   }
 }
@@ -4862,6 +4903,7 @@ function rSubsTbl(){
 // matcher would be fragile). Claude does the matching, but only ever sees
 // the taxonomy list and the actual roster rows -- same anti-fabrication
 // grounding as claimGeneratePacket() and disRespond().
+var ssaAnalyzeSeq=0;
 function ssaAnalyze(){
   var jobId=$('ssa-job').value;
   if(!jobId){toast('Select a job first');return;}
@@ -4887,6 +4929,8 @@ function ssaAnalyze(){
     'taxonomy trades. Do not invent subcontractor names, and do not claim a trade is covered by '+
     'a sub that is not in the roster given. Keep it organized and under 350 words. Plain ASCII '+
     'only, no Unicode box characters.\n\n'+SB_TRADE_TAXONOMY_KNOWLEDGE+'\n\n'+facts;
+  ssaAnalyzeSeq++;
+  var mySsaSeq=ssaAnalyzeSeq;
   fetch(PROXY,{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,
@@ -4896,10 +4940,14 @@ function ssaAnalyze(){
     if(!res.ok)throw new Error('Claude error '+res.status);
     return res.json();
   }).then(function(data){
+    if(mySsaSeq!==ssaAnalyzeSeq) return;
+    var aiErr=bldAiError(data);
+    if(aiErr){$('ssa-result').textContent=aiErr;return;}
     var content=data.content||[];
     var text=content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     $('ssa-result').textContent=text||'No response text returned.';
   }).catch(function(e){
+    if(mySsaSeq!==ssaAnalyzeSeq) return;
     $('ssa-result').textContent='Could not reach Claude. Check your connection and try again.';
   });
 }
@@ -5828,12 +5876,28 @@ function saveDefaults(){
   closeDefaultsModal();rSettings();
   toast(saved?'Saved defaults':'Could not save -- storage may be full or unavailable, try again');
 }
+// RBAC enforcement (2026-08-09 audit): prole was set at PIN entry and shown
+// in the header, but nothing anywhere ever read it for a real permission
+// decision -- Owner/PM/Office had identical access to every action,
+// including any role being able to open this exact modal and read or
+// change the OWNER's own PIN. That's the single clearest, highest-value
+// privilege-escalation risk in the app (an Office employee could lock the
+// owner out or grant themselves owner access), so it's the one gated here.
+// Everything else in the app is unchanged -- this is a minimal baseline,
+// not a full permission system, given no other role spec exists.
+function requireOwnerForPins(){
+  if(prole==='owner') return true;
+  toast('Only Owner can view or edit role PINs');
+  return false;
+}
 function openPinsModal(){
+  if(!requireOwnerForPins()) return;
   $('pm-owner').value=PINS.owner||'';$('pm-pm').value=PINS.pm||'';$('pm-office').value=PINS.office||'';
   $('pinsmodal').classList.add('on');
 }
 function closePinsModal(){$('pinsmodal').classList.remove('on');}
 function savePins(){
+  if(!requireOwnerForPins()) return;
   var owner=$('pm-owner').value.trim(),pm=$('pm-pm').value.trim(),office=$('pm-office').value.trim();
   var re=/^\d{4}$/;
   if(!re.test(owner)||!re.test(pm)||!re.test(office)){toast('Each PIN must be exactly 4 digits');return;}
@@ -6298,6 +6362,7 @@ function rAiHistory(){
       '<div style="font-size:12px;color:var(--text);margin-top:4px;white-space:pre-wrap">'+H(q.answer)+'</div></span></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No questions asked yet</div>';
 }
+var aiAskSeq=0;
 async function aiAsk(){
   var q=$('ai-question').value.trim();
   if(!q){toast('Enter a question first');return;}
@@ -6331,6 +6396,12 @@ async function aiAsk(){
   var sharedCtx=(typeof buildBldSharedCompanyContext==='function')?buildBldSharedCompanyContext():'';
   if(sharedCtx) sys+='\n\n'+sharedCtx;
   var msgs=[{role:'user',content:q}];
+  // Guard against out-of-order async responses -- same shape and same
+  // consequence class as SAIRNbiz's/SAIRNvet's same-night fixes (misattributed
+  // answers under concurrent questions), except here the misattributed answer
+  // also gets permanently saved into bld_ai_chat history if not caught.
+  aiAskSeq++;
+  var myAiAskSeq=aiAskSeq;
   try{
     var res=await fetch(PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -6339,6 +6410,9 @@ async function aiAsk(){
     });
     if(!res.ok)throw new Error('Claude error '+res.status);
     var data=await res.json();
+    if(myAiAskSeq!==aiAskSeq) return;
+    var aiErr=bldAiError(data);
+    if(aiErr){$('ai-answer').textContent=aiErr;return;}
     // A web-search turn returns text interleaved with server_tool_use/
     // web_search_tool_result blocks, not just content[0] -- join every
     // text block in order instead of assuming the old single-block shape.
@@ -6360,6 +6434,7 @@ async function aiAsk(){
     $('ai-question').value='';
     rAiHistory();
   }catch(e){
+    if(myAiAskSeq!==aiAskSeq) return;
     $('ai-answer').textContent='Could not reach Claude. Check your connection and try again.';
   }
 }
@@ -6425,6 +6500,7 @@ function disJobChanged(){
   sel.innerHTML='<option value="">No linked task</option>'+opts;
   sel.value=keep;
 }
+var disRespondSeq=0;
 async function disRespond(){
   var jobId=$('dis-job').value;
   if(!jobId){toast('Select a job first');return;}
@@ -6466,6 +6542,8 @@ async function disRespond(){
     'and what it means for their part of the job -- if the computed schedule impact is unknown, say '+
     'the new date is still being worked out rather than inventing one. Plain ASCII only, no Unicode '+
     'box characters.\n\n'+facts;
+  disRespondSeq++;
+  var myDisSeq=disRespondSeq;
   try{
     var res=await fetch(PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -6475,10 +6553,14 @@ async function disRespond(){
     });
     if(!res.ok)throw new Error('Claude error '+res.status);
     var data=await res.json();
+    if(myDisSeq!==disRespondSeq) return;
+    var aiErr=bldAiError(data);
+    if(aiErr){$('dis-result').textContent=aiErr;return;}
     var content=data.content||[];
     var text=content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     $('dis-result').textContent=text||'No response text returned.';
   }catch(e){
+    if(myDisSeq!==disRespondSeq) return;
     $('dis-result').textContent='Could not reach Claude. Check your connection and try again.';
   }
 }
@@ -6520,6 +6602,7 @@ function saveSchedule(){
   toast(saved?('Saved - '+assignee):'Could not save -- storage may be full or unavailable, try again');
 }
 
+var mktBriefingSeq=0;
 async function mktBriefing(){
   if(!Object.keys(MKT_STATE.data).length){toast('Refresh market data first');return;}
   $('mkt-briefing').innerHTML='<div style="color:var(--muted);font-style:italic">Generating briefing...</div>';
@@ -6530,6 +6613,8 @@ async function mktBriefing(){
     'for this GC: bid pricing, client financing conversations, and material cost timing. '+
     'Plain ASCII only, no Unicode box characters.';
   var msgs=[{role:'user',content:'Latest data points (most recent last): '+JSON.stringify(MKT_STATE.data)}];
+  mktBriefingSeq++;
+  var myMktSeq=mktBriefingSeq;
   try{
     var res=await fetch(PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
@@ -6537,9 +6622,13 @@ async function mktBriefing(){
     });
     if(!res.ok)throw new Error('Claude error '+res.status);
     var data=await res.json();
+    if(myMktSeq!==mktBriefingSeq) return;
+    var aiErr=bldAiError(data);
+    if(aiErr){$('mkt-briefing').innerHTML='<div style="color:var(--danger)">'+H(aiErr)+'</div>';return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     $('mkt-briefing').innerHTML='<div style="white-space:pre-wrap;line-height:1.6">'+H(text||'No response text returned.')+'</div>';
   }catch(e){
+    if(myMktSeq!==mktBriefingSeq) return;
     $('mkt-briefing').innerHTML='<div style="color:var(--danger)">Could not reach Claude. Check your connection and try again.</div>';
   }
 }
