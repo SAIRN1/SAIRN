@@ -35,6 +35,30 @@ Per-app handoff prefix always (`SAIRNHR-SESSION-N`, `SAIRNACC-SESSION-N`), never
 - **Cloud vs. local session confusion** — at scale, with more sessions open, this risk multiplies. Before typing into any Claude Code window, confirm which one it is (local terminal vs. claude.ai's Code tab) — don't assume.
 - **Two sessions given the same instruction, doing redundant work** — before pasting an instruction, know which specific worktree/session it's going to. "Fold into the next response" instructions apply to ONE specific session, not whichever one answers first.
 
+## Portfolio Audit Status (as of 2026-08-09)
+
+Track which apps have had the full mechanical + judgment treatment
+(`sairn-portfolio-triage`'s 4 scanners, `sairn-silent-failure-sweep`,
+`sairn-adversarial-reviewer`'s 4 personas) vs. only a narrower pass —
+update this table whenever an app crosses that line, so a fresh
+session doesn't have to re-derive which apps are actually clean.
+
+| App | 4-Scanner Triage | Silent-Failure Sweep | Adversarial Review (4 personas) | Status |
+|---|---|---|---|---|
+| stonedesk.html | done | done | done | Fully treated |
+| sairnbiz.html | done | done | done | Fully treated |
+| sairngrounds.html | done | done | done | Fully treated |
+| sairnscape.html | done | done | done | Fully treated |
+| sairncode.html | done | done | done | Fully treated |
+| sairnvet.html | done | done | done | Fully treated |
+| sairnbuild.html | **not run** | **not run** | **not run** | **Gap — only the AI Budget Early Warning feature was reviewed, scoped to that one feature. The rest of the app has never had any of the three passes.** |
+
+**sairnbuild.html is the one real gap left in the portfolio.** Don't
+assume it's clean because nothing bad has surfaced — nothing has
+looked yet, outside the one feature that was reviewed. Run the full
+three-pass treatment on it before calling it anything other than
+unaudited.
+
 ## When this doesn't apply
 
 Single-app, single-session work (most of tonight) doesn't need any of this — worktrees, multi-app naming, and the "which session is this" discipline are specifically for when real parallel app work is actually happening, not a default overhead to carry for a single StoneDesk session.
