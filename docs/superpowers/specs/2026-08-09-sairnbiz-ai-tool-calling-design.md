@@ -7,9 +7,13 @@ in the deployed HTML, and a real logged-in session against the live app
 asked "Who is our shop foreman, and how many fabricators do we have?"
 and got a grounded answer (Marcus Thompson; 2 fabricators, correctly
 excluding the part-time delivery driver) sourced from real `sb_emps`
-data via 3 real `POST /api/claude` round trips (all HTTP 200) — proof
-the tool-use mechanism works end-to-end against the live Anthropic API,
-not just in stubbed-fetch unit tests. Concurrency serialization
+data via 2 real `POST /api/claude` calls for that exchange (the
+tool-request call + the tool-result follow-up call, both HTTP 200) —
+proof the tool-use mechanism works end-to-end against the live
+Anthropic API, not just in stubbed-fetch unit tests. (A 3rd live
+`POST /api/claude` call, also HTTP 200, was observed from a separate,
+subsequent question in the same session — not part of this exchange.)
+Concurrency serialization
 (`sbAiBusy`) and the role-gate (`sensitive:true` blocking a non-owner
 role with the exact "restricted to the owner role" error) were also
 confirmed live. Full detail in
