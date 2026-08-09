@@ -1851,7 +1851,7 @@ var PINS=ld('bld_pins',null)||DEFAULT_PINS;
 var pbuf='',prole='owner',jeid=null,ceid=null,coeid=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
@@ -2846,9 +2846,9 @@ function saveTask(){
   var rec={id:taskeid||('TSK-'+Date.now()),job_id:job,name:name,start:start,duration:duration,
     dependency_id:$('tm-dep').value||'',status:status,actual:status==='complete'?$('tm-actual').value:''};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
-  st('bld_tasks',list);
+  var saved=st('bld_tasks',list);
   closeTaskModal();rTimeline();
-  toast('Saved task');
+  toast(saved?'Saved task':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── SELECTIONS ────────────────────────────────────────────────────────────
@@ -2926,9 +2926,9 @@ function saveSel(){
   var rec={id:seleid||('SEL-'+Date.now()),job_id:job,category:$('selm-cat').value,item:item,
     option:option,date:$('selm-date').value,lead:parseFloat($('selm-lead').value)||0,ordered:ordered};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
-  st('bld_selections',list);
+  var saved=st('bld_selections',list);
   closeSelModal();rSelections();
-  toast('Saved selection');
+  toast(saved?'Saved selection':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── DAILY LOGS ────────────────────────────────────────────────────────────
@@ -3003,9 +3003,9 @@ function saveLog(){
     crew:parseFloat($('lm-crew').value)||0,photos:parseFloat($('lm-photos').value)||0,
     work:$('lm-work').value.trim(),delays:$('lm-delays').value.trim()};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
-  st('bld_daily_logs',list);
+  var saved=st('bld_daily_logs',list);
   closeLogModal();rLogs();
-  toast('Saved daily log');
+  toast(saved?'Saved daily log':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── PUNCH LIST ────────────────────────────────────────────────────────────
@@ -3077,9 +3077,9 @@ function savePunch(){
   var rec={id:pleid||('PL-'+Date.now()),job_id:job,item:item,assigned:$('plm-assigned').value.trim(),
     noted:$('plm-noted').value,status:$('plm-status').value};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
-  st('bld_punchlist',list);
+  var saved=st('bld_punchlist',list);
   closePunchModal();rPunch();
-  toast('Saved punch list item');
+  toast(saved?'Saved punch list item':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── INSPECTIONS ───────────────────────────────────────────────────────────
@@ -3152,9 +3152,9 @@ function saveInsp(){
     result:result,reinsp:result==='fail'?$('im-reinsp').value:'',notes:$('im-notes').value.trim(),
     ref_doc_id:docRef[0]||'',ref_doc_v:docRef[1]?parseInt(docRef[1],10):null};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
-  st('bld_inspections',list);
+  var saved=st('bld_inspections',list);
   closeInspModal();rInspections();
-  toast('Saved inspection');
+  toast(saved?'Saved inspection':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── RFIs ──────────────────────────────────────────────────────────────────
@@ -3255,9 +3255,9 @@ function saveRfi(){
     asked:$('rm-asked').value,status:status,response:$('rm-response').value.trim(),respdate:$('rm-respdate').value,
     ref_doc_id:docRef[0]||'',ref_doc_v:docRef[1]?parseInt(docRef[1],10):null};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
-  st('bld_rfis',list);
+  var saved=st('bld_rfis',list);
   closeRfiModal();rRfis();
-  toast('Saved RFI');
+  toast(saved?'Saved RFI':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── SUBMITTALS ────────────────────────────────────────────────────────────
@@ -3339,9 +3339,9 @@ function saveSubmittal(){
     submitted:$('smm-submitted').value,status:$('smm-status').value,notes:$('smm-notes').value.trim(),
     ref_doc_id:docRef[0]||'',ref_doc_v:docRef[1]?parseInt(docRef[1],10):null};
   if(existing){Object.assign(existing,rec);}else{list.push(rec);}
-  st('bld_submittals',list);
+  var saved=st('bld_submittals',list);
   closeSubmittalModal();rSubmittals();
-  toast('Saved submittal');
+  toast(saved?'Saved submittal':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── BIDS & PROPOSALS ─────────────────────────────────────────────────────
@@ -3479,9 +3479,9 @@ function saveBid(){
     notes:$('bm-notes').value.trim()
   };
   if(existing){Object.assign(existing,rec);}else{bids.push(rec);}
-  st('bld_bids',bids);
+  var saved=st('bld_bids',bids);
   closeBidModal();rBids();
-  toast('Saved - '+rec.client);
+  toast(saved?('Saved - '+rec.client):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // A won bid becomes a real Job Board entry -- the funnel this panel exists
@@ -3518,9 +3518,9 @@ function saveSubBid(){
   if(amount<=0){toast('Bid amount must be greater than 0');return;}
   var list=bldSubBids();
   list.push({id:'SB-'+Date.now(),job_id:$('sbm-job').value||'',cost_code:code,sub:sub,amount:amount,awarded:false});
-  st('bld_sub_bids',list);
+  var saved=st('bld_sub_bids',list);
   closeSubBidModal();rSubBids();
-  toast('Sub bid logged - '+sub);
+  toast(saved?('Sub bid logged - '+sub):'Could not save -- storage may be full or unavailable, try again');
 }
 // Awarding one bid in a cost-code group un-awards any other bid already
 // marked in that same group -- a cost code can have exactly one awarded
@@ -3811,13 +3811,13 @@ function saveCO(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(coeid){var i=cos.findIndex(function(x){return x.id===coeid;});if(i>-1)cos[i]=rec;else cos.push(rec);}
   else cos.push(rec);
-  st('bld_change_orders',cos);
+  var saved=st('bld_change_orders',cos);
   closeCOModal();rCO();
   // Accepted COs change contract value, which changes margin -- so Job Board
   // and Dashboard must refresh or they would show a margin computed against
   // a stale contract.
   rJobs();rDash();
-  toast('Saved - '+rec.description);
+  toast(saved?('Saved - '+rec.description):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // Scope = whatever the two filters currently select, so every KPI describes
@@ -4002,12 +4002,12 @@ function saveCost(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(ceid){var i=cs.findIndex(function(x){return x.id===ceid;});if(i>-1)cs[i]=rec;else cs.push(rec);}
   else cs.push(rec);
-  st('bld_costs',cs);
+  var saved=st('bld_costs',cs);
   closeCostModal();rCost();
   // Costs feed job margin, so both other panels must refresh too -- otherwise
   // the Dashboard would keep showing a margin computed from stale costs.
   rJobs();rDash();
-  toast('Saved - '+rec.cost_code);
+  toast(saved?('Saved - '+rec.cost_code):'Could not save -- storage may be full or unavailable, try again');
 }
 
 function rDash(){
@@ -4172,9 +4172,9 @@ function saveJob(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(jeid){var i=js.findIndex(function(x){return x.id===jeid;});if(i>-1)js[i]=rec;else js.push(rec);}
   else js.push(rec);
-  st('bld_jobs',js);
+  var saved=st('bld_jobs',js);
   closeJobModal();rJobs();rDash();
-  toast('Saved - '+rec.address);
+  toast(saved?('Saved - '+rec.address):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── DRAW REQUESTS ─────────────────────────────────────────────────────────
@@ -4298,9 +4298,9 @@ function saveDraw(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(drmeid){var i=list.findIndex(function(x){return x.id===drmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_draws',list);
+  var saved=st('bld_draws',list);
   closeDrawModal();rDraws();
-  toast('Saved - Draw #'+rec.draw_no);
+  toast(saved?('Saved - Draw #'+rec.draw_no):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── LIEN WAIVERS ──────────────────────────────────────────────────────────
@@ -4390,9 +4390,9 @@ function saveLw(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(lwmeid){var i=list.findIndex(function(x){return x.id===lwmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_lien_waivers',list);
+  var saved=st('bld_lien_waivers',list);
   closeLwModal();rLw();rDraws();
-  toast('Saved - '+rec.party);
+  toast(saved?('Saved - '+rec.party):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── PURCHASE ORDERS ───────────────────────────────────────────────────────
@@ -4485,9 +4485,9 @@ function savePo(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(pomeid){var i=list.findIndex(function(x){return x.id===pomeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_pos',list);
+  var saved=st('bld_pos',list);
   closePoModal();rPo();
-  toast('Saved - '+rec.vendor);
+  toast(saved?('Saved - '+rec.vendor):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── DELIVERIES ────────────────────────────────────────────────────────────
@@ -4585,9 +4585,9 @@ function saveDelivery(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(dvmeid){var i=list.findIndex(function(x){return x.id===dvmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_deliveries',list);
+  var saved=st('bld_deliveries',list);
   closeDeliveryModal();rDv();rPo();
-  toast('Saved delivery - '+(po.vendor||''));
+  toast(saved?('Saved delivery - '+(po.vendor||'')):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── TIMESHEET ─────────────────────────────────────────────────────────────
@@ -4667,9 +4667,9 @@ function saveTs(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(tsmeid){var i=list.findIndex(function(x){return x.id===tsmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_timesheet',list);
+  var saved=st('bld_timesheet',list);
   closeTsModal();rTs();
-  toast('Saved - '+rec.employee);
+  toast(saved?('Saved - '+rec.employee):'Could not save -- storage may be full or unavailable, try again');
 }
 // The actual "feeds Job Costing directly" mechanic: posting an entry finds
 // the matching job+cost_code labour line (creating one if none exists yet)
@@ -4785,9 +4785,9 @@ function saveChk(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(chkmeid){var i=list.findIndex(function(x){return x.id===chkmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_checks',list);
+  var saved=st('bld_checks',list);
   closeChkModal();rChk();
-  toast('Saved - '+rec.payee);
+  toast(saved?('Saved - '+rec.payee):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── SUBCONTRACTORS ────────────────────────────────────────────────────────
@@ -4951,9 +4951,9 @@ function saveSub(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(submeid){var i=list.findIndex(function(x){return x.id===submeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_subs',list);
+  var saved=st('bld_subs',list);
   closeSubModal();rSubs();rCompliance();
-  toast('Saved - '+rec.company);
+  toast(saved?('Saved - '+rec.company):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── COMPLIANCE ────────────────────────────────────────────────────────────
@@ -5062,9 +5062,9 @@ function saveSupplier(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(supmeid){var i=list.findIndex(function(x){return x.id===supmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_suppliers',list);
+  var saved=st('bld_suppliers',list);
   closeSupplierModal();rSuppliers();
-  toast('Saved - '+rec.name);
+  toast(saved?('Saved - '+rec.name):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── EQUIPMENT ─────────────────────────────────────────────────────────────
@@ -5156,9 +5156,9 @@ function saveEquip(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(eqmeid){var i=list.findIndex(function(x){return x.id===eqmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_equipment',list);
+  var saved=st('bld_equipment',list);
   closeEquipModal();rEquip();
-  toast('Saved - '+rec.name);
+  toast(saved?('Saved - '+rec.name):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── SAFETY & INCIDENTS ────────────────────────────────────────────────────
@@ -5247,9 +5247,9 @@ function saveIncident(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(incmeid){var i=list.findIndex(function(x){return x.id===incmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_incidents',list);
+  var saved=st('bld_incidents',list);
   closeIncidentModal();rSafety();
-  toast('Saved incident');
+  toast(saved?'Saved incident':'Could not save -- storage may be full or unavailable, try again');
 }
 function rTalksTbl(){
   var list=bldToolboxTalks();
@@ -5298,9 +5298,9 @@ function saveTalk(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(talkmeid){var i=list.findIndex(function(x){return x.id===talkmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_toolbox_talks',list);
+  var saved=st('bld_toolbox_talks',list);
   closeTalkModal();rSafety();
-  toast('Saved toolbox talk');
+  toast(saved?'Saved toolbox talk':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── CLIENT PORTAL ─────────────────────────────────────────────────────────
@@ -5357,9 +5357,9 @@ function saveMsg(){
   if(!job){toast('Select a job first');return;}
   var list=bldCommLog();
   list.push({id:'CM-'+String(Date.now()).slice(-5),job_id:job,date:bldLocalToday(),author:$('msgm-author').value,message:text});
-  st('bld_comm_log',list);
+  var saved=st('bld_comm_log',list);
   closeMsgModal();rClientPortal();
-  toast('Message posted');
+  toast(saved?'Message posted':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── WARRANTY ──────────────────────────────────────────────────────────────
@@ -5446,9 +5446,9 @@ function saveWarranty(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(warmeid){var i=list.findIndex(function(x){return x.id===warmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_warranty',list);
+  var saved=st('bld_warranty',list);
   closeWarrantyModal();rWarranty();
-  toast('Saved warranty claim');
+  toast(saved?'Saved warranty claim':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── DOCUMENTS ─────────────────────────────────────────────────────────────
@@ -5528,9 +5528,9 @@ function saveDoc(){
     var existing=list.find(function(x){return x.id===docmeid;});
     if(!existing){toast('Document no longer exists');return;}
     existing.job_id=job;existing.category=$('docm-category').value;existing.name=name;
-    st('bld_documents',list);
+    var saved1=st('bld_documents',list);
     closeDocModal();rDocs();
-    toast('Saved - '+name);
+    toast(saved1?('Saved - '+name):'Could not save -- storage may be full or unavailable, try again');
     return;
   }
   var rec={
@@ -5539,9 +5539,9 @@ function saveDoc(){
     versions:[{v:1,uploaded_at:$('docm-date').value||bldLocalToday(),uploaded_by:$('docm-by').value.trim(),note:$('docm-note').value.trim()}]
   };
   list.push(rec);
-  st('bld_documents',list);
+  var saved2=st('bld_documents',list);
   closeDocModal();rDocs();
-  toast('Saved - '+name);
+  toast(saved2?('Saved - '+name):'Could not save -- storage may be full or unavailable, try again');
 }
 var docvTargetId=null;
 function openDocVersionModal(docId){
@@ -5561,9 +5561,9 @@ function saveDocVersion(){
   var cur=docCurrent(d);
   var nextV=(cur?cur.v:0)+1;
   d.versions.push({v:nextV,uploaded_at:$('docvm-date').value||bldLocalToday(),uploaded_by:$('docvm-by').value.trim(),note:$('docvm-note').value.trim()});
-  st('bld_documents',list);
+  var saved=st('bld_documents',list);
   closeDocVersionModal();rDocs();
-  toast('Saved version '+nextV);
+  toast(saved?('Saved version '+nextV):'Could not save -- storage may be full or unavailable, try again');
 }
 function openDocHistoryModal(docId){
   var d=bldDocuments().find(function(x){return x.id===docId;});if(!d)return;
@@ -5649,9 +5649,9 @@ function saveReview(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(rvmeid){var i=list.findIndex(function(x){return x.id===rvmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_reviews',list);
+  var saved=st('bld_reviews',list);
   closeReviewModal();rReviews();
-  toast('Saved review - '+customer);
+  toast(saved?('Saved review - '+customer):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── REFERRALS ─────────────────────────────────────────────────────────────
@@ -5725,9 +5725,9 @@ function saveReferral(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(rfmeid){var i=list.findIndex(function(x){return x.id===rfmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_referrals',list);
+  var saved=st('bld_referrals',list);
   closeReferralModal();rReferrals();
-  toast('Saved referral - '+to);
+  toast(saved?('Saved referral - '+to):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── COMPANY PROFILE ───────────────────────────────────────────────────────
@@ -5784,9 +5784,9 @@ function saveCompany(){
     insurance_expiry:$('cpm-insexp').value,founded_year:parseInt($('cpm-founded').value,10)||null,
     notes:$('cpm-notes').value.trim()
   };
-  st('bld_company_profile',rec);
+  var saved=st('bld_company_profile',rec);
   closeCompanyModal();rCompany();
-  toast('Saved company profile');
+  toast(saved?'Saved company profile':'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────
@@ -5824,9 +5824,9 @@ function saveDefaults(){
   var s=bldSettings();
   s.default_retainage_pct=parseFloat($('dfm-retainage').value)||0;
   s.default_markup_pct=parseFloat($('dfm-markup').value)||0;
-  st('bld_settings',s);
+  var saved=st('bld_settings',s);
   closeDefaultsModal();rSettings();
-  toast('Saved defaults');
+  toast(saved?'Saved defaults':'Could not save -- storage may be full or unavailable, try again');
 }
 function openPinsModal(){
   $('pm-owner').value=PINS.owner||'';$('pm-pm').value=PINS.pm||'';$('pm-office').value=PINS.office||'';
@@ -5839,9 +5839,9 @@ function savePins(){
   if(!re.test(owner)||!re.test(pm)||!re.test(office)){toast('Each PIN must be exactly 4 digits');return;}
   if(owner===pm||owner===office||pm===office){toast('Each role needs a different PIN');return;}
   PINS={owner:owner,pm:pm,office:office};
-  st('bld_pins',PINS);
+  var saved=st('bld_pins',PINS);
   closePinsModal();rSettings();
-  toast('PINs updated');
+  toast(saved?'PINs updated':'Could not save -- storage may be full or unavailable, try again');
 }
 function openCostCodeModal(){
   $('ccm-code').value='';$('ccm-label').value='';
@@ -5855,9 +5855,9 @@ function saveCostCode(){
   s.cost_codes=s.cost_codes||[];
   if(s.cost_codes.some(function(c){return c.code===code;})){toast('That code already exists');return;}
   s.cost_codes.push({code:code,label:$('ccm-label').value.trim()});
-  st('bld_settings',s);
+  var saved=st('bld_settings',s);
   closeCostCodeModal();rSettings();
-  toast('Added cost code '+code);
+  toast(saved?('Added cost code '+code):'Could not save -- storage may be full or unavailable, try again');
 }
 function removeCostCode(idx){
   var s=bldSettings();
@@ -5892,10 +5892,19 @@ function subComplianceIssue(s){
   var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
   return(coi!==null&&coi<=30)||(lic!==null&&lic<=30);
 }
+// Fixed (2026-08-09 audit): this used to sum PO amounts AND cleared-check
+// amounts into the same per-vendor total, with no relationship between the
+// two datasets -- so a check that settles a PO (the normal, real workflow)
+// got counted twice. Confirmed against seed data: Midwest Steel Fab's
+// $42,000 structural-steel PO + its own $42,000 "final payment" check
+// showed as $84,000 total spend. Now reuses supplierSpend() -- the SAME
+// real computation the Suppliers panel's own "Total Spend" column already
+// uses -- so this can never diverge from that panel's number again.
 function subSpendMap(){
   var map={};
-  bldPos().filter(function(p){return p.status!=='cancelled';}).forEach(function(p){map[p.vendor]=(map[p.vendor]||0)+(p.amount||0);});
-  bldChecks().filter(function(c){return c.status==='cleared';}).forEach(function(c){map[c.payee]=(map[c.payee]||0)+(c.amount||0);});
+  bldPos().filter(function(p){return p.status!=='cancelled';}).forEach(function(p){
+    if(!(p.vendor in map)) map[p.vendor]=supplierSpend(p.vendor);
+  });
   return map;
 }
 function rReports(){
@@ -6126,9 +6135,9 @@ function savePrice(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(prmeid){var i=list.findIndex(function(x){return x.id===prmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_price_points',list);
+  var saved=st('bld_price_points',list);
   closePriceModal();rPriceIntel();
-  toast('Saved price point - '+material);
+  toast(saved?('Saved price point - '+material):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── INTEGRATIONS ──────────────────────────────────────────────────────────
@@ -6201,9 +6210,9 @@ function saveInteg(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(intmeid){var i=list.findIndex(function(x){return x.id===intmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_integrations',list);
+  var saved=st('bld_integrations',list);
   closeIntegModal();rInteg();
-  toast('Saved - '+name);
+  toast(saved?('Saved - '+name):'Could not save -- storage may be full or unavailable, try again');
 }
 
 // ── AI ASSISTANT ──────────────────────────────────────────────────────────
@@ -6506,9 +6515,9 @@ function saveSchedule(){
   if(existing)Object.keys(existing).forEach(function(k){if(!(k in rec))rec[k]=existing[k];});
   if(schmeid){var i=list.findIndex(function(x){return x.id===schmeid;});if(i>-1)list[i]=rec;else list.push(rec);}
   else list.push(rec);
-  st('bld_schedule_entries',list);
+  var saved=st('bld_schedule_entries',list);
   closeScheduleModal();rSchedule();
-  toast('Saved - '+assignee);
+  toast(saved?('Saved - '+assignee):'Could not save -- storage may be full or unavailable, try again');
 }
 
 async function mktBriefing(){

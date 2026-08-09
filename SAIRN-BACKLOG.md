@@ -3,6 +3,57 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNbuild has zero server-side backup for any real business data
+
+**Logged:** 2026-08-09
+
+**Priority: highest in this backlog.** Found during the first full
+sairn-silent-failure-sweep + sairn-adversarial-reviewer pass ever run
+against `sairnbuild.html` (the sales-critical app) -- every other app
+in the portfolio had already been through this pass.
+
+**What:** `bldData()` (`sairnbuild.html`'s equivalent of `grdData()`/
+`scpData()`, fully built and wired to `/api/sd-data` with a Bearer
+license token) is only ever called for two things: reading SAIRNbiz's
+employee roster, and reading/writing an anonymized shared-knowledge
+word blob. **Jobs, Bids, Change Orders, Costs, Draws, Lien Waivers,
+POs, Deliveries, Timesheets, Checks, Subs, Suppliers, Equipment,
+Incidents, Documents, Reviews, Referrals -- the entire system of
+record for a GC business -- persist through `st()` (localStorage)
+only.** Confirmed against `SAIRNBUILD-SCOPE.md` §4, which explicitly
+lists these resources as needing server-side extension work that was
+never done, and an in-code comment (`saveDraw()` area) independently
+confirming "Local-only for now, consistent with every other panel this
+session." None of this is disclosed anywhere in the app's UI -- a user
+has no way to know their data isn't backed up.
+
+**Why deferred:** This is a real architecture decision -- wiring 16+
+resources to real server persistence, matching the pattern already
+built for SAIRNgrounds/SAIRNscape/SAIRNcode/SAIRNvet -- not a bug fix.
+Same scope-class as the Vendor Ordering Catalog build. Doing it rushed,
+under a "just fix it tonight" framing, risks exactly the kind of
+half-wired schema mismatch that's already been found and fixed
+elsewhere in this portfolio (SAIRNgrounds/SAIRNscape sync merge bugs,
+storage-key collisions). This needs its own scoping session: which
+resources first, what the migration path is for existing localStorage-
+only data already entered by real users, and whether the api/sd-data.js
+resource-name collision risk (already a known, recurring bug class on
+this platform) is checked before any route is added.
+
+**What was fixed tonight instead (narrower, safe scope):** all 35
+`save*()` functions now honestly report a local-storage write failure
+(quota exceeded, private browsing) instead of showing "Saved" whether
+or not the write actually succeeded. This does NOT address the
+underlying gap above -- it only stops the app from lying about the
+*local* save succeeding. The data is still nowhere but the browser
+that entered it.
+
+**Done looks like:** Every business-data resource in `sairnbuild.html`
+round-trips through `bldData()`/`api/sd-data.js` the same way the other
+four apps' resources do, with the same honest await+check+toast
+pattern, and the UI discloses sync status somewhere a user can actually
+see it -- not just a code comment.
+
 ## Rebuild graphify's knowledge graph, properly scoped
 
 **Logged:** 2026-08-07
