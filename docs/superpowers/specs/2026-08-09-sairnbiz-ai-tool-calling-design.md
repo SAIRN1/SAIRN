@@ -1,11 +1,23 @@
 # SAIRNbiz — AI Tool-Calling Foundation
 
-**Status:** Design approved by Michael 2026-08-09. Not yet implemented —
-no code written under this spec. This is item 1 of a 6-item AI-native
-roadmap for SAIRNbiz (payroll/P&L copilot, pre-payroll validation,
-cross-domain attention digest, hiring cost-impact, review narratives).
-Those items are out of scope here — this spec covers only the mechanism
-they will all build on.
+**Status:** Implemented and live-verified 2026-08-09. All 5 commits
+(ab09c3d, 20acdcb, b419c48, 909dd49, 4cbc8b6) are on `origin/main` and
+confirmed live at `sairn.vercel.app/sairnbiz` — `sbExecuteTool` present
+in the deployed HTML, and a real logged-in session against the live app
+asked "Who is our shop foreman, and how many fabricators do we have?"
+and got a grounded answer (Marcus Thompson; 2 fabricators, correctly
+excluding the part-time delivery driver) sourced from real `sb_emps`
+data via 3 real `POST /api/claude` round trips (all HTTP 200) — proof
+the tool-use mechanism works end-to-end against the live Anthropic API,
+not just in stubbed-fetch unit tests. Concurrency serialization
+(`sbAiBusy`) and the role-gate (`sensitive:true` blocking a non-owner
+role with the exact "restricted to the owner role" error) were also
+confirmed live. Full detail in
+`.superpowers/sdd/2026-08-09-sairnbiz-ai-tool-calling/task-5-report.md`.
+This is item 1 of a 6-item AI-native roadmap for SAIRNbiz (payroll/P&L
+copilot, pre-payroll validation, cross-domain attention digest, hiring
+cost-impact, review narratives). With the foundation now proven live,
+item 2 (Payroll/P&L Copilot) is unblocked as the next spec.
 
 ## 1. Problem
 
