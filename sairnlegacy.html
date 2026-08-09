@@ -1187,6 +1187,17 @@ label.chk input{width:auto;}
 var APP_ID='sairnlegacy';
 var PROXY='https://sairn.vercel.app/api/claude';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
+// Added (2026-08-09 audit): api/claude.js returns HTTP 200 with a body like
+// {error:'demo_limit'} or {error:{message:'...'}} on failure -- res.ok is
+// true either way. Same two-shape check used elsewhere on the platform.
+function legAiError(data){
+  if(!data||!data.error) return null;
+  if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.indexOf('limit')!==-1)){
+    return 'Demo limit reached for today -- try again tomorrow or contact michael@sairn.com for a license.';
+  }
+  if(data.error&&data.error.message) return data.error.message;
+  return typeof data.error==='string'?data.error:'AI request failed';
+}
 
 function legLocalToday(){
   var d=new Date();
@@ -1206,6 +1217,16 @@ var pbuf='',prole='owner',ceid=null,aiHist=[];
 var pyInvoiceId=null,acCompleteId=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// Added (2026-08-09 audit): Tribute external_link is free text typed by
+// staff, rendered as a real <a href>. H() HTML-escapes it but places no
+// restriction on scheme -- a "javascript:..." value contains none of the
+// characters H() escapes, so it would execute if clicked (this content may
+// become family-facing in a future phase per the panel's own note). Only
+// allow http(s) links through.
+function safeExternalUrl(u){
+  u=String(u||'').trim();
+  return /^https?:\/\//i.test(u)?u:'';
+}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
@@ -1453,6 +1474,13 @@ async function sendAI(){
   if(chat.querySelector('div[style*="text-align:center"]'))chat.innerHTML='';
   chat.innerHTML+='<div class="amu">'+H(q)+'</div>';
   chat.scrollTop=chat.scrollHeight;
+  // FIXED 2026-08-09: aiHist's assistant-reply push used to land in
+  // resolve order, not send order -- two fast messages where the second's
+  // response arrives first produced two consecutive user turns instead of
+  // correctly alternating. Recording this request's own user-turn index
+  // and splicing the reply back in right after it keeps aiHist correctly
+  // ordered regardless of resolve order.
+  var myUserIdx=aiHist.length;
   aiHist.push({role:'user',content:q});
   var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
@@ -1462,9 +1490,11 @@ async function sendAI(){
         system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving.',
         messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
     var data=await res.json();
+    var aiErr=legAiError(data);
+    if(aiErr){thinking.textContent=aiErr;chat.scrollTop=chat.scrollHeight;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     thinking.textContent=text;
-    aiHist.push({role:'assistant',content:text});
+    aiHist.splice(myUserIdx+1,0,{role:'assistant',content:text});
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
   chat.scrollTop=chat.scrollHeight;
 }
@@ -1495,6 +1525,14 @@ function rDash(){
 }
 
 // ── CASE MANAGEMENT ───────────────────────────────────────────────────────
+// NOTED 2026-08-09 (audit): computed by counting existing cases at modal-
+// open time, not a server-reserved sequence -- two staff opening "+ New
+// Case" around the same time on two devices can be assigned the same
+// human-facing case number. The underlying record id (newId('CS')-style)
+// stays unique regardless, so this is a label collision, not data loss or
+// a merged/overwritten record -- lower severity than the other findings
+// in this file, accepted as a known limitation rather than reworked into
+// a server-coordinated sequence tonight.
 function nextCaseNumber(){
   var year=new Date().getFullYear();
   var existing=cases().filter(function(c){return (c.case_number||'').indexOf('FH-'+year+'-')===0;});
@@ -1871,6 +1909,13 @@ async function savePermit(){
   var caseId=$('pmcase').value,name=$('pmname').value.trim();
   if(!caseId){toast('Select a case');return;}
   if(!name){toast('Decedent name required');return;}
+  // FIXED 2026-08-09: "Cause of death pending" was captured but never
+  // enforced -- a director could mark a burial-transit/cremation permit
+  // Filed or Issued while the ME/coroner's cause-of-death review was still
+  // checked pending, with no warning. Block that specific combination.
+  if($('pmcausepending').checked&&($('pmstatus').value==='Filed'||$('pmstatus').value==='Issued')){
+    toast('Cannot mark permit '+$('pmstatus').value+' while cause of death is still pending ME/coroner review');return;
+  }
   var existing=ceid?deathRecords().find(function(x){return x.id===ceid;}):null;
   var rec={id:ceid||newId('DR'),case_id:caseId,decedent_full_name:name,date_of_death:$('pmdod').value,place_of_death:$('pmplace').value.trim(),
     county:$('pmcounty').value.trim(),attending_physician:$('pmphysician').value.trim(),cause_pending:$('pmcausepending').checked,
@@ -2165,10 +2210,29 @@ function rPreneed(){
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No pre-need plans yet</td></tr>';
   var assignColors={'Not Assigned':'bx',Assigned:'bw',Paid:'bg'};
   var instb=$('instbody');
+  // FIXED 2026-08-09: this column header advertised "Actions" but every
+  // row rendered a bare "--" -- there was no editInsurance()/status-advance
+  // function anywhere in the file, so a policy's Assignment Status could
+  // never move from Not Assigned to Assigned to Paid after creation, unlike
+  // every other workflow status in this app. Added a real advance action,
+  // same one-step-forward pattern as setInvoiceStatus()/setProposalStatus().
+  var nextAssign={'Not Assigned':'Assigned',Assigned:'Paid'};
   instb.innerHTML=ins.length?ins.slice().reverse().map(function(i){
+    var next=nextAssign[i.assignment_status];
     return '<tr><td>'+H(caseLabel(i.case_id))+'</td><td>'+H(i.policy_number)+'</td><td>'+H(i.insurer_name||'--')+'</td><td>'+fmt(i.face_value)+'</td>'+
-      '<td><span class="badge '+(assignColors[i.assignment_status]||'bx')+'">'+H(i.assignment_status)+'</span></td><td>--</td></tr>';
+      '<td><span class="badge '+(assignColors[i.assignment_status]||'bx')+'">'+H(i.assignment_status)+'</span></td>'+
+      '<td>'+(next?'<button class="btn bo bs" onclick="advanceInsuranceStatus(\''+i.id+'\')">Mark '+next+'</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No insurance policies yet</td></tr>';
+}
+async function advanceInsuranceStatus(id){
+  var list=insurancePolicies();
+  var rec=list.find(function(x){return x.id===id;});if(!rec)return;
+  var nextAssign={'Not Assigned':'Assigned',Assigned:'Paid'};
+  var next=nextAssign[rec.assignment_status];if(!next)return;
+  rec.assignment_status=next;
+  st('leg_insurance',list);rPreneed();
+  var syncResult=await sdnData('write','leg_insurance',rec);
+  toast(syncResult?'Marked '+next:'Marked '+next+' on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
 }
 
 // ── ACCOUNTING / INVOICING ────────────────────────────────────────────────
@@ -2229,16 +2293,33 @@ function closePaymentModal(){$('paymentmodal').classList.remove('on');}
 async function confirmPayment(){
   var amount=Number($('pyamount').value)||0;
   if(amount<=0){$('payment-err').textContent='Enter a payment amount greater than 0';return;}
+  var source=$('pysource').value;
   var list=invoices();
   var inv=list.find(function(x){return x.id===pyInvoiceId;});if(!inv)return;
   inv.payments=inv.payments||[];
-  inv.payments.push({source:$('pysource').value,amount:amount,date:legLocalToday()});
+  inv.payments.push({source:source,amount:amount,date:legLocalToday()});
   var total=invoiceTotal(inv),paid=invoicePaid(inv);
   inv.status=paid>=total?'Paid':(paid>0?'Partial':'Draft');
   st('leg_invoices',list);
-  closePaymentModal();rInvoicing();
+  // FIXED 2026-08-09: a payment recorded with source 'Pre-Need Trust' never
+  // touched the source Pre-Need Plan's own amount_paid field -- the two
+  // could silently diverge with nothing in the code cross-referencing them.
+  // Cross-reference the plan linked to this invoice's case and keep its
+  // amount_paid in sync with the real trust-sourced payment.
+  var planSyncResult=true;
+  if(source==='Pre-Need Trust'){
+    var plans=preneedPlans();
+    var plan=plans.find(function(p){return p.linked_case_id===inv.case_id;});
+    if(plan){
+      plan.amount_paid=(Number(plan.amount_paid)||0)+amount;
+      st('leg_preneed',plans);
+      planSyncResult=await sdnData('write','leg_preneed',plan);
+    }
+  }
+  closePaymentModal();rInvoicing();rPreneed();
   var syncResult=await sdnData('write','leg_invoices',inv);
-  toast(syncResult?'Payment recorded':'Recorded on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  var allSynced=syncResult&&planSyncResult;
+  toast(allSynced?'Payment recorded':'Recorded on this device only -- server sync not yet enabled',allSynced?3000:5000);
 }
 function openGplModal(){
   var services=gplServices(),merch=merchCatalog();
@@ -2329,6 +2410,8 @@ async function generateObituary(){
           '. Notes: '+(c.notes||'none')+'. This is a draft to be reviewed and edited by the family before publishing.'}]})});
     var data=await res.json();
     if(myObSeq!==generateObituarySeq||$('obcase').value!==caseId)return;
+    var aiErr=legAiError(data);
+    if(aiErr){$('obtext').value=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'Could not generate a draft -- try again.';
     $('obtext').value=text;
   }catch(e){
@@ -2449,21 +2532,32 @@ function keepsakeLabel(id){var k=keepsakeCatalog().find(function(x){return x.id=
 
 // ── AFTERCARE / GRIEF-SUPPORT FOLLOW-UP ───────────────────────────────────
 function daysFromNow(days){var d=new Date();d.setDate(d.getDate()+days);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
-function generateAftercareSchedule(){
+// FIXED 2026-08-09: this was the one write path in the file that never
+// called sdnData() and never showed the "saved on this device only --
+// server sync not yet enabled" disclosure every other save function in
+// this file shows -- silently local-only with no indication anything was
+// device-specific. Now matches that same honest pattern.
+async function generateAftercareSchedule(){
   var caseId=$('accase').value;
   if(!caseId){toast('Select a case first');return;}
   var existing=aftercareCheckins().filter(function(a){return a.case_id===caseId;});
   var plan=[{type:'1 Week',days:7},{type:'1 Month',days:30},{type:'1 Year',days:365}];
   var list=aftercareCheckins();
-  var created=0;
+  var created=[];
   plan.forEach(function(p){
     if(existing.some(function(a){return a.checkin_type===p.type;}))return;
-    list.push({id:newId('AC'),case_id:caseId,checkin_type:p.type,due_date:daysFromNow(p.days),status:'Pending',completed_date:'',notes:'',created_at:legLocalToday()});
-    created++;
+    var rec={id:newId('AC'),case_id:caseId,checkin_type:p.type,due_date:daysFromNow(p.days),status:'Pending',completed_date:'',notes:'',created_at:legLocalToday()};
+    list.push(rec);
+    created.push(rec);
   });
-  if(!created){toast('Standard schedule already exists for this case');return;}
+  if(!created.length){toast('Standard schedule already exists for this case');return;}
   st('leg_aftercare',list);rAftercare();
-  toast(created+' check-in(s) scheduled');
+  var allSynced=true;
+  for(var i=0;i<created.length;i++){
+    var r=await sdnData('write','leg_aftercare',created[i]);
+    if(!r)allSynced=false;
+  }
+  toast(allSynced?(created.length+' check-in(s) scheduled'):(created.length+' check-in(s) scheduled on this device only -- server sync not yet enabled for this app'),allSynced?3000:5500);
 }
 function openAftercareNoteModal(id){
   acCompleteId=id;$('acnote').value='';
@@ -2484,8 +2578,14 @@ function rAftercare(){
   var list=aftercareCheckins();
   var pending=list.filter(function(a){return a.status==='Pending';});
   $('ac-pending').textContent=pending.length;
-  var weekAhead=new Date(Date.now()+7*24*60*60*1000).getTime();
-  $('ac-dueweek').textContent=pending.filter(function(a){return new Date(a.due_date+'T00:00:00').getTime()<=weekAhead;}).length;
+  // FIXED 2026-08-09: had no lower bound, so a check-in already weeks
+  // overdue silently counted as "Due This Week" -- the same "no cap on
+  // negative days" gap certStatus() (which correctly separates Expired
+  // from Expiring Soon) already avoids elsewhere in this file. Now
+  // requires the due date to actually be between today and the window
+  // end, not just before the window end.
+  var acNow=Date.now(),weekAhead=new Date(acNow+7*24*60*60*1000).getTime();
+  $('ac-dueweek').textContent=pending.filter(function(a){var t=new Date(a.due_date+'T00:00:00').getTime();return t>=acNow&&t<=weekAhead;}).length;
   $('ac-completed').textContent=list.filter(function(a){return a.status==='Completed';}).length;
   var today=legLocalToday();
   var statusColors={Pending:'bw',Completed:'bg',Skipped:'bx'};
@@ -2604,8 +2704,11 @@ function rFleet(){
   $('fl-vehicles').textContent=vl.length;
   var thisYear=legLocalToday().slice(0,4);
   $('fl-thisyear').textContent=ml.filter(function(m){return (m.service_date||'').slice(0,4)===thisYear;}).length;
-  var thirtyOut=new Date(Date.now()+30*24*60*60*1000).getTime();
-  var dueSoon=ml.filter(function(m){return m.next_service_due_date&&new Date(m.next_service_due_date+'T00:00:00').getTime()<=thirtyOut;});
+  // FIXED 2026-08-09: same missing-lower-bound gap as rAftercare()'s
+  // ac-dueweek -- a vehicle already overdue for service silently counted
+  // as "Due Within 30 Days."
+  var flNow=Date.now(),thirtyOut=new Date(flNow+30*24*60*60*1000).getTime();
+  var dueSoon=ml.filter(function(m){if(!m.next_service_due_date)return false;var t=new Date(m.next_service_due_date+'T00:00:00').getTime();return t>=flNow&&t<=thirtyOut;});
   $('fl-due').textContent=dueSoon.length;
   $('fl-vehicle-list').innerHTML=vl.length?vl.map(function(v){
     var records=ml.filter(function(m){return m.vehicle_id===v.id;}).slice().reverse();
@@ -3209,7 +3312,7 @@ function rTribute(){
   var tb=$('trtbody');
   tb.innerHTML=list.length?list.slice().reverse().map(function(t){
     return '<tr><td>'+H(caseLabel(t.case_id))+'</td><td>'+H(t.type)+'</td><td>'+H(t.organization_name||'--')+'</td>'+
-      '<td>'+H(t.details||'--')+'</td><td>'+(t.external_link?'<a href="'+H(t.external_link)+'" target="_blank" rel="noopener">Link</a>':'--')+'</td>'+
+      '<td>'+H(t.details||'--')+'</td><td>'+(safeExternalUrl(t.external_link)?'<a href="'+H(safeExternalUrl(t.external_link))+'" target="_blank" rel="noopener">Link</a>':(t.external_link?H(t.external_link):'--'))+'</td>'+
       '<td><span class="badge '+(statusColors[t.status]||'bx')+'">'+H(t.status)+'</span></td><td>--</td></tr>';
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No options on file yet</td></tr>';
 }
