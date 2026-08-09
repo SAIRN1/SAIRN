@@ -4131,7 +4131,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   function renderAdminOverviewKPIs(){
     var users=[]; try{users=JSON.parse(localStorage.getItem('sd_emp_directory_v1')||'[]');}catch(e){}
     var uEl=document.getElementById('adm-users'); if(uEl) uEl.textContent=users.length;
-    var totalBytes=0; for(var k in localStorage){ try{ totalBytes+=(localStorage[k]||'').length*2; }catch(e){} }
+    var totalBytes=0; for(var i=0;i<localStorage.length;i++){ try{ var k=localStorage.key(i); totalBytes+=(localStorage.getItem(k)||'').length*2; }catch(e){} }
     var pct=Math.min(100, Math.round((totalBytes/1024/5120)*100));
     var sEl=document.getElementById('adm-storage'); if(sEl) sEl.textContent=pct+'%';
     var lastBackup=localStorage.getItem('sd_last_backup');
@@ -5093,7 +5093,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 
   <!-- == MOBILE POS PANEL == -->
   <div class="panel" id="panel-pos">
-<div style="padding:16px;max-width:520px;margin:0 auto">
+<div style="padding:16px;padding-bottom:96px;max-width:520px;margin:0 auto">
   <div style="margin-bottom:16px">
     <h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">📱 Mobile POS</h2>
     <div style="font-size:13px;color:var(--muted);margin-top:2px">Record a completed sale on the spot — no live card processing yet</div>
@@ -19145,7 +19145,7 @@ function renderWarrantyAlertZone(alerts) {
   const worst = warrAlerts.some(a => a.level === 'red') ? 'red' : 'yellow';
   el.innerHTML = '<div class="urgency-banner ' + worst + '">' +
     '<span class="urgency-icon">' + (worst==='red'?'🚨':'⚠️') + '</span>' +
-    '<span>' + warrAlerts.length + ' warranty showToast(s) require attention</span></div>';
+    '<span>' + warrAlerts.length + ' warranty alert(s) require attention</span></div>';
 }
 
 function updateCustomerKPIs() {
@@ -32112,7 +32112,7 @@ function itaRender(){
       '<button onclick="itaDeleteUser(\''+u.name+'\')" style="padding:3px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer;font-size:11px">Remove</button>'+
     '</div>';}).join('')+'</div>':'<div style="color:var(--muted);padding:12px">No additional users.</div>';
   // Storage calc
-  var total=0;for(var k in localStorage){try{total+=localStorage[k].length*2;}catch(e){}}
+  var total=0;for(var i=0;i<localStorage.length;i++){try{var k=localStorage.key(i);total+=(localStorage.getItem(k)||'').length*2;}catch(e){}}
   var kb=(total/1024).toFixed(1);
   function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
   sv('ita-kpi-users',users.length);sv('ita-kpi-storage',kb+' KB');
