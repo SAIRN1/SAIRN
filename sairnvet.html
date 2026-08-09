@@ -377,6 +377,7 @@
         <option value="cattle">Cattle</option><option value="sheep">Sheep</option><option value="goat">Goat</option><option value="llama/alpaca">Llama/Alpaca</option>
         <option value="bird">Bird</option><option value="emu/ratite">Emu/Ratite</option><option value="reptile">Reptile</option>
         <option value="chelonian">Chelonian</option><option value="tortoise">Tortoise</option><option value="turtle">Turtle</option><option value="deer">Deer</option>
+        <option value="rabbit">Rabbit</option><option value="guinea pig">Guinea Pig</option><option value="hamster">Hamster</option><option value="chinchilla">Chinchilla</option>
         <option value="exotic">Exotic</option><option value="swine">Swine</option>
       </select>
       <button class="btn btn-sm" onclick="searchDrugs()">Search</button>
@@ -4253,7 +4254,10 @@ function addClaim(){
   document.getElementById('pi-add-patient').value='';
   document.getElementById('pi-add-provider').value='';
   document.getElementById('pi-add-amount').value='';
-  showToast('Claim submitted for '+patient,'success');
+  // Honest language (2026-08-09 audit): "submitted" implies an actual
+  // insurer-facing transaction happened; this is local-only logging, same
+  // as every sibling feature (Referrals/Reminders/Portal all say "logged").
+  showToast('Claim logged for '+patient,'success');
 }
 
 function getPortalRequests(){
@@ -6507,6 +6511,7 @@ function findDiagnosisEntries(dxName, speciesName){
   });
 }
 
+var protocolSeq=0;
 function getProtocolFromClaude(){
   var dx=document.getElementById('dx-for-protocol').value.trim();
   var weight=document.getElementById('dx-weight').value;
@@ -6525,7 +6530,13 @@ function getProtocolFromClaude(){
   var messages=[{role:'user',content:'Provide a differential and treatment protocol for suspected '+dx+' in a '+weight+'kg '+species+'. '+groundingContext}];
 
   showToast('Getting protocol...','info');
+  // Guard against out-of-order async responses (same pattern as calculateDoseAI):
+  // without this, a second request fired before the first resolves can have its
+  // result overwritten by the slower, now-stale first response.
+  protocolSeq++;
+  var myProtocolSeq=protocolSeq;
   callClaude(system,messages,2000).then(function(result){
+    if(myProtocolSeq!==protocolSeq) return;
     document.getElementById('protocol-result').style.display='block';
     document.getElementById('protocol-result').textContent=result;
   }).catch(function(e){});
@@ -6906,13 +6917,18 @@ function addSpeciesRef(){
   showToast(species+' added','success');
 }
 
+var speciesRefSeq=0;
 function getSpeciesRef(){
   var species=document.getElementById('ref-species').value.trim();
   if(!species){showToast('Enter a species or topic','error');return;}
   var system='You are a veterinary species-husbandry reference expert. Provide normal vitals, housing/husbandry basics, diet, and common health concerns.';
   var messages=[{role:'user',content:'Give a concise reference sheet for: '+species}];
   showToast('Looking up reference info...','info');
+  // Guard against out-of-order async responses -- see calculateDoseAI/getProtocolFromClaude.
+  speciesRefSeq++;
+  var mySpeciesRefSeq=speciesRefSeq;
   callClaude(system,messages,1200).then(function(result){
+    if(mySpeciesRefSeq!==speciesRefSeq) return;
     document.getElementById('ref-result').style.display='block';
     document.getElementById('ref-result').textContent=result;
     var n = 0;
@@ -6922,6 +6938,7 @@ function getSpeciesRef(){
   }).catch(function(e){});
 }
 
+var missedChargeSeq=0;
 function runMissedChargeScan(){
   showToast('Scanning practice data...','info');
   var clients = getClients();
@@ -6939,7 +6956,11 @@ function runMissedChargeScan(){
 
   var system='You are a veterinary practice management analyst. Identify likely missed-charge patterns and revenue opportunities based strictly on the real practice snapshot provided. Do not invent numbers beyond what is given, and say so honestly if the sample size is too small to generalize from.';
   var messages=[{role:'user',content:'Practice snapshot: '+clients.length+' client(s) on file, average invoice value $'+avgInvoice.toFixed(2)+' across '+amounts.length+' invoice(s) logged, '+churnCount+' client(s) with no visit in over 12 months, '+declinedCount+' declined billing transaction(s) logged. Based on this real snapshot, identify likely missed-charge opportunities and revenue-recovery actions.'}];
+  // Guard against out-of-order async responses -- see calculateDoseAI/getProtocolFromClaude.
+  missedChargeSeq++;
+  var myMissedChargeSeq=missedChargeSeq;
   callClaude(system,messages,1200).then(function(result){
+    if(myMissedChargeSeq!==missedChargeSeq) return;
     document.getElementById('missed-charge-result').style.display='block';
     document.getElementById('missed-charge-result').textContent=result;
     var n = 0;
@@ -6950,6 +6971,7 @@ function runMissedChargeScan(){
   }).catch(function(e){});
 }
 
+var zooProtocolSeq=0;
 function getZooProtocol(){
   var species=document.getElementById('zoo-species').value.trim();
   var weight=document.getElementById('zoo-weight').value;
@@ -6958,12 +6980,17 @@ function getZooProtocol(){
   var system='You are a zoo/wildlife veterinary anesthesiologist. Provide a chemical immobilization protocol including drug combination, dose ranges by weight, monitoring plan, and reversal agents. Always include a safety caveat that field conditions require a licensed zoo veterinarian present.';
   var messages=[{role:'user',content:'Species: '+species+'. Estimated weight: '+weight+'kg. Procedure: '+procedure+'. Provide immobilization protocol.'}];
   showToast('Generating protocol...','info');
+  // Guard against out-of-order async responses -- see calculateDoseAI/getProtocolFromClaude.
+  zooProtocolSeq++;
+  var myZooProtocolSeq=zooProtocolSeq;
   callClaude(system,messages,1500).then(function(result){
+    if(myZooProtocolSeq!==zooProtocolSeq) return;
     document.getElementById('zoo-result').style.display='block';
     document.getElementById('zoo-result').textContent=result;
   }).catch(function(e){});
 }
 
+var askAiSeq=0;
 function askAI(){
   var q=document.getElementById('ai-question').value.trim();
   if(!q){showToast('Enter a question','error');return;}
@@ -6974,7 +7001,11 @@ function askAI(){
   showToast('Asking Claude...','info');
   logDoseAudit({type:'ai_assistant_question', question:q.slice(0,200)});
   if(typeof recordSvSharedTopics==='function') recordSvSharedTopics(q);
+  // Guard against out-of-order async responses -- see calculateDoseAI/getProtocolFromClaude.
+  askAiSeq++;
+  var myAskAiSeq=askAiSeq;
   callClaude(system,messages,1500).then(function(result){
+    if(myAskAiSeq!==askAiSeq) return;
     document.getElementById('ai-result').style.display='block';
     document.getElementById('ai-result').textContent=result;
   }).catch(function(e){});
