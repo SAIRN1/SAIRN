@@ -35,7 +35,7 @@ Per-app handoff prefix always (`SAIRNHR-SESSION-N`, `SAIRNACC-SESSION-N`), never
 - **Cloud vs. local session confusion** — at scale, with more sessions open, this risk multiplies. Before typing into any Claude Code window, confirm which one it is (local terminal vs. claude.ai's Code tab) — don't assume.
 - **Two sessions given the same instruction, doing redundant work** — before pasting an instruction, know which specific worktree/session it's going to. "Fold into the next response" instructions apply to ONE specific session, not whichever one answers first.
 
-## Portfolio Audit Status (as of 2026-08-09)
+## Portfolio Audit Status (as of 2026-08-09, corrected same day)
 
 Track which apps have had the full mechanical + judgment treatment
 (`sairn-portfolio-triage`'s 4 scanners, `sairn-silent-failure-sweep`,
@@ -43,21 +43,48 @@ Track which apps have had the full mechanical + judgment treatment
 update this table whenever an app crosses that line, so a fresh
 session doesn't have to re-derive which apps are actually clean.
 
+**Correction, same day:** the original version of this table (written
+mid-session) was already stale by the time anyone read it back. It
+omitted sairnlaw.html/sairndesign.html/sairnlegacy.html entirely (all
+three were built ground-up earlier the same session and got their own
+full 3-pass treatment before this table was even written) and still
+listed sairnbuild.html as "not run" after its gap had already been
+closed later the same session. Separately, sairngrounds.html's and
+sairnscape.html's "Adversarial Review: done" cells had **zero
+corroborating commit evidence anywhere in the repo** — a follow-up
+audit found the only commit mentioning both "adversarial" and either
+app name was this table's own entry. A genuine adversarial-review pass
+was run on both as part of that correction: sairnscape came back clean;
+sairngrounds did not — a real CRITICAL (AI chat concurrent-request
+misattribution, same bug class already fixed in sairnbiz/sairnscape,
+found unfixed here) was caught and fixed (`8e70233`). Lesson: a table
+entry is a claim, not evidence — don't trust "done" in this table
+without a commit SHA or session handoff backing it, and re-verify
+before extending trust forward from it, same standard as everything
+else in the SAIRN skill set.
+
 | App | 4-Scanner Triage | Silent-Failure Sweep | Adversarial Review (4 personas) | Status |
 |---|---|---|---|---|
 | stonedesk.html | done | done | done | Fully treated |
 | sairnbiz.html | done | done | done | Fully treated |
-| sairngrounds.html | done | done | done | Fully treated |
-| sairnscape.html | done | done | done | Fully treated |
+| sairngrounds.html | done | done | done (real finding caught+fixed on re-verification, `8e70233`) | Fully treated |
+| sairnscape.html | done | done | done (re-verified for real, genuinely clean) | Fully treated |
 | sairncode.html | done | done | done | Fully treated |
 | sairnvet.html | done | done | done | Fully treated |
-| sairnbuild.html | **not run** | **not run** | **not run** | **Gap — only the AI Budget Early Warning feature was reviewed, scoped to that one feature. The rest of the app has never had any of the three passes.** |
+| sairnbuild.html | done | done | done | Fully treated (was the one gap, closed `09b65a9`; its own 4 self-disclosed unfixed silent-failure instances were closed later, `66cf7b9`) |
+| sairnlaw.html | done | done | done | Fully treated (built ground-up this portfolio; first full pass `c27a948`) |
+| sairndesign.html | done | done | done | Fully treated (built ground-up this portfolio; first full pass `c27a948`) |
+| sairnlegacy.html | done | done | done | Fully treated (built ground-up this portfolio; first full pass `c27a948`) |
 
-**sairnbuild.html is the one real gap left in the portfolio.** Don't
-assume it's clean because nothing bad has surfaced — nothing has
-looked yet, outside the one feature that was reviewed. Run the full
-three-pass treatment on it before calling it anything other than
-unaudited.
+**All 10 apps in the portfolio are now genuinely fully treated** — each
+cell above traces to a specific commit, not just an assertion. That
+doesn't mean zero future findings; it means the same standard baseline
+StoneDesk got has now genuinely been applied everywhere, not just
+claimed. Key-collision leads surfaced by the 4-scanner triage on 7 of
+these apps were individually traced (same per-key process StoneDesk's
+`SESSION78` handoff used) and all confirmed false positives — same
+underlying storage-getter, different local variable name at each call
+site, not a real divergent-shape bug.
 
 ## When this doesn't apply
 
