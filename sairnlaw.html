@@ -917,6 +917,28 @@ label.chk input{width:auto;}
 var APP_ID='sairnlaw';
 var PROXY='https://sairn.vercel.app/api/claude';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
+// Added (2026-08-09 audit): api/claude.js returns HTTP 200 with a body like
+// {error:'demo_limit'} or {error:{message:'...'}} on failure -- res.ok is
+// true either way, so this file's 4 AI call sites (sendAI, explainReconciliation,
+// runAiDraft, reviewDocument) were all treating that response as a normal
+// answer, falling through to "No response text returned." with no
+// indication the real cause was a rate limit. Same two-shape check already
+// used across the platform (sairnvet.html's callClaude(), sairnbuild.html's
+// bldAiError()). Returns null when there's no error.
+function lawAiError(data){
+  if(!data||!data.error) return null;
+  if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.indexOf('limit')!==-1)){
+    return 'Demo limit reached for today -- try again tomorrow or contact michael@sairn.com for a license.';
+  }
+  if(data.error&&data.error.message) return data.error.message;
+  return typeof data.error==='string'?data.error:'AI request failed';
+}
+// Shared sequence guard for runAiDraft()/reviewDocument() -- both write to
+// the same #draftresult textarea, so a single shared counter is needed
+// (not one per function) to correctly invalidate a stale Draft response
+// when the user switches to Review, or vice versa, before the first
+// request resolves.
+var lawDraftSeq=0;
 
 function lawLocalToday(){
   var d=new Date();
@@ -954,6 +976,16 @@ var lawSession=null;   // {token, role, employee_id, mfa_enabled} -- in-memory m
 var lawPreauth=null;   // short-lived MFA pre-auth token, in-memory only, never persisted
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// Added (2026-08-09 audit): document url_or_ref is free text typed by
+// staff, rendered as a real <a href>. H() HTML-escapes it but places no
+// restriction on scheme -- a value like "javascript:..." contains none of
+// the characters H() escapes, so it would execute if clicked. Only allow
+// http(s) links through; anything else (including no recognizable scheme)
+// renders as plain text instead of a clickable link.
+function safeDocUrl(u){
+  u=String(u||'').trim();
+  return /^https?:\/\//i.test(u)?u:'';
+}
 // H() escapes for HTML-attribute context, which is the WRONG escaping for
 // text embedded as a JS string literal inside an onclick="..." attribute --
 // the browser HTML-decodes the attribute value (turning &#39; back into a
@@ -1364,6 +1396,8 @@ async function sendAI(){
         system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to that citation restriction. '+LAW_FIRM_DATA_RULE,
         messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
     var data=await res.json();
+    var aiErr=lawAiError(data);
+    if(aiErr){thinking.textContent=aiErr;chat.scrollTop=chat.scrollHeight;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     thinking.textContent=text;
     aiHist.push({role:'assistant',content:text});
@@ -1641,7 +1675,7 @@ function rMatterDetail(){
       (milestones.length?milestones.map(function(x){return '<div class="srow"><span class="slbl">'+H(x.title)+'</span><span class="sval">'+fdate(x.date)+'</span></div>';}).join(''):'<div style="color:var(--muted);font-size:13px">No milestones yet</div>')+
     '</div></div>'+
     '<div class="card"><div class="ch"><span class="ct">Linked Documents</span><button class="btn bo bs" style="margin-left:auto" onclick="openMatterDocModal()">+ Link Document</button></div><div class="cb">'+
-      (docs.length?docs.map(function(x){return '<div class="srow"><span class="slbl">'+H(x.title)+(x.doc_type?' ('+H(x.doc_type)+')':'')+'</span><span class="sval">'+(x.url_or_ref?'<a href="'+H(x.url_or_ref)+'" target="_blank" rel="noopener">Link</a>':'--')+'</span></div>';}).join(''):'<div style="color:var(--muted);font-size:13px">No documents linked yet</div>')+
+      (docs.length?docs.map(function(x){var su=safeDocUrl(x.url_or_ref);return '<div class="srow"><span class="slbl">'+H(x.title)+(x.doc_type?' ('+H(x.doc_type)+')':'')+'</span><span class="sval">'+(su?'<a href="'+H(su)+'" target="_blank" rel="noopener">Link</a>':(x.url_or_ref?'<span style="color:var(--muted)">'+H(x.url_or_ref)+'</span>':'--'))+'</span></div>';}).join(''):'<div style="color:var(--muted);font-size:13px">No documents linked yet</div>')+
     '</div></div>';
 }
 
@@ -1752,6 +1786,14 @@ function openTrustModal(){
   $('trustmodal').classList.add('on');
 }
 function closeTrustModal(){$('trustmodal').classList.remove('on');}
+// NOTED 2026-08-09 (audit): the disbursement balance check below is
+// synchronous with no await between the read and the write, so it cannot
+// race with ITSELF on one device/session. It CANNOT close a cross-device
+// race (two staff, two browser sessions, each reading a stale pre-
+// disbursement balance and both passing the check) -- that needs a real
+// server-side atomic check-and-write, which does not exist yet for this
+// resource. No client-side timing change can close that gap; flagged
+// rather than presented as airtight. Real fix logged in SAIRN-BACKLOG.md.
 async function saveTrustTransaction(){
   var matterId=$('trmatter').value,amount=Number($('tramount').value)||0;
   if(!matterId){$('trust-err').textContent='Select a matter';return;}
@@ -1813,8 +1855,24 @@ async function explainReconciliation(){
         system:'You explain trust-accounting reconciliation discrepancies in plain language for a law firm. You are given real, already-computed numbers -- never recompute or second-guess them, never invent additional numbers, only explain what a mismatch of this shape typically means and what to check next (uncleared checks, timing differences, a missed entry).',
         messages:[{role:'user',content:'Trust ledger balance: '+fmt(r.ledgerBal)+'. Sum of client ledgers: '+fmt(r.clientSum)+'. Bank statement balance: '+(r.bankBal===null?'not yet entered':fmt(r.bankBal))+'. Ledger matches client-ledger sum: '+r.ledgerVsClient+'. Ledger matches bank statement: '+r.ledgerVsBank+'. Explain what this indicates and what to check.'}]})});
     var data=await res.json();
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
-    $('tr-reconcile-result').innerHTML+='<div class="cb" style="margin-top:10px;background:var(--bg);border-radius:8px;white-space:pre-wrap">'+H(text)+'</div>';
+    var aiErr=lawAiError(data);
+    // FIXED 2026-08-09: was innerHTML+= (append), so clicking this more
+    // than once (or the discrepancy numbers changing between clicks, e.g.
+    // a new bank statement or a voided transaction) left an old, now-
+    // outdated explanation sitting directly next to the new one with
+    // nothing marking it superseded. Now replaces the explanation each
+    // time, matching what "explain the CURRENT discrepancy" should mean.
+    var explainBox=document.getElementById('tr-explain-result');
+    if(!explainBox){
+      explainBox=document.createElement('div');explainBox.id='tr-explain-result';
+      $('tr-reconcile-result').appendChild(explainBox);
+    }
+    if(aiErr){
+      explainBox.outerHTML='<div class="cb" id="tr-explain-result" style="margin-top:10px;background:var(--bg);border-radius:8px;white-space:pre-wrap">'+H(aiErr)+'</div>';
+    }else{
+      var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+      explainBox.outerHTML='<div class="cb" id="tr-explain-result" style="margin-top:10px;background:var(--bg);border-radius:8px;white-space:pre-wrap">'+H(text)+'</div>';
+    }
   }catch(e){toast('Could not connect to Claude');}
   $('tr-explain-btn').textContent='Explain This Discrepancy (AI)';$('tr-explain-btn').disabled=false;
 }
@@ -2087,7 +2145,7 @@ function rDocMatterChange(){
         (revCount?'<button class="btn bo bs" onclick="openDocHistoryModal(\''+d.id+'\')">History ('+revCount+')</button>':'')+
       '</span></div><div class="cb">'+
       (d.source==='Email'?'<div class="srow"><span class="slbl">From</span><span class="sval">'+H(d.email_from||'--')+'</span></div><div class="srow"><span class="slbl">To</span><span class="sval">'+H(d.email_to||'--')+'</span></div>':'')+
-      (d.content_text?'<div style="white-space:pre-wrap;font-size:13px;color:var(--muted);margin-top:8px;max-height:120px;overflow-y:auto">'+H(d.content_text)+'</div>':(d.url_or_ref?'<a href="'+H(d.url_or_ref)+'" target="_blank" rel="noopener">Open Link</a>':'<span style="color:var(--muted);font-size:13px">No content on file</span>'))+
+      (d.content_text?'<div style="white-space:pre-wrap;font-size:13px;color:var(--muted);margin-top:8px;max-height:120px;overflow-y:auto">'+H(d.content_text)+'</div>':(safeDocUrl(d.url_or_ref)?'<a href="'+H(safeDocUrl(d.url_or_ref))+'" target="_blank" rel="noopener">Open Link</a>':(d.url_or_ref?'<span style="color:var(--muted);font-size:13px">'+H(d.url_or_ref)+'</span>':'<span style="color:var(--muted);font-size:13px">No content on file</span>')))+
       '</div></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:24px">'+(matterId?'No documents filed on this matter yet':'Select a matter above')+'</div>';
 }
@@ -2120,15 +2178,23 @@ async function runAiDraft(){
   var context='Matter: '+(m?m.matter_name:'')+'. Client: '+(m?clientLabel(m.client_id):'')+'. Practice area: '+(m&&m.practice_area?m.practice_area:'unspecified')+
     (m&&m.opposing_parties&&m.opposing_parties.length?'. Opposing parties: '+m.opposing_parties.join(', '):'')+(m&&m.notes?'. Matter notes: '+m.notes:'')+'.';
   $('draftresult').value='Drafting...';
+  lawDraftSeq++;
+  var myDraftSeq=lawDraftSeq;
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:1200,
         system:'You are a legal document drafting and review assistant for a law firm, working from the real matter data provided below. Draft or review documents professionally and precisely, using the matter facts given -- do not invent facts about the matter you were not given. '+LAW_CITATION_RULE+' Drafting document text itself (letters, contract language, motion structure) is expected and not restricted -- the restriction is specifically on inventing citation numbers, not on legal drafting generally.',
         messages:[{role:'user',content:'Matter context: '+context+'\n\nRequest: '+request}]})});
     var data=await res.json();
+    if(myDraftSeq!==lawDraftSeq)return;
+    var aiErr=lawAiError(data);
+    if(aiErr){$('draftresult').value=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     $('draftresult').value=text;
-  }catch(e){$('draftresult').value='Could not connect to Claude. Check your connection and try again.';}
+  }catch(e){
+    if(myDraftSeq!==lawDraftSeq)return;
+    $('draftresult').value='Could not connect to Claude. Check your connection and try again.';
+  }
 }
 async function saveDraftAsDocument(){
   var matterId=$('draftmatter').value;
@@ -2159,15 +2225,23 @@ async function reviewDocument(docId){
   closeReviewPicker();
   var d=matterDocs().find(function(x){return x.id===docId;});if(!d)return;
   $('draftresult').value='Reviewing "'+d.title+'"...';
+  lawDraftSeq++;
+  var myDraftSeq=lawDraftSeq;
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:800,
         system:'You are reviewing a legal document for a law firm. Give specific, actionable feedback (clarity, structure, missing elements, risk flags) -- do not rewrite the whole document unless asked. '+LAW_CITATION_RULE,
         messages:[{role:'user',content:'Please review this document:\n\n'+d.content_text}]})});
     var data=await res.json();
+    if(myDraftSeq!==lawDraftSeq)return;
+    var aiErr=lawAiError(data);
+    if(aiErr){$('draftresult').value=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     $('draftresult').value='--- REVIEW OF: '+d.title+' ---\n\n'+text;
-  }catch(e){$('draftresult').value='Could not connect to Claude. Check your connection and try again.';}
+  }catch(e){
+    if(myDraftSeq!==lawDraftSeq)return;
+    $('draftresult').value='Could not connect to Claude. Check your connection and try again.';
+  }
 }
 function rDrafting(){fillMatterSelects();}
 
@@ -2603,7 +2677,14 @@ async function runCitatorSearch(){
     var opinionId=r.opinions&&r.opinions[0]?r.opinions[0].id:null;
     var citation=(r.citation&&r.citation[0])||'';
     return '<div class="srow"><span class="slbl">'+H(r.caseName)+(citation?' -- '+H(citation):'')+' ('+H(r.court||'--')+', '+(r.dateFiled?fdate(r.dateFiled):'--')+')</span>'+
-      '<span><button class="btn bo bs" onclick="openCitatorCase('+r.cluster_id+','+(opinionId||'null')+',\''+jsEscape(r.caseName)+'\',\''+jsEscape(citation)+'\')">View Citator Report</button></span></div>';
+      // FIXED 2026-08-09: jsEscape() alone only makes the value safe as a
+      // JS single-quoted string literal (escapes \ and ') -- it leaves a
+      // literal " untouched, which can break out of this onclick="..."
+      // double-quoted HTML attribute early. H() applied on top correctly
+      // HTML-attribute-escapes the already-JS-escaped string without
+      // disturbing it: &#39; decodes back to a literal ' at parse time, so
+      // the JS engine still sees the same \' sequence jsEscape produced.
+      '<span><button class="btn bo bs" onclick="openCitatorCase('+r.cluster_id+','+(opinionId||'null')+',\''+H(jsEscape(r.caseName))+'\',\''+H(jsEscape(citation))+'\')">View Citator Report</button></span></div>';
   }).join('');
 }
 async function openCitatorCase(clusterId,opinionId,caseName,citation){

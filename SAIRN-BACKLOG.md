@@ -3,6 +3,34 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNlaw trust disbursement needs a real server-side atomic check
+
+**Logged:** 2026-08-09
+
+**What:** `saveTrustTransaction()`'s disbursement balance check
+(amount cannot exceed the client's trust balance) reads a local
+snapshot via `clientLedgerBalance()` and, if it passes, writes the new
+disbursement. This has zero race window on a single device/session
+(no `await` between the read and the write) but cannot close a
+cross-device race: two staff on two different sessions could each
+read the same pre-disbursement balance, both pass the check
+independently, and both write -- a real over-disbursement of client
+trust funds, which is a bar-discipline / IOLTA compliance matter, not
+just a data-integrity bug.
+
+**Why deferred:** Needs a real server-side atomic check-and-write on
+the trust-transaction resource (reject the write if the balance would
+go negative as of the moment the server actually processes it, not as
+of when the client last read it) -- same scope-class as the SAIRNlegacy
+reservation lock and SAIRNbuild server-sync gaps above, not a quick
+patch.
+
+**Done looks like:** The disbursement write goes through a server
+route that atomically re-validates the balance at write time and
+rejects the transaction if it would go negative, with the client
+showing the real rejection reason -- not just a client-side pre-check
+with an honest limitation comment bolted on.
+
 ## SAIRNlegacy merchandise reservation needs a real server-side lock
 
 **Logged:** 2026-08-09
