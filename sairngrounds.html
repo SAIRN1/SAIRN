@@ -1644,12 +1644,14 @@ async function sendDesignToQuote(){
   var quotes=ld('grd_quotes',[]);
   var qrec={id:'Q-'+Date.now(),property_id:rec.property_id,lines:lines,status:'Draft',valid:daysFromNow(30)};
   quotes.push(qrec);st('grd_quotes',quotes);
-  grdData('write','quotes',qrec);
+  var quoteSyncResult=await grdData('write','quotes',qrec);
   rec.quote_id=qrec.id;
-  var syncResult=await saveDesignRecord(rec);
+  var designSyncResult=await saveDesignRecord(rec);
   rQuotes();updateApprovalUI(rec);
   var sendBtn=$('dw-send-quote-btn');sendBtn.disabled=true;sendBtn.textContent='Sent to Quoting ('+qrec.id+')';
-  toast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Sent to Quoting as draft '+qrec.id+' locally -- the design record itself did not sync to the server, try again with a connection'),syncResult?4000:7000);
+  var bothSynced=quoteSyncResult&&designSyncResult;
+  var whatFailed=quoteSyncResult?'the design record':(designSyncResult?'the quote':'the quote and the design record');
+  toast(bothSynced?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Sent to Quoting as draft '+qrec.id+' locally -- server sync failed for '+whatFailed+', try again with a connection'),bothSynced?4000:7000);
 }
 // Informational only, mirrors sairnLoadWeather()'s go/no-go logic
 // (duplicated ~10 lines rather than refactored into a shared helper --
