@@ -860,6 +860,14 @@ var VALID=['SB-','SD-','DEMO-','SAIRN-','BIZ-'];
 // below). pbuf (keypad entry buffer) retired with it; eid is unrelated
 // (employee-modal edit-id tracking, still live, do not remove).
 var eid=null,prole='owner',aiHist=[];
+// Serializes AI exchanges: aiHist requires strict user/assistant alternation
+// per Anthropic's Messages API, and callAI()'s tool-use round trip pushes a
+// 'user' turn mid-flight (the tool_result) before the assistant's final
+// reply -- a second question sent while one is in flight would push another
+// 'user' turn on top of that and desync the alternation, causing a 400 on
+// the next call. Set true at the start of callAI(), reset on every terminal
+// path (see finish() and both .catch blocks in callAI()).
+var sbAiBusy=false;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -1515,11 +1523,12 @@ function rPerf(){
   $('pftbody').innerHTML=p.map(function(x){var sc={Scheduled:'bb',Upcoming:'bw',Completed:'bg'}[x.status]||'bx';return'<tr><td><strong>'+H(x.emp)+'</strong></td><td>'+H(x.type)+'</td><td>'+fdate(x.due)+'</td><td>'+H(x.rev)+'</td><td>'+(x.score&&x.score!=='--'?'<strong>'+x.score+'/5.0</strong>':'--')+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast(\'Review form - next build\')">Start</button></td></tr>';}).join('');
 }
 
-function sendAI(){var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
+function sendAI(){if(sbAiBusy){toast('Please wait for the current response first');return;}var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
 function askAI(q){$('ainp').value=q;sendAI();}
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Conversation cleared.</div>';}
 function addMsg(t,role){var c=$('achat');var d=document.createElement('div');d.className=role==='u'?'amu':'ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
 function callAI(msg){
+  sbAiBusy=true;
   var emps=ld('sb_emps',[]);
   var ctx='You are the AI business operations assistant for SAIRNbiz, used by Pinnacle Stone & Design in Westlake, OH. They have '+emps.length+' employees, operate a stone fabrication shop, and use SAIRNbiz for HR and accounting. Be concise, practical, and industry-specific. No fluff. If you use a tool and it returns an error or "not authorized," say so plainly instead of guessing an answer.';
   var sharedCtx=(typeof buildSbSharedCompanyContext==='function')?buildSbSharedCompanyContext():'';
@@ -1533,6 +1542,7 @@ function callAI(msg){
   // this session; must not regress to "remove the last .ama in the DOM".
   var thinkingEl=addMsg('Thinking...','a');
   function finish(replyText){
+    sbAiBusy=false;
     if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
     aiHist.push({role:'assistant',content:replyText});
     addMsg(replyText,'a');
@@ -1540,18 +1550,26 @@ function callAI(msg){
   fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10),tools:toolDefs})})
   .then(function(r){return r.json();}).then(function(d){
     var blocks=(d&&d.content)||[];
-    var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
-    if(!toolUse){
+    var toolUses=blocks.filter(function(b){return b.type==='tool_use';});
+    if(!toolUses.length){
       var rep=(blocks[0]&&blocks[0].text)||'No response.';
       finish(rep);
       return;
     }
-    var outcome=sbExecuteTool(toolUse.name,prole);
-    var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error);
-    // Claude requires the assistant turn that requested the tool to be
+    // Every tool_use in the assistant turn needs its own tool_result -- the
+    // API requires the full set to be answered in ONE following user turn,
+    // not just the first one, or the next call 400s (contract violation,
+    // not a real connection error, even though it would land in the
+    // second fetch's .catch and get mislabeled as one if left unhandled).
+    var toolResults=toolUses.map(function(toolUse){
+      var outcome=sbExecuteTool(toolUse.name,prole);
+      var content=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error);
+      return {type:'tool_result',tool_use_id:toolUse.id,content:content};
+    });
+    // Claude requires the assistant turn that requested the tool(s) to be
     // present in history before the tool_result turn that answers it.
     aiHist.push({role:'assistant',content:blocks});
-    aiHist.push({role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]});
+    aiHist.push({role:'user',content:toolResults});
     fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
     .then(function(r2){return r2.json();}).then(function(d2){
       var rep2=(d2.content&&d2.content[0]&&d2.content[0].text)||'No response.';
@@ -1560,6 +1578,7 @@ function callAI(msg){
       finish('Could not reach Claude for the final answer. Connection error.');
     });
   }).catch(function(){
+    sbAiBusy=false;
     if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
     addMsg('Connection error.','a');
   });
