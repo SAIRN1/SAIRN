@@ -884,6 +884,17 @@ label.chk input{width:auto;}
 var APP_ID='sairndesign';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
 var PROXY='https://sairn.vercel.app/api/claude';
+// Added (2026-08-09 audit): api/claude.js returns HTTP 200 with a body like
+// {error:'demo_limit'} or {error:{message:'...'}} on failure -- res.ok is
+// true either way. Same two-shape check used elsewhere on the platform.
+function sdnAiError(data){
+  if(!data||!data.error) return null;
+  if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.indexOf('limit')!==-1)){
+    return 'Demo limit reached for today -- try again tomorrow or contact michael@sairn.com for a license.';
+  }
+  if(data.error&&data.error.message) return data.error.message;
+  return typeof data.error==='string'?data.error:'AI request failed';
+}
 
 // Same "today, as YYYY-MM-DD, LOCAL not UTC" fix already applied platform-
 // wide (StoneDesk/SAIRNbuild/SAIRNgrounds/SAIRNscape all hit and fixed the
@@ -1137,7 +1148,9 @@ function csv(kind){
     name='samples';
   }else if(kind==='reportspl'){
     rows=[['Project','Client','Revenue','Cost','Margin','Margin %']].concat(projects().map(function(p){
-      var pjInvoices=invoices().filter(function(i){return i.project_id===p.id;});
+      // FIXED 2026-08-09: excludes Draft invoices (never sent to the
+      // client) from "Revenue" -- same fix as rInvoicing()/rReports().
+      var pjInvoices=invoices().filter(function(i){return i.project_id===p.id&&i.status!=='Draft';});
       var revenue=pjInvoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0);
       var cost=pjInvoices.reduce(function(s,i){return s+(Number(i.cost_basis)||0);},0);
       return [p.name,projectClientName(p),revenue,cost,revenue-cost,revenue>0?Math.round((revenue-cost)/revenue*100):0];
@@ -1161,6 +1174,17 @@ async function sendAI(){
   if(chat.querySelector('div[style*="text-align:center"]'))chat.innerHTML='';
   chat.innerHTML+='<div class="amu">'+H(q)+'</div>';
   chat.scrollTop=chat.scrollHeight;
+  // FIXED 2026-08-09: aiHist.push({role:'user',...}) happens synchronously
+  // per send, but the paired aiHist.push({role:'assistant',...}) used to
+  // happen only when THAT request's fetch resolved -- landing in whichever
+  // order responses arrive, not the order questions were sent. Two fast
+  // messages where the second's response arrives first produced
+  // [user,user,assistant2,assistant1] instead of correctly alternating,
+  // which can break the next request against an API that expects strict
+  // role alternation. Recording this request's own user-turn index and
+  // splicing the assistant reply back in right after it (not always at
+  // the end) keeps aiHist correctly ordered regardless of resolve order.
+  var myUserIdx=aiHist.length;
   aiHist.push({role:'user',content:q});
   var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
@@ -1170,9 +1194,11 @@ async function sendAI(){
         system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical.',
         messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
     var data=await res.json();
+    var aiErr=sdnAiError(data);
+    if(aiErr){thinking.textContent=aiErr;chat.scrollTop=chat.scrollHeight;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     thinking.textContent=text;
-    aiHist.push({role:'assistant',content:text});
+    aiHist.splice(myUserIdx+1,0,{role:'assistant',content:text});
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
   chat.scrollTop=chat.scrollHeight;
 }
@@ -1188,8 +1214,13 @@ async function sendAI(){
 function specSkuConflict(sku,excludeId){
   sku=(sku||'').trim().toLowerCase();
   if(!sku)return null;
+  // FIXED 2026-08-09: s.sku assumed always present as a string. sdnHydrateAll()
+  // merges server rows with zero shape validation -- a malformed hydrated
+  // record with a missing sku would throw an uncaught TypeError here,
+  // aborting whatever save triggered this check BEFORE its st() write ever
+  // ran, with zero feedback to the user (not even a toast).
   return specItems().find(function(s){
-    return s.id!==excludeId && s.sku.trim().toLowerCase()===sku && s.reserved===true;
+    return s.id!==excludeId && (s.sku||'').trim().toLowerCase()===sku && s.reserved===true;
   })||null;
 }
 
@@ -1209,7 +1240,7 @@ function specDiscountHint(){
   var vendorName=($('spvendor').value||'').trim().toLowerCase();
   var listPrice=Number($('splistprice').value)||0;
   if(!vendorName){hintEl.textContent='';return;}
-  var vendor=vendors().find(function(v){return v.name.toLowerCase()===vendorName;});
+  var vendor=vendors().find(function(v){return (v.name||'').toLowerCase()===vendorName;});
   if(!vendor){hintEl.textContent='';return;}
   var disc=applicableDiscount(vendor.id,'');
   if(!disc){hintEl.textContent='No trade discount on file for '+H(vendor.name)+'.';return;}
@@ -1315,6 +1346,8 @@ async function runComplianceCheck(){
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:400,system:system,messages:[{role:'user',content:userMsg}]})});
     var data=await res.json();
     if(myComplianceSeq!==complianceCheckSeq||$('specproject').value!==pjId)return;
+    var aiErr=sdnAiError(data);
+    if(aiErr){out.innerHTML='<div style="color:var(--danger)">'+H(aiErr)+' Deterministic findings: '+(findings.length?H(findings.join(' ')):'none.')+'</div>';return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     out.innerHTML='<div style="font-weight:700;margin-bottom:8px;'+(findings.length?'color:var(--danger)':'color:var(--ok)')+'">'+(findings.length?findings.length+' deterministic finding(s)':'No deterministic budget/lead-time conflicts')+'</div>'+
       (findings.length?'<ul style="margin:0 0 10px 18px;padding:0">'+findings.map(function(f){return '<li style="margin-bottom:4px">'+H(f)+'</li>';}).join('')+'</ul>':'')+
@@ -1699,7 +1732,7 @@ function rClients(){
   $('c-avgbudget').textContent=fmt(pj.length?pj.reduce(function(s,p){return s+(Number(p.budget)||0);},0)/pj.length:0);
   $('c-completed').textContent=pj.filter(function(p){return p.status==='Complete';}).length;
   var q=($('csrch').value||'').toLowerCase();
-  var filtered=cl.filter(function(c){return !q||c.name.toLowerCase().indexOf(q)!==-1||(c.company||'').toLowerCase().indexOf(q)!==-1;});
+  var filtered=cl.filter(function(c){return !q||(c.name||'').toLowerCase().indexOf(q)!==-1||(c.company||'').toLowerCase().indexOf(q)!==-1;});
   var statusColors={Lead:'bw',Active:'bg',Completed:'bx'};
   var ctb=$('ctbody');
   ctb.innerHTML=filtered.length?filtered.map(function(c){
@@ -1752,7 +1785,7 @@ function rVendors(){
   $('v-total').textContent=list.length;
   $('v-leadtime').textContent=(list.length?Math.round(list.reduce(function(s,v){return s+(Number(v.lead_time_typical_weeks)||0);},0)/list.length):0)+' wks';
   var q=($('vsrch').value||'').toLowerCase();
-  var filtered=list.filter(function(v){return !q||v.name.toLowerCase().indexOf(q)!==-1||v.category.toLowerCase().indexOf(q)!==-1;});
+  var filtered=list.filter(function(v){return !q||(v.name||'').toLowerCase().indexOf(q)!==-1||(v.category||'').toLowerCase().indexOf(q)!==-1;});
   var tb=$('vtbody');
   tb.innerHTML=filtered.length?filtered.map(function(v){
     return '<tr><td>'+H(v.name)+'</td><td>'+H(v.category)+'</td><td>'+H(v.contact_name||'--')+'</td><td>'+H(v.phone||'--')+'</td>'+
@@ -2091,6 +2124,14 @@ function invoiceAmountPreview(){
   $('invamount-preview').textContent=fmt(p?proposalTotal(p):0);
 }
 document.addEventListener('change',function(e){if(e.target&&e.target.id==='invproposal')invoiceAmountPreview();});
+// NOTED 2026-08-09 (audit): the already-invoiced check below is synchronous
+// with no await between the read and the write, so it cannot race with
+// ITSELF on one device/session. It CANNOT close a cross-device race (two
+// staff, two sessions, each hydrating before the other's invoice synced)
+// -- that needs a real server-side unique constraint on proposal_id for
+// sdn_invoices, which does not exist yet. No client-side timing change can
+// close that gap; flagged rather than presented as airtight. Real fix
+// logged in SAIRN-BACKLOG.md.
 async function saveInvoice(){
   var pid=$('invproposal').value;
   var p=proposals().find(function(x){return x.id===pid;});
@@ -2123,7 +2164,13 @@ function rInvoicing(){
   $('inv-outstanding').textContent=fmt(outstanding.reduce(function(s,i){return s+(Number(i.amount)||0);},0));
   $('inv-outstanding-sub').textContent=outstanding.length+' invoice(s)';
   $('inv-paid').textContent=fmt(paid.reduce(function(s,i){return s+(Number(i.amount)||0);},0));
-  $('inv-margin').textContent=fmt(list.reduce(function(s,i){return s+((Number(i.amount)||0)-(Number(i.cost_basis)||0));},0));
+  // FIXED 2026-08-09: was summing ALL invoices including status 'Draft'
+  // (never sent to the client) into a KPI labeled "Total Margin Invoiced" --
+  // a Draft contributed identically to a Paid one, though it hasn't been
+  // invoiced to anyone yet. Now excludes Draft, matching what "Invoiced"
+  // actually means.
+  var actuallyInvoiced=list.filter(function(i){return i.status!=='Draft';});
+  $('inv-margin').textContent=fmt(actuallyInvoiced.reduce(function(s,i){return s+((Number(i.amount)||0)-(Number(i.cost_basis)||0));},0));
   var statusColors={Draft:'bx',Sent:'bb',Paid:'bg',Overdue:'br'};
   var tb=$('invtbody');
   tb.innerHTML=list.length?list.slice().reverse().map(function(i){
@@ -2587,7 +2634,11 @@ function rDiscounts(){
 // KPI in this app.
 function rReports(){
   var pl=projects().map(function(p){
-    var pjInvoices=invoices().filter(function(i){return i.project_id===p.id;});
+    // FIXED 2026-08-09: was including Draft invoices (never sent to the
+    // client) in "Total Revenue Invoiced"/"Total Margin" -- a Draft
+    // contributed identically to a Paid one, though it hasn't actually
+    // been invoiced to anyone yet.
+    var pjInvoices=invoices().filter(function(i){return i.project_id===p.id&&i.status!=='Draft';});
     var revenue=pjInvoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0);
     var cost=pjInvoices.reduce(function(s,i){return s+(Number(i.cost_basis)||0);},0);
     return {project:p,revenue:revenue,cost:cost,margin:revenue-cost,marginPct:revenue>0?Math.round((revenue-cost)/revenue*100):0};

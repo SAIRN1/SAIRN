@@ -3,6 +3,26 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNdesign invoicing needs a real server-side uniqueness constraint
+
+**Logged:** 2026-08-09
+
+**What:** `saveInvoice()`'s "already invoiced" check reads a local
+snapshot of `invoices()` and, if no existing invoice references the
+proposal, writes a new one. Zero race window on one device (no
+`await` between read and write), but two staff on two different
+devices/sessions could each pass the check before either's write has
+synced, producing two invoices for the same approved proposal.
+
+**Why deferred:** Needs a real server-side unique constraint on
+`proposal_id` for the `sdn_invoices` resource (or an upsert-by-
+proposal-id write), same scope-class as the other server-sync/
+atomicity gaps in this backlog.
+
+**Done looks like:** The invoice write goes through a server route
+that rejects a second invoice for a proposal that already has one,
+atomically, rather than relying on a client-side pre-check.
+
 ## SAIRNlaw trust disbursement needs a real server-side atomic check
 
 **Logged:** 2026-08-09
