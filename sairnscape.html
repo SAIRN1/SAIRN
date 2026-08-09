@@ -1080,6 +1080,14 @@ if (document.readyState === 'loading') {
 #scp-gate .gback{font-size:12px;color:#94A3B8;margin-top:14px;cursor:pointer;}
 #scp-role{position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#22C55E);display:none;align-items:center;justify-content:center;z-index:2098;}
 #scp-role.on{display:flex;}
+/* TRIAL GATE (2026-08-09) -- same proven pattern as stonedesk.html's checkTrialGate() */
+#trial-expired-screen{position:fixed;inset:0;background:linear-gradient(135deg,#16A34A,#22C55E);display:none;align-items:center;justify-content:center;z-index:2099;}
+#trial-expired-screen.on{display:flex;}
+#trial-expired-screen .gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+#trial-expired-screen .glogo{font-size:20px;font-weight:800;color:#15803D;letter-spacing:-1px;margin-bottom:4px;}
+#trial-expired-screen .gsub{color:#64748B;font-size:13px;margin-bottom:20px;}
+#trial-expired-screen .gbtn{width:100%;background:#22C55E;color:#fff;border:none;border-radius:8px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;min-height:44px;}
+#trial-expired-screen .gbtn:hover{background:#15803D;}
 #scp-role .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
 #scp-role .plogo{font-size:24px;font-weight:800;color:#15803D;margin-bottom:4px;}
 .scp-plabel{font-size:12px;font-weight:600;color:#64748B;margin-bottom:6px;display:block;text-align:left}
@@ -1217,6 +1225,19 @@ if (document.readyState === 'loading') {
         <a href="#" onclick="scpShowLogin();return false;" style="color:#94A3B8">Back to sign in</a>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="trial-expired-screen">
+  <div class="gbox">
+    <div style="font-size:36px;margin-bottom:10px">&#9203;</div>
+    <div class="glogo">Your 30-day trial has ended</div>
+    <div class="gsub">
+      Thanks for trying SAIRNscape. Your trial started on <strong id="trial-start-display">&mdash;</strong>
+      and access to the full app is now paused. Email us to unlock unlimited access &mdash; no data has been lost.
+    </div>
+    <a class="gbtn" style="display:block;text-decoration:none;box-sizing:border-box" href="mailto:michael@sairn.com?subject=SAIRNscape%20trial%20upgrade">Email michael@sairn.com to Upgrade</a>
+    <div style="font-size:11px;color:#94A3B8;margin-top:14px">Your trial data is safe and will be here when you upgrade.</div>
   </div>
 </div>
 
@@ -1680,8 +1701,34 @@ var SCP_EMPLOYEE_KEY= 'scp_session_employee_id';
 
 function scpAuthErr(body,fallback){return (body&&body.error&&body.error.message)||fallback;}
 
+// 30-day trial gate, keyed off a real timestamp written on first-ever
+// login (never a fabricated countdown). Checked on every successful
+// login, before the app is revealed. Same proven pattern as
+// stonedesk.html's checkTrialGate().
+function checkTrialGate(){
+  var TRIAL_KEY='scp_trial_start';
+  var TRIAL_DAYS=30;
+  var startMs=parseInt(localStorage.getItem(TRIAL_KEY),10);
+  if(!startMs||isNaN(startMs)){
+    startMs=Date.now();
+    try{localStorage.setItem(TRIAL_KEY,String(startMs));}catch(e){}
+  }
+  var daysElapsed=Math.floor((Date.now()-startMs)/86400000);
+  if(daysElapsed<TRIAL_DAYS)return true;
+  var scr=document.getElementById('trial-expired-screen');
+  if(scr){
+    scr.classList.add('on');
+    var dEl=document.getElementById('trial-start-display');
+    if(dEl)dEl.textContent=new Date(startMs).toLocaleDateString();
+  }
+  scp$('scp-role').classList.remove('on');
+  return false;
+}
+window.checkTrialGate=checkTrialGate;
+
 function scpApplyLoggedIn(role){
   scpSt('scp_role',role);
+  if(!checkTrialGate())return;
   scp$('scp-role').classList.remove('on');scp$('scp-app').classList.add('on');
   scp$('scp-huser').textContent=role.charAt(0).toUpperCase()+role.slice(1).replace('_',' ');
   scpInit();
