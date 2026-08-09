@@ -1285,6 +1285,17 @@
         var PINS = { coder: '1234', biller: '2345', auditor: '3456', admin: '4567' };
         var pbuf = '';
         var currentRole = null;
+        // RBAC enforcement (2026-08-09 audit): currentRole was set on PIN entry
+        // but never read anywhere -- all 4 roles had identical destructive access.
+        // Minimal, defensible baseline given no other role/permission spec exists
+        // in this app: only Compliance Admin (the role the UI itself presents as
+        // the elevated one) can delete records. Coder/Biller/Auditor keep full
+        // add/view/export access -- this only gates the 15 remove*() functions.
+        function requireAdminForDelete(){
+            if (currentRole === 'admin') return true;
+            showToast('Only Compliance Admin can delete records');
+            return false;
+        }
 
         async function gateGo() {
             var keyEl = document.getElementById('gkey');
@@ -1514,7 +1525,7 @@ How to answer:
             saveRevenueEntries(seed);
             return seed;
         }
-        function saveRevenueEntries(list){ try { localStorage.setItem('sc_revenue', JSON.stringify(list)); } catch(e){} }
+        function saveRevenueEntries(list){ try { localStorage.setItem('sc_revenue', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderRevenue(){
             var list = getRevenueEntries();
             var tbody = document.getElementById('revenue-tbody');
@@ -1544,6 +1555,7 @@ How to answer:
             }
         }
         function removeRevenueEntry(id){
+            if (!requireAdminForDelete()) return;
             var list = getRevenueEntries().filter(function(r){ return r.id !== id; });
             saveRevenueEntries(list);
             renderRevenue();
@@ -1556,11 +1568,11 @@ How to answer:
             if (isNaN(charge)) { showToast('Charge amount required'); return; }
             var list = getRevenueEntries();
             list.push({id:'rv'+Date.now(), payer:payer, charge:charge, collected:isNaN(collected)?0:collected, date:date||scLocalToday()});
-            saveRevenueEntries(list);
+            var saved = saveRevenueEntries(list);
             renderRevenue();
             document.getElementById('rev-add-charge').value = '';
             document.getElementById('rev-add-collected').value = '';
-            showToast('Entry added');
+            showToast(saved ? 'Entry added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getDenialEntries(){
@@ -1575,7 +1587,7 @@ How to answer:
             saveDenialEntries(seed);
             return seed;
         }
-        function saveDenialEntries(list){ try { localStorage.setItem('sc_denial', JSON.stringify(list)); } catch(e){} }
+        function saveDenialEntries(list){ try { localStorage.setItem('sc_denial', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function statusBadgeClass(status){
             if (status==='Resolved') return 'status-clean';
             if (status==='Denied') return 'status-denied';
@@ -1609,6 +1621,7 @@ How to answer:
             if (typeof renderDenialPredictiveInsights === 'function') renderDenialPredictiveInsights();
         }
         function removeDenialEntry(id){
+            if (!requireAdminForDelete()) return;
             saveDenialEntries(getDenialEntries().filter(function(d){return d.id!==id;}));
             renderDenial();
             renderDashboard();
@@ -1622,14 +1635,14 @@ How to answer:
             if (!code || isNaN(count) || isNaN(amount)) { showToast('Code, count, and amount required'); return; }
             var list = getDenialEntries();
             list.push({id:'dn'+Date.now(), code:code, cause:cause||'—', count:count, amount:amount, status:status});
-            saveDenialEntries(list);
+            var saved = saveDenialEntries(list);
             renderDenial();
             renderDashboard();
             document.getElementById('den-add-code').value = '';
             document.getElementById('den-add-cause').value = '';
             document.getElementById('den-add-count').value = '';
             document.getElementById('den-add-amount').value = '';
-            showToast('Denial record added');
+            showToast(saved ? 'Denial record added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getComplianceItems(){
@@ -1642,7 +1655,7 @@ How to answer:
             saveComplianceItems(seed);
             return seed;
         }
-        function saveComplianceItems(list){ try { localStorage.setItem('sc_compliance', JSON.stringify(list)); } catch(e){} }
+        function saveComplianceItems(list){ try { localStorage.setItem('sc_compliance', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderCompliance(){
             var list = getComplianceItems();
             var tbody = document.getElementById('compliance-tbody');
@@ -1668,6 +1681,7 @@ How to answer:
             }
         }
         function removeComplianceItem(id){
+            if (!requireAdminForDelete()) return;
             saveComplianceItems(getComplianceItems().filter(function(c){return c.id!==id;}));
             renderCompliance();
         }
@@ -1678,10 +1692,10 @@ How to answer:
             if (!item) { showToast('Item description required'); return; }
             var list = getComplianceItems();
             list.push({id:'cp'+Date.now(), item:item, cat:cat, status:status, date:scLocalToday()});
-            saveComplianceItems(list);
+            var saved = saveComplianceItems(list);
             renderCompliance();
             document.getElementById('comp-add-item').value = '';
-            showToast('Compliance item added');
+            showToast(saved ? 'Compliance item added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getFraudAlerts(){
@@ -1693,7 +1707,7 @@ How to answer:
             saveFraudAlerts(seed);
             return seed;
         }
-        function saveFraudAlerts(list){ try { localStorage.setItem('sc_fraud', JSON.stringify(list)); } catch(e){} }
+        function saveFraudAlerts(list){ try { localStorage.setItem('sc_fraud', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderFraud(){
             var list = getFraudAlerts();
             var tbody = document.getElementById('fraud-tbody');
@@ -1718,6 +1732,7 @@ How to answer:
             }
         }
         function removeFraudAlert(id){
+            if (!requireAdminForDelete()) return;
             saveFraudAlerts(getFraudAlerts().filter(function(f){return f.id!==id;}));
             renderFraud();
             renderDashboard();
@@ -1730,13 +1745,13 @@ How to answer:
             if (!desc || isNaN(conf) || isNaN(amount)) { showToast('Description, confidence, and amount required'); return; }
             var list = getFraudAlerts();
             list.push({id:'fr'+Date.now(), desc:desc, conf:conf, amount:amount, status:status});
-            saveFraudAlerts(list);
+            var saved = saveFraudAlerts(list);
             renderFraud();
             renderDashboard();
             document.getElementById('frd-add-desc').value = '';
             document.getElementById('frd-add-conf').value = '';
             document.getElementById('frd-add-amount').value = '';
-            showToast('Fraud alert logged');
+            showToast(saved ? 'Fraud alert logged' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function renderDashboard(){
@@ -1747,9 +1762,16 @@ How to answer:
             var cleanRate = claimsVolume > 0 ? (cleanCount/claimsVolume*100).toFixed(1)+'%' : '—';
 
             var denials = getDenialEntries();
-            var totalDenialCount = denials.reduce(function(s,d){return s+d.count;},0);
             var pendingDenialAmount = denials.filter(function(d){return d.status!=='Resolved';}).reduce(function(s,d){return s+d.amount;},0);
-            var denialRate = claimsVolume > 0 ? (totalDenialCount/claimsVolume*100).toFixed(1)+'%' : '—';
+            // Fixed (2026-08-09 audit): was dividing totalDenialCount (sum of the
+            // Denial panel's aggregate per-reason counts, e.g. 118 with seed data --
+            // a different, larger-scale dataset) by claimsVolume (the small Claims
+            // table's own row count), producing a mathematically impossible >100%
+            // rate. Denial Rate is now scoped to the SAME dataset as claimsVolume/
+            // cleanRate above -- claims actually marked Denied in the Claims table
+            // -- instead of mixing two unrelated-scope counters.
+            var deniedCount = claimsTable ? claimsTable.querySelectorAll('tbody .status-denied').length : 0;
+            var denialRate = claimsVolume > 0 ? (deniedCount/claimsVolume*100).toFixed(1)+'%' : '—';
 
             var fraud = getFraudAlerts();
             var openFraud = fraud.filter(function(f){return f.status==='Under Review'||f.status==='Flagged';}).length;
@@ -1760,7 +1782,7 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Claims Volume</div><div class="kpi-value">'+claimsVolume+'</div><div class="kpi-detail">Logged in Claims panel</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Clean Claim Rate</div><div class="kpi-value">'+cleanRate+'</div><div class="kpi-detail">Of logged claims</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Denial Amount Pending</div><div class="kpi-value">$'+pendingDenialAmount.toLocaleString()+'</div><div class="kpi-detail">From Denial panel, unresolved</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Denial Rate</div><div class="kpi-value">'+denialRate+'</div><div class="kpi-detail">Denials logged vs claims logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Denial Rate</div><div class="kpi-value">'+denialRate+'</div><div class="kpi-detail">Claims marked Denied, of claims logged</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Fraud Alerts Open</div><div class="kpi-value">'+openFraud+'</div><div class="kpi-detail">From Fraud panel</div></div>';
             }
         }
@@ -1774,7 +1796,7 @@ How to answer:
             saveScrubEntries(seed);
             return seed;
         }
-        function saveScrubEntries(list){ try { localStorage.setItem('sc_prebill', JSON.stringify(list)); } catch(e){} }
+        function saveScrubEntries(list){ try { localStorage.setItem('sc_prebill', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderPrebill(){
             var list = getScrubEntries();
             var tbody = document.getElementById('prebill-tbody');
@@ -1799,6 +1821,7 @@ How to answer:
             }
         }
         function removeScrubEntry(id){
+            if (!requireAdminForDelete()) return;
             saveScrubEntries(getScrubEntries().filter(function(p){return p.id!==id;}));
             renderPrebill();
         }
@@ -1811,13 +1834,13 @@ How to answer:
             if (!claim || !error) { showToast('Claim ref and error type required'); return; }
             var list = getScrubEntries();
             list.push({id:'pb'+Date.now(), claim:claim, error:error, value:isNaN(value)?0:value, time:isNaN(time)?0:time, status:status});
-            saveScrubEntries(list);
+            var saved = saveScrubEntries(list);
             renderPrebill();
             document.getElementById('pb-add-claim').value = '';
             document.getElementById('pb-add-error').value = '';
             document.getElementById('pb-add-value').value = '';
             document.getElementById('pb-add-time').value = '';
-            showToast('Scrub entry added');
+            showToast(saved ? 'Scrub entry added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getHccEntries(){
@@ -1829,7 +1852,7 @@ How to answer:
             saveHccEntries(seed);
             return seed;
         }
-        function saveHccEntries(list){ try { localStorage.setItem('sc_hcc', JSON.stringify(list)); } catch(e){} }
+        function saveHccEntries(list){ try { localStorage.setItem('sc_hcc', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderHcc(){
             var list = getHccEntries();
             var tbody = document.getElementById('hcc-tbody');
@@ -1856,6 +1879,7 @@ How to answer:
             }
         }
         function removeHccEntry(id){
+            if (!requireAdminForDelete()) return;
             saveHccEntries(getHccEntries().filter(function(h){return h.id!==id;}));
             renderHcc();
         }
@@ -1867,12 +1891,12 @@ How to answer:
             if (!cat || isNaN(value)) { showToast('Category and value required'); return; }
             var list = getHccEntries();
             list.push({id:'hc'+Date.now(), cat:cat, patient:patient||'—', value:value, status:status});
-            saveHccEntries(list);
+            var saved = saveHccEntries(list);
             renderHcc();
             document.getElementById('hcc-add-cat').value = '';
             document.getElementById('hcc-add-patient').value = '';
             document.getElementById('hcc-add-value').value = '';
-            showToast('HCC entry added');
+            showToast(saved ? 'HCC entry added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getDrgEntries(){
@@ -1884,7 +1908,7 @@ How to answer:
             saveDrgEntries(seed);
             return seed;
         }
-        function saveDrgEntries(list){ try { localStorage.setItem('sc_drg', JSON.stringify(list)); } catch(e){} }
+        function saveDrgEntries(list){ try { localStorage.setItem('sc_drg', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderDrg(){
             var list = getDrgEntries();
             var tbody = document.getElementById('drg-tbody');
@@ -1910,6 +1934,7 @@ How to answer:
             }
         }
         function removeDrgEntry(id){
+            if (!requireAdminForDelete()) return;
             saveDrgEntries(getDrgEntries().filter(function(d){return d.id!==id;}));
             renderDrg();
         }
@@ -1921,12 +1946,12 @@ How to answer:
             if (!code || isNaN(payment)) { showToast('Code and payment required'); return; }
             var list = getDrgEntries();
             list.push({id:'dg'+Date.now(), code:code, patient:patient||'—', tier:tier, payment:payment});
-            saveDrgEntries(list);
+            var saved = saveDrgEntries(list);
             renderDrg();
             document.getElementById('drg-add-code').value = '';
             document.getElementById('drg-add-patient').value = '';
             document.getElementById('drg-add-payment').value = '';
-            showToast('DRG entry added');
+            showToast(saved ? 'DRG entry added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getQueryEntries(){
@@ -1938,7 +1963,7 @@ How to answer:
             saveQueryEntries(seed);
             return seed;
         }
-        function saveQueryEntries(list){ try { localStorage.setItem('sc_query', JSON.stringify(list)); } catch(e){} }
+        function saveQueryEntries(list){ try { localStorage.setItem('sc_query', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderQuery(){
             var list = getQueryEntries();
             var tbody = document.getElementById('query-tbody');
@@ -1964,6 +1989,7 @@ How to answer:
             }
         }
         function removeQueryEntry(id){
+            if (!requireAdminForDelete()) return;
             saveQueryEntries(getQueryEntries().filter(function(q){return q.id!==id;}));
             renderQuery();
         }
@@ -1976,13 +2002,13 @@ How to answer:
             if (!patient || !type) { showToast('Patient and query type required'); return; }
             var list = getQueryEntries();
             list.push({id:'qr'+Date.now(), patient:patient, physician:physician||'—', type:type, value:isNaN(value)?0:value, status:status});
-            saveQueryEntries(list);
+            var saved = saveQueryEntries(list);
             renderQuery();
             document.getElementById('qry-add-patient').value = '';
             document.getElementById('qry-add-physician').value = '';
             document.getElementById('qry-add-type').value = '';
             document.getElementById('qry-add-value').value = '';
-            showToast('Query added');
+            showToast(saved ? 'Query added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getEncoderCodes(){
@@ -1995,7 +2021,7 @@ How to answer:
             saveEncoderCodes(seed);
             return seed;
         }
-        function saveEncoderCodes(list){ try { localStorage.setItem('sc_encoder', JSON.stringify(list)); } catch(e){} }
+        function saveEncoderCodes(list){ try { localStorage.setItem('sc_encoder', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderEncoder(){
             var list = getEncoderCodes();
             var tbody = document.getElementById('encoder-tbody');
@@ -2021,6 +2047,7 @@ How to answer:
             }
         }
         function removeEncoderCode(id){
+            if (!requireAdminForDelete()) return;
             saveEncoderCodes(getEncoderCodes().filter(function(c){return c.id!==id;}));
             renderEncoder();
         }
@@ -2032,12 +2059,12 @@ How to answer:
             if (!code || !desc) { showToast('Code and description required'); return; }
             var list = getEncoderCodes();
             list.push({id:'ec'+Date.now(), code:code, type:type, desc:desc, bundling:bundling});
-            saveEncoderCodes(list);
+            var saved = saveEncoderCodes(list);
             renderEncoder();
             document.getElementById('enc-add-code').value = '';
             document.getElementById('enc-add-desc').value = '';
             document.getElementById('enc-add-bundling').value = '';
-            showToast('Code added');
+            showToast(saved ? 'Code added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getRacEntries(){
@@ -2049,7 +2076,7 @@ How to answer:
             saveRacEntries(seed);
             return seed;
         }
-        function saveRacEntries(list){ try { localStorage.setItem('sc_rac', JSON.stringify(list)); } catch(e){} }
+        function saveRacEntries(list){ try { localStorage.setItem('sc_rac', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderRac(){
             var list = getRacEntries();
             var tbody = document.getElementById('rac-tbody');
@@ -2076,6 +2103,7 @@ How to answer:
             }
         }
         function removeRacEntry(id){
+            if (!requireAdminForDelete()) return;
             saveRacEntries(getRacEntries().filter(function(r){return r.id!==id;}));
             renderRac();
         }
@@ -2086,11 +2114,11 @@ How to answer:
             if (!ref || isNaN(amount)) { showToast('Audit ref and amount required'); return; }
             var list = getRacEntries();
             list.push({id:'ra'+Date.now(), ref:ref, amount:amount, status:status});
-            saveRacEntries(list);
+            var saved = saveRacEntries(list);
             renderRac();
             document.getElementById('rac-add-ref').value = '';
             document.getElementById('rac-add-amount').value = '';
-            showToast('Audit entry added');
+            showToast(saved ? 'Audit entry added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getTelehealthEntries(){
@@ -2102,7 +2130,7 @@ How to answer:
             saveTelehealthEntries(seed);
             return seed;
         }
-        function saveTelehealthEntries(list){ try { localStorage.setItem('sc_telehealth', JSON.stringify(list)); } catch(e){} }
+        function saveTelehealthEntries(list){ try { localStorage.setItem('sc_telehealth', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderTelehealth(){
             var list = getTelehealthEntries();
             var tbody = document.getElementById('telehealth-tbody');
@@ -2128,6 +2156,7 @@ How to answer:
             }
         }
         function removeTelehealthEntry(id){
+            if (!requireAdminForDelete()) return;
             saveTelehealthEntries(getTelehealthEntries().filter(function(t){return t.id!==id;}));
             renderTelehealth();
         }
@@ -2140,13 +2169,13 @@ How to answer:
             if (!claim) { showToast('Claim ref required'); return; }
             var list = getTelehealthEntries();
             list.push({id:'tl'+Date.now(), claim:claim, pos:pos||'—', mod:mod||'—', value:isNaN(value)?0:value, status:status});
-            saveTelehealthEntries(list);
+            var saved = saveTelehealthEntries(list);
             renderTelehealth();
             document.getElementById('th-add-claim').value = '';
             document.getElementById('th-add-pos').value = '';
             document.getElementById('th-add-mod').value = '';
             document.getElementById('th-add-value').value = '';
-            showToast('Telehealth entry added');
+            showToast(saved ? 'Telehealth entry added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getAnesthesiaEntries(){
@@ -2158,7 +2187,7 @@ How to answer:
             saveAnesthesiaEntries(seed);
             return seed;
         }
-        function saveAnesthesiaEntries(list){ try { localStorage.setItem('sc_anesthesia', JSON.stringify(list)); } catch(e){} }
+        function saveAnesthesiaEntries(list){ try { localStorage.setItem('sc_anesthesia', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderAnesthesia(){
             var list = getAnesthesiaEntries();
             var tbody = document.getElementById('anesthesia-tbody');
@@ -2189,6 +2218,7 @@ How to answer:
             }
         }
         function removeAnesthesiaEntry(id){
+            if (!requireAdminForDelete()) return;
             saveAnesthesiaEntries(getAnesthesiaEntries().filter(function(a){return a.id!==id;}));
             renderAnesthesia();
         }
@@ -2200,13 +2230,13 @@ How to answer:
             if (!caseRef || isNaN(base) || isNaN(minutes)) { showToast('Case ref, base units, and minutes required'); return; }
             var list = getAnesthesiaEntries();
             list.push({id:'an'+Date.now(), caseRef:caseRef, base:base, minutes:minutes, qc:qc});
-            saveAnesthesiaEntries(list);
+            var saved = saveAnesthesiaEntries(list);
             renderAnesthesia();
             document.getElementById('an-add-case').value = '';
             document.getElementById('an-add-base').value = '';
             document.getElementById('an-add-minutes').value = '';
             document.getElementById('an-add-qc').value = '';
-            showToast('Anesthesia case added');
+            showToast(saved ? 'Anesthesia case added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getAuthEntries(){
@@ -2222,7 +2252,7 @@ How to answer:
             saveAuthEntries(seed);
             return seed;
         }
-        function saveAuthEntries(list){ try { localStorage.setItem('sc_auth', JSON.stringify(list)); } catch(e){} }
+        function saveAuthEntries(list){ try { localStorage.setItem('sc_auth', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function authStatusFor(exp, today){
             var expDate = new Date(exp+'T00:00:00Z');
             var todayDate = new Date(today+'T00:00:00Z');
@@ -2264,6 +2294,7 @@ How to answer:
             }
         }
         function removeAuthEntry(id){
+            if (!requireAdminForDelete()) return;
             saveAuthEntries(getAuthEntries().filter(function(a){return a.id!==id;}));
             renderAuth();
         }
@@ -2275,13 +2306,13 @@ How to answer:
             if (!authId || !proc || !exp) { showToast('Auth ID, procedure, and expiration required'); return; }
             var list = getAuthEntries();
             list.push({id:'at'+Date.now(), authId:authId, proc:proc, exp:exp, units:isNaN(units)?1:units});
-            saveAuthEntries(list);
+            var saved = saveAuthEntries(list);
             renderAuth();
             document.getElementById('auth-add-id').value = '';
             document.getElementById('auth-add-proc').value = '';
             document.getElementById('auth-add-exp').value = '';
             document.getElementById('auth-add-units').value = '';
-            showToast('Authorization added');
+            showToast(saved ? 'Authorization added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getArEntries(){
@@ -2294,7 +2325,7 @@ How to answer:
             saveArEntries(seed);
             return seed;
         }
-        function saveArEntries(list){ try { localStorage.setItem('sc_ar', JSON.stringify(list)); } catch(e){} }
+        function saveArEntries(list){ try { localStorage.setItem('sc_ar', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function arBucketFor(days){
             if (days <= 30) return '0-30 Days';
             if (days <= 60) return '31-60 Days';
@@ -2329,6 +2360,7 @@ How to answer:
             }
         }
         function removeArEntry(id){
+            if (!requireAdminForDelete()) return;
             saveArEntries(getArEntries().filter(function(a){return a.id!==id;}));
             renderAr();
         }
@@ -2340,12 +2372,12 @@ How to answer:
             if (!patient || isNaN(amount) || isNaN(days)) { showToast('Patient, amount, and days required'); return; }
             var list = getArEntries();
             list.push({id:'ar'+Date.now(), patient:patient, amount:amount, days:days, status:status});
-            saveArEntries(list);
+            var saved = saveArEntries(list);
             renderAr();
             document.getElementById('ar-add-patient').value = '';
             document.getElementById('ar-add-amount').value = '';
             document.getElementById('ar-add-days').value = '';
-            showToast('A/R entry added');
+            showToast(saved ? 'A/R entry added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function getProviderEntries(){
@@ -2359,7 +2391,7 @@ How to answer:
             saveProviderEntries(seed);
             return seed;
         }
-        function saveProviderEntries(list){ try { localStorage.setItem('sc_providers', JSON.stringify(list)); } catch(e){} }
+        function saveProviderEntries(list){ try { localStorage.setItem('sc_providers', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderProviders(){
             var list = getProviderEntries();
             var tbody = document.getElementById('providers-tbody');
@@ -2386,6 +2418,7 @@ How to answer:
             }
         }
         function removeProviderEntry(id){
+            if (!requireAdminForDelete()) return;
             saveProviderEntries(getProviderEntries().filter(function(p){return p.id!==id;}));
             renderProviders();
         }
@@ -2398,13 +2431,13 @@ How to answer:
             if (!name || !specialty) { showToast('Name and specialty required'); return; }
             var list = getProviderEntries();
             list.push({id:'pv'+Date.now(), name:name, specialty:specialty, license:license||'—', cred:cred, perf:isNaN(perf)?0:perf});
-            saveProviderEntries(list);
+            var saved = saveProviderEntries(list);
             renderProviders();
             document.getElementById('prov-add-name').value = '';
             document.getElementById('prov-add-specialty').value = '';
             document.getElementById('prov-add-license').value = '';
             document.getElementById('prov-add-perf').value = '';
-            showToast('Provider added');
+            showToast(saved ? 'Provider added' : 'Could not save -- storage may be full or unavailable, try again');
         }
 
         function filterTable(tableId, searchInputId) {
