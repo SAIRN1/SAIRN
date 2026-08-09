@@ -1,4 +1,4 @@
-"""
+r"""
 duplicate_global_check.py -- flags any top-level function name (or
 window.X=function assignment) declared more than once anywhere in
 stonedesk.html.

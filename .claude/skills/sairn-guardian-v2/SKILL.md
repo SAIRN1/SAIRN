@@ -1,6 +1,6 @@
 ---
 name: sairn-guardian-v2
-description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-07-26 — was listed as 11, missing SAIRNhr and SAIRNacc). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNfuneral, SAIRNmechanical, SAIRNhr, SAIRNacc. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 28 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
+description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-09 — was listed as 11, missing SAIRNhr and SAIRNacc; SAIRNfuneral corrected to SAIRNlegacy, the name it actually shipped under). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNhr, SAIRNacc. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 28 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
 ---
 
 # SAIRN Guardian v2
@@ -252,6 +252,20 @@ githubusercontent.com treatment. An app referenced elsewhere in this same skill
 but absent from its own map is exactly the kind of internal drift Check 0c
 warns against applied to this skill itself — fixed, not left inconsistent.
 
+**Corrected again 2026-08-09** — the same drift class recurred: this table
+still listed a planned `SAIRNfuneral -> sairnfuneral.html` placeholder row
+while the real funeral-home-operations app had already been built, fully
+treated (`sairn-parallel-app-scaling`'s Portfolio Audit Status table), and
+deployed live under a different name, `SAIRNlegacy -> sairnlegacy.html`
+(confirmed via the file's own `<title>` and `git ls-tree` — no
+`sairnfuneral.html` exists anywhere in the repo). Renamed the row rather
+than adding a new one; the color (`#6B7280`) carries over since it was
+never actually in use and doesn't collide with anything else in the table.
+Full-inventory lesson: a real, live, deployed app can go undetected in this
+table indefinitely if nothing ever cross-checks the map against `git
+ls-tree` — the map is a claim about the repo, not derived from it, so it
+drifts exactly like any other unverified claim in this skill set.
+
 | App | File | Color | App ID |
 |-----|------|-------|--------|
 | StoneDesk | stonedesk.html | #16C762 | stonedesk |
@@ -263,7 +277,7 @@ warns against applied to this skill itself — fixed, not left inconsistent.
 | SAIRNdesign | sairndesign.html | #6366F1 | sairndesign |
 | SAIRNcare | sairncare.html | #0D9488 | sairncare |
 | SAIRNvet | sairnvet.html | #7C3AED | sairnvet |
-| SAIRNfuneral | sairnfuneral.html | #6B7280 | sairnfuneral |
+| SAIRNlegacy | sairnlegacy.html | #6B7280 | sairnlegacy |
 | SAIRNmechanical | sairnmechanical.html | #84CC16 | sairnmechanical |
 | SAIRNhr | hr.html | #2563EB | sairnhr |
 | SAIRNacc | sairnaccounting.html | #0D9488 | sairnacc |
