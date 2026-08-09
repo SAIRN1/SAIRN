@@ -21,6 +21,9 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 /* PIN */
 #pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
 #pin.on{display:flex;}
+/* TRIAL GATE (2026-08-09) -- same proven pattern as stonedesk.html's checkTrialGate() */
+#trial-expired-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9999;}
+#trial-expired-screen.on{display:flex;}
 .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
 .plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
 .prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
@@ -239,6 +242,19 @@ label.chk input{width:auto;}
     </div>
 
     <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="trial-expired-screen">
+  <div class="gbox">
+    <div style="font-size:36px;margin-bottom:10px">&#9203;</div>
+    <div class="glogo" style="font-size:20px">Your 30-day trial has ended</div>
+    <div class="gsub" style="margin-bottom:20px">
+      Thanks for trying SAIRNlaw. Your trial started on <strong id="trial-start-display">&mdash;</strong>
+      and access to the full app is now paused. Email us to unlock unlimited access &mdash; no data has been lost.
+    </div>
+    <a class="gbtn" style="display:block;text-decoration:none;box-sizing:border-box" href="mailto:michael@sairn.com?subject=SAIRNlaw%20trial%20upgrade">Email michael@sairn.com to Upgrade</a>
+    <div style="font-size:11px;color:var(--muted);margin-top:14px">Your trial data is safe and will be here when you upgrade.</div>
   </div>
 </div>
 
@@ -1152,6 +1168,35 @@ function lawSsoCallbackIfPresent(){
   return true;
 }
 
+// 30-day trial gate, keyed off a real timestamp written on first-ever
+// login (never a fabricated countdown). Checked in lawEnterApp() --
+// deliberately the ONE choke point every entry path already routes
+// through (lawLogin, lawMfaVerify, lawBootstrap, the SSO callback, AND
+// lawRestoreSession()'s reload-restore path), so gating it here alone
+// covers all of them, unlike apps where the restore path had to be
+// gated separately. Same proven pattern as stonedesk.html's
+// checkTrialGate().
+function checkTrialGate(){
+  var TRIAL_KEY='law_trial_start';
+  var TRIAL_DAYS=30;
+  var startMs=parseInt(localStorage.getItem(TRIAL_KEY),10);
+  if(!startMs||isNaN(startMs)){
+    startMs=Date.now();
+    try{localStorage.setItem(TRIAL_KEY,String(startMs));}catch(e){}
+  }
+  var daysElapsed=Math.floor((Date.now()-startMs)/86400000);
+  if(daysElapsed<TRIAL_DAYS)return true;
+  var scr=$('trial-expired-screen');
+  if(scr){
+    scr.classList.add('on');
+    var dEl=$('trial-start-display');
+    if(dEl)dEl.textContent=new Date(startMs).toLocaleDateString();
+  }
+  $('pin').classList.remove('on');
+  return false;
+}
+window.checkTrialGate=checkTrialGate;
+
 function lawEnterApp(d){
   lawSession={token:d.token,role:d.role,employee_id:d.employee_id,mfa_enabled:!!d.mfa_enabled};
   prole=d.role;ceid=d.employee_id;
@@ -1159,6 +1204,7 @@ function lawEnterApp(d){
   // own copy of THIS user's token -- see the session-independence note above.
   try{localStorage.setItem('law_session',JSON.stringify(lawSession));}catch(e){}
   st('law_role',prole);
+  if(!checkTrialGate())return;
   $('pin').classList.remove('on');$('app').classList.add('on');
   $('huser').textContent=(d.employee_id||prole)+' · '+prole.charAt(0).toUpperCase()+prole.slice(1);
   lawLoginErr('');
