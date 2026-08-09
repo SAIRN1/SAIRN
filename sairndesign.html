@@ -1559,9 +1559,16 @@ function renderProposalDetail(p,items){
 }
 // Reservation trigger -- the one-of-a-kind counterpart to StoneDesk's slab
 // reservation. Approval is the real-world moment a client has committed:
-// every one-of-a-kind item on this proposal is reserved from that point on,
-// which specSkuConflict() then enforces the next time ANY project's Spec
-// Sheet tries to add/edit an item with the same SKU.
+// every one-of-a-kind item on this proposal is reserved from that point on.
+// FIXED 2026-08-09: specSkuConflict() was only ever called at spec-save
+// time, not here at the actual moment reservation happens -- two unreserved
+// spec-item records with the identical SKU (the same physical piece
+// specified independently on two different client projects) could both get
+// marked reserved by two separate proposal approvals, with no error and no
+// warning on either one. Now calls specSkuConflict() for each item right
+// before reserving it, same check the save path already uses, and skips
+// (with an explicit warning) any item whose SKU is already reserved by a
+// DIFFERENT record instead of silently double-reserving it.
 async function setProposalStatus(id,status){
   var list=proposals();
   var p=list.find(function(x){return x.id===id;});if(!p)return;
@@ -1573,15 +1580,22 @@ async function setProposalStatus(id,status){
   if(status==='Approved'){
     var specList=specItems();
     var reservedItems=[];
+    var conflictedItems=[];
     (p.item_ids||[]).forEach(function(iid){
       var s=specList.find(function(x){return x.id===iid;});
       if(s&&s.one_of_a_kind&&!s.reserved){
-        s.reserved=true;s.reserved_for=projectLabel(p.project_id);
-        reservedItems.push(s);
+        var conflict=specSkuConflict(s.sku,s.id);
+        if(conflict){
+          conflictedItems.push(s);
+        }else{
+          s.reserved=true;s.reserved_for=projectLabel(p.project_id);
+          reservedItems.push(s);
+        }
       }
     });
     st('sdn_specitems',specList);
     if(reservedItems.length)toast(reservedItems.length+' one-of-a-kind item(s) reserved: '+reservedItems.map(function(s){return s.item;}).join(', '),5000);
+    if(conflictedItems.length)toast(conflictedItems.length+' one-of-a-kind item(s) NOT reserved -- same SKU already reserved elsewhere, resolve manually: '+conflictedItems.map(function(s){return s.item;}).join(', '),8000);
     // Was sdnData('write','specitems_bulk',{project_id:...}) -- a payload with no id and no
     // actual item data, against a resource that was never registered server-side either. Fixed
     // to what the intent always was: sync each newly-reserved item's real record individually,

@@ -305,8 +305,9 @@ label.chk input{width:auto;}
     This assistant will never output a specific case citation, statute citation, or docket number in citable-
     reference format (e.g. "384 U.S. 436 (1966)") -- not even for a famous case, not even paired with a disclaimer.
     It can describe a case narratively (the holding, the parties, the era, the legal principle) but always directs
-    you to Westlaw, Lexis, or the court's own site for the actual citation. This is enforced by the system prompt
-    below, not a UI label bolted onto unverified output.
+    you to Westlaw, Lexis, or the court's own site for the actual citation. It also has no access to this firm's
+    real matters, deadlines, trust balances, or billing data -- it will say so and point you to the relevant panel
+    rather than guess. Both are enforced by the system prompt below, not a UI label bolted onto unverified output.
   </div>
   <div class="card"><div class="cb">
     <div class="qts">
@@ -315,8 +316,8 @@ label.chk input{width:auto;}
       <span class="qt" onclick="askAI('Draft a polite deadline-reminder email to a client')">Deadline Reminder</span>
       <span class="qt" onclick="askAI('Explain UTBMS litigation billing codes at a high level')">UTBMS Overview</span>
     </div>
-    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div></div>
-    <div class="air"><input id="ainp" placeholder="Ask about matters, deadlines, trust accounting, billing..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
+    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask for drafting help or general legal-practice explanations. It cannot look up this firm's actual matters, deadlines, trust balances, or billing -- check those panels directly.</div></div>
+    <div class="air"><input id="ainp" placeholder="Draft, explain, or ask a general question (no access to this firm's live data)..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
   </div></div>
 </div>
 
@@ -1310,6 +1311,18 @@ function seed(){
 // a second AI feature duplicating the old text would have silently drifted
 // out of sync with any future fix here.
 var LAW_CITATION_RULE='CRITICAL RULE: never output a specific case citation, statute citation, or docket number in citable-reference format (the volume/reporter/page/year pattern, e.g. "384 U.S. 436 (1966)", or a statute section number like "42 U.S.C. Section 1983") under any circumstances -- not even for a universally famous case, not even paired with a disclaimer, regardless of how confident you are. This applies unless the exact citation string was given to you verbatim by the user in this conversation or is already on file in the data you were given, in which case you may repeat it back -- you must never generate a citation string yourself. You MAY describe a case narratively: its general holding, the parties involved, the era or decade, the legal principle it stands for -- without ever producing the citable-reference-format string itself. Always direct the user to Westlaw, Lexis, or the relevant court\'s official site to obtain the actual citation -- every time this comes up, not only for obscure cases, and not only when you are uncertain. This rule applies even for landmark cases like Miranda v. Arizona or Brown v. Board of Education -- your training data is not a verified legal database, and citation recall from language models has caused real court sanctions (Mata v. Avianca, 2023) from fabricated citations submitted in real filings. Never repeat that failure, and never let confidence in a case\'s fame be the reason you output a citation string.';
+// ADDED 2026-08-09: the citation rule above only guards against fabricated
+// case law. This assistant's own panel description and input placeholder
+// invite questions about this firm's real operational data ("Ask about
+// matters, deadlines, trust accounting, billing...") but sendAI() never
+// includes any actual matters/deadlines/trust/invoice data in the request
+// -- nothing stopped the model from answering a question like "What's the
+// trust balance on the Ostrander matter?" with a plausible, specific,
+// entirely fabricated dollar figure attributed to a real client by name.
+// Same fabrication risk as the citation gap, generalized to this firm's
+// own financial/scheduling data, now closed the same way: an explicit
+// refusal instruction rather than a hope the model volunteers one.
+var LAW_FIRM_DATA_RULE='CRITICAL RULE: you have NOT been given this firm\'s actual matters, deadlines, trust account balances, invoices, time entries, or billing records -- none of that real data is included anywhere in this conversation. If asked something that depends on specific real firm data (e.g. "What is the trust balance on the Ostrander matter?", "Which deadlines are overdue?", "How much has this client been billed?", "What\'s the status of matter 2026-0002?"), you MUST say plainly that you do not have access to this firm\'s live data and direct the user to the relevant panel (Trust Accounting, Deadlines, Billing, Matters) to look it up -- never guess, estimate, or invent a specific figure, date, status, or fact about a real matter or client. You may still help with general drafting, explaining concepts, and non-firm-specific questions.';
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
@@ -1348,7 +1361,7 @@ async function sendAI(){
         // confidence or fame -- narrative description of a case (holding,
         // parties, era, principle) is still allowed, only the citation
         // string itself is withheld.
-        system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to this restriction.',
+        system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to that citation restriction. '+LAW_FIRM_DATA_RULE,
         messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
     var data=await res.json();
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';

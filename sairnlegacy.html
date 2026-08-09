@@ -2301,11 +2301,23 @@ function rObituaryCaseChange(){
   var existing=obituaries().find(function(o){return o.case_id===caseId;});
   $('obtext').value=existing?existing.draft_text:'';
 }
+// FIXED 2026-08-09: writes directly to the single shared #obtext textarea
+// with no request guard. If a director selected Case A, clicked Generate,
+// then switched to Case B before A's response landed, whichever response
+// resolved last silently won regardless of which case was selected --
+// Save Draft/Publish then read #obcase and #obtext independently, so
+// Case A's decedent content could get saved or even published as Case B's
+// obituary. Guards against both the case being switched (checked directly)
+// and a second generate being fired for the same or another case (sequence
+// counter) before the first request resolves.
+var generateObituarySeq=0;
 async function generateObituary(){
   var caseId=$('obcase').value;
   var c=cases().find(function(x){return x.id===caseId;});
   if(!c){toast('Select a case first');return;}
   $('obtext').value='Generating...';
+  generateObituarySeq++;
+  var myObSeq=generateObituarySeq;
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:700,
@@ -2316,9 +2328,13 @@ async function generateObituary(){
           (c.family_contact_name?'. Arrangements by family contact '+c.family_contact_name:'')+
           '. Notes: '+(c.notes||'none')+'. This is a draft to be reviewed and edited by the family before publishing.'}]})});
     var data=await res.json();
+    if(myObSeq!==generateObituarySeq||$('obcase').value!==caseId)return;
     var text=(data.content&&data.content[0]&&data.content[0].text)||'Could not generate a draft -- try again.';
     $('obtext').value=text;
-  }catch(e){$('obtext').value='Could not connect to Claude. Check your connection and try again.';}
+  }catch(e){
+    if(myObSeq!==generateObituarySeq||$('obcase').value!==caseId)return;
+    $('obtext').value='Could not connect to Claude. Check your connection and try again.';
+  }
 }
 async function saveObituaryDraft(){
   var caseId=$('obcase').value;
