@@ -1274,6 +1274,7 @@ async function saveSpec(){
   toast(syncResult?'Spec item saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
+var complianceCheckSeq=0;
 async function runComplianceCheck(){
   var pjId=$('specproject').value;
   if(!pjId){toast('Select a project first');return;}
@@ -1302,15 +1303,24 @@ async function runComplianceCheck(){
   var itemLines=items.map(function(x){return '- '+x.item+' (SKU '+x.sku+', vendor '+x.vendor+'): cost '+fmt(x.cost)+', retail '+fmt(x.retail)+', lead time '+x.lead_time_weeks+' wks, status '+x.status+(x.one_of_a_kind?', ONE-OF-A-KIND':'');}).join('\n');
   var system='You are a compliance and verification layer for an interior design studio\'s Spec Sheet -- decision support only, reviewing what a human designer already specified. You NEVER invent or suggest alternative furniture/products; you only review the exact list given for real conflicts: budget overage, lead times that will miss the install date, and install-sequencing issues a designer would flag (e.g. flooring or wall treatments should generally be scheduled before furniture placement, custom/one-of-a-kind pieces need earlier commitment). Cite the deterministic findings given to you plainly, then add anything else you see. This review must happen before the proposal ships to the client -- say so if you find anything. Keep it under 200 words, plain text, no markdown headers.';
   var userMsg='Project: '+pj.name+'. Budget: '+fmt(pj.budget)+'. Target install date: '+fdate(pj.target_install_date)+'. Today: '+fdate(sdnLocalToday())+'.\nDeterministic findings already computed: '+(findings.length?findings.join(' '):'none.')+'\nFull spec list:\n'+itemLines;
+  // Guard against out-of-order async responses (same pattern proven in
+  // SAIRNbiz/SAIRNvet/SAIRNbuild): without this, switching the project
+  // dropdown and running the check again before the first request resolves
+  // lets a slower, now-stale response for the OLD project silently
+  // overwrite the newer project's result on screen.
+  complianceCheckSeq++;
+  var myComplianceSeq=complianceCheckSeq;
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:400,system:system,messages:[{role:'user',content:userMsg}]})});
     var data=await res.json();
+    if(myComplianceSeq!==complianceCheckSeq||$('specproject').value!==pjId)return;
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     out.innerHTML='<div style="font-weight:700;margin-bottom:8px;'+(findings.length?'color:var(--danger)':'color:var(--ok)')+'">'+(findings.length?findings.length+' deterministic finding(s)':'No deterministic budget/lead-time conflicts')+'</div>'+
       (findings.length?'<ul style="margin:0 0 10px 18px;padding:0">'+findings.map(function(f){return '<li style="margin-bottom:4px">'+H(f)+'</li>';}).join('')+'</ul>':'')+
       '<div style="border-top:1px solid var(--border);padding-top:10px;white-space:pre-wrap">'+H(text)+'</div>';
   }catch(e){
+    if(myComplianceSeq!==complianceCheckSeq||$('specproject').value!==pjId)return;
     out.innerHTML='<div style="color:var(--danger)">Could not reach Claude for the narrative review. Deterministic findings: '+(findings.length?H(findings.join(' ')):'none.')+'</div>';
   }
 }
@@ -2623,13 +2633,29 @@ function saveBranding(){
   closeBrandingModal();rSettings();rDash();
   toast('Branding saved');
 }
+// RBAC enforcement (2026-08-09 audit): prole was set at PIN entry and shown
+// in the header, but nothing anywhere ever read it for a real permission
+// decision -- Owner/Designer/Office had identical access to every action,
+// including any role being able to open this exact modal and read or
+// change the OWNER's own PIN. That's the single clearest, highest-value
+// privilege-escalation risk in the app (an Office employee could lock the
+// owner out or grant themselves owner access), so it's the one gated here,
+// same minimal-baseline pattern already applied to SAIRNbuild. Everything
+// else in the app is unchanged.
+function requireOwnerForPins(){
+  if(prole==='owner') return true;
+  toast('Only Owner can view or edit role PINs');
+  return false;
+}
 function openPinsModal(){
+  if(!requireOwnerForPins()) return;
   $('pm-owner').value=PINS.owner||'';$('pm-designer').value=PINS.designer||'';$('pm-office').value=PINS.office||'';
   $('pins-err').textContent='';
   $('pinsmodal').classList.add('on');
 }
 function closePinsModal(){$('pinsmodal').classList.remove('on');}
 function savePins(){
+  if(!requireOwnerForPins()) return;
   var owner=$('pm-owner').value.trim(),designer=$('pm-designer').value.trim(),office=$('pm-office').value.trim();
   var re=/^\d{4}$/;
   if(!re.test(owner)||!re.test(designer)||!re.test(office)){$('pins-err').textContent='Each PIN must be exactly 4 digits';return;}

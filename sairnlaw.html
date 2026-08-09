@@ -2217,7 +2217,15 @@ async function toggleDocShare(id){
   d.shared_with_client=!d.shared_with_client;
   st('law_matterdocs',list);rPortalMatterChange();
   var syncResult=await sdnData('write','law_matterdocs',d);
-  toast(d.shared_with_client?'Marked shared with client':'Unshared',2500);
+  // FIXED 2026-08-09: this was the sole write function in the file that
+  // computed syncResult and never read it -- every other write (30+ sites)
+  // branches its toast on the real result. This one controls whether a
+  // document becomes visible to the client and whether e-signature
+  // requests unlock, so a silent server-sync failure here left the
+  // client-facing state and the actual server state able to disagree with
+  // no indication anything was wrong.
+  var label=d.shared_with_client?'Marked shared with client':'Unshared';
+  toast(syncResult?label:label+' on this device only -- server sync failed, try again with a connection',syncResult?2500:5500);
 }
 var esignDocId=null;
 function openEsignModal(docId){
