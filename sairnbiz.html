@@ -906,6 +906,18 @@ function sbExecuteTool(name, role) {
   }
 }
 
+sbRegisterTool(
+  'get_employees',
+  'Look up the current employee roster: name, role, department, employment type, start date, and status. Does NOT include pay rate or any compensation figures.',
+  { type: 'object', properties: {}, required: [] },
+  false,
+  function () {
+    return ld('sb_emps', []).map(function (e) {
+      return { name: (e.fn || '') + ' ' + (e.ln || ''), role: e.role, dept: e.dept, type: e.type, start: e.start, status: e.status };
+    });
+  }
+);
+
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
