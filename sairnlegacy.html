@@ -1567,27 +1567,72 @@ async function sendAI(){
   if(chat.querySelector('div[style*="text-align:center"]'))chat.innerHTML='';
   chat.innerHTML+='<div class="amu">'+H(q)+'</div>';
   chat.scrollTop=chat.scrollHeight;
-  // FIXED 2026-08-09: aiHist's assistant-reply push used to land in
-  // resolve order, not send order -- two fast messages where the second's
-  // response arrives first produced two consecutive user turns instead of
-  // correctly alternating. Recording this request's own user-turn index
-  // and splicing the reply back in right after it keeps aiHist correctly
-  // ordered regardless of resolve order.
-  var myUserIdx=aiHist.length;
-  aiHist.push({role:'user',content:q});
+  // 2026-08-10: object-identity splice fix, ported from the start rather
+  // than discovered live -- the prior captured-index approach
+  // (var myUserIdx=aiHist.length) goes stale once a concurrent exchange's
+  // insertions land first and shift the array, which this tool-use
+  // round-trip's longer duration makes far more likely to manifest
+  // (found and fixed on SAIRNdesign's structurally identical chat,
+  // docs/superpowers/specs/2026-08-10-sairndesign-ai-tool-calling-design.md).
+  // Recording the turn object itself and looking up its live index at
+  // splice time keeps aiHist correctly ordered regardless of resolve
+  // order or how many other exchanges have inserted ahead of it.
+  var myUserTurn={role:'user',content:q};
+  aiHist.push(myUserTurn);
   var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
+  var toolDefs=Object.keys(LEG_TOOLS).map(function(k){return LEG_TOOLS[k].definition;});
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
-        system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving.',
-        messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
+        system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.',
+        messages:aiHist.map(function(m){return {role:m.role,content:m.content};}),
+        tools:toolDefs})});
     var data=await res.json();
     var aiErr=legAiError(data);
     if(aiErr){thinking.textContent=aiErr;chat.scrollTop=chat.scrollHeight;return;}
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
-    thinking.textContent=text;
-    aiHist.splice(myUserIdx+1,0,{role:'assistant',content:text});
+    var blocks=(data&&data.content)||[];
+    var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
+    if(!toolUse){
+      var text=(blocks[0]&&blocks[0].text)||'No response text returned.';
+      thinking.textContent=text;
+      aiHist.splice(aiHist.indexOf(myUserTurn)+1,0,{role:'assistant',content:text});
+      chat.scrollTop=chat.scrollHeight;
+      return;
+    }
+    var outcome=legExecuteTool(toolUse.name,toolUse.input);
+    // Belt-and-suspenders, same pattern proven on every prior rollout:
+    // reinforce the anti-fabrication instruction right next to the
+    // trigger, in the same turn as the denial/error itself.
+    var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+    // Built from this request's OWN local turn data, not re-read from the
+    // shared aiHist -- aiHist may have been mutated by other concurrent
+    // requests by the time this follow-up fires, matching every prior
+    // rollout's pattern of using local turn state for the follow-up call.
+    var followUpMessages=[
+      {role:'user',content:q},
+      {role:'assistant',content:blocks},
+      {role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]}
+    ];
+    var res2=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
+        system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.',
+        messages:followUpMessages})});
+    var data2=await res2.json();
+    var aiErr2=legAiError(data2);
+    if(aiErr2){thinking.textContent=aiErr2;chat.scrollTop=chat.scrollHeight;return;}
+    var finalText=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
+    thinking.textContent=finalText;
+    // Atomic 3-entry splice at the turn object's live index -- preserves
+    // correct ordering for a multi-entry exchange the same way the
+    // single-entry case above does, rather than three separate splices
+    // that would each need to account for prior insertions shifting
+    // indices.
+    aiHist.splice(aiHist.indexOf(myUserTurn)+1,0,
+      {role:'assistant',content:blocks},
+      {role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]},
+      {role:'assistant',content:finalText}
+    );
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
   chat.scrollTop=chat.scrollHeight;
 }
