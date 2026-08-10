@@ -1,7 +1,27 @@
 # SAIRNbiz — Pre-Payroll Validation
 
-**Status:** Design approved by Michael 2026-08-10. Not yet implemented —
-no code written under this spec. This is item 3 of the 6-item AI-native
+**Status:** Implementation complete and live-verified 2026-08-10 against
+`sairn.vercel.app/sairnbiz` (post-push, commit `100c166`, pushed to
+`origin/main`). All three specified live tests passed against the
+confirmed-deployed version: **(1) missing-rate blocking test** — an
+active employee's rate set to `0` produced the CRITICAL banner and the
+"Cannot run payroll" toast (the success toast did not fire); restoring
+the rate and re-running produced the normal "Payroll calculated" toast
+and cleared the banner. **(2) recently-started warning test** — an
+active employee's start date set to 3 days ago produced the WARNING
+banner while the normal "Payroll calculated" success toast still fired
+(non-blocking), confirmed live. **(3) AI tool test** — asking the AI
+Assistant "Check payroll for any issues before I run it" as owner
+triggered a real `get_payroll_anomalies` tool call returning
+`{critical_count:0,warning_count:0,findings:[]}` against live seed
+data, and the assistant's reply accurately reflected that real "no
+issues found" result rather than generic advice; the same question
+asked as a non-owner (`manager`) role returned the tool error `This
+data is restricted to the owner role.`, correctly relayed by the
+assistant as a restricted-access message. All temporarily-modified
+seed data (`E008` Kevin Walsh's `rate` and `start`) was restored to its
+original value and independently re-verified byte-for-byte against the
+original record after testing. This is item 3 of the 6-item AI-native
 roadmap for SAIRNbiz, building on the tool-calling foundation (item 1)
 and financial tools (item 2, `get_payroll_summary`/`get_pl_summary`,
 both live).
