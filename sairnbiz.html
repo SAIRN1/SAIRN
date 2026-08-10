@@ -934,6 +934,42 @@ sbRegisterTool(
   }
 );
 
+// Shared by every KPI-backed AI tool from here on: rPay() renders real
+// numbers into KPI elements as formatted text ("$12,345"), it doesn't
+// return them. This reads one back and parses it to a real number --
+// same parsing logic genReport('pl')'s local `pf` helper already uses
+// (sairnbiz.html's genReport function), as a small shared function
+// instead of each tool duplicating the one-liner. Does not touch or
+// replace genReport's own local pf -- zero risk to that existing path.
+function sbReadKpiNumber(elId) {
+  var el = $(elId);
+  if (!el) return 0;
+  return parseFloat(String(el.textContent).replace(/[^0-9.-]/g, '')) || 0;
+}
+
+sbRegisterTool(
+  'get_payroll_summary',
+  'Get the current payroll summary: gross payroll, employer taxes, benefits cost, total fully-loaded labor cost, and year-to-date payroll, for active employees. Aggregate totals only -- does not include any individual employee\'s pay.',
+  { type: 'object', properties: {}, required: [] },
+  true,
+  function (input) {
+    // input intentionally unused -- no arguments in v1, same interface
+    // consistency note as get_employees.
+    // rPay() MUST run first, unconditionally, every call -- without it,
+    // these KPI elements still hold their static "$0" HTML default if
+    // the Payroll panel was never opened this session, and this would
+    // return a plausible-looking but completely wrong zero.
+    rPay();
+    return {
+      gross_payroll: sbReadKpiNumber('py-gross'),
+      taxes_fica: sbReadKpiNumber('py-tax'),
+      benefits: sbReadKpiNumber('py-ben'),
+      total_labor_cost: sbReadKpiNumber('py-total'),
+      ytd_payroll: sbReadKpiNumber('py-ytd')
+    };
+  }
+);
+
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
