@@ -1,6 +1,20 @@
 # SAIRNcash — Pivot from SAIRNtype: AI Financial Co-Pilot for Freelancers
 
-**Status:** Design drafted 2026-08-10, pending review. Not yet implemented.
+**Status:** Foundation implemented and live-verified 2026-08-10
+(`docs/superpowers/plans/2026-08-10-sairncash-pivot-foundation.md`).
+`sairncash.html` live at `sairn.vercel.app/sairncash`. Both audit-found
+bugs fixed and confirmed live: `isSubscribed()` uses the real Stripe
+`expiresAt` with per-load server re-verification (forged-`localStorage`
+bypass tested live, correctly rejected); `handleWaitlist()` persists for
+real (honest `NOT_PROVISIONED` confirmed live pending the DB migration).
+**Not yet functional end-to-end** — `STRIPE_SECRET_KEY`/`STRIPE_PRICE_ID`
+and `SAIRNCASH_FIREBASE_*` are not yet set in this Vercel project
+(confirmed live: checkout returns a clean 500 "Stripe not configured",
+firebase-config returns `null`, both honest degradations, not crashes);
+`sql/sairncash_waitlist_schema.sql` has not been run. Tax/retirement
+estimator, Bridge integration, and the trial-notice/no-filing UI
+copy from §3 below remain unimplemented, per the foundation plan's
+explicit scope cut.
 
 Pivots SAIRNtype (generic AI-chat-response keyboard/wrapper, confirmed
 oversaturated per prior market research) into SAIRNcash: a year-round AI
