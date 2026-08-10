@@ -3171,6 +3171,86 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 <script>
 (function(){
   var history=[];
+
+  // AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
+  // live in SAIRNbiz/SAIRNlaw/SAIRNvet/SAIRNscape/SAIRNgrounds. Registry
+  // of read-only tools sendMsg() may request via Claude's tool-use. Kept
+  // inside this IIFE (module-private, same as history/counts) since
+  // nothing outside this widget needs it. Every tool is:
+  //   - read-only (never creates/modifies/deletes anything)
+  //   - wrapped so a thrown error or unexpected data shape becomes an honest
+  //     {ok:false} result, never a crash or a silently wrong answer
+  //   - checked against the CALLING role before running, if marked sensitive
+  //     (same single-role check as every prior rollout's dispatcher -- NOT
+  //     this file's own separate `currentRole === 'owner' || currentRole
+  //     === 'admin'` two-role check used elsewhere for a different feature)
+  // See docs/superpowers/specs/2026-08-10-stonedesk-ai-tool-calling-design.md
+  var SD_TOOLS = {};
+
+  function sdRegisterTool(name, description, inputSchema, sensitive, run) {
+    SD_TOOLS[name] = {
+      definition: { name: name, description: description, input_schema: inputSchema },
+      sensitive: !!sensitive,
+      run: run
+    };
+  }
+
+  // The real, server-verified session role. StoneDesk's auth module
+  // (api/sd-auth.js via a real per-employee login) stores this in
+  // sessionStorage as 'sd_session_role' (SD_ROLE_KEY, stonedesk.html:29284)
+  // -- the module's own internal `currentRole` variable is not exposed
+  // outside its own scope, so this reads the session value directly rather
+  // than reaching into or modifying that existing code.
+  function sdCurrentRole() {
+    try { return sessionStorage.getItem('sd_session_role') || ''; } catch (e) { return ''; }
+  }
+
+  function sdExecuteTool(name, role, input) {
+    var tool = SD_TOOLS[name];
+    if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+    if (tool.sensitive && role !== 'owner') {
+      return { ok: false, error: 'This data is restricted to the owner role.' };
+    }
+    try {
+      return { ok: true, result: tool.run(input || {}) };
+    } catch (e) {
+      return { ok: false, error: 'Could not retrieve that data right now.' };
+    }
+  }
+
+  // Concurrency guard (2026-08-10) -- history (declared just above) is
+  // shared, persistent, multi-turn, and had ZERO guard before this change
+  // -- the same latent bug class already found and fixed live in SAIRNlaw/
+  // SAIRNscape/SAIRNgrounds. Two concurrent sendMsg() calls would both
+  // read/write the same array, corrupting each other's context.
+  var sdAiBusy = false;
+
+  sdRegisterTool(
+    'get_job_profitability',
+    'Look up real per-job profitability records from the Job Financials tracker: customer, quoted price, material, square footage, cost of goods sold (COGS), profit, gross margin percent, and date. Does NOT include production/scheduling job records (a separate data domain), the Quote Builder\'s own quote records, or any other job-adjacent data.',
+    { type: 'object', properties: {}, required: [] },
+    false,
+    function (input) {
+      // input intentionally unused -- this tool takes no real arguments, but
+      // accepts one for interface consistency with sdExecuteTool(name, role,
+      // input), matching every prior tool's convention. Reads the existing
+      // sdFinJobs global directly (stonedesk.html:21644) -- no new lookup
+      // logic, no localStorage re-read.
+      return sdFinJobs.map(function (j) {
+        return {
+          customer: j.customer,
+          quote: j.quote,
+          material: j.material,
+          sqft: j.sqft,
+          cogs: j.cogs,
+          profit: j.profit,
+          margin: j.margin,
+          date: j.date
+        };
+      });
+    }
+  );
+
   var counts={today:0,total:0};
   try{var sc=JSON.parse(localStorage.getItem('sd_ai_counts')||'{}');counts=sc;}catch(e){}
   document.getElementById('ai-queries').textContent=counts.today||0;
