@@ -1,7 +1,34 @@
 # SAIRNdesign — AI Tool-Calling Foundation + `get_clients`
 
-**Status:** Design approved 2026-08-10, following brainstorming. Not yet
-implemented.
+**Status:** Implemented and live-verified 2026-08-10. All 3 commits
+(`cf96296`, `8b169c9`, `49d117c`) are on `origin/main` and confirmed
+live at `sairn.vercel.app/sairndesign` — `sdnExecuteTool` present in
+the deployed HTML. A real interaction test asked "who are our clients,
+and what is Sarah Whitfield's status?" and got a correct, tool-backed
+answer from real `sdn_clients` data.
+
+**A real concurrency regression was found live during testing and
+fixed before considering this done** — the plan's stated goal was to
+*preserve* the existing splice-based reordering fix, and the first
+implementation attempt did not fully do so under the tool-use path's
+longer round-trip: two concurrent tool-using exchanges produced a
+demonstrated ordering corruption
+(`["user","assistant","assistant",...]`, not alternating), because the
+original fix's captured-array-index approach goes stale once a
+concurrent exchange's insertions land first and shift the array.
+Fixed (`49d117c`) by tracking each request's own user turn by object
+identity and looking up its current position via `aiHist.indexOf()` at
+splice time rather than a captured index — preserves the "allow
+concurrent questions" behavior the 2026-08-09 fix established, rather
+than reverting to a busy-guard. Re-verified live after the fix: two
+concurrent tool-using exchanges now produce a fully alternating
+8-entry `aiHist`, confirmed against the real deployed code (not an
+injected override).
+
+`sanitizeTools()` confirmed live for the `sairndesign` app_id. The
+Spec Sheet compliance-review feature was confirmed unmodified by
+`git diff` (zero risk of regression to code this spec never touches).
+Guardian v2 pass clean.
 
 This is SAIRNdesign's first tool-calling work, porting the mechanism
 already proven live on every prior rollout — extending an already
