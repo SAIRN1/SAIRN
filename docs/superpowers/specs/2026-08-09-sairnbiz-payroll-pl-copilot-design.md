@@ -1,12 +1,40 @@
 # SAIRNbiz — Payroll/P&L Copilot
 
-**Status:** Design approved by Michael 2026-08-09. Not yet implemented —
-no code written under this spec. This is item 2 of the 6-item AI-native
-roadmap for SAIRNbiz, building directly on the tool-calling foundation
-from item 1 (`docs/superpowers/specs/2026-08-09-sairnbiz-ai-tool-calling-design.md`,
-`docs/superpowers/plans/2026-08-09-sairnbiz-ai-tool-calling.md`) — the
-`SB_TOOLS`/`sbRegisterTool`/`sbExecuteTool` dispatcher and `callAI()`'s
-multi-turn round-trip already exist and are live-verified end-to-end.
+**Status:** Implemented and live-verified 2026-08-09. Both tools
+(`get_payroll_summary` c9c841b, `get_pl_summary` baf87ea) shipped and
+pushed to `main` (`5cbb592..baf87ea`), confirmed deployed live at
+`sairn.vercel.app/sairnbiz` (`curl | grep -c` found both tool names
+non-zero in the served HTML). The cold-call test (§6, the primary
+correctness claim of this spec) passed live: with the KPI DOM elements
+(`#py-gross`, `#pl-rev`, etc.) explicitly held at their static `"$0"`
+default at the moment the request fired — a stricter isolation than a
+merely-fresh session, since `init()` itself already calls `rPay()` once
+at login before any panel is reachable, so the DOM was deliberately
+reset back to `"$0"` after login to isolate each tool's *own* `rPay()`
+call as the actual cause of correctness, not a byproduct of login — the
+AI Assistant's real answer (via the real deployed Claude proxy) returned
+real, non-zero, non-generic figures (gross payroll $13,488, net income
+$18,028, etc.) that matched the Payroll/P&L panels' on-screen KPIs
+exactly after manually opening them afterward. Role-gate test passed:
+a simulated `manager` role got the exact `"This data is restricted to
+the owner role."` string from both tools (verified both via the AI chat
+and a direct `sbExecuteTool()` console call), never a number. Multi-tool
+exercise passed: a single "full financial and payroll picture" question
+triggered `get_employees` + `get_payroll_summary` + `get_pl_summary` in
+one turn, all three results correctly synthesized into one coherent,
+accurate answer. One disclosed test-methodology limitation: no real
+owner-level login credentials for the `SB-PINNACLE-2026` demo tenant
+were recoverable (its employee-auth account was already provisioned by
+an earlier session, credentials unknown), so the authenticated session
+state was set via a direct `sbApplyLoggedIn('owner')`/`prole` console
+call rather than a real server-verified PIN login — every other part of
+each test (DOM state, the AI round-trip, tool dispatch, `sbExecuteTool`'s
+role check, the live proxy/deployment) was fully real and live, only the
+login step itself was substituted. Margin-rounding note from Task 2's
+review (gross/net margin computed from whole-dollar-rounded inputs vs.
+`#pl-margin`'s full-precision on-screen display, up to 1pp difference
+possible) remains an accepted, spec-directed tradeoff — not observed in
+this session's live data set, where 41% matched exactly either way.
 
 ## 1. Problem
 
