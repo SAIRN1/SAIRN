@@ -513,6 +513,7 @@ textarea{resize:vertical;min-height:80px;}
 <div class="panel" id="panel-payroll">
   <div class="ph"><div><div class="ptitle">Payroll</div><div class="psub">Current pay period &middot; Bi-weekly</div></div>
   <div class="pa"><button class="btn bo bs" onclick="csv('payroll')">Export CSV</button><button class="btn bp bs" onclick="runPayroll()">Run Payroll</button></div></div>
+  <div id="payroll-anomaly-banner"></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Gross Payroll</div><div class="kval" id="py-gross">$0</div><div class="kt">This period</div></div>
     <div class="kpi"><div class="klbl">Employer Taxes</div><div class="kval" id="py-tax">$0</div><div class="kt">FICA + FUTA</div></div>
@@ -1540,7 +1541,37 @@ function rPay(){
   var gpm=rev>0?Math.round(gp/rev*100):0,npm=rev>0?Math.round(net/rev*100):0;
   $('pl-margin').innerHTML=[{l:'Gross Margin',v:gpm+'%'},{l:'Operating Margin',v:npm+'%'},{l:'Industry Avg Gross',v:'45%'},{l:'Industry Avg Net',v:'18%'},{l:'Your Net vs Industry',v:(npm-18)+'pp'}].map(function(r){return'<div class="srow"><span class="slbl">'+r.l+'</span><span class="sval"><strong>'+r.v+'</strong></span></div>';}).join('');
 }
-function runPayroll(){toast('Payroll calculated - no real payment was sent. Process through your bank or payroll provider.',4000);}
+function renderPayrollAnomalyBanner(findings) {
+  var el = $('payroll-anomaly-banner');
+  if (!el) return;
+  if (!findings.length) { el.innerHTML = ''; return; }
+  var criticals = findings.filter(function (f) { return f.severity === 'critical'; });
+  var warnings = findings.filter(function (f) { return f.severity === 'warning'; });
+  var html = '';
+  if (criticals.length) {
+    html += '<div style="background:rgba(239,68,68,0.08);border:1px solid var(--danger);border-radius:8px;padding:12px 14px;margin-bottom:10px;">' +
+      '<div style="font-weight:700;color:var(--danger);margin-bottom:6px;">Cannot run payroll -- ' + criticals.length + ' issue(s) must be fixed first</div>' +
+      criticals.map(function (f) { return '<div style="font-size:13px;color:var(--text);margin-top:2px;">' + H(f.message) + '</div>'; }).join('') +
+      '</div>';
+  }
+  if (warnings.length) {
+    html += '<div style="background:rgba(245,158,11,0.08);border:1px solid var(--warn);border-radius:8px;padding:12px 14px;margin-bottom:10px;">' +
+      '<div style="font-weight:700;color:var(--warn);margin-bottom:6px;">' + warnings.length + ' item(s) worth a look</div>' +
+      warnings.map(function (f) { return '<div style="font-size:13px;color:var(--text);margin-top:2px;">' + H(f.message) + '</div>'; }).join('') +
+      '</div>';
+  }
+  el.innerHTML = html;
+}
+function runPayroll() {
+  var findings = checkPayrollAnomalies();
+  renderPayrollAnomalyBanner(findings);
+  var hasCritical = findings.some(function (f) { return f.severity === 'critical'; });
+  if (hasCritical) {
+    toast('Cannot run payroll -- fix the flagged issue(s) first', 5000);
+    return;
+  }
+  toast('Payroll calculated - no real payment was sent. Process through your bank or payroll provider.', 4000);
+}
 
 function rInvs(){
   var invs=ld('sb_invs',[]);
