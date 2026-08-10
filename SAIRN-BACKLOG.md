@@ -148,7 +148,7 @@ first to confirm this is the only panel in this state.
 
 ## SAIRNdesign invoicing needs a real server-side uniqueness constraint
 
-**Logged:** 2026-08-09
+**Logged:** 2026-08-09. **Code-complete, pending DB migration: 2026-08-10.**
 
 **What:** `saveInvoice()`'s "already invoiced" check reads a local
 snapshot of `invoices()` and, if no existing invoice references the
@@ -157,14 +157,39 @@ proposal, writes a new one. Zero race window on one device (no
 devices/sessions could each pass the check before either's write has
 synced, producing two invoices for the same approved proposal.
 
-**Why deferred:** Needs a real server-side unique constraint on
-`proposal_id` for the `sdn_invoices` resource (or an upsert-by-
-proposal-id write), same scope-class as the other server-sync/
-atomicity gaps in this backlog.
+**Corrected sizing (2026-08-10):** originally grouped as "same
+scope-class" as SAIRNlaw trust disbursement and SAIRNbuild server-sync
+below — verified against live code that this was wrong. `sdn_invoices`
+already has a working generic server route (unlike SAIRNlaw/SAIRNbuild,
+which had none at all); this needed one `UNIQUE INDEX`, not a
+from-scratch resource+schema build. Real scope: small-to-medium, one
+migration + ~15 lines of server code + a client error-handling change.
 
-**Done looks like:** The invoice write goes through a server route
-that rejects a second invoice for a proposal that already has one,
-atomically, rather than relying on a client-side pre-check.
+**Fixed:** `api/sd-data.js`'s `sdn_invoices` write branch now maps a
+Postgres 23505 unique_violation to a clean 409 `DUPLICATE_INVOICE`
+response; `saveInvoice()` (`sairndesign.html`) rolls back its optimistic
+local insert and shows the real rejection on that 409, instead of the
+misleading "server sync failed" fallback. Both shipped and live-verified
+2026-08-10 (`8d1f4d6`) — confirmed inert/no-regression against the live
+endpoint.
+
+**Still open:** the actual DB constraint —
+`sql/sairndesign_invoice_uniqueness.sql`
+(`CREATE UNIQUE INDEX ... ON sdn_invoices (license_hash,
+(data->>'proposal_id'))`) — has **not been run** in Supabase. No DB
+execution access exists from the Claude Code environment (no
+`SUPABASE_URL`/service key, no `psql`, no `supabase` CLI, confirmed
+2026-08-10) — every schema file in this repo has always been a
+hand-off for Michael to run in Supabase's SQL editor, this is no
+different. Until it runs, the race this entry describes is still real;
+the shipped code becomes load-bearing the moment it does. Re-verify
+with the two-sequential-write curl test in
+`docs/superpowers/plans/2026-08-10-sairndesign-invoice-uniqueness.md`
+Task 2 Step 4 after running it.
+
+**Done looks like:** `sql/sairndesign_invoice_uniqueness.sql` run in
+Supabase, then the post-migration curl test in the plan above confirms
+a real 409 on the second concurrent write for the same proposal.
 
 ## SAIRNlaw trust disbursement needs a real server-side atomic check
 
@@ -181,55 +206,88 @@ independently, and both write -- a real over-disbursement of client
 trust funds, which is a bar-discipline / IOLTA compliance matter, not
 just a data-integrity bug.
 
-**Why deferred:** Needs a real server-side atomic check-and-write on
-the trust-transaction resource (reject the write if the balance would
-go negative as of the moment the server actually processes it, not as
-of when the client last read it) -- same scope-class as the SAIRNlegacy
-reservation lock and SAIRNbuild server-sync gaps above, not a quick
-patch.
+**Corrected sizing (2026-08-10):** this is genuinely the largest item
+in this backlog after SAIRNbuild, not "same scope-class" as the
+SAIRNlegacy/SAIRNdesign entries above (which is what this entry
+originally said). Verified against live code: **`law_` has zero
+entries anywhere in `api/sd-data.js`'s resource allowlist** — every
+`sdnData('write','law_trusttx',...)` call 400s today, and the app
+already honestly reports "server sync not yet enabled" (it isn't
+silently lying about this one). There is no
+`sql/sairnlaw_data_schema.sql` — only `_audit_log_schema.sql`,
+`_citator_schema.sql`, and `_employee_auth_schema.sql` exist, none of
+which cover business data. 19 real `law_*` resources exist client-side
+(`clients`, `matters`, `trusttx`, `opaccounts`/`optx`, `deadlines`,
+etc.) and **none** are wired server-side.
 
-**Done looks like:** The disbursement write goes through a server
-route that atomically re-validates the balance at write time and
-rejects the transaction if it would go negative, with the client
-showing the real rejection reason -- not just a client-side pre-check
-with an honest limitation comment bolted on.
+**Why deferred:** Needs the full resource+schema build first (same
+shape as the SAIRNlegacy/SAIRNdesign/SAIRNgrounds/SAIRNscape/SAIRNcode/
+SAIRNvet server-sync builds already done) — at minimum `law_trusttx`
+plus whatever `law_clients`/`law_matters` reads the balance check needs
+— *before* the atomic balance-check-and-write is even possible on top
+of it. Two sequential real efforts, not one small patch. A genuine
+multi-session build, correctly deferred, not attempted 2026-08-10.
+
+**Done looks like:** `law_trusttx` (and its balance-check dependencies)
+wired to real server persistence, the same honest await+check+toast
+pattern every other server-synced resource on this platform uses, THEN
+a real server-side atomic check-and-write on top that re-validates the
+balance at write time and rejects the transaction if it would go
+negative, with the client showing the real rejection reason.
 
 ## SAIRNlegacy merchandise reservation needs a real server-side lock
 
-**Logged:** 2026-08-09
+**Logged:** 2026-08-09. **Resolved: 2026-08-10.**
 
-**Priority: highest in this backlog** — real risk of the same physical
-casket/urn getting promised to two grieving families. Found by the
-first full silent-failure-sweep + adversarial-review pass on
+**Priority was highest in this backlog** — real risk of the same
+physical casket/urn getting promised to two grieving families. Found by
+the first full silent-failure-sweep + adversarial-review pass on
 `sairnlegacy.html`.
 
-**What:** `confirmReserve()` (merchandise reservation, the "moat" panel)
-re-checks a unit's status right before reserving it, but that check
-reads `merchUnits()` -- this device's own localStorage -- not a server
-round-trip. `leg_` resources have no server route yet. Two staff on two
-different devices, each holding a stale local copy, can both pass the
-check and both reserve the same physical unit. The panel's own UI text
-and an in-code comment both claimed this was "checked server-side" --
-corrected tonight to describe what actually happens (same-device
-safeguard only), but the underlying gap is unfixed.
+**What was wrong:** `confirmReserve()` re-checked a unit's status
+against `merchUnits()` — this device's own localStorage — not a server
+round-trip, then wrote through a **blind upsert** (the generic
+`leg_merch_units` route, which did already exist as of 2026-08-07 —
+this entry's original "no server route yet" was stale by the time it
+was re-checked 2026-08-10, corrected here rather than left standing).
+Two staff on two different devices, each holding a stale local copy,
+could both pass the check and both reserve the same physical unit.
 
-**Why deferred:** Needs a real server-side atomic check-and-set
-(reserve only succeeds if the row is still `Available` at write time),
-which means `leg_merch_units` needs a real `api/sd-data.js` route with
-that semantics built in -- not a quick patch, same scope-class as the
-SAIRNbuild server-sync gap above.
+**Corrected sizing (2026-08-10):** this entry originally said "same
+scope-class as the SAIRNbuild server-sync gap" — wrong, once verified
+against live code. The route already existed; the fix needed was a
+narrow atomic-condition addition to it, **no schema migration**. Real
+scope: small-to-medium, ~30 lines of server code + a client
+error-handling change, not a from-scratch build.
 
-**Done looks like:** `confirmReserve()`'s actual reservation write goes
-through a server route that atomically fails if another reservation
-already landed first, and the honest failure message tells staff to
-pick a different unit -- not just a local-storage re-check with an
-honest disclaimer bolted on.
+**Fixed:** `api/sd-data.js`'s `leg_merch_units` write branch now uses a
+conditional `PATCH` (`WHERE data->>status=eq.Available`) instead of a
+blind upsert when `payload.status==='Reserved'` — 0 rows affected maps
+to a real 409 `ALREADY_RESERVED`. `confirmReserve()`
+(`sairnlegacy.html`) rolls back its optimistic local write and shows
+the real rejection on that 409. Shipped and live-verified end-to-end
+2026-08-10 (`8d1f4d6`): direct curl race test (first reservation 200,
+second 409, server-side truth confirmed unchanged) and a real
+browser-driven UI test through `confirmReserve()` itself (second
+"device" correctly rejected and rolled back, first device's reservation
+confirmed intact via a fresh server read). `releaseUnit()`/
+`markUnitSold()` deliberately untouched — narrower scope than the
+original "reservation lock" framing might imply, matching what was
+actually reported and approved.
+
+**Done looks like (achieved):** `confirmReserve()`'s actual reservation
+write goes through a server route that atomically fails if another
+reservation already landed first, and the honest failure message tells
+staff to pick a different unit.
 
 ## SAIRNbuild has zero server-side backup for any real business data
 
 **Logged:** 2026-08-09
 
-**Priority: highest in this backlog.** Found during the first full
+**Priority: largest single item in this backlog** (the SAIRNlegacy
+reservation-lock entry above held "highest priority" for urgency —
+real risk to grieving families — until its 2026-08-10 fix; this entry
+is now the largest by real scope, verified below). Found during the first full
 sairn-silent-failure-sweep + sairn-adversarial-reviewer pass ever run
 against `sairnbuild.html` (the sales-critical app) -- every other app
 in the portfolio had already been through this pass.
@@ -249,10 +307,27 @@ confirming "Local-only for now, consistent with every other panel this
 session." None of this is disclosed anywhere in the app's UI -- a user
 has no way to know their data isn't backed up.
 
-**Why deferred:** This is a real architecture decision -- wiring 16+
+**Corrected count (2026-08-10):** this entry's "16+" undercounted --
+a direct grep of `sairnbuild.html` for `ld('bld_...)` calls finds **36**
+distinct resources (adds `change_orders`/`checks`/`comm_log`/`costs`/
+`daily_logs`/`inspections`/`photo_analyses`/`pins`/`price_points`/
+`punchlist`/`rfis`/`schedule_entries`/`selections`/`sub_bids`/
+`submittals`/`toolbox_talks`/`warranty` on top of the 17 originally
+named), confirming rather than shrinking the "real architecture
+decision, not a bug fix" framing below. Same real scope-class as the
+SAIRNlaw entry above (both need a from-scratch resource+schema build
+before any atomicity work is even possible) -- **not** the same
+scope-class as the SAIRNlegacy/SAIRNdesign entries above, which already
+had working server routes and needed narrower additions. This
+distinction (route-exists-needs-atomicity vs. route-doesn't-exist-at-
+all) is the real sizing signal across all four of these entries, not a
+single "same scope-class" grouping.
+
+**Why deferred:** This is a real architecture decision -- wiring 36
 resources to real server persistence, matching the pattern already
-built for SAIRNgrounds/SAIRNscape/SAIRNcode/SAIRNvet -- not a bug fix.
-Same scope-class as the Vendor Ordering Catalog build. Doing it rushed,
+built for SAIRNgrounds/SAIRNscape/SAIRNcode/SAIRNvet/SAIRNlegacy/
+SAIRNdesign -- not a bug fix. Same scope-class as the Vendor Ordering
+Catalog build. Doing it rushed,
 under a "just fix it tonight" framing, risks exactly the kind of
 half-wired schema mismatch that's already been found and fixed
 elsewhere in this portfolio (SAIRNgrounds/SAIRNscape sync merge bugs,
