@@ -69,10 +69,16 @@ federal/state withholding, FICA, net) depends on. A missing/zero rate
 doesn't produce an error; it silently computes `$0` everywhere for that
 employee, the same "looks fine, isn't" shape as the 8x bug.
 
-**Blocks `runPayroll()`.** Requires explicit acknowledgment before the
-existing "Payroll calculated" toast fires — even though "proceeding"
-only means a toast today, this sets the right precedent for when real
-payroll processing eventually exists, and costs nothing to build now.
+**Blocks `runPayroll()`.** This is a hard block with no override: the
+function returns early, the "Payroll calculated" toast never fires, and
+there is no acknowledge-and-proceed affordance (no confirm dialog, no
+"override" button) anywhere in the shipped UI. The only way to
+"proceed" is to fix the underlying data — correct the missing/zero
+rate — and click Run Payroll again. An acknowledge-and-override
+affordance was considered during the final review of this feature and
+deliberately not built: simpler and safer than an override nobody
+asked for, and consistent with the check existing to catch a silent
+wrong number, not to be waved past.
 
 ### WARNING — recently-started employee
 
