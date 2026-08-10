@@ -1027,6 +1027,21 @@ sbRegisterTool(
   }
 );
 
+sbRegisterTool(
+  'get_payroll_anomalies',
+  'Check for problems before payroll runs: any active employee with a missing or $0 pay rate (payroll would silently compute as $0 for them), and any active employee who started within the last 14 days (may not have been in a prior payroll cycle). Returns real findings, never guesses.',
+  { type: 'object', properties: {}, required: [] },
+  true,
+  function (input) {
+    var findings = checkPayrollAnomalies();
+    return {
+      critical_count: findings.filter(function (f) { return f.severity === 'critical'; }).length,
+      warning_count: findings.filter(function (f) { return f.severity === 'warning'; }).length,
+      findings: findings
+    };
+  }
+);
+
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
