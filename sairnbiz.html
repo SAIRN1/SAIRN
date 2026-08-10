@@ -1413,6 +1413,39 @@ function checkAttentionItems() {
   return findings;
 }
 
+// Hiring cost-impact reasoning (2026-08-10) -- pure math, takes
+// already-fetched payroll/P&L data as arguments (no SB_TOOLS/rPay()/DOM
+// dependency), fully Node-testable in isolation. "Nothing else changes"
+// projection: assumes zero revenue increase from the hire, applies the
+// same FICA-only-tax (7.65%)/flat-$520-benefit assumptions
+// get_payroll_summary already uses and discloses as incomplete, and
+// excludes one-time hiring costs (recruiting, onboarding, ramp-up).
+// See docs/superpowers/specs/2026-08-10-sairnbiz-hiring-cost-impact-design.md
+function computeHiringCostImpact(hourlyRate, employmentType, payrollSummary, plSummary) {
+  var newRoleHours = employmentType === 'Full Time' ? 80 : 32;
+  var newRoleGross = hourlyRate * newRoleHours;
+  var newRoleFica = newRoleGross * 0.0765;
+  var newRoleBenefit = 520;
+  var newRoleFullyLoadedCost = newRoleGross + newRoleFica + newRoleBenefit;
+
+  var projectedTotalLaborCost = payrollSummary.total_labor_cost + newRoleFullyLoadedCost;
+  var projectedNetIncome = plSummary.net_income - newRoleFullyLoadedCost;
+  var projectedNetMarginPct = plSummary.revenue > 0 ? Math.round(projectedNetIncome / plSummary.revenue * 100) : 0;
+
+  return {
+    new_role_gross: newRoleGross,
+    new_role_fica: newRoleFica,
+    new_role_benefit: newRoleBenefit,
+    new_role_fully_loaded_cost: newRoleFullyLoadedCost,
+    current_total_labor_cost: payrollSummary.total_labor_cost,
+    projected_total_labor_cost: projectedTotalLaborCost,
+    current_net_income: plSummary.net_income,
+    current_net_margin_pct: plSummary.net_margin_pct,
+    projected_net_income: projectedNetIncome,
+    projected_net_margin_pct: projectedNetMarginPct
+  };
+}
+
 function rDash(){
   var emps=ld('sb_emps',[]),invs=ld('sb_invs',[]),exps=ld('sb_exps',[]),bills=ld('sb_ap',[]),tr=ld('sb_train',[]),h=ld('sb_hire',[]),pf=ld('sb_perf',[]);
   var rev=invs.reduce(function(s,i){return s+(i.paid||0);},0);
