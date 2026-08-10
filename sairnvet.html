@@ -3973,6 +3973,55 @@ function savePatients(list){
   try { localStorage.setItem('sv_patients', JSON.stringify(list)); } catch(e){}
 }
 
+// AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
+// live in SAIRNbiz and SAIRNlaw, minus the sensitivity/role-gate concept:
+// SAIRNvet's `role` is a self-selected dropdown at login
+// (sairnvet.html:1981), never server-verified, so a "sensitive" flag
+// here would restrict nothing a user couldn't bypass by picking a
+// different option. See
+// docs/superpowers/specs/2026-08-10-sairnvet-ai-tool-calling-design.md
+var SV_TOOLS = {};
+
+function svRegisterTool(name, description, inputSchema, run) {
+  SV_TOOLS[name] = {
+    definition: { name: name, description: description, input_schema: inputSchema },
+    run: run
+  };
+}
+
+function svExecuteTool(name, input) {
+  var tool = SV_TOOLS[name];
+  if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+  try {
+    return { ok: true, result: tool.run(input || {}) };
+  } catch (e) {
+    return { ok: false, error: 'Could not retrieve that data right now.' };
+  }
+}
+
+svRegisterTool(
+  'get_patients',
+  'Look up the practice\'s current patient roster: name, species, breed, owner, age, last visit date, status, and visits this year. Does NOT include weight, vitals, lab results, or any medical/financial record -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  function (input) {
+    // input intentionally unused -- this tool takes no real arguments, but
+    // accepts one for interface consistency with svExecuteTool(name, input),
+    // matching get_matters'/get_employees' convention.
+    return getPatients().map(function (p) {
+      return {
+        name: p.name,
+        species: p.species,
+        breed: p.breed,
+        owner: p.owner,
+        age: p.age,
+        lastVisit: p.lastVisit,
+        status: p.status,
+        visitsThisYear: p.visitsThisYear
+      };
+    });
+  }
+);
+
 function renderPatients(){
   var list = getPatients();
   var tbody = document.getElementById('patients-tbody');
