@@ -151,6 +151,28 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
 .send-btn{width:42px;height:42px;border-radius:11px;border:none;background:var(--glow);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;color:#fff}
 .send-btn:disabled{opacity:0.35;cursor:not-allowed}
 .input-footnote{font-size:10px;color:var(--dim);margin-top:8px;text-align:center}
+.view-tabs{display:flex;gap:4px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.view-tab{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+.view-tab.active{background:rgba(124,111,255,0.15);border-color:var(--glow);color:var(--text)}
+.fin-view{display:none;flex:1;overflow-y:auto;padding:18px 20px;min-height:0}
+.fin-view.active{display:block}
+#view-assistant{padding:0;flex-direction:column}
+#view-assistant.active{display:flex}
+.fin-section{margin-bottom:24px}
+.fin-section h4{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)}
+.fin-form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.fin-form input,.fin-form select{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-size:13px;outline:none}
+.fin-form input:focus,.fin-form select:focus{border-color:rgba(124,111,255,0.45)}
+.fin-form input[type="number"]{width:120px}
+.fin-form input[type="text"]{flex:1;min-width:160px}
+.fin-btn{padding:9px 16px;border-radius:8px;border:none;background:var(--glow);color:#fff;font-size:13px;font-weight:600;cursor:pointer}
+.fin-btn:disabled{opacity:0.5;cursor:not-allowed}
+.fin-list{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.fin-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.fin-item:last-child{border-bottom:none}
+.fin-item-amt{font-weight:600;color:var(--pulse)}
+.fin-item-cat{font-size:11px;color:var(--dim);background:var(--faint);padding:2px 8px;border-radius:20px;margin-left:8px}
+.fin-empty{color:var(--dim);font-size:12px;padding:14px;text-align:center}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--glow);color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;z-index:9999}
 .toast.show{opacity:1;transform:translateY(0)}
 @media(max-width:640px){.sidebar{display:none}.output{padding:12px}.bubble{font-size:14px;padding:11px 14px}}
@@ -266,22 +288,51 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
         <div class="sb-disclaimer">Estimates only. SAIRNcash does not file taxes -- review with your accountant or filing software before relying on any number here.</div>
       </div>
       <div class="app-main">
-        <div class="mode-hdr">
-          <div class="mode-hdr-title">Assistant</div>
-          <div class="mode-hdr-desc">Ask about quarterly set-asides, deduction categories, or retirement contribution limits. Estimates only -- not filing-ready figures.</div>
+        <div class="view-tabs">
+          <button class="view-tab active" id="tab-estimator" onclick="switchView('estimator')">📊 Estimator</button>
+          <button class="view-tab" id="tab-assistant" onclick="switchView('assistant')">💬 Assistant</button>
         </div>
-        <div class="output" id="output">
-          <div class="bubble system">SAIRNcash Pro is live -- Claude is ready. This build tracks and estimates only; it will never file anything on your behalf.</div>
-        </div>
-        <div class="input-area">
-          <div class="input-row">
-            <div class="input-wrap">
-              <textarea id="inp" rows="1" placeholder="Ask about a set-aside, a deduction, or a contribution limit..."></textarea>
-              <span class="cc" id="cc">0</span>
+
+        <div class="fin-view active" id="view-estimator">
+          <div class="fin-section">
+            <h4>Add income</h4>
+            <div class="fin-form">
+              <input type="number" id="incAmount" placeholder="Amount" min="0" step="0.01">
+              <input type="text" id="incDesc" placeholder="Description (e.g. client invoice)">
+              <button class="fin-btn" onclick="submitIncome()">Add</button>
             </div>
-            <button class="send-btn" id="sendBtn" onclick="send()">&#10148;</button>
+            <div class="fin-list" id="incomeList"><div class="fin-empty">No income entries yet.</div></div>
           </div>
-          <div class="input-footnote">Estimate only. Not tax or investment advice. Not a filing product.</div>
+          <div class="fin-section">
+            <h4>Add deduction</h4>
+            <div class="fin-form">
+              <input type="number" id="dedAmount" placeholder="Amount" min="0" step="0.01">
+              <input type="text" id="dedDesc" placeholder="Description (e.g. laptop for client work)" onblur="autoSuggestCategory()">
+              <input type="text" id="dedCategory" placeholder="Category (AI-suggested, edit freely)">
+              <button class="fin-btn" onclick="submitDeduction()">Add</button>
+            </div>
+            <div class="fin-list" id="deductionList"><div class="fin-empty">No deductions entered yet.</div></div>
+          </div>
+        </div>
+
+        <div class="fin-view" id="view-assistant">
+          <div class="mode-hdr">
+            <div class="mode-hdr-title">Assistant</div>
+            <div class="mode-hdr-desc">Ask about quarterly set-asides, deduction categories, or retirement contribution limits. Estimates only -- not filing-ready figures.</div>
+          </div>
+          <div class="output" id="output" style="flex:1">
+            <div class="bubble system">SAIRNcash Pro is live -- Claude is ready. This build tracks and estimates only; it will never file anything on your behalf.</div>
+          </div>
+          <div class="input-area">
+            <div class="input-row">
+              <div class="input-wrap">
+                <textarea id="inp" rows="1" placeholder="Ask about a set-aside, a deduction, or a contribution limit..."></textarea>
+                <span class="cc" id="cc">0</span>
+              </div>
+              <button class="send-btn" id="sendBtn" onclick="send()">&#10148;</button>
+            </div>
+            <div class="input-footnote">Estimate only. Not tax or investment advice. Not a filing product.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -475,8 +526,9 @@ async function initApp() {
     showAppShell();
     // Firebase sync only starts once a real, verified customerId exists
     // (2026-08-10 isolation fix) -- never before, never with a fallback
-    // shared path.
-    if (window._initFirebaseSync) window._initFirebaseSync();
+    // shared path. initFinanceSync() waits for it to finish setting up
+    // window._fbIncomeRef/_fbDeductionsRef before attaching listeners.
+    if (window._initFirebaseSync) { await window._initFirebaseSync(); initFinanceSync(); }
   } else {
     document.getElementById('paywall').style.display = 'flex';
     document.getElementById('appShell').classList.remove('show');
@@ -614,6 +666,97 @@ function calcRetirementEstimate(netProfit, seTax, vehicle) {
   }
   return { estimate: 0, cap: 0 };
 }
+
+// ── VIEW SWITCHING ────────────────────────────────────────────────
+function switchView(v) {
+  document.querySelectorAll('.fin-view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.view-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.getElementById('tab-' + v).classList.add('active');
+  if (v === 'assistant') setTimeout(() => document.getElementById('inp').focus(), 50);
+}
+
+// ── INCOME & DEDUCTIONS ───────────────────────────────────────────
+// Synced via the same customerId-scoped Firebase paths Task 0 set up
+// (window._fbIncomeRef / _fbDeductionsRef, exposed by initFirebase()
+// once a real subscription is confirmed) -- no separate sync mechanism.
+let incomeCache = [], deductionCache = [];
+
+function initFinanceSync() {
+  if (!window._fbIncomeRef || !window._fbOnValueRaw) return;
+  window._fbOnValueRaw(window._fbIncomeRef, snap => {
+    incomeCache = [];
+    snap.forEach(c => { const v = c.val(); if (v) incomeCache.push(Object.assign({ key: c.key }, v)); });
+    renderFinancePanel();
+  });
+  window._fbOnValueRaw(window._fbDeductionsRef, snap => {
+    deductionCache = [];
+    snap.forEach(c => { const v = c.val(); if (v) deductionCache.push(Object.assign({ key: c.key }, v)); });
+    renderFinancePanel();
+  });
+}
+
+async function addIncomeEntry(amount, description) {
+  if (!window._fbIncomeRef || !window._fbPushRaw) { showToast('Sync not ready yet -- try again in a moment'); return false; }
+  await window._fbPushRaw(window._fbIncomeRef, { amount: Number(amount), description: description || '', date: new Date().toISOString(), created_at: Date.now() });
+  return true;
+}
+async function addDeductionEntry(amount, category, description) {
+  if (!window._fbDeductionsRef || !window._fbPushRaw) { showToast('Sync not ready yet -- try again in a moment'); return false; }
+  await window._fbPushRaw(window._fbDeductionsRef, { amount: Number(amount), category: category || 'Uncategorized', description: description || '', date: new Date().toISOString(), created_at: Date.now() });
+  return true;
+}
+
+function sumIncome() { return incomeCache.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
+function sumDeductions() { return deductionCache.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
+function ytdNetProfit() { return sumIncome() - sumDeductions(); }
+
+async function submitIncome() {
+  const amtEl = document.getElementById('incAmount'), descEl = document.getElementById('incDesc');
+  const amount = Number(amtEl.value);
+  if (!amount || amount <= 0) { showToast('Enter a real amount'); return; }
+  const ok = await addIncomeEntry(amount, descEl.value.trim());
+  if (ok) { amtEl.value = ''; descEl.value = ''; showToast('Income added'); }
+}
+async function submitDeduction() {
+  const amtEl = document.getElementById('dedAmount'), descEl = document.getElementById('dedDesc'), catEl = document.getElementById('dedCategory');
+  const amount = Number(amtEl.value);
+  if (!amount || amount <= 0) { showToast('Enter a real amount'); return; }
+  const ok = await addDeductionEntry(amount, catEl.value.trim() || 'Uncategorized', descEl.value.trim());
+  if (ok) { amtEl.value = ''; descEl.value = ''; catEl.value = ''; showToast('Deduction added'); }
+}
+
+// AI-suggested category only -- pre-fills an editable field, never
+// auto-saves, never touches the amount the user typed. Narrow,
+// single-purpose call, NOT the general chat SYSTEM_PROMPT (spec §4).
+async function suggestDeductionCategory() {
+  const descEl = document.getElementById('dedDesc'), catEl = document.getElementById('dedCategory');
+  const description = descEl.value.trim();
+  if (!description || catEl.value.trim()) return; // don't overwrite a category the user already typed
+  try {
+    const res = await fetch('/api/claude', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      app_id: 'sairncash', is_demo: false, max_tokens: 20,
+      system: 'Suggest ONE short deduction category (2-3 words, e.g. "Equipment", "Software Subscriptions", "Home Office") for the given business expense description. Output ONLY the category label, nothing else.',
+      messages: [{ role: 'user', content: description }]
+    })});
+    const data = await res.json();
+    const suggestion = data && data.content && data.content[0] && data.content[0].text;
+    if (suggestion && !catEl.value.trim()) catEl.value = suggestion.trim();
+  } catch (e) { /* silent -- category stays blank/user-typed, never blocks the add-deduction flow */ }
+}
+function autoSuggestCategory() { suggestDeductionCategory(); }
+
+function renderFinancePanel() {
+  const incEl = document.getElementById('incomeList');
+  incEl.innerHTML = incomeCache.length
+    ? incomeCache.slice().reverse().map(e => `<div class="fin-item"><span>${H(e.description || '(no description)')}</span><span class="fin-item-amt">$${(Number(e.amount)||0).toFixed(2)}</span></div>`).join('')
+    : '<div class="fin-empty">No income entries yet.</div>';
+  const dedEl = document.getElementById('deductionList');
+  dedEl.innerHTML = deductionCache.length
+    ? deductionCache.slice().reverse().map(e => `<div class="fin-item"><span>${H(e.description || '(no description)')}<span class="fin-item-cat">${H(e.category || 'Uncategorized')}</span></span><span class="fin-item-amt">$${(Number(e.amount)||0).toFixed(2)}</span></div>`).join('')
+    : '<div class="fin-empty">No deductions entered yet.</div>';
+}
+function H(s) { const d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
 
 // ── ASSISTANT ─────────────────────────────────────────────────────
 const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need. When explaining a number, you will be given the already-computed figure and the inputs it came from in the user\'s message context -- explain it in plain language. Never recompute, restate a different number, or imply a different figure is more correct.';
