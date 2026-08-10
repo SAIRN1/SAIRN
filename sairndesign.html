@@ -2280,6 +2280,9 @@ async function saveInvoice(){
   var pid=$('invproposal').value;
   var p=proposals().find(function(x){return x.id===pid;});
   if(!p){toast('Select an approved proposal first');return;}
+  // Zero race window on one device (no await between this read and the
+  // write below), but cannot close a cross-device race -- the real lock
+  // is the server's unique-index rejection below.
   var alreadyInvoiced=invoices().some(function(i){return i.proposal_id===pid;});
   if(alreadyInvoiced){toast('This proposal already has an invoice');return;}
   var rec={id:newId('INV'),invoice_number:'INV-'+Date.now().toString().slice(-6),proposal_id:pid,
@@ -2287,8 +2290,32 @@ async function saveInvoice(){
     due_date:$('invdue').value,status:'Draft',issued_date:sdnLocalToday(),paid_date:'',created_at:sdnLocalToday()};
   var list=invoices();list.push(rec);st('sdn_invoices',list);
   closeInvoiceModal();rInvoicing();
-  var syncResult=await sdnData('write','sdn_invoices',rec);
-  toast(syncResult?'Invoice created':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+  // 2026-08-10: direct fetch instead of sdnData() -- this write needs to
+  // read the real response status/error code (409 DUPLICATE_INVOICE vs.
+  // any other failure) to know whether to roll the optimistic local
+  // insert back. sdnData() collapses every non-2xx response to null and
+  // has ~20 other call sites in this file that depend on that exact
+  // contract, so it isn't touched -- this is a local, single-call-site
+  // change.
+  var lic=sdnLicenseKey();
+  if(!lic){toast('Saved on this device only -- server sync failed, try again with a connection',6000);return;}
+  try{
+    var r=await fetch(DATA_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+      body:JSON.stringify({action:'write',resource:'sdn_invoices',app_id:APP_ID,payload:rec})});
+    var d=await r.json().catch(function(){return null;});
+    if(r.status===409&&d&&d.error&&d.error.code==='DUPLICATE_INVOICE'){
+      // Server rejected it -- a duplicate genuinely landed first. Roll the
+      // local optimistic insert back so this device isn't left showing an
+      // invoice the server never actually holds.
+      list=invoices().filter(function(i){return i.id!==rec.id;});
+      st('sdn_invoices',list);rInvoicing();
+      toast(d.error.message,6000);
+      return;
+    }
+    toast((r.ok&&d&&d.ok)?'Invoice created':'Saved on this device only -- server sync failed, try again with a connection',(r.ok&&d&&d.ok)?3000:6000);
+  }catch(e){
+    toast('Saved on this device only -- server sync failed, try again with a connection',6000);
+  }
 }
 async function setInvoiceStatus(id,status){
   var list=invoices();
