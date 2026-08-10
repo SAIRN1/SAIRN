@@ -1110,6 +1110,75 @@ window.grdLocalToday=grdLocalToday;
 var VALID=['GRD-','DEMO-','SAIRN-'];
 var zid=null,jid=null,qid=null,pid=null,aiHist=[];
 
+// AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
+// live in SAIRNbiz/SAIRNlaw/SAIRNvet/SAIRNscape. Registry of read-only
+// tools callAI() may request via Claude's tool-use. Every tool is:
+//   - read-only (never creates/modifies/deletes anything)
+//   - wrapped so a thrown error or unexpected data shape becomes an honest
+//     {ok:false} result, never a crash or a silently wrong answer
+//   - checked against the CALLING role before running, if marked sensitive
+//     (same single-role check as SAIRNbiz's sbExecuteTool/SAIRNlaw's
+//     lawExecuteTool/SAIRNscape's scpExecuteTool -- NOT this file's own
+//     separate GRD_QC_AUTHORITY_ROLES/MSB_VOID_AUTHORITY_ROLES multi-role
+//     concepts, different features)
+// See docs/superpowers/specs/2026-08-10-sairngrounds-ai-tool-calling-design.md
+var GRD_TOOLS = {};
+
+function grdRegisterTool(name, description, inputSchema, sensitive, run) {
+  GRD_TOOLS[name] = {
+    definition: { name: name, description: description, input_schema: inputSchema },
+    sensitive: !!sensitive,
+    run: run
+  };
+}
+
+function grdExecuteTool(name, role, input) {
+  var tool = GRD_TOOLS[name];
+  if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+  if (tool.sensitive && role !== 'owner') {
+    return { ok: false, error: 'This data is restricted to the owner role.' };
+  }
+  try {
+    return { ok: true, result: tool.run(input || {}) };
+  } catch (e) {
+    return { ok: false, error: 'Could not retrieve that data right now.' };
+  }
+}
+
+// Concurrency guard (2026-08-10) -- found necessary during design, not
+// discovered live: aiHist is a shared, persistent, multi-turn history
+// array (same shape as SAIRNlaw's aiHist/SAIRNscape's scpAiHist) that had
+// ZERO guard before this change. Two concurrent callAI() calls would both
+// read/write the same array, corrupting each other's context -- the exact
+// bug class already found and fixed live in SAIRNlaw and SAIRNscape. Same
+// fix shape: block a second send outright rather than trying to make
+// concurrent shared-history calls safe.
+var grdAiBusy = false;
+
+grdRegisterTool(
+  'get_properties',
+  'Look up the company\'s current property roster: name, type, contact, phone, email, acreage, address, and status. Does NOT include job history, schedule, invoices, quotes, or property notes -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  false,
+  function (input) {
+    // input intentionally unused -- this tool takes no real arguments, but
+    // accepts one for interface consistency with grdExecuteTool(name, role,
+    // input), matching get_customers'/get_matters' convention.
+    return ld('grd_properties', []).map(function (p) {
+      return {
+        name: p.name,
+        type: p.type,
+        contact: p.contact,
+        phone: p.phone,
+        email: p.email,
+        acreage: p.acreage,
+        address: p.address,
+        status: p.status
+      };
+    });
+  }
+);
+
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function ld(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
