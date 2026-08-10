@@ -1269,18 +1269,25 @@ async function sendAI(){
   if(chat.querySelector('div[style*="text-align:center"]'))chat.innerHTML='';
   chat.innerHTML+='<div class="amu">'+H(q)+'</div>';
   chat.scrollTop=chat.scrollHeight;
-  // FIXED 2026-08-09: aiHist.push({role:'user',...}) happens synchronously
-  // per send, but the paired aiHist.push({role:'assistant',...}) used to
-  // happen only when THAT request's fetch resolved -- landing in whichever
-  // order responses arrive, not the order questions were sent. Two fast
-  // messages where the second's response arrives first produced
-  // [user,user,assistant2,assistant1] instead of correctly alternating,
-  // which can break the next request against an API that expects strict
-  // role alternation. Recording this request's own user-turn index and
-  // splicing the assistant reply back in right after it (not always at
-  // the end) keeps aiHist correctly ordered regardless of resolve order.
-  var myUserIdx=aiHist.length;
-  aiHist.push({role:'user',content:q});
+  // FIXED 2026-08-09, HARDENED 2026-08-10: aiHist.push({role:'user',...})
+  // happens synchronously per send, but the paired assistant entry only
+  // lands when THAT request resolves -- landing in whichever order
+  // responses arrive, not the order questions were sent.
+  // The original 2026-08-09 fix recorded a raw array INDEX
+  // (aiHist.length) at push time and spliced at index+1 on resolve. That
+  // works for two concurrent SINGLE-entry exchanges, but goes stale the
+  // moment any concurrent exchange's insertions land first and shift the
+  // array: this request's captured index no longer points at its own
+  // user turn. Live-tested 2026-08-10 with two concurrent tool-using
+  // (3-entry) exchanges -- a real, reproducible ordering corruption
+  // resulted (["user","assistant","assistant",...], not alternating).
+  // Fix: track this request's own user turn by OBJECT IDENTITY, not a
+  // captured index, and look up its CURRENT position via indexOf() at
+  // splice time -- correct regardless of how many insertions happened
+  // before it while this request was in flight, without abandoning the
+  // "allow concurrent questions" design the 2026-08-09 fix established.
+  var myUserTurn={role:'user',content:q};
+  aiHist.push(myUserTurn);
   var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
   var toolDefs=Object.keys(SDN_TOOLS).map(function(k){return SDN_TOOLS[k].definition;});
@@ -1298,7 +1305,7 @@ async function sendAI(){
     if(!toolUse){
       var text=(blocks[0]&&blocks[0].text)||'No response text returned.';
       thinking.textContent=text;
-      aiHist.splice(myUserIdx+1,0,{role:'assistant',content:text});
+      aiHist.splice(aiHist.indexOf(myUserTurn)+1,0,{role:'assistant',content:text});
       chat.scrollTop=chat.scrollHeight;
       return;
     }
@@ -1325,12 +1332,13 @@ async function sendAI(){
     if(aiErr2){thinking.textContent=aiErr2;chat.scrollTop=chat.scrollHeight;return;}
     var finalText=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
     thinking.textContent=finalText;
-    // Atomic 3-entry splice at the same recorded index the single-entry
-    // case uses -- preserves the existing fix's exact "insert relative to
-    // this request's own recorded position" behavior for a multi-entry
-    // exchange, rather than three separate splices that would each need
-    // to account for the prior insertions shifting indices.
-    aiHist.splice(myUserIdx+1,0,
+    // Atomic 3-entry splice at this request's OWN user turn's CURRENT
+    // position (looked up by identity, not a captured index -- see the
+    // 2026-08-10 hardening note above) -- correct regardless of how many
+    // other concurrent exchanges' insertions landed while this longer
+    // tool-use round-trip was in flight, rather than three separate
+    // splices that would each need to account for shifting indices.
+    aiHist.splice(aiHist.indexOf(myUserTurn)+1,0,
       {role:'assistant',content:blocks},
       {role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]},
       {role:'assistant',content:finalText}
