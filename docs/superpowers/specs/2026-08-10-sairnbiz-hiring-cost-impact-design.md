@@ -1,10 +1,14 @@
 # SAIRNbiz — Hiring Cost-Impact Reasoning
 
-**Status:** Implementation complete and live-verified 2026-08-10, pushed
-to main (98d235c) and confirmed deployed at sairn.vercel.app/sairnbiz
-(`computeHiringCostImpact`/`get_hiring_cost_impact` both present in the
-post-push live HTML). This is item 5 of the 6-item AI-native roadmap for
-SAIRNbiz, building on items 1-2 (tool-calling foundation,
+**Status:** Implementation complete 2026-08-10. **A real output-integrity
+issue was found during Task 3's live verification (the AI fabricating
+substitute financial figures instead of relaying a tool denial/error, in
+two separate live scenarios) and has been fixed, platform-wide, in the
+same commit range** (`b189b38`, pushed to main and live-verified against
+sairn.vercel.app/sairnbiz) — see "Findings from live testing" and "Fix
+and re-verification" below before trusting any status claim past this
+line. This is item 5 of the 6-item AI-native roadmap for SAIRNbiz,
+building on items 1-2 (tool-calling foundation,
 `get_payroll_summary`/`get_pl_summary`).
 
 Specific tests that passed live, against the confirmed-deployed app, via
@@ -33,19 +37,55 @@ same technique as items 2-4):
   role."}` for a `manager` role, both via direct call and via the live
   chat's actual tool_result.
 
-**Known concern, not fixed under this verification-only task:** although
-the tool-level role gate is correct, the AI's rendered reply to a denied
-`manager`-role request did not always just relay the restriction — in
-2 of 2 live runs it followed the restriction message with a
-self-generated, non-tool-backed cost estimate (invented workers'-comp
-rate, FUTA/SUTA, benefit range), despite the system prompt's explicit
-"say so plainly instead of guessing an answer" instruction. The
-sibling `get_payroll_summary` tool, tested the same way in the same
-session, complied correctly with no fabricated numbers — so this
-appears specific to `get_hiring_cost_impact`'s multi-caveat, estimate-
-framed tool description, not a general role-gate defect. Logged here
-rather than silently fixed, since Task 3 is verification-only; needs a
-follow-up task to tighten the tool description or system prompt.
+**Findings from live testing (both fixed 2026-08-10, see below) — two
+separate incidents, not one:**
+1. **Non-owner-role denial fabrication.** The AI's rendered reply to a
+   denied `manager`-role request did not always just relay the
+   restriction — in 2 of 2 live runs it followed the restriction message
+   with a self-generated, non-tool-backed cost estimate (invented
+   workers'-comp rate, FUTA/SUTA, benefit range), despite the system
+   prompt's then-existing "say so plainly instead of guessing an answer"
+   instruction.
+2. **Owner-role tool-skip free-hand arithmetic (separate incident, not
+   previously promoted out of the Task 3 report).** In an owner-role
+   session with the tool fully available, a differently-phrased
+   follow-up question ("give me the exact figures you used in the
+   calculation," asked after payroll+P&L+hiring-cost tool results were
+   already in the conversation history) caused the model to skip calling
+   `get_hiring_cost_impact` again and instead answer from its own
+   arithmetic — which in the original Task 3 test run was wrong. This is
+   arguably more concerning than incident 1: it happened on the *owner*
+   role, with no access restriction in play at all, purely from question
+   phrasing / conversational state.
+
+Root cause (diagnosed during the fix wave, corrects an earlier
+diagnosis that assumed the issue was specific to this tool's
+description): `callAI()` makes two proxy calls per exchange. Only the
+FIRST sends the `tools` array; the SECOND — the one that generates the
+actual rendered reply after a tool_result comes back — sends no `tools`
+field at all, so a tool's description has zero influence on that turn.
+The trigger is question phrasing / conversational state, not which tool
+was involved, so this affects every current and future sensitive tool,
+not just `get_hiring_cost_impact`.
+
+**Fix and re-verification (2026-08-10, commit `b189b38`):** `callAI()`'s
+system prompt now explicitly forbids ANY substitute figure (not just "an
+answer"), positioned at the end of system-prompt construction; the
+tool_result error string built for denials/errors now also carries an
+adjacent, explicit "do not estimate" instruction. Re-tested live against
+the deployed fix:
+- Non-owner-role denial (incident 1 scenario): 2/2 clean — both runs
+  stated the restriction plainly with zero fabricated numbers.
+- Owner-role "give me the exact figures" follow-up (incident 2
+  scenario): 2/2 improved — the model still did not call the tool again
+  on this specific follow-up, but both times it correctly relayed the
+  real numbers already present in conversation history instead of
+  free-handing new (and previously wrong) arithmetic.
+This is a prompt-level mitigation, not a structural guarantee — it
+reduces the frequency and severity of fabrication but cannot
+mechanically eliminate it, since the underlying two-call/no-tools-on-
+the-second-call architecture is unchanged. Small live sample size (2
+runs per scenario); treat as directional evidence, not proof.
 
 ## 1. Problem
 
