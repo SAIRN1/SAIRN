@@ -1029,7 +1029,7 @@ sbRegisterTool(
 
 sbRegisterTool(
   'get_payroll_anomalies',
-  'Check for problems before payroll runs: any active employee with a missing or $0 pay rate (payroll would silently compute as $0 for them), and any active employee who started within the last 14 days (may not have been in a prior payroll cycle). Returns real findings, never guesses.',
+  'Check for problems before payroll runs. IMPORTANT CAVEATS: this tool performs EXACTLY TWO checks and no others -- (1) any active employee with a missing or $0 pay rate (payroll would silently compute as $0 for them), and (2) any active employee who started within the last 14 days (may not have been in a prior payroll cycle). A result of critical_count:0, warning_count:0 means ONLY that these two specific checks found nothing -- it does NOT mean payroll is correct, complete, or ready to run. This tool does NOT verify tax withholding accuracy, does NOT check benefits enrollment (benefits cost is always $0 in this app -- no enrollment UI exists to write a real value), and does NOT compare against any prior payroll cycle (no payroll-run history is persisted anywhere). Never present a zero-finding result as "payroll is clean" or "ready to run" without stating these caveats.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
@@ -1170,6 +1170,11 @@ function doLogout(){
   // the new user's role. (Finding 2, 2026-08-09 payroll/P&L copilot final-
   // review fix wave.)
   clrAI();
+  // Clear the payroll-anomaly banner too, same staleness-leak reason as
+  // clrAI() above -- otherwise a flagged employee's name/issue text can
+  // survive logout into the next session on this device. (final-review
+  // Finding 3, 2026-08-10)
+  renderPayrollAnomalyBanner([]);
   $('app').classList.remove('on');$('pin').classList.add('on');toast('Logged out');
 }
 
@@ -1393,7 +1398,13 @@ function saveEmp(){
   if(existing&&existing.ben)r.ben=existing.ben;
   if(!r.fn||!r.ln){toast('Name required');return;}
   if(eid){var i=emps.findIndex(function(x){return x.id===eid;});if(i>-1)emps[i]=r;else emps.push(r);}else emps.push(r);
-  st('sb_emps',emps);closeEmpModal();rEmps();syncEmps(emps);toast('Saved - '+r.fn+' '+r.ln);
+  st('sb_emps',emps);closeEmpModal();rEmps();syncEmps(emps);
+  // Clear the payroll-anomaly banner -- the user hasn't re-attempted Run
+  // Payroll yet, so leaving a stale finding asserted by name (possibly
+  // now fixed) is worse than showing nothing until they click Run
+  // Payroll again. (final-review Finding 3, 2026-08-10)
+  renderPayrollAnomalyBanner([]);
+  toast('Saved - '+r.fn+' '+r.ln);
 }
 
 function openHireModal(){['hpos','hrate'].forEach(function(f){$(f).value='';});$('hdept').value='Fabrication';$('hstage').value='Screening';$('hstatus').value='Active';$('hposted').value=sbLocalToday();$('hiremodal').classList.add('on');}
@@ -1902,7 +1913,10 @@ function genReport(type){
   else if(type==='payroll'){
     rPay();
     $('rtitle').textContent='Payroll Summary - '+new Date().toLocaleDateString();
-    $('rbody').innerHTML='<table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>'+$('pytbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Gross Payroll:</strong> '+$('py-gross').textContent+' &nbsp;&nbsp; <strong>Total Labor Cost:</strong> '+$('py-total').textContent+' &nbsp;&nbsp; <strong>YTD Payroll:</strong> '+$('py-ytd').textContent+'</div>';
+    var payrollReportWarning='';
+    var payrollReportAnomalies=checkPayrollAnomalies().filter(function(f){return f.severity==='critical';});
+    if(payrollReportAnomalies.length){payrollReportWarning='<div style="background:rgba(239,68,68,0.08);border:1px solid var(--danger);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:var(--danger);">This report includes '+payrollReportAnomalies.length+' unresolved payroll issue(s) -- see Payroll panel before relying on these figures.</div>';}
+    $('rbody').innerHTML=payrollReportWarning+'<table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>'+$('pytbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Gross Payroll:</strong> '+$('py-gross').textContent+' &nbsp;&nbsp; <strong>Total Labor Cost:</strong> '+$('py-total').textContent+' &nbsp;&nbsp; <strong>YTD Payroll:</strong> '+$('py-ytd').textContent+'</div>';
   }
   else if(type==='tax'){
     rTax();
@@ -1928,6 +1942,15 @@ function csv(type){
   else{rows=[['SAIRNbiz',type,new Date().toLocaleDateString()]];}
   var c=rows.map(function(r){return r.map(function(x){return'"'+String(x||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
+  // Export is never blocked (final-review Finding 2, 2026-08-10) -- a
+  // downloadable CSV with unflagged payroll issues is worse than the
+  // no-op toast this feature was built to protect, so a CRITICAL finding
+  // still lets the file download but adds a named-count warning toast.
+  if(type==='payroll'){
+    var payrollAnomalies=checkPayrollAnomalies();
+    var payrollCriticals=payrollAnomalies.filter(function(f){return f.severity==='critical';});
+    if(payrollCriticals.length){toast('Exported with '+payrollCriticals.length+' unresolved payroll issue(s) -- see Payroll panel',5000);return;}
+  }
   toast('Exported - '+fn);
 }
 
