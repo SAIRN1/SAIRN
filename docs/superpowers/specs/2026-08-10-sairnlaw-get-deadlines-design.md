@@ -1,10 +1,26 @@
 # SAIRNlaw — `get_deadlines` AI Tool
 
-**Status:** Design approved 2026-08-10, following brainstorming. Not yet
-implemented — this spec precedes the implementation plan and explicit
-go-ahead, per the user's request to gate this one on an explicit approval
-before any code (unlike `get_matters`, which was pre-approved straight
-through to execution).
+**Status:** Implemented and live-verified 2026-08-10. All 2 commits
+(`d85a940`, `d4ce7d6`) are on `origin/main` and confirmed live at
+`sairn.vercel.app/sairnlaw` — `get_deadlines` present in
+`LAW_TOOLS`. A real owner-role session asked "what deadlines are coming
+up, and is anything overdue?" and got a grounded answer (Delacroix v.
+Reyes Supply Co.'s Answer to Complaint, due 2026-08-10, "Due Soon") from
+real `law_deadlines` data. Refusal-preserved test passed: a billing/trust
+question still got an honest "I don't have access" redirect, zero
+fabrication. **Dashboard-consistency spot check passed exactly**:
+`get_deadlines`'s live-computed Due-soon count (1) matched `rDash()`'s own
+`k-deadlines` dashboard number (1) for the same real data at the same
+moment, confirming the ported urgency thresholds didn't diverge from
+`rDash()`'s actual logic. Concurrency regression check passed with two
+tools now registered — `lawAiBusy` still correctly rejected a second
+concurrent send with the "please wait" toast, confirming the guard
+generalizes past the single-tool case it was originally fixed against.
+Role-gate mechanism confirmed live via direct `lawExecuteTool` calls.
+Guardian v2 pass was clean except the same two pre-existing findings
+already noted during the `get_matters` rollout (duplicate
+`tr-explain-result` id, `nav_panel_check.py`'s sidebar-button convention
+mismatch) — confirmed unchanged by this task, not newly introduced.
 
 This is the second tool on SAIRNlaw's AI tool-calling foundation
 (`docs/superpowers/specs/2026-08-10-sairnlaw-ai-tool-calling-design.md`,
