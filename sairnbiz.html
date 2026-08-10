@@ -1071,9 +1071,44 @@ sbRegisterTool(
   },
   true,
   function (input) {
+    // Finding 2 (2026-08-10 fix wave): sbExecuteTool's own contract is that
+    // a thrown error becomes an honest {ok:false}, never a crash or a
+    // silently wrong answer (see the comment on sbExecuteTool's definition
+    // above) -- so invalid input must throw here rather than fall through
+    // to garbage math (e.g. 'full time' lowercase silently computing as
+    // Part Time, or a non-numeric hourly_rate NaN-ing through to a
+    // JSON-serialized null with no error flag).
+    if (typeof input.hourly_rate !== 'number' || !isFinite(input.hourly_rate)) {
+      throw new Error('hourly_rate must be a finite number.');
+    }
+    if (input.employment_type !== 'Full Time' && input.employment_type !== 'Part Time') {
+      throw new Error('employment_type must be exactly "Full Time" or "Part Time".');
+    }
+    // Finding 3: this calls SB_TOOLS[...].run() directly, bypassing
+    // sbExecuteTool's own role-check for these two specific calls --
+    // deliberate, and safe today only because (1) the caller already
+    // passed THIS tool's own owner-only gate (sensitive:true, above) to
+    // reach this code at all, and (2) both get_payroll_summary and
+    // get_pl_summary are ALSO owner-only today, so no privilege escalation
+    // occurs. If either of those two tools' gate is ever narrowed or made
+    // conditional/non-owner, this call site needs to be revisited.
     var payrollSummary = SB_TOOLS['get_payroll_summary'].run();
     var plSummary = SB_TOOLS['get_pl_summary'].run();
+    // Finding 4: guard against either reused tool's return shape ever
+    // drifting (e.g. a renamed field) -- without this, computeHiringCostImpact
+    // would silently produce NaN/null values instead of an honest error.
+    if (typeof payrollSummary.total_labor_cost !== 'number' || !isFinite(payrollSummary.total_labor_cost) ||
+        typeof plSummary.net_income !== 'number' || !isFinite(plSummary.net_income) ||
+        typeof plSummary.revenue !== 'number' || !isFinite(plSummary.revenue) ||
+        typeof plSummary.net_margin_pct !== 'number' || !isFinite(plSummary.net_margin_pct)) {
+      throw new Error('get_payroll_summary/get_pl_summary returned an unexpected shape.');
+    }
     var result = computeHiringCostImpact(input.hourly_rate, input.employment_type, payrollSummary, plSummary);
+    // Echo validated inputs + derived hours back so the tool's output is
+    // self-describing (Finding 2).
+    result.hourly_rate = input.hourly_rate;
+    result.employment_type = input.employment_type;
+    result.new_role_hours = input.employment_type === 'Full Time' ? 80 : 32;
     if (input.position) {
       var match = ld('sb_hire', []).find(function (h) { return h.pos === input.position; });
       if (match) {
@@ -1923,9 +1958,22 @@ function sbSafeHistoryWindow(hist, maxLen) {
 function callAI(msg){
   sbAiBusy=true;
   var emps=ld('sb_emps',[]);
-  var ctx='You are the AI business operations assistant for SAIRNbiz, used by Pinnacle Stone & Design in Westlake, OH. They have '+emps.length+' employees, operate a stone fabrication shop, and use SAIRNbiz for HR and accounting. Be concise, practical, and industry-specific. No fluff. If you use a tool and it returns an error or "not authorized," say so plainly instead of guessing an answer.';
+  var ctx='You are the AI business operations assistant for SAIRNbiz, used by Pinnacle Stone & Design in Westlake, OH. They have '+emps.length+' employees, operate a stone fabrication shop, and use SAIRNbiz for HR and accounting. Be concise, practical, and industry-specific. No fluff.';
   var sharedCtx=(typeof buildSbSharedCompanyContext==='function')?buildSbSharedCompanyContext():'';
   if(sharedCtx)ctx+='\n\n'+sharedCtx;
+  // Finding 1 (2026-08-10 hiring-cost-impact final-review fix wave, platform-
+  // wide -- not scoped to any one tool). Deliberately placed at the END of
+  // system-prompt construction (after sharedCtx), not up near the persona
+  // sentence where it used to live -- instructions nearer the end of a
+  // system block carry more weight, and this instruction must survive into
+  // the SECOND proxy call below too, which is the one that actually
+  // generates the user-visible reply after a tool_result comes back, and
+  // which sends NO `tools` field at all -- so a tool's own description has
+  // zero influence on that turn. Broadened from the old "say so plainly
+  // instead of guessing an answer" (a hedged "rough industry estimate"
+  // could still satisfy that) to explicitly forbid ANY substitute figure,
+  // not just "the answer."
+  ctx+='\n\nNever provide your own estimate, guess, or general-knowledge substitute for any number a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop. This applies even to "rough" or "industry-average" figures.';
   if(typeof recordSbSharedTopics==='function')recordSbSharedTopics(msg);
   aiHist.push({role:'user',content:msg});
   var toolDefs=Object.keys(SB_TOOLS).map(function(k){return SB_TOOLS[k].definition;});
@@ -1960,7 +2008,12 @@ function callAI(msg){
     // second fetch's .catch and get mislabeled as one if left unhandled).
     var toolResults=toolUses.map(function(toolUse){
       var outcome=sbExecuteTool(toolUse.name,prole,toolUse.input);
-      var content=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error);
+      // Finding 1 part 2: reinforce the anti-fabrication instruction right
+      // next to the trigger, in the same turn as the denial/error itself --
+      // the system-prompt-level instruction above covers every turn, this
+      // is belt-and-suspenders specifically for the tool_result content the
+      // model sees immediately before generating its reply.
+      var content=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
       return {type:'tool_result',tool_use_id:toolUse.id,content:content};
     });
     // Claude requires the assistant turn that requested the tool(s) to be
