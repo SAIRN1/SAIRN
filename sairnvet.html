@@ -7122,20 +7122,41 @@ var askAiSeq=0;
 function askAI(){
   var q=document.getElementById('ai-question').value.trim();
   if(!q){showToast('Enter a question','error');return;}
-  var system='You are a general veterinary knowledge assistant. Answer clearly and accurately. IMPORTANT: if the question asks for a specific numeric drug dose or asks you to diagnose a specific patient, do NOT provide a specific number or a single diagnosis here — this tool is not connected to the verified drug/diagnosis database or the contraindication safety checks. Instead, tell the user to use the AI Dosing Calculator (for verified, bounds-checked doses) or the Diagnosis Library / Diagnosis Protocol Generator (for a grounded, ranked differential) so the safety checks actually run. You may still discuss general concepts, mechanisms, and reasoning freely.';
+  var toolDefs=Object.keys(SV_TOOLS).map(function(k){return SV_TOOLS[k].definition;});
+  var system='You are a general veterinary knowledge assistant. Answer clearly and accurately. IMPORTANT: if the question asks for a specific numeric drug dose or asks you to diagnose a specific patient, do NOT provide a specific number or a single diagnosis here — this tool is not connected to the verified drug/diagnosis database or the contraindication safety checks. Instead, tell the user to use the AI Dosing Calculator (for verified, bounds-checked doses) or the Diagnosis Library / Diagnosis Protocol Generator (for a grounded, ranked differential) so the safety checks actually run. You may still discuss general concepts, mechanisms, and reasoning freely, and you may look up real patient roster information (name, species, breed, owner, age, last visit, status) via the get_patients tool when asked -- never guess or invent a specific figure, date, or fact a tool would have provided.';
   var sharedCtx=(typeof buildSvSharedCompanyContext==='function')?buildSvSharedCompanyContext():'';
   if(sharedCtx) system+='\n\n'+sharedCtx;
-  var messages=[{role:'user',content:q}];
   showToast('Asking Claude...','info');
   logDoseAudit({type:'ai_assistant_question', question:q.slice(0,200)});
   if(typeof recordSvSharedTopics==='function') recordSvSharedTopics(q);
   // Guard against out-of-order async responses -- see calculateDoseAI/getProtocolFromClaude.
   askAiSeq++;
   var myAskAiSeq=askAiSeq;
-  callClaude(system,messages,1500).then(function(result){
+  callClaudeWithTools(system,[{role:'user',content:q}],toolDefs,1500).then(function(blocks){
     if(myAskAiSeq!==askAiSeq) return;
-    document.getElementById('ai-result').style.display='block';
-    document.getElementById('ai-result').textContent=result;
+    var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
+    if(!toolUse){
+      var rep=(blocks[0]&&blocks[0].text)||'No response text returned.';
+      document.getElementById('ai-result').style.display='block';
+      document.getElementById('ai-result').textContent=rep;
+      return;
+    }
+    var outcome=svExecuteTool(toolUse.name,toolUse.input);
+    // Belt-and-suspenders, same pattern proven in SAIRNbiz/SAIRNlaw:
+    // reinforce the anti-fabrication instruction right next to the
+    // trigger, in the same turn as the denial/error itself.
+    var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the error plainly and stop.');
+    var followUpMessages=[
+      {role:'user',content:q},
+      {role:'assistant',content:blocks},
+      {role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]}
+    ];
+    callClaudeWithTools(system,followUpMessages,undefined,1500).then(function(blocks2){
+      if(myAskAiSeq!==askAiSeq) return;
+      var rep2=(blocks2[0]&&blocks2[0].text)||'No response text returned.';
+      document.getElementById('ai-result').style.display='block';
+      document.getElementById('ai-result').textContent=rep2;
+    }).catch(function(e){});
   }).catch(function(e){});
 }
 
