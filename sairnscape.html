@@ -1649,6 +1649,72 @@ var SCP_PROXY='https://sairn.vercel.app/api/claude';
 var SCP_VALID=['SCP-','DEMO-','SAIRN-'];
 var scpCid=null,scpJid=null,scpQid=null,scpSid=null,scpIid=null,scpAiHist=[];
 
+// AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
+// live in SAIRNbiz/SAIRNlaw/SAIRNvet. Registry of read-only tools
+// scpCallAI() may request via Claude's tool-use. Every tool is:
+//   - read-only (never creates/modifies/deletes anything)
+//   - wrapped so a thrown error or unexpected data shape becomes an honest
+//     {ok:false} result, never a crash or a silently wrong answer
+//   - checked against the CALLING role before running, if marked sensitive
+//     (same single-role check as SAIRNbiz's sbExecuteTool/SAIRNlaw's
+//     lawExecuteTool -- NOT this file's own separate
+//     SCP_QC_AUTHORITY_ROLES multi-role concept, a different feature)
+// See docs/superpowers/specs/2026-08-10-sairnscape-ai-tool-calling-design.md
+var SCP_TOOLS = {};
+
+function scpRegisterTool(name, description, inputSchema, sensitive, run) {
+  SCP_TOOLS[name] = {
+    definition: { name: name, description: description, input_schema: inputSchema },
+    sensitive: !!sensitive,
+    run: run
+  };
+}
+
+function scpExecuteTool(name, role, input) {
+  var tool = SCP_TOOLS[name];
+  if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+  if (tool.sensitive && role !== 'owner') {
+    return { ok: false, error: 'This data is restricted to the owner role.' };
+  }
+  try {
+    return { ok: true, result: tool.run(input || {}) };
+  } catch (e) {
+    return { ok: false, error: 'Could not retrieve that data right now.' };
+  }
+}
+
+// Concurrency guard (2026-08-10) -- found necessary during design, not
+// discovered live: scpAiHist is a shared, persistent, multi-turn history
+// array (same shape as SAIRNlaw's aiHist) that had ZERO guard before this
+// change. Two concurrent scpCallAI() calls would both read/write the same
+// array, corrupting each other's context -- the exact bug class already
+// found and fixed live in SAIRNlaw. Same fix shape as lawAiBusy: block a
+// second send outright rather than trying to make concurrent shared-
+// history calls safe.
+var scpAiBusy = false;
+
+scpRegisterTool(
+  'get_customers',
+  'Look up the company\'s current customer roster: name, service, whether it\'s recurring, phone, email, and address. Does NOT include job history, schedule, invoices, quotes, or customer notes -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  false,
+  function (input) {
+    // input intentionally unused -- this tool takes no real arguments, but
+    // accepts one for interface consistency with scpExecuteTool(name, role,
+    // input), matching get_matters'/get_patients' convention.
+    return scpLd('scp_customers', []).map(function (c) {
+      return {
+        name: c.name,
+        service: c.service,
+        recurring: c.recurring,
+        phone: c.phone,
+        email: c.email,
+        address: c.address
+      };
+    });
+  }
+);
+
 function scpH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function scpSt(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function scpLd(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
