@@ -1483,6 +1483,44 @@ lawRegisterTool(
   }
 );
 
+// Pure function -- takes already-known values as arguments, not global
+// lookups, so it's fully Node-testable with no ld()/DOM stubbing needed.
+// Reuses rDash()'s own existing urgency thresholds verbatim (see rDash(),
+// sairnlaw.html:1575 area) rather than inventing a new scheme -- Overdue
+// and Due-soon must mean the same thing here as they do on the dashboard.
+function computeDeadlineUrgency(dueDate, today, weekAheadMs) {
+  if (dueDate < today) return 'Overdue';
+  if (new Date(dueDate + 'T00:00:00').getTime() <= weekAheadMs) return 'Due soon';
+  return 'Upcoming';
+}
+
+lawRegisterTool(
+  'get_deadlines',
+  'Look up the firm\'s current PENDING deadlines only (completed deadlines are not included): matter, deadline type, title, due date, due time, and location. Each deadline includes an "urgency" field computed live from its due date -- "Overdue", "Due soon" (within 7 days), or "Upcoming" -- never from a stored status label. Does NOT include trust account balances, invoices, time entries, billing records, or deadline notes -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  false,
+  function (input) {
+    // input intentionally unused -- this tool takes no real arguments, but
+    // accepts one for interface consistency with lawExecuteTool(name, role,
+    // input), matching get_matters' and SAIRNbiz's get_employees convention.
+    var today = lawLocalToday();
+    var weekAheadMs = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    return deadlines()
+      .filter(function (d) { return d.status === 'Pending'; })
+      .map(function (d) {
+        return {
+          matter: matterLabel(d.matter_id),
+          type: d.type,
+          title: d.title,
+          due_date: d.due_date,
+          due_time: d.due_time,
+          location: d.location,
+          urgency: computeDeadlineUrgency(d.due_date, today, weekAheadMs)
+        };
+      });
+  }
+);
+
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
