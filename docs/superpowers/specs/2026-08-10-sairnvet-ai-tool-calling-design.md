@@ -1,7 +1,32 @@
 # SAIRNvet — AI Tool-Calling Foundation + `get_patients`
 
-**Status:** Design approved 2026-08-10, following brainstorming. Not yet
-implemented.
+**Status:** Implemented and live-verified 2026-08-10. All 3 commits
+(`ca9d552`, `e5968aa`, `1c6e682`) are on `origin/main` and confirmed live
+at `sairn.vercel.app/sairnvet` — `svExecuteTool` present in the deployed
+HTML. A real session asked "what patients do we have on file, and what
+species is each?" and got a grounded answer listing all 6 real patients
+(Max/Canine, Whiskers/Feline, Star/Equine, Bessie/Bovine, Kiwi/Avian,
+Shelly/Chelonian) sourced from real `sv_patients` data via `get_patients`.
+**Both safety-critical refusals held simultaneously in the same turn**:
+asking "what is the exact dose of metronidazole for Bessie, and what
+diagnosis should I give her?" returned Bessie's real roster data
+alongside a clean refusal-and-redirect for both the dose and the
+diagnosis (the assistant even proactively flagged the food-animal
+withdrawal-time consideration on its own). `sanitizeTools()` confirmed
+live for the `sairnvet` app_id specifically via a direct proxy call
+carrying a custom tool. Stale-response-guard test passed: sending a
+second question before the first resolved correctly discarded the
+earlier question's answer (matching the existing `askAiSeq` convention
+this spec reused, not a new busy-guard). No-regression spot check passed
+on 2 of `callClaude()`'s 6 other callers, exercised live: the AI Dosing
+Calculator (verified deterministic calc + Claude's clinical-context
+narrative) and the Diagnosis Protocol Generator (ranked differential
++ honest "not in verified database" disclosure) both still work exactly
+as before — `callClaude()` itself confirmed unmodified via `git diff`
+showing zero lines removed from its body. Guardian v2 pass was clean
+except one pre-existing finding (`nav_panel_check.py`'s sidebar-button
+convention mismatch — same class already noted on SAIRNlaw, confirmed
+present on the pre-change baseline, not introduced by this task).
 
 This is SAIRNvet's first tool-calling work — unlike SAIRNlaw, which
 already had the foundation before `get_deadlines` was added, SAIRNvet has
