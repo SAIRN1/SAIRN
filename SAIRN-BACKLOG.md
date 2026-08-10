@@ -3,6 +3,37 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNbiz AP "Pay" button doesn't actually mark anything paid
+
+**Logged:** 2026-08-10
+
+**What:** `rAP()`'s bill row (`sairnbiz.html:1644`) renders a "Pay"
+button: `onclick="toast('Marked paid')"`. It shows a success toast and
+does nothing else — `sb_ap`'s `status`/`bal` fields are never updated.
+A bill's `status` is set once at creation (`saveBill()`,
+`sairnbiz.html:1467-1474`, via a dropdown defaulting to "Open") and can
+never be changed afterward through any real UI action. Same shape as
+the other silent-failure findings this platform has caught before: a
+button that looks like it worked, shows a believable success message,
+and changes nothing.
+
+**Why deferred:** Surfaced while designing the cross-domain attention
+digest (item 4 of the SAIRNbiz AI-native roadmap), which needed to know
+whether AP `status` could be trusted as a live signal — it can't, for
+this reason among others (see also `sb_train`'s missing edit path,
+logged separately if not already). Wiring a real "mark this bill paid"
+action (update `status`/`bal`, probably clear/reduce `bal` by the
+payment amount, maybe log a payment date) is a real, separate,
+self-contained fix — not something to bundle into a digest/validation
+feature that has to treat the existing behavior as a known constraint
+either way.
+
+**Done looks like:** Clicking "Pay" on an AP bill actually updates that
+bill's real `status` (to `Paid` or partially reduces `bal` for a partial
+payment) and persists it, the same way `saveBill()`/`saveInv()` persist
+new records — with an honest toast reflecting what actually happened,
+not a fixed success string regardless of outcome.
+
 ## SAIRNbiz payroll runs are never actually recorded anywhere
 
 **Logged:** 2026-08-10
