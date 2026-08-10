@@ -508,11 +508,115 @@ function updateUsageBar() {
   document.getElementById('usageFill').style.width = Math.min((todayCount/200)*100,100) + '%';
 }
 
+// ── TAX MATH (2026) ──────────────────────────────────────────────
+// Every function here is pure and deterministic -- same inputs, same
+// output, every time. Claude never computes or restates any of these
+// numbers; it only explains a result already produced here (see
+// SYSTEM_PROMPT below). Re-verify every constant against the current
+// year's real IRS Rev. Proc. before this ships for a different tax
+// year -- see design spec §1 for full 2026 sourcing (web-verified
+// 2026-08-10 against IRS.gov + Tax Foundation, not carried forward
+// from stale training data). Federal only -- no state tax anywhere in
+// this file (spec §5, confirmed decision). Self-employment income
+// only -- no W-2 interaction (spec §5, confirmed decision).
+const TAX_YEAR_2026 = {
+  ssWageBase: 184500,
+  addlMedicareThreshold: { single: 200000, hoh: 200000, mfj: 250000, mfs: 125000 },
+  standardDeduction: { single: 16100, mfs: 16100, hoh: 24150, mfj: 32200 },
+  sepCap: 72000,
+  solo401kDeferral: 24500,
+  // [incomeUpTo, rate] cumulative brackets, confirmed 2026-08-10 against
+  // IRS.gov's own inflation-adjustment release + Tax Foundation's
+  // published table (cross-checked, not single-sourced). MFS confirmed
+  // as exactly half of MFJ at every threshold via two independently
+  // verified data points (10% cap $12,400 = half of MFJ's $24,800;
+  // 37% start $384,350 = half of MFJ's $768,700) -- not assumed from
+  // pre-2026 convention, this year's structure could have changed.
+  brackets: {
+    single: [[12400,0.10],[50400,0.12],[105700,0.22],[201775,0.24],[256225,0.32],[640600,0.35],[Infinity,0.37]],
+    mfj:    [[24800,0.10],[100800,0.12],[211400,0.22],[403550,0.24],[512450,0.32],[768700,0.35],[Infinity,0.37]],
+    hoh:    [[17700,0.10],[67450,0.12],[105700,0.22],[201775,0.24],[256200,0.32],[640600,0.35],[Infinity,0.37]],
+    mfs:    [[12400,0.10],[50400,0.12],[105700,0.22],[201775,0.24],[256225,0.32],[384350,0.35],[Infinity,0.37]]
+  }
+};
+
+function calcSeTax(netProfit) {
+  const netSeEarnings = Math.max(0, netProfit) * 0.9235;
+  const ss = 0.124 * Math.min(netSeEarnings, TAX_YEAR_2026.ssWageBase);
+  const medicare = 0.029 * netSeEarnings;
+  return { netSeEarnings, ss, medicare, ssAndMedicare: ss + medicare };
+}
+
+function calcAdditionalMedicare(netSeEarnings, filingStatus) {
+  const threshold = TAX_YEAR_2026.addlMedicareThreshold[filingStatus];
+  return netSeEarnings > threshold ? 0.009 * (netSeEarnings - threshold) : 0;
+}
+
+function bracketTax(taxableIncome, filingStatus) {
+  const table = TAX_YEAR_2026.brackets[filingStatus];
+  let tax = 0, lastCap = 0;
+  for (const [cap, rate] of table) {
+    const bandTop = Math.min(taxableIncome, cap);
+    if (bandTop > lastCap) tax += (bandTop - lastCap) * rate;
+    lastCap = cap;
+    if (taxableIncome <= cap) break;
+  }
+  return tax;
+}
+
+function calcTotalTax(netProfit, filingStatus, retirementContribution) {
+  const se = calcSeTax(netProfit);
+  const addlMedicare = calcAdditionalMedicare(se.netSeEarnings, filingStatus);
+  const seTax = se.ssAndMedicare + addlMedicare;
+  const taxableIncome = Math.max(0,
+    se.netSeEarnings - (seTax / 2) - TAX_YEAR_2026.standardDeduction[filingStatus] - (retirementContribution || 0)
+  );
+  const incomeTax = bracketTax(taxableIncome, filingStatus);
+  return { seTax, incomeTax, totalTax: seTax + incomeTax, netSeEarnings: se.netSeEarnings, taxableIncome };
+}
+
+// Real IRS safe-harbor rule: pay the lesser of 90% of this year's
+// estimated tax, or 100% (110% if last year's AGI exceeded $150k) of
+// last year's total tax. hasFullBasis reflects whether a real
+// prior-year figure was entered -- if not, the caller must show this
+// as a partial/best-available estimate, never as final (spec
+// confirmed decision + §1).
+function calcQuarterlySetAside(ytdNetProfit, filingStatus, priorYearTaxLiability, priorYearAgiOver150k) {
+  const estAnnual = calcTotalTax(ytdNetProfit, filingStatus, 0).totalTax;
+  const ninetyPct = 0.9 * estAnnual;
+  let safeHarborBasis = ninetyPct;
+  let hasFullBasis = false;
+  if (priorYearTaxLiability) {
+    const priorYearBasis = (priorYearAgiOver150k ? 1.10 : 1.0) * priorYearTaxLiability;
+    safeHarborBasis = Math.min(ninetyPct, priorYearBasis);
+    hasFullBasis = true;
+  }
+  return { estAnnual, safeHarborBasis, quarterlyAmount: safeHarborBasis / 4, hasFullBasis };
+}
+
+// Self-employed SEP/Solo 401(k) employer-equivalent contribution --
+// NOT a flat 25% (circular math: 25% of compensation, where
+// compensation is itself reduced by the contribution, reduces to an
+// effective ~18.587-20%). Presented as an explicit approximation --
+// spec §1 requires the UI to say so and recommend verifying the exact
+// figure with a tax professional or IRS Pub. 560 worksheet before
+// contributing. Under-50 only in this pass -- catch-up contributions
+// deferred (spec §1).
+function calcRetirementEstimate(netProfit, seTax, vehicle) {
+  const effectiveRate = 0.20;
+  const base = Math.max(0, netProfit * 0.9235 - seTax / 2) * effectiveRate;
+  if (vehicle === 'sep') {
+    return { estimate: Math.min(base, TAX_YEAR_2026.sepCap), cap: TAX_YEAR_2026.sepCap };
+  }
+  if (vehicle === 'solo401k') {
+    const total = Math.min(TAX_YEAR_2026.solo401kDeferral + base, TAX_YEAR_2026.sepCap);
+    return { estimate: total, cap: TAX_YEAR_2026.sepCap };
+  }
+  return { estimate: 0, cap: 0 };
+}
+
 // ── ASSISTANT ─────────────────────────────────────────────────────
-// Single generic mode for this foundation pass -- the real tax/
-// retirement-estimator system prompt and structured UI are deferred to
-// a later plan (spec §1, "repurposed" section), not built here.
-const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need.';
+const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need. When explaining a number, you will be given the already-computed figure and the inputs it came from in the user\'s message context -- explain it in plain language. Never recompute, restate a different number, or imply a different figure is more correct.';
 
 let localHistory=[], loading=false, msgCount=0;
 
