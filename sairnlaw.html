@@ -1415,7 +1415,15 @@ var LAW_CITATION_RULE='CRITICAL RULE: never output a specific case citation, sta
 // Same fabrication risk as the citation gap, generalized to this firm's
 // own financial/scheduling data, now closed the same way: an explicit
 // refusal instruction rather than a hope the model volunteers one.
-var LAW_FIRM_DATA_RULE='CRITICAL RULE: you have NOT been given this firm\'s actual matters, deadlines, trust account balances, invoices, time entries, or billing records -- none of that real data is included anywhere in this conversation. If asked something that depends on specific real firm data (e.g. "What is the trust balance on the Ostrander matter?", "Which deadlines are overdue?", "How much has this client been billed?", "What\'s the status of matter 2026-0002?"), you MUST say plainly that you do not have access to this firm\'s live data and direct the user to the relevant panel (Trust Accounting, Deadlines, Billing, Matters) to look it up -- never guess, estimate, or invent a specific figure, date, status, or fact about a real matter or client. You may still help with general drafting, explaining concepts, and non-firm-specific questions.';
+// EDITED 2026-08-10: was a blanket "you have no real firm data at all"
+// refusal. Now that get_matters exists (see the AI tool-calling
+// dispatcher above), that claim is false for matters specifically --
+// left uncorrected it would contradict the tool's own real access and
+// could push the model to refuse a question it can now actually answer.
+// Precise field-level edit: matters access is granted, deadlines/trust/
+// billing refusal stays exactly as strict as it was, since those still
+// have no tool and no data in this conversation.
+var LAW_FIRM_DATA_RULE='CRITICAL RULE: you now have tool-based access to this firm\'s current MATTERS (matter number, matter name, client name, practice area, status, responsible attorney, opposing parties) -- use the get_matters tool for any question about that data rather than guessing. You do NOT have access to this firm\'s deadlines, trust account balances, invoices, time entries, matter notes, or billing records -- none of that real data is available through any tool or included anywhere in this conversation. If asked something that depends on that still-unavailable data (e.g. "What is the trust balance on the Ostrander matter?", "Which deadlines are overdue?", "How much has this client been billed?"), you MUST say plainly that you do not have access to it and direct the user to the relevant panel (Trust Accounting, Deadlines, Billing) to look it up -- never guess, estimate, or invent a specific figure, date, or fact about that data. You may still help with general drafting, explaining concepts, and non-firm-specific questions.';
 // AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
 // live in SAIRNbiz (see docs/superpowers/specs/2026-08-09-sairnbiz-ai-
 // tool-calling-design.md). Registry of read-only tools sendAI() may
