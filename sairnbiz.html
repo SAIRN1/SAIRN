@@ -1042,6 +1042,21 @@ sbRegisterTool(
   }
 );
 
+sbRegisterTool(
+  'get_attention_digest',
+  'Get a prioritized list of everything across the business that needs attention right now: budget categories over 90% (critical) or 75-90% (warning) of annual spend, AP bills past due (critical) or due within 14 days (warning), employee certifications expired (critical) or expiring within 30 days (warning), and performance reviews overdue (critical) or due within 14 days (warning). Findings are computed from real dates, not from stored status labels. Synthesize across domains in your answer when more than one is present -- do not just list one domain and ignore the others.',
+  { type: 'object', properties: {}, required: [] },
+  true,
+  function (input) {
+    var findings = checkAttentionItems();
+    return {
+      critical_count: findings.filter(function (f) { return f.severity === 'critical'; }).length,
+      warning_count: findings.filter(function (f) { return f.severity === 'warning'; }).length,
+      findings: findings
+    };
+  }
+);
+
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
