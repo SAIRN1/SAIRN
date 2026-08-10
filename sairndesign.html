@@ -1207,6 +1207,58 @@ function csv(kind){
 
 // ── AI ASSISTANT (generic) ────────────────────────────────────────────────
 var aiHist=[];
+
+// AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
+// live on every other SAIRN app. Registry of read-only tools sendAI()
+// may request via Claude's tool-use. Every tool is:
+//   - read-only (never creates/modifies/deletes anything)
+//   - wrapped so a thrown error or unexpected data shape becomes an honest
+//     {ok:false} result, never a crash or a silently wrong answer
+// No sensitivity/role-gate concept here -- SAIRNdesign has no real,
+// server-verified auth (prole comes from a client-side PIN match), same
+// reasoning already applied to SAIRNvet's/SAIRNcode's/SAIRNbuild's
+// dispatchers.
+// See docs/superpowers/specs/2026-08-10-sairndesign-ai-tool-calling-design.md
+var SDN_TOOLS = {};
+
+function sdnRegisterTool(name, description, inputSchema, run) {
+  SDN_TOOLS[name] = {
+    definition: { name: name, description: description, input_schema: inputSchema },
+    run: run
+  };
+}
+
+function sdnExecuteTool(name, input) {
+  var tool = SDN_TOOLS[name];
+  if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+  try {
+    return { ok: true, result: tool.run(input || {}) };
+  } catch (e) {
+    return { ok: false, error: 'Could not retrieve that data right now.' };
+  }
+}
+
+sdnRegisterTool(
+  'get_clients',
+  'Look up the current client roster: name, company, phone, email, address, and status. Does NOT include project, spec-item, vendor, contract, invoice, proposal, team, or schedule data -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  function (input) {
+    // input intentionally unused -- this tool takes no real arguments, but
+    // accepts one for interface consistency with sdnExecuteTool(name, input),
+    // matching every prior tool's convention.
+    return clients().map(function (c) {
+      return {
+        name: c.name,
+        company: c.company,
+        phone: c.phone,
+        email: c.email,
+        address: c.address,
+        status: c.status
+      };
+    });
+  }
+);
+
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about clients, specs, vendors, or studio operations.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
