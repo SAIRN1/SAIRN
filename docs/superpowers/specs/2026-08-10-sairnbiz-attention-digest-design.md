@@ -26,10 +26,31 @@ app, both specifically named per the plan:
   the legacy AR-overdue (`INV-2604`) and open-hiring-count (3 positions)
   items unchanged, alongside the new cross-domain findings. The
   empty-state ("Nothing needs attention") branch was **not** exercised
-  live — real seed data has genuine findings in all four domains, so a
-  true clean state never occurred during testing — covered instead by
-  inspection of the `(attnHtml + legacyHtml) || fallback` logic at
-  `sairnbiz.html:1449`.
+  live — real seed data has genuine findings across the AP, training,
+  and performance domains, so a true clean state never occurred during
+  testing — covered instead by inspection of the
+  `(attnHtml + legacyHtml) || fallback` logic at `sairnbiz.html:1449`.
+- **Correction (2026-08-10, final-review fix wave):** this Status line
+  previously claimed real seed data produced findings "across all four
+  domains." That was false. Real seed data's budget categories max out
+  at 57% utilization (Insurance: $13,680 of $24,000), below the 75%
+  warning threshold — **budget produces zero findings from real seed
+  data** and was never actually live-tested; only AP, training, and
+  performance had real live findings. Budget-branch correctness instead
+  rests on: (1) the Task 1 Node harness's boundary test (categories at
+  exactly 90%/91%/75%/76%, confirming 90% and 75% are not flagged and
+  91%/76% are, matching `u>90`/`u>75` operators exactly) -- itself
+  needing one fix round during Task 1 for a boundary-case error in the
+  test's own assertions, not the underlying code -- and (2) direct
+  code-comparison against `rBud()`'s own badge logic (`sairnbiz.html`
+  `function rBud()`, the `u>90?'br':u>75?'bw':'bg'` / `'Over
+  Budget'/'Watch'/'On Track'` ternary), confirmed to use the identical
+  `u>90`/`u>75` thresholds and operators as `checkAttentionItems()`.
+  Live browser testing of the budget branch specifically (temporarily
+  pushing one category above 90% on the deployed app and confirming the
+  Dashboard/AI tool response) was not performed in this fix-wave
+  session — re-verify live before treating the budget branch as
+  live-confirmed, not just code- and harness-verified.
 
 This is item 4 of the 6-item AI-native roadmap for SAIRNbiz, and the
 flagship item: the first feature that genuinely reasons across HR
