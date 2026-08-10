@@ -1,7 +1,16 @@
 # SAIRNcode — AI Tool-Calling Foundation + `get_providers`
 
-**Status:** Design approved 2026-08-10, following brainstorming. Not yet
-implemented.
+**Status:** Implemented and live-verified 2026-08-10. Both commits
+(`5c16edd`, `ea19adc`) are on `origin/main` and confirmed live at
+`sairn.vercel.app/sairncode` — `scExecuteTool` present in the deployed
+HTML. A real interaction test asked "list our providers and their
+performance scores" and got a correctly-sorted, real answer sourced
+from `sc_providers` via `get_providers`. The no-tool-use path was also
+confirmed unaffected (a generic ICD-10/CPT question still answered
+directly from the persona). `sanitizeTools()` confirmed live for the
+`sairncode` app_id. Guardian v2 pass clean except 3 pre-existing,
+unrelated findings (demo-scope read-only settings buttons, confirmed
+present on the pre-change baseline).
 
 This is SAIRNcode's first tool-calling work, porting the mechanism
 already proven live in SAIRNbiz, SAIRNlaw, SAIRNvet, SAIRNscape,
