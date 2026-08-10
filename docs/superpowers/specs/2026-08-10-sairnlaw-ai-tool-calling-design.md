@@ -1,9 +1,29 @@
 # SAIRNlaw — AI Tool-Calling Foundation
 
-**Status:** Approved for implementation 2026-08-10, following brainstorming
-that surveyed AI-integration depth across all 10 live SAIRN apps (see
-platform survey below). This ports the exact mechanism proven live in
-SAIRNbiz's AI Tool-Calling Foundation
+**Status:** Implemented and live-verified 2026-08-10. All 3 commits
+(`38deb21`, `9b0d8e8`, `fc015f7`) are on `origin/main` and confirmed live at
+`sairn.vercel.app/sairnlaw` — `lawExecuteTool` present in the deployed
+HTML, and a real owner-role session against the live app asked "what
+matters are currently open, and who is responsible for each?" and got a
+grounded answer (Ostrander Estate Planning/J. Ortiz, Delacroix v. Reyes
+Supply Co./S. Whitfield) sourced from real `law_matters` data via the
+`get_matters` tool. The refusal-preserved test also passed live: asking
+about the Ostrander matter's trust balance and overdue deadlines still
+got an honest "I don't have access" redirect to the Trust Accounting and
+Deadlines panels, with zero fabricated figures — confirming the
+`LAW_FIRM_DATA_RULE` edit only lifted the refusal for what's actually
+tool-backed. Role-gate mechanism confirmed live via direct
+`lawExecuteTool` calls (owner allowed, non-owner blocked with the exact
+"restricted to the owner role" error). `sanitizeTools()` confirmed live
+for the `sairnlaw` app_id specifically via a direct proxy call carrying
+a custom tool, not merely assumed from SAIRNbiz's own verification of
+the same shared function.
+
+**A real concurrency bug was found live during testing and fixed before
+push** — see "Findings from live testing" below.
+
+This ports the exact mechanism proven live in SAIRNbiz's AI Tool-Calling
+Foundation
 (`docs/superpowers/specs/2026-08-09-sairnbiz-ai-tool-calling-design.md`)
 to SAIRNlaw — same architecture, same dispatcher shape, same role-gate
 pattern, same anti-fabrication discipline. No new platform-level work is
@@ -187,3 +207,44 @@ Direct port of SAIRNbiz's mechanism (`sairnbiz.html:889-940, 1958-2027`):
 - Full Guardian v2 pass before push; live-verify against
   `sairn.vercel.app/sairnlaw` after push — both steps of the Push
   Protocol, neither optional.
+
+## Findings from live testing (2026-08-10) and fix
+
+**A real concurrency bug, found before push, not assumed safe from the
+existing placeholder-by-reference pattern.** This spec originally
+assumed (§3) that `sendAI()`'s existing DOM-node-reference placeholder
+handling was sufficient concurrency safety, the same way it is in
+SAIRNbiz's `callAI()`. Live-testing two questions sent back-to-back
+before the first resolved found this false: `sendAI()` had no
+busy-guard at all (SAIRNbiz's `sendAI()` wrapper has `sbAiBusy`;
+SAIRNlaw's did not, pre-existing gap this spec didn't originally
+notice), so both calls read and wrote the same mutable `aiHist` array
+concurrently. Two separate bad outcomes were observed across two live
+runs:
+1. Both concurrent calls saw each other's unanswered question in their
+   own request's history (since each pushes its own user turn
+   synchronously before its first `await`, and both build their
+   `fetch` body from the same shared `aiHist` afterward). One run
+   produced a single merged answer covering both questions in one
+   bubble instead of two independent answers.
+2. In a separate run, one bubble was left permanently stuck at
+   "Thinking..." with no thrown exception and no error response —
+   Anthropic accepted the resulting non-alternating/cross-referenced
+   turn sequence rather than rejecting it with a 400, so nothing in
+   `sendAI()`'s existing try/catch ever fired to surface the problem.
+
+**Fix:** added `lawAiBusy`, same shape as SAIRNbiz's `sbAiBusy` — a
+second `sendAI()` call while one is in flight is rejected outright with
+a "please wait" toast before it touches `aiHist` at all, rather than
+attempting to make concurrent shared-history calls safe (a materially
+larger change, and not the pattern this platform uses anywhere else).
+Set in a `finally` block so it clears on every exit path (early
+returns, the no-tool-use path, and thrown errors alike).
+
+**Re-verified live after the fix**, against the real deployed code
+(not an in-memory injection): sending two questions back-to-back now
+produces exactly one message bubble, one `.amu` entry, and the "please
+wait" toast — the second call is rejected before it pushes anything to
+`aiHist`, and `aiHist` itself stays a clean, uncorrupted 4-entry
+sequence for the first call (user → assistant tool_use → tool_result →
+final answer).
