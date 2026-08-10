@@ -970,6 +970,58 @@ sbRegisterTool(
   }
 );
 
+sbRegisterTool(
+  'get_pl_summary',
+  'Get the current profit & loss summary: revenue, cost of goods sold, gross profit, operating expenses, net income, revenue broken down by category, expenses broken down by category, and gross/net margin percentages. Also includes static industry-average margin benchmarks (45% gross, 18% net) for comparison -- these are fixed reference figures, NOT computed from this business\'s own data, and must never be presented as if they were.',
+  { type: 'object', properties: {}, required: [] },
+  true,
+  function (input) {
+    // rPay() MUST run first, unconditionally -- same cold-call reason as
+    // get_payroll_summary. Also seeds the KPI elements this tool reads.
+    rPay();
+    var revenue = sbReadKpiNumber('pl-rev');
+    var cogs = sbReadKpiNumber('pl-cogs');
+    var grossProfit = sbReadKpiNumber('pl-gp');
+    var operatingExpenses = sbReadKpiNumber('pl-opex');
+    var netIncome = sbReadKpiNumber('pl-net');
+    // Category breakdowns: re-derived directly (cheap, no rate constants
+    // to drift), not parsed from rendered HTML. Mirrors rPay()'s own
+    // grouping exactly (sairnbiz.html's rPay function, revCats/expCats).
+    var invs = ld('sb_invs', []);
+    var exps = ld('sb_exps', []);
+    var revenueByCategory = {};
+    invs.forEach(function (i) {
+      var c = i.cat || 'Uncategorized';
+      revenueByCategory[c] = (revenueByCategory[c] || 0) + i.amt;
+    });
+    // Labor seeded from the same gross-payroll figure get_payroll_summary
+    // reads back, keeping the two tools' numbers internally consistent
+    // even though they're separate calls -- matches rPay()'s own
+    // expCats={Labor:gross} seed exactly.
+    var expenseByCategory = { Labor: sbReadKpiNumber('py-gross') };
+    exps.forEach(function (e) {
+      expenseByCategory[e.cat] = (expenseByCategory[e.cat] || 0) + e.amt;
+    });
+    // Margins recomputed arithmetically from the already-extracted
+    // numbers above, not parsed from #pl-margin's rendered HTML.
+    var grossMarginPct = revenue > 0 ? Math.round(grossProfit / revenue * 100) : 0;
+    var netMarginPct = revenue > 0 ? Math.round(netIncome / revenue * 100) : 0;
+    return {
+      revenue: revenue,
+      cogs: cogs,
+      gross_profit: grossProfit,
+      operating_expenses: operatingExpenses,
+      net_income: netIncome,
+      revenue_by_category: revenueByCategory,
+      expense_by_category: expenseByCategory,
+      gross_margin_pct: grossMarginPct,
+      net_margin_pct: netMarginPct,
+      industry_avg_gross_margin_pct: 45,
+      industry_avg_net_margin_pct: 18
+    };
+  }
+);
+
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
