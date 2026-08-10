@@ -1896,13 +1896,38 @@ async function confirmReserve(){
   if(!u){$('reserve-err').textContent='Unit not found';return;}
   // Re-check live status immediately before writing -- closes the race
   // where a second staff member reserved this same unit between this
-  // modal opening and this confirm click.
+  // modal opening and this confirm click. This is still only a
+  // same-device/stale-local-copy check -- the real cross-device lock is
+  // the server's atomic conditional write below.
   if(u.status!=='Available'){$('reserve-err').textContent='This unit was just reserved by someone else -- pick a different unit';closeReserveModal();rMerch();return;}
   u.status='Reserved';u.reserved_for_case_id=caseId;u.reserved_at=legLocalToday();
   st('leg_merch_units',list);
   closeReserveModal();rMerch();
-  var syncResult=await sdnData('write','leg_merch_units',u);
-  toast(syncResult?'Unit reserved for '+caseLabel(caseId):'Reserved on this device only -- server sync not yet enabled for this app',syncResult?3500:5500);
+  // 2026-08-10: direct fetch instead of sdnData() -- this write needs to
+  // read the real response status/error code (409 ALREADY_RESERVED vs.
+  // any other failure) to know whether to roll the optimistic local write
+  // back. sdnData() collapses every non-2xx response to null and has ~40
+  // other call sites in this file that depend on that exact contract, so
+  // it isn't touched -- this is a local, single-call-site change.
+  var lic=legLicenseKey();
+  if(!lic){toast('Reserved on this device only -- server sync not yet enabled for this app',5500);return;}
+  try{
+    var r=await fetch(DATA_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+      body:JSON.stringify({action:'write',resource:'leg_merch_units',app_id:APP_ID,payload:u})});
+    var d=await r.json().catch(function(){return null;});
+    if(r.status===409&&d&&d.error&&d.error.code==='ALREADY_RESERVED'){
+      // Server rejected it -- someone else's reservation actually won.
+      // Roll the local optimistic write back so this device isn't left
+      // showing a reservation the server never actually holds.
+      u.status='Available';u.reserved_for_case_id='';u.reserved_at='';
+      st('leg_merch_units',list);rMerch();
+      toast(d.error.message,6000);
+      return;
+    }
+    toast((r.ok&&d&&d.ok)?'Unit reserved for '+caseLabel(caseId):'Reserved on this device only -- server sync not yet enabled for this app',(r.ok&&d&&d.ok)?3500:5500);
+  }catch(e){
+    toast('Reserved on this device only -- server sync not yet enabled for this app',5500);
+  }
 }
 async function releaseUnit(unitId){
   var list=merchUnits();
