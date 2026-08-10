@@ -3605,17 +3605,19 @@ function rMsbFoodInv(){
 }
 
 // === AI ASSISTANT ===
-function sendAI(){var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
+function sendAI(){if(grdAiBusy){toast('Please wait for the current response first');return;}var inp=$('ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';addMsg(m,'u');callAI(m);}
 function askAI(q){$('ainp').value=q;sendAI();}
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Conversation cleared.</div>';}
 function addMsg(t,role){var c=$('achat');var d=document.createElement('div');d.className=role==='u'?'amu':'ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
 function callAI(msg){
+  grdAiBusy=true;
   var props=ld('grd_properties',[]);
-  var ctx='You are the AI grounds operations assistant for SAIRNgrounds, used by a golf course / HOA / commercial grounds operator managing '+props.length+' properties. Be concise, practical, and turf/landscaping-industry-specific. No fluff.';
+  var ctx='You are the AI grounds operations assistant for SAIRNgrounds, used by a golf course / HOA / commercial grounds operator managing '+props.length+' properties. Be concise, practical, and turf/landscaping-industry-specific. No fluff. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
   var sharedCtx=buildGrdSharedCompanyContext();
   if(sharedCtx)ctx+='\n\n'+sharedCtx;
   recordGrdSharedTopics(msg);
   aiHist.push({role:'user',content:msg});
+  var toolDefs=Object.keys(GRD_TOOLS).map(function(k){return GRD_TOOLS[k].definition;});
   // Reference this call's OWN placeholder node directly (not "the last .ama in
   // the DOM") -- if a second question is sent before this one's fetch resolves,
   // two Thinking placeholders coexist, and "remove the last one" removes
@@ -3624,11 +3626,42 @@ function callAI(msg){
   // Same bug already fixed in sairnbiz.html/sairnscape.html, found unfixed
   // here by a fresh adversarial-review pass.
   var thinkingEl=addMsg('Thinking...','a');
-  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
-  .then(function(r){return r.json();}).then(function(d){
+  function finish(replyText){
+    grdAiBusy=false;
     if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
-    var rep=(d.content&&d.content[0]&&d.content[0].text)||'No response.';aiHist.push({role:'assistant',content:rep});addMsg(rep,'a');
-  }).catch(function(){if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();addMsg('Connection error.','a');});
+    aiHist.push({role:'assistant',content:replyText});
+    addMsg(replyText,'a');
+  }
+  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10),tools:toolDefs})})
+  .then(function(r){return r.json();}).then(function(d){
+    var blocks=(d&&d.content)||[];
+    var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
+    if(!toolUse){
+      var rep=(blocks[0]&&blocks[0].text)||'No response.';
+      finish(rep);
+      return;
+    }
+    var outcome=grdExecuteTool(toolUse.name,grdCurrentRole(),toolUse.input);
+    // Belt-and-suspenders, same pattern proven in SAIRNbiz/SAIRNlaw/
+    // SAIRNvet/SAIRNscape: reinforce the anti-fabrication instruction
+    // right next to the trigger, in the same turn as the denial/error.
+    var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+    // Claude requires the assistant turn that requested the tool to be
+    // present in history before the tool_result turn that answers it.
+    aiHist.push({role:'assistant',content:blocks});
+    aiHist.push({role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]});
+    fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
+    .then(function(r2){return r2.json();}).then(function(d2){
+      var rep2=(d2.content&&d2.content[0]&&d2.content[0].text)||'No response.';
+      finish(rep2);
+    }).catch(function(){
+      finish('Could not reach Claude for the final answer. Connection error.');
+    });
+  }).catch(function(){
+    grdAiBusy=false;
+    if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
+    addMsg('Connection error.','a');
+  });
 }
 
 // === SHARED COMPANY KNOWLEDGE (sd_shared_knowledge, keyed by license_hash
