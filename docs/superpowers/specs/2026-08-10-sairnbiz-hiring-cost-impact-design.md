@@ -1,9 +1,51 @@
 # SAIRNbiz — Hiring Cost-Impact Reasoning
 
-**Status:** Design approved by Michael 2026-08-10. Not yet implemented —
-no code written under this spec. This is item 5 of the 6-item AI-native
-roadmap for SAIRNbiz, building on items 1-2 (tool-calling foundation,
+**Status:** Implementation complete and live-verified 2026-08-10, pushed
+to main (98d235c) and confirmed deployed at sairn.vercel.app/sairnbiz
+(`computeHiringCostImpact`/`get_hiring_cost_impact` both present in the
+post-push live HTML). This is item 5 of the 6-item AI-native roadmap for
+SAIRNbiz, building on items 1-2 (tool-calling foundation,
 `get_payroll_summary`/`get_pl_summary`).
+
+Specific tests that passed live, against the confirmed-deployed app, via
+a real owner-role chat session (login bypassed via `sbApplyLoggedIn`,
+same technique as items 2-4):
+- **Reuse-not-drift test:** direct `get_payroll_summary`/`get_pl_summary`
+  calls in-session returned `total_labor_cost:18680`,
+  `net_income:18028`, `net_margin_pct:41`; a subsequent hiring-cost
+  question in the same session invoked `get_hiring_cost_impact`, whose
+  response carried `current_total_labor_cost:18680`,
+  `current_net_income:18028`, `current_net_margin_pct:41` — an exact
+  match, confirmed genuine reuse rather than a second computed copy.
+- **Math/position-context test:** `$28/hr` Full Time → `28×80=2240`
+  gross, `2240×0.0765=171.36` FICA, `+520` benefit → `2931.36` fully
+  loaded, added/subtracted correctly against the real current totals
+  (`projected_total_labor_cost:21611.36`, `projected_net_income:15096.64`,
+  `projected_net_margin_pct:34`) — all arithmetic verified by hand.
+  Asking about the real open "Senior Fabricator" requisition
+  (`sairnbiz.html:1347`) correctly surfaced `dept:Fabrication`,
+  `stage:Interviewing`, `posted_rate_range:$26-30/hr` in the tool result
+  and the AI's rendered answer. A hypothetical non-matching position
+  ("Junior Welder Apprentice") answered correctly with no error and no
+  `position_context` field.
+- **Role-gate test (tool level, passed):** `sbExecuteTool` correctly
+  returned `{ok:false, error:"This data is restricted to the owner
+  role."}` for a `manager` role, both via direct call and via the live
+  chat's actual tool_result.
+
+**Known concern, not fixed under this verification-only task:** although
+the tool-level role gate is correct, the AI's rendered reply to a denied
+`manager`-role request did not always just relay the restriction — in
+2 of 2 live runs it followed the restriction message with a
+self-generated, non-tool-backed cost estimate (invented workers'-comp
+rate, FUTA/SUTA, benefit range), despite the system prompt's explicit
+"say so plainly instead of guessing an answer" instruction. The
+sibling `get_payroll_summary` tool, tested the same way in the same
+session, complied correctly with no fabricated numbers — so this
+appears specific to `get_hiring_cost_impact`'s multi-caveat, estimate-
+framed tool description, not a general role-gate defect. Logged here
+rather than silently fixed, since Task 3 is verification-only; needs a
+follow-up task to tighten the tool description or system prompt.
 
 ## 1. Problem
 
