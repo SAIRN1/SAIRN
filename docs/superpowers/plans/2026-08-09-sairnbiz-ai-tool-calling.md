@@ -2,7 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give SAIRNbiz's AI Assistant (`callAI()`, `sairnbiz.html:1488`) real function-calling access to the app's own data, starting with one proof tool (`get_employees`), so every later feature (payroll/P&L copilot, pre-payroll validation, cross-domain digest, hiring cost-impact, review narratives) can add a tool to the same mechanism instead of rebuilding it.
+**Goal:** Give SAIRNbiz's AI Assistant (`callAI()`, `sairnbiz.html:1488`) real function-calling access to the app's own data, starting with one proof tool (`get_employees`), so every later feature (payroll/P&L copilot, pre-payroll validation, cross-domain digest, hiring cost-impact) can add a tool to the same mechanism instead of rebuilding it.
+
+**Roadmap closed at 5 items (2026-08-10):** the originally-planned 6th item, "review narratives," was descoped — no foundation exists for it (no free-text field on `sb_perf`, no built review-conducting form, only a stub button). See the design doc's top-of-file note. Items 1-5 are the complete roadmap.
 
 **Architecture:** Multi-turn tool-calling through the existing shared proxy (`api/claude.js`). The proxy's `sanitizeTools()` currently strips any tool that isn't Anthropic's server-executed `web_search_20250305`; it needs to allow custom (client-executed) tool definitions through unmodified, since those carry none of the cost/abuse risk the existing whitelist defends against. On the client, `callAI()` sends a `tools` array; if Claude responds with a `tool_use` block, a new dispatcher (`sbExecuteTool()`) looks it up, checks role-sensitivity, executes the matching local getter, and sends a `tool_result` back for the final answer — one round-trip, not an open-ended tool loop.
 

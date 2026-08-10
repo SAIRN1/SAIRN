@@ -1,5 +1,5 @@
-- main HEAD: `713aebb05012692055b3f351df4bc78d1f9d4b3d` (clean, nothing uncommitted)
-- SAIRNbiz AI Tool-Calling roadmap items 1-5 complete and live
+- main HEAD: `eab953b933e04fccb794a34b4eeab53e7a05b465` (clean, nothing uncommitted)
+- SAIRNbiz AI Tool-Calling roadmap: **closed at 5 items, done.** Items 1-5 complete and live.
 - Platform-wide anti-substitution fix confirmed dynamically covering all 6 registered tools
-- Item 6 (review narratives) was mid-brainstorming (sb_perf has no free-text narrative field) — not yet begun otherwise
-- Next session: pick up item 6 brainstorming fresh
+- Item 6 ("review narratives") descoped 2026-08-10, not built: no foundation exists — `sb_perf` has no free-text field, and the review-conducting form is a stub (`toast('Review form - next build')`). Decided to treat it as its own future spec once a real form/data model exists, not force-fit into this roadmap. See design doc top-of-file note.
+- Next session: no open SAIRNbiz AI-roadmap work. Pick next task fresh.

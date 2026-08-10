@@ -18,10 +18,27 @@ Concurrency serialization
 role with the exact "restricted to the owner role" error) were also
 confirmed live. Full detail in
 `.superpowers/sdd/2026-08-09-sairnbiz-ai-tool-calling/task-5-report.md`.
-This is item 1 of a 6-item AI-native roadmap for SAIRNbiz (payroll/P&L
-copilot, pre-payroll validation, cross-domain attention digest, hiring
-cost-impact, review narratives). With the foundation now proven live,
-item 2 (Payroll/P&L Copilot) is unblocked as the next spec.
+This is item 1 of what was originally scoped as a 6-item AI-native
+roadmap for SAIRNbiz (payroll/P&L copilot, pre-payroll validation,
+cross-domain attention digest, hiring cost-impact, review narratives).
+With the foundation now proven live, item 2 (Payroll/P&L Copilot) is
+unblocked as the next spec.
+
+**Roadmap closed at 5 items (2026-08-10):** item 6, "review narratives,"
+was descoped during brainstorming, not built. Investigation found no
+foundation for it exists at all — `sb_perf` (the performance-review
+data) has no free-text field to hold written feedback, and the
+review-conducting UI itself is a stub (`sairnbiz.html`'s "Start" button
+on the Performance panel does `toast('Review form - next build')`,
+never built). Every other roadmap item added a read-only tool over data
+and UI that already existed; this one would require new persistence and
+a new form first. Decided (Michael, during item-6 brainstorming) to
+treat "review narratives" as its own future spec, sized properly, once
+a real review-conducting form/data model exists — not to force-fit it
+into this roadmap's lightweight read-only-tool pattern. Items 1-5
+(tool-calling foundation, payroll/P&L copilot, pre-payroll validation,
+cross-domain attention digest, hiring cost-impact) are the complete,
+final roadmap.
 
 ## 1. Problem
 
