@@ -1044,7 +1044,7 @@ sbRegisterTool(
 
 sbRegisterTool(
   'get_attention_digest',
-  'Get a prioritized digest of four key business areas: budget categories over 90% (critical) or above 75% (warning) of annual spend, AP bills past due (critical) or due within 14 days (warning), employee certifications expired (critical) or expiring within 30 days (warning), and performance reviews overdue (critical) or due within 14 days (warning). For AP, training, and performance items, findings are computed from real dates, not from stored status labels. IMPORTANT: This tool does NOT check accounts receivable (overdue customer invoices), which is a separate signal tracked elsewhere in the app. Synthesize across the covered domains in your answer when more than one is present -- do not just list one domain and ignore the others.',
+  'Get a prioritized digest of four key business areas: budget categories over 90% (critical) or above 75% (warning) of annual spend, AP bills past due (critical) or due within 14 days (warning), employee certifications expired (critical) or expiring within 30 days (warning), and performance reviews overdue (critical) or due within 14 days (warning). For AP, training, and performance items, findings are computed from real dates, not from stored status labels; a bill or review with no due date on file is flagged as a warning rather than silently skipped. IMPORTANT: This tool does NOT check accounts receivable (overdue customer invoices), which is a separate signal tracked elsewhere in the app. IMPORTANT: budget figures come from a static budget table (sb_bud) that has no live connection to recorded expenses -- no expense-entry path in this app ever updates sb_bud\'s actual-spend values. Budget utilization reflects the seeded/manually-entered baseline only, not a real-time sync with recorded expenses -- do not present it as reflecting expenses entered since setup. Synthesize across the covered domains in your answer when more than one is present -- do not just list one domain and ignore the others.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
@@ -1371,9 +1371,10 @@ function checkAttentionItems() {
   });
 
   ld('sb_ap', []).forEach(function (bill) {
-    if (bill.status === 'Paid' || !bill.due) return;
+    if (bill.status === 'Paid') return;
+    if (!bill.due) { findings.push({ severity: 'warning', domain: 'ap', subject: bill.vendor, message: bill.vendor + ' bill has no due date on file -- cannot determine urgency.' }); return; }
     var dueMs = new Date(bill.due + 'T00:00:00').getTime();
-    if (isNaN(dueMs)) return;
+    if (isNaN(dueMs)) { findings.push({ severity: 'warning', domain: 'ap', subject: bill.vendor, message: bill.vendor + ' bill has no due date on file -- cannot determine urgency.' }); return; }
     if (dueMs < now) {
       findings.push({ severity: 'critical', domain: 'ap', subject: bill.vendor, message: bill.vendor + ' bill (' + fmt(bill.bal) + ') is past due (' + bill.due + ').' });
     } else if (dueMs - now < FOURTEEN_DAYS_MS) {
@@ -1393,9 +1394,10 @@ function checkAttentionItems() {
   });
 
   ld('sb_perf', []).forEach(function (p) {
-    if (p.status === 'Completed' || !p.due) return;
+    if (p.status === 'Completed') return;
+    if (!p.due) { findings.push({ severity: 'warning', domain: 'performance', subject: p.emp, message: p.emp + '\'s ' + p.type + ' has no due date on file -- cannot determine urgency.' }); return; }
     var dueMs = new Date(p.due + 'T00:00:00').getTime();
-    if (isNaN(dueMs)) return;
+    if (isNaN(dueMs)) { findings.push({ severity: 'warning', domain: 'performance', subject: p.emp, message: p.emp + '\'s ' + p.type + ' has no due date on file -- cannot determine urgency.' }); return; }
     if (dueMs < now) {
       findings.push({ severity: 'critical', domain: 'performance', subject: p.emp, message: p.emp + '\'s ' + p.type + ' is overdue (was due ' + p.due + ').' });
     } else if (dueMs - now < FOURTEEN_DAYS_MS) {
@@ -2014,7 +2016,8 @@ function genReport(type){
   else if(type==='ap'){
     var bills=ld('sb_ap',[]);
     $('rtitle').textContent='AP Aging Report - '+new Date().toLocaleDateString();
-    $('rbody').innerHTML='<table><thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Balance</th><th>Status</th></tr></thead><tbody>'+bills.map(function(b){return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td>'+H(b.status)+'</td></tr>';}).join('')+'</tbody></table>';
+    var apReportWarning='<div style="background:rgba(245,158,11,0.08);border:1px solid var(--warn);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:var(--warn);">This report\'s Status column reflects the manually-set status field, which is never recomputed after a bill is created -- it may not match the Dashboard\'s attention digest, which computes urgency from real due dates instead.</div>';
+    $('rbody').innerHTML=apReportWarning+'<table><thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Balance</th><th>Status</th></tr></thead><tbody>'+bills.map(function(b){return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td>'+H(b.status)+'</td></tr>';}).join('')+'</tbody></table>';
   }
   else{$('rtitle').textContent='Report: '+type;$('rbody').innerHTML='<p style="color:var(--muted);padding:24px;text-align:center;">Generated - '+new Date().toLocaleString()+'</p>';}
   $('rout').scrollIntoView({behavior:'smooth'});
