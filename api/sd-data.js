@@ -1615,6 +1615,18 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairndesign', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdesign data tables are not set up yet — run sql/sairndesign_data_schema.sql in Supabase first.' } }); return; }
+      // Invoice-per-proposal uniqueness (2026-08-10): once
+      // sql/sairndesign_invoice_uniqueness.sql's index exists, a genuinely
+      // new invoice for an already-invoiced proposal_id fails here with
+      // Postgres 23505 (PostgREST maps it to 409) -- map it to a clean,
+      // real rejection instead of the generic upstream() 502. Scoped to
+      // sdn_invoices only: no other SDN_RESOURCES table has this
+      // constraint, so this branch can never misfire for them. Inert (this
+      // branch is simply unreachable) until that migration actually runs.
+      if (r.status === 409 && resource === 'sdn_invoices') {
+        res.status(409).json({ error: { code: 'DUPLICATE_INVOICE', message: 'This proposal already has an invoice.' } });
+        return;
+      }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -1654,6 +1666,36 @@ module.exports = async (req, res) => {
       const idCol = LEG_RESOURCES[resource];
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      // Reservation-lock hard gate (2026-08-10): the one transition on this
+      // resource that can't be a blind merge -- two staff on two devices,
+      // each holding a stale local copy showing 'Available', could otherwise
+      // both pass their own client-side check and both upsert 'Reserved' for
+      // different cases, silently overwriting each other (real risk: the
+      // same physical casket/urn promised to two grieving families). Every
+      // OTHER transition on this resource (release, mark Sold, catalog/unit
+      // creation) keeps the blind-upsert semantics below -- this is a
+      // narrow, resource+transition-specific gate. See
+      // docs/superpowers/specs/2026-08-10-sairnlegacy-reservation-lock-design.md
+      if (resource === 'leg_merch_units' && payload.status === 'Reserved') {
+        const r = await fetch(rest(
+          'leg_merch_units?license_hash=eq.' + enc(licHash) +
+          '&merch_unit_id=eq.' + enc(String(payload.id)) +
+          '&data->>status=eq.Available'
+        ), {
+          method: 'PATCH',
+          headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ data: payload, updated_at: nowISO() })
+        });
+        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        if (!Array.isArray(rows) || rows.length === 0) {
+          res.status(409).json({ error: { code: 'ALREADY_RESERVED', message: 'This unit could not be reserved -- it may have already been reserved or sold by someone else, or it has not finished syncing to the server yet.' } });
+          return;
+        }
+        res.status(200).json({ ok: true, data: rows[0].data });
         return;
       }
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
