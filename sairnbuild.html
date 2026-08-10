@@ -6485,7 +6485,9 @@ async function aiAsk(){
     'If a question depends on current information -- specific products, materials, pricing, '+
     'availability, codes, or trends that could have changed since training -- you MUST use '+
     'the web search tool rather than answering from memory alone, so the trade-knowledge '+
-    'base stays current without manual upkeep. '+
+    'base stays current without manual upkeep. You may also look up the real job roster '+
+    '(address, client, value, stage, dates, and blocked-reason) via the get_jobs tool when a '+
+    'question needs it -- never guess or invent a job\'s status or details. '+
     'Always end with a one-line reminder that code/legal answers must be verified with the '+
     'local building department or contract counsel before being relied on. Plain ASCII only, '+
     'no Unicode box characters. Keep it under 200 words.\n\n'+SB_TRADE_SEQUENCE_KNOWLEDGE+
@@ -6499,21 +6501,64 @@ async function aiAsk(){
   // also gets permanently saved into bld_ai_chat history if not caught.
   aiAskSeq++;
   var myAiAskSeq=aiAskSeq;
+  var toolDefs=Object.keys(BLD_TOOLS).map(function(k){return BLD_TOOLS[k].definition;});
+  var toolsForRequest=[{type:'web_search_20250305',name:'web_search',max_uses:3}].concat(toolDefs);
+  function saveAndRender(answer){
+    $('ai-answer').textContent=answer;
+    var list=bldAiChat();
+    list.push({id:'AIQ-'+String(Date.now()).slice(-5),job_id:jobId,date:bldLocalToday(),question:q,answer:answer});
+    st('bld_ai_chat',list);
+    if(typeof recordBldSharedTopics==='function') recordBldSharedTopics(q);
+    $('ai-question').value='';
+    rAiHistory();
+  }
   try{
     var res=await fetch(PROXY,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,messages:msgs,
-        tools:[{type:'web_search_20250305',name:'web_search',max_uses:3}]})
+        tools:toolsForRequest})
     });
     if(!res.ok)throw new Error('Claude error '+res.status);
     var data=await res.json();
     if(myAiAskSeq!==aiAskSeq) return;
     var aiErr=bldAiError(data);
     if(aiErr){$('ai-answer').textContent=aiErr;return;}
-    // A web-search turn returns text interleaved with server_tool_use/
-    // web_search_tool_result blocks, not just content[0] -- join every
-    // text block in order instead of assuming the old single-block shape.
     var content=data.content||[];
+    // A custom tool_use block (get_jobs) is a distinct block type from
+    // Anthropic's own server_tool_use/web_search_tool_result blocks used
+    // by the web_search tool -- both can appear in the same content array
+    // if the model used both in one turn, so this checks for a custom
+    // tool_use specifically rather than assuming mutual exclusivity.
+    var toolUse=content.filter(function(b){return b.type==='tool_use';})[0];
+    if(toolUse){
+      var outcome=bldExecuteTool(toolUse.name,toolUse.input);
+      // Belt-and-suspenders, same pattern proven on every prior rollout:
+      // reinforce the anti-fabrication instruction right next to the
+      // trigger, in the same turn as the denial/error itself.
+      var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+      var followUpMessages=[
+        {role:'user',content:q},
+        {role:'assistant',content:content},
+        {role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]}
+      ];
+      var res2=await fetch(PROXY,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sys,messages:followUpMessages})
+      });
+      if(!res2.ok)throw new Error('Claude error '+res2.status);
+      var data2=await res2.json();
+      if(myAiAskSeq!==aiAskSeq) return;
+      var aiErr2=bldAiError(data2);
+      if(aiErr2){$('ai-answer').textContent=aiErr2;return;}
+      var answer2=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
+      saveAndRender(answer2);
+      return;
+    }
+    // No custom tool_use -- existing web-search text/citation handling,
+    // unchanged. A web-search turn returns text interleaved with
+    // server_tool_use/web_search_tool_result blocks, not just content[0]
+    // -- join every text block in order instead of assuming the old
+    // single-block shape.
     var text=content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     var sources=[];
     content.forEach(function(b){
@@ -6523,13 +6568,7 @@ async function aiAsk(){
     });
     if(sources.length) text+='\n\nSources:\n'+sources.map(function(u){return '- '+u;}).join('\n');
     var answer=text||'No response text returned.';
-    $('ai-answer').textContent=answer;
-    var list=bldAiChat();
-    list.push({id:'AIQ-'+String(Date.now()).slice(-5),job_id:jobId,date:bldLocalToday(),question:q,answer:answer});
-    st('bld_ai_chat',list);
-    if(typeof recordBldSharedTopics==='function') recordBldSharedTopics(q);
-    $('ai-question').value='';
-    rAiHistory();
+    saveAndRender(answer);
   }catch(e){
     if(myAiAskSeq!==aiAskSeq) return;
     $('ai-answer').textContent='Could not reach Claude. Check your connection and try again.';
