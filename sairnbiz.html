@@ -1326,6 +1326,76 @@ function init(){
 
 function pbar(pct,color){return '<div class="pbar"><div class="pfill" style="width:'+pct+'%;'+(color?'background:'+color:'')+'"></div></div>';}
 
+// Cross-domain attention digest (2026-08-10) -- synthesizes budget
+// overages, AP bills nearing/past due, expiring certs, and overdue
+// performance reviews into one prioritized list. Pure function, no DOM,
+// no dependency on rBud()/rAP()/rTrain()/rPerf() -- reads sb_bud/sb_ap/
+// sb_train/sb_perf directly.
+//
+// IMPORTANT: urgency is computed from the real date fields (due/exp),
+// NEVER from the stored `status` field on sb_ap/sb_train/sb_perf --
+// all three are confirmed stale and never recomputed after creation
+// (no edit path exists for sb_train at all; the AP "Pay" button is a
+// no-op toast; sb_perf status is chosen once at creation and never
+// auto-flips to overdue). Trusting those labels would silently miss
+// real problems -- the entire reason this function exists.
+// See docs/superpowers/specs/2026-08-10-sairnbiz-attention-digest-design.md
+function checkAttentionItems() {
+  var findings = [];
+  var now = Date.now();
+  var FOURTEEN_DAYS_MS = 14 * 86400000;
+  var THIRTY_DAYS_MS = 30 * 86400000;
+
+  ld('sb_bud', []).forEach(function (b) {
+    var u = b.annual > 0 ? Math.round(b.actual / b.annual * 100) : 0;
+    if (u > 90) {
+      findings.push({ severity: 'critical', domain: 'budget', subject: b.cat, message: b.cat + ' is over budget: ' + u + '% of annual (' + fmt(b.actual) + ' of ' + fmt(b.annual) + ').' });
+    } else if (u > 75 && u < 90) {
+      findings.push({ severity: 'warning', domain: 'budget', subject: b.cat, message: b.cat + ' is at ' + u + '% of annual budget -- worth watching.' });
+    }
+  });
+
+  ld('sb_ap', []).forEach(function (bill) {
+    if (bill.status === 'Paid' || !bill.due) return;
+    var dueMs = new Date(bill.due + 'T00:00:00').getTime();
+    if (isNaN(dueMs)) return;
+    if (dueMs < now) {
+      findings.push({ severity: 'critical', domain: 'ap', subject: bill.vendor, message: bill.vendor + ' bill (' + fmt(bill.bal) + ') is past due (' + bill.due + ').' });
+    } else if (dueMs - now < FOURTEEN_DAYS_MS) {
+      findings.push({ severity: 'warning', domain: 'ap', subject: bill.vendor, message: bill.vendor + ' bill (' + fmt(bill.bal) + ') is due within 14 days (' + bill.due + ').' });
+    }
+  });
+
+  ld('sb_train', []).forEach(function (t) {
+    if (!t.exp) return;
+    var expMs = new Date(t.exp + 'T00:00:00').getTime();
+    if (isNaN(expMs)) return;
+    if (expMs < now) {
+      findings.push({ severity: 'critical', domain: 'training', subject: t.emp, message: t.emp + '\'s ' + t.cert + ' certification expired (' + t.exp + ').' });
+    } else if (expMs - now < THIRTY_DAYS_MS) {
+      findings.push({ severity: 'warning', domain: 'training', subject: t.emp, message: t.emp + '\'s ' + t.cert + ' certification expires within 30 days (' + t.exp + ').' });
+    }
+  });
+
+  ld('sb_perf', []).forEach(function (p) {
+    if (p.status === 'Completed' || !p.due) return;
+    var dueMs = new Date(p.due + 'T00:00:00').getTime();
+    if (isNaN(dueMs)) return;
+    if (dueMs < now) {
+      findings.push({ severity: 'critical', domain: 'performance', subject: p.emp, message: p.emp + '\'s ' + p.type + ' is overdue (was due ' + p.due + ').' });
+    } else if (dueMs - now < FOURTEEN_DAYS_MS) {
+      findings.push({ severity: 'warning', domain: 'performance', subject: p.emp, message: p.emp + '\'s ' + p.type + ' is due within 14 days (' + p.due + ').' });
+    }
+  });
+
+  var DOMAIN_ORDER = { budget: 0, ap: 1, training: 2, performance: 3 };
+  findings.sort(function (a, b) {
+    if (a.severity !== b.severity) return a.severity === 'critical' ? -1 : 1;
+    return DOMAIN_ORDER[a.domain] - DOMAIN_ORDER[b.domain];
+  });
+  return findings;
+}
+
 function rDash(){
   var emps=ld('sb_emps',[]),invs=ld('sb_invs',[]),exps=ld('sb_exps',[]),bills=ld('sb_ap',[]),tr=ld('sb_train',[]),h=ld('sb_hire',[]),pf=ld('sb_perf',[]);
   var rev=invs.reduce(function(s,i){return s+(i.paid||0);},0);
