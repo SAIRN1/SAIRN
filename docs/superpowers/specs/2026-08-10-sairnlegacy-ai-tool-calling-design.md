@@ -1,6 +1,11 @@
 # SAIRNlegacy — AI Tool-Calling Foundation + `get_cases`
 
-**Status:** Design approved 2026-08-10. Not yet implemented.
+**Status:** Implemented and live-verified 2026-08-10. `LEG_TOOLS`/
+`legRegisterTool`/`legExecuteTool` + `get_cases` shipped, `sendAI()`
+rewired with the object-identity splice fix from the start. Confirmed
+live on `sairn.vercel.app/sairnlegacy`: real case data returned, no
+family-contact/date leakage, concurrent-request ordering correct,
+`generateObituary()` unaffected.
 
 This is SAIRNlegacy's first tool-calling work, porting the mechanism
 already proven live on every prior rollout — including a concurrency
