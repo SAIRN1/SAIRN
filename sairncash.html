@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAIRNcash — AI Financial Co-Pilot for Freelancers</title>
+<meta name="description" content="SAIRNcash tracks quarterly tax set-asides, categorizes deductions, and optimizes SEP IRA/Solo 401(k) contributions for freelancers and the self-employed. It does not file your taxes -- hand off to your accountant or filing software when it's time to file. $9.99/month.">
+<meta name="theme-color" content="#0A0B14">
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0A0B14;--surface:#111220;--card:#181929;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --glow:#7C6FFF;--pulse:#00E5C4;--spark:#FF7B7B;--amber:#FFB347;
+  --text:#F0EEF8;--muted:#8B8AA0;--dim:#4A4963;--faint:#1A1B2E;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;overflow-x:hidden}
+
+.page{display:none;min-height:100vh}
+.page.active{display:block}
+#appPage{display:none;height:100vh;flex-direction:column}
+#appPage.active{display:flex}
+
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:rgba(10,11,20,0.9);backdrop-filter:blur(24px);border-bottom:1px solid var(--border)}
+.nav-logo{font-weight:800;font-size:22px;background:linear-gradient(135deg,var(--glow),var(--pulse));-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer;letter-spacing:-0.5px}
+.nav-cta{padding:9px 22px;border-radius:100px;font-size:13px;font-weight:600;background:var(--glow);color:#fff;cursor:pointer;border:none}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,111,255,0.35)}
+
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:100px 24px 80px;position:relative;overflow:hidden}
+.hero-orb{position:absolute;border-radius:50%;pointer-events:none}
+.orb1{width:700px;height:700px;top:-200px;left:50%;transform:translateX(-50%);background:radial-gradient(circle,rgba(124,111,255,0.12) 0%,transparent 70%)}
+.orb2{width:400px;height:400px;bottom:-100px;left:10%;background:radial-gradient(circle,rgba(0,229,196,0.07) 0%,transparent 70%)}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(124,111,255,0.1);border:1px solid rgba(124,111,255,0.25);border-radius:100px;padding:6px 18px;font-size:12px;color:var(--glow);font-weight:500;margin-bottom:36px;letter-spacing:0.5px}
+.pulse-dot{width:6px;height:6px;border-radius:50%;background:var(--pulse);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero-title{font-size:clamp(40px,7vw,76px);font-weight:800;line-height:1.05;letter-spacing:-2px;margin-bottom:28px}
+.hero-title em{font-style:normal;color:var(--glow)}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--muted);max-width:620px;font-weight:300;line-height:1.7;margin-bottom:24px}
+.hero-note{font-size:13px;color:var(--dim);max-width:560px;margin-bottom:44px;line-height:1.6;border-top:1px solid var(--border);padding-top:18px}
+.hero-actions{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:48px}
+.btn-hero{padding:17px 40px;border-radius:100px;font-size:16px;font-weight:600;border:none;cursor:pointer;transition:all 0.2s}
+.btn-hero.primary{background:var(--glow);color:#fff}
+.btn-hero.primary:hover{transform:translateY(-2px);box-shadow:0 16px 48px rgba(124,111,255,0.4)}
+.trust{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--dim)}
+.trust-item::before{content:'✓';color:var(--pulse);font-weight:700}
+
+.section{padding:100px 24px;max-width:1160px;margin:0 auto}
+.section-label{font-size:11px;font-weight:600;color:var(--glow);letter-spacing:3px;text-transform:uppercase;text-align:center;margin-bottom:14px}
+.section-title{font-size:clamp(30px,4vw,44px);font-weight:800;letter-spacing:-1px;text-align:center;margin-bottom:16px;line-height:1.15}
+.section-sub{text-align:center;color:var(--muted);font-size:17px;font-weight:300;max-width:580px;margin:0 auto 56px;line-height:1.7}
+
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:40px;max-width:420px;margin-left:auto;margin-right:auto}
+.plan{background:var(--card);border:1px solid var(--glow);border-radius:20px;padding:36px;background:linear-gradient(160deg,rgba(124,111,255,0.08),var(--card))}
+.plan-name{font-size:20px;font-weight:700;margin-bottom:6px}
+.plan-price{font-size:52px;font-weight:800;letter-spacing:-2px;line-height:1;margin-bottom:4px}
+.plan-price sup{font-size:22px;font-weight:500;vertical-align:top;margin-top:12px;display:inline-block}
+.plan-note{font-size:11px;color:var(--dim);margin-bottom:6px}
+.plan-period{color:var(--muted);font-size:13px;margin-bottom:24px}
+.plan-features{list-style:none;margin-bottom:24px}
+.plan-features li{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.plan-features li:last-child{border-bottom:none}
+.plan-features li span{color:var(--pulse);font-weight:700;flex-shrink:0}
+.plan-btn{width:100%;padding:14px;border-radius:100px;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;border:none;background:var(--glow);color:#fff}
+.plan-btn:hover{box-shadow:0 8px 28px rgba(124,111,255,0.4);transform:translateY(-1px)}
+
+.cta-section{padding:120px 24px;text-align:center;position:relative;overflow:hidden;background:var(--faint);border-top:1px solid var(--border)}
+.cta-title{font-size:clamp(36px,6vw,64px);font-weight:800;letter-spacing:-2px;margin-bottom:20px;line-height:1.05}
+.cta-sub{color:var(--muted);font-size:18px;font-weight:300;margin-bottom:40px;max-width:520px;margin-left:auto;margin-right:auto}
+.waitlist-form{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;max-width:480px;margin:0 auto}
+.waitlist-input{flex:1;min-width:220px;background:var(--card);border:1px solid var(--border);border-radius:100px;padding:15px 24px;color:var(--text);font-size:15px;outline:none}
+.waitlist-input:focus{border-color:rgba(124,111,255,0.5)}
+.waitlist-btn{padding:15px 32px;border-radius:100px;background:var(--glow);color:#fff;font-size:15px;font-weight:600;border:none;cursor:pointer;white-space:nowrap}
+.waitlist-btn:disabled{opacity:0.6;cursor:not-allowed}
+.cta-note{margin-top:16px;font-size:12px;color:var(--dim)}
+
+footer{padding:40px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+.footer-logo{font-weight:800;font-size:20px;background:linear-gradient(135deg,var(--glow),var(--pulse));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.footer-copy{font-size:12px;color:var(--dim)}
+
+#paywall{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;background:var(--bg);position:relative}
+#paywall::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 700px 500px at 50% 40%,rgba(124,111,255,0.1) 0%,transparent 70%)}
+.pw-logo{font-size:32px;font-weight:800;background:linear-gradient(135deg,var(--glow),var(--pulse));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;text-align:center}
+.pw-tagline{font-size:14px;color:var(--muted);margin-bottom:40px;text-align:center}
+.pw-card{background:var(--card);border:1px solid rgba(124,111,255,0.25);border-radius:22px;padding:44px;max-width:440px;width:100%;text-align:center;position:relative}
+.pw-price{font-size:64px;font-weight:800;letter-spacing:-2px;margin-bottom:4px;line-height:1}
+.pw-price sup{font-size:24px;font-weight:500;vertical-align:top;margin-top:12px;display:inline-block}
+.pw-period{color:var(--muted);font-size:13px;margin-bottom:20px}
+.pw-trial-note{background:rgba(0,229,196,0.06);border:1px solid rgba(0,229,196,0.15);border-radius:12px;padding:12px 16px;font-size:12px;color:var(--pulse);margin-bottom:24px;text-align:left;line-height:1.6}
+.pw-features{list-style:none;margin-bottom:28px;text-align:left}
+.pw-features li{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.pw-features li:last-child{border-bottom:none}
+.pw-features li span{color:var(--pulse);font-weight:700}
+.pw-btn{width:100%;padding:16px;border-radius:100px;border:none;background:linear-gradient(135deg,var(--glow),#5B54CC);color:#fff;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-bottom:14px}
+.pw-btn:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(124,111,255,0.4)}
+.pw-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.pw-email{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:13px 20px;color:var(--text);font-size:14px;outline:none;margin-bottom:12px}
+.pw-note{font-size:11px;color:var(--dim)}
+.pw-not-tax-filing{font-size:11px;color:var(--dim);margin-top:14px;line-height:1.6;border-top:1px solid var(--border);padding-top:14px}
+.pw-error{color:var(--spark);font-size:12px;margin-top:8px;display:none}
+
+#appShell{display:none;flex-direction:column;height:100vh;width:100vw;overflow:hidden}
+#appShell.show{display:flex}
+.app-topbar{display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:48px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.app-logo{font-size:18px;font-weight:800;background:linear-gradient(135deg,var(--glow),var(--pulse));-webkit-background-clip:text;-webkit-text-fill-color:transparent;cursor:pointer}
+.app-topbar-right{display:flex;align-items:center;gap:8px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--pulse);animation:pulsedot 2s infinite}
+@keyframes pulsedot{0%,100%{box-shadow:0 0 0 0 rgba(0,229,196,0.4)}70%{box-shadow:0 0 0 7px rgba(0,229,196,0)}}
+.app-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:rgba(124,111,255,0.12);border:1px solid rgba(124,111,255,0.25);color:var(--glow)}
+.pro-badge{font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;background:linear-gradient(135deg,rgba(124,111,255,0.2),rgba(0,229,196,0.2));border:1px solid rgba(124,111,255,0.3);color:#fff}
+.topbar-btn-sm{font-size:11px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer}
+.topbar-btn-sm:hover{color:var(--text);border-color:rgba(255,255,255,0.2)}
+#presenceBar{text-align:center;padding:4px 20px;font-size:11px;color:var(--dim);background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.app-body{display:flex;flex:1;overflow:hidden;min-height:0}
+.sidebar{width:190px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto}
+.sb-section{padding:12px 13px 4px;font-size:10px;font-weight:600;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase}
+.usage-wrap{padding:7px 13px}
+.usage-bar-label{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-bottom:3px}
+.usage-bar-bg{height:3px;background:var(--faint);border-radius:2px}
+.usage-bar-fill{height:100%;background:linear-gradient(90deg,var(--glow),var(--pulse));border-radius:2px;transition:width 0.3s;width:0%}
+.stat-row{display:flex;justify-content:space-between;padding:4px 13px;font-size:11px}
+.stat-label{color:var(--dim)}.stat-val{color:var(--pulse);font-weight:600}
+.sb-divider{height:1px;background:var(--border);margin:7px 12px}
+.clear-btn{margin:5px 7px;padding:7px;border-radius:8px;border:1px solid rgba(255,123,123,0.2);background:rgba(255,123,123,0.05);color:#FF7B7B;font-size:11px;cursor:pointer;width:calc(100% - 14px)}
+.sb-disclaimer{margin:8px 7px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--faint);color:var(--dim);font-size:10px;line-height:1.6}
+.app-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);min-height:0}
+.mode-hdr{padding:11px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.mode-hdr-title{font-size:14px;font-weight:600}
+.mode-hdr-desc{font-size:11px;color:var(--muted);margin-top:1px}
+.output{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-height:0}
+.bubble{max-width:90%;padding:14px 18px;border-radius:14px;font-size:16px;line-height:1.8}
+.bubble.user{align-self:flex-end;background:rgba(124,111,255,0.18);border:1px solid rgba(124,111,255,0.25);border-bottom-right-radius:4px}
+.bubble.ai{align-self:flex-start;background:var(--card);border:1px solid var(--border);border-bottom-left-radius:4px;max-width:94%}
+.bubble.system{align-self:center;background:rgba(0,229,196,0.06);border:1px solid rgba(0,229,196,0.15);border-radius:8px;font-size:12px;color:var(--pulse);padding:7px 14px;max-width:100%;text-align:center}
+.bubble-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;opacity:0.6}
+.bubble.ai .bubble-label{color:var(--glow)}
+.bubble.user .bubble-label{color:var(--pulse);text-align:right}
+.thinking{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:14px;border-bottom-left-radius:4px;align-self:flex-start}
+.dots{display:flex;gap:4px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--glow);animation:bounce 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
+.input-area{padding:11px 14px;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0}
+.input-row{display:flex;align-items:flex-end;gap:9px}
+.input-wrap{flex:1;position:relative}
+textarea#inp{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 44px 11px 14px;color:var(--text);font-size:15px;resize:none;outline:none;min-height:46px;max-height:130px;line-height:1.5}
+textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
+.cc{position:absolute;right:10px;bottom:8px;font-size:10px;color:var(--dim);pointer-events:none}
+.send-btn{width:42px;height:42px;border-radius:11px;border:none;background:var(--glow);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;color:#fff}
+.send-btn:disabled{opacity:0.35;cursor:not-allowed}
+.input-footnote{font-size:10px;color:var(--dim);margin-top:8px;text-align:center}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--glow);color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transform:translateY(8px);transition:all 0.25s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:640px){.sidebar{display:none}.output{padding:12px}.bubble{font-size:14px;padding:11px 14px}}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="mainNav">
+  <div class="nav-logo" onclick="showPage('home')">SAIRNcash</div>
+  <button class="nav-cta" onclick="showPage('app')">Open App ↗</button>
+</nav>
+
+<div class="page active" id="homePage">
+  <section class="hero">
+    <div class="hero-orb orb1"></div>
+    <div class="hero-orb orb2"></div>
+    <div class="hero-badge"><span class="pulse-dot"></span>Powered by Claude · Built for freelancers</div>
+    <h1 class="hero-title">Know what you owe.<br>Before <em>anyone</em> asks.</h1>
+    <p class="hero-sub">SAIRNcash tracks your quarterly tax set-aside, categorizes deductions as you go, and helps you optimize SEP IRA / Solo 401(k) contributions -- year-round, not just at filing time.</p>
+    <p class="hero-note"><strong style="color:var(--muted)">SAIRNcash does not file your taxes.</strong> It tracks, categorizes, and estimates -- then you (or your accountant, or your filing software) take it from there at filing time. That's by design, not a limitation.</p>
+    <div class="hero-actions">
+      <button class="btn-hero primary" onclick="showPage('app')">Start free ↗</button>
+    </div>
+    <div class="trust">
+      <span class="trust-item">Claude-Native</span>
+      <span class="trust-item">Not a filing product</span>
+      <span class="trust-item">Cross-Device Sync</span>
+      <span class="trust-item">Free to Start</span>
+    </div>
+  </section>
+
+  <div style="background:var(--faint);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:100px 24px">
+    <div style="max-width:1060px;margin:0 auto">
+      <div class="section-label">Pricing</div>
+      <h2 class="section-title">Start free.<br>Upgrade when it's paying for itself.</h2>
+      <p class="section-sub">No credit card on day one. Placeholder pricing -- real competitive research pending (Keeper, FlyFin, QuickBooks Self-Employed).</p>
+      <div class="pricing-grid">
+        <div class="plan">
+          <div class="plan-name">Pro</div>
+          <div class="plan-price"><sup>$</sup>9<span style="font-size:26px">.99</span></div>
+          <div class="plan-note">Reused SAIRNtype Stripe price -- placeholder</div>
+          <div class="plan-period">per month · cancel anytime</div>
+          <ul class="plan-features">
+            <li><span>✓</span>Quarterly tax set-aside tracking</li>
+            <li><span>✓</span>Deduction categorization</li>
+            <li><span>✓</span>SEP IRA / Solo 401(k) estimates</li>
+            <li><span>✓</span>Phone + computer synced live</li>
+          </ul>
+          <button class="plan-btn" onclick="showPage('app')">Get Pro — $9.99/mo</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-section">
+    <h2 class="cta-title">Get early access.</h2>
+    <p class="cta-sub">Real launch date, not a promise. We'll email you -- nothing else.</p>
+    <div class="waitlist-form">
+      <input class="waitlist-input" type="email" placeholder="your@email.com" id="waitlistEmail">
+      <button class="waitlist-btn" onclick="handleWaitlist()">Claim early access</button>
+    </div>
+    <p class="cta-note">No spam. No credit card.</p>
+  </div>
+
+  <footer>
+    <div class="footer-logo">SAIRNcash</div>
+    <div class="footer-copy">© 2026 SAIRNcash. Powered by Claude. Not a tax filing product.</div>
+  </footer>
+</div>
+
+<div class="page" id="appPage">
+  <div id="paywall">
+    <div class="pw-logo">SAIRNcash</div>
+    <div class="pw-tagline">AI Financial Co-Pilot for Freelancers</div>
+    <div class="pw-card">
+      <div class="pw-price"><sup>$</sup>9<span style="font-size:30px">.99</span></div>
+      <div class="pw-period">per month · unlimited Claude AI</div>
+      <div class="pw-trial-note" id="pwTrialNote">You'll be charged $9.99/mo starting today when you subscribe. No trial is offered yet in this build -- see the implementation plan's deferred trial-notice UI before any real trial period is offered.</div>
+      <ul class="pw-features">
+        <li><span>✓</span>Unlimited AI with Claude</li>
+        <li><span>✓</span>Quarterly tax set-aside tracking</li>
+        <li><span>✓</span>Deduction categorization</li>
+        <li><span>✓</span>Phone + computer synced live</li>
+      </ul>
+      <input class="pw-email" type="email" id="pwEmail" placeholder="your@email.com (optional)">
+      <button class="pw-btn" id="subBtn" onclick="startCheckout()">Get SAIRNcash Pro — $9.99/mo</button>
+      <div class="pw-error" id="pwError"></div>
+      <p class="pw-note">Secured by Stripe · Cancel anytime · No hidden fees</p>
+      <p class="pw-not-tax-filing">SAIRNcash tracks, categorizes, and estimates what you owe. It does not file your taxes -- hand off to your accountant or filing software (TurboTax, H&amp;R Block, a CPA) when it's time to file.</p>
+    </div>
+  </div>
+
+  <div id="appShell">
+    <div class="app-topbar">
+      <div class="app-logo" onclick="showPage('home')">SAIRNcash</div>
+      <div class="app-topbar-right">
+        <span class="status-dot"></span>
+        <span class="pro-badge">PRO</span>
+        <span class="app-badge" id="syncBadge">○ Sync</span>
+        <button class="topbar-btn-sm" onclick="showAccount()">Account</button>
+        <button class="topbar-btn-sm" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+    <div id="presenceBar">Connecting to sync...</div>
+    <div class="app-body">
+      <div class="sidebar">
+        <div class="sb-section">Session</div>
+        <div class="usage-wrap"><div class="usage-bar-label"><span>Today</span><span id="usageCount">0</span></div><div class="usage-bar-bg"><div class="usage-bar-fill" id="usageFill"></div></div></div>
+        <div class="stat-row"><span class="stat-label">Messages</span><span class="stat-val" id="statMsgs">0</span></div>
+        <div class="stat-row"><span class="stat-label">Plan</span><span class="stat-val">Pro</span></div>
+        <div class="sb-divider"></div>
+        <button class="clear-btn" onclick="clearSession()">🗑 Clear session</button>
+        <div class="sb-disclaimer">Estimates only. SAIRNcash does not file taxes -- review with your accountant or filing software before relying on any number here.</div>
+      </div>
+      <div class="app-main">
+        <div class="mode-hdr">
+          <div class="mode-hdr-title">Assistant</div>
+          <div class="mode-hdr-desc">Ask about quarterly set-asides, deduction categories, or retirement contribution limits. Estimates only -- not filing-ready figures.</div>
+        </div>
+        <div class="output" id="output">
+          <div class="bubble system">SAIRNcash Pro is live -- Claude is ready. This build tracks and estimates only; it will never file anything on your behalf.</div>
+        </div>
+        <div class="input-area">
+          <div class="input-row">
+            <div class="input-wrap">
+              <textarea id="inp" rows="1" placeholder="Ask about a set-aside, a deduction, or a contribution limit..."></textarea>
+              <span class="cc" id="cc">0</span>
+            </div>
+            <button class="send-btn" id="sendBtn" onclick="send()">&#10148;</button>
+          </div>
+          <div class="input-footnote">Estimate only. Not tax or investment advice. Not a filing product.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, push, onValue, set, serverTimestamp, onDisconnect }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+async function initFirebase() {
+  try {
+    const res = await fetch('/api/sairncash/firebase-config');
+    if (!res.ok) return;
+    const config = await res.json();
+    if (!config || !config.apiKey) return;
+    const app = initializeApp(config);
+    const db = getDatabase(app);
+    let did = localStorage.getItem('sairncash_did');
+    if (!did) { did = 'dev_' + Math.random().toString(36).substr(2,9); localStorage.setItem('sairncash_did', did); }
+    const mob = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+    const dn = mob ? '📱 Phone' : '💻 Computer';
+    const msgsRef = ref(db, 'sairncash/messages');
+    const presRef = ref(db, 'sairncash/presence/' + did);
+    set(presRef, { name: dn, online: true, ts: serverTimestamp() });
+    onDisconnect(presRef).remove();
+    onValue(ref(db, 'sairncash/presence'), snap => {
+      const devs = []; snap.forEach(c => { const d = c.val(); if (d&&d.name) devs.push(d.name); });
+      const bar = document.getElementById('presenceBar');
+      if (bar) { bar.textContent = devs.length > 0 ? devs.join('  ·  ') + '  — synced live' : 'No other devices connected'; bar.style.color = devs.length > 1 ? 'var(--pulse)' : 'var(--dim)'; }
+      const badge = document.getElementById('syncBadge');
+      if (badge) { badge.textContent = devs.length > 1 ? '⚡ Synced' : '○ Sync'; }
+    });
+    let init = false;
+    onValue(msgsRef, snap => {
+      if (!init) { init = true; return; }
+      snap.forEach(child => {
+        const key = child.key; const msg = child.val();
+        if (!msg || msg.deviceId === did) return;
+        if (document.querySelector(`[data-key="${key}"]`)) return;
+        window._appendSyncedBubble && window._appendSyncedBubble(msg.role, msg.text, msg.device, key);
+      });
+    });
+    window._fbPush = async (role, text) => { await push(msgsRef, { role, text, device: dn, deviceId: did, ts: serverTimestamp() }); };
+    window._fbClear = async () => { await set(msgsRef, null); };
+  } catch(e) { console.log('Sync unavailable'); }
+}
+initFirebase();
+</script>
+
+<script>
+// ── NAV ──────────────────────────────────────────────────────────
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); if (p.id === 'appPage') p.style.display = 'none'; });
+  const mainNav = document.getElementById('mainNav');
+  if (page === 'app') {
+    document.getElementById('appPage').classList.add('active');
+    document.getElementById('appPage').style.display = 'flex';
+    mainNav.style.display = 'none';
+    return;
+  }
+  mainNav.style.display = 'flex';
+  document.getElementById('homePage').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── WAITLIST ──────────────────────────────────────────────────────
+// 2026-08-10: real persistence via api/sairncash/waitlist.js instead of
+// a fabricated success toast -- see SAIRN-BACKLOG-class audit finding.
+async function handleWaitlist() {
+  const inp = document.getElementById('waitlistEmail');
+  const btn = document.querySelector('.waitlist-btn');
+  if (!inp.value.includes('@')) { inp.style.borderColor='var(--spark)'; setTimeout(()=>inp.style.borderColor='',1500); return; }
+  const email = inp.value.trim();
+  btn.disabled = true; btn.textContent = 'Joining...';
+  try {
+    const res = await fetch('/api/sairncash/waitlist', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email})});
+    const data = await res.json().catch(()=>null);
+    if (!res.ok || !data || !data.ok) {
+      btn.disabled = false; btn.textContent = 'Claim early access';
+      showToast((data && data.error && data.error.message) || 'Could not join waitlist -- try again');
+      return;
+    }
+    btn.textContent = "✓ You're in!";
+    btn.style.background = 'var(--pulse)'; btn.style.color = '#0A0B14';
+    inp.value = '';
+    setTimeout(() => { btn.disabled = false; btn.textContent = 'Claim early access'; btn.style.background = ''; btn.style.color = ''; }, 3000);
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Claim early access';
+    showToast('Could not join waitlist -- check your connection and try again');
+  }
+}
+
+// ── SUBSCRIPTION ──────────────────────────────────────────────────
+function getSub() { try { return JSON.parse(localStorage.getItem('sairncash_sub') || 'null'); } catch { return null; } }
+function saveSub(d) { localStorage.setItem('sairncash_sub', JSON.stringify(d)); }
+// 2026-08-10: uses the real expiresAt Stripe returns (via /api/sairncash/verify)
+// instead of an arbitrary client-only 35-day timer -- see audit finding.
+function isSubscribed() {
+  const s = getSub();
+  if (!s || !s.valid || !s.expiresAt) return false;
+  return Date.now() < new Date(s.expiresAt).getTime();
+}
+// Re-verifies against the real subscription state once per app load --
+// closes the "forged localStorage grants permanent free access" gap a
+// pure isSubscribed() check (client-only, no server round-trip) can't
+// close on its own. Falls back to the last known real expiresAt only on
+// a network failure, never on an actual server rejection.
+async function reverifySubscription() {
+  const s = getSub();
+  if (!s || !s.subscriptionId) return isSubscribed();
+  try {
+    const res = await fetch('/api/sairncash/verify', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({subscriptionId: s.subscriptionId})});
+    const data = await res.json();
+    if (data.valid) { saveSub(data); return true; }
+    localStorage.removeItem('sairncash_sub');
+    return false;
+  } catch(e) {
+    return isSubscribed();
+  }
+}
+
+function showAccount() {
+  const s = getSub();
+  if (s) alert(`SAIRNcash Pro\n\nEmail: ${s.email||'N/A'}\nPlan: ${s.plan}\nPrice: ${s.price}\nRenews: ${s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : 'N/A'}\n\nManage or cancel at stripe.com`);
+}
+function signOut() {
+  if (confirm('Sign out? You will need to resubscribe.')) { localStorage.removeItem('sairncash_sub'); location.reload(); }
+}
+
+async function startCheckout() {
+  const btn = document.getElementById('subBtn');
+  const err = document.getElementById('pwError');
+  const email = document.getElementById('pwEmail').value.trim();
+  btn.disabled = true; btn.textContent = 'Redirecting to Stripe...'; err.style.display = 'none';
+  try {
+    const res = await fetch('/api/sairncash/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) });
+    const data = await res.json();
+    if (data.url) { window.location.href = data.url; }
+    else { throw new Error(data.error || 'Could not start checkout'); }
+  } catch(e) {
+    err.textContent = 'Error: ' + e.message; err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Get SAIRNcash Pro — $9.99/mo';
+  }
+}
+
+async function handleStripeReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const sid = params.get('session_id');
+  const cancelled = params.get('cancelled');
+  if (cancelled) { window.history.replaceState({}, '', '/'); return false; }
+  if (sid) {
+    try {
+      const res = await fetch('/api/sairncash/verify', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ sessionId: sid }) });
+      const data = await res.json();
+      if (data.valid) { saveSub(data); window.history.replaceState({}, '', '/'); return true; }
+    } catch(e) {}
+    window.history.replaceState({}, '', '/');
+  }
+  return false;
+}
+
+async function initApp() {
+  const justPaid = await handleStripeReturn();
+  if (justPaid || await reverifySubscription()) {
+    showAppShell();
+  } else {
+    document.getElementById('paywall').style.display = 'flex';
+    document.getElementById('appShell').classList.remove('show');
+  }
+}
+
+function showAppShell() {
+  document.getElementById('paywall').style.display = 'none';
+  document.getElementById('appShell').classList.add('show');
+  loadTodayUsage();
+  setTimeout(() => document.getElementById('inp').focus(), 100);
+}
+
+// ── USAGE ─────────────────────────────────────────────────────────
+let todayCount = 0;
+function loadTodayUsage() {
+  const today = new Date().toDateString();
+  const stored = JSON.parse(localStorage.getItem('sairncash_usage') || '{}');
+  todayCount = stored.date === today ? (stored.count || 0) : 0;
+  updateUsageBar();
+}
+function incUsage() {
+  todayCount++;
+  localStorage.setItem('sairncash_usage', JSON.stringify({ date: new Date().toDateString(), count: todayCount }));
+  updateUsageBar();
+}
+function updateUsageBar() {
+  document.getElementById('usageCount').textContent = todayCount;
+  document.getElementById('usageFill').style.width = Math.min((todayCount/200)*100,100) + '%';
+}
+
+// ── ASSISTANT ─────────────────────────────────────────────────────
+// Single generic mode for this foundation pass -- the real tax/
+// retirement-estimator system prompt and structured UI are deferred to
+// a later plan (spec §1, "repurposed" section), not built here.
+const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need.';
+
+let localHistory=[], loading=false, msgCount=0;
+
+function addBubble(role,text) {
+  const out=document.getElementById('output');
+  const welcome=out.querySelector('.bubble.system');
+  if(welcome&&role!=='system') welcome.remove();
+  const d=document.createElement('div'); d.className='bubble '+role;
+  if(role!=='system'){const lbl=document.createElement('div');lbl.className='bubble-label';lbl.textContent=role==='ai'?'✦ SAIRNcash':'You';d.appendChild(lbl);}
+  const txt=document.createElement('div'); txt.style.cssText='white-space:pre-wrap;word-break:break-word'; txt.textContent=text; d.appendChild(txt);
+  out.appendChild(d); out.scrollTop=out.scrollHeight;
+}
+
+window._appendSyncedBubble=function(role,text,device,key){
+  const out=document.getElementById('output');
+  const welcome=out.querySelector('.bubble.system');
+  if(welcome&&role!=='system') welcome.remove();
+  const d=document.createElement('div'); d.className='bubble '+role;
+  if(key) d.dataset.key=key;
+  if(role!=='system'){const lbl=document.createElement('div');lbl.className='bubble-label';lbl.textContent=role==='ai'?'✦ SAIRNcash':'You · '+(device||'Other device');d.appendChild(lbl);}
+  const txt=document.createElement('div'); txt.style.cssText='white-space:pre-wrap;word-break:break-word'; txt.textContent=text; d.appendChild(txt);
+  out.appendChild(d); out.scrollTop=out.scrollHeight;
+};
+
+function showThinking() {
+  const out=document.getElementById('output');
+  const old=document.getElementById('thinking'); if(old) old.remove();
+  const d=document.createElement('div'); d.className='thinking'; d.id='thinking';
+  d.innerHTML='<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div><span style="font-size:13px;color:var(--muted)">Claude is thinking...</span>';
+  out.appendChild(d); out.scrollTop=out.scrollHeight;
+}
+function removeThinking() { const t=document.getElementById('thinking'); if(t) t.remove(); }
+
+function showToast(msg) {
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── CLAUDE API ────────────────────────────────────────────────────
+// Calls the shared platform proxy (api/claude.js) -- 'sairncash' added
+// to its KNOWN_APP_IDS allowlist -- rather than a duplicate per-app
+// pass-through. is_demo:false because access is already gated by
+// reverifySubscription() above, matching every other real-subscriber
+// app on this platform.
+async function callClaude(userMsg) {
+  if(loading) return;
+  loading=true; document.getElementById('sendBtn').disabled=true; showThinking();
+  localHistory.push({role:'user',content:userMsg});
+  try {
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncash',is_demo:false,max_tokens:1000,system:SYSTEM_PROMPT,messages:localHistory})});
+    const data=await res.json();
+    removeThinking();
+    if(data.error){addBubble('system','Error: '+(data.error.message||data.error));}
+    else {
+      const aiText=data.content[0].text;
+      localHistory.push({role:'assistant',content:aiText});
+      addBubble('ai',aiText);
+      if(window._fbPush) window._fbPush('ai',aiText);
+      msgCount++; incUsage();
+      document.getElementById('statMsgs').textContent=msgCount;
+    }
+  } catch(e){ removeThinking(); addBubble('system','Network error. Check your connection.'); }
+  loading=false; document.getElementById('sendBtn').disabled=false;
+}
+
+function send() {
+  const el=document.getElementById('inp');
+  const txt=el.value.trim();
+  if(!txt||loading) return;
+  addBubble('user',txt);
+  if(window._fbPush) window._fbPush('user',txt);
+  el.value=''; el.style.height='auto'; document.getElementById('cc').textContent='0';
+  callClaude(txt);
+}
+
+function clearSession() {
+  if(!confirm('Clear all messages? This clears all synced devices.')) return;
+  document.getElementById('output').innerHTML='<div class="bubble system">Session cleared.</div>';
+  localHistory=[]; msgCount=0; document.getElementById('statMsgs').textContent='0';
+  if(window._fbClear) window._fbClear().then(()=>showToast('Cleared on all devices'));
+  else showToast('Session cleared');
+}
+
+// ── INPUT ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function(){
+  const inpEl=document.getElementById('inp');
+  inpEl.addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,130)+'px';document.getElementById('cc').textContent=this.value.length;});
+  inpEl.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}});
+});
+
+// ── INIT ─────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  if (document.getElementById('appPage').classList.contains('active')) initApp();
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('session_id') || params.get('cancelled')) {
+    showPage('app');
+    initApp();
+  }
+});
+</script>
+</body>
+</html>

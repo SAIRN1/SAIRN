@@ -31,7 +31,14 @@
 const KNOWN_APP_IDS = [
   'stonedesk', 'sairnbiz', 'sairnscape', 'sairncode', 'sairnbuild',
   'sairnlaw', 'sairndesign', 'sairncare', 'sairnvet', 'sairnfuneral',
-  'sairnmechanical', 'sairnhr', 'sairnacc', 'sairngrounds', 'sairnlegacy'
+  'sairnmechanical', 'sairnhr', 'sairnacc', 'sairngrounds', 'sairnlegacy',
+  // SAIRNcash (2026-08-10) -- pivot from SAIRNtype. Its own callClaude()
+  // calls this shared proxy directly (is_demo:false, gated upstream by
+  // its own real Stripe subscription check) rather than a duplicate
+  // per-app pass-through -- SAIRNtype's original api/claude.js had no
+  // app_id allowlist, no rate limiting, and read the wrong env var name
+  // (`mykey`); not ported.
+  'sairncash'
 ];
 
 // Server tools a frontend is allowed to request. Server-executed tool TYPES
