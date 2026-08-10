@@ -1469,6 +1469,46 @@ function rTS(){
   $('ts-bill').textContent=tb;$('ts-util').textContent=th>0?Math.round(tb/th*100)+'%':'0%';
 }
 
+// Pre-payroll validation (2026-08-10) -- deterministic checks that run
+// BEFORE payroll "runs," so a wrong number gets caught before anyone
+// trusts it, not after. This app has already shipped one real, silent
+// payroll-math bug in production (0fa5fc6, the rPay() Benefits Cost 8x
+// inflation) -- a real calculation, mathematically wrong, nothing about
+// it looked broken. These checks exist so the next wrong number doesn't
+// ship silently either.
+//
+// Pure function, no rPay() dependency, no DOM read-back -- unlike
+// get_payroll_summary/get_pl_summary, these checks read raw employee
+// records directly, so there is no "cold call" risk class here at all.
+// See docs/superpowers/specs/2026-08-10-sairnbiz-pre-payroll-validation-design.md
+function checkPayrollAnomalies() {
+  var findings = [];
+  var emps = ld('sb_emps', []).filter(function (e) { return e.status === 'Active'; });
+  var now = Date.now();
+  var FOURTEEN_DAYS_MS = 14 * 86400000;
+  emps.forEach(function (e) {
+    var name = (e.fn || '') + ' ' + (e.ln || '');
+    if (!e.rate || e.rate <= 0) {
+      findings.push({
+        severity: 'critical',
+        employee: name,
+        message: name + ' has no pay rate set (or it is $0) -- payroll for this employee will silently compute as $0 across every figure.'
+      });
+    }
+    if (e.start) {
+      var startMs = new Date(e.start + 'T00:00:00').getTime();
+      if (!isNaN(startMs) && (now - startMs) >= 0 && (now - startMs) < FOURTEEN_DAYS_MS) {
+        findings.push({
+          severity: 'warning',
+          employee: name,
+          message: name + ' started within the last 14 days -- may not have been included in a prior payroll cycle.'
+        });
+      }
+    }
+  });
+  return findings;
+}
+
 function rPay(){
   var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
   var gross=0,taxes=0,bens=0;
