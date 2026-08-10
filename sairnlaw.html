@@ -988,6 +988,21 @@ var AUTH_API='https://sairn.vercel.app/api/law-auth';
 // localStorage -- true of any browser-storage app, and the reason logout
 // clears the token rather than leaving it behind.
 var prole='owner',ceid=null,aiHist=[];
+// Concurrency guard for sendAI() (added 2026-08-10, found via live testing
+// during the AI tool-calling rollout -- not present in the original
+// single-shot version of this function). Without it, two sendAI() calls
+// in flight at once share the same mutable aiHist array: both read it at
+// fetch-time after both have already pushed their own user turn, so each
+// request's transcript contains the OTHER call's unanswered question too.
+// Live-observed consequences: a merged answer covering both questions in
+// one bubble, and in one run, a second bubble permanently stuck at
+// "Thinking..." with no error and no exception thrown (Anthropic accepted
+// the resulting non-alternating turn sequence rather than rejecting it, so
+// nothing here ever hit a catch block). Same fix shape as SAIRNbiz's
+// sbAiBusy: block a second send outright rather than trying to make
+// concurrent shared-history calls safe, which is the larger, riskier
+// change and not what this platform does elsewhere.
+var lawAiBusy=false;
 var lawSession=null;   // {token, role, employee_id, mfa_enabled} -- in-memory mirror
 var lawPreauth=null;   // short-lived MFA pre-auth token, in-memory only, never persisted
 
@@ -1465,6 +1480,8 @@ function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
   var inp=$('ainp'),q=(inp.value||'').trim();
   if(!q)return;
+  if(lawAiBusy){toast('Please wait for the current response first');return;}
+  lawAiBusy=true;
   inp.value='';
   var chat=$('achat');
   if(chat.querySelector('div[style*="text-align:center"]'))chat.innerHTML='';
@@ -1473,40 +1490,76 @@ async function sendAI(){
   aiHist.push({role:'user',content:q});
   var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
+  var toolDefs=Object.keys(LAW_TOOLS).map(function(k){return LAW_TOOLS[k].definition;});
+  // Citation-grounding instruction -- the actual enforcement mechanism
+  // for this panel's promise, not a UI label. This does not make
+  // hallucination structurally impossible (no system prompt can, for
+  // any LLM) -- it's the same class of mitigation as a disclaimer
+  // plus explicit refusal instruction, not a verification system. A
+  // real citation-verification system (checking a generated citation
+  // against an actual case-law database) is a materially larger
+  // build -- out of scope for Phase 1, flagged here rather than
+  // silently implied as solved.
+  //
+  // TIGHTENED 2026-08-08: live-testing the first version of this rule
+  // found a real gap -- for a famous case (Miranda v. Arizona) the
+  // model stated a specific citation string ("384 U.S. 436 (1966)")
+  // prefaced with "high confidence" and followed by a verification
+  // disclaimer, rather than withholding the citation itself. A busy
+  // attorney could copy the citation and skip the disclaimer
+  // underneath it. The rule now explicitly forbids outputting the
+  // citable-reference-format string (volume/reporter/page/year, or a
+  // statute section number) under any circumstances regardless of
+  // confidence or fame -- narrative description of a case (holding,
+  // parties, era, principle) is still allowed, only the citation
+  // string itself is withheld.
+  //
+  // ADDED 2026-08-10: platform-wide anti-substitution instruction,
+  // ported from SAIRNbiz's fix for the same fabrication class (a denied
+  // or failed tool call getting followed by a self-invented figure
+  // anyway). Placed at the end of system-prompt construction so it
+  // carries into the SECOND proxy call below too -- that's the one that
+  // renders the user-visible reply after a tool_result comes back, and
+  // it sends no `tools` field at all, so a tool's own description has
+  // zero influence on that turn.
+  var sys='You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to that citation restriction. '+LAW_FIRM_DATA_RULE+' Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop. This applies even to "rough" or "likely" answers.';
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:600,
-        // Citation-grounding instruction -- the actual enforcement mechanism
-        // for this panel's promise, not a UI label. This does not make
-        // hallucination structurally impossible (no system prompt can, for
-        // any LLM) -- it's the same class of mitigation as a disclaimer
-        // plus explicit refusal instruction, not a verification system. A
-        // real citation-verification system (checking a generated citation
-        // against an actual case-law database) is a materially larger
-        // build -- out of scope for Phase 1, flagged here rather than
-        // silently implied as solved.
-        //
-        // TIGHTENED 2026-08-08: live-testing the first version of this rule
-        // found a real gap -- for a famous case (Miranda v. Arizona) the
-        // model stated a specific citation string ("384 U.S. 436 (1966)")
-        // prefaced with "high confidence" and followed by a verification
-        // disclaimer, rather than withholding the citation itself. A busy
-        // attorney could copy the citation and skip the disclaimer
-        // underneath it. The rule now explicitly forbids outputting the
-        // citable-reference-format string (volume/reporter/page/year, or a
-        // statute section number) under any circumstances regardless of
-        // confidence or fame -- narrative description of a case (holding,
-        // parties, era, principle) is still allowed, only the citation
-        // string itself is withheld.
-        system:'You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to that citation restriction. '+LAW_FIRM_DATA_RULE,
-        messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:600,system:sys,
+        messages:aiHist.map(function(m){return {role:m.role,content:m.content};}),
+        tools:toolDefs})});
     var data=await res.json();
     var aiErr=lawAiError(data);
     if(aiErr){thinking.textContent=aiErr;chat.scrollTop=chat.scrollHeight;return;}
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
-    thinking.textContent=text;
-    aiHist.push({role:'assistant',content:text});
+    var blocks=(data&&data.content)||[];
+    var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
+    if(!toolUse){
+      var rep=(blocks[0]&&blocks[0].text)||'No response text returned.';
+      thinking.textContent=rep;
+      aiHist.push({role:'assistant',content:rep});
+      chat.scrollTop=chat.scrollHeight;
+      return;
+    }
+    var outcome=lawExecuteTool(toolUse.name,prole,toolUse.input);
+    // Belt-and-suspenders, same as SAIRNbiz: reinforce the anti-fabrication
+    // instruction right next to the trigger, in the same turn as the
+    // denial/error itself, not just once at the system-prompt level.
+    var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+    // Claude requires the assistant turn that requested the tool to be
+    // present in history before the tool_result turn that answers it.
+    aiHist.push({role:'assistant',content:blocks});
+    aiHist.push({role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]});
+    var res2=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:600,system:sys,
+        messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
+    var data2=await res2.json();
+    var aiErr2=lawAiError(data2);
+    if(aiErr2){thinking.textContent=aiErr2;chat.scrollTop=chat.scrollHeight;return;}
+    var rep2=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
+    thinking.textContent=rep2;
+    aiHist.push({role:'assistant',content:rep2});
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
+  finally{lawAiBusy=false;}
   chat.scrollTop=chat.scrollHeight;
 }
 
