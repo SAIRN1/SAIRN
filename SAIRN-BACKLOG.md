@@ -148,7 +148,7 @@ first to confirm this is the only panel in this state.
 
 ## SAIRNdesign invoicing needs a real server-side uniqueness constraint
 
-**Logged:** 2026-08-09. **Code-complete, pending DB migration: 2026-08-10.**
+**Logged:** 2026-08-09. **Resolved: 2026-08-10.**
 
 **What:** `saveInvoice()`'s "already invoiced" check reads a local
 snapshot of `invoices()` and, if no existing invoice references the
@@ -173,23 +173,28 @@ misleading "server sync failed" fallback. Both shipped and live-verified
 2026-08-10 (`8d1f4d6`) — confirmed inert/no-regression against the live
 endpoint.
 
-**Still open:** the actual DB constraint —
-`sql/sairndesign_invoice_uniqueness.sql`
-(`CREATE UNIQUE INDEX ... ON sdn_invoices (license_hash,
-(data->>'proposal_id'))`) — has **not been run** in Supabase. No DB
-execution access exists from the Claude Code environment (no
-`SUPABASE_URL`/service key, no `psql`, no `supabase` CLI, confirmed
-2026-08-10) — every schema file in this repo has always been a
-hand-off for Michael to run in Supabase's SQL editor, this is no
-different. Until it runs, the race this entry describes is still real;
-the shipped code becomes load-bearing the moment it does. Re-verify
-with the two-sequential-write curl test in
-`docs/superpowers/plans/2026-08-10-sairndesign-invoice-uniqueness.md`
-Task 2 Step 4 after running it.
+**Migration run and independently verified, 2026-08-10:** Michael ran
+`sql/sairndesign_invoice_uniqueness.sql` in Supabase's SQL editor (I
+have no DB execution access from the Claude Code environment — no
+`SUPABASE_URL`/service key, no `psql`, no `supabase` CLI, no Supabase
+MCP tool, all confirmed this session — this step could not be done by
+me). Two earlier behavioral retests after a premature "success" report
+still showed 200/200 (no rejection) — not treated as fixed until a
+real re-test confirmed it. Final re-test post-migration: first write
+for a fresh `proposal_id` → 200; second write, same `proposal_id`,
+different `invoice_id` → real 409 `DUPLICATE_INVOICE`; read-back
+confirmed only one row persisted. No-regression check also passed:
+updating an existing invoice's `status` in place (same `invoice_id`,
+same `proposal_id`, e.g. `setInvoiceStatus()`'s path) still succeeds
+normally. Test/scratch duplicate rows created during verification
+(`PR-TEST`, `PR-VERIFY-1`, `PR-RETEST-1`, `PR-CHECK-1`, all on the
+`SDN-PINNACLE-2026` demo license) were identified as synthetic before
+deletion (never assumed) and are confirmed cleaned from the live table.
 
-**Done looks like:** `sql/sairndesign_invoice_uniqueness.sql` run in
-Supabase, then the post-migration curl test in the plan above confirms
-a real 409 on the second concurrent write for the same proposal.
+**Done looks like (achieved):** the invoice write goes through a server
+route that rejects a second invoice for a proposal that already has
+one, atomically — confirmed live, not assumed from a "migration ran"
+report alone.
 
 ## SAIRNlaw trust disbursement needs a real server-side atomic check
 
