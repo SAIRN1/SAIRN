@@ -1283,17 +1283,58 @@ async function sendAI(){
   aiHist.push({role:'user',content:q});
   var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
+  var toolDefs=Object.keys(SDN_TOOLS).map(function(k){return SDN_TOOLS[k].definition;});
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
-        system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical.',
-        messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
+        system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.',
+        messages:aiHist.map(function(m){return {role:m.role,content:m.content};}),
+        tools:toolDefs})});
     var data=await res.json();
     var aiErr=sdnAiError(data);
     if(aiErr){thinking.textContent=aiErr;chat.scrollTop=chat.scrollHeight;return;}
-    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
-    thinking.textContent=text;
-    aiHist.splice(myUserIdx+1,0,{role:'assistant',content:text});
+    var blocks=(data&&data.content)||[];
+    var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
+    if(!toolUse){
+      var text=(blocks[0]&&blocks[0].text)||'No response text returned.';
+      thinking.textContent=text;
+      aiHist.splice(myUserIdx+1,0,{role:'assistant',content:text});
+      chat.scrollTop=chat.scrollHeight;
+      return;
+    }
+    var outcome=sdnExecuteTool(toolUse.name,toolUse.input);
+    // Belt-and-suspenders, same pattern proven on every prior rollout:
+    // reinforce the anti-fabrication instruction right next to the
+    // trigger, in the same turn as the denial/error itself.
+    var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+    // Built from this request's OWN local turn data, not re-read from the
+    // shared aiHist -- aiHist may have been mutated by other concurrent
+    // requests by the time this follow-up fires, matching every prior
+    // rollout's pattern of using local turn state for the follow-up call.
+    var followUpMessages=[
+      {role:'user',content:q},
+      {role:'assistant',content:blocks},
+      {role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]}
+    ];
+    var res2=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
+        system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.',
+        messages:followUpMessages})});
+    var data2=await res2.json();
+    var aiErr2=sdnAiError(data2);
+    if(aiErr2){thinking.textContent=aiErr2;chat.scrollTop=chat.scrollHeight;return;}
+    var finalText=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
+    thinking.textContent=finalText;
+    // Atomic 3-entry splice at the same recorded index the single-entry
+    // case uses -- preserves the existing fix's exact "insert relative to
+    // this request's own recorded position" behavior for a multi-entry
+    // exchange, rather than three separate splices that would each need
+    // to account for the prior insertions shifting indices.
+    aiHist.splice(myUserIdx+1,0,
+      {role:'assistant',content:blocks},
+      {role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]},
+      {role:'assistant',content:finalText}
+    );
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
   chat.scrollTop=chat.scrollHeight;
 }
