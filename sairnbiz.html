@@ -1044,7 +1044,7 @@ sbRegisterTool(
 
 sbRegisterTool(
   'get_attention_digest',
-  'Get a prioritized list of everything across the business that needs attention right now: budget categories over 90% (critical) or 75-90% (warning) of annual spend, AP bills past due (critical) or due within 14 days (warning), employee certifications expired (critical) or expiring within 30 days (warning), and performance reviews overdue (critical) or due within 14 days (warning). Findings are computed from real dates, not from stored status labels. Synthesize across domains in your answer when more than one is present -- do not just list one domain and ignore the others.',
+  'Get a prioritized digest of four key business areas: budget categories over 90% (critical) or above 75% (warning) of annual spend, AP bills past due (critical) or due within 14 days (warning), employee certifications expired (critical) or expiring within 30 days (warning), and performance reviews overdue (critical) or due within 14 days (warning). For AP, training, and performance items, findings are computed from real dates, not from stored status labels. IMPORTANT: This tool does NOT check accounts receivable (overdue customer invoices), which is a separate signal tracked elsewhere in the app. Synthesize across the covered domains in your answer when more than one is present -- do not just list one domain and ignore the others.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
