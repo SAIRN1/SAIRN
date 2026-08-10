@@ -1,7 +1,29 @@
 # SAIRNscape — AI Tool-Calling Foundation + `get_customers`
 
-**Status:** Design approved 2026-08-10, following brainstorming. Not yet
-implemented.
+**Status:** Implemented and live-verified 2026-08-10. All 2 commits
+(`d285ee9`, `c5d2361`) are on `origin/main` and confirmed live at
+`sairn.vercel.app/sairnscape` — `scpExecuteTool` present in the deployed
+HTML. A real owner-role session asked "what customers do we have, and
+which ones are recurring?" and got a grounded answer (Diane Ferraro/
+Weekly mowing/recurring, Marcus Webb/Seasonal cleanup/not recurring,
+Nguyen Family/Biweekly mowing/recurring) sourced from real
+`scp_customers` data via `get_customers`. The no-tool path stayed
+correct too — a pricing question ("what's a fair markup on mulch")
+answered directly with no tool called, no regression to prior behavior.
+**The concurrency fix (the load-bearing check for this rollout) passed
+on the real deployed code**: sending two questions back-to-back
+rejected the second with the "please wait" toast before it touched
+`scpAiHist`, and after the first resolved, `scpAiHist` showed a clean,
+correctly-ordered 4-entry sequence with `scpAiBusy` reset to `false` —
+the pre-existing shared-history race this spec set out to fix is
+confirmed closed, not just theoretically addressed. Role-gate mechanism
+confirmed live: `owner` allowed, `crew_lead` and `office` both correctly
+blocked with the exact "restricted to the owner role" error.
+`sanitizeTools()` confirmed live for the `sairnscape` app_id
+specifically via a direct proxy call carrying a custom tool. Guardian
+v2 pass was clean (one informational-only D2 finding — a `finish`
+helper name reused across unrelated scopes, same pattern already used
+in SAIRNbiz/SAIRNlaw, not a real collision).
 
 This is SAIRNscape's first tool-calling work, porting the mechanism
 already proven live in SAIRNbiz, SAIRNlaw, and SAIRNvet — with a real,
