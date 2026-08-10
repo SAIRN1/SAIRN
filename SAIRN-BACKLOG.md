@@ -34,6 +34,63 @@ payment) and persists it, the same way `saveBill()`/`saveInv()` persist
 new records — with an honest toast reflecting what actually happened,
 not a fixed success string regardless of outcome.
 
+## SAIRNbiz has no way to update a training cert's status at all
+
+**Logged:** 2026-08-10
+
+**What:** `sb_train` records (`emp`, `cert`, `exp`, `status`) are written
+once by `seed()` and never touched again -- there is no edit/save
+function anywhere in `sairnbiz.html` for the Training panel's records.
+A cert seeded months ago as `status:'Active'` shows "Active" forever,
+even after its real `exp` date has passed, because nothing ever writes
+a new value. Surfaced while designing the cross-domain attention digest
+(item 4 of the SAIRNbiz AI-native roadmap; see
+`docs/superpowers/specs/2026-08-10-sairnbiz-attention-digest-design.md`
+§1), which needed to know whether `sb_train.status` could be trusted as
+a live signal -- it can't, for this reason.
+
+**Why deferred:** The digest spec's fix works around this (compute
+expiry from the real `exp` date, ignore the unreliable `status` label)
+rather than fixing the underlying gap. Building a real cert edit path
+(status changes, renewal date updates, maybe a renewal-reminder flow)
+is a real, separate, self-contained feature -- not something to bundle
+into a digest/read-only-computation feature.
+
+**Done looks like:** A real edit function for `sb_train` records (at
+minimum, updating `status` and `exp` on renewal) that persists the same
+way `saveBill()`/`saveReview()` persist their records, so the Training
+panel's own `status` field can eventually be trusted again instead of
+permanently ignored in favor of date-based computation.
+
+## SAIRNbiz budget "actual" spend never syncs with recorded expenses
+
+**Logged:** 2026-08-10
+
+**What:** `sb_bud`'s `actual` field (per-category spend against the
+annual budget) is written exactly once, inside `seed()`. No
+expense-entry path -- `saveExp()` or otherwise -- ever updates `sb_bud`.
+A user can record real expenses all day and the Budget panel's
+utilization percentages, and the cross-domain attention digest's budget
+findings, never move from their seeded baseline. Surfaced during the
+final review of the cross-domain attention digest (item 4 of the
+SAIRNbiz AI-native roadmap), which disclosed this staleness in
+`get_attention_digest`'s tool description but did not fix the
+underlying gap (out of scope for that feature -- a read-only digest
+over existing data, not a data-model fix).
+
+**Why deferred:** Wiring real expense-to-budget sync (deciding how
+`sb_exps` categories map to `sb_bud` categories, whether the mapping is
+1:1 or needs a lookup table, and whether historical seeded `actual`
+values should be zeroed or kept as a starting baseline) is a real,
+separate data-model decision -- not something to bundle into a
+disclosure fix.
+
+**Done looks like:** Every `saveExp()` call updates the matching
+`sb_bud` category's `actual` value (or a documented, deliberate mapping
+decides how categories reconcile), so Budget panel utilization and the
+attention digest's budget findings reflect real recorded expenses
+instead of a permanently static seeded/manually-entered baseline.
+
 ## SAIRNbiz payroll runs are never actually recorded anywhere
 
 **Logged:** 2026-08-10
