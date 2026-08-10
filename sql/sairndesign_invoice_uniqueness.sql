@@ -1,0 +1,21 @@
+-- sql/sairndesign_invoice_uniqueness.sql
+-- Closes SAIRN-BACKLOG.md's "SAIRNdesign invoicing needs a real
+-- server-side uniqueness constraint" entry (logged 2026-08-09).
+-- saveInvoice()'s existing client-side "already invoiced" check has
+-- zero race window on one device but cannot close a cross-device race.
+-- This index makes a second concurrent insert for the same proposal
+-- fail atomically at the DB layer (23505 unique_violation), which
+-- api/sd-data.js's sdn_invoices write branch maps to a clean 409
+-- DUPLICATE_INVOICE response.
+--
+-- Coexists with the table's existing (license_hash, invoice_id) upsert
+-- key: setInvoiceStatus() updates an EXISTING invoice_id in place
+-- (proposal_id unchanged), which never re-triggers this constraint --
+-- only a genuinely NEW invoice_id for an already-invoiced proposal_id
+-- does.
+--
+-- Run this in Supabase's SQL editor. Verify after running:
+--   select indexname from pg_indexes where tablename='sdn_invoices';
+-- should include sdninv_license_proposal_unique.
+CREATE UNIQUE INDEX IF NOT EXISTS sdninv_license_proposal_unique
+  ON public.sdn_invoices (license_hash, (data->>'proposal_id'));
