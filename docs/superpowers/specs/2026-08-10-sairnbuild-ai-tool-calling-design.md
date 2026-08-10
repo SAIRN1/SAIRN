@@ -1,7 +1,21 @@
 # SAIRNbuild — AI Tool-Calling Foundation + `get_jobs`
 
-**Status:** Design approved 2026-08-10, following brainstorming. Not yet
-implemented.
+**Status:** Implemented and live-verified 2026-08-10. Both commits
+(`34c2ba2`, `448c389`) are on `origin/main` and confirmed live at
+`sairn.vercel.app/sairnbuild` — `bldExecuteTool` present in the
+deployed HTML. A real interaction test asked "what is the value of the
+Hartley job, and what stage is it in?" and got a correct, tool-backed
+answer from real `bld_jobs` data. The existing `web_search_20250305`
+path was confirmed unaffected (a residential-electrical-code question
+still returned real search-grounded content). The existing `aiAskSeq`
+concurrency guard was confirmed to correctly extend across the new
+tool-use round-trip: two back-to-back questions produced only the
+later question's answer, matching the pre-existing convention.
+`sanitizeTools()` confirmed live for a mixed `web_search_20250305` +
+`get_jobs` array on the `sairnbuild` app_id specifically. Guardian v2
+pass clean except 2 pre-existing findings (a duplicate `rBids`
+declaration, a "work in progress" placeholder string elsewhere in the
+file), both confirmed present on the pre-change baseline.
 
 This is SAIRNbuild's first custom-tool-calling work, porting the
 mechanism already proven live on every prior rollout — merged
