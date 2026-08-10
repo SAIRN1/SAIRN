@@ -1931,6 +1931,43 @@ async function callClaude(system, messages, maxTokens) {
   }
 }
 
+// New, separate from callClaude() -- NOT a modification of it. callClaude()
+// is used by 6 other AI features (dosing calculator, differential
+// diagnosis, SOAP notes, species reference, revenue-recovery analytics,
+// zoo protocol) and always assumes a plain-text reply; a tool_use-only
+// response has no .text and would incorrectly hit callClaude()'s "Empty
+// response" error path. This function sends `tools` and returns the raw
+// content blocks array so the caller can inspect it for a tool_use block,
+// leaving callClaude() and its 6 callers completely untouched.
+async function callClaudeWithTools(system, messages, tools, maxTokens) {
+  try {
+    var res = await fetch(PROXY, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        app_id:APP_ID, is_demo:true,
+        system:system, messages:messages, tools:tools,
+        max_tokens:maxTokens||1000
+      })
+    });
+    var data = await res.json();
+    if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.includes('limit'))){
+      showToast('Demo limit reached. Email michael@sairn.com for license.','error',6000);
+      throw new Error('demo_limit');
+    }
+    if(!res.ok){
+      var em=(data.error&&data.error.message)?data.error.message:(typeof data.error==='string'?data.error:'Error '+res.status);
+      showToast('Claude: '+em,'error',4000); throw new Error(em);
+    }
+    var blocks = (data.content) || [];
+    if(!blocks.length){showToast('Empty response — try again.','error',3000);throw new Error('empty');}
+    return blocks;
+  } catch(e){
+    if(e.message!=='demo_limit'&&e.message!=='empty') showToast('Connection error.','error',4000);
+    throw e;
+  }
+}
+
 var pinValue='';
 function setupPinPad(){
   var pad=document.getElementById('pinPad');
