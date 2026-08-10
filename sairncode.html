@@ -2474,6 +2474,55 @@ How to answer:
             return seed;
         }
         function saveProviderEntries(list){ try { localStorage.setItem('sc_providers', JSON.stringify(list)); return true; } catch(e){ return false; } }
+
+        // AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
+        // live on every other SAIRN app. Registry of read-only tools
+        // sendChatMessage() may request via Claude's tool-use. Every tool is:
+        //   - read-only (never creates/modifies/deletes anything)
+        //   - wrapped so a thrown error or unexpected data shape becomes an honest
+        //     {ok:false} result, never a crash or a silently wrong answer
+        // No sensitivity/role-gate concept here -- SAIRNcode has no real,
+        // server-verified auth (sc_role comes from a client-side PIN pick),
+        // same reasoning already applied to SAIRNvet's dispatcher.
+        // See docs/superpowers/specs/2026-08-10-sairncode-ai-tool-calling-design.md
+        var SC_TOOLS = {};
+
+        function scRegisterTool(name, description, inputSchema, run) {
+            SC_TOOLS[name] = {
+                definition: { name: name, description: description, input_schema: inputSchema },
+                run: run
+            };
+        }
+
+        function scExecuteTool(name, input) {
+            var tool = SC_TOOLS[name];
+            if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+            try {
+                return { ok: true, result: tool.run(input || {}) };
+            } catch (e) {
+                return { ok: false, error: 'Could not retrieve that data right now.' };
+            }
+        }
+
+        scRegisterTool(
+            'get_providers',
+            'Look up the current provider roster: name, specialty, license number, credentialing status, and performance score. Does NOT include A/R, denials, DRG, HCC, RAC, compliance, fraud, revenue, prebill, telehealth, or anesthesia data -- those are not available to this tool.',
+            { type: 'object', properties: {}, required: [] },
+            function (input) {
+                // input intentionally unused -- this tool takes no real arguments, but
+                // accepts one for interface consistency with scExecuteTool(name, input),
+                // matching every prior tool's convention.
+                return getProviderEntries().map(function (p) {
+                    return {
+                        name: p.name,
+                        specialty: p.specialty,
+                        license: p.license,
+                        cred: p.cred,
+                        perf: p.perf
+                    };
+                });
+            }
+        );
         function renderProviders(){
             var list = getProviderEntries();
             var tbody = document.getElementById('providers-tbody');
