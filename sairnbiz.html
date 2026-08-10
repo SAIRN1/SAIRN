@@ -1421,14 +1421,17 @@ function rDash(){
   pf.filter(function(p){return p.status==='Completed';}).forEach(function(p){acts.push({t:H(p.emp)+' '+H(p.type)+' completed'+(p.score&&p.score!=='--'?' - '+p.score+'/5.0':''),d:p.due});});
   acts.sort(function(a,b){return new Date(b.d)-new Date(a.d);});
   $('d-activity').innerHTML=acts.length?acts.slice(0,5).map(function(a){return'<div class="srow"><span class="slbl">'+a.t+'</span><span class="sval" style="font-size:11px;color:var(--muted)">'+fdate(a.d)+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No activity recorded yet</div>';
-  var actions=[];
-  invs.filter(function(i){return i.status==='Overdue';}).forEach(function(i){actions.push({t:H(i.id)+' overdue - '+fmt(i.amt-(i.paid||0))+' '+H(i.cust),b:'Overdue',c:'br'});});
-  bills.filter(function(b){return b.status==='Overdue';}).forEach(function(b){actions.push({t:H(b.vendor)+' AP overdue '+fmt(b.bal),b:'Past Due',c:'br'});});
-  tr.filter(function(t){return t.status==='Expiring Soon';}).forEach(function(t){actions.push({t:H(t.emp)+' '+H(t.cert)+' expiring '+fdate(t.exp),b:'90 Days',c:'bw'});});
-  if(h.length)actions.push({t:h.length+' open hiring position'+(h.length===1?'':'s')+' active',b:'Hiring',c:'bb'});
-  var duePf=pf.filter(function(p){return p.status==='Scheduled'||p.status==='Upcoming';}).length;
-  if(duePf)actions.push({t:duePf+' performance review'+(duePf===1?'':'s')+' due',b:'HR',c:'bb'});
-  $('d-actions').innerHTML=actions.length?actions.map(function(a){return'<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
+  var attn = checkAttentionItems();
+  var legacyActions = [];
+  invs.filter(function (i) { return i.status === 'Overdue'; }).forEach(function (i) { legacyActions.push({ t: H(i.id) + ' overdue - ' + fmt(i.amt - (i.paid || 0)) + ' ' + H(i.cust), b: 'Overdue', c: 'br' }); });
+  if (h.length) legacyActions.push({ t: h.length + ' open hiring position' + (h.length === 1 ? '' : 's') + ' active', b: 'Hiring', c: 'bb' });
+  var attnHtml = attn.map(function (f) {
+    var badgeClass = f.severity === 'critical' ? 'br' : 'bw';
+    var badgeLabel = f.severity === 'critical' ? 'Critical' : 'Watch';
+    return '<div class="srow"><span class="slbl">' + H(f.message) + '</span><span class="badge ' + badgeClass + '">' + badgeLabel + '</span></div>';
+  }).join('');
+  var legacyHtml = legacyActions.map(function (a) { return '<div class="srow"><span class="slbl">' + a.t + '</span><span class="badge ' + a.c + '">' + a.b + '</span></div>'; }).join('');
+  $('d-actions').innerHTML = (attnHtml + legacyHtml) || '<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
 }
 
 function rEmps(){
