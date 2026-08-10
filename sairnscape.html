@@ -2731,28 +2731,61 @@ async function scpSaveVendor(){
   scpToast(syncResult?'Vendor saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 
-function scpSendAI(){var inp=scp$('scp-ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';scpAddMsg(m,'u');scpCallAI(m);}
+function scpSendAI(){if(scpAiBusy){scpToast('Please wait for the current response first');return;}var inp=scp$('scp-ainp');var m=(inp.value||'').trim();if(!m)return;inp.value='';scpAddMsg(m,'u');scpCallAI(m);}
 function scpAskAI(q){scp$('scp-ainp').value=q;scpSendAI();}
 function scpClrAI(){scpAiHist=[];scp$('scp-achat').innerHTML='<div style="color:#64748B;text-align:center;padding:40px 0;">Conversation cleared.</div>';}
 function scpAddMsg(t,role){var c=scp$('scp-achat');var d=document.createElement('div');d.className=role==='u'?'scp-amu':'scp-ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
 function scpCallAI(msg){
+  scpAiBusy=true;
   var custs=scpLd('scp_customers',[]);
-  var ctx='You are the AI business assistant for SAIRNscape, used by a residential/small-commercial landscaping company with '+custs.length+' active customers. Be concise, practical, and landscaping-industry-specific. No fluff.';
+  var ctx='You are the AI business assistant for SAIRNscape, used by a residential/small-commercial landscaping company with '+custs.length+' active customers. Be concise, practical, and landscaping-industry-specific. No fluff. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
   var sharedCtx=buildScpSharedCompanyContext();
   if(sharedCtx)ctx+='\n\n'+sharedCtx;
   recordScpSharedTopics(msg);
   scpAiHist.push({role:'user',content:msg});
+  var toolDefs=Object.keys(SCP_TOOLS).map(function(k){return SCP_TOOLS[k].definition;});
   // Reference this call's OWN placeholder node directly (not "the last .scp-ama in
   // the DOM") -- if a second question is sent before this one's fetch resolves,
   // two Thinking placeholders coexist, and "remove the last one" removes
   // whichever request finishes first's own bubble regardless of which call it
   // belongs to, permanently orphaning the other and misattributing the answer.
   var thinkingEl=scpAddMsg('Thinking...','a');
-  fetch(SCP_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:SCP_APP_ID,is_demo:true,system:ctx,messages:scpAiHist.slice(-10)})})
-  .then(function(r){return r.json();}).then(function(d){
+  function finish(replyText){
+    scpAiBusy=false;
     if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
-    var rep=(d.content&&d.content[0]&&d.content[0].text)||'No response.';scpAiHist.push({role:'assistant',content:rep});scpAddMsg(rep,'a');
-  }).catch(function(){if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();scpAddMsg('Connection error.','a');});
+    scpAiHist.push({role:'assistant',content:replyText});
+    scpAddMsg(replyText,'a');
+  }
+  fetch(SCP_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:SCP_APP_ID,is_demo:true,system:ctx,messages:scpAiHist.slice(-10),tools:toolDefs})})
+  .then(function(r){return r.json();}).then(function(d){
+    var blocks=(d&&d.content)||[];
+    var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
+    if(!toolUse){
+      var rep=(blocks[0]&&blocks[0].text)||'No response.';
+      finish(rep);
+      return;
+    }
+    var outcome=scpExecuteTool(toolUse.name,scpCurrentRole(),toolUse.input);
+    // Belt-and-suspenders, same pattern proven in SAIRNbiz/SAIRNlaw/
+    // SAIRNvet: reinforce the anti-fabrication instruction right next to
+    // the trigger, in the same turn as the denial/error itself.
+    var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+    // Claude requires the assistant turn that requested the tool to be
+    // present in history before the tool_result turn that answers it.
+    scpAiHist.push({role:'assistant',content:blocks});
+    scpAiHist.push({role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]});
+    fetch(SCP_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:SCP_APP_ID,is_demo:true,system:ctx,messages:scpAiHist.slice(-10)})})
+    .then(function(r2){return r2.json();}).then(function(d2){
+      var rep2=(d2.content&&d2.content[0]&&d2.content[0].text)||'No response.';
+      finish(rep2);
+    }).catch(function(){
+      finish('Could not reach Claude for the final answer. Connection error.');
+    });
+  }).catch(function(){
+    scpAiBusy=false;
+    if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
+    scpAddMsg('Connection error.','a');
+  });
 }
 
 // === SHARED COMPANY KNOWLEDGE (sd_shared_knowledge, app-agnostic resource
