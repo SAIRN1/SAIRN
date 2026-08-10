@@ -1401,6 +1401,65 @@ var LAW_CITATION_RULE='CRITICAL RULE: never output a specific case citation, sta
 // own financial/scheduling data, now closed the same way: an explicit
 // refusal instruction rather than a hope the model volunteers one.
 var LAW_FIRM_DATA_RULE='CRITICAL RULE: you have NOT been given this firm\'s actual matters, deadlines, trust account balances, invoices, time entries, or billing records -- none of that real data is included anywhere in this conversation. If asked something that depends on specific real firm data (e.g. "What is the trust balance on the Ostrander matter?", "Which deadlines are overdue?", "How much has this client been billed?", "What\'s the status of matter 2026-0002?"), you MUST say plainly that you do not have access to this firm\'s live data and direct the user to the relevant panel (Trust Accounting, Deadlines, Billing, Matters) to look it up -- never guess, estimate, or invent a specific figure, date, status, or fact about a real matter or client. You may still help with general drafting, explaining concepts, and non-firm-specific questions.';
+// AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
+// live in SAIRNbiz (see docs/superpowers/specs/2026-08-09-sairnbiz-ai-
+// tool-calling-design.md). Registry of read-only tools sendAI() may
+// request via Claude's tool-use. Every tool is:
+//   - read-only (never creates/modifies/deletes anything)
+//   - wrapped so a thrown error or unexpected data shape becomes an honest
+//     {ok:false} result, never a crash or a silently wrong answer
+//   - checked against the CALLING role before running, if marked sensitive
+// See docs/superpowers/specs/2026-08-10-sairnlaw-ai-tool-calling-design.md
+var LAW_TOOLS = {};
+
+function lawRegisterTool(name, description, inputSchema, sensitive, run) {
+  LAW_TOOLS[name] = {
+    definition: { name: name, description: description, input_schema: inputSchema },
+    sensitive: !!sensitive,
+    run: run
+  };
+}
+
+// run() MUST be synchronous -- the try/catch below only catches thrown
+// errors. An async run() returning a rejected Promise would NOT be
+// caught and would silently report {ok:true, result:<pending Promise>}.
+// (Same documented constraint as SAIRNbiz's sbExecuteTool.)
+function lawExecuteTool(name, role, input) {
+  var tool = LAW_TOOLS[name];
+  if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+  if (tool.sensitive && role !== 'owner') {
+    return { ok: false, error: 'This data is restricted to the owner role.' };
+  }
+  try {
+    return { ok: true, result: tool.run(input || {}) };
+  } catch (e) {
+    return { ok: false, error: 'Could not retrieve that data right now.' };
+  }
+}
+
+lawRegisterTool(
+  'get_matters',
+  'Look up the firm\'s current matters: matter number, matter name, client name, practice area, status, responsible attorney, and opposing parties. Does NOT include deadlines, trust account balances, invoices, time entries, or matter notes -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  false,
+  function (input) {
+    // input intentionally unused -- this tool takes no real arguments, but
+    // accepts one for interface consistency with lawExecuteTool(name, role,
+    // input), matching SAIRNbiz's get_employees convention.
+    return matters().map(function (m) {
+      return {
+        matter_number: m.matter_number,
+        matter_name: m.matter_name,
+        client: clientLabel(m.client_id),
+        practice_area: m.practice_area,
+        status: m.status,
+        responsible_attorney: m.responsible_attorney,
+        opposing_parties: m.opposing_parties || []
+      };
+    });
+  }
+);
+
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
