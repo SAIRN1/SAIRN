@@ -6407,6 +6407,59 @@ function rAiHistory(){
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No questions asked yet</div>';
 }
 var aiAskSeq=0;
+// AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
+// live on every other SAIRN app. Registry of read-only tools aiAsk()
+// may request via Claude's tool-use, MERGED into the existing
+// web_search_20250305 server tool this chat already sends -- not a
+// replacement. Every tool is:
+//   - read-only (never creates/modifies/deletes anything)
+//   - wrapped so a thrown error or unexpected data shape becomes an honest
+//     {ok:false} result, never a crash or a silently wrong answer
+// No sensitivity/role-gate concept here -- SAIRNbuild has no real,
+// server-verified auth (prole comes from a client-side PIN pick), same
+// reasoning already applied to SAIRNvet's/SAIRNcode's dispatchers.
+// See docs/superpowers/specs/2026-08-10-sairnbuild-ai-tool-calling-design.md
+var BLD_TOOLS = {};
+
+function bldRegisterTool(name, description, inputSchema, run) {
+  BLD_TOOLS[name] = {
+    definition: { name: name, description: description, input_schema: inputSchema },
+    run: run
+  };
+}
+
+function bldExecuteTool(name, input) {
+  var tool = BLD_TOOLS[name];
+  if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+  try {
+    return { ok: true, result: tool.run(input || {}) };
+  } catch (e) {
+    return { ok: false, error: 'Could not retrieve that data right now.' };
+  }
+}
+
+bldRegisterTool(
+  'get_jobs',
+  'Look up the current job roster: address, client, contract value, stage, start date, target completion date, and a blocked-reason if the job is currently blocked. Does NOT include subcontractor, RFI, submittal, change-order, bid, or punch-list data -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  function (input) {
+    // input intentionally unused -- this tool takes no real arguments, but
+    // accepts one for interface consistency with bldExecuteTool(name, input),
+    // matching every prior tool's convention.
+    return jobs().map(function (j) {
+      return {
+        address: j.address,
+        client: j.client,
+        value: j.value,
+        stage: j.stage,
+        start: j.start,
+        target: j.target,
+        blocked: j.blocked
+      };
+    });
+  }
+);
+
 async function aiAsk(){
   var q=$('ai-question').value.trim();
   if(!q){toast('Enter a question first');return;}
