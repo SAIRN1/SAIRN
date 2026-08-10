@@ -40,15 +40,22 @@ module.exports = async (req, res) => {
         res.status(402).json({ error: 'Payment not complete' });
         return;
       }
-      const customer = session.customer_details || {};
+      const contact = session.customer_details || {};
       const sub = session.subscription;
+      const customerObj = session.customer;
       res.status(200).json({
         valid: true,
-        email: customer.email || '',
-        name: customer.name || '',
+        email: contact.email || '',
+        name: contact.name || '',
         plan: 'SAIRNcash Pro',
         price: '$9.99/month',
         subscriptionId: typeof sub === 'string' ? sub : (sub && sub.id),
+        // Real customer.id (not the transient checkout session id) -- the
+        // stable identifier every Firebase sync path is scoped by
+        // (2026-08-10, closes the global-shared-path data-isolation bug
+        // found while designing the tax/retirement estimator: this ID
+        // survives a plan change or resubscribe, subscriptionId doesn't).
+        customerId: typeof customerObj === 'string' ? customerObj : (customerObj && customerObj.id),
         expiresAt: sub && sub.current_period_end
           ? new Date(sub.current_period_end * 1000).toISOString()
           : null
@@ -75,6 +82,7 @@ module.exports = async (req, res) => {
       plan: 'SAIRNcash Pro',
       price: '$9.99/month',
       subscriptionId: sub.id,
+      customerId: customer.id || (typeof sub.customer === 'string' ? sub.customer : undefined),
       expiresAt: sub.current_period_end
         ? new Date(sub.current_period_end * 1000).toISOString()
         : null

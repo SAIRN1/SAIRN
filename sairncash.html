@@ -294,8 +294,19 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, push, onValue, set, serverTimestamp, onDisconnect }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+// 2026-08-10: every path below is scoped under sairncash/customers/{customerId}/
+// -- fixes a real cross-subscriber data-isolation bug found while designing
+// the tax/retirement estimator (the original single global 'sairncash/messages'
+// path, inherited from SAIRNtype, synced every subscriber's data into one
+// shared list). No customerId -> no sync at all, rather than falling back
+// to a shared path. customerId comes from api/sairncash/verify.js's real
+// Stripe customer id (added alongside this fix), stored in sairncash_sub by
+// the existing saveSub()/reverifySubscription() flow -- not re-derived here.
 async function initFirebase() {
   try {
+    const sub = getSub();
+    const customerId = sub && sub.customerId;
+    if (!customerId) { console.log('Sync unavailable -- no verified customer yet'); return; }
     const res = await fetch('/api/sairncash/firebase-config');
     if (!res.ok) return;
     const config = await res.json();
@@ -306,11 +317,12 @@ async function initFirebase() {
     if (!did) { did = 'dev_' + Math.random().toString(36).substr(2,9); localStorage.setItem('sairncash_did', did); }
     const mob = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
     const dn = mob ? '📱 Phone' : '💻 Computer';
-    const msgsRef = ref(db, 'sairncash/messages');
-    const presRef = ref(db, 'sairncash/presence/' + did);
+    const base = 'sairncash/customers/' + customerId + '/';
+    const msgsRef = ref(db, base + 'messages');
+    const presRef = ref(db, base + 'presence/' + did);
     set(presRef, { name: dn, online: true, ts: serverTimestamp() });
     onDisconnect(presRef).remove();
-    onValue(ref(db, 'sairncash/presence'), snap => {
+    onValue(ref(db, base + 'presence'), snap => {
       const devs = []; snap.forEach(c => { const d = c.val(); if (d&&d.name) devs.push(d.name); });
       const bar = document.getElementById('presenceBar');
       if (bar) { bar.textContent = devs.length > 0 ? devs.join('  ·  ') + '  — synced live' : 'No other devices connected'; bar.style.color = devs.length > 1 ? 'var(--pulse)' : 'var(--dim)'; }
@@ -329,9 +341,20 @@ async function initFirebase() {
     });
     window._fbPush = async (role, text) => { await push(msgsRef, { role, text, device: dn, deviceId: did, ts: serverTimestamp() }); };
     window._fbClear = async () => { await set(msgsRef, null); };
+    // Exposed for Task 2/3 (income/deduction/profile) -- same base path,
+    // same customerId scoping, no separate sync mechanism introduced.
+    window._fbIncomeRef = ref(db, base + 'income');
+    window._fbDeductionsRef = ref(db, base + 'deductions');
+    window._fbProfileRef = ref(db, base + 'profile');
+    window._fbPushRaw = push;
+    window._fbSetRaw = set;
+    window._fbOnValueRaw = onValue;
   } catch(e) { console.log('Sync unavailable'); }
 }
-initFirebase();
+// Called from initApp() once a real subscription is confirmed (moved off
+// the unconditional top-level call so customerId is guaranteed available
+// before this ever runs) -- see the plain script block's initApp().
+window._initFirebaseSync = initFirebase;
 </script>
 
 <script>
@@ -450,6 +473,10 @@ async function initApp() {
   const justPaid = await handleStripeReturn();
   if (justPaid || await reverifySubscription()) {
     showAppShell();
+    // Firebase sync only starts once a real, verified customerId exists
+    // (2026-08-10 isolation fix) -- never before, never with a fallback
+    // shared path.
+    if (window._initFirebaseSync) window._initFirebaseSync();
   } else {
     document.getElementById('paywall').style.display = 'flex';
     document.getElementById('appShell').classList.remove('show');
