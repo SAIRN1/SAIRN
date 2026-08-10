@@ -3,6 +3,61 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNbiz payroll runs are never actually recorded anywhere
+
+**Logged:** 2026-08-10
+
+**What:** `runPayroll()` (`sairnbiz.html:1503`) is a no-op toast —
+clicking "Run Payroll" checks nothing, saves nothing, and no record of
+the run (date, gross, tax, benefits, per-employee amounts) is ever
+persisted. Separately, the Payroll panel's "YTD Payroll" KPI (`py-ytd`)
+is not a real sum of historical runs — it's `rPay()` computing
+`gross×13`, an extrapolation from the current period alone.
+
+**Why deferred:** Surfaced while designing pre-payroll validation
+(item 3 of the SAIRNbiz AI-native roadmap), which wanted to flag "a
+number significantly off from last cycle" — there is no "last cycle"
+data to compare against. Building real run-snapshot persistence
+(a new `sb_payroll_runs` log, written on every real "Run Payroll") is
+its own legitimate feature with its own real scope, not something to
+build as a side effect of a smaller validation task.
+
+**Done looks like:** Every "Run Payroll" click writes a real, timestamped
+snapshot (gross/tax/benefits/total, employee count, maybe a per-employee
+breakdown) to persistent storage. "YTD Payroll" sums real recorded runs
+instead of extrapolating. A future "vs. last cycle" anomaly check
+becomes possible once this exists.
+
+## SAIRNbiz Benefits panel has no way to actually enroll anyone
+
+**Logged:** 2026-08-10
+
+**What:** `sairnbiz.html`'s Benefits panel reads `e.ben.health`,
+`e.ben.dental`, `e.ben.k401`, and `e.ben.cost` in three places
+(`sairnbiz.html:1615-1619`, `rBenKPIs()`) to compute enrolled-employee
+counts and total benefits cost — but `e.ben` is **never written
+anywhere in the file**. There is no benefits-enrollment save function.
+`saveEmp()` only carries forward an existing employee's `.ben` if one
+already happens to exist (`sairnbiz.html:1377`) — nothing ever creates
+one in the first place. Every Benefits panel KPI (enrolled count, total
+cost, per-plan breakdowns) is permanently `0`/empty for every employee,
+in every install, with no error and no visible sign anything is missing
+— it just looks like an app with no benefits enrolled yet.
+
+**Why deferred:** Surfaced while designing pre-payroll validation
+(item 3), which considered comparing rPay()'s flat `$520/employee`
+payroll-benefits assumption against real enrolled cost — impossible
+today since real enrolled cost is always `$0`. This is a real, separate,
+larger gap (a whole missing enrollment CRUD flow — plan selection, cost
+entry, dependent tracking, whatever the Benefits panel's UI actually
+implies exists), not a quick fix alongside a validation feature.
+
+**Done looks like:** A real save path that lets a user actually enroll
+an employee in health/dental/401k and record a real cost, so
+`rBenKPIs()`'s numbers reflect real data instead of being permanently
+and invisibly zero. Worth a `sairn-silent-failure-sweep`-style pass
+first to confirm this is the only panel in this state.
+
 ## SAIRNdesign invoicing needs a real server-side uniqueness constraint
 
 **Logged:** 2026-08-09
