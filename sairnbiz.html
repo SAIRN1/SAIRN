@@ -899,10 +899,14 @@ function sbRegisterTool(name, description, inputSchema, sensitive, run) {
 // code -- prole is real (server-issued via SB_AUTH_API) but nothing has
 // ever branched on it before now. New pattern, not an established one.
 // This gate controls what the AI assistant will SAY, not genuine data
-// confidentiality -- the underlying data is still directly readable from
-// localStorage/SB_TOOLS by anyone with browser console access to this
-// device, regardless of role. Real payroll confidentiality (item 2's
-// sensitive tools) needs server-side enforcement, not just this client gate.
+// confidentiality -- the underlying data is still directly reachable
+// through SAIRNbiz's un-gated Payroll/P&L panels themselves (no panel in
+// this app is role-gated), not merely via browser console access -- a
+// manager can see the same numbers by clicking the nav item, no console
+// needed. Real payroll confidentiality (item 2's sensitive tools) needs
+// server-side enforcement, not just this client gate. (Finding 2, 2026-
+// 08-09 payroll/P&L copilot final-review fix wave -- corrected from an
+// earlier version of this comment that understated the exposure.)
 // run() MUST be synchronous -- the try/catch below only catches thrown
 // errors. An async run() returning a rejected Promise would NOT be caught
 // and would silently report {ok:true, result:<pending Promise>}.
@@ -949,7 +953,7 @@ function sbReadKpiNumber(elId) {
 
 sbRegisterTool(
   'get_payroll_summary',
-  'Get the current payroll summary: gross payroll, employer taxes, benefits cost, total fully-loaded labor cost, and year-to-date payroll, for active employees. Aggregate totals only -- does not include any individual employee\'s pay.',
+  'Get the current payroll summary: gross payroll, employer taxes, benefits cost, total fully-loaded labor cost, and year-to-date payroll, for active employees. Aggregate totals only -- does not include any individual employee\'s pay. IMPORTANT CAVEATS: taxes_fica is the employer-side 7.65% FICA component only -- it does NOT include federal (22%) or state (3.99%) employee withholding, which is computed per-employee but never totaled into any KPI. benefits is a flat $520-per-active-employee assumption, not a figure from a real benefits ledger. total_labor_cost = gross_payroll + taxes_fica + benefits -- it excludes FUTA, SUTA, and workers\' comp, so despite the "fully-loaded" label it is not a complete employer cost figure. ytd_payroll is an extrapolation (current period\'s gross payroll x 13), not a sum of actual historical payroll records -- treat it as an estimate, not an authoritative year-to-date total.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
@@ -972,7 +976,7 @@ sbRegisterTool(
 
 sbRegisterTool(
   'get_pl_summary',
-  'Get the current profit & loss summary: revenue, cost of goods sold, gross profit, operating expenses, net income, revenue broken down by category, expenses broken down by category, and gross/net margin percentages. Also includes static industry-average margin benchmarks (45% gross, 18% net) for comparison -- these are fixed reference figures, NOT computed from this business\'s own data, and must never be presented as if they were.',
+  'Get the current profit & loss summary: revenue, cost of goods sold, gross profit, operating expenses, net income, revenue broken down by category, expenses broken down by category, and gross/net margin percentages. Also includes static industry-average margin benchmarks (45% gross, 18% net) for comparison -- these are fixed reference figures, NOT computed from this business\'s own data, and must never be presented as if they were. IMPORTANT: expense_by_category includes cost of goods sold (the Materials category), which is a separate line item from operating_expenses -- so summing expense_by_category yields operating_expenses PLUS cogs, not operating_expenses alone. Do not present a category breakdown as reconciling to operating_expenses without accounting for this.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
@@ -1143,6 +1147,13 @@ function doLogout(){
   st('sb_role',null);
   prole=''; // reset in-memory role too -- session storage alone isn't enough (Finding 4)
   try{sessionStorage.removeItem(SB_SESSION_KEY);sessionStorage.removeItem(SB_ROLE_KEY);sessionStorage.removeItem(SB_EMPLOYEE_KEY);}catch(e){}
+  // Clear AI chat history/DOM on logout -- otherwise a prior user's stale
+  // aiHist (which can hold a real tool_result, e.g. payroll numbers) rides
+  // into the next login on this device and the model can quote it from
+  // history even though a FRESH tool call would correctly be refused for
+  // the new user's role. (Finding 2, 2026-08-09 payroll/P&L copilot final-
+  // review fix wave.)
+  clrAI();
   $('app').classList.remove('on');$('pin').classList.add('on');toast('Logged out');
 }
 
@@ -1644,6 +1655,24 @@ function sendAI(){if(sbAiBusy){toast('Please wait for the current response first
 function askAI(q){$('ainp').value=q;sendAI();}
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Conversation cleared.</div>';}
 function addMsg(t,role){var c=$('achat');var d=document.createElement('div');d.className=role==='u'?'amu':'ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
+// aiHist can't be sliced by a fixed count -- a tool-using exchange pushes
+// 4 entries (user/assistant-tool_use/user-tool_result/assistant-reply)
+// instead of 2, so a fixed-size window can land mid-exchange, which the
+// Messages API rejects (it requires the first message to be a real user
+// turn, not a tool_result continuation). Walk back from the desired
+// window size to the nearest safe boundary instead. (Finding 1, 2026-08-09
+// payroll/P&L copilot final-review fix wave.)
+function sbSafeHistoryWindow(hist, maxLen) {
+  var start = Math.max(0, hist.length - maxLen);
+  while (start > 0) {
+    var entry = hist[start];
+    var isToolResultContinuation = entry.role === 'user' && Array.isArray(entry.content) &&
+      entry.content.some(function (c) { return c.type === 'tool_result'; });
+    if (entry.role === 'user' && !isToolResultContinuation) break;
+    start--;
+  }
+  return hist.slice(start);
+}
 function callAI(msg){
   sbAiBusy=true;
   var emps=ld('sb_emps',[]);
@@ -1664,7 +1693,7 @@ function callAI(msg){
     aiHist.push({role:'assistant',content:replyText});
     addMsg(replyText,'a');
   }
-  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10),tools:toolDefs})})
+  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:sbSafeHistoryWindow(aiHist,10),tools:toolDefs})})
   .then(function(r){return r.json();}).then(function(d){
     if(d&&d.error){
       finish(d.error.message||'The AI proxy returned an error.');
@@ -1691,7 +1720,7 @@ function callAI(msg){
     // present in history before the tool_result turn that answers it.
     aiHist.push({role:'assistant',content:blocks});
     aiHist.push({role:'user',content:toolResults});
-    fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:aiHist.slice(-10)})})
+    fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:APP_ID,is_demo:true,system:ctx,messages:sbSafeHistoryWindow(aiHist,10)})})
     .then(function(r2){return r2.json();}).then(function(d2){
       var rep2=(d2&&d2.error)?(d2.error.message||'The AI proxy returned an error.'):((d2.content&&d2.content[0]&&d2.content[0].text)||'No response.');
       finish(rep2);
