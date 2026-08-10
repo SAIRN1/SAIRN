@@ -1057,6 +1057,33 @@ sbRegisterTool(
   }
 );
 
+sbRegisterTool(
+  'get_hiring_cost_impact',
+  'Calculate the real cost impact of filling an open position: if hired at a given hourly rate, what happens to total labor cost and net margin. Optionally name a real open position (matching the Hiring pipeline) to include its department, stage, and posted pay range as reference context -- the math itself always uses the hourly_rate argument you provide, never the position\'s free-text posted range (which cannot be reliably parsed -- e.g. "$18-22/hr"). IMPORTANT CAVEATS: this is a "nothing else changes" projection -- it assumes ZERO revenue increase from the hire (a real hire may of course grow revenue; this tool cannot predict that), applies the same simplified FICA-only tax (7.65%) and flat $520 benefit assumptions get_payroll_summary already uses and discloses as incomplete, and excludes one-time hiring costs entirely (recruiting, onboarding, ramp-up time to full productivity). Present the result as an estimate of ongoing fully-loaded cost, not a complete hiring-decision analysis.',
+  {
+    type: 'object',
+    properties: {
+      position: { type: 'string', description: 'Optional: an open position title from the Hiring pipeline, e.g. "Senior Fabricator", to include as reference context.' },
+      hourly_rate: { type: 'number', description: 'The hourly pay rate to model, in dollars.' },
+      employment_type: { type: 'string', enum: ['Full Time', 'Part Time'], description: 'Full Time computes 80 hours/period, Part Time computes 32 hours/period, matching this app\'s existing payroll convention.' }
+    },
+    required: ['hourly_rate', 'employment_type']
+  },
+  true,
+  function (input) {
+    var payrollSummary = SB_TOOLS['get_payroll_summary'].run();
+    var plSummary = SB_TOOLS['get_pl_summary'].run();
+    var result = computeHiringCostImpact(input.hourly_rate, input.employment_type, payrollSummary, plSummary);
+    if (input.position) {
+      var match = ld('sb_hire', []).find(function (h) { return h.pos === input.position; });
+      if (match) {
+        result.position_context = { dept: match.dept, stage: match.stage, posted_rate_range: match.rate };
+      }
+    }
+    return result;
+  }
+);
+
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
