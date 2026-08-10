@@ -1350,7 +1350,7 @@ function checkAttentionItems() {
     var u = b.annual > 0 ? Math.round(b.actual / b.annual * 100) : 0;
     if (u > 90) {
       findings.push({ severity: 'critical', domain: 'budget', subject: b.cat, message: b.cat + ' is over budget: ' + u + '% of annual (' + fmt(b.actual) + ' of ' + fmt(b.annual) + ').' });
-    } else if (u > 75 && u < 90) {
+    } else if (u > 75) {
       findings.push({ severity: 'warning', domain: 'budget', subject: b.cat, message: b.cat + ' is at ' + u + '% of annual budget -- worth watching.' });
     }
   });
