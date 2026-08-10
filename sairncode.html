@@ -2596,8 +2596,8 @@ How to answer:
 
         async function sendChatMessage() {
             const input = document.getElementById('chatInput');
-            const history = document.getElementById('chatHistory');
-            if (!input || !history) return;
+            const chatHistoryEl = document.getElementById('chatHistory');
+            if (!input || !chatHistoryEl) return;
 
             const message = input.value.trim();
             if (!message) return;
@@ -2607,51 +2607,101 @@ How to answer:
             const userMsg = document.createElement('div');
             userMsg.className = 'chat-message user';
             userMsg.innerHTML = `<div class="chat-bubble">${escHtml(message)}</div>`;
-            history.appendChild(userMsg);
+            chatHistoryEl.appendChild(userMsg);
 
             const loadingMsg = document.createElement('div');
             loadingMsg.className = 'chat-message assistant';
             loadingMsg.innerHTML = '<div class="chat-bubble"><div class="spinner"></div> Processing...</div>';
-            history.appendChild(loadingMsg);
-            history.scrollTop = history.scrollHeight;
+            chatHistoryEl.appendChild(loadingMsg);
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+
+            function renderReply(text) {
+                loadingMsg.remove();
+                const assistantMsg = document.createElement('div');
+                assistantMsg.className = 'chat-message assistant';
+                assistantMsg.innerHTML = `<div class="chat-bubble">${escHtml(text)}</div>`;
+                chatHistoryEl.appendChild(assistantMsg);
+                chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+            }
+
+            function renderError(text) {
+                loadingMsg.remove();
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'chat-message assistant';
+                errorMsg.innerHTML = `<div class="chat-bubble error-box">${escHtml(text)}</div>`;
+                chatHistoryEl.appendChild(errorMsg);
+                chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+            }
 
             try {
                 const sharedCtx = (typeof buildScSharedCompanyContext === 'function') ? buildScSharedCompanyContext() : '';
                 if (typeof recordScSharedTopics === 'function') recordScSharedTopics(message);
+                // Belt-and-suspenders, same pattern proven on every prior rollout:
+                // an explicit anti-fabrication instruction, not spelled out
+                // verbatim in the design doc's architecture section but added
+                // here for consistency with the platform-wide convention at
+                // zero cost.
+                const sys = SAIRNCODE_SYSTEM_PROMPT + (sharedCtx ? ('\n\n' + sharedCtx) : '') +
+                    '\n\nNever provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
+                const toolDefs = Object.keys(SC_TOOLS).map(function (k) { return SC_TOOLS[k].definition; });
                 const response = await fetch(APP_CONFIG.proxy, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         messages: [{ role: 'user', content: message }],
-                        system: SAIRNCODE_SYSTEM_PROMPT + (sharedCtx ? ('\n\n' + sharedCtx) : ''),
+                        system: sys,
+                        app_id: APP_CONFIG.app_id,
+                        is_demo: APP_CONFIG.is_demo,
+                        tools: toolDefs
+                    })
+                });
+
+                if (!response.ok) {
+                    renderError('Error: Unable to process request');
+                    return;
+                }
+
+                const data = await response.json();
+                const blocks = (data && data.content) || [];
+                const toolUse = blocks.filter(function (b) { return b.type === 'tool_use'; })[0];
+
+                if (!toolUse) {
+                    renderReply((blocks[0] && blocks[0].text) || 'Response received');
+                    return;
+                }
+
+                const outcome = scExecuteTool(toolUse.name, toolUse.input);
+                const toolResultContent = outcome.ok
+                    ? JSON.stringify(outcome.result)
+                    : ('Error: ' + outcome.error + ' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+
+                const followUpMessages = [
+                    { role: 'user', content: message },
+                    { role: 'assistant', content: blocks },
+                    { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: toolResultContent }] }
+                ];
+
+                const response2 = await fetch(APP_CONFIG.proxy, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: followUpMessages,
+                        system: sys,
                         app_id: APP_CONFIG.app_id,
                         is_demo: APP_CONFIG.is_demo
                     })
                 });
 
-                loadingMsg.remove();
-
-                if (response.ok) {
-                    const data = await response.json();
-                    const assistantMsg = document.createElement('div');
-                    assistantMsg.className = 'chat-message assistant';
-                    assistantMsg.innerHTML = `<div class="chat-bubble">${escHtml(data.content?.[0]?.text || 'Response received')}</div>`;
-                    history.appendChild(assistantMsg);
-                } else {
-                    const errorMsg = document.createElement('div');
-                    errorMsg.className = 'chat-message assistant';
-                    errorMsg.innerHTML = '<div class="chat-bubble error-box">Error: Unable to process request</div>';
-                    history.appendChild(errorMsg);
+                if (!response2.ok) {
+                    renderError('Error: Unable to process request');
+                    return;
                 }
-            } catch (error) {
-                loadingMsg.remove();
-                const errorMsg = document.createElement('div');
-                errorMsg.className = 'chat-message assistant';
-                errorMsg.innerHTML = '<div class="chat-bubble error-box">Error: Connection failed</div>';
-                history.appendChild(errorMsg);
-            }
 
-            history.scrollTop = history.scrollHeight;
+                const data2 = await response2.json();
+                renderReply((data2.content && data2.content[0] && data2.content[0].text) || 'Response received');
+            } catch (error) {
+                renderError('Error: Connection failed');
+            }
         }
 
         window.addEventListener('load', () => {
