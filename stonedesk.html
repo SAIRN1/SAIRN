@@ -3268,6 +3268,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   }
   function sendMsg(msg){
     if(!msg.trim())return;
+    sdAiBusy=true;
     appendMsg('user',msg);
     history.push({role:'user',content:msg});
     var typing=document.createElement('div');
@@ -3276,27 +3277,58 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     typing.textContent='🤖 Thinking...';
     document.getElementById('ai-chat').appendChild(typing);
     document.getElementById('ai-chat').scrollTop=document.getElementById('ai-chat').scrollHeight;
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:history})
-    }).then(function(r){return r.json();}).then(function(r){
+    var toolDefs=Object.keys(SD_TOOLS).map(function(k){return SD_TOOLS[k].definition;});
+    var sys='You are the AI assistant for StoneDesk, a stone fabrication shop management platform. Be concise, practical, and industry-specific. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
+    function finish(reply){
+      sdAiBusy=false;
       var t=document.getElementById('ai-typing');if(t)t.remove();
-      var reply=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||'Sorry, I could not get a response.'));
       appendMsg('assistant',reply);
       history.push({role:'assistant',content:reply});
       counts.today=(counts.today||0)+1;counts.total=(counts.total||0)+1;
       try{localStorage.setItem('sd_ai_counts',JSON.stringify(counts));}catch(e){}
       document.getElementById('ai-queries').textContent=counts.today;
       document.getElementById('ai-total').textContent=counts.total;
+    }
+    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,system:sys,messages:history,tools:toolDefs})
+    }).then(function(r){return r.json();}).then(function(r){
+      var blocks=(r&&r.content)||[];
+      var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
+      if(!toolUse){
+        var reply=(blocks[0]&&blocks[0].text?blocks[0].text:(r.completion||'Sorry, I could not get a response.'));
+        finish(reply);
+        return;
+      }
+      var outcome=sdExecuteTool(toolUse.name,sdCurrentRole(),toolUse.input);
+      // Belt-and-suspenders, same pattern proven on every prior rollout:
+      // reinforce the anti-fabrication instruction right next to the
+      // trigger, in the same turn as the denial/error itself.
+      var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+      // Claude requires the assistant turn that requested the tool to be
+      // present in history before the tool_result turn that answers it.
+      history.push({role:'assistant',content:blocks});
+      history.push({role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]});
+      fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({app_id:'stonedesk',is_demo:true,system:sys,messages:history})
+      }).then(function(r2){return r2.json();}).then(function(r2){
+        var reply2=(r2.content&&r2.content[0]&&r2.content[0].text?r2.content[0].text:(r2.completion||'Sorry, I could not get a response.'));
+        finish(reply2);
+      }).catch(function(){
+        finish('Could not reach Claude for the final answer. Connection error.');
+      });
     }).catch(function(){
+      sdAiBusy=false;
       var t=document.getElementById('ai-typing');if(t)t.remove();
       appendMsg('assistant','AI proxy unavailable. Please check your connection or try again.');
     });
   }
   window.sdAISend=function(){
+    if(sdAiBusy){notify('Please wait for the current response first','warn');return;}
     var inp=document.getElementById('ai-input');
     sendMsg(inp.value);inp.value='';
   };
   window.sdAIQuick=function(q){
+    if(sdAiBusy){notify('Please wait for the current response first','warn');return;}
     document.getElementById('ai-input').value=q;sdAISend();
   };
   window.sdAIClear=function(){
