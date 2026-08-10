@@ -1,7 +1,18 @@
 # SAIRNgrounds — AI Tool-Calling Foundation + `get_properties`
 
-**Status:** Design approved 2026-08-10, following brainstorming. Not yet
-implemented.
+**Status:** Implemented and live-verified 2026-08-10. All 2 commits
+(`4cefafe`, `b9b7483`) are on `origin/main` and confirmed live at
+`sairn.vercel.app/sairngrounds` — `grdExecuteTool` present in the
+deployed HTML. Real property-roster questions answered with tool-backed
+data; no-tool path unaffected. Concurrency fix confirmed on the live
+deployed code: second concurrent send rejected with a toast before
+touching `aiHist`, `aiHist` stayed a clean 4-entry sequence for the
+surviving call, `grdAiBusy` correctly reset to `false`. Role-gate
+confirmed: `owner` allowed, `superintendent` blocked.
+`sanitizeTools()` confirmed live for the `sairngrounds` app_id. Guardian
+v2 pass clean except one pre-existing finding (`nav_panel_check.py`'s
+sidebar-button convention mismatch, confirmed present on the pre-change
+baseline).
 
 This is SAIRNgrounds' first tool-calling work, porting the mechanism
 already proven live in SAIRNbiz, SAIRNlaw, SAIRNvet, and SAIRNscape.
