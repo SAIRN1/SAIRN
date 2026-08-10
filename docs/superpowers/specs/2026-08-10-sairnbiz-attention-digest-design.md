@@ -1,11 +1,36 @@
 # SAIRNbiz — Cross-Domain Attention Digest
 
-**Status:** Design approved by Michael 2026-08-10. Not yet implemented —
-no code written under this spec. This is item 4 of the 6-item AI-native
-roadmap for SAIRNbiz, and the flagship item: the first feature that
-genuinely reasons across HR (training, performance) and Accounting
-(budget, AP) in one place, the specific capability the platform's
-competitive research identified as unoccupied.
+**Status:** Implemented and live-verified 2026-08-10. All 4 tasks
+committed to `main` and pushed (`374340e`, `92f661a`, `f7c5e55`,
+`9e3ddab`, `f82bf11`) and confirmed deployed at `sairn.vercel.app/sairnbiz`
+(`checkAttentionItems` and `get_attention_digest` both present in the
+live-served HTML post-push). Live-tested directly against the deployed
+app, both specifically named per the plan:
+- **Stale-label independence test — PASSED live.** A training cert
+  (Marcus Thompson, OSHA 30-Hour Construction) was temporarily set to
+  `status:'Active'`/`exp:'2026-01-01'` (past); `#d-actions` correctly
+  flagged it Critical ("...certification expired (2026-01-01).") despite
+  the stale "Active" label — the specific thing the old (pre-push)
+  label-based code, re-confirmed live before the push, could not do.
+  Test data restored immediately after.
+- **Multi-domain synthesis test — PASSED live.** With real, unmodified
+  seed data already spanning AP (4 overdue bills), Performance (2
+  overdue reviews), and Training (1 expiring cert), asking the AI
+  Assistant "What needs my attention across the business right now?"
+  produced one coherent, prioritized answer synthesizing all three
+  domains, not a single-domain answer. Non-owner roles (manager, staff,
+  accounting, hr) confirmed restricted from `get_attention_digest` via
+  direct `sbExecuteTool` calls, each returning "This data is restricted
+  to the owner role."
+- Clean-state/AR/hiring-preservation test also passed live: `#d-actions`
+  still shows the legacy AR-overdue (`INV-2604`) and open-hiring-count
+  (3 positions) items unchanged, alongside the new findings.
+
+This is item 4 of the 6-item AI-native roadmap for SAIRNbiz, and the
+flagship item: the first feature that genuinely reasons across HR
+(training, performance) and Accounting (budget, AP) in one place, the
+specific capability the platform's competitive research identified as
+unoccupied.
 
 ## 1. Problem
 
