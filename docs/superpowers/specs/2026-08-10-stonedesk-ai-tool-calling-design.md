@@ -1,7 +1,26 @@
 # StoneDesk — AI Tool-Calling Foundation + `get_job_profitability`
 
-**Status:** Design approved 2026-08-10, following brainstorming (including
-a real mid-brainstorming correction — see §0). Not yet implemented.
+**Status:** Implemented and live-verified 2026-08-10. Both commits
+(`67fd953`, `1bfdd32`) are on `origin/main` and confirmed live at
+`sairn.vercel.app/stonedesk` — `sdExecuteTool` present in the deployed
+HTML, `TOTAL_BLOCKS` stayed 128 throughout. A real interaction test
+asked "which jobs were most profitable, and what is the average
+margin?" and got a correctly-ranked, correctly-averaged answer sourced
+from real `sdFinJobs` data via `get_job_profitability`. `finAskCFO()`
+(an existing caller of the now-rewired `sdAIQuick()`) triggered the
+tool correctly and used the real data in its answer — no regression.
+Concurrency fix confirmed live: a second concurrent send was rejected
+with the "please wait" toast. `sanitizeTools()` confirmed for the
+`stonedesk` app_id. One benign finding during testing: a rare Anthropic
+API response with `stop_reason:'end_turn'` but an empty `content`
+array occurred on one follow-up call during back-to-back testing —
+handled by the existing (pre-existing, unmodified) "Sorry, I could not
+get a response" fallback, not a defect introduced by this change.
+Pre-push injection testing (used on every prior rollout) does not work
+for this file's chat widget — its `history`/`appendMsg`/`counts` are
+private to their own IIFE closure, confirmed by a failed override
+attempt (`ReferenceError: appendMsg is not defined`) — so verification
+here relied on the Node harness plus live testing after push instead.
 
 This is StoneDesk's first tool-calling work, porting the mechanism
 already proven live in SAIRNbiz, SAIRNlaw, SAIRNvet, SAIRNscape, and
