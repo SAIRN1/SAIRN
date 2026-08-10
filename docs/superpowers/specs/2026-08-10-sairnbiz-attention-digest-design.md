@@ -22,9 +22,14 @@ app, both specifically named per the plan:
   accounting, hr) confirmed restricted from `get_attention_digest` via
   direct `sbExecuteTool` calls, each returning "This data is restricted
   to the owner role."
-- Clean-state/AR/hiring-preservation test also passed live: `#d-actions`
-  still shows the legacy AR-overdue (`INV-2604`) and open-hiring-count
-  (3 positions) items unchanged, alongside the new findings.
+- **AR/hiring-preservation confirmed live:** `#d-actions` still shows
+  the legacy AR-overdue (`INV-2604`) and open-hiring-count (3 positions)
+  items unchanged, alongside the new cross-domain findings. The
+  empty-state ("Nothing needs attention") branch was **not** exercised
+  live — real seed data has genuine findings in all four domains, so a
+  true clean state never occurred during testing — covered instead by
+  inspection of the `(attnHtml + legacyHtml) || fallback` logic at
+  `sairnbiz.html:1449`.
 
 This is item 4 of the 6-item AI-native roadmap for SAIRNbiz, and the
 flagship item: the first feature that genuinely reasons across HR
