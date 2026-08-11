@@ -54,5 +54,11 @@
       "src": "/sairndental-book$",
       "dest": "/sairndental-book.html"
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/sairndental/send-reminder",
+      "schedule": "0 * * * *"
+    }
   ]
 }
