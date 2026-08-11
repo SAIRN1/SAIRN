@@ -522,6 +522,208 @@ function exportPanelCSV(panelId,name){
   toast('CSV exported: '+name);
 }
 
+// ── DATA ACCESSORS ────────────────────────────────────────────────
+function patients(){return ld('dnt_patients_list',[]);}
+function providers(){return ld('dnt_providers_list',[]);}
+function operatories(){return ld('dnt_operatories_list',[]);}
+function providerHours(){return ld('dnt_hours_list',[]);}
+function procedureTypes(){return ld('dnt_procedures_list',[]);}
+function coverageRules(){return ld('dnt_coverage_list',[]);}
+
+function fillDentalSelects(){
+  var provOpts=providers().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+'</option>';}).join('');
+  var opOpts=operatories().map(function(o){return '<option value="'+o.id+'">'+H(o.name)+'</option>';}).join('');
+  var pcOpts=procedureTypes().map(function(p){return '<option value="'+p.id+'">'+H(p.code)+' -- '+H(p.description)+'</option>';}).join('');
+  var ptOpts=patients().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+'</option>';}).join('');
+  if($('pv-add-operatory'))$('pv-add-operatory').innerHTML='<option value="">(none)</option>'+opOpts;
+  if($('ph-add-provider'))$('ph-add-provider').innerHTML=provOpts||'<option value="">Add a provider first</option>';
+  if($('cv-add-procedure'))$('cv-add-procedure').innerHTML=pcOpts||'<option value="">Add a procedure type first</option>';
+  if($('icap-patient'))$('icap-patient').innerHTML=ptOpts||'<option value="">Add a patient first</option>';
+}
+
+// ── PATIENTS ──────────────────────────────────────────────────────
+function rPatients(){
+  var list=patients();
+  var tbody=$('patients-tbody');
+  tbody.innerHTML=list.map(function(p){
+    return '<tr><td>'+H(p.name)+'</td><td>'+H(p.dob||'--')+'</td><td>'+H(p.phone||'--')+'</td><td>'+H(p.insurance_payer||'--')+'</td><td>'+H(p.insurance_member_id||'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="removePatient(\''+p.id+'\')">Remove</button></td></tr>';
+  }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center">No patients on file yet</td></tr>';
+  fillDentalSelects();
+}
+async function addPatient(){
+  var name=$('pt-add-name').value.trim();
+  if(!name){toast('Patient name required');return;}
+  var rec={id:newId('PT'),name:name,dob:$('pt-add-dob').value,phone:$('pt-add-phone').value.trim(),
+    email:$('pt-add-email').value.trim(),insurance_payer:$('pt-add-payer').value.trim(),
+    insurance_member_id:$('pt-add-memberid').value.trim(),insurance_group_number:'',insurance_plan_type:'',
+    created_at:dntLocalToday()};
+  var list=patients();list.push(rec);st('dnt_patients_list',list);
+  rPatients();
+  ['pt-add-name','pt-add-dob','pt-add-phone','pt-add-email','pt-add-payer','pt-add-memberid'].forEach(function(id){$(id).value='';});
+  var syncResult=await sdnData('write','dnt_patients',rec);
+  toast(syncResult?'Patient added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function removePatient(id){
+  // Local-only, matching this platform's real convention for every
+  // resource on the generic sd-data.js pattern -- that endpoint has no
+  // delete action for ANY app (read/write only), so a fake "sync the
+  // deletion" call would either do nothing useful or, worse, blindly
+  // overwrite the real synced record's full data with a bare
+  // {id,_deleted} payload via the upsert-merge write path, destroying
+  // the real fields. Removing here only removes it from this device.
+  var list=patients().filter(function(p){return p.id!==id;});
+  st('dnt_patients_list',list);rPatients();
+  toast('Patient removed on this device');
+}
+
+// ── PROVIDERS ─────────────────────────────────────────────────────
+function rProviders(){
+  var list=providers(),ops=operatories();
+  var tbody=$('providers-tbody');
+  tbody.innerHTML=list.map(function(p){
+    var op=ops.find(function(o){return o.id===p.operatory_id;});
+    return '<tr><td>'+H(p.name)+'</td><td>'+H(p.role)+'</td><td>'+H(op?op.name:'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="removeProvider(\''+p.id+'\')">Remove</button></td></tr>';
+  }).join('')||'<tr><td colspan="4" style="color:var(--muted);text-align:center">No providers on file yet</td></tr>';
+  fillDentalSelects();
+}
+async function addProvider(){
+  var name=$('pv-add-name').value.trim();
+  if(!name){toast('Provider name required');return;}
+  var rec={id:newId('PV'),name:name,role:$('pv-add-role').value,operatory_id:$('pv-add-operatory').value||'',created_at:dntLocalToday()};
+  var list=providers();list.push(rec);st('dnt_providers_list',list);
+  rProviders();
+  $('pv-add-name').value='';
+  var syncResult=await sdnData('write','dnt_providers',rec);
+  toast(syncResult?'Provider added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function removeProvider(id){
+  // Local-only -- see removePatient()'s comment for why.
+  var list=providers().filter(function(p){return p.id!==id;});
+  st('dnt_providers_list',list);rProviders();
+  toast('Provider removed on this device');
+}
+
+// ── OPERATORIES ───────────────────────────────────────────────────
+function rOperatories(){
+  var list=operatories();
+  var tbody=$('operatories-tbody');
+  tbody.innerHTML=list.map(function(o){
+    return '<tr><td>'+H(o.name)+'</td><td><button class="btn bo bs" onclick="removeOperatory(\''+o.id+'\')">Remove</button></td></tr>';
+  }).join('')||'<tr><td colspan="2" style="color:var(--muted);text-align:center">No operatories on file yet</td></tr>';
+  fillDentalSelects();
+}
+async function addOperatory(){
+  var name=$('op-add-name').value.trim();
+  if(!name){toast('Operatory name required');return;}
+  var rec={id:newId('OP'),name:name,created_at:dntLocalToday()};
+  var list=operatories();list.push(rec);st('dnt_operatories_list',list);
+  rOperatories();
+  $('op-add-name').value='';
+  var syncResult=await sdnData('write','dnt_operatories',rec);
+  toast(syncResult?'Operatory added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function removeOperatory(id){
+  // Local-only -- see removePatient()'s comment for why.
+  var list=operatories().filter(function(o){return o.id!==id;});
+  st('dnt_operatories_list',list);rOperatories();
+  toast('Operatory removed on this device');
+}
+
+// ── PROVIDER HOURS ────────────────────────────────────────────────
+function rHours(){
+  var list=providerHours(),provs=providers();
+  var tbody=$('hours-tbody');
+  tbody.innerHTML=list.map(function(h){
+    var pv=provs.find(function(p){return p.id===h.provider_id;});
+    return '<tr><td>'+H(pv?pv.name:'(unknown provider)')+'</td><td>'+H(h.day_of_week)+'</td><td>'+H(h.start_time)+'</td><td>'+H(h.end_time)+'</td>'+
+      '<td><button class="btn bo bs" onclick="removeProviderHours(\''+h.id+'\')">Remove</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No hours defined yet</td></tr>';
+}
+async function addProviderHours(){
+  var providerId=$('ph-add-provider').value;
+  var start=$('ph-add-start').value,end=$('ph-add-end').value;
+  if(!providerId){toast('Add a provider first');return;}
+  if(!start||!end){toast('Start and end time required');return;}
+  var rec={id:newId('PH'),provider_id:providerId,day_of_week:$('ph-add-day').value,start_time:start,end_time:end,created_at:dntLocalToday()};
+  var list=providerHours();list.push(rec);st('dnt_hours_list',list);
+  rHours();
+  $('ph-add-start').value='';$('ph-add-end').value='';
+  var syncResult=await sdnData('write','dnt_provider_hours',rec);
+  toast(syncResult?'Hours block added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function removeProviderHours(id){
+  // Local-only -- see removePatient()'s comment for why.
+  var list=providerHours().filter(function(h){return h.id!==id;});
+  st('dnt_hours_list',list);rHours();
+  toast('Hours block removed on this device');
+}
+
+// ── PROCEDURE TYPES ───────────────────────────────────────────────
+// Practice-entered only -- never a bundled/hardcoded CDT code list
+// (design spec §3, real ADA-copyright constraint).
+function rProcedures(){
+  var list=procedureTypes();
+  var tbody=$('procedures-tbody');
+  tbody.innerHTML=list.map(function(p){
+    return '<tr><td>'+H(p.cdt_code)+'</td><td>'+H(p.description)+'</td><td>'+fmt(p.default_fee)+'</td><td>'+H(p.default_length_minutes)+' min</td>'+
+      '<td><button class="btn bo bs" onclick="removeProcedureType(\''+p.id+'\')">Remove</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No procedure types on file yet -- enter your practice\'s own codes and fees above</td></tr>';
+  fillDentalSelects();
+}
+async function addProcedureType(){
+  var code=$('pc-add-code').value.trim(),desc=$('pc-add-desc').value.trim();
+  var fee=parseFloat($('pc-add-fee').value),length=parseInt($('pc-add-length').value,10);
+  if(!code||!desc){toast('Code and description required');return;}
+  var rec={id:newId('PC'),cdt_code:code,description:desc,default_fee:isNaN(fee)?0:fee,
+    default_length_minutes:isNaN(length)?30:length,created_at:dntLocalToday()};
+  var list=procedureTypes();list.push(rec);st('dnt_procedures_list',list);
+  rProcedures();
+  ['pc-add-code','pc-add-desc','pc-add-fee','pc-add-length'].forEach(function(id){$(id).value='';});
+  var syncResult=await sdnData('write','dnt_procedure_types',rec);
+  toast(syncResult?'Procedure type added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function removeProcedureType(id){
+  // Local-only -- see removePatient()'s comment for why.
+  var list=procedureTypes().filter(function(p){return p.id!==id;});
+  st('dnt_procedures_list',list);rProcedures();
+  toast('Procedure type removed on this device');
+}
+
+// ── COVERAGE RULES ────────────────────────────────────────────────
+// Payer + procedure-type level estimates, not per-individual-plan --
+// no canonical source to verify these against (design spec §3).
+function rCoverage(){
+  var list=coverageRules(),procs=procedureTypes();
+  var tbody=$('coverage-tbody');
+  tbody.innerHTML=list.map(function(c){
+    var pc=procs.find(function(p){return p.id===c.procedure_type_id;});
+    return '<tr><td>'+H(c.payer)+'</td><td>'+H(pc?(pc.code+' -- '+pc.description):'(unknown procedure)')+'</td><td>'+H(c.coverage_percent)+'%</td>'+
+      '<td><button class="btn bo bs" onclick="removeCoverageRule(\''+c.id+'\')">Remove</button></td></tr>';
+  }).join('')||'<tr><td colspan="4" style="color:var(--muted);text-align:center">No coverage rules defined yet</td></tr>';
+}
+async function addCoverageRule(){
+  var payer=$('cv-add-payer').value.trim();
+  var procedureTypeId=$('cv-add-procedure').value;
+  var pct=parseFloat($('cv-add-percent').value);
+  if(!payer){toast('Payer required');return;}
+  if(!procedureTypeId){toast('Add a procedure type first');return;}
+  if(isNaN(pct)||pct<0||pct>100){toast('Coverage percent must be 0-100');return;}
+  var rec={id:newId('CV'),payer:payer,procedure_type_id:procedureTypeId,coverage_percent:pct,created_at:dntLocalToday()};
+  var list=coverageRules();list.push(rec);st('dnt_coverage_list',list);
+  rCoverage();
+  $('cv-add-payer').value='';$('cv-add-percent').value='';
+  var syncResult=await sdnData('write','dnt_coverage_rules',rec);
+  toast(syncResult?'Coverage rule added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function removeCoverageRule(id){
+  // Local-only -- see removePatient()'s comment for why.
+  var list=coverageRules().filter(function(c){return c.id!==id;});
+  st('dnt_coverage_list',list);rCoverage();
+  toast('Coverage rule removed on this device');
+}
+
 function rDash(){
   $('k-patients').textContent=patients().length;
   $('k-providers').textContent=providers().length;
@@ -531,6 +733,7 @@ function rDash(){
 
 function init(){
   rDash();
+  fillDentalSelects();
 }
 </script>
 </body>
