@@ -749,7 +749,7 @@ function populateProfileForm() {
 async function saveProfile() {
   if (!window._fbProfileRef || !window._fbSetRaw) { showToast('Sync not ready yet -- try again in a moment'); return; }
   const filing_status = document.getElementById('profFilingStatus').value;
-  const prior_year_tax_liability = Number(document.getElementById('profPriorYearTax').value) || undefined;
+  const prior_year_tax_liability = Number(document.getElementById('profPriorYearTax').value) || null;
   const prior_year_agi_over_150k = document.getElementById('profAgiOver150k').checked;
   const retirement_vehicle = document.getElementById('profRetirementVehicle').value;
   await window._fbSetRaw(window._fbProfileRef, { filing_status, prior_year_tax_liability, prior_year_agi_over_150k, retirement_vehicle });
