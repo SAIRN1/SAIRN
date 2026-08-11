@@ -271,18 +271,23 @@ In the Pending Requests panel header (`sairndental.html:395-398`):
 
 ```html
         <div class="ph"><div><div class="ptitle">Pending Requests</div><div class="psub">Self-scheduled and other pending appointments &mdash; review and confirm before they're final. New bookings are never auto-confirmed.</div></div></div>
-        <div class="card"><div class="ch"><div class="ct">Awaiting Confirmation</div><button class="btn bo bs" onclick="dntRefreshPending()">Refresh</button></div><div class="cb" style="padding:0">
+        <div class="card"><div class="ch"><div class="ct">Awaiting Confirmation</div><button class="btn bo bs" id="dnt-refresh-pending-btn" onclick="dntRefreshPending()">Refresh</button></div><div class="cb" style="padding:0">
           <table id="pending-table"><thead><tr><th>Patient</th><th>Provider</th><th>Time</th><th>Source</th><th>Photos / Notes</th><th></th></tr></thead><tbody id="pending-tbody"></tbody></table>
         </div></div>
 ```
 
 - [ ] **Step 2: Add the click handler**
 
-Immediately after `dntSyncFromServer()` (Task 2):
+Immediately after `dntSyncFromServer()` (Task 2). Uses a direct
+`getElementById` reference (`$('dnt-refresh-pending-btn')`), not the
+implicit global `event` object, matching this codebase's established
+pattern for disable/re-enable-during-async-op buttons (e.g.
+`sairndental-book.html`'s `submitBooking()` uses
+`document.getElementById('bk-submit-btn')` directly):
 
 ```js
 async function dntRefreshPending(){
-  var btn=event&&event.target;
+  var btn=$('dnt-refresh-pending-btn');
   if(btn){btn.disabled=true;btn.textContent='Refreshing...';}
   await dntSyncFromServer();
   if(btn){btn.disabled=false;btn.textContent='Refresh';}
@@ -298,8 +303,8 @@ python tools/div_balance_check.py sairndental.html
 python tools/duplicate_global_check.py sairndental.html
 ```
 
-Expected: clean, no duplicate IDs (this adds no new `id` attributes, only
-a button with an `onclick`).
+Expected: clean, no duplicate IDs (the one new `id`,
+`dnt-refresh-pending-btn`, is unique in the file).
 
 - [ ] **Step 4: Commit**
 
