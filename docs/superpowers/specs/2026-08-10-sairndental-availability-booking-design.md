@@ -1,6 +1,45 @@
 # SAIRNdental — Availability Engine + Self-Scheduling Design
 
-**Status:** Design drafted 2026-08-10, pending review. Not yet implemented.
+**Status:** Code implemented and pushed 2026-08-10
+(`docs/superpowers/plans/2026-08-10-sairndental-availability-booking.md`).
+**Not fully live-verified — blocked on the SQL migration, honestly
+reported, not glossed over.**
+
+**Confirmed live, real tests, not assumed:**
+- `sairndental` and `sairndental-book` both return 200.
+- The license key genuinely never appears anywhere in
+  `sairndental-book.html`'s served source (grepped the real response —
+  zero matches for the key or `dntLicenseKey`) — structural isolation
+  confirmed, not just claimed by file separation.
+- An unknown/unmigrated slug returns a clean `404 UNKNOWN_SLUG`, not a
+  crash or a misleading response.
+- Internal-app Booking Settings panel: real slug/timezone/procedure-
+  type selection, correct public-link preview, honest "server sync not
+  yet enabled" toast (accurate — the migration hasn't run).
+- Pending Requests panel: correct empty state.
+- **A real production deploy failure was found and fixed during this
+  verification pass**, not shipped broken: `vercel.json`'s
+  `buildCommand` exceeded Vercel's 256-character schema limit after
+  adding the two new app files, the deployment failed
+  (`readyState:'ERROR'`), and `sairn.vercel.app` silently kept serving
+  the previous successful build in the meantime — caught by checking
+  Vercel's own deployment API directly (build logs were empty; the
+  real error was in `get_deployment`'s `errorMessage` field), not
+  assumed from the monitor's timeout alone. Fixed by replacing the
+  ever-growing explicit app-list with a wildcard `cp *.html dist/`
+  (confirmed via `git ls-tree` that only real, intended app files are
+  tracked at the repo root before making that change) — the root
+  cause (a hard character ceiling on a growing string) cannot recur.
+
+**Not yet verifiable — `sql/sairndental_availability_booking_schema.sql`
+has not been run** (confirmed live: `dnt_settings` read returns
+`"provisioned":false`): the real conflict/double-booking test (the
+actual regression test for the `EXCLUDE` constraints), real rate-limit
+persistence, a real end-to-end booking creating a genuine `Pending`
+appointment, and the Confirm/Reject flow against real synced data all
+require this migration first. Re-run
+`docs/superpowers/plans/2026-08-10-sairndental-availability-booking.md`
+Task 6 Steps 4-9 once it has.
 
 Concrete technical design for the top-level spec's §4 (real recurring
 availability, multi-provider conflict prevention, public booking page),
