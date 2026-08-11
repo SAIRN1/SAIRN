@@ -72,9 +72,17 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const hoursRes = await fetch(rest('dnt_provider_hours?license_hash=eq.' + encodeURIComponent(licenseHash) + '&provider_id=eq.' + encodeURIComponent(providerId) + '&select=data'), { headers });
+    // dnt_provider_hours has NO promoted provider_id column (unlike
+    // dnt_appointments) -- it's still a plain foundation-plan generic-
+    // jsonb resource, so provider_id only exists inside data. Filtering
+    // by a nonexistent real column here previously failed the query
+    // silently (hoursRes.ok was false, defaulted to []), which made
+    // every availability request return zero slots regardless of real
+    // provider hours -- found live during the end-to-end booking test.
+    // Fetch all hours for this license and filter client-side instead.
+    const hoursRes = await fetch(rest('dnt_provider_hours?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data'), { headers });
     const hoursRows = hoursRes.ok ? await hoursRes.json() : [];
-    const providerHours = (hoursRows || []).map((x) => x.data);
+    const providerHours = (hoursRows || []).map((x) => x.data).filter((h) => h.provider_id === providerId);
 
     const procRes = await fetch(rest('dnt_procedure_types?license_hash=eq.' + encodeURIComponent(licenseHash) + '&procedure_type_id=eq.' + encodeURIComponent(procedureTypeId) + '&select=data'), { headers });
     const procRows = procRes.ok ? await procRes.json() : [];
