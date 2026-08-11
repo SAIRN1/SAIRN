@@ -3,6 +3,79 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNdental public-book.js misclassifies a real slot race as a generic 502, not 409 SLOT_TAKEN -- plus an orphaned patient record on that same failure
+
+**Logged:** 2026-08-11
+
+**What:** Live-reproduced during the photo-capture feature's Task 5
+verification (not part of that feature -- pre-existing code, found
+adjacent to it): submitting a booking for a slot that's already taken
+returns `502 {"error":{"message":"Could not complete booking -- try
+again"}}`, not the friendlier `409 SLOT_TAKEN` message
+`public-book.js:114-116` is written to produce. `api/sd-data.js`'s own
+separate `dnt_appointments` write handler (`api/sd-data.js:1835-1846`)
+was already fixed for this exact bug class on 2026-08-11 (documented
+in its own comment): a real Postgres `exclusion_violation` from the
+`EXCLUDE` constraints can come back as HTTP 400, not 409, so a bare
+`status === 409` check silently misses it. `public-book.js:114`
+still only checks `insertRes.status === 409` and falls through to a
+generic 502 for anything else — the same fix was never mirrored to
+this second, independent insert code path. **The double-booking
+protection itself still works** (verified: a real race against the
+same slot did NOT create a duplicate appointment) — this is a
+user-facing error-message bug, not a data-integrity bug. Secondary,
+related consequence: patient matching/creation happens before the
+appointment insert, so a raced booking still leaves behind a real,
+orphaned `dnt_patients` row even though no appointment was created for
+it — confirmed live (`PT-1786459097218-952`, "Curl Test 4 Slot Race").
+
+**Why deferred:** Found while live-verifying the photo-capture
+feature's own, unrelated changes
+(`docs/superpowers/plans/2026-08-11-sairndental-photo-capture.md` Task
+5) — orthogonal to that feature's scope, not folded into it. A real
+fix belongs in its own pass: mirror `sd-data.js`'s body-inspection
+approach into `public-book.js`'s insert-error handling, and decide
+whether the orphaned-patient-on-failed-insert case needs a real fix
+(e.g. don't create the patient row until the appointment insert
+succeeds) or is an acceptable, self-limiting bit of clutter given this
+platform's append-only, no-delete-API data model (see the next entry).
+
+**Done looks like:** A slot-race booking attempt returns real `409
+SLOT_TAKEN` from `public-book.js`, matching `sd-data.js`'s existing
+body-inspection pattern; a documented decision (not silence) on
+whether the orphaned-patient case needs its own fix.
+
+## SAIRNdental (and platform-wide) has no delete capability via `api/sd-data.js` for any resource
+
+**Logged:** 2026-08-11
+
+**What:** `api/sd-data.js` supports only `read`/`write` actions for
+every resource on every app — confirmed by grep, zero `delete` handler
+exists anywhere in the file. This was already known/documented
+implicitly in this codebase (`removePatient()`/`removeProcedureType()`
+in `sairndental.html` are explicitly local-only, with comments
+explaining why), but it became a real operational blocker during the
+photo-capture feature's live verification: test data created against
+the real `DNT-PINNACLE-2026` demo practice (patients
+`PT-1786459014901-103`, `PT-1786459096578-942`,
+`PT-1786459097218-952`; appointments `AP-1786459014994-702`,
+`AP-1786459096666-870`) could not be cleaned up by any tool available
+in this session — there is no API path to remove it, only a direct
+Supabase dashboard delete, which requires Michael's manual action.
+
+**Why deferred:** A real delete action (even an admin-only,
+audit-logged one) is a genuine feature decision with real design
+questions of its own (soft-delete vs. hard-delete, who's authorized,
+whether it should exist at all given this platform's append-only-ledger
+philosophy for financial resources specifically) — not something to
+improvise as a side effect of one verification pass needing cleanup.
+
+**Done looks like:** Either a real, deliberately-scoped delete/archive
+capability is designed and added, or a documented, explicit decision
+that test/demo data cleanup is permanently a manual Supabase-dashboard
+task and every session's live-verification protocol says so plainly
+(rather than each session rediscovering the same gap).
+
 ## SAIRNdental per-patient photo history panel
 
 **Logged:** 2026-08-11
