@@ -762,11 +762,13 @@ function initFinanceSync() {
     incomeCache = [];
     snap.forEach(c => { const v = c.val(); if (v) incomeCache.push(Object.assign({ key: c.key }, v)); });
     renderFinancePanel();
+    renderEstimator();
   });
   window._fbOnValueRaw(window._fbDeductionsRef, snap => {
     deductionCache = [];
     snap.forEach(c => { const v = c.val(); if (v) deductionCache.push(Object.assign({ key: c.key }, v)); });
     renderFinancePanel();
+    renderEstimator();
   });
 }
 
@@ -784,6 +786,65 @@ async function addDeductionEntry(amount, category, description) {
 function sumIncome() { return incomeCache.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
 function sumDeductions() { return deductionCache.reduce((s, e) => s + (Number(e.amount) || 0), 0); }
 function ytdNetProfit() { return sumIncome() - sumDeductions(); }
+
+// Verified against IRS.gov for tax year 2026 specifically -- each date
+// individually checked against weekend/holiday shifts, none apply this
+// year. Re-verify for any other tax year before reuse, same discipline
+// as TAX_YEAR_2026.
+const QUARTERLY_DEADLINES_2026 = [
+  { label: 'Q1', date: '2026-04-15' },
+  { label: 'Q2', date: '2026-06-15' },
+  { label: 'Q3', date: '2026-09-15' },
+  { label: 'Q4', date: '2027-01-15' }
+];
+
+function nextQuarterlyDeadline() {
+  const now = new Date();
+  for (const d of QUARTERLY_DEADLINES_2026) {
+    const due = new Date(d.date + 'T23:59:59');
+    if (due >= now) {
+      const days = Math.ceil((due - now) / 86400000);
+      return { label: d.label, dateStr: due.toLocaleDateString(), days };
+    }
+  }
+  return null; // all 4 deadlines have passed -- fails safely, not thrown
+}
+
+function renderEstimator() {
+  const ytd = ytdNetProfit();
+  const filingStatus = profileCache.filing_status || 'single';
+  const result = calcQuarterlySetAside(ytd, filingStatus, profileCache.prior_year_tax_liability, profileCache.prior_year_agi_over_150k);
+  // calcRetirementEstimate's 2nd param must be the FULL SE tax (SS +
+  // Medicare + Additional Medicare) -- calcTotalTax().seTax already
+  // includes all three (sairncash.html:658-667, unchanged, already
+  // live). calcSeTax() alone only returns ssAndMedicare, missing
+  // Additional Medicare -- using that instead would understate the
+  // half-SE-tax deduction for any high earner over the Additional
+  // Medicare threshold, silently overstating their retirement room.
+  const totalTaxResult = calcTotalTax(ytd, filingStatus, 0);
+  const retirement = calcRetirementEstimate(ytd, totalTaxResult.seTax, profileCache.retirement_vehicle || 'none');
+
+  const ytdEl = document.getElementById('resYtdNet');
+  const annualEl = document.getElementById('resEstAnnual');
+  const quarterlyEl = document.getElementById('resQuarterly');
+  const quarterlyLabelEl = document.getElementById('resQuarterlyLabel');
+  const deadlineEl = document.getElementById('resDeadline');
+  const retirementEl = document.getElementById('resRetirement');
+  const missingNoteEl = document.getElementById('profileMissingNote');
+
+  if (ytdEl) ytdEl.textContent = '$' + ytd.toFixed(2);
+  if (annualEl) annualEl.textContent = '$' + result.estAnnual.toFixed(2);
+  if (quarterlyEl) quarterlyEl.textContent = '$' + result.quarterlyAmount.toFixed(2);
+  if (quarterlyLabelEl) quarterlyLabelEl.textContent = result.hasFullBasis
+    ? 'Recommended quarterly set-aside'
+    : 'Partial estimate (90% of this year only) -- add prior-year tax above for the full figure';
+  if (deadlineEl) {
+    const next = nextQuarterlyDeadline();
+    deadlineEl.textContent = next ? (next.dateStr + ' (' + next.days + ' days)') : 'N/A';
+  }
+  if (retirementEl) retirementEl.textContent = '$' + retirement.estimate.toFixed(2);
+  if (missingNoteEl) missingNoteEl.style.display = result.hasFullBasis ? 'none' : '';
+}
 
 async function submitIncome() {
   const amtEl = document.getElementById('incAmount'), descEl = document.getElementById('incDesc');
