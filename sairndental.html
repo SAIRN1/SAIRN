@@ -394,7 +394,7 @@ label.chk input{width:auto;}
       <div class="panel" id="panel-pending">
         <div class="ph"><div><div class="ptitle">Pending Requests</div><div class="psub">Self-scheduled and other pending appointments &mdash; review and confirm before they're final. New bookings are never auto-confirmed.</div></div></div>
         <div class="card"><div class="ch"><div class="ct">Awaiting Confirmation</div></div><div class="cb" style="padding:0">
-          <table id="pending-table"><thead><tr><th>Patient</th><th>Provider</th><th>Time</th><th>Source</th><th></th></tr></thead><tbody id="pending-tbody"></tbody></table>
+          <table id="pending-table"><thead><tr><th>Patient</th><th>Provider</th><th>Time</th><th>Source</th><th>Photos / Notes</th><th></th></tr></thead><tbody id="pending-tbody"></tbody></table>
         </div></div>
       </div>
 
@@ -868,10 +868,16 @@ function rPending(){
   tbody.innerHTML=list.map(function(a){
     var pt=pats.find(function(x){return x.id===a.patient_id;});
     var pv=provs.find(function(x){return x.id===a.provider_id;});
+    var photos=Array.isArray(a.photos)?a.photos:[];
+    var thumbs=photos.map(function(src){
+      return '<img src="'+src+'" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;margin-right:4px" onclick="window.open(this.src)">';
+    }).join('');
+    var noteHtml=a.patient_notes?('<div style="font-size:12px;color:var(--muted);margin-top:4px">'+H(a.patient_notes)+'</div>'):'';
     return '<tr><td>'+H(pt?pt.name:'(unknown patient)')+'</td><td>'+H(pv?pv.name:'(unknown provider)')+'</td>'+
       '<td>'+H(a.start_time?new Date(a.start_time).toLocaleString():'--')+'</td><td>'+H(a.source||'staff')+'</td>'+
+      '<td>'+thumbs+noteHtml+'</td>'+
       '<td><button class="btn bp bs" onclick="confirmAppointment(\''+a.id+'\')">Confirm</button> <button class="btn bo bs" onclick="rejectAppointment(\''+a.id+'\')">Reject</button></td></tr>';
-  }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No pending requests</td></tr>';
+  }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center">No pending requests</td></tr>';
 }
 async function setAppointmentStatus(id,status){
   var list=appointments();
