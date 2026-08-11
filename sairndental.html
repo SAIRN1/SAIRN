@@ -724,6 +724,91 @@ function removeCoverageRule(id){
   toast('Coverage rule removed on this device');
 }
 
+// ── INSURANCE CAPTURE (mandatory sairn-app-scaffold requirement) ────
+// Photo -> Claude analysis -> structured output, adapted for this
+// app's actual vertical (design spec §1): a front-desk photo of a
+// patient's insurance card, Claude extracts payer/member ID/group/
+// plan type, staff reviews and confirms before it's ever saved --
+// never auto-written to the patient record. Same proxy discipline as
+// every other app (sairn.vercel.app/api/claude only, app_id+is_demo),
+// free-text response with targeted extraction, not a fragile JSON
+// contract -- per the scaffold skill's own honest note about
+// StoneDesk's real, proven implementation shape.
+var icapExtracted=null;
+function rIcap(){
+  fillDentalSelects();
+  $('icap-preview').style.display='none';
+  $('icap-review').style.display='none';
+  $('icap-status').textContent='';
+}
+function icapHandleFile(event){
+  var file=event.target.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var dataUrl=e.target.result;
+    $('icap-preview').src=dataUrl;
+    $('icap-preview').style.display='block';
+    icapAnalyze(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+async function icapAnalyze(dataUrl){
+  if(!$('icap-patient').value){toast('Select a patient first');return;}
+  $('icap-status').textContent='Claude is reading the card...';
+  $('icap-review').style.display='none';
+  var base64=dataUrl.split(',')[1];
+  var mediaType=(dataUrl.match(/^data:([^;]+);/)||[])[1]||'image/jpeg';
+  var system='You are extracting insurance-card details for a dental practice\'s front desk. Read the photographed card and report exactly these four fields, one per line, in this exact format (use "Not visible" if a field genuinely is not on the card -- never guess or invent a value):\nPayer: <name>\nMember ID: <id>\nGroup Number: <number>\nPlan Type: <type>';
+  var msgs=[{role:'user',content:[
+    {type:'image',source:{type:'base64',media_type:mediaType,data:base64}},
+    {type:'text',text:'Extract the insurance details from this card photo.'}
+  ]}];
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:200,system:system,messages:msgs})});
+    var data=await res.json();
+    var aiErr=dntAiError(data);
+    if(aiErr){$('icap-status').textContent=aiErr;return;}
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    icapExtracted=icapParseFields(text);
+    $('icap-out-payer').value=icapExtracted.payer;
+    $('icap-out-memberid').value=icapExtracted.memberId;
+    $('icap-out-group').value=icapExtracted.group;
+    $('icap-out-plantype').value=icapExtracted.planType;
+    $('icap-status').textContent='Extracted -- review every field below before saving.';
+    $('icap-review').style.display='block';
+  }catch(e){
+    $('icap-status').textContent='Could not connect to Claude. Check your connection and try again.';
+  }
+}
+// Targeted line extraction, not a JSON contract -- per sairn-app-scaffold's
+// own documented "free text plus light, targeted extraction" baseline.
+function icapParseFields(text){
+  function grab(label){
+    var m=text.match(new RegExp(label+'\\s*:\\s*(.+)','i'));
+    var v=m?m[1].trim():'';
+    return (v.toLowerCase()==='not visible')?'':v;
+  }
+  return {payer:grab('Payer'),memberId:grab('Member ID'),group:grab('Group Number'),planType:grab('Plan Type')};
+}
+async function icapSaveToPatient(){
+  var patientId=$('icap-patient').value;
+  if(!patientId){toast('Select a patient first');return;}
+  var list=patients();
+  var p=list.find(function(x){return x.id===patientId;});
+  if(!p){toast('Patient not found');return;}
+  p.insurance_payer=$('icap-out-payer').value.trim();
+  p.insurance_member_id=$('icap-out-memberid').value.trim();
+  p.insurance_group_number=$('icap-out-group').value.trim();
+  p.insurance_plan_type=$('icap-out-plantype').value.trim();
+  st('dnt_patients_list',list);
+  $('icap-review').style.display='none';
+  $('icap-status').textContent='Saved to '+p.name+'\'s record.';
+  var syncResult=await sdnData('write','dnt_patients',p);
+  toast(syncResult?'Insurance info saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+
 function rDash(){
   $('k-patients').textContent=patients().length;
   $('k-providers').textContent=providers().length;
