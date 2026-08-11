@@ -1,6 +1,24 @@
 # SAIRNdental — Automated Email Reminders Design
 
-**Status:** Design drafted 2026-08-11, pending review. Not yet implemented.
+**Status:** Design approved 2026-08-11. Implementation plan at
+`docs/superpowers/plans/2026-08-11-sairndental-email-reminders.md`.
+Tasks 1-5 built, tested, and pushed to `main`
+(`5f0f6a8`, `7bfd71b`, `c5eb83b`, `d079e74`, `e92a08f`) — Practice Info
+settings fields, "no email on file" badge, the email-copy module (7
+tests), the window-selection module (14 boundary/idempotency tests),
+`send-reminder.js` (4 auth-gate tests), and the hourly Vercel Cron
+entry. Live-verified: `sairndental.html`'s two UI changes are live
+byte-identical to the pushed file; `send-reminder.js` is deployed and
+reachable, and correctly fails closed (500) rather than accepting an
+unauthenticated request, since `CRON_SECRET` is not yet set in Vercel.
+**Not yet done:** `CRON_SECRET` and `RESEND_FROM_ADDRESS` env vars,
+and every live-data step in Task 6 (real Resend send,
+delivery-confirmed window-boundary check, idempotency-of-a-real-send,
+live missing-email/failed-send checks against production data) —
+blocked on Resend's sending-domain DNS verification, currently
+propagating after a Namecheap Custom DNS → BasicDNS switch (per
+Namecheap's own documentation, up to 24-48h; confirmed a genuine
+external wait, not a bug).
 
 Concrete technical design for the top-level spec's §5 (real automated
 no-show reminders via email, not SMS — genuinely new platform
