@@ -1287,7 +1287,8 @@ var DNT_SYNC_RESOURCES=[
   ['dnt_coverage_rules','dnt_coverage_list'],
   ['dnt_appointments','dnt_appointments_list'],
   ['dnt_charges','dnt_charges_list'],
-  ['dnt_payments','dnt_payments_list']
+  ['dnt_payments','dnt_payments_list'],
+  ['dnt_referrals','dnt_referrals_list']
 ];
 // dnt_denial/dnt_ar/dnt_revenue deliberately excluded -- no client-side
 // accessor or render function exists for any of them yet (confirmed by
@@ -1320,7 +1321,7 @@ async function dntSyncFromServer(){
   }
   if(changed){
     rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
-    rCoverage();rPending();rAppointments();rBilling();
+    rCoverage();rPending();rAppointments();rBilling();rReferrals();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
   }
   return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+1};
