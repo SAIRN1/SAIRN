@@ -294,6 +294,45 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
         </div>
 
         <div class="fin-view active" id="view-estimator">
+          <div class="fin-section" id="profileSection">
+            <h4>Your profile</h4>
+            <div class="fin-form">
+              <select id="profFilingStatus">
+                <option value="single">Single</option>
+                <option value="mfj">Married Filing Jointly</option>
+                <option value="mfs">Married Filing Separately</option>
+                <option value="hoh">Head of Household</option>
+              </select>
+              <input type="number" id="profPriorYearTax" placeholder="Last year's total tax (optional)" min="0" step="0.01">
+              <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px"><input type="checkbox" id="profAgiOver150k" style="width:auto"> Last year's AGI was over $150k</label>
+              <select id="profRetirementVehicle">
+                <option value="none">No retirement plan</option>
+                <option value="sep">SEP IRA</option>
+                <option value="solo401k">Solo 401(k)</option>
+              </select>
+              <button class="fin-btn" onclick="saveProfile()">Save profile</button>
+            </div>
+            <div class="fin-empty" id="profileMissingNote" style="display:none">No prior-year tax figure entered yet -- the set-aside below is a partial estimate (90% of this year's projected tax only), not the full IRS safe-harbor calculation. Add it above for a more accurate number.</div>
+          </div>
+
+          <div class="fin-section" id="resultsSection">
+            <h4>Quarterly set-aside estimate</h4>
+            <div class="fin-list">
+              <div class="fin-item"><span>Year-to-date net profit</span><span class="fin-item-amt" id="resYtdNet">$0.00</span></div>
+              <div class="fin-item"><span>Estimated annual tax (SE + federal income)</span><span class="fin-item-amt" id="resEstAnnual">$0.00</span></div>
+              <div class="fin-item"><span id="resQuarterlyLabel">Recommended quarterly set-aside</span><span class="fin-item-amt" id="resQuarterly">$0.00</span></div>
+              <div class="fin-item"><span id="resDeadlineLabel">Next quarterly deadline</span><span class="fin-item-amt" id="resDeadline">--</span></div>
+            </div>
+          </div>
+
+          <div class="fin-section" id="retirementSection">
+            <h4>Retirement contribution estimate</h4>
+            <div class="fin-list">
+              <div class="fin-item"><span id="resRetirementLabel">Estimated contribution room</span><span class="fin-item-amt" id="resRetirement">$0.00</span></div>
+            </div>
+            <div class="fin-empty" style="text-align:left">Approximately 20% of net self-employment earnings after the deduction for one-half of SE tax -- a simplified estimate, not the exact IRS Publication 560 worksheet. Verify the precise figure with a tax professional or your plan administrator before contributing.</div>
+          </div>
+
           <div class="fin-section">
             <h4>Add income</h4>
             <div class="fin-form">
@@ -528,7 +567,7 @@ async function initApp() {
     // (2026-08-10 isolation fix) -- never before, never with a fallback
     // shared path. initFinanceSync() waits for it to finish setting up
     // window._fbIncomeRef/_fbDeductionsRef before attaching listeners.
-    if (window._initFirebaseSync) { await window._initFirebaseSync(); initFinanceSync(); }
+    if (window._initFirebaseSync) { await window._initFirebaseSync(); initFinanceSync(); initProfileSync(); }
   } else {
     document.getElementById('paywall').style.display = 'flex';
     document.getElementById('appShell').classList.remove('show');
@@ -681,6 +720,41 @@ function switchView(v) {
 // (window._fbIncomeRef / _fbDeductionsRef, exposed by initFirebase()
 // once a real subscription is confirmed) -- no separate sync mechanism.
 let incomeCache = [], deductionCache = [];
+
+let profileCache = {};
+
+// Mirrors initFinanceSync()'s real-time-listener pattern exactly (line
+// 724-736) -- a profile edit on one device reflects here live, same as
+// income/deduction entries already do.
+function initProfileSync() {
+  if (!window._fbProfileRef || !window._fbOnValueRaw) return;
+  window._fbOnValueRaw(window._fbProfileRef, snap => {
+    profileCache = snap.val() || {};
+    populateProfileForm();
+    renderEstimator();
+  });
+}
+
+function populateProfileForm() {
+  const fs = document.getElementById('profFilingStatus');
+  const pyt = document.getElementById('profPriorYearTax');
+  const agi = document.getElementById('profAgiOver150k');
+  const rv = document.getElementById('profRetirementVehicle');
+  if (fs && profileCache.filing_status) fs.value = profileCache.filing_status;
+  if (pyt) pyt.value = profileCache.prior_year_tax_liability || '';
+  if (agi) agi.checked = !!profileCache.prior_year_agi_over_150k;
+  if (rv && profileCache.retirement_vehicle) rv.value = profileCache.retirement_vehicle;
+}
+
+async function saveProfile() {
+  if (!window._fbProfileRef || !window._fbSetRaw) { showToast('Sync not ready yet -- try again in a moment'); return; }
+  const filing_status = document.getElementById('profFilingStatus').value;
+  const prior_year_tax_liability = Number(document.getElementById('profPriorYearTax').value) || undefined;
+  const prior_year_agi_over_150k = document.getElementById('profAgiOver150k').checked;
+  const retirement_vehicle = document.getElementById('profRetirementVehicle').value;
+  await window._fbSetRaw(window._fbProfileRef, { filing_status, prior_year_tax_liability, prior_year_agi_over_150k, retirement_vehicle });
+  showToast('Profile saved');
+}
 
 function initFinanceSync() {
   if (!window._fbIncomeRef || !window._fbOnValueRaw) return;
