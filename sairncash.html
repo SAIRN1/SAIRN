@@ -713,6 +713,7 @@ function switchView(v) {
   document.getElementById('view-' + v).classList.add('active');
   document.getElementById('tab-' + v).classList.add('active');
   if (v === 'assistant') setTimeout(() => document.getElementById('inp').focus(), 50);
+  if (v === 'estimator') renderEstimator();
 }
 
 // ── INCOME & DEDUCTIONS ───────────────────────────────────────────
