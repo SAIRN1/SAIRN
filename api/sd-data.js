@@ -87,7 +87,7 @@ const RESOURCES = {
   // promoted columns the EXCLUDE constraints check against -- still
   // listed here since this map only gates "is this a known resource
   // string," not which code path handles it.
-  dnt_settings: true
+  dnt_settings: true, dnt_referrals: true
 };
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
