@@ -41,15 +41,36 @@ module.exports = async (req, res) => {
     const body = req.body || {};
     const slug = body.slug, providerId = body.provider_id, procedureTypeId = body.procedure_type_id;
     const dateFrom = body.date_from, dateTo = body.date_to;
-    if (!slug || !providerId || !procedureTypeId || !dateFrom || !dateTo) {
-      res.status(400).json({ error: { message: 'slug, provider_id, procedure_type_id, date_from, date_to are required' } });
-      return;
-    }
+    if (!slug) { res.status(400).json({ error: { message: 'slug is required' } }); return; }
 
     const licenseHash = await resolveSlug(slug);
     if (!licenseHash) { res.status(404).json({ error: { code: 'UNKNOWN_SLUG', message: 'Booking link not found' } }); return; }
 
     const headers = supabaseHeaders();
+
+    // Listing mode: {slug} only -- the public page's first real read,
+    // discovering which providers/procedure types it can even offer,
+    // before it knows enough to ask for real slots. Public-safe fields
+    // only (never anything from dnt_patients or dnt_appointments here).
+    if (!providerId || !procedureTypeId || !dateFrom || !dateTo) {
+      const settingsRes = await fetch(rest('dnt_settings?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data&limit=1'), { headers });
+      const settingsRows = settingsRes.ok ? await settingsRes.json() : [];
+      const settings = (settingsRows && settingsRows[0] && settingsRows[0].data) || {};
+      const bookableIds = settings.publicly_bookable_procedure_type_ids || [];
+
+      const provRes = await fetch(rest('dnt_providers?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data'), { headers });
+      const provRows = provRes.ok ? await provRes.json() : [];
+      const providersOut = (provRows || []).map((x) => x.data).map((p) => ({ id: p.id, name: p.name, role: p.role }));
+
+      const allProcRes = await fetch(rest('dnt_procedure_types?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data'), { headers });
+      const allProcRows = allProcRes.ok ? await allProcRes.json() : [];
+      const proceduresOut = (allProcRows || []).map((x) => x.data)
+        .filter((p) => bookableIds.indexOf(p.id) !== -1)
+        .map((p) => ({ id: p.id, code: p.code, description: p.description, default_length_minutes: p.default_length_minutes }));
+
+      res.status(200).json({ ok: true, providers: providersOut, procedure_types: proceduresOut, timezone: settings.timezone || '' });
+      return;
+    }
 
     const hoursRes = await fetch(rest('dnt_provider_hours?license_hash=eq.' + encodeURIComponent(licenseHash) + '&provider_id=eq.' + encodeURIComponent(providerId) + '&select=data'), { headers });
     const hoursRows = hoursRes.ok ? await hoursRes.json() : [];
