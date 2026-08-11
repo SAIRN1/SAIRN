@@ -1823,8 +1823,31 @@ module.exports = async (req, res) => {
           updated_at: nowISO()
         })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.' } }); return; }
-      if (r.status === 409) { res.status(409).json({ error: { code: 'SLOT_TAKEN', message: 'This time slot conflicts with an existing appointment for this provider or operatory.' } }); return; }
+      // 2026-08-11 fix: a bare `r.status === 400` used to be classified as
+      // NOT_PROVISIONED unconditionally -- wrong, and it masked a real bug
+      // (found live: an exclusion_violation from the EXCLUDE constraints
+      // was itself coming back as 400, not 409, and got silently
+      // mislabeled as "tables not set up" instead of the real conflict).
+      // Read the real body first and only call it NOT_PROVISIONED if the
+      // message actually says so -- otherwise log and surface the real
+      // error via upstream().
+      if (r.status === 404) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 409 || r.status === 400) {
+        const bodyText = await r.text();
+        let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
+        const msg = (bodyJson && (bodyJson.message || bodyJson.details || bodyJson.hint)) || bodyText || '';
+        if (/relation .* does not exist|does not exist/i.test(msg) && r.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.' } });
+          return;
+        }
+        if (/exclusion|dntap_no_provider_overlap|dntap_no_operatory_overlap|duplicate key|unique constraint/i.test(msg)) {
+          res.status(409).json({ error: { code: 'SLOT_TAKEN', message: 'This time slot conflicts with an existing appointment for this provider or operatory.' } });
+          return;
+        }
+        console.error('dnt_appointments write error (status ' + r.status + '):', msg);
+        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        return;
+      }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
