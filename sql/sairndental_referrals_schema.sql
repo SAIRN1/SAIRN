@@ -14,3 +14,12 @@ create table if not exists public.dnt_referrals (
   unique (license_hash, referral_id), constraint dntrf_data_size check (octet_length(data::text) <= 65536)
 );
 create index if not exists idx_dntrf_license on public.dnt_referrals(license_hash);
+
+-- ── RLS: service-role only, matching sql/sairndental_data_schema.sql's
+-- established pattern for every other dnt_* table (that file's own RLS
+-- block predates this table, so it isn't covered there — this closes
+-- the gap for dnt_referrals specifically). ──
+alter table public.dnt_referrals enable row level security;
+drop policy if exists "svc only dnt_referrals" on public.dnt_referrals;
+create policy "svc only dnt_referrals" on public.dnt_referrals for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+grant select, insert, update, delete on public.dnt_referrals to service_role;
