@@ -1166,6 +1166,34 @@ function rDash(){
   $('k-coverage').textContent=coverageRules().length;
 }
 
+// ── REAL SERVER SYNC (2026-08-11) ────────────────────────────────────
+// This app previously had zero 'read' actions anywhere -- every panel
+// rendered only from this device's own localStorage, so anything written
+// from a different device (critically, a self-scheduled booking from
+// sairndental-book.html, which always runs in a different, unauthenticated
+// browser) was permanently invisible to staff. Confirmed live before this
+// fix: a fresh session showed 0 patients/providers/etc. and "No pending
+// requests" despite the server holding real data for all of it. Same
+// pattern as sairngrounds.html's grdMergeById()/grdSyncFromServer()
+// (2026-08-06 fix for the identical bug there) -- reused deliberately,
+// not reinvented. See docs/superpowers/specs/2026-08-11-sairndental-real-sync-design.md.
+//
+// Known, accepted limitation (same as the sairngrounds precedent): no
+// delete-tombstones -- a record removed locally via removePatient()/
+// removeProcedureType() can reappear on the next sync, since the server
+// still has it and this merge has no way to know it was deliberately
+// removed. Disclosed to staff via the updated toast text (Task 4), not
+// silently hidden. Real tombstoned deletes are separate, larger,
+// deferred work.
+function dntMergeById(local, serverArr){
+  var merged=local.slice();
+  serverArr.forEach(function(sr){
+    var idx=merged.findIndex(function(m){return m&&sr&&m.id!=null&&m.id===sr.id;});
+    if(idx>=0)merged[idx]=sr;else merged.push(sr);
+  });
+  return merged;
+}
+
 function init(){
   rDash();
   fillDentalSelects();
