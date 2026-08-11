@@ -3,6 +3,34 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNdental per-patient photo history panel
+
+**Logged:** 2026-08-11
+
+**What:** A real, standalone panel showing every photo on file for a
+given patient as an ongoing visual record — independent of any single
+appointment or booking request, something staff would open and browse
+on its own (e.g. tracking how a condition has visually changed over
+multiple visits), not just a thumbnail attached to one Pending Requests
+row.
+
+**Why deferred:** Surfaced while designing the guided photo-capture
+feature for the public booking flow
+(`docs/superpowers/specs/2026-08-11-sairndental-photo-capture-design.md`).
+That feature deliberately scopes photos to a single booking request,
+reviewed once via a thumbnail in the existing Pending Requests panel —
+correct and sufficient for that pass, but a genuine per-patient photo
+history is a bigger, independently valuable feature (its own data
+model question: photos keyed to `patient_id` directly rather than
+living inside one appointment's record, likely its own resource/table)
+that shouldn't be folded into the booking-time feature silently.
+
+**Done looks like:** A new panel (or section of the Patients panel)
+that lists every photo ever captured for a selected patient, across
+every appointment/booking, in one browsable view — not scattered across
+individual appointment records with no aggregate way to see them
+together.
+
 ## SAIRNbiz AP "Pay" button doesn't actually mark anything paid
 
 **Logged:** 2026-08-10
