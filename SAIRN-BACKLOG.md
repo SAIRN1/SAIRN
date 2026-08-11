@@ -3,6 +3,83 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNdental's new real-sync sweep can silently exhaust localStorage once photo-bearing bookings accumulate
+
+**Logged:** 2026-08-11
+
+**What:** Found during the final whole-branch review of the real
+read/sync feature
+(`docs/superpowers/plans/2026-08-11-sairndental-real-sync.md`).
+`dntSyncFromServer()` pulls **all** `dnt_appointments` with no status
+filter, date range, or limit. Self-scheduled appointments can carry up
+to 3 photos as base64 data URLs (the guided photo-capture feature,
+`~300KB` client-compressed each, `1.2MB` combined server cap —
+`api/_lib/dental-photo-validation.js:13`). That's roughly 900KB per
+photo-carrying booking, doubled again by localStorage's UTF-16 string
+storage in practice — against a `~5MB` per-origin quota **shared with
+every other SAIRN app on `sairn.vercel.app`** (StoneDesk already stores
+slab photos in the same origin). A handful of photo-bearing bookings can
+exhaust it. The failure is silent and self-reinforcing: `st()`
+(`sairndental.html:482`) swallows `QuotaExceededError` in an empty
+`catch(e){}`, the sync's own `changed` flag still gets set to `true`
+(the local write attempt happened, whether or not it actually persisted
+in memory-vs-disk terms — the render then runs off whatever `ld()`
++actually+ retrieved, which is stale once quota is hit), and the honest
+success/failure toast added in this same feature's post-review fix wave
+only detects a *read* failure, not a *local write* failure — so staff
+still see "Refreshed from server." Once at quota, every other local
+write in the app (`addPatient`, `setAppointmentStatus`) silently stops
+persisting too, not just the sync sweep.
+
+**Why deferred:** A real fix has two independent directions with real
+tradeoffs (don't cache photo blobs locally at all vs. filter which
+appointments the sweep pulls, e.g. by date range or status) that need
+their own design pass, not a squeeze-in fix during a review pass for an
+unrelated feature. Flagged with the real numbers rather than silently
+shipped, per this platform's standing no-silent-failure discipline.
+
+**Done looks like:** Either `st()` (or a wrapper around it) surfaces a
+real, honest signal when a write doesn't actually persist — not just
+swallowed — or the sync sweep and/or local photo storage is redesigned
+to not accumulate unbounded blob data in a quota-limited, cross-app-
+shared storage layer in the first place.
+
+## SAIRN platform-wide: no app clears local data on a license/device re-key, and storage keys aren't license-scoped
+
+**Logged:** 2026-08-11
+
+**What:** Found during the same SAIRNdental real-sync review, but
+confirmed as a platform-wide pattern, not specific to that app. Every
+SAIRN app's login flow (checked: `sairndental.html`'s `gateGo()`,
+`sairnbuild.html`, `sairnlaw.html`, `sairndesign.html`,
+`sairnlegacy.html`, `sairncode.html`) writes a new license key to
+`localStorage` via a bare `setItem`-style call without ever clearing any
+of that app's `*_list`/`*_obj` data keys first, and none of those data
+keys are scoped by license. Before any app had real read/sync, this only
+meant a re-keyed device retained its own locally-created records
+(stale, but confined to one practice's data). **SAIRNdental's new
+real-sync sweep changes the consequence, not the root cause**: the first
+`init()` under License A now pulls A's entire server-side dataset into
+local storage, and a later login under License B on the same device
+merges B's data on top of it — producing a single local cache mixing
+two different practices' real patient records. For a HIPAA-adjacent app,
+that's real cross-tenant PHI exposure on a shared/re-provisioned device,
+not just stale demo clutter.
+
+**Why deferred:** This is a root-cause platform architecture gap (no
+license-scoped storage keys, no clear-on-relogin step) shared by all 13
+apps, not something to patch in SAIRNdental alone — a single-app fix
+would be misleading about the actual scope of the problem. Any app that
+adds real sync next (following this same session's precedent) inherits
+the identical exposure the moment it does.
+
+**Done looks like:** A real, platform-wide decision and fix — either
+every app's data keys get license-hash-scoped (e.g. `dnt_patients_list`
+becomes keyed per license, not global to the origin), or every login
+flow does a real clear of the previous license's local data before
+writing the new one. Needs its own design pass given the number of apps
+and existing local keys involved, not an incidental fix.
+
 ## SAIRNdental public-book.js misclassifies a real slot race as a generic 502, not 409 SLOT_TAKEN -- plus an orphaned patient record on that same failure
 
 **Logged:** 2026-08-11
