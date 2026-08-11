@@ -55,6 +55,18 @@ input:focus,select:focus{border-color:var(--p);}
       <div class="fg"><label>Date of Birth</label><input type="date" id="bk-dob"></div>
       <div class="fg"><label>Phone</label><input type="text" id="bk-phone" placeholder="(555) 555-5555"></div>
       <div class="fg"><label>Email (optional)</label><input type="email" id="bk-email"></div>
+      <button class="btn" id="bk-details-continue-btn" onclick="continueToPhotoStep()">Continue</button>
+      <div class="msg" id="bk-details-msg"></div>
+    </div>
+  </div>
+
+  <div id="step-photo" class="step">
+    <div class="card">
+      <div class="msg">Find good lighting, hold the camera steady, and get close to the area of concern. Photos are optional -- you can skip this and still submit your request.</div>
+      <div id="bk-photo-tiles" style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0"></div>
+      <input type="file" id="bk-photo-input" accept="image/*" capture="environment" style="display:none" onchange="onPhotoFileSelected(event)">
+      <button class="btn" id="bk-add-photo-btn" onclick="document.getElementById('bk-photo-input').click()" style="background:#fff;color:var(--pd);border:1px solid var(--p)">+ Add Photo</button>
+      <div class="fg" style="margin-top:16px"><label>Anything you'd like the dentist to know? (optional)</label><textarea id="bk-notes" rows="3" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit"></textarea></div>
       <button class="btn" id="bk-submit-btn" onclick="submitBooking()">Request This Appointment</button>
       <div class="msg" id="bk-submit-msg"></div>
     </div>
@@ -103,6 +115,77 @@ async function init(){
   }
 }
 
+var bkPhotos=[]; // array of compressed data-URL strings, max 3
+
+function continueToPhotoStep(){
+  var name=document.getElementById('bk-name').value.trim();
+  var dob=document.getElementById('bk-dob').value;
+  var phone=document.getElementById('bk-phone').value.trim();
+  var msgEl=document.getElementById('bk-details-msg');
+  if(!name||!dob||!phone){msgEl.textContent='Name, date of birth, and phone are required.';msgEl.className='msg err';return;}
+  msgEl.textContent='';
+  showStep('photo');
+}
+
+function bkCompressOnce(dataUrl,maxDim,quality){
+  return new Promise(function(resolve){
+    var img=new Image();
+    img.onload=function(){
+      var scale=Math.min(1,maxDim/Math.max(img.width,img.height));
+      var w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
+      var canvas=document.createElement('canvas');
+      canvas.width=w;canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=function(){resolve(dataUrl);};
+    img.src=dataUrl;
+  });
+}
+// Budget ~300KB base64-string length (design spec §0/§2) -- a more
+// generous ladder than StoneDesk's stone-photo uploader since dental
+// photos need to stay genuinely useful for a dentist's real review, and
+// this endpoint isn't bound by api/sd-data.js's 64KB payload check.
+// Canvas re-encoding (drawImage + toDataURL) mechanically drops all
+// original EXIF/GPS metadata as a side effect -- verified explicitly in
+// Task 5, not just assumed.
+async function bkCompressUnderBudget(dataUrl,budgetBytes){
+  var attempts=[[1400,0.75],[1100,0.68],[900,0.6],[700,0.5],[550,0.4],[420,0.32]];
+  var out=dataUrl;
+  for(var i=0;i<attempts.length;i++){
+    out=await bkCompressOnce(dataUrl,attempts[i][0],attempts[i][1]);
+    var b64Len=out.length-(out.indexOf(',')+1);
+    if(b64Len<=budgetBytes)return out;
+  }
+  return out; // best effort -- server-side size check (Task 2) is the real backstop
+}
+
+function renderPhotoTiles(){
+  var el=document.getElementById('bk-photo-tiles');
+  el.innerHTML=bkPhotos.map(function(dataUrl,i){
+    return '<div style="position:relative"><img src="'+dataUrl+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--border)" onclick="window.open(this.src)">'+
+      '<button onclick="removeBkPhoto('+i+')" style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;border:none;background:var(--danger);color:#fff;font-size:12px;cursor:pointer">&times;</button></div>';
+  }).join('');
+  document.getElementById('bk-add-photo-btn').style.display=bkPhotos.length>=3?'none':'block';
+}
+function removeBkPhoto(i){bkPhotos.splice(i,1);renderPhotoTiles();}
+
+async function onPhotoFileSelected(event){
+  var file=event.target.files[0];
+  event.target.value='';
+  if(!file)return;
+  var msgEl=document.getElementById('bk-submit-msg');
+  if(file.type.indexOf('image/')!==0){msgEl.textContent="That doesn't look like an image -- try again.";msgEl.className='msg err';return;}
+  msgEl.textContent='';
+  var reader=new FileReader();
+  reader.onload=async function(e){
+    var compressed=await bkCompressUnderBudget(e.target.result,300*1024);
+    bkPhotos.push(compressed);
+    renderPhotoTiles();
+  };
+  reader.readAsDataURL(file);
+}
+
 function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML;}
 
 async function onProviderOrProcedureChange(){
@@ -144,6 +227,7 @@ async function submitBooking(){
   var dob=document.getElementById('bk-dob').value;
   var phone=document.getElementById('bk-phone').value.trim();
   var email=document.getElementById('bk-email').value.trim();
+  var notes=document.getElementById('bk-notes').value.trim();
   var msgEl=document.getElementById('bk-submit-msg');
   if(!name||!dob||!phone){msgEl.textContent='Name, date of birth, and phone are required.';msgEl.className='msg err';return;}
   if(!pickedSlot){msgEl.textContent='Select a time first.';msgEl.className='msg err';return;}
@@ -152,7 +236,8 @@ async function submitBooking(){
   try{
     var res=await fetch(BOOK_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       slug:slug,patient:{name:name,dob:dob,phone:phone,email:email},
-      provider_id:pickedProvider,procedure_type_id:pickedProcedure,start_time:pickedSlot.start_time
+      provider_id:pickedProvider,procedure_type_id:pickedProcedure,start_time:pickedSlot.start_time,
+      photos:bkPhotos,patient_notes:notes
     })});
     var data=await res.json();
     if(!res.ok||!data.ok){
