@@ -657,7 +657,7 @@ function removePatient(id){
   // the real fields. Removing here only removes it from this device.
   var list=patients().filter(function(p){return p.id!==id;});
   st('dnt_patients_list',list);rPatients();
-  toast('Patient removed on this device');
+  toast('Patient removed on this device -- may reappear if server data syncs again');
 }
 
 // ── PROVIDERS ─────────────────────────────────────────────────────
@@ -771,7 +771,7 @@ function removeProcedureType(id){
   // Local-only -- see removePatient()'s comment for why.
   var list=procedureTypes().filter(function(p){return p.id!==id;});
   st('dnt_procedures_list',list);rProcedures();
-  toast('Procedure type removed on this device');
+  toast('Procedure type removed on this device -- may reappear if server data syncs again');
 }
 
 // ── COVERAGE RULES ────────────────────────────────────────────────
