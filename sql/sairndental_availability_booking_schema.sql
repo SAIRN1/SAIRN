@@ -24,7 +24,7 @@
 -- SEARCH PATH: Supabase's dashboard installs extensions into a
 -- dedicated "extensions" schema by default, not "public" -- confirmed
 -- by the dashboard's own report above. The EXCLUDE constraints below
--- use btree_gist's gist operator support for text (=) and tsrange
+-- use btree_gist's gist operator support for text (=) and tstzrange
 -- (&&), which must be resolvable via the search_path at constraint-
 -- creation time. Set explicitly rather than assumed, since the
 -- default search_path for the SQL editor's role may not include a
@@ -84,12 +84,12 @@ alter table public.dnt_appointments
   add constraint dntap_no_provider_overlap
     exclude using gist (
       license_hash with =, provider_id with =,
-      tsrange(start_time, end_time) with &&
+      tstzrange(start_time, end_time) with &&
     ) where (status in ('Pending','Confirmed')),
   add constraint dntap_no_operatory_overlap
     exclude using gist (
       license_hash with =, operatory_id with =,
-      tsrange(start_time, end_time) with &&
+      tstzrange(start_time, end_time) with &&
     ) where (status in ('Pending','Confirmed'));
 
 -- dnt_booking_rate_limits: real, new -- first rate-limiter on this

@@ -145,12 +145,12 @@ alter table public.dnt_appointments
   add constraint dntap_no_provider_overlap
     exclude using gist (
       license_hash with =, provider_id with =,
-      tsrange(start_time, end_time) with &&
+      tstzrange(start_time, end_time) with &&
     ) where (status in ('Pending','Confirmed')),
   add constraint dntap_no_operatory_overlap
     exclude using gist (
       license_hash with =, operatory_id with =,
-      tsrange(start_time, end_time) with &&
+      tstzrange(start_time, end_time) with &&
     ) where (status in ('Pending','Confirmed'));
 ```
 
