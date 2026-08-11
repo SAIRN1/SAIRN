@@ -1,5 +1,5 @@
 {
-  "buildCommand": "mkdir -p dist && for f in stonedesk sairnbiz sairncode sairnvet sairnbuild sairnscape sairngrounds sairndesign sairnlegacy sairnlaw sairncash; do cp $f.html dist/$f.html; done && cp stonedesk.html dist/index.html && cp sw.js dist/sw.js",
+  "buildCommand": "mkdir -p dist && for f in stonedesk sairnbiz sairncode sairnvet sairnbuild sairnscape sairngrounds sairndesign sairnlegacy sairnlaw sairncash sairndental; do cp $f.html dist/$f.html; done && cp stonedesk.html dist/index.html && cp sw.js dist/sw.js",
   "outputDirectory": "dist",
   "routes": [
     {
@@ -45,6 +45,10 @@
     {
       "src": "/sairncash$",
       "dest": "/sairncash.html"
+    },
+    {
+      "src": "/sairndental$",
+      "dest": "/sairndental.html"
     }
   ]
 }

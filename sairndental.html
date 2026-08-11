@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNdental - Dental Practice Operations</title>
+<style>
+:root{--p:#0EA5E9;--pd:#0284C7;--pt:#E0F2FE;--pb:#BAE6FD;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;transition:border .2s;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* PIN */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+/* TRIAL GATE -- same proven pattern as every other SAIRN app's checkTrialGate() */
+#trial-expired-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9999;}
+#trial-expired-screen.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
+.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s;}
+.pdot.on{background:var(--p);border-color:var(--p);}
+.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;}
+.pkey:hover{background:var(--pt);border-color:var(--p);}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+/* SIDEBAR */
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;transition:all .15s;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+/* MAIN */
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--p);}
+.bs{padding:6px 12px;font-size:12px;}
+/* KPIs */
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+/* FORMS */
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;transition:border .2s;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--p);}
+textarea{resize:vertical;min-height:80px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+label.chk{display:flex;align-items:center;gap:8px;text-transform:none;font-weight:500;color:var(--text);font-size:13px;}
+label.chk input{width:auto;}
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+/* MODAL */
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+.navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+#scrim.on{display:block;}
+
+/* INSURANCE CAPTURE (Task 5) */
+.icap-drop{border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .15s;}
+.icap-drop:hover{border-color:var(--p);background:var(--pt);}
+.icap-preview{max-width:280px;max-height:180px;border-radius:8px;margin:12px auto;display:block;box-shadow:var(--sh);}
+
+@media (max-width:768px){
+  .navtog{display:flex;align-items:center;justify-content:center;}
+  aside{position:fixed;top:56px;left:0;bottom:0;width:250px;z-index:50;
+        transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);}
+  aside.on{transform:translateX(0);}
+  main{padding:14px;}
+  header{padding:0 12px;gap:10px;}
+  .hlogo{font-size:17px;}
+  .hbadge{display:none;}
+  .huser{display:none;}
+  .hbtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
+  .sb{min-height:44px;font-size:14px;}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  .btn.bs{min-height:40px;}
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .kval{font-size:20px;}
+  .g2{grid-template-columns:1fr;}
+  .fr{grid-template-columns:1fr;}
+  .sbar{flex-wrap:wrap;}
+  .sbar input,.sbar select{width:100%!important;flex:1 1 100%;}
+  .ph{gap:8px;}
+  .ptitle{font-size:19px;}
+  .pa{margin-left:0;width:100%;}
+  .mbox{width:94%;padding:20px;}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media (max-width:420px){
+  .krow{grid-template-columns:1fr 1fr;}
+}
+@media print{
+  #gate,#pin,aside,header .hr,.pa,.navtog,#scrim{display:none!important;}
+  main{padding:0;}
+  .panel{display:block!important;}
+  body{font-size:12px;}
+  .card{box-shadow:none;border:1px solid #ddd;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNdental</div>
+    <div class="gsub">Dental Practice Operations &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="DNT-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNdental</div>
+    <div class="prole">Enter your 4-digit PIN</div>
+    <div class="pdots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
+    <div class="ppad">
+      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
+      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
+      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
+      <button class="pkey" onclick="pk('C')">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')">&larr;</button>
+    </div>
+    <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="trial-expired-screen">
+  <div class="gbox">
+    <div style="font-size:36px;margin-bottom:10px">&#9203;</div>
+    <div class="glogo" style="font-size:20px">Your 30-day trial has ended</div>
+    <div class="gsub" style="margin-bottom:20px">
+      Thanks for trying SAIRNdental. Your trial started on <strong id="trial-start-display">&mdash;</strong>
+      and access to the full app is now paused. Email us to unlock unlimited access &mdash; no data has been lost.
+    </div>
+    <a class="gbtn" style="display:block;text-decoration:none;box-sizing:border-box" href="mailto:michael@sairn.com?subject=SAIRNdental%20trial%20upgrade">Email michael@sairn.com to Upgrade</a>
+    <div style="font-size:11px;color:var(--muted);margin-top:14px">Your trial data is safe and will be here when you upgrade.</div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="aside">&#9776;</button>
+    <div class="hlogo">SAIRNdental</div>
+    <div class="hbadge">Dental Practice Ops</div>
+    <div class="hr">
+      <span class="huser" id="huser">Owner</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div id="scrim" onclick="closeNav()"></div>
+  <div class="wrap">
+    <aside id="aside" aria-label="Main navigation">
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <div class="ss">Patients</div>
+      <button class="sb" id="sb-patients" onclick="nav('patients')"><span class="sico">&#129502;</span>Patients</button>
+      <button class="sb" id="sb-icap" onclick="nav('icap')"><span class="sico">&#128248;</span>Insurance Capture</button>
+      <div class="ss">Practice Setup</div>
+      <button class="sb" id="sb-providers" onclick="nav('providers')"><span class="sico">&#129658;</span>Providers</button>
+      <button class="sb" id="sb-operatories" onclick="nav('operatories')"><span class="sico">&#127973;</span>Operatories</button>
+      <button class="sb" id="sb-hours" onclick="nav('hours')"><span class="sico">&#128337;</span>Provider Hours</button>
+      <button class="sb" id="sb-procedures" onclick="nav('procedures')"><span class="sico">&#128220;</span>Procedure Types</button>
+      <button class="sb" id="sb-coverage" onclick="nav('coverage')"><span class="sico">&#128179;</span>Coverage Rules</button>
+      <div class="sfoot">SAIRNdental &copy; 2026</div>
+    </aside>
+    <main>
+
+      <div class="panel on" id="panel-dashboard">
+        <div class="ph"><div><div class="ptitle">Dashboard</div><div class="psub">Practice overview</div></div></div>
+        <div class="krow">
+          <div class="kpi"><div class="klbl">Patients</div><div class="kval" id="k-patients">0</div><div class="kt">On file</div></div>
+          <div class="kpi"><div class="klbl">Providers</div><div class="kval" id="k-providers">0</div><div class="kt">Active</div></div>
+          <div class="kpi"><div class="klbl">Procedure Types</div><div class="kval" id="k-procedures">0</div><div class="kt">Defined</div></div>
+          <div class="kpi"><div class="klbl">Coverage Rules</div><div class="kval" id="k-coverage">0</div><div class="kt">Defined</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Getting started</div></div><div class="cb">
+          <p style="color:var(--muted);font-size:13px;line-height:1.7">This is SAIRNdental's foundation: patient records, providers, operatories, provider hours, procedure types, and coverage rules. Real-time checkout balance, self-scheduling, automated reminders, and denial/A/R/revenue reporting are built on top of this foundation in separate follow-up work.</p>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-patients">
+        <div class="ph"><div><div class="ptitle">Patients</div><div class="psub">Patient records and insurance on file</div></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-patients','patients')">Export CSV</button></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Add Patient</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Name</label><input type="text" id="pt-add-name" placeholder="Full name"></div>
+            <div class="fg"><label>Date of Birth</label><input type="date" id="pt-add-dob"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Phone</label><input type="text" id="pt-add-phone" placeholder="(555) 555-5555"></div>
+            <div class="fg"><label>Email</label><input type="email" id="pt-add-email" placeholder="patient@example.com"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Insurance Payer</label><input type="text" id="pt-add-payer" placeholder="e.g. Delta Dental"></div>
+            <div class="fg"><label>Member ID</label><input type="text" id="pt-add-memberid" placeholder="Member ID"></div>
+          </div>
+          <button class="btn bp" onclick="addPatient()">Add Patient</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
+          <table id="patients-table"><thead><tr><th>Name</th><th>DOB</th><th>Phone</th><th>Payer</th><th>Member ID</th><th></th></tr></thead><tbody id="patients-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-icap">
+        <div class="ph"><div><div class="ptitle">Insurance Capture</div><div class="psub">Photograph a patient's insurance card &mdash; Claude extracts the details, you review before saving</div></div></div>
+        <div class="card"><div class="cb">
+          <div class="fg"><label>Patient</label><select id="icap-patient"></select></div>
+          <div class="icap-drop" onclick="document.getElementById('icap-file').click()">
+            <div style="font-size:28px;margin-bottom:6px">&#128248;</div>
+            <div style="font-weight:600;color:var(--pd)">Tap to photograph insurance card</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Front of card, well-lit</div>
+            <input type="file" id="icap-file" accept="image/*" capture="environment" style="display:none" onchange="icapHandleFile(event)">
+          </div>
+          <img id="icap-preview" class="icap-preview" style="display:none">
+          <div id="icap-status" style="font-size:13px;color:var(--muted);text-align:center;margin-top:10px"></div>
+          <div id="icap-review" style="display:none;margin-top:16px">
+            <div class="fr">
+              <div class="fg"><label>Payer</label><input type="text" id="icap-out-payer"></div>
+              <div class="fg"><label>Member ID</label><input type="text" id="icap-out-memberid"></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><label>Group Number</label><input type="text" id="icap-out-group"></div>
+              <div class="fg"><label>Plan Type</label><input type="text" id="icap-out-plantype"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Review every field above &mdash; Claude's reading of the card, not verified against the payer. Edit anything before saving.</div>
+            <button class="btn bp" onclick="icapSaveToPatient()">Save to Patient Record</button>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-providers">
+        <div class="ph"><div><div class="ptitle">Providers</div><div class="psub">Dentists and hygienists</div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Add Provider</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Name</label><input type="text" id="pv-add-name" placeholder="Dr. Jane Smith"></div>
+            <div class="fg"><label>Role</label><select id="pv-add-role"><option>Dentist</option><option>Hygienist</option></select></div>
+          </div>
+          <div class="fg"><label>Default Operatory</label><select id="pv-add-operatory"></select></div>
+          <button class="btn bp" onclick="addProvider()">Add Provider</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
+          <table id="providers-table"><thead><tr><th>Name</th><th>Role</th><th>Operatory</th><th></th></tr></thead><tbody id="providers-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-operatories">
+        <div class="ph"><div><div class="ptitle">Operatories</div><div class="psub">Physical chairs/rooms being scheduled against</div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Add Operatory</div></div><div class="cb">
+          <div class="fg"><label>Name</label><input type="text" id="op-add-name" placeholder="e.g. Operatory 1"></div>
+          <button class="btn bp" onclick="addOperatory()">Add Operatory</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
+          <table id="operatories-table"><thead><tr><th>Name</th><th></th></tr></thead><tbody id="operatories-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-hours">
+        <div class="ph"><div><div class="ptitle">Provider Hours</div><div class="psub">Real recurring weekly availability &mdash; feeds the scheduling engine (separate follow-up build)</div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Add Hours Block</div></div><div class="cb">
+          <div class="fg"><label>Provider</label><select id="ph-add-provider"></select></div>
+          <div class="fr">
+            <div class="fg"><label>Day of Week</label><select id="ph-add-day"><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select></div>
+            <div class="fg"><label>Start Time</label><input type="time" id="ph-add-start"></div>
+            <div class="fg"><label>End Time</label><input type="time" id="ph-add-end"></div>
+          </div>
+          <button class="btn bp" onclick="addProviderHours()">Add Hours Block</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
+          <table id="hours-table"><thead><tr><th>Provider</th><th>Day</th><th>Start</th><th>End</th><th></th></tr></thead><tbody id="hours-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-procedures">
+        <div class="ph"><div><div class="ptitle">Procedure Types</div><div class="psub">Your practice's own procedure list &mdash; code, description, fee, and default length. Not a bundled CDT code library (real ADA copyright constraint) &mdash; enter your practice's actual codes and fees below.</div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Add Procedure Type</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>CDT Code</label><input type="text" id="pc-add-code" placeholder="e.g. D0120"></div>
+            <div class="fg"><label>Description</label><input type="text" id="pc-add-desc" placeholder="e.g. Periodic oral evaluation"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Default Fee</label><input type="number" id="pc-add-fee" placeholder="0.00" min="0" step="0.01"></div>
+            <div class="fg"><label>Default Length (minutes)</label><input type="number" id="pc-add-length" placeholder="30" min="1"></div>
+          </div>
+          <button class="btn bp" onclick="addProcedureType()">Add Procedure Type</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
+          <table id="procedures-table"><thead><tr><th>Code</th><th>Description</th><th>Fee</th><th>Length</th><th></th></tr></thead><tbody id="procedures-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-coverage">
+        <div class="ph"><div><div class="ptitle">Coverage Rules</div><div class="psub">Payer + procedure-type coverage estimates &mdash; feeds the checkout-balance engine (separate follow-up build). Estimates only, not verified per-plan figures.</div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Add Coverage Rule</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Payer</label><input type="text" id="cv-add-payer" placeholder="e.g. Delta Dental"></div>
+            <div class="fg"><label>Procedure Type</label><select id="cv-add-procedure"></select></div>
+          </div>
+          <div class="fg"><label>Coverage Percent</label><input type="number" id="cv-add-percent" placeholder="80" min="0" max="100"></div>
+          <button class="btn bp" onclick="addCoverageRule()">Add Coverage Rule</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
+          <table id="coverage-table"><thead><tr><th>Payer</th><th>Procedure Type</th><th>Coverage %</th><th></th></tr></thead><tbody id="coverage-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairndental';
+var PROXY='https://sairn.vercel.app/api/claude';
+var DATA_API='https://sairn.vercel.app/api/sd-data';
+
+function dntAiError(data){
+  if(!data||!data.error) return null;
+  if(data.error==='demo_limit'||(typeof data.error==='string'&&data.error.indexOf('limit')!==-1)){
+    return 'Demo limit reached for today -- try again tomorrow or contact michael@sairn.com for a license.';
+  }
+  if(data.error&&data.error.message) return data.error.message;
+  return typeof data.error==='string'?data.error:'AI request failed';
+}
+
+function dntLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
+// validation is server-side in api/_lib/license.js against license_keys.
+var VALID=['DNT-','DEMO-','SAIRN-'];
+var DEFAULT_PINS={owner:'1234',frontdesk:'2345',provider:'3456'};
+var PINS=ld('dnt_pins',null)||DEFAULT_PINS;
+
+var pbuf='',prole='owner';
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
+
+function dntLicenseKey(){ return localStorage.getItem('dnt_license_key') || ''; }
+
+// sdnData()-equivalent, matches every other app's pattern exactly.
+function sdnData(action,resource,payload){
+  var lic=dntLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  return fetch(DATA_API,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      return d.data;
+    });
+  }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
+}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key format. Try DNT-PINNACLE-2026';return;}
+  localStorage.setItem('dnt_license_key',k);
+  $('gate').style.display='none';$('pin').classList.add('on');
+}
+function pk(k){$('perr').textContent='';
+  if(k==='C'){pbuf='';dots();return;}
+  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
+  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+}
+function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+// 30-day trial gate, keyed off a real timestamp written on first-ever
+// login (never a fabricated countdown). Same proven pattern as every
+// other SAIRN app's checkTrialGate().
+function checkTrialGate(){
+  var TRIAL_KEY='dnt_trial_start';
+  var TRIAL_DAYS=30;
+  var startMs=parseInt(localStorage.getItem(TRIAL_KEY),10);
+  if(!startMs||isNaN(startMs)){
+    startMs=Date.now();
+    try{localStorage.setItem(TRIAL_KEY,String(startMs));}catch(e){}
+  }
+  var daysElapsed=Math.floor((Date.now()-startMs)/86400000);
+  if(daysElapsed<TRIAL_DAYS)return true;
+  var scr=$('trial-expired-screen');
+  if(scr){
+    scr.classList.add('on');
+    var dEl=$('trial-start-display');
+    if(dEl)dEl.textContent=new Date(startMs).toLocaleDateString();
+  }
+  $('pin').classList.remove('on');
+  return false;
+}
+window.checkTrialGate=checkTrialGate;
+
+function chkPin(){
+  var match=null;
+  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
+  if(match){
+    prole=match;st('dnt_role',prole);
+    if(!checkTrialGate())return;
+    $('pin').classList.remove('on');$('app').classList.add('on');
+    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
+    init();
+  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+}
+function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+function toggleNav(){
+  var a=$('aside');if(!a)return;
+  var open=a.classList.toggle('on');
+  $('scrim').classList.toggle('on',open);
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded',open?'true':'false');
+}
+function closeNav(){
+  var a=$('aside');if(a)a.classList.remove('on');
+  $('scrim').classList.remove('on');
+  var t=$('navtog');if(t)t.setAttribute('aria-expanded','false');
+}
+
+function nav(id){
+  closeNav();
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='dashboard')rDash();
+  if(id==='patients')rPatients();
+  if(id==='icap')rIcap();
+  if(id==='providers')rProviders();
+  if(id==='operatories')rOperatories();
+  if(id==='hours')rHours();
+  if(id==='procedures')rProcedures();
+  if(id==='coverage')rCoverage();
+}
+
+function exportPanelCSV(panelId,name){
+  var panelEl=$(panelId);if(!panelEl)return;
+  var csv='';
+  function csvField(s){s=String(s==null?'':s);if(/[",\n]/.test(s))return '"'+s.replace(/"/g,'""')+'"';return s;}
+  panelEl.querySelectorAll('table').forEach(function(table){
+    table.querySelectorAll('tr').forEach(function(row){
+      var cells=row.querySelectorAll('th,td');
+      var line=Array.from(cells).map(function(c){return csvField(c.textContent);}).join(',');
+      csv+=line+'\n';
+    });
+  });
+  var blob=new Blob([csv],{type:'text/csv'});
+  var url=window.URL.createObjectURL(blob);
+  var link=document.createElement('a');
+  link.href=url;link.download='sairndental-'+name+'-'+dntLocalToday()+'.csv';link.click();
+  window.URL.revokeObjectURL(url);
+  toast('CSV exported: '+name);
+}
+
+function rDash(){
+  $('k-patients').textContent=patients().length;
+  $('k-providers').textContent=providers().length;
+  $('k-procedures').textContent=procedureTypes().length;
+  $('k-coverage').textContent=coverageRules().length;
+}
+
+function init(){
+  rDash();
+}
+</script>
+</body>
+</html>
