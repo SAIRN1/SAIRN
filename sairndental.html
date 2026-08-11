@@ -228,6 +228,9 @@ label.chk input{width:auto;}
       <div class="ss">Scheduling</div>
       <button class="sb" id="sb-booking-settings" onclick="nav('booking-settings')"><span class="sico">&#128279;</span>Booking Settings</button>
       <button class="sb" id="sb-pending" onclick="nav('pending')"><span class="sico">&#128203;</span>Pending Requests</button>
+      <button class="sb" id="sb-appointments" onclick="nav('appointments')"><span class="sico">&#128197;</span>Appointments</button>
+      <div class="ss">Billing</div>
+      <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128176;</span>Billing</button>
       <div class="sfoot">SAIRNdental &copy; 2026</div>
     </aside>
     <main>
@@ -389,6 +392,55 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
+      <div class="panel" id="panel-appointments">
+        <div class="ph"><div><div class="ptitle">Appointments</div><div class="psub">Confirmed appointments &mdash; mark a visit complete to generate its charge.</div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Confirmed</div></div><div class="cb" style="padding:0">
+          <table id="appointments-table"><thead><tr><th>Patient</th><th>Provider</th><th>Time</th><th>Procedure</th><th></th></tr></thead><tbody id="appointments-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-billing">
+        <div class="ph"><div><div class="ptitle">Billing</div><div class="psub">Real-time patient balance &mdash; charges, insurance estimates locked in at entry time, and payments.</div></div></div>
+        <div class="card">
+          <div class="fg"><label>Patient</label><select id="bill-patient" onchange="rBilling()"></select></div>
+        </div>
+        <div class="krow" id="bill-kpis" style="grid-template-columns:repeat(4,1fr)"></div>
+        <div class="card"><div class="ch"><div class="ct">Add Charge</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Procedure Type</label><select id="ch-add-procedure" onchange="onChargeProcedureChange()"></select></div>
+            <div class="fg"><label>Amount</label><input type="number" id="ch-add-amount" min="0" step="0.01"></div>
+          </div>
+          <div class="msg" id="ch-add-coverage-note" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <button class="btn bp" onclick="submitCharge()">Add Charge</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Charges</div></div><div class="cb" style="padding:0">
+          <table id="charges-table"><thead><tr><th>Date</th><th>Procedure</th><th>Amount</th><th>Est. Insurance</th><th>Patient Resp.</th></tr></thead><tbody id="charges-tbody"></tbody></table>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Add Payment</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Amount</label><input type="number" id="pm-add-amount" min="0" step="0.01"></div>
+            <div class="fg"><label>Method</label><select id="pm-add-method"><option>Cash</option><option>Card</option><option>Check</option></select></div>
+          </div>
+          <button class="btn bp" onclick="submitPayment()">Add Payment</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Payments</div></div><div class="cb" style="padding:0">
+          <table id="payments-table"><thead><tr><th>Date</th><th>Amount</th><th>Method</th></tr></thead><tbody id="payments-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="modal" id="completeVisitModal">
+        <div class="mbox">
+          <div class="mtitle">Complete Visit</div>
+          <div class="fg"><label>Procedure</label><input type="text" id="cv-procedure-label" disabled></div>
+          <div class="fg"><label>Amount</label><input type="number" id="cv-amount" min="0" step="0.01"></div>
+          <div class="msg" id="cv-coverage-note" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn bp" onclick="submitCompleteVisit()">Save &amp; Complete Visit</button>
+            <button class="btn bo" onclick="closeCompleteVisitModal()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -524,6 +576,8 @@ function nav(id){
   if(id==='coverage')rCoverage();
   if(id==='booking-settings')rBookingSettings();
   if(id==='pending')rPending();
+  if(id==='appointments')rAppointments();
+  if(id==='billing')rBilling();
 }
 
 function exportPanelCSV(panelId,name){
@@ -814,11 +868,133 @@ async function setAppointmentStatus(id,status){
   if(!a){toast('Appointment not found');return;}
   a.status=status;
   st('dnt_appointments_list',list);rPending();
+  if($('panel-appointments'))rAppointments();
   var syncResult=await sdnData('write','dnt_appointments',a);
   toast(syncResult?('Appointment '+status.toLowerCase()):'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  return a;
 }
 function confirmAppointment(id){setAppointmentStatus(id,'Confirmed');}
 function rejectAppointment(id){setAppointmentStatus(id,'Cancelled');}
+
+// ── APPOINTMENTS + COMPLETE VISIT (2026-08-11) ───────────────────────
+// Distinct from Pending Requests (new-request triage) -- this panel
+// covers the next lifecycle stage: a Confirmed appointment gets
+// completed, which auto-fills (never silently auto-commits) its
+// linked charge from the procedure's default_fee (design spec §0).
+function rAppointments(){
+  var list=appointments().filter(function(a){return a.status==='Confirmed';});
+  var pats=patients(),provs=providers(),procs=procedureTypes();
+  var tbody=$('appointments-tbody');
+  tbody.innerHTML=list.map(function(a){
+    var pt=pats.find(function(x){return x.id===a.patient_id;});
+    var pv=provs.find(function(x){return x.id===a.provider_id;});
+    var pc=procs.find(function(x){return x.id===a.procedure_type_id;});
+    return '<tr><td>'+H(pt?pt.name:'(unknown patient)')+'</td><td>'+H(pv?pv.name:'(unknown provider)')+'</td>'+
+      '<td>'+H(a.start_time?new Date(a.start_time).toLocaleString():'--')+'</td><td>'+H(pc?(pc.cdt_code+' -- '+pc.description):'(unknown procedure)')+'</td>'+
+      '<td><button class="btn bp bs" onclick="openCompleteVisitModal(\''+a.id+'\')">Complete Visit</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No confirmed appointments</td></tr>';
+}
+
+var cvAppointmentId=null;
+function openCompleteVisitModal(appointmentId){
+  var a=appointments().find(function(x){return x.id===appointmentId;});
+  if(!a){toast('Appointment not found');return;}
+  var pc=procedureTypes().find(function(p){return p.id===a.procedure_type_id;});
+  cvAppointmentId=appointmentId;
+  $('cv-procedure-label').value=pc?(pc.cdt_code+' -- '+pc.description):'(unknown procedure)';
+  $('cv-amount').value=pc?pc.default_fee:0;
+  var pt=patients().find(function(x){return x.id===a.patient_id;});
+  var est=pc?computeEstimatedInsurance(pc.default_fee, pt?pt.insurance_payer:'', pc.id):{found:false,amount:0};
+  $('cv-coverage-note').textContent=est.found
+    ? ('Estimated insurance: '+fmt(est.amount)+' (locked in when saved)')
+    : 'No coverage rule on file for this payer/procedure -- showing full amount due.';
+  $('completeVisitModal').classList.add('on');
+}
+function closeCompleteVisitModal(){$('completeVisitModal').classList.remove('on');cvAppointmentId=null;}
+async function submitCompleteVisit(){
+  if(!cvAppointmentId){toast('No appointment selected');return;}
+  var a=appointments().find(function(x){return x.id===cvAppointmentId;});
+  if(!a){toast('Appointment not found');return;}
+  var amount=Number($('cv-amount').value);
+  if(!amount||amount<=0){toast('Enter a real amount');return;}
+  var result=await addChargeEntry(a.patient_id, a.id, a.procedure_type_id, amount);
+  closeCompleteVisitModal();
+  await setAppointmentStatus(a.id,'Completed');
+  toast(result.syncResult?'Visit completed, charge added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3500:5500);
+}
+
+// ── BILLING PANEL (2026-08-11) ────────────────────────────────────
+function rBilling(){
+  var sel=$('bill-patient');
+  var curPatient=sel.value;
+  var pats=patients();
+  sel.innerHTML=pats.length?pats.map(function(p){return '<option value="'+p.id+'">'+H(p.name)+'</option>';}).join(''):'<option value="">Add a patient first</option>';
+  if(curPatient)sel.value=curPatient;
+  var procSel=$('ch-add-procedure');
+  var curProc=procSel.value;
+  var procs=procedureTypes();
+  procSel.innerHTML=procs.length?procs.map(function(p){return '<option value="'+p.id+'">'+H(p.cdt_code)+' -- '+H(p.description)+'</option>';}).join(''):'<option value="">Add a procedure type first</option>';
+  if(curProc)procSel.value=curProc;
+  onChargeProcedureChange();
+
+  var patientId=sel.value;
+  var kpis=$('bill-kpis');
+  if(!patientId){ kpis.innerHTML=''; $('charges-tbody').innerHTML=''; $('payments-tbody').innerHTML=''; return; }
+  var bal=patientBalance(patientId);
+  kpis.innerHTML=
+    '<div class="kpi"><div class="klbl">Total Charges</div><div class="kval">'+fmt(bal.totalCharges)+'</div></div>'+
+    '<div class="kpi"><div class="klbl">Est. Insurance</div><div class="kval">'+fmt(bal.totalEstInsurance)+'</div></div>'+
+    '<div class="kpi"><div class="klbl">Payments</div><div class="kval">'+fmt(bal.totalPayments)+'</div></div>'+
+    '<div class="kpi"><div class="klbl">Balance Due</div><div class="kval" style="color:'+(bal.balanceDue>0?'var(--danger)':'var(--ok)')+'">'+fmt(bal.balanceDue)+'</div></div>';
+
+  var procs2=procedureTypes();
+  var myCharges=charges().filter(function(c){return c.patient_id===patientId;});
+  $('charges-tbody').innerHTML=myCharges.map(function(c){
+    var pc=procs2.find(function(p){return p.id===c.procedure_type_id;});
+    var resp=(Number(c.amount)||0)-(Number(c.estimated_insurance_portion)||0);
+    return '<tr><td>'+H(c.date)+'</td><td>'+H(pc?(pc.cdt_code+' -- '+pc.description):'(unknown)')+'</td><td>'+fmt(c.amount)+'</td><td>'+fmt(c.estimated_insurance_portion)+'</td><td>'+fmt(resp)+'</td></tr>';
+  }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No charges yet</td></tr>';
+
+  var myPayments=payments().filter(function(p){return p.patient_id===patientId;});
+  $('payments-tbody').innerHTML=myPayments.map(function(p){
+    return '<tr><td>'+H(p.date)+'</td><td>'+fmt(p.amount)+'</td><td>'+H(p.method)+'</td></tr>';
+  }).join('')||'<tr><td colspan="3" style="color:var(--muted);text-align:center">No payments yet</td></tr>';
+}
+function onChargeProcedureChange(){
+  var procId=$('ch-add-procedure').value;
+  var pc=procedureTypes().find(function(p){return p.id===procId;});
+  if(pc)$('ch-add-amount').value=pc.default_fee;
+  var patientId=$('bill-patient').value;
+  var pt=patients().find(function(p){return p.id===patientId;});
+  var note=$('ch-add-coverage-note');
+  if(!pc||!pt){note.textContent='';return;}
+  var est=computeEstimatedInsurance(pc.default_fee, pt.insurance_payer, pc.id);
+  note.textContent=est.found
+    ? ('Estimated insurance: '+fmt(est.amount)+' (locked in when saved)')
+    : 'No coverage rule on file for this payer/procedure -- showing full amount due.';
+}
+async function submitCharge(){
+  var patientId=$('bill-patient').value;
+  var procId=$('ch-add-procedure').value;
+  var amount=Number($('ch-add-amount').value);
+  if(!patientId){toast('Select a patient first');return;}
+  if(!procId){toast('Select a procedure type');return;}
+  if(!amount||amount<=0){toast('Enter a real amount');return;}
+  var result=await addChargeEntry(patientId,'',procId,amount);
+  rBilling();
+  toast(result.syncResult?'Charge added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3000:5000);
+}
+async function submitPayment(){
+  var patientId=$('bill-patient').value;
+  var amount=Number($('pm-add-amount').value);
+  var method=$('pm-add-method').value;
+  if(!patientId){toast('Select a patient first');return;}
+  if(!amount||amount<=0){toast('Enter a real amount');return;}
+  var result=await addPaymentEntry(patientId,amount,method);
+  $('pm-add-amount').value='';
+  rBilling();
+  toast(result.syncResult?'Payment added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3000:5000);
+}
 
 // ── INSURANCE CAPTURE (mandatory sairn-app-scaffold requirement) ────
 // Photo -> Claude analysis -> structured output, adapted for this
