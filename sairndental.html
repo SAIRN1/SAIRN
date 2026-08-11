@@ -376,12 +376,18 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-booking-settings">
         <div class="ph"><div><div class="ptitle">Booking Settings</div><div class="psub">Your practice's public self-scheduling link &mdash; the license key never appears on that page, this link is separate and safe to share.</div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Practice Info</div></div><div class="cb">
+          <div class="fg"><label>Practice Name</label><input type="text" id="bs-practice-name" placeholder="e.g. Pinnacle Dental"></div>
+          <div class="fg"><label>Practice Phone</label><input type="text" id="bs-practice-phone" placeholder="e.g. (555) 123-4567"></div>
+          <div class="fg"><label>Practice Address</label><input type="text" id="bs-practice-address" placeholder="e.g. 123 Main St, Springfield, IL 62701"></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Used on every appointment reminder email &mdash; name and phone in the body, address in the footer.</div>
+        </div></div>
         <div class="card"><div class="cb">
           <div class="fg"><label>Public Booking Link Slug</label><input type="text" id="bs-slug" placeholder="e.g. pinnacle-dental"></div>
           <div style="font-size:11px;color:var(--muted);margin-bottom:14px" id="bs-link-preview"></div>
           <div class="fg"><label>Practice Timezone</label><input type="text" id="bs-timezone" placeholder="e.g. America/New_York"></div>
           <div class="fg"><label>Publicly Bookable Procedure Types</label><div id="bs-procedure-checks" style="font-size:13px"></div></div>
-          <button class="btn bp" onclick="saveBookingSettings()">Save Booking Settings</button>
+          <button class="btn bp" onclick="saveBookingSettings()">Save Settings</button>
         </div></div>
       </div>
 
@@ -395,7 +401,7 @@ label.chk input{width:auto;}
       <div class="panel" id="panel-appointments">
         <div class="ph"><div><div class="ptitle">Appointments</div><div class="psub">Confirmed appointments &mdash; mark a visit complete to generate its charge.</div></div></div>
         <div class="card"><div class="ch"><div class="ct">Confirmed</div></div><div class="cb" style="padding:0">
-          <table id="appointments-table"><thead><tr><th>Patient</th><th>Provider</th><th>Time</th><th>Procedure</th><th></th></tr></thead><tbody id="appointments-tbody"></tbody></table>
+          <table id="appointments-table"><thead><tr><th>Patient</th><th>Provider</th><th>Time</th><th>Procedure</th><th>Reminders</th><th></th></tr></thead><tbody id="appointments-tbody"></tbody></table>
         </div></div>
       </div>
 
@@ -806,11 +812,14 @@ function removeCoverageRule(id){
 // (sql/sairndental_availability_booking_schema.sql) -- deliberately
 // separate from the license key, which stays a private Bearer secret
 // this settings panel never displays or embeds in the shareable link.
-function settings(){return ld('dnt_settings_obj',{id:'default',booking_slug:'',timezone:'',publicly_bookable_procedure_type_ids:[]});}
+function settings(){return ld('dnt_settings_obj',{id:'default',booking_slug:'',timezone:'',publicly_bookable_procedure_type_ids:[],practice_name:'',practice_phone:'',practice_address:''});}
 function rBookingSettings(){
   var s=settings();
   $('bs-slug').value=s.booking_slug||'';
   $('bs-timezone').value=s.timezone||'';
+  $('bs-practice-name').value=s.practice_name||'';
+  $('bs-practice-phone').value=s.practice_phone||'';
+  $('bs-practice-address').value=s.practice_address||'';
   $('bs-link-preview').textContent=s.booking_slug?('Public link: sairn.vercel.app/sairndental-book?slug='+s.booking_slug):'Set a slug and save to get your public booking link.';
   var procs=procedureTypes();
   var checked=s.publicly_bookable_procedure_type_ids||[];
@@ -824,7 +833,9 @@ async function saveBookingSettings(){
   var timezone=$('bs-timezone').value.trim();
   if(!slug){toast('Booking slug required');return;}
   var checkedIds=Array.from(document.querySelectorAll('#bs-procedure-checks input[type=checkbox]:checked')).map(function(el){return el.getAttribute('data-proc-id');});
-  var rec={id:'default',booking_slug:slug,timezone:timezone,publicly_bookable_procedure_type_ids:checkedIds};
+  var rec={id:'default',booking_slug:slug,timezone:timezone,publicly_bookable_procedure_type_ids:checkedIds,
+    practice_name:$('bs-practice-name').value.trim(),practice_phone:$('bs-practice-phone').value.trim(),
+    practice_address:$('bs-practice-address').value.trim()};
   st('dnt_settings_obj',rec);
   var lic=dntLicenseKey();
   if(!lic){toast('Saved on this device only -- server sync not yet enabled for this app',5000);return;}
@@ -889,10 +900,12 @@ function rAppointments(){
     var pt=pats.find(function(x){return x.id===a.patient_id;});
     var pv=provs.find(function(x){return x.id===a.provider_id;});
     var pc=procs.find(function(x){return x.id===a.procedure_type_id;});
+    var noEmail=!pt||!pt.email;
     return '<tr><td>'+H(pt?pt.name:'(unknown patient)')+'</td><td>'+H(pv?pv.name:'(unknown provider)')+'</td>'+
       '<td>'+H(a.start_time?new Date(a.start_time).toLocaleString():'--')+'</td><td>'+H(pc?(pc.cdt_code+' -- '+pc.description):'(unknown procedure)')+'</td>'+
+      '<td>'+(noEmail?'<span style="color:var(--danger);font-size:12px">No email on file</span>':'<span style="color:var(--muted);font-size:12px">--</span>')+'</td>'+
       '<td><button class="btn bp bs" onclick="openCompleteVisitModal(\''+a.id+'\')">Complete Visit</button></td></tr>';
-  }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No confirmed appointments</td></tr>';
+  }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center">No confirmed appointments</td></tr>';
 }
 
 var cvAppointmentId=null;
