@@ -556,7 +556,7 @@ function coverageRules(){return ld('dnt_coverage_list',[]);}
 function fillDentalSelects(){
   var provOpts=providers().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+'</option>';}).join('');
   var opOpts=operatories().map(function(o){return '<option value="'+o.id+'">'+H(o.name)+'</option>';}).join('');
-  var pcOpts=procedureTypes().map(function(p){return '<option value="'+p.id+'">'+H(p.code)+' -- '+H(p.description)+'</option>';}).join('');
+  var pcOpts=procedureTypes().map(function(p){return '<option value="'+p.id+'">'+H(p.cdt_code)+' -- '+H(p.description)+'</option>';}).join('');
   var ptOpts=patients().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+'</option>';}).join('');
   if($('pv-add-operatory'))$('pv-add-operatory').innerHTML='<option value="">(none)</option>'+opOpts;
   if($('ph-add-provider'))$('ph-add-provider').innerHTML=provOpts||'<option value="">Add a provider first</option>';
@@ -762,7 +762,7 @@ function rBookingSettings(){
   var checked=s.publicly_bookable_procedure_type_ids||[];
   $('bs-procedure-checks').innerHTML=procs.length?procs.map(function(p){
     var isChecked=checked.indexOf(p.id)!==-1;
-    return '<label class="chk"><input type="checkbox" data-proc-id="'+p.id+'" '+(isChecked?'checked':'')+'> '+H(p.code)+' -- '+H(p.description)+'</label>';
+    return '<label class="chk"><input type="checkbox" data-proc-id="'+p.id+'" '+(isChecked?'checked':'')+'> '+H(p.cdt_code)+' -- '+H(p.description)+'</label>';
   }).join('<br>'):'<span style="color:var(--muted)">Add procedure types first</span>';
 }
 async function saveBookingSettings(){

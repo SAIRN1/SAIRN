@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
       const allProcRows = allProcRes.ok ? await allProcRes.json() : [];
       const proceduresOut = (allProcRows || []).map((x) => x.data)
         .filter((p) => bookableIds.indexOf(p.id) !== -1)
-        .map((p) => ({ id: p.id, code: p.code, description: p.description, default_length_minutes: p.default_length_minutes }));
+        .map((p) => ({ id: p.id, code: p.cdt_code, description: p.description, default_length_minutes: p.default_length_minutes }));
 
       res.status(200).json({ ok: true, providers: providersOut, procedure_types: proceduresOut, timezone: settings.timezone || '' });
       return;
