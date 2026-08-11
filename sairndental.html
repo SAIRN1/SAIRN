@@ -393,7 +393,7 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-pending">
         <div class="ph"><div><div class="ptitle">Pending Requests</div><div class="psub">Self-scheduled and other pending appointments &mdash; review and confirm before they're final. New bookings are never auto-confirmed.</div></div></div>
-        <div class="card"><div class="ch"><div class="ct">Awaiting Confirmation</div></div><div class="cb" style="padding:0">
+        <div class="card"><div class="ch"><div class="ct">Awaiting Confirmation</div><button class="btn bo bs" id="dnt-refresh-pending-btn" onclick="dntRefreshPending()">Refresh</button></div><div class="cb" style="padding:0">
           <table id="pending-table"><thead><tr><th>Patient</th><th>Provider</th><th>Time</th><th>Source</th><th>Photos / Notes</th><th></th></tr></thead><tbody id="pending-tbody"></tbody></table>
         </div></div>
       </div>
@@ -1231,6 +1231,14 @@ async function dntSyncFromServer(){
     rCoverage();rPending();rAppointments();rBilling();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
   }
+}
+
+async function dntRefreshPending(){
+  var btn=$('dnt-refresh-pending-btn');
+  if(btn){btn.disabled=true;btn.textContent='Refreshing...';}
+  await dntSyncFromServer();
+  if(btn){btn.disabled=false;btn.textContent='Refresh';}
+  toast('Refreshed from server');
 }
 
 function init(){
