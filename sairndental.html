@@ -225,6 +225,9 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-hours" onclick="nav('hours')"><span class="sico">&#128337;</span>Provider Hours</button>
       <button class="sb" id="sb-procedures" onclick="nav('procedures')"><span class="sico">&#128220;</span>Procedure Types</button>
       <button class="sb" id="sb-coverage" onclick="nav('coverage')"><span class="sico">&#128179;</span>Coverage Rules</button>
+      <div class="ss">Scheduling</div>
+      <button class="sb" id="sb-booking-settings" onclick="nav('booking-settings')"><span class="sico">&#128279;</span>Booking Settings</button>
+      <button class="sb" id="sb-pending" onclick="nav('pending')"><span class="sico">&#128203;</span>Pending Requests</button>
       <div class="sfoot">SAIRNdental &copy; 2026</div>
     </aside>
     <main>
@@ -368,6 +371,24 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
+      <div class="panel" id="panel-booking-settings">
+        <div class="ph"><div><div class="ptitle">Booking Settings</div><div class="psub">Your practice's public self-scheduling link &mdash; the license key never appears on that page, this link is separate and safe to share.</div></div></div>
+        <div class="card"><div class="cb">
+          <div class="fg"><label>Public Booking Link Slug</label><input type="text" id="bs-slug" placeholder="e.g. pinnacle-dental"></div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:14px" id="bs-link-preview"></div>
+          <div class="fg"><label>Practice Timezone</label><input type="text" id="bs-timezone" placeholder="e.g. America/New_York"></div>
+          <div class="fg"><label>Publicly Bookable Procedure Types</label><div id="bs-procedure-checks" style="font-size:13px"></div></div>
+          <button class="btn bp" onclick="saveBookingSettings()">Save Booking Settings</button>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-pending">
+        <div class="ph"><div><div class="ptitle">Pending Requests</div><div class="psub">Self-scheduled and other pending appointments &mdash; review and confirm before they're final. New bookings are never auto-confirmed.</div></div></div>
+        <div class="card"><div class="ch"><div class="ct">Awaiting Confirmation</div></div><div class="cb" style="padding:0">
+          <table id="pending-table"><thead><tr><th>Patient</th><th>Provider</th><th>Time</th><th>Source</th><th></th></tr></thead><tbody id="pending-tbody"></tbody></table>
+        </div></div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -501,6 +522,8 @@ function nav(id){
   if(id==='hours')rHours();
   if(id==='procedures')rProcedures();
   if(id==='coverage')rCoverage();
+  if(id==='booking-settings')rBookingSettings();
+  if(id==='pending')rPending();
 }
 
 function exportPanelCSV(panelId,name){
@@ -723,6 +746,79 @@ function removeCoverageRule(id){
   st('dnt_coverage_list',list);rCoverage();
   toast('Coverage rule removed on this device');
 }
+
+// ── BOOKING SETTINGS ──────────────────────────────────────────────
+// The public booking_slug here is a real, indexed, non-secret column
+// (sql/sairndental_availability_booking_schema.sql) -- deliberately
+// separate from the license key, which stays a private Bearer secret
+// this settings panel never displays or embeds in the shareable link.
+function settings(){return ld('dnt_settings_obj',{id:'default',booking_slug:'',timezone:'',publicly_bookable_procedure_type_ids:[]});}
+function rBookingSettings(){
+  var s=settings();
+  $('bs-slug').value=s.booking_slug||'';
+  $('bs-timezone').value=s.timezone||'';
+  $('bs-link-preview').textContent=s.booking_slug?('Public link: sairn.vercel.app/sairndental-book?slug='+s.booking_slug):'Set a slug and save to get your public booking link.';
+  var procs=procedureTypes();
+  var checked=s.publicly_bookable_procedure_type_ids||[];
+  $('bs-procedure-checks').innerHTML=procs.length?procs.map(function(p){
+    var isChecked=checked.indexOf(p.id)!==-1;
+    return '<label class="chk"><input type="checkbox" data-proc-id="'+p.id+'" '+(isChecked?'checked':'')+'> '+H(p.code)+' -- '+H(p.description)+'</label>';
+  }).join('<br>'):'<span style="color:var(--muted)">Add procedure types first</span>';
+}
+async function saveBookingSettings(){
+  var slug=$('bs-slug').value.trim();
+  var timezone=$('bs-timezone').value.trim();
+  if(!slug){toast('Booking slug required');return;}
+  var checkedIds=Array.from(document.querySelectorAll('#bs-procedure-checks input[type=checkbox]:checked')).map(function(el){return el.getAttribute('data-proc-id');});
+  var rec={id:'default',booking_slug:slug,timezone:timezone,publicly_bookable_procedure_type_ids:checkedIds};
+  st('dnt_settings_obj',rec);
+  var lic=dntLicenseKey();
+  if(!lic){toast('Saved on this device only -- server sync not yet enabled for this app',5000);return;}
+  try{
+    var r=await fetch(DATA_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
+    var d=await r.json().catch(function(){return null;});
+    if(r.status===409&&d&&d.error&&d.error.code==='SLUG_TAKEN'){
+      toast(d.error.message,6000);
+      return;
+    }
+    toast((r.ok&&d&&d.ok)?'Booking settings saved':'Saved on this device only -- server sync not yet enabled for this app',(r.ok&&d&&d.ok)?3000:5000);
+    rBookingSettings();
+  }catch(e){
+    toast('Saved on this device only -- server sync not yet enabled for this app',5000);
+  }
+}
+
+// ── PENDING REQUESTS ──────────────────────────────────────────────
+// Reads real dnt_appointments -- staff-created and self-scheduled
+// (source:'self-scheduled') alike, anything status:'Pending'. No
+// outbound notification email here -- deferred to the automated-
+// reminders follow-up plan so that infrastructure is built once,
+// coherently (design spec §5).
+function appointments(){return ld('dnt_appointments_list',[]);}
+function rPending(){
+  var list=appointments().filter(function(a){return a.status==='Pending';});
+  var pats=patients(),provs=providers();
+  var tbody=$('pending-tbody');
+  tbody.innerHTML=list.map(function(a){
+    var pt=pats.find(function(x){return x.id===a.patient_id;});
+    var pv=provs.find(function(x){return x.id===a.provider_id;});
+    return '<tr><td>'+H(pt?pt.name:'(unknown patient)')+'</td><td>'+H(pv?pv.name:'(unknown provider)')+'</td>'+
+      '<td>'+H(a.start_time?new Date(a.start_time).toLocaleString():'--')+'</td><td>'+H(a.source||'staff')+'</td>'+
+      '<td><button class="btn bp bs" onclick="confirmAppointment(\''+a.id+'\')">Confirm</button> <button class="btn bo bs" onclick="rejectAppointment(\''+a.id+'\')">Reject</button></td></tr>';
+  }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No pending requests</td></tr>';
+}
+async function setAppointmentStatus(id,status){
+  var list=appointments();
+  var a=list.find(function(x){return x.id===id;});
+  if(!a){toast('Appointment not found');return;}
+  a.status=status;
+  st('dnt_appointments_list',list);rPending();
+  var syncResult=await sdnData('write','dnt_appointments',a);
+  toast(syncResult?('Appointment '+status.toLowerCase()):'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function confirmAppointment(id){setAppointmentStatus(id,'Confirmed');}
+function rejectAppointment(id){setAppointmentStatus(id,'Cancelled');}
 
 // ── INSURANCE CAPTURE (mandatory sairn-app-scaffold requirement) ────
 // Photo -> Claude analysis -> structured output, adapted for this
