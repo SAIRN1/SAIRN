@@ -1,6 +1,21 @@
 # SAIRNcash — Estimator Panel Finish (Task 3 completion) Design
 
-**Status:** Design drafted 2026-08-11, pending review. Not yet implemented.
+**Status:** Implemented, reviewed, and live 2026-08-11. Commits
+`aa75c03`..`73a190f`. Two real plan-mandated bugs caught during task
+review and fixed: `saveProfile()` was passing `undefined` (not `null`)
+into a real Firebase `set()` call for an absent optional field, which
+the SDK rejects; `renderEstimator()`'s currency writes were missing the
+file's own `(Number(x)||0)` guard. Both fixed and re-reviewed clean.
+Local checks, structural checks, and a timezone-safe re-run of the
+quarterly-deadline date logic all pass. Live byte-verified (after
+accounting for a harmless local-CRLF-vs-deployed-LF difference — content
+MD5-identical). **Not yet live-tested end-to-end**: the plan's Task 4
+Steps 3-7 (real Stripe-subscribed account regression — profile
+save/sync, live recompute, two-device isolation) are blocked on Stripe
+not being configured in this Vercel project at all yet (confirmed live:
+`api/sairncash/checkout.js` returns `"Stripe not configured"`) —
+expected, per the user, Stripe setup is planned for next week, not this
+session. See `SAIRN-PLATFORM-SESSION3-HANDOFF.md` for full detail.
 
 Completes Task 3 of the already-approved
 `docs/superpowers/specs/2026-08-10-sairncash-tax-retirement-estimator-design.md`
