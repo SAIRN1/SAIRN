@@ -1109,6 +1109,46 @@ async function icapSaveToPatient(){
 // guessed percentage.
 function charges(){return ld('dnt_charges_list',[]);}
 function payments(){return ld('dnt_payments_list',[]);}
+function referrals(){return ld('dnt_referrals_list',[]);}
+
+// ── REFERRAL TRACKING (2026-08-11) ───────────────────────────────────
+// Append-only, matching dnt_charges/dnt_payments' precedent -- no
+// remove function. patient_id/internal_provider_id are optional links;
+// patient_name/external_party are always independently stored so a
+// referral row never breaks if the linked record is later removed
+// locally. NO fee/commission/value field exists anywhere in this
+// resource -- illegal under the Anti-Kickback Statute + state dental
+// board ethics rules (design spec §0/§3). Do not add one.
+async function addReferral(){
+  var direction=$('rf-add-direction').value;
+  var patientName=$('rf-add-patient-name').value.trim();
+  var externalParty=$('rf-add-external').value.trim();
+  var date=$('rf-add-date').value;
+  var reason=$('rf-add-reason').value.trim();
+  if(!patientName){toast('Patient name required');return;}
+  if(!externalParty){toast('External party required');return;}
+  if(!date){toast('Date required');return;}
+  if(!reason){toast('Reason required');return;}
+  var rec={id:newId('RF'),direction:direction,patient_name:patientName,
+    patient_id:$('rf-add-patient').value,external_party:externalParty,
+    internal_provider_id:$('rf-add-provider').value,date:date,reason:reason,
+    status:'Pending',created_at:dntLocalToday()};
+  var list=referrals();list.push(rec);st('dnt_referrals_list',list);
+  rReferrals();
+  ['rf-add-patient-name','rf-add-external','rf-add-date','rf-add-reason'].forEach(function(id){$(id).value='';});
+  $('rf-add-patient').value='';$('rf-add-provider').value='';
+  var syncResult=await sdnData('write','dnt_referrals',rec);
+  toast(syncResult?'Referral added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+async function setReferralStatus(id,status){
+  var list=referrals();
+  var r=list.find(function(x){return x.id===id;});
+  if(!r){toast('Referral not found');return;}
+  r.status=status;
+  st('dnt_referrals_list',list);rReferrals();
+  var syncResult=await sdnData('write','dnt_referrals',r);
+  toast(syncResult?('Referral marked '+status):'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
 
 // Case-insensitive exact match only -- no fuzzy matching (design spec
 // §2, a fuzzy match risks a wrong guess on a genuinely different
