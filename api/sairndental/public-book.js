@@ -13,6 +13,7 @@
 // review).
 
 const { resolveSlug, checkAndIncrementRateLimit } = require('../_lib/dental-public');
+const { validatePhotosPayload } = require('../_lib/dental-photo-validation');
 
 function supabaseHeaders(extra) {
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -45,8 +46,16 @@ module.exports = async (req, res) => {
     const slug = body.slug;
     const patient = body.patient || {};
     const providerId = body.provider_id, procedureTypeId = body.procedure_type_id, startTime = body.start_time;
+    const photos = body.photos;
+    const patientNotes = typeof body.patient_notes === 'string' ? body.patient_notes.trim() : '';
     if (!slug || !patient.name || !patient.dob || !patient.phone || !providerId || !procedureTypeId || !startTime) {
       res.status(400).json({ error: { message: 'slug, patient (name/dob/phone), provider_id, procedure_type_id, start_time are required' } });
+      return;
+    }
+
+    const photosCheck = validatePhotosPayload(photos);
+    if (!photosCheck.ok) {
+      res.status(400).json({ error: { code: photosCheck.code, message: photosCheck.message } });
       return;
     }
 
@@ -89,7 +98,8 @@ module.exports = async (req, res) => {
     const appointmentId = newId('AP');
     const appointmentData = {
       id: appointmentId, patient_id: patientId, provider_id: providerId, operatory_id: operatoryId,
-      procedure_type_id: procedureTypeId, start_time: startTime, end_time: endTime, status: 'Pending', source: 'self-scheduled'
+      procedure_type_id: procedureTypeId, start_time: startTime, end_time: endTime, status: 'Pending', source: 'self-scheduled',
+      photos: Array.isArray(photos) ? photos : [], patient_notes: patientNotes
     };
     const insertRes = await fetch(rest('dnt_appointments?on_conflict=license_hash,appointment_id'), {
       method: 'POST',
