@@ -1,6 +1,31 @@
 # SAIRNdental — New App Design Spec
 
-**Status:** Design drafted 2026-08-10, pending review. Not yet implemented.
+**Status:** Foundation implemented and live-verified 2026-08-10
+(`docs/superpowers/plans/2026-08-10-sairndental-foundation.md`).
+`sairndental.html` live at `sairn.vercel.app/sairndental`. Real
+license gate + 30-day trial gate confirmed live via the actual UI
+flow (not simulated). All 6 core data panels (patients, providers,
+operatories, provider hours, procedure types, coverage rules)
+confirmed live via real add/list/cross-reference interactions.
+Insurance-card capture confirmed two ways: the real network round-
+trip through `api/claude` (a degenerate test image correctly
+triggered and displayed Anthropic's own real rejection, proving
+request formatting/proxy/error-handling all work end-to-end), and the
+extraction-parsing + save-to-patient-record logic against realistic
+mock Claude output (including the "Not visible" -> blank-field
+behavior). A real insurance-card photo end-to-end test is still
+outstanding — recommended before this ships to an actual practice.
+
+**Not yet functional end-to-end** — confirmed live, not assumed:
+`sql/sairndental_data_schema.sql` and
+`sql/sairndental_license_seed.sql` have not been run
+(`DNT-PINNACLE-2026` returns `401 INVALID_LICENSE` against
+`api/sd-data.js`); every panel currently shows the honest "Saved on
+this device only — server sync not yet enabled" toast rather than a
+false success. Cross-device sync, and therefore the availability
+engine + booking, fee-schedule + balance, email reminders, and
+SAIRNcode denial/A/R/revenue bridge follow-up plans, all depend on
+these two migrations being run first.
 
 New SAIRN B2B practice-management app for dental practices. Confirmed
 scope, resolved through direct design questions rather than assumed
