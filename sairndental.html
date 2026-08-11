@@ -219,6 +219,7 @@ label.chk input{width:auto;}
       <div class="ss">Patients</div>
       <button class="sb" id="sb-patients" onclick="nav('patients')"><span class="sico">&#129502;</span>Patients</button>
       <button class="sb" id="sb-icap" onclick="nav('icap')"><span class="sico">&#128248;</span>Insurance Capture</button>
+      <button class="sb" id="sb-referrals" onclick="nav('referrals')"><span class="sico">&#128257;</span>Referrals</button>
       <div class="ss">Practice Setup</div>
       <button class="sb" id="sb-providers" onclick="nav('providers')"><span class="sico">&#129658;</span>Providers</button>
       <button class="sb" id="sb-operatories" onclick="nav('operatories')"><span class="sico">&#127973;</span>Operatories</button>
@@ -269,6 +270,31 @@ label.chk input{width:auto;}
         </div></div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
           <table id="patients-table"><thead><tr><th>Name</th><th>DOB</th><th>Phone</th><th>Payer</th><th>Member ID</th><th></th></tr></thead><tbody id="patients-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-referrals">
+        <div class="ph"><div><div class="ptitle">Referrals</div><div class="psub">Incoming and outgoing patient referrals to/from external providers &mdash; record-keeping only, never a mechanism for referral payment (illegal under federal and state law).</div></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-referrals','referrals')">Export CSV</button></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Add Referral</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Direction</label><select id="rf-add-direction"><option value="incoming">Incoming</option><option value="outgoing">Outgoing</option></select></div>
+            <div class="fg"><label>Patient Name</label><input type="text" id="rf-add-patient-name" placeholder="Full name"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Link to Existing Patient (optional)</label><select id="rf-add-patient"><option value="">(none yet)</option></select></div>
+            <div class="fg"><label>External Practice/Provider</label><input type="text" id="rf-add-external" placeholder="e.g. Dr. Jones Oral Surgery"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>This Practice's Provider (optional)</label><select id="rf-add-provider"><option value="">(none)</option></select></div>
+            <div class="fg"><label>Date</label><input type="date" id="rf-add-date"></div>
+          </div>
+          <div class="fg"><label>Reason</label><input type="text" id="rf-add-reason" placeholder="e.g. Root canal consult"></div>
+          <button class="btn bp" onclick="addReferral()">Add Referral</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
+          <table id="referrals-table"><thead><tr><th>Direction</th><th>Patient</th><th>External Party</th><th>Provider</th><th>Date</th><th>Reason</th><th>Status</th></tr></thead><tbody id="referrals-tbody"></tbody></table>
         </div></div>
       </div>
 
@@ -584,6 +610,7 @@ function nav(id){
   if(id==='pending')rPending();
   if(id==='appointments')rAppointments();
   if(id==='billing')rBilling();
+  if(id==='referrals')rReferrals();
 }
 
 function exportPanelCSV(panelId,name){
@@ -622,6 +649,8 @@ function fillDentalSelects(){
   if($('ph-add-provider'))$('ph-add-provider').innerHTML=provOpts||'<option value="">Add a provider first</option>';
   if($('cv-add-procedure'))$('cv-add-procedure').innerHTML=pcOpts||'<option value="">Add a procedure type first</option>';
   if($('icap-patient'))$('icap-patient').innerHTML=ptOpts||'<option value="">Add a patient first</option>';
+  if($('rf-add-patient'))$('rf-add-patient').innerHTML='<option value="">(none yet)</option>'+ptOpts;
+  if($('rf-add-provider'))$('rf-add-provider').innerHTML='<option value="">(none)</option>'+provOpts;
 }
 
 // ── PATIENTS ──────────────────────────────────────────────────────
@@ -1148,6 +1177,19 @@ async function setReferralStatus(id,status){
   st('dnt_referrals_list',list);rReferrals();
   var syncResult=await sdnData('write','dnt_referrals',r);
   toast(syncResult?('Referral marked '+status):'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+function rReferrals(){
+  var list=referrals(),pats=patients(),provs=providers();
+  var tbody=$('referrals-tbody');
+  tbody.innerHTML=list.map(function(r){
+    var prov=provs.find(function(p){return p.id===r.internal_provider_id;});
+    var statusOpts=['Pending','Scheduled','Completed','Declined'].map(function(s){
+      return '<option value="'+s+'"'+(s===r.status?' selected':'')+'>'+s+'</option>';
+    }).join('');
+    return '<tr><td>'+H(r.direction==='incoming'?'Incoming':'Outgoing')+'</td><td>'+H(r.patient_name)+'</td>'+
+      '<td>'+H(r.external_party)+'</td><td>'+H(prov?prov.name:'--')+'</td><td>'+H(r.date)+'</td><td>'+H(r.reason)+'</td>'+
+      '<td><select onchange="setReferralStatus(\''+r.id+'\',this.value)">'+statusOpts+'</select></td></tr>';
+  }).join('')||'<tr><td colspan="7" style="color:var(--muted);text-align:center">No referrals on file yet</td></tr>';
 }
 
 // Case-insensitive exact match only -- no fuzzy matching (design spec
