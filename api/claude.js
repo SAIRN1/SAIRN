@@ -38,7 +38,13 @@ const KNOWN_APP_IDS = [
   // per-app pass-through -- SAIRNtype's original api/claude.js had no
   // app_id allowlist, no rate limiting, and read the wrong env var name
   // (`mykey`); not ported.
-  'sairncash'
+  'sairncash',
+  // SAIRNdental (2026-08-10) -- for the insurance-card capture flow
+  // (docs/superpowers/specs/2026-08-10-sairndental-design.md §1) and
+  // any future AI use. Standard license-key-gated B2B app, is_demo
+  // used the same way every other non-SAIRNcash app on this platform
+  // already does.
+  'sairndental'
 ];
 
 // Server tools a frontend is allowed to request. Server-executed tool TYPES

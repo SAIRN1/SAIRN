@@ -75,7 +75,11 @@ const RESOURCES = {
   leg_keepsakeorders: true, leg_keepsakes: true, leg_liverybookings: true, leg_liveryvendors: true,
   leg_maintenance: true, leg_memorials: true, leg_merch_catalog: true, leg_merch_units: true, leg_monuments: true,
   leg_obituaries: true, leg_petcases: true, leg_plots: true, leg_preneed: true, leg_processions: true,
-  leg_tributes: true, leg_vehicles: true
+  leg_tributes: true, leg_vehicles: true,
+  // SAIRNdental (2026-08-10) -- see sql/sairndental_data_schema.sql. All 12 prefixed dnt_.
+  dnt_patients: true, dnt_providers: true, dnt_operatories: true, dnt_provider_hours: true,
+  dnt_procedure_types: true, dnt_coverage_rules: true, dnt_appointments: true, dnt_charges: true,
+  dnt_payments: true, dnt_denial: true, dnt_ar: true, dnt_revenue: true
 };
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
@@ -163,7 +167,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue' } });
     return;
   }
 
@@ -1704,6 +1708,46 @@ module.exports = async (req, res) => {
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlegacy', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables are not set up yet — run sql/sairnlegacy_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // ── SAIRNDENTAL: 12 resources (2026-08-10) -- same generic read/write
+    // pair as LEG_RESOURCES/SDN_RESOURCES above. sc_denial/sc_ar/
+    // sc_revenue's data shape and KPI math are reused from SAIRNcode per
+    // docs/superpowers/specs/2026-08-10-sairndental-design.md §6, but the
+    // storage keys here are dnt_denial/dnt_ar/dnt_revenue -- a genuinely
+    // separate namespace, not a shared table with SAIRNcode's own sc_
+    // resources (checked for collision against every existing resource
+    // string in this file before being added; none found). ──
+    const DNT_RESOURCES = {
+      dnt_patients: 'patient_id', dnt_providers: 'provider_id', dnt_operatories: 'operatory_id',
+      dnt_provider_hours: 'provider_hour_id', dnt_procedure_types: 'procedure_type_id',
+      dnt_coverage_rules: 'coverage_rule_id', dnt_appointments: 'appointment_id', dnt_charges: 'charge_id',
+      dnt_payments: 'payment_id', dnt_denial: 'denial_id', dnt_ar: 'ar_id', dnt_revenue: 'revenue_id'
+    };
+    if (DNT_RESOURCES[resource] && action === 'read') {
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (DNT_RESOURCES[resource] && action === 'write') {
+      const idCol = DNT_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
