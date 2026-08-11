@@ -6,6 +6,31 @@
 -- docs/superpowers/specs/2026-08-10-sairndental-availability-booking-design.md
 -- for the full design reasoning.
 --
+-- FIRST RUN FAILED (2026-08-10): create extension if not exists
+-- btree_gist rolled back everything after it in the same implicit
+-- transaction (including dnt_settings, which appears earlier in this
+-- file) -- confirmed via select 1 from pg_extension where
+-- extname='btree_gist' returning 0 rows even after the Supabase
+-- dashboard's Database > Extensions page showed it as enabled
+-- (v1.7, schema "extensions"). pg_extension is the authoritative
+-- Postgres catalog -- if it shows 0 rows, the extension is not
+-- actually installed regardless of what any dashboard UI displays;
+-- trust the catalog query over the UI. Before re-running this file,
+-- confirm directly with an ISOLATED statement (not part of a larger
+-- pasted block, so the real error text is visible):
+--   create extension if not exists btree_gist with schema extensions;
+-- then re-verify: select 1 from pg_extension where extname='btree_gist';
+--
+-- SEARCH PATH: Supabase's dashboard installs extensions into a
+-- dedicated "extensions" schema by default, not "public" -- confirmed
+-- by the dashboard's own report above. The EXCLUDE constraints below
+-- use btree_gist's gist operator support for text (=) and tsrange
+-- (&&), which must be resolvable via the search_path at constraint-
+-- creation time. Set explicitly rather than assumed, since the
+-- default search_path for the SQL editor's role may not include a
+-- non-public extensions schema.
+set search_path to public, extensions;
+--
 -- dnt_settings: new generic-jsonb resource, but booking_slug also gets
 -- a real, indexed, unique column -- the public booking page resolves
 -- a practice by this slug on every request, and it must never be
@@ -40,7 +65,7 @@ alter table public.dnt_appointments
   add column if not exists end_time timestamptz,
   add column if not exists status text;
 
-create extension if not exists btree_gist;
+create extension if not exists btree_gist with schema extensions;
 
 -- RISK FLAGGED, NOT VERIFIED (no DB execution access from this
 -- environment): any dnt_appointments rows written before this
