@@ -832,9 +832,9 @@ function renderEstimator() {
   const retirementEl = document.getElementById('resRetirement');
   const missingNoteEl = document.getElementById('profileMissingNote');
 
-  if (ytdEl) ytdEl.textContent = '$' + ytd.toFixed(2);
-  if (annualEl) annualEl.textContent = '$' + result.estAnnual.toFixed(2);
-  if (quarterlyEl) quarterlyEl.textContent = '$' + result.quarterlyAmount.toFixed(2);
+  if (ytdEl) ytdEl.textContent = '$' + (Number(ytd)||0).toFixed(2);
+  if (annualEl) annualEl.textContent = '$' + (Number(result.estAnnual)||0).toFixed(2);
+  if (quarterlyEl) quarterlyEl.textContent = '$' + (Number(result.quarterlyAmount)||0).toFixed(2);
   if (quarterlyLabelEl) quarterlyLabelEl.textContent = result.hasFullBasis
     ? 'Recommended quarterly set-aside'
     : 'Partial estimate (90% of this year only) -- add prior-year tax above for the full figure';
@@ -842,7 +842,7 @@ function renderEstimator() {
     const next = nextQuarterlyDeadline();
     deadlineEl.textContent = next ? (next.dateStr + ' (' + next.days + ' days)') : 'N/A';
   }
-  if (retirementEl) retirementEl.textContent = '$' + retirement.estimate.toFixed(2);
+  if (retirementEl) retirementEl.textContent = '$' + (Number(retirement.estimate)||0).toFixed(2);
   if (missingNoteEl) missingNoteEl.style.display = result.hasFullBasis ? 'none' : '';
 }
 
