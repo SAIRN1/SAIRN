@@ -1193,10 +1193,50 @@ function dntMergeById(local, serverArr){
   });
   return merged;
 }
+var DNT_SYNC_RESOURCES=[
+  ['dnt_patients','dnt_patients_list'],
+  ['dnt_providers','dnt_providers_list'],
+  ['dnt_operatories','dnt_operatories_list'],
+  ['dnt_provider_hours','dnt_hours_list'],
+  ['dnt_procedure_types','dnt_procedures_list'],
+  ['dnt_coverage_rules','dnt_coverage_list'],
+  ['dnt_appointments','dnt_appointments_list'],
+  ['dnt_charges','dnt_charges_list'],
+  ['dnt_payments','dnt_payments_list']
+];
+// dnt_denial/dnt_ar/dnt_revenue deliberately excluded -- no client-side
+// accessor or render function exists for any of them yet (confirmed by
+// reading the file); that's a separate, not-yet-built follow-up feature
+// area, not part of this fix. See this plan's "Real correction" section.
+async function dntSyncFromServer(){
+  var changed=false;
+  for(var i=0;i<DNT_SYNC_RESOURCES.length;i++){
+    var resource=DNT_SYNC_RESOURCES[i][0], key=DNT_SYNC_RESOURCES[i][1];
+    var serverData=await sdnData('read',resource,{});
+    if(Array.isArray(serverData)&&serverData.length){
+      st(key,dntMergeById(ld(key,[]),serverData));changed=true;
+    }
+  }
+  // dnt_settings: single-object resource, not a list -- take the one
+  // 'default' record from the server's array response (still array-
+  // shaped like every other resource's read, per api/sd-data.js) and
+  // replace the local object directly.
+  var settingsData=await sdnData('read','dnt_settings',{});
+  if(Array.isArray(settingsData)&&settingsData.length){
+    var serverSettings=settingsData.find(function(s){return s&&s.id==='default';})||settingsData[0];
+    if(serverSettings){st('dnt_settings_obj',serverSettings);changed=true;}
+  }
+  if(changed){
+    rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
+    rCoverage();rPending();rAppointments();rBilling();
+    if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
+  }
+}
 
 function init(){
   rDash();
   fillDentalSelects();
+  dntSyncFromServer();
 }
 </script>
 </body>
