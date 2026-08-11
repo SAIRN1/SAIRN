@@ -654,10 +654,13 @@ function removePatient(id){
   // deletion" call would either do nothing useful or, worse, blindly
   // overwrite the real synced record's full data with a bare
   // {id,_deleted} payload via the upsert-merge write path, destroying
-  // the real fields. Removing here only removes it from this device.
+  // the real fields. Removing here only removes it from this device,
+  // and now that real sync exists (2026-08-11), a later sync WILL pull
+  // this record right back if the server still has it. Disclosed via
+  // the toast below, not silently hidden.
   var list=patients().filter(function(p){return p.id!==id;});
   st('dnt_patients_list',list);rPatients();
-  toast('Patient removed on this device -- may reappear if server data syncs again');
+  toast('Patient removed on this device -- may reappear if server data syncs again',5000);
 }
 
 // ── PROVIDERS ─────────────────────────────────────────────────────
@@ -771,7 +774,7 @@ function removeProcedureType(id){
   // Local-only -- see removePatient()'s comment for why.
   var list=procedureTypes().filter(function(p){return p.id!==id;});
   st('dnt_procedures_list',list);rProcedures();
-  toast('Procedure type removed on this device -- may reappear if server data syncs again');
+  toast('Procedure type removed on this device -- may reappear if server data syncs again',5000);
 }
 
 // ── COVERAGE RULES ────────────────────────────────────────────────
@@ -1210,11 +1213,14 @@ var DNT_SYNC_RESOURCES=[
 // area, not part of this fix. See this plan's "Real correction" section.
 async function dntSyncFromServer(){
   var changed=false;
+  var failureCount=0;
   for(var i=0;i<DNT_SYNC_RESOURCES.length;i++){
     var resource=DNT_SYNC_RESOURCES[i][0], key=DNT_SYNC_RESOURCES[i][1];
     var serverData=await sdnData('read',resource,{});
-    if(Array.isArray(serverData)&&serverData.length){
-      st(key,dntMergeById(ld(key,[]),serverData));changed=true;
+    if(Array.isArray(serverData)){
+      if(serverData.length){st(key,dntMergeById(ld(key,[]),serverData));changed=true;}
+    }else{
+      failureCount++;
     }
   }
   // dnt_settings: single-object resource, not a list -- take the one
@@ -1222,23 +1228,35 @@ async function dntSyncFromServer(){
   // shaped like every other resource's read, per api/sd-data.js) and
   // replace the local object directly.
   var settingsData=await sdnData('read','dnt_settings',{});
-  if(Array.isArray(settingsData)&&settingsData.length){
-    var serverSettings=settingsData.find(function(s){return s&&s.id==='default';})||settingsData[0];
-    if(serverSettings){st('dnt_settings_obj',serverSettings);changed=true;}
+  if(Array.isArray(settingsData)){
+    if(settingsData.length){
+      var serverSettings=settingsData.find(function(s){return s&&s.id==='default';})||settingsData[0];
+      if(serverSettings){st('dnt_settings_obj',serverSettings);changed=true;}
+    }
+  }else{
+    failureCount++;
   }
   if(changed){
     rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
     rCoverage();rPending();rAppointments();rBilling();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
   }
+  return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+1};
 }
 
 async function dntRefreshPending(){
   var btn=$('dnt-refresh-pending-btn');
   if(btn){btn.disabled=true;btn.textContent='Refreshing...';}
-  await dntSyncFromServer();
-  if(btn){btn.disabled=false;btn.textContent='Refresh';}
-  toast('Refreshed from server');
+  try{
+    var result=await dntSyncFromServer();
+    if(result&&result.failures===result.total){
+      toast('Could not refresh from server -- check your connection and try again');
+    }else{
+      toast('Refreshed from server');
+    }
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='Refresh';}
+  }
 }
 
 function init(){
