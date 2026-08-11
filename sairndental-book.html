@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Book an Appointment</title>
+<style>
+:root{--p:#0EA5E9;--pd:#0284C7;--pt:#E0F2FE;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;}
+.wrap{max-width:560px;margin:0 auto;padding:32px 20px 60px;}
+.logo{font-size:22px;font-weight:800;color:var(--pd);text-align:center;margin-bottom:4px;}
+.sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:28px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:var(--sh);}
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,select{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;background:#fff;}
+input:focus,select:focus{border-color:var(--p);}
+.btn{border:none;border-radius:8px;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer;background:var(--p);color:#fff;width:100%;}
+.btn:hover{background:var(--pd);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:10px;}
+.slot{border:1px solid var(--border);border-radius:8px;padding:9px;font-size:13px;text-align:center;cursor:pointer;background:#fff;}
+.slot:hover{border-color:var(--p);background:var(--pt);color:var(--pd);}
+.slot.picked{background:var(--p);color:#fff;border-color:var(--p);}
+.msg{font-size:13px;color:var(--muted);text-align:center;padding:10px;}
+.msg.err{color:var(--danger);}
+.msg.ok{background:var(--pt);color:var(--pd);border-radius:8px;padding:16px;font-weight:600;}
+.step{display:none;}
+.step.on{display:block;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">SAIRNdental</div>
+  <div class="sub">Book an appointment</div>
+
+  <div id="step-loading" class="step on"><div class="msg" id="loading-msg">Loading...</div></div>
+
+  <div id="step-select" class="step">
+    <div class="card">
+      <div class="fg"><label>Provider</label><select id="bk-provider" onchange="onProviderOrProcedureChange()"></select></div>
+      <div class="fg"><label>Reason for Visit</label><select id="bk-procedure" onchange="onProviderOrProcedureChange()"></select></div>
+    </div>
+    <div class="card">
+      <label>Available Times <span id="bk-timezone-note" style="text-transform:none;font-weight:400;color:var(--muted)"></span></label>
+      <div id="bk-slots" class="slots"></div>
+      <div id="bk-slots-msg" class="msg"></div>
+    </div>
+  </div>
+
+  <div id="step-details" class="step">
+    <div class="card">
+      <div class="fg"><label>Full Name</label><input type="text" id="bk-name"></div>
+      <div class="fg"><label>Date of Birth</label><input type="date" id="bk-dob"></div>
+      <div class="fg"><label>Phone</label><input type="text" id="bk-phone" placeholder="(555) 555-5555"></div>
+      <div class="fg"><label>Email (optional)</label><input type="email" id="bk-email"></div>
+      <button class="btn" id="bk-submit-btn" onclick="submitBooking()">Request This Appointment</button>
+      <div class="msg" id="bk-submit-msg"></div>
+    </div>
+  </div>
+
+  <div id="step-done" class="step">
+    <div class="msg ok">Your request has been sent and is <strong>pending confirmation</strong> — the practice will reach out to confirm your appointment. This is not yet a confirmed appointment.</div>
+  </div>
+</div>
+
+<script>
+var API='https://sairn.vercel.app/api/sairndental/public-availability';
+var BOOK_API='https://sairn.vercel.app/api/sairndental/public-book';
+var slug=new URLSearchParams(window.location.search).get('slug');
+var listing=null,pickedSlot=null,pickedProvider=null,pickedProcedure=null;
+
+function showStep(id){
+  document.querySelectorAll('.step').forEach(function(s){s.classList.remove('on');});
+  document.getElementById('step-'+id).classList.add('on');
+}
+
+async function init(){
+  if(!slug){document.getElementById('loading-msg').textContent='No booking link provided. Ask your practice for their real booking link.';document.getElementById('loading-msg').className='msg err';return;}
+  try{
+    var res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:slug})});
+    var data=await res.json();
+    if(!res.ok||!data.ok){
+      document.getElementById('loading-msg').textContent=(data.error&&data.error.message)||'This booking link was not found. Ask your practice for their real link.';
+      document.getElementById('loading-msg').className='msg err';
+      return;
+    }
+    listing=data;
+    if(!listing.providers.length||!listing.procedure_types.length){
+      document.getElementById('loading-msg').textContent='Online booking is not yet available for this practice.';
+      document.getElementById('loading-msg').className='msg err';
+      return;
+    }
+    document.getElementById('bk-provider').innerHTML=listing.providers.map(function(p){return '<option value="'+p.id+'">'+esc(p.name)+' ('+esc(p.role)+')</option>';}).join('');
+    document.getElementById('bk-procedure').innerHTML=listing.procedure_types.map(function(p){return '<option value="'+p.id+'">'+esc(p.description)+'</option>';}).join('');
+    document.getElementById('bk-timezone-note').textContent=listing.timezone?('('+listing.timezone+')'):'';
+    showStep('select');
+    onProviderOrProcedureChange();
+  }catch(e){
+    document.getElementById('loading-msg').textContent='Could not connect. Check your connection and try again.';
+    document.getElementById('loading-msg').className='msg err';
+  }
+}
+
+function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML;}
+
+async function onProviderOrProcedureChange(){
+  pickedProvider=document.getElementById('bk-provider').value;
+  pickedProcedure=document.getElementById('bk-procedure').value;
+  pickedSlot=null;
+  var slotsEl=document.getElementById('bk-slots'),msgEl=document.getElementById('bk-slots-msg');
+  slotsEl.innerHTML='';msgEl.textContent='Loading available times...';msgEl.className='msg';
+  var today=new Date();
+  var from=today.toISOString().slice(0,10);
+  var to=new Date(today.getTime()+14*86400000).toISOString().slice(0,10);
+  try{
+    var res=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      slug:slug,provider_id:pickedProvider,procedure_type_id:pickedProcedure,date_from:from,date_to:to
+    })});
+    var data=await res.json();
+    if(!res.ok||!data.ok){msgEl.textContent=(data.error&&data.error.message)||'Could not load available times.';msgEl.className='msg err';return;}
+    if(!data.slots.length){msgEl.textContent='No open times in the next 14 days for this selection.';return;}
+    msgEl.textContent='';
+    slotsEl.innerHTML=data.slots.slice(0,60).map(function(s,i){
+      var d=new Date(s.start_time);
+      return '<div class="slot" data-idx="'+i+'" onclick="pickSlot('+i+')">'+d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+'<br>'+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+'</div>';
+    }).join('');
+    window._slots=data.slots;
+  }catch(e){
+    msgEl.textContent='Could not connect. Check your connection and try again.';msgEl.className='msg err';
+  }
+}
+
+function pickSlot(i){
+  pickedSlot=window._slots[i];
+  document.querySelectorAll('.slot').forEach(function(el){el.classList.remove('picked');});
+  document.querySelector('.slot[data-idx="'+i+'"]').classList.add('picked');
+  showStep('details');
+}
+
+async function submitBooking(){
+  var name=document.getElementById('bk-name').value.trim();
+  var dob=document.getElementById('bk-dob').value;
+  var phone=document.getElementById('bk-phone').value.trim();
+  var email=document.getElementById('bk-email').value.trim();
+  var msgEl=document.getElementById('bk-submit-msg');
+  if(!name||!dob||!phone){msgEl.textContent='Name, date of birth, and phone are required.';msgEl.className='msg err';return;}
+  if(!pickedSlot){msgEl.textContent='Select a time first.';msgEl.className='msg err';return;}
+  var btn=document.getElementById('bk-submit-btn');
+  btn.disabled=true;btn.textContent='Sending request...';msgEl.textContent='';
+  try{
+    var res=await fetch(BOOK_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      slug:slug,patient:{name:name,dob:dob,phone:phone,email:email},
+      provider_id:pickedProvider,procedure_type_id:pickedProcedure,start_time:pickedSlot.start_time
+    })});
+    var data=await res.json();
+    if(!res.ok||!data.ok){
+      msgEl.textContent=(data.error&&data.error.message)||'Could not complete booking -- try again.';
+      msgEl.className='msg err';
+      btn.disabled=false;btn.textContent='Request This Appointment';
+      return;
+    }
+    showStep('done');
+  }catch(e){
+    msgEl.textContent='Could not connect. Check your connection and try again.';msgEl.className='msg err';
+    btn.disabled=false;btn.textContent='Request This Appointment';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
