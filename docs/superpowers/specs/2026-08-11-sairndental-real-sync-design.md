@@ -1,6 +1,24 @@
 # SAIRNdental — Real Read/Sync Capability Design
 
-**Status:** Design drafted 2026-08-11, pending review. Not yet implemented.
+**Status:** Implemented, reviewed, and live 2026-08-11. Commits
+`75eeff7`..`0a6b2c0` (feature) + `c5b1ff8` (backlog logging). Live-verified
+via the real `DNT-PINNACLE-2026` demo practice: a self-scheduled booking
+submitted through the public booking page appeared correctly in a fresh
+staff browser session's Pending Requests panel (the actual regression
+test for the bug this spec exists to fix), the manual Refresh button
+surfaced a booking created after page load without a reload, the
+disclosed local-delete reappear-on-sync behavior was confirmed real, and
+`dnt_settings`'s single-object handling populated real server values.
+Final whole-branch review found 2 Important + several Minor issues;
+directly actionable ones (honest failure toast on total sync failure,
+button-recovery try/finally, comment/toast-duration polish) were fixed
+in one review-driven pass and re-verified clean; two larger, genuinely
+separate-scope issues (localStorage quota risk from unbounded
+photo-bearing appointments; a platform-wide, pre-existing gap where no
+SAIRN app clears local data or scopes storage keys by license, which
+real sync turns into actual cross-tenant data-mixing risk on a re-keyed
+device) were logged to `SAIRN-BACKLOG.md`, not silently shipped or
+squeezed into this feature's fix wave.
 
 **Confirmed platform-critical fix, not a minor addition.** `sairndental.html`
 has zero `'read'` actions anywhere in its client-side code — every one of
