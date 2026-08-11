@@ -905,6 +905,65 @@ async function icapSaveToPatient(){
   toast(syncResult?'Insurance info saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
 }
 
+// ── FEE SCHEDULE / COVERAGE LOOKUP (2026-08-11) ──────────────────────
+// Pure, deterministic, no AI involvement in any number here. Real
+// arithmetic against the practice's own coverage rules -- never a
+// guessed percentage.
+function charges(){return ld('dnt_charges_list',[]);}
+function payments(){return ld('dnt_payments_list',[]);}
+
+// Case-insensitive exact match only -- no fuzzy matching (design spec
+// §2, a fuzzy match risks a wrong guess on a genuinely different
+// plan). Returns {found:false, coveragePercent:0} on a miss -- the
+// caller must show the honest no-rule-found message, never silently
+// substitute a guessed percentage.
+function lookupCoverage(payer, procedureTypeId){
+  var rules=coverageRules();
+  var payerNorm=(payer||'').trim().toLowerCase();
+  var match=rules.find(function(r){
+    return (r.payer||'').trim().toLowerCase()===payerNorm && r.procedure_type_id===procedureTypeId;
+  });
+  return match ? {found:true, coveragePercent:Number(match.coverage_percent)||0} : {found:false, coveragePercent:0};
+}
+// Locked-in at call time (design spec §0) -- the caller stores this
+// result on the charge record permanently. Never recomputed for an
+// existing charge, even if the underlying coverage rule changes later.
+function computeEstimatedInsurance(amount, payer, procedureTypeId){
+  var cov=lookupCoverage(payer, procedureTypeId);
+  return { amount: Math.round((Number(amount)||0) * (cov.coveragePercent/100) * 100)/100, found: cov.found };
+}
+
+function patientBalance(patientId){
+  var myCharges=charges().filter(function(c){return c.patient_id===patientId;});
+  var myPayments=payments().filter(function(p){return p.patient_id===patientId;});
+  var totalCharges=myCharges.reduce(function(s,c){return s+(Number(c.amount)||0);},0);
+  var totalEstInsurance=myCharges.reduce(function(s,c){return s+(Number(c.estimated_insurance_portion)||0);},0);
+  var totalPayments=myPayments.reduce(function(s,p){return s+(Number(p.amount)||0);},0);
+  var balanceDue=(totalCharges-totalEstInsurance)-totalPayments;
+  return {totalCharges:totalCharges, totalEstInsurance:totalEstInsurance, totalPayments:totalPayments, balanceDue:balanceDue};
+}
+
+// Append-only ledger writes -- each a new, uniquely-IDed row, safe
+// from the lost-update race a shared mutable "current balance" field
+// would have (design spec §4, confirmed not assumed: two staff each
+// adding their own charge/payment never conflicts, both land, balance
+// is a sum computed at display time).
+async function addChargeEntry(patientId, appointmentId, procedureTypeId, amount){
+  var pt=patients().find(function(p){return p.id===patientId;});
+  var est=computeEstimatedInsurance(amount, pt?pt.insurance_payer:'', procedureTypeId);
+  var rec={id:newId('CH'), patient_id:patientId, appointment_id:appointmentId||'', procedure_type_id:procedureTypeId,
+    amount:Number(amount)||0, estimated_insurance_portion:est.amount, date:dntLocalToday()};
+  var list=charges();list.push(rec);st('dnt_charges_list',list);
+  var syncResult=await sdnData('write','dnt_charges',rec);
+  return {rec:rec, coverageFound:est.found, syncResult:syncResult};
+}
+async function addPaymentEntry(patientId, amount, method){
+  var rec={id:newId('PM'), patient_id:patientId, amount:Number(amount)||0, method:method, date:dntLocalToday()};
+  var list=payments();list.push(rec);st('dnt_payments_list',list);
+  var syncResult=await sdnData('write','dnt_payments',rec);
+  return {rec:rec, syncResult:syncResult};
+}
+
 function rDash(){
   $('k-patients').textContent=patients().length;
   $('k-providers').textContent=providers().length;
