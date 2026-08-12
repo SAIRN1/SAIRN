@@ -3942,6 +3942,14 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
             <span style="font-size:10px;color:var(--muted);margin-left:4px" id="dc-mode-hint">In Preset Shape, drag any edge of the drawing to stretch it — type to set the exact length while dragging. Switch to Custom Draw for irregular shapes: click and drag toward the next point (snaps to 45°), type to set the exact length while dragging, release to place it. Click near the start to close the shape, drag any corner once closed.</span>
           </div>
 
+          <div class="draw-toolbar" id="dc-zoom-tools" style="margin-top:6px">
+            <span style="font-size:10px;color:var(--muted);margin-right:2px">Zoom:</span>
+            <button class="draw-btn" id="dc-zoom-out-btn" onclick="dcZoomOut()">− Zoom Out</button>
+            <button class="draw-btn" id="dc-zoom-fit-btn" onclick="dcZoomFit()">⤢ Fit to Screen</button>
+            <button class="draw-btn" id="dc-zoom-in-btn" onclick="dcZoomIn()">+ Zoom In</button>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px" id="dc-zoom-label">100%</span>
+          </div>
+
           <div class="draw-toolbar" id="dc-draw-tools" style="margin-top:6px;display:none">
             <button class="draw-btn" onclick="dcUndoPoint()">↶ Undo Point</button>
             <button class="draw-btn" id="dc-insert-btn" onclick="setDCInsertMode(!dcInsertMode)">+ Insert Point on Edge</button>
@@ -10504,6 +10512,34 @@ function dcApplyZoomTransform(ctx, W, H) {
   ctx.setTransform(dcZoomLevel, 0, 0, dcZoomLevel, W/2*(1-dcZoomLevel), H/2*(1-dcZoomLevel));
 }
 
+// Syncs the zoom toolbar's live %-label and each button's disabled state to the current
+// dcZoomLevel. Called after every zoom change AND after every reset-to-1 point (shape switch,
+// mode switch, Clear Shape) so the UI never shows a stale percentage or an enabled button at a
+// bound that's already been reached.
+function dcUpdateZoomUI() {
+  const label = document.getElementById('dc-zoom-label');
+  if (label) label.textContent = Math.round(dcZoomLevel * 100) + '%';
+  const outBtn = document.getElementById('dc-zoom-out-btn');
+  const inBtn = document.getElementById('dc-zoom-in-btn');
+  if (outBtn) outBtn.disabled = dcZoomLevel <= DC_ZOOM_MIN;
+  if (inBtn) inBtn.disabled = dcZoomLevel >= DC_ZOOM_MAX;
+}
+function dcZoomIn() {
+  dcZoomLevel = Math.min(dcZoomLevel * DC_ZOOM_STEP, DC_ZOOM_MAX);
+  dcUpdateZoomUI();
+  drawCTPreview();
+}
+function dcZoomOut() {
+  dcZoomLevel = Math.max(dcZoomLevel / DC_ZOOM_STEP, DC_ZOOM_MIN);
+  dcUpdateZoomUI();
+  drawCTPreview();
+}
+function dcZoomFit() {
+  dcZoomLevel = 1;
+  dcUpdateZoomUI();
+  drawCTPreview();
+}
+
 function dcCanvasCoords(e) {
   const rect = dcCanvas.getBoundingClientRect();
   const scaleX = dcCanvas.width/rect.width, scaleY = dcCanvas.height/rect.height;
@@ -10553,6 +10589,13 @@ function setDCMode(mode) {
   if (toolsRow) toolsRow.style.display = (mode==='draw') ? 'flex' : 'none';
   const roomToolsRow = document.getElementById('dc-room-tools');
   if (roomToolsRow) roomToolsRow.style.display = (mode==='room') ? 'flex' : 'none';
+  // Zoom (2026-08-12): out of scope for Room Layout (its own independent renderer) -- hide the
+  // toolbar there, and always reset to 1 on any mode switch so a rep never lands on a mode with
+  // a stale zoom level from whatever they were doing before.
+  const zoomToolsRow = document.getElementById('dc-zoom-tools');
+  if (zoomToolsRow) zoomToolsRow.style.display = (mode==='room') ? 'none' : 'flex';
+  dcZoomLevel = 1;
+  if (typeof dcUpdateZoomUI === 'function') dcUpdateZoomUI();
   if (mode === 'draw' && !dcPoly.length) {
     // Seed the polygon from whatever preset is currently active so "draw mode" continues
     // the shape on screen instead of starting from a blank canvas.
@@ -11080,6 +11123,8 @@ function dcUndoPoint() {
 function dcClearPoly() {
   dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; dcEditPass = false;
   dcCutouts = []; dcSeams = []; dcChamferedCorners = {}; dcRaisedBar = null;
+  dcZoomLevel = 1;
+  if (typeof dcUpdateZoomUI === 'function') dcUpdateZoomUI();
   // Defensive (June 2026 audit): also reset drag state here, not just on mode switch -- a
   // stuck dcCornerDragging index (see the mouseup-handler fix above) previously survived a
   // Clear Shape click and crashed the very next mousemove inside dcCornerDragMove, since
@@ -11387,6 +11432,8 @@ function selectDrawShape(id) {
   // different preset — drop back to preset mode so the rep sees the new preset cleanly rather
   // than a stale custom shape that no longer matches the selected dimensions.
   if (dcMode === 'draw') { dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; setDCMode('preset'); }
+  dcZoomLevel = 1;
+  if (typeof dcUpdateZoomUI === 'function') dcUpdateZoomUI();
   drawCTPreview();
   // Fix (2026-08-12, caught in final review): a shape switch can deactivate a raised bar (or a
   // chamfer, or a seam) that belonged to the PREVIOUS shape -- the renderer and the UI both
