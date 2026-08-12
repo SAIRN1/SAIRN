@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Patient Feedback</title>
+<style>
+:root{--p:#0EA5E9;--pd:#0284C7;--pt:#E0F2FE;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;}
+.wrap{max-width:560px;margin:0 auto;padding:32px 20px 60px;}
+.logo{font-size:22px;font-weight:800;color:var(--pd);text-align:center;margin-bottom:4px;}
+.sub{color:var(--muted);font-size:13px;text-align:center;margin-bottom:28px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:var(--sh);}
+.fg{margin-bottom:14px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;background:#fff;font-family:inherit;}
+input:focus,textarea:focus{border-color:var(--p);}
+.btn{border:none;border-radius:8px;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer;background:var(--p);color:#fff;width:100%;}
+.btn:hover{background:var(--pd);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.msg{font-size:13px;color:var(--muted);text-align:center;padding:10px;}
+.msg.err{color:var(--danger);}
+.msg.ok{background:var(--pt);color:var(--pd);border-radius:8px;padding:16px;font-weight:600;}
+.step{display:none;}
+.step.on{display:block;}
+.thread-msg{margin-bottom:12px;}
+.thread-who{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:2px;}
+.thread-text{font-size:14px;}
+.token-box{background:var(--pt);border-radius:8px;padding:14px;font-size:12px;word-break:break-all;margin-bottom:14px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Patient Feedback</div>
+  <div class="sub">Private, direct to the practice owner</div>
+
+  <div id="step-loading" class="step on"><div class="msg" id="loading-msg">Loading...</div></div>
+
+  <div id="step-submit" class="step">
+    <div class="card">
+      <div class="fg"><label>Your Message</label><textarea id="cp-message" rows="5" placeholder="Tell us what happened..."></textarea></div>
+      <div class="fg"><label>Your Name (optional)</label><input type="text" id="cp-name" placeholder="Leave blank to stay anonymous"></div>
+      <button class="btn" id="cp-submit-btn" onclick="submitComplaint()">Send</button>
+      <div class="msg" id="cp-submit-msg"></div>
+    </div>
+  </div>
+
+  <div id="step-submitted" class="step">
+    <div class="card">
+      <div class="msg ok">Your message has been sent to the practice owner.</div>
+      <div class="fg" style="margin-top:16px"><label>Save This Link</label></div>
+      <div class="token-box" id="cp-saved-link"></div>
+      <div class="msg">Bookmark this link or write it down &mdash; it's the only way to see the practice's response and reply. There is no way to recover it if you lose it.</div>
+    </div>
+  </div>
+
+  <div id="step-thread" class="step">
+    <div class="card">
+      <div style="font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px" id="cp-thread-status"></div>
+      <div id="cp-thread-messages"></div>
+    </div>
+    <div class="card">
+      <div class="fg"><label>Reply</label><textarea id="cp-thread-reply" rows="3" placeholder="Write a reply..."></textarea></div>
+      <button class="btn" id="cp-thread-reply-btn" onclick="submitThreadReply()">Send Reply</button>
+      <div class="msg" id="cp-thread-msg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var SUBMIT_API='https://sairn.vercel.app/api/sairndental/public-complaint-submit';
+var THREAD_API='https://sairn.vercel.app/api/sairndental/public-complaint-thread';
+var params=new URLSearchParams(window.location.search);
+var slug=params.get('slug');
+var token=params.get('token');
+
+function showStep(id){
+  document.querySelectorAll('.step').forEach(function(s){s.classList.remove('on');});
+  document.getElementById('step-'+id).classList.add('on');
+}
+function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML;}
+
+function init(){
+  if(token){loadThread();return;}
+  if(slug){showStep('submit');return;}
+  document.getElementById('loading-msg').textContent='No link provided. Ask your practice for their real feedback link.';
+  document.getElementById('loading-msg').className='msg err';
+}
+
+async function submitComplaint(){
+  var message=document.getElementById('cp-message').value.trim();
+  var name=document.getElementById('cp-name').value.trim();
+  var msgEl=document.getElementById('cp-submit-msg');
+  if(!message){msgEl.textContent='Please write a message first.';msgEl.className='msg err';return;}
+  var btn=document.getElementById('cp-submit-btn');
+  btn.disabled=true;btn.textContent='Sending...';msgEl.textContent='';
+  try{
+    var res=await fetch(SUBMIT_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slug:slug,message:message,patient_name:name})});
+    var data=await res.json();
+    if(!res.ok||!data.ok){
+      msgEl.textContent=(data.error&&data.error.message)||'Could not send -- try again';
+      msgEl.className='msg err';
+      btn.disabled=false;btn.textContent='Send';
+      return;
+    }
+    var link=window.location.origin+window.location.pathname+'?token='+data.token;
+    document.getElementById('cp-saved-link').textContent=link;
+    showStep('submitted');
+  }catch(e){
+    msgEl.textContent='Could not connect. Check your connection and try again.';msgEl.className='msg err';
+    btn.disabled=false;btn.textContent='Send';
+  }
+}
+
+function renderThread(data){
+  document.getElementById('cp-thread-status').textContent='Status: '+data.status;
+  document.getElementById('cp-thread-messages').innerHTML=(data.messages||[]).map(function(m){
+    var who=m.from==='owner'?'Practice':'You';
+    return '<div class="thread-msg"><div class="thread-who">'+esc(who)+' &middot; '+esc(new Date(m.at).toLocaleString())+'</div><div class="thread-text">'+esc(m.text)+'</div></div>';
+  }).join('');
+  showStep('thread');
+}
+
+async function loadThread(){
+  try{
+    var res=await fetch(THREAD_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token})});
+    var data=await res.json();
+    if(!res.ok||!data.ok){
+      document.getElementById('loading-msg').textContent=(data.error&&data.error.message)||"This link isn't valid.";
+      document.getElementById('loading-msg').className='msg err';
+      return;
+    }
+    renderThread(data);
+  }catch(e){
+    document.getElementById('loading-msg').textContent='Could not connect. Check your connection and try again.';
+    document.getElementById('loading-msg').className='msg err';
+  }
+}
+
+async function submitThreadReply(){
+  var reply=document.getElementById('cp-thread-reply').value.trim();
+  var msgEl=document.getElementById('cp-thread-msg');
+  if(!reply){msgEl.textContent='Write a reply first.';msgEl.className='msg err';return;}
+  var btn=document.getElementById('cp-thread-reply-btn');
+  btn.disabled=true;btn.textContent='Sending...';msgEl.textContent='';
+  try{
+    var res=await fetch(THREAD_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:token,reply:reply})});
+    var data=await res.json();
+    if(!res.ok||!data.ok){
+      msgEl.textContent=(data.error&&data.error.message)||'Could not send -- try again';
+      msgEl.className='msg err';
+      btn.disabled=false;btn.textContent='Send Reply';
+      return;
+    }
+    document.getElementById('cp-thread-reply').value='';
+    btn.disabled=false;btn.textContent='Send Reply';
+    renderThread(data);
+  }catch(e){
+    msgEl.textContent='Could not connect. Check your connection and try again.';msgEl.className='msg err';
+    btn.disabled=false;btn.textContent='Send Reply';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
