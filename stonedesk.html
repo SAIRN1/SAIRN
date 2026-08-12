@@ -9918,7 +9918,8 @@ function calc() {
   const dwCost = COUNTERS.dw * 15;
   const seamCost = (typeof DC_SEAM_EDGE_COST === 'number') ? DC_SEAM_EDGE_COST : 0;
   const chamferCost = (typeof DC_CHAMFER_EDGE_COST === 'number') ? DC_CHAMFER_EDGE_COST : 0;
-  const rawSubtotal = matFabSubtotal + finishCost + edgeCost + waterfallCost + sinkCost + cookCost + holeCost + outletCost + bsCost + bktCost + dwCost + seamCost + chamferCost + removal + delivery;
+  const barCost = (typeof DC_BAR_EDGE_COST === 'number') ? DC_BAR_EDGE_COST : 0;
+  const rawSubtotal = matFabSubtotal + finishCost + edgeCost + waterfallCost + sinkCost + cookCost + holeCost + outletCost + bsCost + bktCost + dwCost + seamCost + chamferCost + barCost + removal + delivery;
   const tierAdj = (matFabSubtotal + finishCost + edgeCost) * (tier.mult - 1.0);
   let total = rawSubtotal + tierAdj;
   total = Math.max(total, proj.min);
@@ -9927,7 +9928,7 @@ function calc() {
   const impliedSF = totalLF * (proj.depthIn / 12);
   const impliedPPSF = total / impliedSF;
 
-  lastCalc = { mat, proj, tier, total, totalLF, impliedSF, impliedPPSF, bsRate, edgeRate, sinkFee, thick, finUpch, removal, delivery, waterfallCost, sinkCost, cookCost, holeCost, outletCost, bsCost, bktCost, dwCost, seamCost, chamferCost, matFabSubtotal, finishCost, edgeCost, tierAdj };
+  lastCalc = { mat, proj, tier, total, totalLF, impliedSF, impliedPPSF, bsRate, edgeRate, sinkFee, thick, finUpch, removal, delivery, waterfallCost, sinkCost, cookCost, holeCost, outletCost, bsCost, bktCost, dwCost, seamCost, chamferCost, barCost, matFabSubtotal, finishCost, edgeCost, tierAdj };
 
   document.getElementById('total-price').textContent = fmt(total);
 
@@ -9949,6 +9950,7 @@ function calc() {
     { name:'Dishwasher brackets (x' + COUNTERS.dw + ')', val:dwCost, show:COUNTERS.dw > 0 },
     { name:'Seam polished edge', val:seamCost, show:seamCost > 0 },
     { name:'Chamfered corner(s)', val:chamferCost, show:chamferCost > 0 },
+    { name:'Raised bar edge', val:barCost, show:barCost > 0 },
     { name:'Old countertop removal', val:removal, show:removal > 0 },
     { name:'Delivery', val:delivery, show:delivery > 0 },
     { name:tier.mult !== 1.0 ? tier.label + ' pricing adjustment' : '', val:tierAdj, show:tierAdj !== 0 },
@@ -13240,6 +13242,27 @@ function dcChamferPricingSummary() {
   return { count: active.length, totalDiagLF: totalDiagLF };
 }
 
+// Sums the active raised bar's real footprint and new edge length. Filters on ctShape prefix
+// (same fix class as dcChamferActiveKeys()) so a bar left over from a different shape never
+// bills or prints here. Effective length is re-clamped against the edge's CURRENT length, same
+// staleness fix chamfer's own pricing/cut-sheet needed after its final review.
+function dcRaisedBarPricingSummary() {
+  if (!dcRaisedBar || dcRaisedBar.edgeKey.indexOf(ctShape + ':') !== 0) {
+    return { active:false, sqFt:0, edgeLF:0, effLenIn:0, effDepthIn:0, corbelFlag:false };
+  }
+  const edgeLenIn = dcRaisedBarEdgeLenIn(dcRaisedBar.edgeKey);
+  const effLenIn = edgeLenIn > 0 ? Math.min(dcRaisedBar.lengthIn, edgeLenIn) : dcRaisedBar.lengthIn;
+  const effDepthIn = dcRaisedBar.overhangDepthIn;
+  if (!(effLenIn > 0) || !(effDepthIn > 0)) {
+    return { active:false, sqFt:0, edgeLF:0, effLenIn:0, effDepthIn:0, corbelFlag:false };
+  }
+  const sqFt = (effLenIn * effDepthIn) / 144;
+  const edgeLF = (effLenIn / 12) + (effDepthIn / 12) * 2; // front edge + both step edges, single-sided
+  const threshold = parseFloat((document.getElementById('sairn-unit-corbel_threshold')||{}).value) || 15;
+  const corbelFlag = effDepthIn > threshold;
+  return { active:true, sqFt, edgeLF, effLenIn, effDepthIn, corbelFlag };
+}
+
 // Sums placed drainboard cutouts by configuration (single/double-sided) and prices them from
 // the editable admin Unit Pricing fields — same pattern as dcSeamPricingSummary above. Defaults
 // ($375 single, $475 double) come from researched fabricator pricing: a typical sloped
@@ -13355,7 +13378,8 @@ function calcDrawing() {
   if(getCBV('dh-outlet-pop')) holes.push('Pop-up island outlet');
   if(getCBV('dh-gfci')) holes.push('GFCI outlet');
 
-  const totalMat=(netSqFt+splashSqFt+wfSqFt)*1.15;
+  const barInfo = (typeof dcRaisedBarPricingSummary === 'function') ? dcRaisedBarPricingSummary() : {active:false,sqFt:0,edgeLF:0,corbelFlag:false};
+  const totalMat=(netSqFt+splashSqFt+wfSqFt+barInfo.sqFt)*1.15;
   const slabs=Math.ceil(totalMat/50);
   const thh=(totalMat/50*4).toFixed(1);
 
@@ -13368,6 +13392,7 @@ function calcDrawing() {
   const seamEdgeCost = seamInfo.totalSeamLF * 2 * edgeLfRate; // both sides of every cut are finished edge
   const chamferInfo = (typeof dcChamferPricingSummary === 'function') ? dcChamferPricingSummary() : {count:0,totalDiagLF:0};
   const chamferEdgeCost = chamferInfo.totalDiagLF * 2 * edgeLfRate; // both sides of every chamfer cut are finished edge, same convention as seams
+  const barEdgeCost = barInfo.edgeLF * edgeLfRate; // single-sided -- ordinary perimeter edges, not an interior double-faced cut
   const drainboardInfo = (typeof dcDrainboardPricingSummary === 'function') ? dcDrainboardPricingSummary() : {count:0,totalCost:0};
   const integratedInfo = (typeof dcIntegratedSinkPricingSummary === 'function') ? dcIntegratedSinkPricingSummary() : {count:0,singleBowlCount:0,multiBowlCount:0,totalCost:0};
 
@@ -13384,6 +13409,7 @@ function calcDrawing() {
     {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
     {n:seamInfo.seamCount>0?seamInfo.pieceCount+' pieces':'1 piece',l:'Seams',s:seamInfo.seamCount>0?seamInfo.seamCount+' seam(s), '+seamInfo.totalSeamLF.toFixed(1)+' LF, +$'+seamEdgeCost.toFixed(0)+' polished edge':'No seams placed'},
     {n:chamferInfo.count>0?'+$'+chamferEdgeCost.toFixed(0):'None',l:'Chamfered Corners',s:chamferInfo.count>0?chamferInfo.count+' corner(s), '+chamferInfo.totalDiagLF.toFixed(2)+' LF diagonal edge':'No corners chamfered'},
+    {n:barInfo.active?barInfo.sqFt.toFixed(2)+' sqft':'None',l:'Raised Bar',s:barInfo.active?barInfo.effLenIn.toFixed(1)+'in x '+barInfo.effDepthIn.toFixed(1)+'in overhang'+(barInfo.corbelFlag?' -- corbel support recommended':''):'No raised bar'},
     {n:drainboardInfo.count>0?'$'+drainboardInfo.totalCost.toFixed(0):'None',l:'Drainboard(s)',s:drainboardInfo.count>0?drainboardInfo.count+' side(s) attached':'No drainboards placed'},
     {n:integratedInfo.count>0?'+$'+integratedInfo.totalCost.toFixed(0):'None',l:'Integrated Sink Premium',s:integratedInfo.count>0?'Carved from same stone, no separate fixture — '+integratedInfo.count+' sink(s)':'No integrated sinks placed'},
   ];
@@ -13413,7 +13439,7 @@ function calcDrawing() {
   }
 
   drawCTPreview();
-  dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost, chamferEdgeCost);
+  dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost, chamferEdgeCost, barEdgeCost);
 }
 
 // Live pricing sync (2026-08-04): calcDrawing() above recomputes gross sqft on every shape edit
@@ -13428,7 +13454,7 @@ function calcDrawing() {
 // existing tested behavior. No pricing formula is duplicated or reimplemented here -- this only
 // feeds the real calc() (unchanged, still owns MATERIALS/PROJECTS/TIERS) the same inputs
 // qbImportFromDraw() would, then lets it compute lastCalc itself.
-function dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost, chamferEdgeCost) {
+function dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost, chamferEdgeCost, barEdgeCost) {
   if (typeof calc !== 'function' || typeof setV !== 'function' || typeof gN !== 'function') return;
   const shape = (typeof ctShape !== 'undefined') ? ctShape : 'straight';
   const isCustom = (typeof dcMode !== 'undefined' && dcMode === 'draw' && typeof dcPolyClosed !== 'undefined' && dcPolyClosed);
@@ -13478,6 +13504,7 @@ function dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost, chamferEdgeCost) {
   // that owns the formula.
   if (typeof seamEdgeCost === 'number') DC_SEAM_EDGE_COST = seamEdgeCost;
   if (typeof chamferEdgeCost === 'number') DC_CHAMFER_EDGE_COST = chamferEdgeCost;
+  if (typeof barEdgeCost === 'number') DC_BAR_EDGE_COST = barEdgeCost;
 
   calc();
 }
@@ -14619,6 +14646,9 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 </div><div class="sairn-form-grp">
   <label class="sairn-form-lbl">Edge work ($/LF)</label>
   <input class="sairn-form-inp" id="sairn-unit-edge_lf" value="18" type="number" step="0.01">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">Corbel support threshold, raised bar (in) — quartz default</label>
+  <input class="sairn-form-inp" id="sairn-unit-corbel_threshold" value="15" type="number" step="0.5">
 </div><div class="sairn-form-grp">
   <label class="sairn-form-lbl">Sink cutout (each)</label>
   <input class="sairn-form-inp" id="sairn-unit-sink_cutout" value="150" type="number" step="0.01">
