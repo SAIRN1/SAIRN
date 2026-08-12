@@ -11724,6 +11724,27 @@ function drawCTPreview() {
     return edgeAssignments[label] || fallback;
   }
 
+  // Raised bar (2026-08-12): purely additive, unlike chamfer -- draws a second, separate filled
+  // rect sharing one edge with the base shape/section's own rect, using the identical fill style,
+  // so two adjacent same-alpha fills with no gap read as one continuous piece. Zero need to touch
+  // any existing shape's fill call. Called once per candidate edge, after that edge's own
+  // rect/fill/strokes are already drawn. edgeKey must match dcRaisedBar.edgeKey EXACTLY (already
+  // shape-namespaced) or this is a no-op -- the caller doesn't need its own active/shape check.
+  function dcDrawRaisedBarIfActive(edgeKey, rectX, rectY, rectW, rectH, sc, edgeLenIn) {
+    if (!dcRaisedBar || dcRaisedBar.edgeKey !== edgeKey) return;
+    var effLenIn = edgeLenIn > 0 ? Math.min(dcRaisedBar.lengthIn, edgeLenIn) : dcRaisedBar.lengthIn;
+    var maxOffsetIn = Math.max(edgeLenIn - effLenIn, 0);
+    var effOffsetIn = Math.min(Math.max(dcRaisedBar.offsetIn, 0), maxOffsetIn);
+    if (!(effLenIn > 0)) return;
+    var offsetPx = effOffsetIn * sc, lengthPx = effLenIn * sc, depthPx = dcRaisedBar.overhangDepthIn * sc;
+    var barX = rectX + offsetPx, barY = rectY + rectH;
+    ctx.fillStyle = 'rgba(232,133,10,0.1)';
+    ctx.beginPath(); ctx.rect(barX, barY, lengthPx, depthPx); ctx.fill();
+    colorEdge(barX, barY + depthPx, barX + lengthPx, barY + depthPx, 'polished');
+    colorEdge(barX, barY, barX, barY + depthPx, 'polished');
+    colorEdge(barX + lengthPx, barY, barX + lengthPx, barY + depthPx, 'polished');
+  }
+
   // Reset the placeable-rect registry used for sink/cutout click-placement + drag hit-testing
   // in the legacy preset renderer. (Point-to-point draw mode has its own equivalent inside
   // drawDCPolygon and returns before reaching this point.)
@@ -11743,6 +11764,7 @@ function drawCTPreview() {
     colorEdge(x,y+aD*sc,x+aL*sc,y+aD*sc,ea0.bottom);
     colorEdge(x,y,x,y+aD*sc,ea0.left);
     window._ctRects.push({key:'A', x:x, y:y, w:aL*sc, h:aD*sc});
+    dcDrawRaisedBarIfActive(ctShape+':Front (exposed)', x, y, aL*sc, aD*sc, sc, aL);
     // waterfall indicators
     if(getCBV('dh-wf-left')) { ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(x-12,y,12,aD*sc); ctx.fill(); colorEdge(x,y,x,y+aD*sc,'waterfall'); dimLabel(x-6,y-8,'WF'); }
     if(getCBV('dh-wf-right')) { ctx.fillStyle='rgba(248,113,113,0.3)'; ctx.beginPath(); ctx.rect(x+aL*sc,y,12,aD*sc); ctx.fill(); colorEdge(x+aL*sc,y,x+aL*sc,y+aD*sc,'waterfall'); dimLabel(x+aL*sc+6,y-8,'WF'); }
@@ -11807,6 +11829,7 @@ function drawCTPreview() {
     }
     window._ctRects.push({key:'A', x:ax, y:ay, w:aw, h:ah});
     if (hasStub) window._ctRects.push({key:'B', x:bx, y:by, w:bw, h:bh});
+    dcDrawRaisedBarIfActive('lshape:A-Front', ax, ay, aw, ah, sc, aL);
 
     if (hasStub) {
       // One continuous outline, clockwise starting at B's top-left, around the whole L, back to
