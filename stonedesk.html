@@ -10594,12 +10594,22 @@ var dcPresetEdgeDragging = null; // {rectKey, side: 'top'|'right'|'bottom'|'left
 // whether dragging that side changes the field's WIDTH-axis (len) or HEIGHT-axis (dep) value.
 // top/bottom edges run horizontally on screen, so dragging them vertically changes depth; left/
 // right edges run vertically on screen, so dragging them horizontally changes length.
+// `rotated:true` marks a rect whose LENGTH runs along the screen-VERTICAL axis (rect.h) and
+// DEPTH along the screen-HORIZONTAL axis (rect.w) -- the opposite of the default convention
+// (rect A, U-shape's Back run, and every Galley/custom section, where w=length, h=depth).
+// L-shape's B run (the vertical stub) and U-shape's Left/Right legs are drawn rotated 90° from
+// that default (see drawCTPreview(): `bw=(bD)*sc, bh=bL*sc` for B; `leftW=aD*sc, leftH=aL*sc`
+// for Left; `rightW=cDv*sc, rightH=cLv*sc` for Right -- confirmed by reading the renderer, not
+// assumed). Bugfix (2026-08-13): dragging B's left/right edge was writing to db-len (Length)
+// instead of db-dep (Depth), because the generic top/bottom-vs-left/right rule in
+// dcTryStartPresetEdgeDrag()/dcPresetEdgeDragMove()/dcPresetEdgeDragEnd() only holds for the
+// non-rotated case -- those three functions now check this flag.
 const PRESET_EDGE_FIELD_MAP = {
   A:     { lenField:'da-len', depField:'da-dep' },
-  B:     { lenField:'db-len', depField:'db-dep' },
-  Left:  { lenField:'da-len', depField:'da-dep' },   // U-shape Left Run
+  B:     { lenField:'db-len', depField:'db-dep', rotated:true },
+  Left:  { lenField:'da-len', depField:'da-dep', rotated:true },   // U-shape Left Run
   Back:  { lenField:'db-len', depField:'db-dep' },   // U-shape Back Run
-  Right: { lenField:'dc-len', depField:'dc-dep' },   // U-shape Right Run
+  Right: { lenField:'dc-len', depField:'dc-dep', rotated:true },   // U-shape Right Run
 };
 function dcPresetEdgeFieldFor(rectKey) {
   if (PRESET_EDGE_FIELD_MAP[rectKey]) return PRESET_EDGE_FIELD_MAP[rectKey];
@@ -10671,7 +10681,12 @@ function dcTryStartPresetEdgeDrag(px, py) {
   if (!hit) return false;
   const fields = dcPresetEdgeFieldFor(hit.rectKey);
   const isHorizontalEdge = (hit.side==='top' || hit.side==='bottom');
-  const fieldId = isHorizontalEdge ? fields.depField : fields.lenField;
+  // See PRESET_EDGE_FIELD_MAP's `rotated` comment -- for a rotated rect (L-shape's B run,
+  // U-shape's Left/Right legs), the top/bottom-vs-left/right -> depth-vs-length mapping is
+  // inverted from the default, since Length runs vertically on screen for these rects instead
+  // of horizontally.
+  const rotated = !!fields.rotated;
+  const fieldId = (isHorizontalEdge !== rotated) ? fields.depField : fields.lenField;
   const el = document.getElementById(fieldId);
   const startVal = el ? (parseFloat(el.value)||0) : 0;
   // Snapshot EVERY rect's current on-screen position/size, plus a still image of the canvas as
@@ -10700,7 +10715,10 @@ function dcPresetEdgeDragMove(e) {
   const fields = dcPresetEdgeFieldFor(d.rectKey);
   const curLenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
   const curDepIn = parseFloat((document.getElementById(fields.depField)||{}).value) || 1;
-  const pxPerInX = d.rect.w / curLenIn, pxPerInY = d.rect.h / curDepIn;
+  // Rotated rect (see PRESET_EDGE_FIELD_MAP comment): rect.w is Depth's pixel extent and rect.h
+  // is Length's, the opposite of the default w=Length/h=Depth convention.
+  const rotated = !!fields.rotated;
+  const pxPerInX = d.rect.w / (rotated ? curDepIn : curLenIn), pxPerInY = d.rect.h / (rotated ? curLenIn : curDepIn);
 
   let liveValIn;
   if (d.isHorizontalEdge) {
@@ -10745,7 +10763,10 @@ function dcPresetEdgeDragEnd(e) {
     const fields = dcPresetEdgeFieldFor(d.rectKey);
     const curLenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
     const curDepIn = parseFloat((document.getElementById(fields.depField)||{}).value) || 1;
-    const pxPerInX = d.rect.w / curLenIn, pxPerInY = d.rect.h / curDepIn;
+    // Rotated rect (see PRESET_EDGE_FIELD_MAP comment): rect.w is Depth's pixel extent and
+    // rect.h is Length's, the opposite of the default w=Length/h=Depth convention.
+    const rotated = !!fields.rotated;
+    const pxPerInX = d.rect.w / (rotated ? curDepIn : curLenIn), pxPerInY = d.rect.h / (rotated ? curLenIn : curDepIn);
     let liveValIn;
     if (d.isHorizontalEdge) {
       const deltaPx = (d.side==='top') ? (d.rect.y - py) : (py - (d.rect.y + d.rect.h));
