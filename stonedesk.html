@@ -11926,6 +11926,10 @@ function drawCTPreview() {
     window._ctRects.push({key:'Back', x:bx, y:by, w:backW, h:backH});
     window._ctRects.push({key:'Left', x:lx, y:ly, w:leftW, h:leftH});
     window._ctRects.push({key:'Right', x:rx, y:ry, w:rightW, h:rightH});
+    // Raised bar attaches to the Back run's own rect (bx,by,backW,backH) -- its front edge is
+    // "Back front" (the nominal, un-chamfered full span from lx+leftW to rx), independent of
+    // whether either inside corner is currently chamfered; the two features don't interact.
+    dcDrawRaisedBarIfActive('ushape:Back front', lx+leftW, by, backFrontPx, backH, sc, bL);
     // Outline as one continuous polygon (clockwise from top-left, around the U, back to start)
     colorEdge(lx,ly+leftH, lx,by, ea('Left back (wall)','wall'));                 // left leg outer (left wall)
     colorEdge(lx,by, bx+backW,by, ea('Back wall','wall'));                       // back wall
