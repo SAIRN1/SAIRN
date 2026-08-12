@@ -9900,7 +9900,8 @@ function calc() {
   const bsCost = bsRate * bsLF;
   const bktCost = COUNTERS.bkt * 50;
   const dwCost = COUNTERS.dw * 15;
-  const rawSubtotal = matFabSubtotal + finishCost + edgeCost + waterfallCost + sinkCost + cookCost + holeCost + outletCost + bsCost + bktCost + dwCost + removal + delivery;
+  const seamCost = (typeof DC_SEAM_EDGE_COST === 'number') ? DC_SEAM_EDGE_COST : 0;
+  const rawSubtotal = matFabSubtotal + finishCost + edgeCost + waterfallCost + sinkCost + cookCost + holeCost + outletCost + bsCost + bktCost + dwCost + seamCost + removal + delivery;
   const tierAdj = (matFabSubtotal + finishCost + edgeCost) * (tier.mult - 1.0);
   let total = rawSubtotal + tierAdj;
   total = Math.max(total, proj.min);
@@ -9909,7 +9910,7 @@ function calc() {
   const impliedSF = totalLF * (proj.depthIn / 12);
   const impliedPPSF = total / impliedSF;
 
-  lastCalc = { mat, proj, tier, total, totalLF, impliedSF, impliedPPSF, bsRate, edgeRate, sinkFee, thick, finUpch, removal, delivery, waterfallCost, sinkCost, cookCost, holeCost, outletCost, bsCost, bktCost, dwCost, matFabSubtotal, finishCost, edgeCost, tierAdj };
+  lastCalc = { mat, proj, tier, total, totalLF, impliedSF, impliedPPSF, bsRate, edgeRate, sinkFee, thick, finUpch, removal, delivery, waterfallCost, sinkCost, cookCost, holeCost, outletCost, bsCost, bktCost, dwCost, seamCost, matFabSubtotal, finishCost, edgeCost, tierAdj };
 
   document.getElementById('total-price').textContent = fmt(total);
 
@@ -9929,6 +9930,7 @@ function calc() {
     { name:'Backsplash', val:bsCost, show:bsCost > 0 },
     { name:'Carbon brackets (x' + COUNTERS.bkt + ')', val:bktCost, show:COUNTERS.bkt > 0 },
     { name:'Dishwasher brackets (x' + COUNTERS.dw + ')', val:dwCost, show:COUNTERS.dw > 0 },
+    { name:'Seam polished edge', val:seamCost, show:seamCost > 0 },
     { name:'Old countertop removal', val:removal, show:removal > 0 },
     { name:'Delivery', val:delivery, show:delivery > 0 },
     { name:tier.mult !== 1.0 ? tier.label + ' pricing adjustment' : '', val:tierAdj, show:tierAdj !== 0 },
@@ -10152,6 +10154,11 @@ var TIERS = {
 };
 var currentTier = 'retail';
 var COUNTERS = { wf: 0, sink: 0, cook: 0, hole: 0, outlet: 0, bkt: 0, dw: 0 };
+// Seam polished-edge cost, synced from the Drawing Tool's dcSeams via dcSyncLiveToQuoteEngine()
+// (2026-08-12 fix): calcDrawing() already computed this dollar figure correctly for its own
+// results-panel display, but never fed it into calc()'s real quote total -- same disconnect bug
+// class as the cutout cost fix earlier this session, found while designing the chamfer feature.
+var DC_SEAM_EDGE_COST = 0;
 var TYPICAL = {
   kitchen_std: 2800, kitchen_l: 3600, kitchen_island: 4400,
   bath_single: 950, bath_double: 1500, bath_master: 2200,
@@ -13017,7 +13024,7 @@ function calcDrawing() {
   }
 
   drawCTPreview();
-  dcSyncLiveToQuoteEngine(grossSqFt);
+  dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost);
 }
 
 // Live pricing sync (2026-08-04): calcDrawing() above recomputes gross sqft on every shape edit
@@ -13032,7 +13039,7 @@ function calcDrawing() {
 // existing tested behavior. No pricing formula is duplicated or reimplemented here -- this only
 // feeds the real calc() (unchanged, still owns MATERIALS/PROJECTS/TIERS) the same inputs
 // qbImportFromDraw() would, then lets it compute lastCalc itself.
-function dcSyncLiveToQuoteEngine(grossSqFt) {
+function dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost) {
   if (typeof calc !== 'function' || typeof setV !== 'function' || typeof gN !== 'function') return;
   const shape = (typeof ctShape !== 'undefined') ? ctShape : 'straight';
   const isCustom = (typeof dcMode !== 'undefined' && dcMode === 'draw' && typeof dcPolyClosed !== 'undefined' && dcPolyClosed);
@@ -13074,6 +13081,13 @@ function dcSyncLiveToQuoteEngine(grossSqFt) {
       if (el) el.textContent = COUNTERS[k];
     });
   }
+
+  // Seam-cost disconnect fix (2026-08-12): calcDrawing() already computes this dollar figure
+  // correctly for its own results-panel display (both sides of every seam cut are finished
+  // edge, priced at the admin-configured edge_lf rate) -- it just never reached the real quote
+  // total before. Passed in directly rather than recomputed here, so there's exactly one place
+  // that owns the formula.
+  if (typeof seamEdgeCost === 'number') DC_SEAM_EDGE_COST = seamEdgeCost;
 
   calc();
 }
