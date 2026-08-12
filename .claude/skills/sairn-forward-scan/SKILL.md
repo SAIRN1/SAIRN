@@ -21,6 +21,8 @@ Every real lesson tonight was found reactively — a bug shipped, then got caugh
 
 **About to build a new feature with any threshold, ratio, or edge case:** before writing the happy-path logic, ask "what's the zero case, the negative case, the empty case" — SAIRNbuild's zero-budget-with-real-spend gap existed because that specific input wasn't asked about until a later review caught it. Ask during design, not after shipping.
 
+**About to build multi-angle scanning, per-pixel line-detection, or click-drag 2D→3D geometry reconstruction from photos, in any app:** stop and re-check the US 9,501,700 patent family (photo-based measurement-to-estimate, aerial-roof-imagery domain) before building — confirmed real, active, and litigated aggressively by its owner (a $125M verdict against a competitor in this exact category). StoneDesk's current photo feature is confirmed clear because it's a single LLM inference call, not this classical CV pipeline — but if any future feature moves toward that specific shape (multi-angle scan-rotate-scan, per-pixel roofline/edge filters, manual 2D-model-to-3D dragging), that clearance no longer holds and needs a fresh check, not an assumption the earlier "all clear" still applies.
+
 **About to add a new visual indicator (color, badge, KPI):** before shipping, ask "does this collide with an existing color/signal meaning elsewhere in the app" — the --warn/--p amber collision and the SAIRNbiz static-green-on-negative bug both existed because this question wasn't asked until the color was already picked.
 
 ## What this is NOT
