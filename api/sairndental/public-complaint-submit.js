@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
   if (message.length > MAX_MESSAGE_LEN) { res.status(400).json({ error: { code: 'MESSAGE_TOO_LONG', message: 'Message is too long -- please keep it under ' + MAX_MESSAGE_LEN + ' characters' } }); return; }
 
   try {
-    const rl = await checkAndIncrementRateLimit(req, 60, 5); // 5 submissions per hour per IP
+    const rl = await checkAndIncrementRateLimit(req, 60, 5, 'complaint-submit'); // 5 submissions per hour per IP
     if (!rl.allowed) { res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many attempts -- please call the office or try again later' } }); return; }
 
     const licenseHash = await resolveSlug(slug);

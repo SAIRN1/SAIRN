@@ -53,6 +53,10 @@
     {
       "src": "/sairndental-book$",
       "dest": "/sairndental-book.html"
+    },
+    {
+      "src": "/sairndental-complaint$",
+      "dest": "/sairndental-complaint.html"
     }
   ],
   "crons": [

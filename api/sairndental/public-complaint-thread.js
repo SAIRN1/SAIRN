@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
 
   try {
     if (reply) {
-      const rl = await checkAndIncrementRateLimit(req, 60, 20); // 20 replies per hour per IP
+      const rl = await checkAndIncrementRateLimit(req, 60, 20, 'complaint-reply'); // 20 replies per hour per IP
       if (!rl.allowed) { res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many messages -- please try again later' } }); return; }
     }
 

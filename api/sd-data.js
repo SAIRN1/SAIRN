@@ -1810,11 +1810,11 @@ module.exports = async (req, res) => {
     // this staff app's read and its write, silently dropped). See
     // docs/superpowers/specs/2026-08-12-sairndental-complaint-design.md §0/§1.
     if (resource === 'dnt_complaints' && action === 'read') {
-      const r = await fetch(rest('dnt_complaints?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      const r = await fetch(rest('dnt_complaints?license_hash=eq.' + enc(licHash) + '&select=data,updated_at&order=updated_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({}, x.data, { updated_at: x.updated_at })), provisioned: true });
       return;
     }
     if (resource === 'dnt_complaints' && action === 'write') {

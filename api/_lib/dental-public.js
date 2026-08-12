@@ -53,8 +53,8 @@ async function resolveSlug(slug) {
 
 // windowMinutes: fixed-window size. maxCount: allowed requests per window
 // per ip_hash. Returns {allowed: boolean, count: number}.
-async function checkAndIncrementRateLimit(req, windowMinutes, maxCount) {
-  const ipHash = hashIp(clientIp(req));
+async function checkAndIncrementRateLimit(req, windowMinutes, maxCount, bucket) {
+  const ipHash = hashIp(clientIp(req) + (bucket ? '|' + bucket : ''));
   const windowMs = windowMinutes * 60 * 1000;
   const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs).toISOString();
   const headers = supabaseHeaders();
