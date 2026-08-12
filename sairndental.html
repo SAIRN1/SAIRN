@@ -621,6 +621,7 @@ function nav(id){
   if(id==='appointments')rAppointments();
   if(id==='billing')rBilling();
   if(id==='referrals')rReferrals();
+  if(id==='complaints')rComplaints();
 }
 
 function exportPanelCSV(panelId,name){
@@ -1377,7 +1378,8 @@ var DNT_SYNC_RESOURCES=[
   ['dnt_appointments','dnt_appointments_list'],
   ['dnt_charges','dnt_charges_list'],
   ['dnt_payments','dnt_payments_list'],
-  ['dnt_referrals','dnt_referrals_list']
+  ['dnt_referrals','dnt_referrals_list'],
+  ['dnt_complaints','dnt_complaints_list']
 ];
 // dnt_denial/dnt_ar/dnt_revenue deliberately excluded -- no client-side
 // accessor or render function exists for any of them yet (confirmed by
@@ -1410,7 +1412,7 @@ async function dntSyncFromServer(){
   }
   if(changed){
     rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
-    rCoverage();rPending();rAppointments();rBilling();rReferrals();
+    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
   }
   return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+1};
