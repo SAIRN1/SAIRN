@@ -964,6 +964,8 @@ textarea#userInput::placeholder{color:var(--muted)}
 .draw-btn:hover,.draw-btn.active{
   background:var(--ar);border-color:var(--ab);color:var(--a);
 }
+.draw-btn:disabled{opacity:.45;cursor:default}
+.draw-btn:disabled:hover{background:rgba(255,255,255,0.04);border-color:var(--border);color:var(--muted)}
 
 /* edge legend */
 .edge-legend{
@@ -10846,9 +10848,13 @@ function dcTryStartPresetEdgeDrag(px, py) {
 }
 function dcPresetEdgeDragMove(e) {
   if (!dcPresetEdgeDragging) return;
-  const rect = dcCanvas.getBoundingClientRect();
-  const scaleX = dcCanvas.width/rect.width, scaleY = dcCanvas.height/rect.height;
-  const px = (e.clientX-rect.left)*scaleX, py = (e.clientY-rect.top)*scaleY;
+  // Fix (2026-08-12, caught in final review): this used to re-derive px,py from
+  // getBoundingClientRect() directly, which is only correct at zoom 1x -- d.rect (set when the
+  // drag started, from window._ctRects) is in the same LOGICAL/pre-zoom space dcCanvasCoords()
+  // already returns, so comparing it against raw screen-space coords silently wrote wrong
+  // dimensions into the quote at any other zoom level. Now uses the same universal conversion
+  // every other hit-test/drag function in the file uses.
+  const { px, py } = dcCanvasCoords(e);
   const d = dcPresetEdgeDragging;
   d._lastPx = px; d._lastPy = py; // remembered so the typed-override callback can redraw without a new mouse event
   const fields = dcPresetEdgeFieldFor(d.rectKey);
@@ -10894,10 +10900,12 @@ function dcRedrawPresetDragFrame(d, pxPerInX, pxPerInY, valueIn) {
 function dcPresetEdgeDragEnd(e) {
   if (!dcPresetEdgeDragging) return;
   const d = dcPresetEdgeDragging;
-  const rect = dcCanvas.getBoundingClientRect();
-  const scaleX = dcCanvas.width/rect.width, scaleY = dcCanvas.height/rect.height;
-  const px = e ? (e.clientX-rect.left)*scaleX : null;
-  const py = e ? (e.clientY-rect.top)*scaleY : null;
+  // Fix (2026-08-12, caught in final review): same fix as dcPresetEdgeDragMove above -- use the
+  // shared, zoom-aware conversion instead of a raw re-derivation, so the committed value matches
+  // what the rep actually dragged to, at any zoom level.
+  const c = e ? dcCanvasCoords(e) : null;
+  const px = c ? c.px : null;
+  const py = c ? c.py : null;
 
   // Only NOW — once the drag has actually ended — do we write the new value into the field and
   // trigger the full re-render (which recomputes the shared scale and re-lays-out everything,
@@ -11055,8 +11063,15 @@ function dcShowDragOverlay(anchorPx, liveLengthIn, onType) {
   }
   const rect = dcCanvas.getBoundingClientRect();
   const dispScale = rect.width / dcCanvas.width;
-  box.style.left = (rect.left + anchorPx.x*dispScale + 14) + 'px';
-  box.style.top = (rect.top + anchorPx.y*dispScale - 36) + 'px';
+  // Fix (2026-08-12, caught in final review): anchorPx arrives in LOGICAL (pre-zoom) coordinates
+  // -- the same space dcCanvasCoords()/dcInToPx() already use -- so it must go through the same
+  // forward transform dcApplyZoomTransform() applies at render time before being converted to
+  // real screen position, or this overlay drifts away from the cursor at any zoom other than 1x.
+  const W = dcCanvas.width, H = dcCanvas.height;
+  const rawX = anchorPx.x*dcZoomLevel + W/2*(1-dcZoomLevel);
+  const rawY = anchorPx.y*dcZoomLevel + H/2*(1-dcZoomLevel);
+  box.style.left = (rect.left + rawX*dispScale + 14) + 'px';
+  box.style.top = (rect.top + rawY*dispScale - 36) + 'px';
   const displayVal = dcDragOverlayTyped != null ? dcDragOverlayTyped : Math.round(liveLengthIn*10)/10;
   // Rebuild only if not already focused, so typing isn't interrupted by every mousemove redraw.
   const existingInput = document.getElementById('dc-drag-input');
@@ -11207,8 +11222,14 @@ function dcOpenEdgeTypeMenu(segIdx, px, py) {
   }
   const rect = dcCanvas.getBoundingClientRect();
   const dispScale = rect.width / dcCanvas.width;
-  menu.style.left = (rect.left + px*dispScale + 10) + 'px';
-  menu.style.top = (rect.top + py*dispScale - 10) + 'px';
+  // Fix (2026-08-12, caught in final review): px,py arrive in LOGICAL (pre-zoom) coordinates via
+  // dcCanvasClick()'s dcCanvasCoords() call -- same forward-transform fix as dcShowDragOverlay
+  // above, for the same reason.
+  const W = dcCanvas.width, H = dcCanvas.height;
+  const rawX = px*dcZoomLevel + W/2*(1-dcZoomLevel);
+  const rawY = py*dcZoomLevel + H/2*(1-dcZoomLevel);
+  menu.style.left = (rect.left + rawX*dispScale + 10) + 'px';
+  menu.style.top = (rect.top + rawY*dispScale - 10) + 'px';
   const types = ['polished','wall','cabinet','appliance','waterfall','splash'];
   menu.innerHTML = types.map(t =>
     '<div onclick="dcSetEdgeType(' + segIdx + ',\'' + t + '\')" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;border-radius:5px;font-size:11px;color:#fff" onmouseover="this.style.background=\'rgba(255,255,255,0.08)\'" onmouseout="this.style.background=\'transparent\'">' +
@@ -11775,7 +11796,11 @@ function drawCTPreview() {
   // maps to (0,0,W,H) under the STALE transform, leaving old content visible outside it.
   ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,W,H);
-  dcApplyZoomTransform(ctx, W, H);
+  // Room Layout (dcMode==='room') is out of scope for zoom -- dcZoomLevel is already always 1
+  // there in practice (the toolbar is hidden and every reset point covers mode switches), but
+  // this guard makes that a structural guarantee at the render call site itself, not just a
+  // UI-level one, per the final review's recommendation.
+  if (dcMode !== 'room') dcApplyZoomTransform(ctx, W, H);
 
   // Graph-paper grid (2026-08-04 visual polish): light blueprint-paper background (#EEF3F9, set
   // via CSS on the canvas element) with a two-tier grid -- a faint 40px minor line every 10in at
@@ -12808,9 +12833,13 @@ function dcApplySinkFitCheck(c, notify) {
 function dcCanvasPlaceOrDrag(e, phase) {
   const cv = document.getElementById('ct-canvas');
   if (!cv) return;
-  const rect = cv.getBoundingClientRect();
-  const scaleX = cv.width / rect.width, scaleY = cv.height / rect.height;
-  const px = (e.clientX - rect.left) * scaleX, py = (e.clientY - rect.top) * scaleY;
+  // Fix (2026-08-12, caught in final review): this used to re-derive px,py from
+  // getBoundingClientRect() directly instead of calling dcCanvasCoords() -- the plan that
+  // introduced zoom named this function as one that already routed through it; it didn't. At any
+  // zoom other than 1x a sink/cooktop/hole cutout would be placed or dragged to the wrong spot
+  // (increasingly off the further from canvas-center the click was). cv and dcCanvas are the
+  // same DOM element, so dcCanvasCoords() (which reads the global dcCanvas) is safe to use here.
+  const { px, py } = dcCanvasCoords(e);
 
   if (phase === 'down') {
     const existing = dcHitCutout(px, py);
