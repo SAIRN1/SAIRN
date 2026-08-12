@@ -10326,18 +10326,44 @@ var dcEditPass = false;       // true once the shape is closed and the rep is in
 var GRID_SNAP_IN = 1;         // grid snap: nearest inch
 var ANGLE_SNAP_DEG = 45;      // angle snap: nearest 45° increment (covers 0/45/90/135/180/...)
 
+// Canvas height (2026-08-12): replaces the old fixed 480px with a viewport-relative, capped
+// value -- 65% of the browser's visible height, floored at 480 (never smaller than today's
+// experience) and capped at 900 (never dominates the page on an ultrawide monitor). Width was
+// already responsive (dcCanvas.width = offsetWidth, both call sites below); this was the one
+// real fixed constant.
+function dcComputeCanvasHeight() {
+  return Math.max(480, Math.min(window.innerHeight * 0.65, 900));
+}
+
 function initDCCanvas() {
   dcCanvas = document.getElementById('ct-canvas');
   if (!dcCanvas) return;
   dcCtx = dcCanvas.getContext('2d', { willReadFrequently: true });
   dcCanvas.width = dcCanvas.offsetWidth || 640;
-  dcCanvas.height = 480;
+  dcCanvas.height = dcComputeCanvasHeight();
   dcCanvas.onmousedown = dcCanvasClick;
   dcCanvas.onmousemove = dcCanvasHover;
   dcCanvas.oncontextmenu = e => e.preventDefault();
   initDCCutoutEvents();
   initDCSeamEvents();
   initDCTouchEvents();
+  // Debounced window-resize re-sync (2026-08-12): no resize listener existed for this canvas
+  // before -- width only ever re-synced on load and on the side-panel collapse toggle. Guarded
+  // so it only wires once per canvas lifetime, same pattern as the mouseup listener below.
+  // Debounced (~150ms) so a window-drag doesn't fire a full redraw on every intermediate event.
+  if (!dcCanvas._resizeWired) {
+    dcCanvas._resizeWired = true;
+    var dcResizeDebounce = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(dcResizeDebounce);
+      dcResizeDebounce = setTimeout(function () {
+        if (!dcCanvas) return;
+        dcCanvas.width = dcCanvas.offsetWidth || dcCanvas.width;
+        dcCanvas.height = dcComputeCanvasHeight();
+        if (typeof drawCTPreview === 'function') drawCTPreview();
+      }, 150);
+    });
+  }
   // Document-level mouseup (not canvas-level) so a drag that ends outside the canvas bounds —
   // easy to do when stretching a long measurement near the panel edge — still gets caught and
   // committed instead of leaving the drag stuck active. Guarded so it only wires once per canvas
@@ -10375,7 +10401,7 @@ function toggleDCLeftPanel() {
   setTimeout(function(){
     if (dcCanvas) {
       dcCanvas.width = dcCanvas.offsetWidth || dcCanvas.width;
-      dcCanvas.height = 480;
+      dcCanvas.height = dcComputeCanvasHeight();
     }
     if (typeof drawCTPreview === 'function') drawCTPreview();
   }, 220);
