@@ -220,6 +220,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-patients" onclick="nav('patients')"><span class="sico">&#129502;</span>Patients</button>
       <button class="sb" id="sb-icap" onclick="nav('icap')"><span class="sico">&#128248;</span>Insurance Capture</button>
       <button class="sb" id="sb-referrals" onclick="nav('referrals')"><span class="sico">&#128257;</span>Referrals</button>
+      <button class="sb" id="sb-complaints" onclick="nav('complaints')"><span class="sico">&#128172;</span>Complaints<span class="badge br" id="complaints-badge" style="display:none;margin-left:8px"></span></button>
       <div class="ss">Practice Setup</div>
       <button class="sb" id="sb-providers" onclick="nav('providers')"><span class="sico">&#129658;</span>Providers</button>
       <button class="sb" id="sb-operatories" onclick="nav('operatories')"><span class="sico">&#127973;</span>Operatories</button>
@@ -296,6 +297,14 @@ label.chk input{width:auto;}
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
           <table id="referrals-table"><thead><tr><th>Direction</th><th>Patient</th><th>External Party</th><th>Provider</th><th>Date</th><th>Reason</th><th>Status</th></tr></thead><tbody id="referrals-tbody"></tbody></table>
         </div></div>
+      </div>
+
+      <div class="panel" id="panel-complaints">
+        <div class="ph"><div><div class="ptitle">Complaints</div><div class="psub">Anonymous-optional patient feedback, routed privately &mdash; every open thread needs a real owner response, not a passive drop-box.</div></div></div>
+        <div class="card"><div class="cb">
+          <div style="font-size:11px;color:var(--muted)" id="cp-link-preview"></div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Threads</div></div><div class="cb" id="cp-list"></div></div>
       </div>
 
       <div class="panel" id="panel-icap">
@@ -1229,6 +1238,47 @@ function rReferrals(){
       '<td>'+H(r.external_party)+'</td><td>'+H(prov?prov.name:'--')+'</td><td>'+H(r.date)+'</td><td>'+H(r.reason)+'</td>'+
       '<td><select onchange="setReferralStatus(\''+r.id+'\',this.value)">'+statusOpts+'</select></td></tr>';
   }).join('')||'<tr><td colspan="7" style="color:var(--muted);text-align:center">No referrals on file yet</td></tr>';
+}
+
+function cpBadgeCount(){return complaints().filter(function(c){return c.status==='New';}).length;}
+function rComplaintsBadge(){
+  var n=cpBadgeCount();
+  var b=$('complaints-badge');
+  if(!b)return;
+  if(n>0){b.textContent=String(n);b.style.display='inline-block';}else{b.style.display='none';}
+}
+function rComplaints(){
+  rComplaintsBadge();
+  var list=complaints().slice().sort(function(a,b){
+    var order={'New':0,'Awaiting Patient':1,'Resolved':2};
+    var byStatus=(order[a.status]||0)-(order[b.status]||0);
+    if(byStatus!==0)return byStatus;
+    return (b.updated_at||'').localeCompare(a.updated_at||'');
+  });
+  var s=settings();
+  var linkEl=$('cp-link-preview');
+  if(linkEl)linkEl.textContent=s.booking_slug?('Patient feedback link: sairn.vercel.app/sairndental-complaint?slug='+s.booking_slug):'Set a public link slug on the Booking Settings panel to get your patient feedback link.';
+  var host=$('cp-list');
+  if(!host)return;
+  if(!list.length){host.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px">No complaints on file yet</div>';return;}
+  var isOwner=prole==='owner';
+  host.innerHTML=list.map(function(c){
+    var msgsHtml=(c.messages||[]).map(function(m){
+      var who=m.from==='owner'?'Practice':(c.patient_name?H(c.patient_name):'Anonymous patient');
+      return '<div style="margin-bottom:8px"><div style="font-size:11px;color:var(--muted);font-weight:600">'+who+' &middot; '+H(new Date(m.at).toLocaleString())+'</div><div style="font-size:13px">'+H(m.text)+'</div></div>';
+    }).join('');
+    var statusClass=c.status==='New'?'br':(c.status==='Resolved'?'bg':'bw');
+    var respondHtml=isOwner?(
+      '<div class="fg"><textarea id="cp-reply-'+c.id+'" rows="2" placeholder="Write a response..." style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit"></textarea></div>'+
+      '<button class="btn bp bs" onclick="respondToComplaint(\''+c.id+'\',\'reply\')">Send Response</button> '+
+      (c.status!=='Resolved'?'<button class="btn bo bs" onclick="respondToComplaint(\''+c.id+'\',\'resolve\')">Mark Resolved</button>':'')
+    ):'<div style="font-size:12px;color:var(--muted)">Only the practice owner can respond.</div>';
+    return '<div class="card" style="margin-bottom:12px"><div class="cb">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+      '<div style="font-weight:600">'+(c.patient_name?H(c.patient_name):'Anonymous')+'</div>'+
+      '<span class="badge '+statusClass+'">'+H(c.status)+'</span></div>'+
+      msgsHtml+respondHtml+'</div></div>';
+  }).join('');
 }
 
 // Case-insensitive exact match only -- no fuzzy matching (design spec
