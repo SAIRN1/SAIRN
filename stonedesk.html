@@ -10604,11 +10604,22 @@ var dcPresetEdgeDragging = null; // {rectKey, side: 'top'|'right'|'bottom'|'left
 // instead of db-dep (Depth), because the generic top/bottom-vs-left/right rule in
 // dcTryStartPresetEdgeDrag()/dcPresetEdgeDragMove()/dcPresetEdgeDragEnd() only holds for the
 // non-rotated case -- those three functions now check this flag.
+// `compositeLen:true` marks a rect whose WIDTH (rect.w, the pixel extent that would normally
+// convert 1:1 with lenField alone) is actually a SUM of more than just that one field.
+// U-shape's Back run is drawn `backW = aD*sc + bL*sc + cDv*sc` (Left's depth + Back's own
+// length + Right's depth, see drawCTPreview()) -- Back's HEIGHT (backH = bDv*sc) is still a
+// pure, single-field function of db-dep, but its WIDTH is not a pure function of db-len alone.
+// Bugfix (2026-08-13): dragging Back's left/right edge computed pxPerInX = rect.w / db-len,
+// which silently inflates the px-per-inch ratio by however much of backW actually belongs to
+// the two legs' depths -- the saved Length value ended up smaller than what the rep's drag
+// distance represented on the canvas's own real (grid-matching) scale. Fixed by deriving the
+// scale from Back's own PURE axis (height/db-dep) instead of its composite one, for exactly
+// this one rect -- Left/Right/A/Galley/custom sections have no composite axis and are unaffected.
 const PRESET_EDGE_FIELD_MAP = {
   A:     { lenField:'da-len', depField:'da-dep' },
   B:     { lenField:'db-len', depField:'db-dep', rotated:true },
   Left:  { lenField:'da-len', depField:'da-dep', rotated:true },   // U-shape Left Run
-  Back:  { lenField:'db-len', depField:'db-dep' },   // U-shape Back Run
+  Back:  { lenField:'db-len', depField:'db-dep', compositeLen:true },   // U-shape Back Run
   Right: { lenField:'dc-len', depField:'dc-dep', rotated:true },   // U-shape Right Run
 };
 function dcPresetEdgeFieldFor(rectKey) {
@@ -10716,9 +10727,13 @@ function dcPresetEdgeDragMove(e) {
   const curLenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
   const curDepIn = parseFloat((document.getElementById(fields.depField)||{}).value) || 1;
   // Rotated rect (see PRESET_EDGE_FIELD_MAP comment): rect.w is Depth's pixel extent and rect.h
-  // is Length's, the opposite of the default w=Length/h=Depth convention.
+  // is Length's, the opposite of the default w=Length/h=Depth convention. compositeLen rect (see
+  // same comment, U-shape's Back run): rect.w isn't a pure function of lenField alone, so borrow
+  // the real canvas scale from rect.h/depField (Back's own pure axis) instead.
   const rotated = !!fields.rotated;
-  const pxPerInX = d.rect.w / (rotated ? curDepIn : curLenIn), pxPerInY = d.rect.h / (rotated ? curLenIn : curDepIn);
+  const compositeLen = !!fields.compositeLen;
+  const pxPerInX = rotated ? (d.rect.w / curDepIn) : (compositeLen ? (d.rect.h / curDepIn) : (d.rect.w / curLenIn));
+  const pxPerInY = rotated ? (d.rect.h / curLenIn) : (d.rect.h / curDepIn);
 
   let liveValIn;
   if (d.isHorizontalEdge) {
@@ -10764,9 +10779,13 @@ function dcPresetEdgeDragEnd(e) {
     const curLenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
     const curDepIn = parseFloat((document.getElementById(fields.depField)||{}).value) || 1;
     // Rotated rect (see PRESET_EDGE_FIELD_MAP comment): rect.w is Depth's pixel extent and
-    // rect.h is Length's, the opposite of the default w=Length/h=Depth convention.
+    // rect.h is Length's, the opposite of the default w=Length/h=Depth convention. compositeLen
+    // rect (U-shape's Back run): rect.w isn't a pure function of lenField alone, so borrow the
+    // real canvas scale from rect.h/depField (Back's own pure axis) instead.
     const rotated = !!fields.rotated;
-    const pxPerInX = d.rect.w / (rotated ? curDepIn : curLenIn), pxPerInY = d.rect.h / (rotated ? curLenIn : curDepIn);
+    const compositeLen = !!fields.compositeLen;
+    const pxPerInX = rotated ? (d.rect.w / curDepIn) : (compositeLen ? (d.rect.h / curDepIn) : (d.rect.w / curLenIn));
+    const pxPerInY = rotated ? (d.rect.h / curLenIn) : (d.rect.h / curDepIn);
     let liveValIn;
     if (d.isHorizontalEdge) {
       const deltaPx = (d.side==='top') ? (d.rect.y - py) : (py - (d.rect.y + d.rect.h));
