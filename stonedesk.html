@@ -11360,11 +11360,31 @@ function dcChamferMaxSetbackIn(cornerKey) {
 // quote total and the printed fabrication instruction still billed/specified the original,
 // now-too-large setback -- the same staleness class the sink-fit check already solved elsewhere
 // in this file, just not extended to chamfers. This is the single source both money and the cut
-// sheet read from, so they can never disagree with what's actually drawn.
+// sheet read from, at the moment either is computed/printed -- like the rest of this app's
+// dimension-driven pricing (gross sqft, sink-fit), it still lags a typed dimension edit until
+// the next calcDrawing() refire (drag end, blur, etc.), same as every other figure here.
 function dcChamferEffectiveSetbackIn(cornerKey) {
   var c = dcChamferedCorners[cornerKey];
   if (!c) return 0;
   return Math.min(c.setbackIn, dcChamferMaxSetbackIn(cornerKey));
+}
+
+// Final-review fix (2026-08-12): dcChamferedCorners deliberately survives a shape switch (so
+// switching away and back doesn't lose a rep's work), but that means a stale key for a NOT
+// currently selected shape (e.g. 'lshape-AB' while ctShape is now 'ushape') was leaking into
+// pricing and the cut sheet -- billing for, and printing a fabrication instruction for, a corner
+// that doesn't exist on the currently drawn shape. Also excludes Custom Draw mode entirely
+// (chamfering is out of scope there, per the design spec) and excludes any corner whose live
+// effective setback has clamped to 0 (e.g. switching to a shape with no Run B at all), which
+// previously survived as a phantom "0.00in chamfer" cut-sheet row. This is the single filter
+// both dcChamferPricingSummary() and printDrawCutSheet() use, so they can't disagree with each
+// other -- or with the renderer, which only ever reads the current shape's own key already.
+function dcChamferActiveKeys() {
+  if (typeof dcMode !== 'undefined' && dcMode === 'draw') return [];
+  var prefix = (typeof ctShape !== 'undefined' ? ctShape : '') + '-';
+  return Object.keys(dcChamferedCorners).filter(function(k) {
+    return k.indexOf(prefix) === 0 && dcChamferEffectiveSetbackIn(k) > 0;
+  });
 }
 
 // Applies a rep-typed setback, clamping (never silently corrupting the fill geometry) if it
@@ -13064,7 +13084,7 @@ function dcSeamPricingSummary() {
 // triangle a 45deg chamfer cuts) -- the rate (edgeLfRate, both-sides-finished x2) is applied by
 // the caller in calcDrawing(), same as seams, so there's exactly one place that owns the rate.
 function dcChamferPricingSummary() {
-  const active = Object.keys(dcChamferedCorners).filter(k => dcChamferedCorners[k].setbackIn > 0);
+  const active = dcChamferActiveKeys();
   const totalDiagLF = active.reduce((sum,k) => sum + (dcChamferEffectiveSetbackIn(k) * Math.SQRT2) / 12, 0);
   return { count: active.length, totalDiagLF: totalDiagLF };
 }
@@ -13413,9 +13433,9 @@ function printDrawCutSheet() {
     const seamSummary = dcSeams.map(s => s.label + ' (' + (Math.hypot(s.x2-s.x1,s.y2-s.y1)/12).toFixed(1) + ' LF)').join(', ');
     win.document.write('<div class="row"><span class="rl">Seams</span><span class="rv">'+dcSeams.length+' — '+seamSummary+'</span></div>');
   }
-  if (typeof dcChamferedCorners !== 'undefined') {
+  if (typeof dcChamferedCorners !== 'undefined' && typeof dcChamferActiveKeys === 'function') {
     const chamferLabels = { 'lshape-AB':'Inside corner (A-B)', 'ushape-BackLeft':'Inside corner (Back-Left)', 'ushape-BackRight':'Inside corner (Back-Right)' };
-    const activeChamfers = Object.keys(dcChamferedCorners).filter(k => dcChamferedCorners[k].setbackIn > 0);
+    const activeChamfers = dcChamferActiveKeys();
     if (activeChamfers.length) {
       const chamferSummary = activeChamfers.map(k => (chamferLabels[k]||k) + ': ' + dcChamferEffectiveSetbackIn(k).toFixed(2) + 'in chamfer').join(', ');
       win.document.write('<div class="row"><span class="rl">Chamfered Corners</span><span class="rv">'+chamferSummary+'</span></div>');
