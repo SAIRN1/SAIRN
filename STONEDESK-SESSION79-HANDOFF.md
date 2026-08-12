@@ -184,6 +184,43 @@ decision per this session's own instructions).
    named, explicit check to look for going forward, not just something
    caught by luck a second time.
 
+7. **Patent-landscape claim, re-verified this session, resolved to a
+   confirmed non-issue for the app as it exists today.** The prior
+   handoff's "actively-prosecuted US patent family 9,501,700 + five
+   continuations through 11,727,163... covering photo-based measurement-
+   to-estimate workflows" was pulled live from Google Patents rather
+   than trusted secondhand. Confirmed real: assignee Xactware Solutions
+   (Verisk), active, expires 2032-07-16, and the continuation chain is
+   actually longer than previously known (12,265,758 issued, plus
+   US20250232075A1 filed 2025 and still pending). But Claim 1 is narrow
+   and specific — aerial images of a building, a per-pixel roofline
+   filter, scan-rotate-scan at two angles, 2D line-model construction,
+   manual click-drag onto an oblique aerial image for 3D. Checked
+   StoneDesk's actual implementation (`intakeAnalyzePhoto()`,
+   stonedesk.html:30484): a single Claude vision-model call on a
+   handheld kitchen photo, returning JSON directly — no aerial imagery,
+   no per-pixel filter, no multi-angle scan, no geometric line model.
+   Different domain, different mechanism — does not read on the claim.
+   **Not a live risk to StoneDesk as built today.** Re-check this
+   specific family if the photo feature ever moves toward its own
+   geometric line-detection pipeline instead of an LLM vision call. Real
+   attorney review is still recommended before any patent-adjacent
+   public/marketing claim — not before continued engineering work.
+8. **5 real skills were invisible to the Skill tool all session** —
+   `sairn-app-builder`, `sairn-client-facing-design`,
+   `sairn-infra-debugger`, `sairn-mobile-sync`, `sairn-portfolio-triage`.
+   Root cause found and fixed this session (was wrongly guessed as a
+   harness-level indexing gap earlier): `.claude/settings.local.json`'s
+   `skillOverrides` block had all 5 explicitly set to `"off"`. Flipped to
+   `"on"` — confirmed live immediately after the edit (all 5 now appear
+   in the invokable skill list). `settings.local.json` is gitignored
+   (machine-local config), so nothing to commit/push for this fix; it's
+   already in effect for this machine going forward. Unknown why they
+   were disabled originally — no history/comment in the file explaining
+   it, so if any of the 5 turn out to have been off for a real reason,
+   that's worth someone confirming, not assumed safe forever just
+   because re-enabling them didn't break anything today.
+
 Next: gap #1 (chamfered corners), per direct instruction — brainstorm
 first, then build. In progress: fabrication-real (cut sheet + real
 pricing), preset-shapes' inside corners only (not Custom Draw, named
