@@ -1,6 +1,37 @@
 # SAIRNdental — Anonymous-Optional Patient Complaint Design
 
-**Status:** Design drafted 2026-08-12, pending review. Not yet implemented.
+**Status:** Implemented and pushed to `main` 2026-08-12
+(`docs/superpowers/plans/2026-08-12-sairndental-complaint.md`, 11 commits,
+`42e7580..378a87c`, merged via subagent-driven-development: 9 tasks, each
+independently task-reviewed, plus a final whole-branch review that found
+and fixed 1 Critical (`vercel.json` had no route for the new public page —
+would have 404'd in production) and 4 Important cross-file integration
+gaps (`updated_at` never reaching the client so the panel's sort was
+silently inert, a rate-limit bucket collision with the existing booking
+endpoint, the nav badge not rendering at boot on a cached load, and zero
+test coverage for the read-only-enforcement guarantee) — all fixed in one
+fix wave, re-reviewed clean.
+
+**Live-verified 2026-08-12** (`sairn.vercel.app`): the public page route
+resolves (200, confirming the Critical fix landed), `dnt_complaints`
+clears the `RESOURCES` allowlist gate, a write against it through the
+generic `api/sd-data.js` path returns a real `400 READ_ONLY_RESOURCE`
+(tested with the real `DNT-PINNACLE-2026` demo license, not just a bogus
+token), reads degrade gracefully to `provisioned:false` rather than
+crashing, and the public page's served HTML/JS contains zero license-key
+references.
+
+**Not yet live-verified — blocked on the SQL migration**
+(`sql/sairndental_complaints_schema.sql` has not been run in Supabase;
+confirmed live via the `provisioned:false` read above), honestly
+reported, not glossed over: a real end-to-end submission creating a
+genuine `dnt_complaints` row, the returned access-token thread
+view/reply round-trip, the owner respond/resolve flow and its nav-badge
+count change, the reopen-on-patient-reply state transition, and the
+non-owner UI-gate check. Re-run
+`docs/superpowers/plans/2026-08-12-sairndental-complaint.md` Task 10
+Steps 6-9 once the migration has been run.
+
 Brainstormed across two sessions (see `SAIRNDENTAL-SESSION1-HANDOFF.md`
 for the mid-brainstorm stopping point) — all design questions below are
 now resolved.
