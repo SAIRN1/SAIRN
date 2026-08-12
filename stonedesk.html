@@ -13579,7 +13579,8 @@ function printDrawCutSheet() {
   const splashSqFt=splLen>0?(splLen*splHt)/144:0;
   const wfSqFt=((wfLeft?1:0)+(wfRight?1:0))*(aD||25)*wfHt/144;
   const wfCount=(wfLeft?1:0)+(wfRight?1:0);
-  const totalMat=(netSqFt+splashSqFt+wfSqFt)*1.15;
+  const barInfo2 = (typeof dcRaisedBarPricingSummary === 'function') ? dcRaisedBarPricingSummary() : {active:false,sqFt:0,effLenIn:0,effDepthIn:0,corbelFlag:false};
+  const totalMat=(netSqFt+splashSqFt+wfSqFt+barInfo2.sqFt)*1.15;
   const slabs=Math.ceil(totalMat/50);
   const thh=(totalMat/50*4).toFixed(1);
 
@@ -13618,6 +13619,10 @@ function printDrawCutSheet() {
       const chamferSummary = activeChamfers.map(k => (chamferLabels[k]||k) + ': ' + dcChamferEffectiveSetbackIn(k).toFixed(2) + 'in chamfer').join(', ');
       win.document.write('<div class="row"><span class="rl">Chamfered Corners</span><span class="rv">'+chamferSummary+'</span></div>');
     }
+  }
+  if (barInfo2.active) {
+    const barEdgeLabel = dcRaisedBar.edgeKey.slice(dcRaisedBar.edgeKey.indexOf(':')+1);
+    win.document.write('<div class="row"><span class="rl">Raised Bar</span><span class="rv">'+barEdgeLabel+': '+barInfo2.effLenIn.toFixed(1)+'in \xd7 '+barInfo2.effDepthIn.toFixed(1)+'in overhang, '+dcRaisedBar.heightIn+'in height'+(barInfo2.corbelFlag?' ⚠ corbel support recommended':'')+'</span></div>');
   }
   if (typeof dcCutouts !== 'undefined' && dcCutouts.length) {
     const cutoutSummary = dcCutouts.map(c => c.label).join(', ');
