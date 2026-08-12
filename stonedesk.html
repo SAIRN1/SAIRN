@@ -10315,6 +10315,12 @@ function clearKTCanvas() {
 // just "edit the preset you already have," per spec. Every measurement is typed by the rep, never
 // inferred from mouse-drag distance, so the layout is always dimensionally exact.
 var dcCanvas = null, dcCtx = null;
+// Zoom (2026-08-12): covers Preset and Custom Draw modes only -- Room Layout has its own
+// independent renderer/transform and is out of scope. No manual pan: zoom is always anchored on
+// the canvas's own center point (see dcApplyZoomTransform below), so there is no pan offset to
+// track, just this one multiplier.
+var dcZoomLevel = 1;          // 1.0 = fit (today's unzoomed behavior); range [DC_ZOOM_MIN, DC_ZOOM_MAX]
+var DC_ZOOM_MIN = 1, DC_ZOOM_MAX = 3, DC_ZOOM_STEP = 1.25;
 var dcMode = 'preset';        // 'preset' = show the active preset's rectangle math (legacy renderer) | 'draw' = polygon mode active
 var dcPoly = [];              // [{x,y}, ...] polygon points in inches, local coordinate space (not pixels)
 var dcPolyClosed = false;     // true once the rep has closed the loop back to the start point
@@ -10488,10 +10494,29 @@ function dcGetTransform() {
 function dcInToPx(pt) { const t=dcGetTransform(); return { x: pt.x*t.scale+t.ox, y: pt.y*t.scale+t.oy }; }
 function dcPxToIn(px, py) { const t=dcGetTransform(); return { x: (px-t.ox)/t.scale, y: (py-t.oy)/t.scale }; }
 
+// Sets the CURRENT (absolute, not stacked) canvas transform to scale everything drawn
+// afterward -- grid, shapes, strokes, dimension text -- uniformly around the canvas's own
+// center point (W/2, H/2). Uses setTransform, not save()/scale()/restore(): drawCTPreview() has
+// several early-return paths (blank-dimensions guards, the draw/room mode branches), and a
+// save/restore pair would need matching every single one or the transform stack corrupts
+// silently across frames. setTransform is absolute -- called once here, nothing else needed.
+function dcApplyZoomTransform(ctx, W, H) {
+  ctx.setTransform(dcZoomLevel, 0, 0, dcZoomLevel, W/2*(1-dcZoomLevel), H/2*(1-dcZoomLevel));
+}
+
 function dcCanvasCoords(e) {
   const rect = dcCanvas.getBoundingClientRect();
   const scaleX = dcCanvas.width/rect.width, scaleY = dcCanvas.height/rect.height;
-  return { px:(e.clientX-rect.left)*scaleX, py:(e.clientY-rect.top)*scaleY };
+  const rawPx = (e.clientX-rect.left)*scaleX, rawPy = (e.clientY-rect.top)*scaleY;
+  // Zoom (2026-08-12): exact inverse of dcApplyZoomTransform()'s setTransform above, so every
+  // existing hit-test/drag function downstream of this call (dcHitRect, dcHitPresetEdge,
+  // corner-drag, dcCanvasPlaceOrDrag, the seam/cutout routers, touch translation) keeps working
+  // in the exact same coordinate space it always has -- zero changes needed to any of them. At
+  // dcZoomLevel===1 (the default) this reduces to px=rawPx, py=rawPy: byte-identical to today.
+  const W = dcCanvas.width, H = dcCanvas.height;
+  const px = (rawPx - W/2*(1-dcZoomLevel)) / dcZoomLevel;
+  const py = (rawPy - H/2*(1-dcZoomLevel)) / dcZoomLevel;
+  return { px, py };
 }
 
 // Snap a candidate next-point to the nearest 45° increment from `from`, at whatever raw distance
@@ -11698,7 +11723,12 @@ function drawCTPreview() {
   // was never set here. Not user-visible at this canvas size, but free to fix at the source.
   const ctx = cv.getContext('2d', { willReadFrequently: true });
   const W=cv.width, H=cv.height;
+  // Zoom (2026-08-12): reset to identity BEFORE clearing -- clearRect(0,0,W,H) must run in
+  // untransformed space, or after a previously-zoomed frame it would only clear the region that
+  // maps to (0,0,W,H) under the STALE transform, leaving old content visible outside it.
+  ctx.setTransform(1,0,0,1,0,0);
   ctx.clearRect(0,0,W,H);
+  dcApplyZoomTransform(ctx, W, H);
 
   // Graph-paper grid (2026-08-04 visual polish): light blueprint-paper background (#EEF3F9, set
   // via CSS on the canvas element) with a two-tier grid -- a faint 40px minor line every 10in at
