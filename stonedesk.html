@@ -11352,6 +11352,21 @@ function dcChamferMaxSetbackIn(cornerKey) {
   return shorter > 0 ? shorter * DC_CHAMFER_MAX_FRACTION : 0;
 }
 
+// Fix (2026-08-12, caught in post-hoc review): pricing (dcChamferPricingSummary) and the printed
+// cut sheet both used to trust the raw stored setbackIn directly, while the renderer already
+// re-clamps it live against the current adjacent runs every draw (see drawCTPreview's
+// chamferABMaxPx/chamferBLMaxPx/chamferBRMaxPx). Without this, a rep who chamfers a corner and
+// later shrinks the adjacent run would get a canvas showing a safely-clamped notch while the
+// quote total and the printed fabrication instruction still billed/specified the original,
+// now-too-large setback -- the same staleness class the sink-fit check already solved elsewhere
+// in this file, just not extended to chamfers. This is the single source both money and the cut
+// sheet read from, so they can never disagree with what's actually drawn.
+function dcChamferEffectiveSetbackIn(cornerKey) {
+  var c = dcChamferedCorners[cornerKey];
+  if (!c) return 0;
+  return Math.min(c.setbackIn, dcChamferMaxSetbackIn(cornerKey));
+}
+
 // Applies a rep-typed setback, clamping (never silently corrupting the fill geometry) if it
 // exceeds the max for this corner's current adjacent runs, and treating zero/blank/invalid
 // input -- or a corner whose adjacent runs aren't valid yet -- as "not chamfered" (same as
@@ -13050,7 +13065,7 @@ function dcSeamPricingSummary() {
 // the caller in calcDrawing(), same as seams, so there's exactly one place that owns the rate.
 function dcChamferPricingSummary() {
   const active = Object.keys(dcChamferedCorners).filter(k => dcChamferedCorners[k].setbackIn > 0);
-  const totalDiagLF = active.reduce((sum,k) => sum + (dcChamferedCorners[k].setbackIn * Math.SQRT2) / 12, 0);
+  const totalDiagLF = active.reduce((sum,k) => sum + (dcChamferEffectiveSetbackIn(k) * Math.SQRT2) / 12, 0);
   return { count: active.length, totalDiagLF: totalDiagLF };
 }
 
@@ -13402,7 +13417,7 @@ function printDrawCutSheet() {
     const chamferLabels = { 'lshape-AB':'Inside corner (A-B)', 'ushape-BackLeft':'Inside corner (Back-Left)', 'ushape-BackRight':'Inside corner (Back-Right)' };
     const activeChamfers = Object.keys(dcChamferedCorners).filter(k => dcChamferedCorners[k].setbackIn > 0);
     if (activeChamfers.length) {
-      const chamferSummary = activeChamfers.map(k => (chamferLabels[k]||k) + ': ' + dcChamferedCorners[k].setbackIn + 'in chamfer').join(', ');
+      const chamferSummary = activeChamfers.map(k => (chamferLabels[k]||k) + ': ' + dcChamferEffectiveSetbackIn(k).toFixed(2) + 'in chamfer').join(', ');
       win.document.write('<div class="row"><span class="rl">Chamfered Corners</span><span class="rv">'+chamferSummary+'</span></div>');
     }
   }
