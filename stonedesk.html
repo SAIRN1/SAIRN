@@ -12225,6 +12225,54 @@ function dcHitCutout(px, py) {
   return null;
 }
 
+// Sink-fit validation (2026-08-12): flags a sink cutout whose real footprint (SINK_SHAPES'
+// wIn/dIn) doesn't actually fit within the drawn counter section it's placed on, using a 1.5in
+// minimum edge clearance -- a commonly-cited minimum distance from a cutout edge to the
+// counter's own finished edge to avoid cracking during fabrication; a reasonable conservative
+// default, not pulled from a specific material spec. PRESET-mode rects only (A/B/Back/Left/
+// Right/galley sections, i.e. c.rectKey is set) -- Custom Draw mode's polygon segments carry no
+// per-wall depth value in the current data model, so this check is skipped there entirely
+// (segIdx-based cutouts always return ok:true, a named limitation, not silently "checked and
+// passed"). Non-blocking by design: flags with a toast plus a persistent "⚠" marker carried into
+// the cutout list AND the printed cut sheet (dcCutouts' own .label is what both already render),
+// rather than refusing placement outright -- the clearance minimum is a heuristic, not a hard
+// law, and a rep may have a real reason to go tighter.
+const SINK_FIT_EDGE_CLEARANCE_IN = 1.5;
+function dcCheckSinkFit(c) {
+  if (!c || c.type !== 'sink' || !c.rectKey) return { ok: true };
+  const r = (window._ctRects || []).find(rr => rr.key === c.rectKey);
+  const shapeDef = SINK_SHAPES[c.sinkShape] || SINK_SHAPES.single;
+  if (!r) return { ok: true };
+  const fields = dcPresetEdgeFieldFor(c.rectKey);
+  const lenIn = parseFloat((document.getElementById(fields.lenField) || {}).value) || 0;
+  const depIn = parseFloat((document.getElementById(fields.depField) || {}).value) || 0;
+  if (!(lenIn > 0) || !(depIn > 0)) return { ok: true };
+  const rotated = !!fields.rotated;
+  const fracAlongLen = rotated ? c.fracY : c.fracX;
+  const fracAlongDep = rotated ? c.fracX : c.fracY;
+  const posLenIn = fracAlongLen * lenIn, posDepIn = fracAlongDep * depIn;
+  const halfW = shapeDef.wIn / 2, halfD = shapeDef.dIn / 2;
+  const cl = SINK_FIT_EDGE_CLEARANCE_IN;
+  if (posLenIn - halfW < cl || posLenIn + halfW > lenIn - cl) {
+    return { ok: false, reason: shapeDef.label + ' (' + shapeDef.wIn + 'in wide) does not fit within this ' + lenIn.toFixed(0) + 'in run with ' + cl + 'in min. edge clearance' };
+  }
+  if (posDepIn - halfD < cl || posDepIn + halfD > depIn - cl) {
+    return { ok: false, reason: shapeDef.label + ' (' + shapeDef.dIn + 'in deep) does not fit within this ' + depIn.toFixed(1) + 'in counter depth with ' + cl + 'in min. edge clearance' };
+  }
+  return { ok: true };
+}
+// Recomputes fit for one cutout and keeps its rendered label in sync -- baseLabel is captured
+// once (the clean, original label) so repeated calls during a drag don't stack "⚠ ⚠ ⚠" prefixes.
+function dcApplySinkFitCheck(c, notify) {
+  if (!c) return;
+  if (c.baseLabel == null) c.baseLabel = c.label;
+  const fit = dcCheckSinkFit(c);
+  c.fitOk = fit.ok;
+  c.fitReason = fit.ok ? null : fit.reason;
+  c.label = (fit.ok ? '' : '⚠ ') + c.baseLabel;
+  if (!fit.ok && notify && typeof showToast === 'function') showToast(fit.reason);
+}
+
 function dcCanvasPlaceOrDrag(e, phase) {
   const cv = document.getElementById('ct-canvas');
   if (!cv) return;
@@ -12251,6 +12299,7 @@ function dcCanvasPlaceOrDrag(e, phase) {
       if (!hit) return;
       dcCutouts.push({ id:'co'+dcCutoutSeq, rectKey:hit.rectKey, fracX:hit.fracX, fracY:hit.fracY, type:dcCutoutType, sinkShape, integrated, label:itemLabel+' '+dcCutoutSeq, color:style.color });
     }
+    dcApplySinkFitCheck(dcCutouts[dcCutouts.length - 1], true);
     drawCTPreview();
     updateDCCutoutList();
     if (typeof calcDrawing === 'function') calcDrawing(); // placing a sink/cooktop/faucet/outlet must drive quote cost immediately, not just the canvas
@@ -12268,11 +12317,19 @@ function dcCanvasPlaceOrDrag(e, phase) {
       const hit = dcHitRect(px, py);
       if (hit) { c.rectKey = hit.rectKey; c.fracX = hit.fracX; c.fracY = hit.fracY; delete c.segIdx; delete c.fracAlong; }
     }
+    dcApplySinkFitCheck(c, false); // live-update the ⚠ flag while dragging, no toast spam per frame
     drawCTPreview();
     return;
   }
 
-  if (phase === 'up') { dcDraggingCutout = null; }
+  if (phase === 'up') {
+    if (dcDraggingCutout) {
+      const c = dcCutouts.find(x => x.id === dcDraggingCutout);
+      if (c && c.fitOk === false && typeof showToast === 'function') showToast(c.fitReason);
+      updateDCCutoutList();
+    }
+    dcDraggingCutout = null;
+  }
 }
 
 // Resolves a cutout's screen position for the CURRENT render — preset rects in W/H pixel space,
@@ -12475,12 +12532,14 @@ function updateDCCutoutList() {
   const el = document.getElementById('dc-cutout-list');
   if (!el) return;
   if (!dcCutouts.length) { el.innerHTML = '<span style="font-size:11px;color:var(--muted)">No sinks or cutouts placed yet — pick a type above, then click the spot on the layout.</span>'; return; }
-  el.innerHTML = dcCutouts.map(c =>
-    '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border:1px solid '+c.color+'55;border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
+  el.innerHTML = dcCutouts.map(c => {
+    const warn = c.fitOk === false;
+    const borderColor = warn ? '#F87171' : c.color;
+    return '<span title="'+(warn ? (c.fitReason||'').replace(/"/g,'&quot;') : '')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(warn?'rgba(248,113,113,0.12)':'rgba(255,255,255,0.05)')+';border:1px solid '+borderColor+(warn?'':'55')+';border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
       '<span style="width:8px;height:8px;border-radius:50%;background:'+c.color+'"></span>'+c.label+
       '<button onclick="dcRemoveCutout(\''+c.id+'\')" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0 0 0 4px">×</button>'+
-    '</span>'
-  ).join('');
+    '</span>';
+  }).join('');
 }
 function dcRemoveCutout(id) {
   // Removing a sink also removes any drainboards attached to it — they have no meaning without
@@ -12935,6 +12994,15 @@ function calcDrawing() {
     (wfCount>0?'Waterfall jobs typically 25-35% waste — bookmatching adds complexity. ':'') +
     (ctShape==='ushape'?'U-shape kitchens often have 20-25% waste from corner cuts. ':'') +
     'Order quantity at +15% standard waste allowance. Verify with actual slab dimensions before ordering.';
+
+  // Re-validate every placed sink's fit whenever any dimension changes -- a sink placed validly
+  // can go stale if the rep later shrinks the run (a field edit or an edge-drag), so this can't
+  // only run at placement/drag time; calcDrawing() already re-fires on every shape edit (see the
+  // note on dcSyncLiveToQuoteEngine below), making it the right place to keep the flag current.
+  if (typeof dcCutouts !== 'undefined' && typeof dcApplySinkFitCheck === 'function') {
+    dcCutouts.forEach(c => { if (c.type === 'sink') dcApplySinkFitCheck(c, false); });
+    if (typeof updateDCCutoutList === 'function') updateDCCutoutList();
+  }
 
   drawCTPreview();
   dcSyncLiveToQuoteEngine(grossSqFt);
