@@ -1,23 +1,26 @@
 # STONEDESK — Session 79 Handoff
 
-Written 2026-08-12, at a natural stopping point (cost-disconnect fix landed
-and live-verified; about to start on the 4 previously-flagged drawing-tool
-gaps). Claims below are independently re-verified against the actual repo
-and live site this session, not carried forward from memory.
+Written 2026-08-12, updated in place after landing gap #4 (sink-fit
+validation) — still the same session, not a new one. Claims below are
+independently re-verified against the actual repo and live site this
+session, not carried forward from memory.
 
 ## 1. Verified current state
 
-- `origin/main` HEAD: `333e60fadaa8fe6572f5ce2faad7e254bcf45687` — confirmed
-  via `git rev-parse origin/main`, matches local HEAD, no ahead/behind.
+- `origin/main` HEAD: `46e8e2a96c485598f0f488ba7bb6df2036892e4e` —
+  confirmed matches local HEAD, no ahead/behind, as of the sink-fit
+  commit landing.
 - Live site (`sairn.vercel.app/stonedesk`) confirmed byte-identical to HEAD
   via `git hash-object` on a fresh curl of the deployed file
-  (`975f37f7638ba1493cd8065624e560b0f433d38d` both sides).
-- Script-block count as of this session: 128 total `<script>` blocks
-  (real HTML-parser extraction via `tools/extract_scripts.py`, not the
-  repo-root `extract_scripts.js`'s naive regex — see Section 3), 121
-  non-empty, **121/121 pass `node --check`**. Re-verify this count next
-  session rather than trusting it — it changes every session per
-  CLAUDE.md's standing instruction.
+  (`b8516e0899cb448e4cfa9cbb3bba3e0be1d737d2` both sides) after the
+  sink-fit push.
+- Script-block count as of the cost-disconnect commit: 128 total
+  `<script>` blocks (real HTML-parser extraction via
+  `tools/extract_scripts.py`, not the repo-root `extract_scripts.js`'s
+  naive regex — see Section 3), 121 non-empty, **121/121 pass
+  `node --check`**. Re-ran again after the sink-fit commit, same 121/121
+  clean result. Re-verify this count next session rather than trusting
+  it — it changes every session per CLAUDE.md's standing instruction.
 - No uncommitted changes to `stonedesk.html`.
 
 ## 2. Commits this session, in order
@@ -38,6 +41,28 @@ and live site this session, not carried forward from memory.
 Back-run drag-magnitude fixes, were already pushed and live-verified
 *before* this session started — carried forward from the prior,
 undocumented gap between Session 78 and now, not new this session.)
+
+- `46e8e2a` — feat: validate drawn sink cutouts against real counter
+  dimensions (gap #4 from the prior session's open list, judged
+  highest-risk of the four because a bad placement flows straight to the
+  shop floor's cut sheet on real, non-returnable stone). Adds
+  `dcCheckSinkFit()`/`dcApplySinkFitCheck()`, wired into placement, drag,
+  drag-end, and — importantly — into `calcDrawing()`'s existing
+  re-fire-on-any-edit path, so a sink that fit when placed but goes stale
+  after the rep later shrinks the run also gets caught, not just
+  time-of-placement. Uses a 1.5in minimum edge clearance (named
+  assumption, not a specific material spec). Non-blocking: flags via
+  toast + a persistent "⚠" folded into the cutout's own `.label`, which
+  is what both the on-screen chip list and the printed cut sheet already
+  render, so the warning reaches the shop floor too. **Scoped to PRESET
+  mode only** (straight/island/L/U/galley rects) — Custom Draw mode's
+  polygon segments carry no per-wall depth value in the data model, so
+  fit-checking is a named gap there, not silently "checked and passed."
+  Live-verified against production (see Section 3) — a 33in sink flagged
+  on a 30in run with the correct reason text, a 32in sink on a 40in run
+  passed clean, and shrinking that same run back to 30in via
+  `calcDrawing()`'s normal re-fire (no direct re-check call) correctly
+  flipped it to a warning — proving the wiring, not just the function.
 
 ## 3. What was CORRECTED, not just added
 
@@ -93,6 +118,27 @@ undocumented gap between Session 78 and now, not new this session.)
   mapping (business fee tiers like "Bar Sink" vs. drawn shapes like
   "single/double bowl" don't correspond cleanly) — flagging so a future
   session doesn't assume it's already handled.
+- **A real, currently-live bug was found (not fixed) while building the
+  sink-fit check, and is being disclosed explicitly rather than left
+  silently sitting there:** `dcCurrentScalePxPerIn()` (used for sink
+  render sizing and drag grab-radius, near `dcHitCutout`) computes scale
+  as `r.w / lenIn` unconditionally. This is the exact same bug class just
+  fixed in `55c2e8f` for preset-edge-drag (the `compositeLen` fix) —
+  U-shape's `Back` rect's pixel width is a composite of three fields, not
+  a pure function of `db-len` alone, so this still silently produces a
+  wrong (inflated) scale for any sink sitting on `Back`. It likely also
+  mishandles `rotated` rects (`B`/`Left`/`Right`) the same way, since it
+  never branches on `fields.rotated` either — unconfirmed, flagged as a
+  strong suspicion pending a dedicated look. **The new sink-fit check
+  deliberately does NOT depend on this function** — it reads
+  Length/Depth field values directly in inches and only uses
+  `fields.rotated` to pick which fraction maps to which axis, sidestepping
+  the composite/rotated pixel-scale math entirely — so this pre-existing
+  bug does not affect gap #4's correctness. But it's a real, separate,
+  currently-shipping defect (likely visible as an oddly-sized or
+  oddly-scaled sink drawing on a `Back` or rotated run) that should get
+  its own fix in a future session, using the same `compositeLen`-aware
+  pattern already proven in `55c2e8f`.
 
 ## 4. Open items, prioritized
 
@@ -100,22 +146,31 @@ Re-verified this session, not carried forward blind:
 
 1. **Chamfered 45° inside corners** — no angle-snap mechanism exists
    anywhere in the drawing tool's corner-drag code. Confirmed still true;
-   not touched this session.
+   not touched this session. Judged lower risk than sink-fit was: a
+   missing precision feature, not a path to a bad real-world cut.
 2. **Raised bar cannot combine with L-shape/U-shape on the same page** —
    confirmed still true; not touched this session.
 3. **Canvas hardcoded to 480px height, no resize/zoom** — confirmed still
    true; not touched this session.
-4. **Sink placement not validated against real counter dimensions** — a
-   sink cutout can be placed with no check that it actually fits within
-   the drawn counter's depth/width. Confirmed still true; not touched
-   this session.
+4. ~~Sink placement not validated against real counter dimensions~~ —
+   **FIXED this session, `46e8e2a`, live-verified.** Was judged
+   highest-risk of the four (silent bad data reaching real fabrication)
+   and done first. See Section 2/3 for detail and the named PRESET-mode-
+   only scope boundary.
+5. **New this session, found not fixed:** `dcCurrentScalePxPerIn()`'s
+   `compositeLen`/`rotated` scale bug (Section 3) — real, currently live,
+   affects sink render sizing/drag-radius on U-shape's `Back` run and
+   possibly `B`/`Left`/`Right`. Not blocking anything already shipped
+   tonight, but should get its own targeted fix using the same pattern
+   as `55c2e8f`.
 
 3D capability remains explicitly out of scope (separate, larger future
 decision per this session's own instructions).
 
-Next: starting on the highest-risk of the 4 gaps above (assessment of
-which is highest-risk happens in the next turn of this same session, not
-pre-decided in this handoff).
+Next: gap #1 (chamfered corners), #2 (raised bar can't combine with L/U-
+shape), or #3 (canvas size/zoom) — whichever is picked next should be
+logged here with the same reasoning-at-decision-time standard used for
+gap #4, not assumed.
 
 ## 5. Standard verification reminder for whoever reads this next
 
