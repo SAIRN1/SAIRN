@@ -32,6 +32,10 @@ Every bug tonight that actually mattered — not just annoying, genuinely catast
 
 5. **Live-test the actual failure path, not just the success path.** Every silent-failure bug found tonight was found by triggering the real scenario (editing an employee, running payroll, checking the console after a page load) — never by reading the code alone.
 
+## Displayed ≠ wired — a recurring, now-confirmed pattern (added 2026-08-12)
+
+StoneDesk had this exact bug twice: drawing-tool cutout costs (sink/cooktop) computed correctly and displayed correctly in the drawing tool's own results panel, but never fed into calc()'s real quote total — a rep could draw $370 in cutouts and the quote showed $0 extra. Then the identical shape recurred with seam polished-edge cost. Both times: a real, correct calculation existed, rendered correctly in its own local display, and simply was never passed to the one function that owns the actual customer-facing total. Check this explicitly whenever a UI shows a dollar figure (or any computed value) in more than one place — confirm the "detail" display and the "total" display are reading the same live value, not two independently-computed numbers only one of which is real.
+
 ## Why this is separate from Guardian's Check 0b
 
 Check 0b catches a number with *no function behind it at all* — a hardcoded literal masquerading as live data. This is different: a *real function*, genuinely running, that either fails without saying so, or succeeds at claiming something that never actually happened. Both are fabrication in the broad sense, but they need different detection methods — 0b is found by tracing whether a function exists; this is found by actually triggering the action and checking what happens on the failure path, and by checking infrastructure directly rather than trusting the code to reveal everything.
