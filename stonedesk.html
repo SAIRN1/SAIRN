@@ -10159,6 +10159,10 @@ var COUNTERS = { wf: 0, sink: 0, cook: 0, hole: 0, outlet: 0, bkt: 0, dw: 0 };
 // results-panel display, but never fed it into calc()'s real quote total -- same disconnect bug
 // class as the cutout cost fix earlier this session, found while designing the chamfer feature.
 var DC_SEAM_EDGE_COST = 0;
+// Chamfered-corner edge cost, synced from dcChamferedCorners via dcSyncLiveToQuoteEngine() --
+// same disconnect-bug-avoidance pattern as DC_SEAM_EDGE_COST above, built in correctly from the
+// start rather than fixed after the fact.
+var DC_CHAMFER_EDGE_COST = 0;
 var TYPICAL = {
   kitchen_std: 2800, kitchen_l: 3600, kitchen_island: 4400,
   bath_single: 950, bath_double: 1500, bath_master: 2200,
@@ -11001,7 +11005,7 @@ function dcUndoPoint() {
 
 function dcClearPoly() {
   dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; dcEditPass = false;
-  dcCutouts = []; dcSeams = [];
+  dcCutouts = []; dcSeams = []; dcChamferedCorners = {};
   // Defensive (June 2026 audit): also reset drag state here, not just on mode switch -- a
   // stuck dcCornerDragging index (see the mouseup-handler fix above) previously survived a
   // Clear Shape click and crashed the very next mousemove inside dcCornerDragMove, since
@@ -11312,6 +11316,68 @@ function selectDrawShape(id) {
   if (typeof initDCCanvas === 'function') initDCCanvas();
 }
 
+// Chamfered corners (2026-08-12): preset-shape inside-corner 45deg chamfers, keyed by
+// shape+corner so switching shapes (or away and back) can't carry stale corner state onto a
+// shape it doesn't apply to. Key absence = square corner (default, unchanged behavior).
+var dcChamferedCorners = {}; // keyed 'lshape-AB' | 'ushape-BackLeft' | 'ushape-BackRight' -> { setbackIn: number }
+// A setback can't exceed this fraction of the shorter adjacent run, or the substituted fill
+// point would pass the run's far end and produce a self-intersecting notch instead of a clean
+// one -- same "flag, don't silently corrupt the geometry" posture as the sink-fit check.
+var DC_CHAMFER_MAX_FRACTION = 0.4;
+
+function dcChamferKeyFor(shape, edgeName) {
+  if (shape === 'lshape' && edgeName === 'Corner (inside)') return 'lshape-AB';
+  if (shape === 'ushape' && edgeName === 'Corner (inside) — Left') return 'ushape-BackLeft';
+  if (shape === 'ushape' && edgeName === 'Corner (inside) — Right') return 'ushape-BackRight';
+  return null;
+}
+
+// Returns [runA, runB], the two adjacent run lengths (inches) that meet at this corner, read
+// from the same dimension inputs drawCTPreview uses (gN('da-len') etc.) -- kept in inches so
+// this needs no canvas scale factor, unlike drawCTPreview's render-time re-clamp of the same
+// 0.4x-of-shorter-run bound in pixel space. The 'ushape-BackRight' fallback (dc-len || da-len)
+// mirrors drawCTPreview's own cLv=cL||aL fallback for a blank Right Run field.
+function dcChamferAdjacentRunsIn(cornerKey) {
+  if (cornerKey === 'lshape-AB') return [gN('db-len'), gN('da-len') - gN('db-dep')];
+  if (cornerKey === 'ushape-BackLeft') return [gN('da-len'), gN('db-len')];
+  if (cornerKey === 'ushape-BackRight') return [(gN('dc-len') || gN('da-len')), gN('db-len')];
+  return [0, 0];
+}
+
+function dcChamferMaxSetbackIn(cornerKey) {
+  var runs = dcChamferAdjacentRunsIn(cornerKey);
+  var shorter = Math.min(runs[0], runs[1]);
+  return shorter > 0 ? shorter * DC_CHAMFER_MAX_FRACTION : 0;
+}
+
+// Applies a rep-typed setback, clamping (never silently corrupting the fill geometry) if it
+// exceeds the max for this corner's current adjacent runs, and treating zero/blank/invalid
+// input -- or a corner whose adjacent runs aren't valid yet -- as "not chamfered" (same as
+// unchecking the box) rather than a degenerate zero-length or geometrically-impossible chamfer.
+function dcSetChamferSetback(cornerKey, rawVal, cbEl, inputEl) {
+  if (!dcChamferedCorners[cornerKey]) return;
+  var val = parseFloat(rawVal);
+  var max = dcChamferMaxSetbackIn(cornerKey);
+  if (!(val > 0) || !(max > 0)) {
+    delete dcChamferedCorners[cornerKey];
+    if (cbEl) cbEl.checked = false;
+    if (inputEl) { inputEl.value = ''; inputEl.style.display = 'none'; }
+    if (!(max > 0) && val > 0 && typeof showToast === 'function') showToast('Enter valid run dimensions before chamfering this corner');
+    drawCTPreview();
+    if (typeof calcDrawing === 'function') calcDrawing();
+    return;
+  }
+  var finalVal = val;
+  if (val > max) {
+    finalVal = Math.round(max * 100) / 100;
+    if (inputEl) inputEl.value = finalVal;
+    if (typeof showToast === 'function') showToast('Chamfer setback clamped to ' + finalVal.toFixed(2) + 'in (max for this corner)');
+  }
+  dcChamferedCorners[cornerKey].setbackIn = finalVal;
+  drawCTPreview();
+  if (typeof calcDrawing === 'function') calcDrawing();
+}
+
 // Build edge assignment selectors
 function buildEdgeAssignmentArea() {
   const area = document.getElementById('edge-assignment-area');
@@ -11321,7 +11387,7 @@ function buildEdgeAssignmentArea() {
   const shapeEdges = {
     straight: ['Front (exposed)','Back (wall)','Left end','Right end'],
     lshape:   ['A-Front','A-Back (wall)','A-Left end','B-Front','B-Back (wall)','B-End','Corner (inside)'],
-    ushape:   ['Left front','Back front','Right front','Left back (wall)','Back wall','Right back (wall)','Left end','Right end'],
+    ushape:   ['Left front','Back front','Right front','Left back (wall)','Back wall','Right back (wall)','Left end','Right end','Corner (inside) — Left','Corner (inside) — Right'],
     island:   ['Front (exposed)','Back (exposed)','Left end','Right end'],
     galley:   ['Front counter front','Front counter back','Back counter front','Back counter back','Left end','Right end'],
     custom:   ['Section A front','Section A back','Section B front','Section B back','Section C front','Left end','Right end'],
@@ -11357,6 +11423,41 @@ function buildEdgeAssignmentArea() {
 
     row.appendChild(swatch); row.appendChild(lbl); row.appendChild(sel);
     area.appendChild(row);
+
+    // Chamfer control (2026-08-12): setback-inches input, shown only for the corner-type edge
+    // labels this shape actually defines an inside corner for.
+    const chamferKey = dcChamferKeyFor(ctShape, edgeName);
+    if (chamferKey) {
+      const crow = document.createElement('div');
+      crow.style.cssText = 'display:flex;align-items:center;gap:8px;margin:-3px 0 10px 20px';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.id = 'chamfer-cb-' + chamferKey;
+      cb.checked = !!dcChamferedCorners[chamferKey];
+      const clbl = document.createElement('label');
+      clbl.textContent = 'Chamfer 45°'; clbl.htmlFor = cb.id;
+      clbl.style.cssText = 'font-size:10px;color:var(--muted)';
+      const sbIn = document.createElement('input');
+      sbIn.type = 'number'; sbIn.id = 'chamfer-sb-' + chamferKey; sbIn.step = '0.25'; sbIn.placeholder = 'in';
+      sbIn.style.cssText = 'width:52px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:5px;padding:3px 5px;color:var(--text);font-size:10px;font-family:DM Mono,monospace;outline:none';
+      sbIn.style.display = cb.checked ? '' : 'none';
+      sbIn.value = cb.checked ? dcChamferedCorners[chamferKey].setbackIn : '';
+      cb.onchange = () => {
+        if (cb.checked) {
+          dcChamferedCorners[chamferKey] = { setbackIn: 0 };
+          sbIn.style.display = '';
+          sbIn.value = 1.5;
+          dcSetChamferSetback(chamferKey, '1.5', cb, sbIn);
+        } else {
+          delete dcChamferedCorners[chamferKey];
+          sbIn.value = ''; sbIn.style.display = 'none';
+          drawCTPreview();
+          if (typeof calcDrawing === 'function') calcDrawing();
+        }
+      };
+      sbIn.oninput = () => dcSetChamferSetback(chamferKey, sbIn.value, cb, sbIn);
+      crow.appendChild(cb); crow.appendChild(clbl); crow.appendChild(sbIn);
+      area.appendChild(crow);
+    }
   });
 }
 
