@@ -11337,6 +11337,14 @@ function selectDrawShape(id) {
   // than a stale custom shape that no longer matches the selected dimensions.
   if (dcMode === 'draw') { dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; setDCMode('preset'); }
   drawCTPreview();
+  // Fix (2026-08-12, caught in final review): a shape switch can deactivate a raised bar (or a
+  // chamfer, or a seam) that belonged to the PREVIOUS shape -- the renderer and the UI both
+  // correctly show it as gone immediately, but without this call DC_BAR_EDGE_COST/
+  // DC_CHAMFER_EDGE_COST/DC_SEAM_EDGE_COST kept the old shape's dollar figure until something
+  // else happened to fire calcDrawing() (Calculate button, a cutout/seam edit). Re-firing here
+  // makes "switching to a shape/edge it isn't on zeroes its cost the same tick" actually true,
+  // not just true for the canvas.
+  if (typeof calcDrawing === 'function') calcDrawing();
   if (typeof initDCCanvas === 'function') initDCCanvas();
 }
 
@@ -11354,12 +11362,16 @@ var dcRaisedBar = null; // or { edgeKey, lengthIn, offsetIn, overhangDepthIn, he
 // length lookup, and (Tasks 2-4) the render call sites. galley/custom share this same shape of
 // entry (multiple candidate sections), matching their shared dynamic-loop renderer.
 var DC_BAR_EDGE_CANDIDATES = {
-  straight: [{ label: 'Front (exposed)', lenField: 'da-len' }],
-  island:   [{ label: 'Front (exposed)', lenField: 'da-len' }],
-  lshape:   [{ label: 'A-Front', lenField: 'da-len' }],
-  ushape:   [{ label: 'Back front', lenField: 'db-len' }],
-  galley:   [{ label: 'Front counter front', lenField: 'da-len' }, { label: 'Back counter front', lenField: 'db-len' }],
-  custom:   [{ label: 'Section A front', lenField: 'da-len' }, { label: 'Section B front', lenField: 'db-len' }, { label: 'Section C front', lenField: 'dc-len' }],
+  straight: [{ label: 'Front (exposed)', lenField: 'da-len', depField: 'da-dep' }],
+  island:   [{ label: 'Front (exposed)', lenField: 'da-len', depField: 'da-dep' }],
+  lshape:   [{ label: 'A-Front', lenField: 'da-len', depField: 'da-dep' }],
+  // ushape's Back run height (backH) always defaults to 25.5 in the renderer when db-dep is
+  // blank (bDv=bD||25.5, drawCTPreview) -- it never blocks the Back run from rendering the way a
+  // blank depth does for every other shape below. depField:null means "no separate depth check
+  // applies here," not "no depth" -- dcRaisedBarEdgeDepthIn() treats a null depField as always-valid.
+  ushape:   [{ label: 'Back front', lenField: 'db-len', depField: null }],
+  galley:   [{ label: 'Front counter front', lenField: 'da-len', depField: 'da-dep' }, { label: 'Back counter front', lenField: 'db-len', depField: 'db-dep' }],
+  custom:   [{ label: 'Section A front', lenField: 'da-len', depField: 'da-dep' }, { label: 'Section B front', lenField: 'db-len', depField: 'db-dep' }, { label: 'Section C front', lenField: 'dc-len', depField: 'dc-dep' }],
 };
 
 // Real current length (inches) of the edge dcRaisedBar.edgeKey names, read live from the same
@@ -11374,6 +11386,28 @@ function dcRaisedBarEdgeLenIn(edgeKey) {
   var candidates = DC_BAR_EDGE_CANDIDATES[shape] || [];
   for (var i = 0; i < candidates.length; i++) {
     if (candidates[i].label === label) return gN(candidates[i].lenField);
+  }
+  return 0;
+}
+
+// Fix (2026-08-12, caught in final review): every renderer refuses to draw a section with no
+// real depth (blank depth = "Enter dimensions to see preview", nothing drawn) the same way it
+// refuses one with no length -- but dcRaisedBarPricingSummary() only ever checked length,
+// so a rep who attached a bar to a section and then blanked THAT section's depth (not its
+// length) kept getting billed and cut-sheet-printed for a bar on a section that draws nothing.
+// Returns a positive sentinel (1) for a null depField (ushape's Back run -- see above), so
+// callers can uniformly treat "> 0" as "this host depth is valid" for every shape.
+function dcRaisedBarEdgeDepthIn(edgeKey) {
+  if (!edgeKey) return 0;
+  var sep = edgeKey.indexOf(':');
+  if (sep < 0) return 0;
+  var shape = edgeKey.slice(0, sep), label = edgeKey.slice(sep + 1);
+  var candidates = DC_BAR_EDGE_CANDIDATES[shape] || [];
+  for (var i = 0; i < candidates.length; i++) {
+    if (candidates[i].label === label) {
+      if (!candidates[i].depField) return 1;
+      return gN(candidates[i].depField);
+    }
   }
   return 0;
 }
@@ -11734,7 +11768,10 @@ function drawCTPreview() {
   // shape-namespaced) or this is a no-op -- the caller doesn't need its own active/shape check.
   function dcDrawRaisedBarIfActive(edgeKey, rectX, rectY, rectW, rectH, sc, edgeLenIn) {
     if (!dcRaisedBar || dcRaisedBar.edgeKey !== edgeKey) return;
-    var effLenIn = edgeLenIn > 0 ? Math.min(dcRaisedBar.lengthIn, edgeLenIn) : dcRaisedBar.lengthIn;
+    // Fix (2026-08-12, caught in final review): fall back to 0 (no bar), never the raw stored
+    // length, when the host edge's real length isn't positive -- matches
+    // dcRaisedBarPricingSummary()'s identical fix so rendering and pricing can't disagree.
+    var effLenIn = edgeLenIn > 0 ? Math.min(dcRaisedBar.lengthIn, edgeLenIn) : 0;
     var maxOffsetIn = Math.max(edgeLenIn - effLenIn, 0);
     var effOffsetIn = Math.min(Math.max(dcRaisedBar.offsetIn, 0), maxOffsetIn);
     if (!(effLenIn > 0)) return;
@@ -11929,8 +11966,15 @@ function drawCTPreview() {
     window._ctRects.push({key:'Left', x:lx, y:ly, w:leftW, h:leftH});
     window._ctRects.push({key:'Right', x:rx, y:ry, w:rightW, h:rightH});
     // Raised bar attaches to the Back run's own rect (bx,by,backW,backH) -- its front edge is
-    // "Back front" (the nominal, un-chamfered full span from lx+leftW to rx), independent of
-    // whether either inside corner is currently chamfered; the two features don't interact.
+    // "Back front", the nominal, un-chamfered full span from lx+leftW to rx.
+    // KNOWN LIMITATION (2026-08-12, found in final review, not fixed this pass): if a Back-Left
+    // or Back-Right corner is ALSO chamfered, its fill gusset and this bar's fill can overlap
+    // near that corner whenever the bar's offset is small enough to reach it (offsetIn=0, the
+    // default, always overlaps) -- the two alpha-0.1 fills stack to a visibly darker triangle,
+    // the chamfer's diagonal stroke draws across the bar's interior, and the bar's step edge in
+    // that small region is billed as finished edge when it's actually interior material once
+    // chamfered. Not reconciled this pass (accepted, narrow edge case: both features active on
+    // the same corner of the same U-shape simultaneously) -- a real gap, not silently unhandled.
     dcDrawRaisedBarIfActive('ushape:Back front', lx+leftW, by, backFrontPx, backH, sc, bL);
     // Outline as one continuous polygon (clockwise from top-left, around the U, back to start)
     colorEdge(lx,ly+leftH, lx,by, ea('Left back (wall)','wall'));                 // left leg outer (left wall)
@@ -13251,7 +13295,14 @@ function dcRaisedBarPricingSummary() {
     return { active:false, sqFt:0, edgeLF:0, effLenIn:0, effDepthIn:0, corbelFlag:false };
   }
   const edgeLenIn = dcRaisedBarEdgeLenIn(dcRaisedBar.edgeKey);
-  const effLenIn = edgeLenIn > 0 ? Math.min(dcRaisedBar.lengthIn, edgeLenIn) : dcRaisedBar.lengthIn;
+  const hostDepthIn = dcRaisedBarEdgeDepthIn(dcRaisedBar.edgeKey);
+  // Fix (2026-08-12, caught in final review): a host section with no real length OR no real
+  // depth doesn't exist on the drawing -- every renderer already refuses to draw a bar there.
+  // Both must be positive or this is inactive; no fallback to the raw stored length here.
+  if (!(edgeLenIn > 0) || !(hostDepthIn > 0)) {
+    return { active:false, sqFt:0, edgeLF:0, effLenIn:0, effDepthIn:0, corbelFlag:false };
+  }
+  const effLenIn = Math.min(dcRaisedBar.lengthIn, edgeLenIn);
   const effDepthIn = dcRaisedBar.overhangDepthIn;
   if (!(effLenIn > 0) || !(effDepthIn > 0)) {
     return { active:false, sqFt:0, edgeLF:0, effLenIn:0, effDepthIn:0, corbelFlag:false };
