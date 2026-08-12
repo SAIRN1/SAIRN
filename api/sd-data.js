@@ -29,6 +29,7 @@
 
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
+const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 
 const RESOURCES = {
   profile: true, memory: true, employees: true, slabs: true, render_usage: true, shared_knowledge: true,
@@ -1842,6 +1843,20 @@ module.exports = async (req, res) => {
     }
     if (resource === 'dnt_appointments' && action === 'write') {
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'dnt_appointments payload.id is required' } }); return; }
+      // Security fix (2026-08-12): public-book.js already validates payload.photos
+      // via validatePhotosPayload() before it ever reaches this table -- but this
+      // generic write path is the SAME endpoint the authenticated staff app uses
+      // for every other appointment write, and it applied zero validation of its
+      // own. sairndental.html's rPending() renders each photo's data URL directly
+      // into an <img src="..."> attribute unescaped (safe only because the public
+      // path's regex forbids ", <, > from ever appearing) -- so a caller holding a
+      // valid license key could reach this handler directly with a crafted
+      // payload.photos entry and get a stored-XSS payload rendered into another
+      // staff member's (including the owner's) authenticated session. Applying the
+      // same validation here closes the gap at its source, independent of the
+      // render-side H() fix in sairndental.html.
+      const photosCheck = validatePhotosPayload(payload.photos);
+      if (!photosCheck.ok) { res.status(400).json({ error: { code: photosCheck.code, message: photosCheck.message } }); return; }
       const r = await fetch(rest('dnt_appointments?on_conflict=license_hash,appointment_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),

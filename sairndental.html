@@ -912,8 +912,15 @@ function rPending(){
     var pt=pats.find(function(x){return x.id===a.patient_id;});
     var pv=provs.find(function(x){return x.id===a.provider_id;});
     var photos=Array.isArray(a.photos)?a.photos:[];
+    // Security fix (2026-08-12): src is patient-submitted (self-booking photo
+    // upload) -- was interpolated into this attribute unescaped, relying
+    // entirely on public-book.js's own regex validation to keep it safe.
+    // api/sd-data.js's generic dnt_appointments write path applied no such
+    // validation, so any holder of this practice's license key could reach
+    // it directly and inject a stored-XSS payload into this render. H()
+    // closes it here too, independent of the server-side validation fix.
     var thumbs=photos.map(function(src){
-      return '<img src="'+src+'" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;margin-right:4px" onclick="window.open(this.src)">';
+      return '<img src="'+H(src)+'" style="width:36px;height:36px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;margin-right:4px" onclick="window.open(this.src)">';
     }).join('');
     var noteHtml=a.patient_notes?('<div style="font-size:12px;color:var(--muted);margin-top:4px">'+H(a.patient_notes)+'</div>'):'';
     return '<tr><td>'+H(pt?pt.name:'(unknown patient)')+'</td><td>'+H(pv?pv.name:'(unknown provider)')+'</td>'+
