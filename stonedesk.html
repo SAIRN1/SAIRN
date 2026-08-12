@@ -12364,6 +12364,15 @@ function dcCutoutScreenPos(c) {
 // mode this is just the polygon transform's scale; in preset mode there's no single global
 // scale variable exposed, so it's derived from whichever rect the cutout is sitting on (its
 // pixel width divided by its known inch length, read back from the Length/Depth fields).
+// BUGFIX (2026-08-12, same root cause as 55c2e8f's preset-edge-drag fix): this always divided
+// r.w by lenIn, which is only correct for the plain, non-rotated, non-composite case (A). For a
+// `rotated` rect (B/Left/Right), r.w is actually Depth's pixel extent, not Length's -- dividing
+// it by lenIn silently produced the wrong scale. For U-shape's `compositeLen` rect (Back), r.w
+// is a sum of three fields (Left-depth + Back-length + Right-depth), not a pure function of
+// lenIn at all -- same inflation bug the drag fix already corrected for edge-dragging, but this
+// separate function (used for sink render sizing and drag grab-radius, not dragging itself) was
+// never touched by that fix. Corrected the same way: derive the scale from whichever axis is
+// actually a PURE function of a single field for that rect shape.
 function dcCurrentScalePxPerIn(c) {
   if (c && c.type === 'drainboard' && c.attachedToSinkId) {
     const sink = dcCutouts.find(s => s.id === c.attachedToSinkId);
@@ -12374,6 +12383,9 @@ function dcCurrentScalePxPerIn(c) {
   if (!r) return DRAW_SCALE_PXPERIN;
   const fields = dcPresetEdgeFieldFor(c.rectKey);
   const lenIn = parseFloat((document.getElementById(fields.lenField)||{}).value) || 1;
+  const depIn = parseFloat((document.getElementById(fields.depField)||{}).value) || 1;
+  if (fields.rotated) return r.w / depIn;
+  if (fields.compositeLen) return r.h / depIn;
   return r.w / lenIn;
 }
 
