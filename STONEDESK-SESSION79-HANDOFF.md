@@ -167,8 +167,28 @@ Re-verified this session, not carried forward blind:
 3D capability remains explicitly out of scope (separate, larger future
 decision per this session's own instructions).
 
+6. ~~Seam polished-edge cost never reached the real quote total~~ —
+   **FIXED, `e46024e`, live-verified.** Same disconnect class as the
+   cutout fix (`333e60f`): `calcDrawing()` already computed the correct
+   dollar figure for its own results-panel display, never passed it to
+   `calc()`. Found while researching pricing wiring for the chamfer
+   feature (not fixed silently — surfaced and confirmed with the user
+   before fixing, per explicit instruction, as its own commit). Added
+   `DC_SEAM_EDGE_COST`, synced from `calcDrawing()`'s own `seamEdgeCost`
+   via `dcSyncLiveToQuoteEngine()`. Live-verified: $3,335 -> $3,405 on a
+   24in seam, back to $3,335 on removal, matching the exact expected
+   $72 (24in / 12 * 2 sides * $18/LF admin rate).
+   **This exact pattern (a value computed correctly and displayed
+   correctly in one place, but never wired to the real total) has now
+   hit StoneDesk twice** — added to `sairn-silent-failure-sweep` as a
+   named, explicit check to look for going forward, not just something
+   caught by luck a second time.
+
 Next: gap #1 (chamfered corners), per direct instruction — brainstorm
-first, then build.
+first, then build. In progress: fabrication-real (cut sheet + real
+pricing), preset-shapes' inside corners only (not Custom Draw, named
+scope boundary matching the sink-fit pattern), rep-adjustable setback
+size. Design not yet written up or approved.
 
 ## 5. Standard verification reminder for whoever reads this next
 
