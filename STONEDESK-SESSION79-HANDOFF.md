@@ -157,20 +157,18 @@ Re-verified this session, not carried forward blind:
    highest-risk of the four (silent bad data reaching real fabrication)
    and done first. See Section 2/3 for detail and the named PRESET-mode-
    only scope boundary.
-5. **New this session, found not fixed:** `dcCurrentScalePxPerIn()`'s
-   `compositeLen`/`rotated` scale bug (Section 3) — real, currently live,
-   affects sink render sizing/drag-radius on U-shape's `Back` run and
-   possibly `B`/`Left`/`Right`. Not blocking anything already shipped
-   tonight, but should get its own targeted fix using the same pattern
-   as `55c2e8f`.
+5. ~~`dcCurrentScalePxPerIn()`'s `compositeLen`/`rotated` scale bug~~ —
+   **FIXED, `2461171`, live-verified.** Confirmed both the bug (old
+   formula gave inconsistent scales per rect: 1.45/5.71/1.59 px/in on
+   Left/Back/Right of the same drawing) and the fix (all three now
+   return the same 3.6226 px/in, matching the drawing's real single
+   scale) directly against production.
 
 3D capability remains explicitly out of scope (separate, larger future
 decision per this session's own instructions).
 
-Next: gap #1 (chamfered corners), #2 (raised bar can't combine with L/U-
-shape), or #3 (canvas size/zoom) — whichever is picked next should be
-logged here with the same reasoning-at-decision-time standard used for
-gap #4, not assumed.
+Next: gap #1 (chamfered corners), per direct instruction — brainstorm
+first, then build.
 
 ## 5. Standard verification reminder for whoever reads this next
 
