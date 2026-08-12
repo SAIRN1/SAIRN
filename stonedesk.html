@@ -11977,6 +11977,7 @@ function drawCTPreview() {
       colorEdge(pad,cy,pad+sl*sc,cy,backColor); colorEdge(pad,cy+sd*sc,pad+sl*sc,cy+sd*sc,frontColor);
       colorEdge(pad,cy,pad,cy+sd*sc,backColor); colorEdge(pad+sl*sc,cy,pad+sl*sc,cy+sd*sc,ea('Left end','wall'));
       window._ctRects.push({key:s.lbl.front||('Section'+window._ctRects.length), x:pad, y:cy, w:sl*sc, h:sd*sc});
+      if (s.lbl.front) dcDrawRaisedBarIfActive(ctShape+':'+s.lbl.front, pad, cy, sl*sc, sd*sc, sc, sl);
       cy+=sd*sc+8;
     });
   }
