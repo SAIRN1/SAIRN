@@ -481,6 +481,7 @@ label.chk input{width:auto;}
 var APP_ID='sairndental';
 var PROXY='https://sairn.vercel.app/api/claude';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
+var COMPLAINT_RESPOND_API='https://sairn.vercel.app/api/sairndental/complaint-respond';
 
 function dntAiError(data){
   if(!data||!data.error) return null;
@@ -1139,6 +1140,44 @@ async function icapSaveToPatient(){
 function charges(){return ld('dnt_charges_list',[]);}
 function payments(){return ld('dnt_payments_list',[]);}
 function referrals(){return ld('dnt_referrals_list',[]);}
+function complaints(){return ld('dnt_complaints_list',[]);}
+
+// ── PATIENT COMPLAINTS (2026-08-12) ──────────────────────────────────
+// dnt_complaints is READ-ONLY through sdnData()/api/sd-data.js's
+// generic path (design spec §1) -- this function never calls
+// sdnData('write','dnt_complaints',...). All real mutation goes
+// through the dedicated complaint-respond.js endpoint, which does its
+// own fresh read-then-write server-side (design spec §0). Owner-only
+// enforcement is UI-level here (prole==='owner'), matching this app's
+// existing role-gating convention -- see design spec §0 for why that's
+// a stated, accepted limitation, not a gap.
+async function respondToComplaint(id, action) {
+  if (prole !== 'owner') { toast('Only the practice owner can respond'); return; }
+  var text = '';
+  if (action === 'reply') {
+    var ta = $('cp-reply-' + id);
+    text = ta ? ta.value.trim() : '';
+    if (!text) { toast('Write a response first'); return; }
+  }
+  var lic = dntLicenseKey();
+  if (!lic) { toast('Not logged in'); return; }
+  try {
+    var r = await fetch(COMPLAINT_RESPOND_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+      body: JSON.stringify({ complaint_id: id, action: action, text: text })
+    });
+    var d = await r.json();
+    if (!r.ok || !d || !d.ok) { toast((d && d.error && d.error.message) || 'Could not save -- try again'); return; }
+    var list = complaints();
+    var c = list.find(function (x) { return x.id === id; });
+    if (c) { c.status = d.status; c.messages = d.messages; st('dnt_complaints_list', list); }
+    rComplaints();
+    toast(action === 'resolve' ? 'Marked resolved' : 'Response sent');
+  } catch (e) {
+    toast('Could not connect -- check your connection and try again');
+  }
+}
 
 // ── REFERRAL TRACKING (2026-08-11) ───────────────────────────────────
 // Append-only, matching dnt_charges/dnt_payments' precedent -- no
