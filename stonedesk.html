@@ -3899,6 +3899,22 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
           <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5">Waterfall ends are marked in red on the drawing preview. Each waterfall panel is a full slab height cut — typically 36in of stone per leg.</div>
         </div>
 
+        <!-- Raised Bar -->
+        <div class="dm-card">
+          <div class="dm-card-title">Raised Bar (Overhang)</div>
+          <div class="dm-field">
+            <label>Attach to edge</label>
+            <select id="db-bar-edge" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-size:12px;font-family:Outfit,sans-serif;outline:none">
+              <option value="">No raised bar</option>
+            </select>
+          </div>
+          <div class="dm-field"><label>Bar length (in)</label><input type="number" id="db-bar-len" placeholder="e.g. 48"></div>
+          <div class="dm-field"><label>Offset from left end (in)</label><input type="number" id="db-bar-offset" placeholder="e.g. 12"></div>
+          <div class="dm-field"><label>Overhang depth (in)</label><input type="number" id="db-bar-depth" placeholder="e.g. 12"></div>
+          <div class="dm-field"><label>Bar height (in)</label><input type="number" id="db-bar-height" placeholder="e.g. 42" value="42"></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:6px;line-height:1.5">A stepped-up overhang section for stool seating. Adds real sqft and finished edge to the quote. Overhang depths beyond the corbel-support threshold (Admin → Unit Pricing) are flagged, not blocked.</div>
+        </div>
+
         <!-- Notes -->
         <div class="dm-card">
           <div class="dm-card-title">Notes</div>
@@ -10161,6 +10177,9 @@ var COUNTERS = { wf: 0, sink: 0, cook: 0, hole: 0, outlet: 0, bkt: 0, dw: 0 };
 // results-panel display, but never fed it into calc()'s real quote total -- same disconnect bug
 // class as the cutout cost fix earlier this session, found while designing the chamfer feature.
 var DC_SEAM_EDGE_COST = 0;
+// Raised bar (overhang) edge cost, synced from dcRaisedBar via dcSyncLiveToQuoteEngine() --
+// same disconnect-bug-avoidance pattern as DC_SEAM_EDGE_COST/DC_CHAMFER_EDGE_COST.
+var DC_BAR_EDGE_COST = 0;
 // Chamfered-corner edge cost, synced from dcChamferedCorners via dcSyncLiveToQuoteEngine() --
 // same disconnect-bug-avoidance pattern as DC_SEAM_EDGE_COST above, built in correctly from the
 // start rather than fixed after the fact.
@@ -11007,7 +11026,7 @@ function dcUndoPoint() {
 
 function dcClearPoly() {
   dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; dcEditPass = false;
-  dcCutouts = []; dcSeams = []; dcChamferedCorners = {};
+  dcCutouts = []; dcSeams = []; dcChamferedCorners = {}; dcRaisedBar = null;
   // Defensive (June 2026 audit): also reset drag state here, not just on mode switch -- a
   // stuck dcCornerDragging index (see the mouseup-handler fix above) previously survived a
   // Clear Shape click and crashed the very next mousemove inside dcCornerDragMove, since
@@ -11310,12 +11329,116 @@ function selectDrawShape(id) {
   else { addNF('da-len','Section A — Length',96); addDepthNF('da-dep','Section A — Depth',25.5); addNF('db-len','Section B — Length',0); addDepthNF('db-dep','Section B — Depth',0); addNF('dc-len','Section C — Length',0); addDepthNF('dc-dep','Section C — Depth',0); addNF('dd-len','Section D — Length',0); addDepthNF('dd-dep','Section D — Depth',0); }
 
   buildEdgeAssignmentArea();
+  buildRaisedBarArea();
   // Switching presets invalidates any in-progress or completed hand-drawn polygon from a
   // different preset — drop back to preset mode so the rep sees the new preset cleanly rather
   // than a stale custom shape that no longer matches the selected dimensions.
   if (dcMode === 'draw') { dcPoly = []; dcPolyClosed = false; dcHistory = []; dcEdgeTypes = {}; setDCMode('preset'); }
   drawCTPreview();
   if (typeof initDCCanvas === 'function') initDCCanvas();
+}
+
+// Raised bar / overhang section (2026-08-12): one real, priced, true-to-scale bar-height
+// overhang attachable to any preset shape's HORIZONTAL front edges only (vertical fronts like
+// L-shape's B-Front or U-shape's Left/Right front are out of scope this pass -- named
+// limitation, same precedent as chamfer excluding Custom Draw). Namespaced by
+// '<ctShape>:<edge label>' for the exact same reason dcChamferedCorners is namespaced by shape:
+// chamfer's own final review found a real Critical bug from NOT filtering stale cross-shape
+// state on the read side -- every consumer of dcRaisedBar below filters on this from the start.
+var dcRaisedBar = null; // or { edgeKey, lengthIn, offsetIn, overhangDepthIn, heightIn }
+
+// Every shape's real horizontal front edge(s), traced directly from drawCTPreview() (not
+// assumed) -- the single source of truth for the edge-picker dropdown, the pricing/cut-sheet
+// length lookup, and (Tasks 2-4) the render call sites. galley/custom share this same shape of
+// entry (multiple candidate sections), matching their shared dynamic-loop renderer.
+var DC_BAR_EDGE_CANDIDATES = {
+  straight: [{ label: 'Front (exposed)', lenField: 'da-len' }],
+  island:   [{ label: 'Front (exposed)', lenField: 'da-len' }],
+  lshape:   [{ label: 'A-Front', lenField: 'da-len' }],
+  ushape:   [{ label: 'Back front', lenField: 'db-len' }],
+  galley:   [{ label: 'Front counter front', lenField: 'da-len' }, { label: 'Back counter front', lenField: 'db-len' }],
+  custom:   [{ label: 'Section A front', lenField: 'da-len' }, { label: 'Section B front', lenField: 'db-len' }, { label: 'Section C front', lenField: 'dc-len' }],
+};
+
+// Real current length (inches) of the edge dcRaisedBar.edgeKey names, read live from the same
+// dimension inputs drawCTPreview uses -- the single place this shape+edge-to-field mapping is
+// expressed (DC_BAR_EDGE_CANDIDATES), consumed identically by the UI clamp, the render-time
+// re-clamp, and pricing/cut-sheet, so none of them can drift out of sync with each other.
+function dcRaisedBarEdgeLenIn(edgeKey) {
+  if (!edgeKey) return 0;
+  var sep = edgeKey.indexOf(':');
+  if (sep < 0) return 0;
+  var shape = edgeKey.slice(0, sep), label = edgeKey.slice(sep + 1);
+  var candidates = DC_BAR_EDGE_CANDIDATES[shape] || [];
+  for (var i = 0; i < candidates.length; i++) {
+    if (candidates[i].label === label) return gN(candidates[i].lenField);
+  }
+  return 0;
+}
+
+// Builds/refreshes the "Attach to edge" dropdown for the CURRENT ctShape and syncs the four
+// number inputs to dcRaisedBar's stored state (or blanks them if inactive/on a different
+// shape) -- called from selectDrawShape() every time the shape changes, mirroring
+// buildEdgeAssignmentArea()'s own rebuild-on-shape-select pattern.
+function buildRaisedBarArea() {
+  var sel = document.getElementById('db-bar-edge');
+  if (!sel) return;
+  var candidates = DC_BAR_EDGE_CANDIDATES[ctShape] || [];
+  sel.innerHTML = '';
+  var noneOpt = document.createElement('option');
+  noneOpt.value = ''; noneOpt.textContent = 'No raised bar';
+  sel.appendChild(noneOpt);
+  candidates.forEach(function (c) {
+    var o = document.createElement('option');
+    o.value = ctShape + ':' + c.label;
+    o.textContent = c.label;
+    sel.appendChild(o);
+  });
+  var active = (dcRaisedBar && dcRaisedBar.edgeKey.indexOf(ctShape + ':') === 0) ? dcRaisedBar : null;
+  sel.value = active ? active.edgeKey : '';
+
+  var lenIn = document.getElementById('db-bar-len');
+  var offIn = document.getElementById('db-bar-offset');
+  var depIn = document.getElementById('db-bar-depth');
+  var htIn = document.getElementById('db-bar-height');
+  if (lenIn) lenIn.value = active ? active.lengthIn : '';
+  if (offIn) offIn.value = active ? active.offsetIn : '';
+  if (depIn) depIn.value = active ? active.overhangDepthIn : '';
+  if (htIn) htIn.value = active ? active.heightIn : 42;
+
+  function applyFromInputs() {
+    var edgeKey = sel.value;
+    if (!edgeKey) {
+      dcRaisedBar = null;
+      drawCTPreview();
+      if (typeof calcDrawing === 'function') calcDrawing();
+      return;
+    }
+    var lengthIn = parseFloat(lenIn.value) || 0;
+    var overhangDepthIn = parseFloat(depIn.value) || 0;
+    var heightIn = parseFloat(htIn.value) || 42;
+    var offsetIn = parseFloat(offIn.value) || 0;
+    if (!(lengthIn > 0) || !(overhangDepthIn > 0)) {
+      dcRaisedBar = null;
+      drawCTPreview();
+      if (typeof calcDrawing === 'function') calcDrawing();
+      return;
+    }
+    var edgeLenIn = dcRaisedBarEdgeLenIn(edgeKey);
+    var clampedLen = edgeLenIn > 0 ? Math.min(lengthIn, edgeLenIn) : lengthIn;
+    var maxOffset = Math.max(edgeLenIn - clampedLen, 0);
+    var clampedOffset = Math.min(Math.max(offsetIn, 0), maxOffset);
+    if ((clampedLen !== lengthIn || clampedOffset !== offsetIn) && typeof showToast === 'function') {
+      showToast('Bar length/position clamped to fit the ' + edgeLenIn.toFixed(1) + 'in edge');
+    }
+    dcRaisedBar = { edgeKey: edgeKey, lengthIn: clampedLen, offsetIn: clampedOffset, overhangDepthIn: overhangDepthIn, heightIn: heightIn };
+    lenIn.value = clampedLen;
+    offIn.value = clampedOffset;
+    drawCTPreview();
+    if (typeof calcDrawing === 'function') calcDrawing();
+  }
+  sel.onchange = applyFromInputs;
+  [lenIn, offIn, depIn, htIn].forEach(function (el) { if (el) el.oninput = applyFromInputs; });
 }
 
 // Chamfered corners (2026-08-12): preset-shape inside-corner 45deg chamfers, keyed by
