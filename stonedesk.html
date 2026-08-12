@@ -11658,8 +11658,13 @@ function drawCTPreview() {
       // segments and never referenced B-Front/B-End/Corner at all, so picking those did nothing
       // and picking B-Back (wall) painted two unrelated edges at once. Fixed to a clean 1:1 map.
       colorEdge(bx,by, bx+bw,by, ea('B-Back (wall)','wall'));                    // B top (back wall)
-      colorEdge(bx+bw,by, bx+bw,ay, ea('B-Front','polished'));                   // B right side, down to A's top — this is B's exposed front face
-      colorEdge(bx+bw,ay, ax+aw,ay, ea('A-Back (wall)','wall'));                 // remainder of A's top (back wall), from B's right edge to A's right edge
+      // These two stop at the substituted chamfer points (not the old square corner) when
+      // chamfered (2026-08-12) -- otherwise the full-length strokes would still reach the old
+      // corner point, now interior to the filled notch, overlapping the new diagonal stroke
+      // below. Endpoints only; every other colorEdge() call here, and the drag/rotation math
+      // elsewhere in this branch, stays byte-identical.
+      colorEdge(bx+bw,by, bx+bw, chamferABOffPx>0 ? ay-chamferABOffPx : ay, ea('B-Front','polished'));                   // B right side, down to A's top — this is B's exposed front face
+      colorEdge(chamferABOffPx>0 ? bx+bw+chamferABOffPx : bx+bw, ay, ax+aw,ay, ea('A-Back (wall)','wall'));                 // remainder of A's top (back wall), from B's right edge to A's right edge
       colorEdge(ax+aw,ay, ax+aw,ay+ah, ea('A-Left end','polished'));             // A right end (note: dropdown label says "Left end" but this is the run's far end from the corner — matches the legacy straight-shape convention this was copied from)
       colorEdge(ax+aw,ay+ah, ax,ay+ah, ea('A-Front','polished'));                // A front (the long exposed front edge)
       colorEdge(ax,ay+ah, ax,by, ea('B-End','wall'));                            // the shared left side running through both A and B — this is B's far end, distinct from B's "Front" (its right side)
@@ -11720,7 +11725,11 @@ function drawCTPreview() {
     ctx.lineTo(rx, ry+rightH);
     if (offBR > 0) {
       ctx.lineTo(rx, by+backH+offBR);
-      ctx.lineTo(rx+offBR, by+backH);
+      // Fix (2026-08-12, caught in post-hoc review): this second substituted point must lie on
+      // the "Back front" segment, which runs from rx toward lx+leftW -- i.e. DECREASING x from
+      // rx (lx+leftW < rx). The original rx+offBR moved the wrong direction, off the actual
+      // edge and into the right leg's own top boundary instead of a valid chamfer cut.
+      ctx.lineTo(rx-offBR, by+backH);
     } else {
       ctx.lineTo(rx, by+backH);
     }
@@ -11741,9 +11750,12 @@ function drawCTPreview() {
     colorEdge(lx,by, bx+backW,by, ea('Back wall','wall'));                       // back wall
     colorEdge(bx+backW,by, rx+rightW,ry+rightH, ea('Right back (wall)','wall'));  // right leg outer (right wall)
     colorEdge(rx+rightW,ry+rightH, rx,ry+rightH, ea('Right front','polished'));   // right leg front
-    colorEdge(rx,ry+rightH, rx,by+backH, ea('Right end','wall'));                // right leg inner end
-    colorEdge(rx,by+backH, lx+leftW,by+backH, ea('Back front','polished'));      // back run front (between the legs)
-    colorEdge(lx+leftW,by+backH, lx+leftW,ly+leftH, ea('Left end','wall'));      // left leg inner end
+    // These three stop at the substituted chamfer points (not the old square corners) when
+    // chamfered (2026-08-12) -- same fix as the L-shape's B-Front/A-Back(wall) shortening above,
+    // for the same reason (avoid overlapping the new diagonal strokes below). Endpoints only.
+    colorEdge(rx,ry+rightH, rx, offBR>0 ? by+backH+offBR : by+backH, ea('Right end','wall'));                // right leg inner end
+    colorEdge(offBR>0 ? rx-offBR : rx, by+backH, offBL>0 ? lx+leftW+offBL : lx+leftW, by+backH, ea('Back front','polished'));      // back run front (between the legs)
+    colorEdge(lx+leftW, offBL>0 ? by+backH+offBL : by+backH, lx+leftW,ly+leftH, ea('Left end','wall'));      // left leg inner end
     colorEdge(lx+leftW,ly+leftH, lx,ly+leftH, ea('Left front','polished'));      // left leg front
     // Chamfer diagonal strokes + not-yet-chamfered corner markers (2026-08-12), mirroring the
     // L-shape's 'Corner (inside)' dot-to-stroke pattern above.
@@ -11756,7 +11768,7 @@ function drawCTPreview() {
     }
     const cornerColorBR = ea('Corner (inside) — Right', null);
     if (offBR > 0) {
-      colorEdge(rx, by+backH+offBR, rx+offBR, by+backH, cornerColorBR || 'polished');
+      colorEdge(rx, by+backH+offBR, rx-offBR, by+backH, cornerColorBR || 'polished'); // matches the corrected fill-polygon point above
     } else if (cornerColorBR) {
       ctx.fillStyle = EDGE_COLORS[cornerColorBR].color;
       ctx.beginPath(); ctx.arc(rx, by+backH, 5, 0, Math.PI*2); ctx.fill();
