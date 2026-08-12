@@ -9901,7 +9901,8 @@ function calc() {
   const bktCost = COUNTERS.bkt * 50;
   const dwCost = COUNTERS.dw * 15;
   const seamCost = (typeof DC_SEAM_EDGE_COST === 'number') ? DC_SEAM_EDGE_COST : 0;
-  const rawSubtotal = matFabSubtotal + finishCost + edgeCost + waterfallCost + sinkCost + cookCost + holeCost + outletCost + bsCost + bktCost + dwCost + seamCost + removal + delivery;
+  const chamferCost = (typeof DC_CHAMFER_EDGE_COST === 'number') ? DC_CHAMFER_EDGE_COST : 0;
+  const rawSubtotal = matFabSubtotal + finishCost + edgeCost + waterfallCost + sinkCost + cookCost + holeCost + outletCost + bsCost + bktCost + dwCost + seamCost + chamferCost + removal + delivery;
   const tierAdj = (matFabSubtotal + finishCost + edgeCost) * (tier.mult - 1.0);
   let total = rawSubtotal + tierAdj;
   total = Math.max(total, proj.min);
@@ -9910,7 +9911,7 @@ function calc() {
   const impliedSF = totalLF * (proj.depthIn / 12);
   const impliedPPSF = total / impliedSF;
 
-  lastCalc = { mat, proj, tier, total, totalLF, impliedSF, impliedPPSF, bsRate, edgeRate, sinkFee, thick, finUpch, removal, delivery, waterfallCost, sinkCost, cookCost, holeCost, outletCost, bsCost, bktCost, dwCost, seamCost, matFabSubtotal, finishCost, edgeCost, tierAdj };
+  lastCalc = { mat, proj, tier, total, totalLF, impliedSF, impliedPPSF, bsRate, edgeRate, sinkFee, thick, finUpch, removal, delivery, waterfallCost, sinkCost, cookCost, holeCost, outletCost, bsCost, bktCost, dwCost, seamCost, chamferCost, matFabSubtotal, finishCost, edgeCost, tierAdj };
 
   document.getElementById('total-price').textContent = fmt(total);
 
@@ -9931,6 +9932,7 @@ function calc() {
     { name:'Carbon brackets (x' + COUNTERS.bkt + ')', val:bktCost, show:COUNTERS.bkt > 0 },
     { name:'Dishwasher brackets (x' + COUNTERS.dw + ')', val:dwCost, show:COUNTERS.dw > 0 },
     { name:'Seam polished edge', val:seamCost, show:seamCost > 0 },
+    { name:'Chamfered corner(s)', val:chamferCost, show:chamferCost > 0 },
     { name:'Old countertop removal', val:removal, show:removal > 0 },
     { name:'Delivery', val:delivery, show:delivery > 0 },
     { name:tier.mult !== 1.0 ? tier.label + ' pricing adjustment' : '', val:tierAdj, show:tierAdj !== 0 },
@@ -11698,10 +11700,39 @@ function drawCTPreview() {
     const bx=ox, by=oy;
     const lx=ox, ly=oy+backH;
     const rx=ox+backW-rightW, ry=oy+backH;
+    // Chamfered inside corners (2026-08-12): same unified-fill-polygon approach as the L-shape
+    // above, extended to U-shape's two inside corners (Back-Left, Back-Right). backFrontPx is
+    // the "Back front" segment's full pixel length (rx to lx+leftW) -- the second adjacent edge
+    // for BOTH corners, since they share that one segment.
+    const chamferBL = dcChamferedCorners['ushape-BackLeft'];
+    const chamferBR = dcChamferedCorners['ushape-BackRight'];
+    const backFrontPx = backW - leftW - rightW;
+    const chamferBLMaxPx = Math.max(Math.min(leftH, backFrontPx) * DC_CHAMFER_MAX_FRACTION, 0);
+    const chamferBRMaxPx = Math.max(Math.min(rightH, backFrontPx) * DC_CHAMFER_MAX_FRACTION, 0);
+    const offBL = (chamferBL && chamferBL.setbackIn > 0) ? Math.min(chamferBL.setbackIn * sc, chamferBLMaxPx) : 0;
+    const offBR = (chamferBR && chamferBR.setbackIn > 0) ? Math.min(chamferBR.setbackIn * sc, chamferBRMaxPx) : 0;
     ctx.fillStyle='rgba(232,133,10,0.1)';
-    ctx.beginPath(); ctx.rect(bx,by,backW,backH); ctx.fill();
-    ctx.beginPath(); ctx.rect(lx,ly,leftW,leftH); ctx.fill();
-    ctx.beginPath(); ctx.rect(rx,ry,rightW,rightH); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(lx, ly+leftH);
+    ctx.lineTo(lx, by);
+    ctx.lineTo(lx+backW, by);
+    ctx.lineTo(rx+rightW, ry+rightH);
+    ctx.lineTo(rx, ry+rightH);
+    if (offBR > 0) {
+      ctx.lineTo(rx, by+backH+offBR);
+      ctx.lineTo(rx+offBR, by+backH);
+    } else {
+      ctx.lineTo(rx, by+backH);
+    }
+    if (offBL > 0) {
+      ctx.lineTo(lx+leftW+offBL, by+backH);
+      ctx.lineTo(lx+leftW, by+backH+offBL);
+    } else {
+      ctx.lineTo(lx+leftW, by+backH);
+    }
+    ctx.lineTo(lx+leftW, ly+leftH);
+    ctx.closePath();
+    ctx.fill();
     window._ctRects.push({key:'Back', x:bx, y:by, w:backW, h:backH});
     window._ctRects.push({key:'Left', x:lx, y:ly, w:leftW, h:leftH});
     window._ctRects.push({key:'Right', x:rx, y:ry, w:rightW, h:rightH});
@@ -11714,6 +11745,22 @@ function drawCTPreview() {
     colorEdge(rx,by+backH, lx+leftW,by+backH, ea('Back front','polished'));      // back run front (between the legs)
     colorEdge(lx+leftW,by+backH, lx+leftW,ly+leftH, ea('Left end','wall'));      // left leg inner end
     colorEdge(lx+leftW,ly+leftH, lx,ly+leftH, ea('Left front','polished'));      // left leg front
+    // Chamfer diagonal strokes + not-yet-chamfered corner markers (2026-08-12), mirroring the
+    // L-shape's 'Corner (inside)' dot-to-stroke pattern above.
+    const cornerColorBL = ea('Corner (inside) — Left', null);
+    if (offBL > 0) {
+      colorEdge(lx+leftW+offBL, by+backH, lx+leftW, by+backH+offBL, cornerColorBL || 'polished');
+    } else if (cornerColorBL) {
+      ctx.fillStyle = EDGE_COLORS[cornerColorBL].color;
+      ctx.beginPath(); ctx.arc(lx+leftW, by+backH, 5, 0, Math.PI*2); ctx.fill();
+    }
+    const cornerColorBR = ea('Corner (inside) — Right', null);
+    if (offBR > 0) {
+      colorEdge(rx, by+backH+offBR, rx+offBR, by+backH, cornerColorBR || 'polished');
+    } else if (cornerColorBR) {
+      ctx.fillStyle = EDGE_COLORS[cornerColorBR].color;
+      ctx.beginPath(); ctx.arc(rx, by+backH, 5, 0, Math.PI*2); ctx.fill();
+    }
   } else {
     // galley or custom — draw all sections
     const galleyLabels=[{front:'Front counter front',back:'Front counter back'},{front:'Back counter front',back:'Back counter back'}];
@@ -12985,6 +13032,16 @@ function dcSeamPricingSummary() {
   return { seamCount: dcSeams.length, pieceCount: dcSeams.length + 1, totalSeamLF: totalSeamLF };
 }
 
+// Sums active chamfers into a single diagonal-LF figure, mirroring dcSeamPricingSummary above.
+// Diagonal length per chamfer = setbackIn * sqrt(2) (the hypotenuse of the equal-leg right
+// triangle a 45deg chamfer cuts) -- the rate (edgeLfRate, both-sides-finished x2) is applied by
+// the caller in calcDrawing(), same as seams, so there's exactly one place that owns the rate.
+function dcChamferPricingSummary() {
+  const active = Object.keys(dcChamferedCorners).filter(k => dcChamferedCorners[k].setbackIn > 0);
+  const totalDiagLF = active.reduce((sum,k) => sum + (dcChamferedCorners[k].setbackIn * Math.SQRT2) / 12, 0);
+  return { count: active.length, totalDiagLF: totalDiagLF };
+}
+
 // Sums placed drainboard cutouts by configuration (single/double-sided) and prices them from
 // the editable admin Unit Pricing fields — same pattern as dcSeamPricingSummary above. Defaults
 // ($375 single, $475 double) come from researched fabricator pricing: a typical sloped
@@ -13111,6 +13168,8 @@ function calcDrawing() {
   const seamInfo = (typeof dcSeamPricingSummary === 'function') ? dcSeamPricingSummary() : {seamCount:0,pieceCount:1,totalSeamLF:0};
   const edgeLfRate = parseFloat((document.getElementById('sairn-unit-edge_lf')||{}).value) || 18;
   const seamEdgeCost = seamInfo.totalSeamLF * 2 * edgeLfRate; // both sides of every cut are finished edge
+  const chamferInfo = (typeof dcChamferPricingSummary === 'function') ? dcChamferPricingSummary() : {count:0,totalDiagLF:0};
+  const chamferEdgeCost = chamferInfo.totalDiagLF * 2 * edgeLfRate; // both sides of every chamfer cut are finished edge, same convention as seams
   const drainboardInfo = (typeof dcDrainboardPricingSummary === 'function') ? dcDrainboardPricingSummary() : {count:0,totalCost:0};
   const integratedInfo = (typeof dcIntegratedSinkPricingSummary === 'function') ? dcIntegratedSinkPricingSummary() : {count:0,singleBowlCount:0,multiBowlCount:0,totalCost:0};
 
@@ -13126,6 +13185,7 @@ function calcDrawing() {
     {n:thh+' hr',l:'Est. Labor (THH)',s:'Granite benchmark 4hr per 50sqft'},
     {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
     {n:seamInfo.seamCount>0?seamInfo.pieceCount+' pieces':'1 piece',l:'Seams',s:seamInfo.seamCount>0?seamInfo.seamCount+' seam(s), '+seamInfo.totalSeamLF.toFixed(1)+' LF, +$'+seamEdgeCost.toFixed(0)+' polished edge':'No seams placed'},
+    {n:chamferInfo.count>0?'+$'+chamferEdgeCost.toFixed(0):'None',l:'Chamfered Corners',s:chamferInfo.count>0?chamferInfo.count+' corner(s), '+chamferInfo.totalDiagLF.toFixed(2)+' LF diagonal edge':'No corners chamfered'},
     {n:drainboardInfo.count>0?'$'+drainboardInfo.totalCost.toFixed(0):'None',l:'Drainboard(s)',s:drainboardInfo.count>0?drainboardInfo.count+' side(s) attached':'No drainboards placed'},
     {n:integratedInfo.count>0?'+$'+integratedInfo.totalCost.toFixed(0):'None',l:'Integrated Sink Premium',s:integratedInfo.count>0?'Carved from same stone, no separate fixture — '+integratedInfo.count+' sink(s)':'No integrated sinks placed'},
   ];
@@ -13155,7 +13215,7 @@ function calcDrawing() {
   }
 
   drawCTPreview();
-  dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost);
+  dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost, chamferEdgeCost);
 }
 
 // Live pricing sync (2026-08-04): calcDrawing() above recomputes gross sqft on every shape edit
@@ -13170,7 +13230,7 @@ function calcDrawing() {
 // existing tested behavior. No pricing formula is duplicated or reimplemented here -- this only
 // feeds the real calc() (unchanged, still owns MATERIALS/PROJECTS/TIERS) the same inputs
 // qbImportFromDraw() would, then lets it compute lastCalc itself.
-function dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost) {
+function dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost, chamferEdgeCost) {
   if (typeof calc !== 'function' || typeof setV !== 'function' || typeof gN !== 'function') return;
   const shape = (typeof ctShape !== 'undefined') ? ctShape : 'straight';
   const isCustom = (typeof dcMode !== 'undefined' && dcMode === 'draw' && typeof dcPolyClosed !== 'undefined' && dcPolyClosed);
@@ -13219,6 +13279,7 @@ function dcSyncLiveToQuoteEngine(grossSqFt, seamEdgeCost) {
   // total before. Passed in directly rather than recomputed here, so there's exactly one place
   // that owns the formula.
   if (typeof seamEdgeCost === 'number') DC_SEAM_EDGE_COST = seamEdgeCost;
+  if (typeof chamferEdgeCost === 'number') DC_CHAMFER_EDGE_COST = chamferEdgeCost;
 
   calc();
 }
@@ -13324,6 +13385,14 @@ function printDrawCutSheet() {
   if (typeof dcSeams !== 'undefined' && dcSeams.length) {
     const seamSummary = dcSeams.map(s => s.label + ' (' + (Math.hypot(s.x2-s.x1,s.y2-s.y1)/12).toFixed(1) + ' LF)').join(', ');
     win.document.write('<div class="row"><span class="rl">Seams</span><span class="rv">'+dcSeams.length+' — '+seamSummary+'</span></div>');
+  }
+  if (typeof dcChamferedCorners !== 'undefined') {
+    const chamferLabels = { 'lshape-AB':'Inside corner (A-B)', 'ushape-BackLeft':'Inside corner (Back-Left)', 'ushape-BackRight':'Inside corner (Back-Right)' };
+    const activeChamfers = Object.keys(dcChamferedCorners).filter(k => dcChamferedCorners[k].setbackIn > 0);
+    if (activeChamfers.length) {
+      const chamferSummary = activeChamfers.map(k => (chamferLabels[k]||k) + ': ' + dcChamferedCorners[k].setbackIn + 'in chamfer').join(', ');
+      win.document.write('<div class="row"><span class="rl">Chamfered Corners</span><span class="rv">'+chamferSummary+'</span></div>');
+    }
   }
   if (typeof dcCutouts !== 'undefined' && dcCutouts.length) {
     const cutoutSummary = dcCutouts.map(c => c.label).join(', ');
