@@ -11617,9 +11617,34 @@ function drawCTPreview() {
     const ax=ox, ay=oy+(bL||0)*sc, aw=aL*sc, ah=aD*sc;
     const hasStub = bL && bD;
     const bx=ox, by=oy, bw=(bD||25)*sc, bh=bL*sc;
+    // Chamfered inside corner (2026-08-12): unify A/B's two independent rect fills into one
+    // polygon so a chamfer produces a real notch, not just a diagonal line drawn on top of a
+    // still-square fill. offPx is re-clamped here (not just at input time in
+    // buildEdgeAssignmentArea) so a setback valid when typed can never self-intersect the fill
+    // if the rep later shrinks A or B's dimensions -- same defensive posture as the sink-fit
+    // staleness re-check.
+    const chamferAB = dcChamferedCorners['lshape-AB'];
+    const chamferABMaxPx = Math.max(Math.min(bh, aw-bw) * DC_CHAMFER_MAX_FRACTION, 0);
+    const chamferABOffPx = (hasStub && chamferAB && chamferAB.setbackIn > 0) ? Math.min(chamferAB.setbackIn * sc, chamferABMaxPx) : 0;
     ctx.fillStyle='rgba(232,133,10,0.1)';
-    ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.fill();
-    if (hasStub) { ctx.beginPath(); ctx.rect(bx,by,bw,bh); ctx.fill(); }
+    if (hasStub) {
+      ctx.beginPath();
+      ctx.moveTo(bx,by);
+      ctx.lineTo(bx+bw,by);
+      if (chamferABOffPx > 0) {
+        ctx.lineTo(bx+bw, ay-chamferABOffPx);
+        ctx.lineTo(bx+bw+chamferABOffPx, ay);
+      } else {
+        ctx.lineTo(bx+bw, ay);
+      }
+      ctx.lineTo(ax+aw, ay);
+      ctx.lineTo(ax+aw, ay+ah);
+      ctx.lineTo(ax, ay+ah);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.fill();
+    }
     window._ctRects.push({key:'A', x:ax, y:ay, w:aw, h:ah});
     if (hasStub) window._ctRects.push({key:'B', x:bx, y:by, w:bw, h:bh});
 
@@ -11642,7 +11667,12 @@ function drawCTPreview() {
       // (e.g. a radius or backsplash detail at the inside corner). Drawn as a small marker dot
       // so picking a color for it is visible, rather than silently doing nothing.
       const cornerColor = ea('Corner (inside)', null);
-      if (cornerColor) {
+      if (chamferABOffPx > 0) {
+        // Real fabrication edge now that the corner is chamfered -- a new diagonal stroke
+        // between the same two substituted points the fill notch above uses, drawn on top of
+        // (not replacing) the unmodified B-Front/A-Back(wall) strokes above, per the design spec.
+        colorEdge(bx+bw, ay-chamferABOffPx, bx+bw+chamferABOffPx, ay, cornerColor || 'polished');
+      } else if (cornerColor) {
         ctx.fillStyle = EDGE_COLORS[cornerColor].color;
         ctx.beginPath(); ctx.arc(bx+bw, ay, 5, 0, Math.PI*2); ctx.fill();
       }
