@@ -94,6 +94,27 @@ async function main() {
     assert.strictEqual(store.data.status, 'Awaiting Patient');
   });
 
+  await test('owner reply, then second patient reply -- thread handler read is fresh too (not a stale 2-message snapshot)', async () => {
+    // After test 1, store has 3 messages: original complaint, patient
+    // reply, owner reply. Test 1 alone only proves complaint-respond.js
+    // reads fresh; this proves the OTHER direction -- that
+    // public-complaint-thread.js's own read also picks up a message it
+    // didn't write itself (the owner's), not a snapshot from before the
+    // owner's write happened.
+    assert.strictEqual(store.data.messages.length, 3);
+    assert.strictEqual(store.data.messages[2].text, 'Thanks, looking into it now');
+
+    var threadRes = mockRes();
+    await threadHandler({ method: 'POST', headers: {}, body: { token: 'tok-xyz', reply: 'Thanks for the update' } }, threadRes);
+    assert.strictEqual(threadRes.statusCode, 200);
+
+    assert.strictEqual(store.data.messages.length, 4);
+    // Owner's message from the prior step survived unchanged.
+    assert.strictEqual(store.data.messages[2].text, 'Thanks, looking into it now');
+    // New patient message appended after it, not overwriting it.
+    assert.strictEqual(store.data.messages[3].text, 'Thanks for the update');
+  });
+
   await test('patient reply after Resolved reopens to New (state-transition rule)', async () => {
     store.data.status = 'Resolved';
     var threadRes = mockRes();

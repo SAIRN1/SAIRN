@@ -97,6 +97,45 @@ async function main() {
     assert.strictEqual(res.body.error.code, 'NOT_FOUND');
   });
 
+  await test("license_hash scoping -- valid license for practice A cannot reach practice B's complaint_id -> 404 NOT_FOUND", async () => {
+    delete require.cache[require.resolve('../_lib/license')];
+    require.cache[require.resolve('../_lib/license')] = { exports: { validateLicenseKey: async function () { return { valid: true, active: true, license_hash: 'practice-A-hash' }; } } };
+
+    // Two rows seeded under two different license_hash values. The mock
+    // filters on whichever eq. clauses are actually present in the query
+    // URL (mirroring real PostgREST behavior), rather than just checking
+    // for the presence of "license_hash=eq." as a substring -- so this
+    // test only passes if the real code's query truly ANDs license_hash
+    // together with complaint_id. If complaint-respond.js ever dropped
+    // the license_hash filter, this mock would match complaint_id alone,
+    // return practice B's row, and the handler would incorrectly
+    // succeed instead of 404 -- which is exactly the regression this
+    // test exists to catch.
+    var rows = [
+      { license_hash: 'practice-A-hash', complaint_id: 'A-COMP-1', access_token: 'tok-a', data: { messages: [] } },
+      { license_hash: 'practice-B-hash', complaint_id: 'B-COMP-1', access_token: 'tok-b', data: { messages: [] } }
+    ];
+    global.fetch = async function (url) {
+      var u = String(url);
+      var mHash = u.match(/license_hash=eq\.([^&]+)/);
+      var mId = u.match(/complaint_id=eq\.([^&]+)/);
+      var matches = rows.filter(function (r) {
+        if (mHash && r.license_hash !== decodeURIComponent(mHash[1])) return false;
+        if (mId && r.complaint_id !== decodeURIComponent(mId[1])) return false;
+        return true;
+      });
+      return { ok: true, json: async function () { return matches; } };
+    };
+
+    delete require.cache[require.resolve('./complaint-respond.js')];
+    var handler = require('./complaint-respond.js');
+    var res = mockRes();
+    // Practice A's valid, active license -- but asking for practice B's complaint_id.
+    await handler(mockReq({ complaint_id: 'B-COMP-1', action: 'resolve' }, 'Bearer GOOD-A-KEY'), res);
+    assert.strictEqual(res.statusCode, 404);
+    assert.strictEqual(res.body.error.code, 'NOT_FOUND');
+  });
+
   console.log(passed + ' passed');
 }
 
