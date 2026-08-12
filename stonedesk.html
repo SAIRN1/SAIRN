@@ -12253,6 +12253,7 @@ function dcCanvasPlaceOrDrag(e, phase) {
     }
     drawCTPreview();
     updateDCCutoutList();
+    if (typeof calcDrawing === 'function') calcDrawing(); // placing a sink/cooktop/faucet/outlet must drive quote cost immediately, not just the canvas
     return;
   }
 
@@ -12486,8 +12487,9 @@ function dcRemoveCutout(id) {
   // the sink they're derived from, and would otherwise become invisible orphan records.
   dcCutouts = dcCutouts.filter(c => c.id !== id && c.attachedToSinkId !== id);
   drawCTPreview(); updateDCCutoutList();
+  if (typeof calcDrawing === 'function') calcDrawing(); // keep quote cost in sync when a cutout is removed
 }
-function clearDCCutouts() { dcCutouts = []; drawCTPreview(); updateDCCutoutList(); }
+function clearDCCutouts() { dcCutouts = []; drawCTPreview(); updateDCCutoutList(); if (typeof calcDrawing === 'function') calcDrawing(); }
 
 // == UNIFIED POINTER ROUTER ===================================================================
 // dcCutoutMode and dcSeamMode (plus active drags of either) used to be handled by two SEPARATE
@@ -12972,6 +12974,26 @@ function dcSyncLiveToQuoteEngine(grossSqFt) {
   const ptEl = document.getElementById('project-type');
   const projMap = { straight:'kitchen_std', island:'kitchen_island', lshape:'kitchen_l', ushape:'kitchen_l', galley:'kitchen_std', custom:'kitchen_std' };
   if (ptEl) ptEl.value = projMap[shape] || 'kitchen_std';
+
+  // Cost-disconnect fix (2026-08-12): once a rep has drawn a real shape (guaranteed by this point --
+  // both early-returns above already required it), whatever sink/cooktop/faucet/outlet cutouts are
+  // actually placed on the canvas become the source of truth for COUNTERS, fully replacing the
+  // separate Step 5 manual steppers for those same four types. This is an unconditional override
+  // (including 0, so removing every placed cutout of a type correctly zeroes its cost) rather than a
+  // merge with whatever the steppers happened to hold, so a rep can never forget to also bump a
+  // stepper -- and never end up double-counted between the two if they touch both. Reps who never
+  // open the Drawing Tool are unaffected: this function returns before this point until a shape exists.
+  if (typeof dcCutouts !== 'undefined' && typeof COUNTERS !== 'undefined') {
+    const countOf = t => dcCutouts.filter(c => c.type === t).length;
+    COUNTERS.sink = countOf('sink');
+    COUNTERS.cook = countOf('cooktop');
+    COUNTERS.hole = countOf('faucet');
+    COUNTERS.outlet = countOf('outlet');
+    ['sink', 'cook', 'hole', 'outlet'].forEach(k => {
+      const el = document.getElementById(k + '-count');
+      if (el) el.textContent = COUNTERS[k];
+    });
+  }
 
   calc();
 }
