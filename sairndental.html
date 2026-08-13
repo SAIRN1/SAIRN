@@ -681,7 +681,7 @@ function rPatients(){
   var tbody=$('patients-tbody');
   tbody.innerHTML=list.map(function(p){
     return '<tr><td>'+H(p.name)+'</td><td>'+H(p.dob||'--')+'</td><td>'+H(p.phone||'--')+'</td><td>'+H(p.insurance_payer||'--')+'</td><td>'+H(p.insurance_member_id||'--')+'</td>'+
-      '<td>'+H(isMinorPatient(p.dob)&&p.guardian_name?p.guardian_name+(p.guardian_relationship?' ('+p.guardian_relationship+')':''):'--')+'</td>'+
+      '<td>'+H(p.guardian_name?p.guardian_name+(p.guardian_relationship?' ('+p.guardian_relationship+')':''):'--')+'</td>'+
       '<td><button class="btn bo bs" onclick="removePatient(\''+p.id+'\')">Remove</button></td></tr>';
   }).join('')||'<tr><td colspan="7" style="color:var(--muted);text-align:center">No patients on file yet</td></tr>';
   fillDentalSelects();
