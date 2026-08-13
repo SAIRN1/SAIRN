@@ -25,6 +25,8 @@ Every real lesson tonight was found reactively — a bug shipped, then got caugh
 
 **About to add a new visual indicator (color, badge, KPI):** before shipping, ask "does this collide with an existing color/signal meaning elsewhere in the app" — the --warn/--p amber collision and the SAIRNbiz static-green-on-negative bug both existed because this question wasn't asked until the color was already picked.
 
+**About to write any date/age comparison logic (minor detection, expiration countdowns, deadline calculations):** the platform has hit the same UTC-vs-local date-parsing bug twice now — once in an earlier fix (2026-08-06), and again in new pediatric-fields code the same night, misclassifying a minor as an adult the day before their real 18th birthday. Check date-comparison logic explicitly for this class of bug before shipping — don't assume a fresh implementation is safe just because the earlier instance was already fixed elsewhere. Build the `Date` from local year/month/day components (the existing `dntLocalToday()`-style pattern), never hand a raw `YYYY-MM-DD` string straight to `new Date()` and then read it back with local getters.
+
 ## What this is NOT
 
 Not a replacement for `sairn-decision-gate`'s Premortem (that's for a specific claim or proposal about to go out the door) or `sairn-precommit-gate` (that's the routing checklist for which skill applies to a given commit). This is the standing habit of scanning for the *next* instance of an *already-known* pattern, applied continuously, not triggered by a specific decision point.
