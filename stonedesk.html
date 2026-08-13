@@ -11514,8 +11514,13 @@ function dcRaisedBarEdgeLenIn(edgeKey) {
 // refuses one with no length -- but dcRaisedBarPricingSummary() only ever checked length,
 // so a rep who attached a bar to a section and then blanked THAT section's depth (not its
 // length) kept getting billed and cut-sheet-printed for a bar on a section that draws nothing.
-// Returns a positive sentinel (1) for a null depField (ushape's Back run -- see above), so
-// callers can uniformly treat "> 0" as "this host depth is valid" for every shape.
+// Returns Infinity for a null depField (ushape's Back run -- see above), so callers can
+// uniformly treat "> 0" as "this host depth is valid" for every shape. Fix (2026-08-13,
+// adversarial review finding #3): this used to return the real inch value 1 as that sentinel --
+// safe today since every caller only ever does a >0 boolean check, but 1 is also a plausible
+// real depth, so any future caller doing arithmetic instead of a boolean check would have
+// silently treated "no depth field" as "exactly 1 inch deep." Infinity satisfies the same >0
+// check while being unmistakably not a real physical depth if it ever leaks into a calculation.
 function dcRaisedBarEdgeDepthIn(edgeKey) {
   if (!edgeKey) return 0;
   var sep = edgeKey.indexOf(':');
@@ -11524,7 +11529,7 @@ function dcRaisedBarEdgeDepthIn(edgeKey) {
   var candidates = DC_BAR_EDGE_CANDIDATES[shape] || [];
   for (var i = 0; i < candidates.length; i++) {
     if (candidates[i].label === label) {
-      if (!candidates[i].depField) return 1;
+      if (!candidates[i].depField) return Infinity;
       return gN(candidates[i].depField);
     }
   }
@@ -13563,8 +13568,12 @@ function calcDrawing() {
 
   const barInfo = (typeof dcRaisedBarPricingSummary === 'function') ? dcRaisedBarPricingSummary() : {active:false,sqFt:0,edgeLF:0,corbelFlag:false};
   const totalMat=(netSqFt+splashSqFt+wfSqFt+barInfo.sqFt)*1.15;
-  const slabs=Math.ceil(totalMat/50);
-  const thh=(totalMat/50*4).toFixed(1);
+  // Fix (2026-08-13, adversarial review finding #4): was a bare literal 50, unlike every other
+  // rate in this function (sink/cooktop/corbel-threshold), which all read from an admin-editable
+  // sairn-unit-* field -- moved to match that same pattern.
+  const slabSqFt = parseFloat((document.getElementById('sairn-unit-slab_sqft')||{}).value) || 50;
+  const slabs=Math.ceil(totalMat/slabSqFt);
+  const thh=(totalMat/slabSqFt*4).toFixed(1);
 
   // Seams: each one adds a fabrication piece (more labor/handling) and its full length is
   // finished/polished edge on both sides of the cut, priced at the same edge_lf rate used
@@ -13723,15 +13732,21 @@ async function getAIDrawingAdvice() {
 // Print cut sheet
 function printDrawCutSheet() {
   const aL=gN('da-len'),aD=gN('da-dep'),bL=gN('db-len'),bD=gN('db-dep'),cL=gN('dc-len'),cD=gN('dc-dep');
-  const jobName=document.getElementById('draw-job-name').value||'Job';
-  const material=document.getElementById('draw-material').value||'';
-  const edgeProfile=document.getElementById('draw-edge').value||'';
-  const sinkType=document.getElementById('draw-sink').value;
-  const ctType=document.getElementById('draw-cooktop').value;
+  // Fix (2026-08-13, adversarial review finding #1): every field on this printed sheet is a
+  // rep-typed or admin-configured string written straight into a new document via
+  // win.document.write() -- escHtml() here matches the standard already used on `notes` below
+  // (now itself upgraded from a partial </> -only replace to the same real escHtml()), so a job
+  // name or material string containing '</title><script>...' etc. can no longer break out of its
+  // tag or inject markup into the print popup.
+  const jobName=escHtml(document.getElementById('draw-job-name').value||'Job');
+  const material=escHtml(document.getElementById('draw-material').value||'');
+  const edgeProfile=escHtml(document.getElementById('draw-edge').value||'');
+  const sinkType=escHtml(document.getElementById('draw-sink').value);
+  const ctType=escHtml(document.getElementById('draw-cooktop').value);
   const notes=document.getElementById('draw-notes').value||'';
   const wfLeft=getCBV('dh-wf-left'), wfRight=getCBV('dh-wf-right');
   const wfHt=gN('dh-wf-ht')||36;
-  const shopName=localStorage.getItem('fab_shop_name')||'Stone Fabrication Shop';
+  const shopName=escHtml(localStorage.getItem('fab_shop_name')||'Stone Fabrication Shop');
   const date=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 
   let gross=0;
@@ -13764,8 +13779,12 @@ function printDrawCutSheet() {
   const wfCount=(wfLeft?1:0)+(wfRight?1:0);
   const barInfo2 = (typeof dcRaisedBarPricingSummary === 'function') ? dcRaisedBarPricingSummary() : {active:false,sqFt:0,effLenIn:0,effDepthIn:0,corbelFlag:false};
   const totalMat=(netSqFt+splashSqFt+wfSqFt+barInfo2.sqFt)*1.15;
-  const slabs=Math.ceil(totalMat/50);
-  const thh=(totalMat/50*4).toFixed(1);
+  // Fix (2026-08-13, adversarial review finding #4): same fix as calcDrawing() above -- was a
+  // bare literal 50, now reads the same admin-editable sairn-unit-slab_sqft field so the printed
+  // cut sheet's slab/labor estimate can't silently disagree with the calculator's.
+  const slabSqFt = parseFloat((document.getElementById('sairn-unit-slab_sqft')||{}).value) || 50;
+  const slabs=Math.ceil(totalMat/slabSqFt);
+  const thh=(totalMat/slabSqFt*4).toFixed(1);
 
   const holes=[];
   if(getCBV('dh-faucet1')) holes.push('1 Faucet hole'); if(getCBV('dh-faucet3')) holes.push('3 Faucet holes');
@@ -13835,7 +13854,7 @@ function printDrawCutSheet() {
   } else win.document.write('<span style="font-size:12px;color:#aaa">No extras selected</span>');
   win.document.write('</div></div>');
 
-  if(notes) win.document.write('<div class="sec-t" style="margin-bottom:6px">Notes</div><div class="notes-box">'+notes.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>');
+  if(notes) win.document.write('<div class="sec-t" style="margin-bottom:6px">Notes</div><div class="notes-box">'+escHtml(notes)+'</div>');
   win.document.write('<div class="sig-row"><div class="sig">Estimator &amp; Date</div><div class="sig">Customer Approval &amp; Date</div><div class="sig">Fabricator Sign-Off</div><div class="sig">Installer Sign-Off</div></div>');
   win.document.write('<div class="ftr"><div>'+shopName+' — Fabrication Cut Sheet — Internal Use Only</div><div>Generated by StoneDesk AI \xb7 sairn.vercel.app/stonedesk</div></div>');
   win.document.write('<scr'+'ipt>window.onload=function(){window.print();}<\/script>');
@@ -14837,6 +14856,9 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 </div><div class="sairn-form-grp">
   <label class="sairn-form-lbl">Corbel support threshold, raised bar (in) — quartz default</label>
   <input class="sairn-form-inp" id="sairn-unit-corbel_threshold" value="15" type="number" step="0.5">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">Slab size, drawing tool cut sheet (SF per slab)</label>
+  <input class="sairn-form-inp" id="sairn-unit-slab_sqft" value="50" type="number" step="1">
 </div><div class="sairn-form-grp">
   <label class="sairn-form-lbl">Sink cutout (each)</label>
   <input class="sairn-form-inp" id="sairn-unit-sink_cutout" value="150" type="number" step="0.01">
