@@ -710,7 +710,7 @@ async function addPatient(){
   if(!name){toast('Patient name required');return;}
   var dob=$('pt-add-dob').value;
   var gName=$('pt-add-guardian-name').value.trim();
-  var gRel=$('pt-add-guardian-relationship').value;
+  var gRel=isMinorPatient(dob)?$('pt-add-guardian-relationship').value:'';
   var gPhone=$('pt-add-guardian-phone').value.trim();
   var gEmail=$('pt-add-guardian-email').value.trim();
   if(isMinorPatient(dob)&&(!gName||(!gPhone&&!gEmail))){
