@@ -11836,6 +11836,99 @@ function buildEdgeAssignmentArea() {
   });
 }
 
+// Stone appearance (2026-08-13): representative color/pattern fills for the Drawing Tool's
+// rendered shapes, keyed by stone TYPE (pattern) and TONE (base color) -- deliberately never tied
+// to any specific photographed slab, quarry, or named product; procedural canvas drawing only, no
+// image assets. Both default to unset (null), which dcApplyStoneFill() below treats as "render
+// today's flat placeholder" -- zero visual change for anyone who never touches the picker.
+var dcStoneType = null;   // 'granite' | 'marble' | 'quartzite' | 'quartz' | null
+var dcColorTone = null;   // 'light' | 'medium' | 'dark' | null
+
+var STONE_TONE_COLORS = {
+  granite:   { light: '#C9C2B8', medium: '#8B8478', dark: '#3A3733' },
+  marble:    { light: '#F3EFE8', medium: '#D8D2C6', dark: '#5C5A55' },
+  quartzite: { light: '#EDEAE2', medium: '#B8B2A4', dark: '#4A4844' },
+  quartz:    { light: '#EDEDED', medium: '#9C9C9C', dark: '#2E2E2E' }
+};
+
+// Tiny deterministic PRNG (mulberry32) seeded from a string hash, so texture layout is stable
+// across re-renders of the same inputs -- drawCTPreview() fires on nearly every keystroke, and a
+// true Math.random() texture would visibly jitter on every redraw. Returns a function that
+// produces successive pseudo-random floats in [0,1) from the same seed every time it's called.
+function dcHashSeed(str) {
+  var h = 1779033703 ^ str.length;
+  for (var i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function() {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  };
+}
+
+// Draws speckle dots (Granite, Engineered Quartz) or soft vein strokes (Marble, Quartzite) within
+// the bounding box (x,y,w,h) -- the caller has already clipped the canvas to the real shape (see
+// dcApplyStoneFill below), so this can safely draw across the whole bounding rectangle without
+// worrying about spilling outside an L-shape/U-shape/polygon's actual boundary. Pattern density
+// and style differ by stone type to match each one's real typical character, not an arbitrary
+// style choice: granite's speckle is denser/coarser than quartz's fine manufactured fleck; marble
+// shows more/thicker veining than quartzite's subtler veining.
+function dcDrawStoneTexture(ctx, x, y, w, h, stoneType, colorTone) {
+  if (w <= 0 || h <= 0) return;
+  var rand = dcHashSeed(x.toFixed(1)+'|'+y.toFixed(1)+'|'+w.toFixed(1)+'|'+h.toFixed(1)+'|'+stoneType+'|'+colorTone);
+  var tones = STONE_TONE_COLORS[stoneType];
+  var speckleColors = [tones.light, tones.medium, tones.dark];
+  if (stoneType === 'granite' || stoneType === 'quartz') {
+    var count = Math.max(1, Math.round((w*h) / (stoneType === 'granite' ? 90 : 260)));
+    var maxR = stoneType === 'granite' ? 1.6 : 0.9;
+    for (var i = 0; i < count; i++) {
+      var px = x + rand()*w, py = y + rand()*h, r = 0.4 + rand()*maxR;
+      ctx.fillStyle = speckleColors[Math.floor(rand()*speckleColors.length)];
+      ctx.globalAlpha = 0.35 + rand()*0.25;
+      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  } else {
+    var veinCount = stoneType === 'marble' ? (2 + Math.floor(rand()*3)) : (1 + Math.floor(rand()*2));
+    var lineW = stoneType === 'marble' ? 1.1 : 0.6;
+    for (var v = 0; v < veinCount; v++) {
+      var sx = x + rand()*w, sy = y + rand()*h;
+      var cx1 = x + rand()*w, cy1 = y + rand()*h;
+      var cx2 = x + rand()*w, cy2 = y + rand()*h;
+      var ex = x + rand()*w, ey = y + rand()*h;
+      ctx.strokeStyle = speckleColors[rand() < 0.5 ? 0 : 2];
+      ctx.globalAlpha = 0.18 + rand()*0.15;
+      ctx.lineWidth = lineW;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.bezierCurveTo(cx1, cy1, cx2, cy2, ex, ey); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// Replaces the flat placeholder fillStyle+fill() every shape branch in drawCTPreview() (and
+// drawDCPolygon) currently calls directly. The caller MUST have already built the shape's real
+// path via ctx.beginPath()+ctx.rect()/moveTo()/lineTo()/closePath() BEFORE calling this -- it only
+// replaces the "set a fillStyle and fill()" portion. Uses ctx.clip() (on whatever path is
+// currently set) so texture primitives, which draw across the full (x,y,w,h) bounding box for
+// simplicity, never spill outside the real shape whether it's a simple rect or an arbitrary
+// polygon. Falls back to today's exact flat placeholder when no appearance is selected.
+function dcApplyStoneFill(ctx, x, y, w, h) {
+  if (!dcStoneType || !dcColorTone || !STONE_TONE_COLORS[dcStoneType] || !STONE_TONE_COLORS[dcStoneType][dcColorTone]) {
+    ctx.fillStyle = 'rgba(232,133,10,0.1)';
+    ctx.fill();
+    return;
+  }
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = STONE_TONE_COLORS[dcStoneType][dcColorTone];
+  ctx.fillRect(x, y, w, h);
+  dcDrawStoneTexture(ctx, x, y, w, h, dcStoneType, dcColorTone);
+  ctx.restore();
+}
+
 // Drawing canvas with color-coded edges
 function gN(id) { const e=document.getElementById(id); return e ? (parseFloat(e.value)||0) : 0; }
 function getCBV(id) { const e=document.getElementById(id); return e ? e.checked : false; }
