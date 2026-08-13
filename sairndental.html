@@ -257,7 +257,7 @@ label.chk input{width:auto;}
         <div class="card"><div class="ch"><div class="ct">Add Patient</div></div><div class="cb">
           <div class="fr">
             <div class="fg"><label>Name</label><input type="text" id="pt-add-name" placeholder="Full name"></div>
-            <div class="fg"><label>Date of Birth</label><input type="date" id="pt-add-dob"></div>
+            <div class="fg"><label>Date of Birth</label><input type="date" id="pt-add-dob" onchange="onPtDobChange()"></div>
           </div>
           <div class="fr">
             <div class="fg"><label>Phone</label><input type="text" id="pt-add-phone" placeholder="(555) 555-5555"></div>
@@ -267,10 +267,21 @@ label.chk input{width:auto;}
             <div class="fg"><label>Insurance Payer</label><input type="text" id="pt-add-payer" placeholder="e.g. Delta Dental"></div>
             <div class="fg"><label>Member ID</label><input type="text" id="pt-add-memberid" placeholder="Member ID"></div>
           </div>
+          <!-- Pediatric fields (2026-08-13): hidden unless pt-add-dob implies
+               a minor (see onPtDobChange()/isMinorPatient()) -- supplements,
+               never replaces, the patient's own phone/email fields above. -->
+          <div class="fr" id="pt-add-guardian-group" style="display:none">
+            <div class="fg"><label>Guardian Name</label><input type="text" id="pt-add-guardian-name" placeholder="Full name"></div>
+            <div class="fg"><label>Relationship</label><select id="pt-add-guardian-relationship"><option>Mother</option><option>Father</option><option>Legal Guardian</option><option>Other</option></select></div>
+          </div>
+          <div class="fr" id="pt-add-guardian-group2" style="display:none">
+            <div class="fg"><label>Guardian Phone</label><input type="text" id="pt-add-guardian-phone" placeholder="(555) 555-5555"></div>
+            <div class="fg"><label>Guardian Email</label><input type="email" id="pt-add-guardian-email" placeholder="guardian@example.com"></div>
+          </div>
           <button class="btn bp" onclick="addPatient()">Add Patient</button>
         </div></div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
-          <table id="patients-table"><thead><tr><th>Name</th><th>DOB</th><th>Phone</th><th>Payer</th><th>Member ID</th><th></th></tr></thead><tbody id="patients-tbody"></tbody></table>
+          <table id="patients-table"><thead><tr><th>Name</th><th>DOB</th><th>Phone</th><th>Payer</th><th>Member ID</th><th>Guardian</th><th></th></tr></thead><tbody id="patients-tbody"></tbody></table>
         </div></div>
       </div>
 
@@ -670,20 +681,53 @@ function rPatients(){
   var tbody=$('patients-tbody');
   tbody.innerHTML=list.map(function(p){
     return '<tr><td>'+H(p.name)+'</td><td>'+H(p.dob||'--')+'</td><td>'+H(p.phone||'--')+'</td><td>'+H(p.insurance_payer||'--')+'</td><td>'+H(p.insurance_member_id||'--')+'</td>'+
+      '<td>'+H(isMinorPatient(p.dob)&&p.guardian_name?p.guardian_name+(p.guardian_relationship?' ('+p.guardian_relationship+')':''):'--')+'</td>'+
       '<td><button class="btn bo bs" onclick="removePatient(\''+p.id+'\')">Remove</button></td></tr>';
   }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center">No patients on file yet</td></tr>';
   fillDentalSelects();
 }
+// Pediatric fields (2026-08-13): single source of truth for minor status,
+// used by both the Add Patient form's live guardian-field toggle and
+// addPatient()'s save-time validation, plus rPatients()'s table column --
+// avoids duplicating the age math in three places where it could drift.
+// Empty/unset dob is NOT a minor, matching this form's existing behavior
+// where DOB is optional and never blocks saving an adult patient.
+function isMinorPatient(dob){
+  if(!dob)return false;
+  var b=new Date(dob),today=new Date();
+  var age=today.getFullYear()-b.getFullYear();
+  var m=today.getMonth()-b.getMonth();
+  if(m<0||(m===0&&today.getDate()<b.getDate()))age--;
+  return age<18;
+}
+function onPtDobChange(){
+  var show=isMinorPatient($('pt-add-dob').value)?'grid':'none';
+  $('pt-add-guardian-group').style.display=show;
+  $('pt-add-guardian-group2').style.display=show;
+}
 async function addPatient(){
   var name=$('pt-add-name').value.trim();
   if(!name){toast('Patient name required');return;}
-  var rec={id:newId('PT'),name:name,dob:$('pt-add-dob').value,phone:$('pt-add-phone').value.trim(),
+  var dob=$('pt-add-dob').value;
+  var gName=$('pt-add-guardian-name').value.trim();
+  var gRel=$('pt-add-guardian-relationship').value;
+  var gPhone=$('pt-add-guardian-phone').value.trim();
+  var gEmail=$('pt-add-guardian-email').value.trim();
+  if(isMinorPatient(dob)&&(!gName||(!gPhone&&!gEmail))){
+    toast('Guardian name and at least one contact method (phone or email) are required for a minor patient');
+    return;
+  }
+  var rec={id:newId('PT'),name:name,dob:dob,phone:$('pt-add-phone').value.trim(),
     email:$('pt-add-email').value.trim(),insurance_payer:$('pt-add-payer').value.trim(),
     insurance_member_id:$('pt-add-memberid').value.trim(),insurance_group_number:'',insurance_plan_type:'',
+    guardian_name:gName,guardian_relationship:gRel,guardian_phone:gPhone,guardian_email:gEmail,
     created_at:dntLocalToday()};
   var list=patients();list.push(rec);st('dnt_patients_list',list);
   rPatients();
-  ['pt-add-name','pt-add-dob','pt-add-phone','pt-add-email','pt-add-payer','pt-add-memberid'].forEach(function(id){$(id).value='';});
+  ['pt-add-name','pt-add-dob','pt-add-phone','pt-add-email','pt-add-payer','pt-add-memberid',
+   'pt-add-guardian-name','pt-add-guardian-phone','pt-add-guardian-email'].forEach(function(id){$(id).value='';});
+  $('pt-add-guardian-relationship').selectedIndex=0;
+  onPtDobChange();
   var syncResult=await sdnData('write','dnt_patients',rec);
   toast(syncResult?'Patient added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
 }
