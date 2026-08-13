@@ -2095,12 +2095,12 @@ async function explainReconciliation(){
   var r=reconcileTrust();
   $('tr-explain-btn').textContent='Asking Claude...';$('tr-explain-btn').disabled=true;
   try{
-    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:300,
-        system:'You explain trust-accounting reconciliation discrepancies in plain language for a law firm. You are given real, already-computed numbers -- never recompute or second-guess them, never invent additional numbers, only explain what a mismatch of this shape typically means and what to check next (uncleared checks, timing differences, a missed entry).',
-        messages:[{role:'user',content:'Trust ledger balance: '+fmt(r.ledgerBal)+'. Sum of client ledgers: '+fmt(r.clientSum)+'. Bank statement balance: '+(r.bankBal===null?'not yet entered':fmt(r.bankBal))+'. Ledger matches client-ledger sum: '+r.ledgerVsClient+'. Ledger matches bank statement: '+r.ledgerVsBank+'. Explain what this indicates and what to check.'}]})});
-    var data=await res.json();
-    var aiErr=lawAiError(data);
+    var trPrompt='Trust ledger balance: '+fmt(r.ledgerBal)+'. Sum of client ledgers: '+fmt(r.clientSum)+'. Bank statement balance: '+(r.bankBal===null?'not yet entered':fmt(r.bankBal))+'. Ledger matches client-ledger sum: '+r.ledgerVsClient+'. Ledger matches bank statement: '+r.ledgerVsBank+'. Explain what this indicates and what to check.';
+    var rr=await lawAuth('ai_generate',{max_tokens:300,
+      system:'You explain trust-accounting reconciliation discrepancies in plain language for a law firm. You are given real, already-computed numbers -- never recompute or second-guess them, never invent additional numbers, only explain what a mismatch of this shape typically means and what to check next (uncleared checks, timing differences, a missed entry).',
+      messages:[{role:'user',content:trPrompt}],prompt_for_log:trPrompt,matter_id:'general',tools_used:[]},true);
+    var data=rr.data;
+    var aiErr=lawAiError(data)||(!rr.ok?(rr.msg||'AI request failed'):null);
     // FIXED 2026-08-09: was innerHTML+= (append), so clicking this more
     // than once (or the discrepancy numbers changing between clicks, e.g.
     // a new bank statement or a voided transaction) left an old, now-
@@ -2426,13 +2426,13 @@ async function runAiDraft(){
   lawDraftSeq++;
   var myDraftSeq=lawDraftSeq;
   try{
-    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:1200,
-        system:'You are a legal document drafting and review assistant for a law firm, working from the real matter data provided below. Draft or review documents professionally and precisely, using the matter facts given -- do not invent facts about the matter you were not given. '+LAW_CITATION_RULE+' Drafting document text itself (letters, contract language, motion structure) is expected and not restricted -- the restriction is specifically on inventing citation numbers, not on legal drafting generally.',
-        messages:[{role:'user',content:'Matter context: '+context+'\n\nRequest: '+request}]})});
-    var data=await res.json();
+    var draftPrompt='Matter context: '+context+'\n\nRequest: '+request;
+    var rr=await lawAuth('ai_generate',{max_tokens:1200,
+      system:'You are a legal document drafting and review assistant for a law firm, working from the real matter data provided below. Draft or review documents professionally and precisely, using the matter facts given -- do not invent facts about the matter you were not given. '+LAW_CITATION_RULE+' Drafting document text itself (letters, contract language, motion structure) is expected and not restricted -- the restriction is specifically on inventing citation numbers, not on legal drafting generally.',
+      messages:[{role:'user',content:draftPrompt}],prompt_for_log:draftPrompt,matter_id:matterId,tools_used:[]},true);
+    var data=rr.data;
     if(myDraftSeq!==lawDraftSeq)return;
-    var aiErr=lawAiError(data);
+    var aiErr=lawAiError(data)||(!rr.ok?(rr.msg||'AI request failed'):null);
     if(aiErr){$('draftresult').value=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     $('draftresult').value=text;
@@ -2473,13 +2473,13 @@ async function reviewDocument(docId){
   lawDraftSeq++;
   var myDraftSeq=lawDraftSeq;
   try{
-    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:800,
-        system:'You are reviewing a legal document for a law firm. Give specific, actionable feedback (clarity, structure, missing elements, risk flags) -- do not rewrite the whole document unless asked. '+LAW_CITATION_RULE,
-        messages:[{role:'user',content:'Please review this document:\n\n'+d.content_text}]})});
-    var data=await res.json();
+    var reviewPrompt='Please review this document:\n\n'+d.content_text;
+    var rr=await lawAuth('ai_generate',{max_tokens:800,
+      system:'You are reviewing a legal document for a law firm. Give specific, actionable feedback (clarity, structure, missing elements, risk flags) -- do not rewrite the whole document unless asked. '+LAW_CITATION_RULE,
+      messages:[{role:'user',content:reviewPrompt}],prompt_for_log:reviewPrompt,matter_id:d.matter_id||'general',tools_used:[]},true);
+    var data=rr.data;
     if(myDraftSeq!==lawDraftSeq)return;
-    var aiErr=lawAiError(data);
+    var aiErr=lawAiError(data)||(!rr.ok?(rr.msg||'AI request failed'):null);
     if(aiErr){$('draftresult').value=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     $('draftresult').value='--- REVIEW OF: '+d.title+' ---\n\n'+text;
