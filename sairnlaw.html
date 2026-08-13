@@ -864,6 +864,7 @@ label.chk input{width:auto;}
   <div class="ph"><div><div class="ptitle">AI Chain of Custody</div><div class="psub">Every AI interaction, matter-linked and logged server-side the moment it happens. Nothing here can be edited or deleted -- there is no such code path.</div></div></div>
   <div class="card"><div class="cb">
     <button class="btn bo" onclick="aicocLoad()">Refresh</button>
+    <div id="aicoc-note" style="margin-top:8px;font-size:12px;color:var(--muted)"></div>
     <div id="aicoc-list" style="margin-top:12px"></div>
   </div></div>
 </div>
@@ -1557,8 +1558,14 @@ function askAI(q){$('ainp').value=q;sendAI();}
 // documents), but it IS surfaced honestly via toast, not silently
 // swallowed, matching this platform's established saveOk-style discipline
 // rather than an empty catch(e){}.
-function lawLogAiInteraction(prompt,response,toolsUsed){
-  lawAuth('ai_log',{prompt:prompt,response:response,matter_id:$('aimatter')?$('aimatter').value:'general',tools_used:toolsUsed||[]},true)
+// matter (added 2026-08-13) is captured by the CALLER at send time, not
+// re-read from the DOM here -- see sendAI()'s "sentMatter" capture. Reading
+// $('aimatter').value at LOG time (after the AI round-trip, 5-15+ seconds
+// later) let a rep change the matter dropdown mid-request and silently
+// misattribute the interaction to the wrong matter, which is unacceptable
+// for an evidentiary/audit record.
+function lawLogAiInteraction(prompt,response,toolsUsed,matter){
+  lawAuth('ai_log',{prompt:prompt,response:response,matter_id:matter||'general',tools_used:toolsUsed||[]},true)
     .then(function(r){ if(!r.ok) toast('AI interaction was not logged to the Chain of Custody record — ' + (r.msg||'try again')); })
     .catch(function(){ toast('AI interaction was not logged to the Chain of Custody record — network error'); });
 }
@@ -1567,6 +1574,8 @@ async function sendAI(){
   if(!q)return;
   var matterSel=$('aimatter');
   if(matterSel && !matterSel.value){ toast('Select a matter (or "General") before sending — required for the AI Chain of Custody record'); return; }
+  // Frozen at send time, not log time -- see lawLogAiInteraction()'s comment.
+  var sentMatter=matterSel?matterSel.value:'general';
   if(lawAiBusy){toast('Please wait for the current response first');return;}
   lawAiBusy=true;
   inp.value='';
@@ -1624,7 +1633,7 @@ async function sendAI(){
       var rep=(blocks[0]&&blocks[0].text)||'No response text returned.';
       thinking.textContent=rep;
       aiHist.push({role:'assistant',content:rep});
-      lawLogAiInteraction(q,rep,[]);
+      lawLogAiInteraction(q,rep,[],sentMatter);
       chat.scrollTop=chat.scrollHeight;
       return;
     }
@@ -1646,7 +1655,7 @@ async function sendAI(){
     var rep2=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
     thinking.textContent=rep2;
     aiHist.push({role:'assistant',content:rep2});
-    lawLogAiInteraction(q,rep2,[toolUse.name]);
+    lawLogAiInteraction(q,rep2,[toolUse.name],sentMatter);
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
   finally{lawAiBusy=false;}
   chat.scrollTop=chat.scrollHeight;
@@ -3124,12 +3133,16 @@ function aicocLoad(){
   box.innerHTML='<div style="color:var(--muted);font-size:13px">Loading…</div>';
   lawAuth('ai_list',{limit:200},true).then(function(r){
     if(!r.ok){box.innerHTML='<div style="color:var(--muted);font-size:13px">'+H(r.msg||'Could not load the AI Chain of Custody log.')+'</div>';return;}
+    // Rendered from what the SERVER returns, same discipline as
+    // secLoadAudit()'s coverage disclosure -- the panel can't imply
+    // completeness the server itself didn't claim.
+    $('aicoc-note').textContent=r.data.note||'';
     var rows=r.data.entries||[];
     if(!rows.length){box.innerHTML='<div style="color:var(--muted);font-size:13px">No AI interactions logged yet.</div>';return;}
     var mmap={};matters().forEach(function(m){mmap[m.id]=m.matter_number+' -- '+m.matter_name;});
     box.innerHTML=rows.map(function(e){
-      var matterLabel=e.matter_id==='general'?'General':(mmap[e.matter_id]||e.matter_id||'General');
-      var statusColor=e.status==='rejected'?'var(--danger)':(e.status==='used_in_filing'?'var(--ok)':(e.status==='reviewed'?'var(--brand)':'var(--warn)'));
+      var mlabel=e.matter_id==='general'?'General':(mmap[e.matter_id]||e.matter_id||'General');
+      var statusColor=e.status==='rejected'?'var(--danger)':(e.status==='used_in_filing'?'var(--ok)':(e.status==='reviewed'?'var(--p)':'var(--warn)'));
       var actions='';
       if(e.status==='unreviewed'){
         actions='<button class="btn bp" style="margin-right:6px" onclick="aicocReview(\''+e.id+'\')">Approve</button>'
@@ -3141,7 +3154,7 @@ function aicocLoad(){
       }
       return '<div class="card" style="margin-bottom:10px"><div class="cb">'
         +'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">'
-        +'<div style="font-size:12px;color:var(--muted)">'+H(fdatetime(e.created_at))+' &middot; '+H(e.employee_id||'--')+(e.role?' ('+H(e.role)+')':'')+' &middot; '+H(matterLabel)+'</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+H(fdatetime(e.created_at))+' &middot; '+H(e.employee_id||'--')+(e.role?' ('+H(e.role)+')':'')+' &middot; '+H(mlabel)+'</div>'
         +'<div style="font-size:11px;font-weight:700;color:'+statusColor+'">'+H(AICOC_STATUS_LABEL[e.status]||e.status)+'</div>'
         +'</div>'
         +'<div style="font-size:12px;color:var(--muted);font-style:italic;margin-bottom:6px">'+H(e.prompt||'')+'</div>'

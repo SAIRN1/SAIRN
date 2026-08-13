@@ -28,8 +28,11 @@
 -- {ai_reviewed, ai_rejected, ai_used_in_filing} whose detail->>'log_entry_id'
 -- matches a given ai_interaction row's id, or 'unreviewed' if none exists.
 -- This is a real event-sourcing model, not a mutable status column -- it
--- means the full review history (including a correction, if one is ever
--- needed) is itself part of the immutable record, not overwritten.
+-- means the full review history is itself part of the immutable record,
+-- not overwritten. Note this is a one-way transition, not a correction
+-- mechanism: once an entry reaches 'rejected' or 'used_in_filing', the
+-- server (api/law-auth.js) 409s any further transition -- there is no
+-- reopen/correct path in the shipped code today.
 --
 -- Safe to re-run.
 

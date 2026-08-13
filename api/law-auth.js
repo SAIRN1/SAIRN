@@ -115,6 +115,11 @@ const ACTIONS = [
 // role-gated.
 const AI_COC_REVIEW_ROLES = { owner: true, attorney: true };
 const AI_PROMPT_RESPONSE_CAP = 20000;
+// Separate, smaller cap for LIST-time preview length. AI_PROMPT_RESPONSE_CAP
+// above governs what's stored at INSERT time (ai_log); this one governs what
+// ai_list returns per entry, so a listing of up to 1000 entries can't balloon
+// to multi-megabyte responses and risk exceeding Vercel's response size limit.
+const AI_LIST_PREVIEW_CAP = 500;
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -486,7 +491,11 @@ module.exports = async (req, res) => {
       if (!prompt || !response) { res.status(400).json({ error: { message: 'prompt and response are both required' } }); return; }
       const matter_id = body.matter_id ? String(body.matter_id) : 'general';
       const tools_used = Array.isArray(body.tools_used) ? body.tools_used.map(String) : [];
-      await audit('ai_interaction', { employee_id: caller.employee_id, role: caller.role, detail: { prompt, response, matter_id, tools_used } });
+      const logged = await audit('ai_interaction', { employee_id: caller.employee_id, role: caller.role, detail: { prompt, response, matter_id, tools_used } });
+      if (!logged) {
+        res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — try again' } });
+        return;
+      }
       res.status(200).json({ ok: true });
       return;
     }
@@ -514,6 +523,10 @@ module.exports = async (req, res) => {
         var lid = e.detail && e.detail.log_entry_id;
         if (lid && !statusById[lid]) statusById[lid] = e;
       });
+      const truncPreview = function (s) {
+        s = s || '';
+        return s.length > AI_LIST_PREVIEW_CAP ? (s.slice(0, AI_LIST_PREVIEW_CAP) + '…') : s;
+      };
       const entries = interactions.map(function (e) {
         var statusEvent = statusById[e.id];
         var status = 'unreviewed';
@@ -522,17 +535,29 @@ module.exports = async (req, res) => {
           else if (statusEvent.event_type === 'ai_rejected') status = 'rejected';
           else if (statusEvent.event_type === 'ai_used_in_filing') status = 'used_in_filing';
         }
+        var fullPrompt = (e.detail && e.detail.prompt) || '';
+        var fullResponse = (e.detail && e.detail.response) || '';
         return {
           id: e.id, employee_id: e.employee_id, role: e.role, created_at: e.created_at,
-          matter_id: e.detail && e.detail.matter_id, prompt: e.detail && e.detail.prompt,
-          response: e.detail && e.detail.response, tools_used: (e.detail && e.detail.tools_used) || [],
+          matter_id: e.detail && e.detail.matter_id, prompt: truncPreview(fullPrompt),
+          prompt_truncated: fullPrompt.length > AI_LIST_PREVIEW_CAP,
+          response: truncPreview(fullResponse),
+          response_truncated: fullResponse.length > AI_LIST_PREVIEW_CAP,
+          tools_used: (e.detail && e.detail.tools_used) || [],
           status: status,
           reject_reason: (statusEvent && statusEvent.event_type === 'ai_rejected' && statusEvent.detail) ? statusEvent.detail.reason : null,
           reviewed_by: statusEvent ? statusEvent.employee_id : null,
           reviewed_at: statusEvent ? statusEvent.created_at : null
         };
       });
-      res.status(200).json({ ok: true, entries: entries });
+      res.status(200).json({
+        ok: true,
+        entries: entries,
+        // Honest coverage/scope disclosure alongside the data itself, same
+        // precedent as audit_read's `coverage` field above — the UI can't
+        // imply this listing is complete or untruncated when it isn't.
+        note: 'Showing the ' + entries.length + ' most recent AI Chain of Custody events for this license.'
+      });
       return;
     }
 
@@ -570,7 +595,11 @@ module.exports = async (req, res) => {
       try { current = await aiCurrentStatus(logEntryId); } catch (e) { return upstream(res, e.detail); }
       if (!current.interactionExists) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such AI interaction' } }); return; }
       if (current.status !== 'unreviewed') { res.status(409).json({ error: { code: 'ALREADY_REVIEWED', message: 'This entry is already ' + current.status } }); return; }
-      await audit('ai_reviewed', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId } });
+      const logged = await audit('ai_reviewed', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId } });
+      if (!logged) {
+        res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — try again' } });
+        return;
+      }
       res.status(200).json({ ok: true });
       return;
     }
@@ -589,7 +618,11 @@ module.exports = async (req, res) => {
       try { current = await aiCurrentStatus(logEntryId); } catch (e) { return upstream(res, e.detail); }
       if (!current.interactionExists) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such AI interaction' } }); return; }
       if (current.status !== 'unreviewed') { res.status(409).json({ error: { code: 'ALREADY_REVIEWED', message: 'This entry is already ' + current.status } }); return; }
-      await audit('ai_rejected', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId, reason: reason } });
+      const logged = await audit('ai_rejected', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId, reason: reason } });
+      if (!logged) {
+        res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — try again' } });
+        return;
+      }
       res.status(200).json({ ok: true });
       return;
     }
@@ -607,7 +640,11 @@ module.exports = async (req, res) => {
       if (!current.interactionExists) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such AI interaction' } }); return; }
       if (current.status === 'used_in_filing') { res.status(409).json({ error: { code: 'ALREADY_USED', message: 'This entry has already been marked used in filing' } }); return; }
       if (current.status !== 'reviewed') { res.status(409).json({ error: { code: 'NOT_REVIEWED', message: 'This entry must be reviewed and approved before it can be marked used in a filing' } }); return; }
-      await audit('ai_used_in_filing', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId } });
+      const logged = await audit('ai_used_in_filing', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId } });
+      if (!logged) {
+        res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — try again' } });
+        return;
+      }
       res.status(200).json({ ok: true });
       return;
     }
