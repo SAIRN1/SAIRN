@@ -3799,6 +3799,20 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
           <div class="dm-field"><label>Customer / Job Name</label><input type="text" id="draw-job-name" placeholder="e.g. Johnson Kitchen"></div>
           <div class="dm-field"><label>Material</label><input type="text" id="draw-material" placeholder="e.g. Calacatta Gold Quartz 3cm"></div>
           <div class="dm-field"><label>Edge Profile</label><input type="text" id="draw-edge" placeholder="e.g. Eased, Ogee, Mitered"></div>
+          <div class="dm-field">
+            <label>Stone Appearance <span style="color:var(--muted);font-weight:400;font-size:10px">(optional — representative preview, not an actual slab)</span></label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+              <button type="button" class="dc-stone-type-btn" data-stone-type="granite" onclick="dcSetStoneType('granite')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);cursor:pointer">Granite</button>
+              <button type="button" class="dc-stone-type-btn" data-stone-type="marble" onclick="dcSetStoneType('marble')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);cursor:pointer">Marble</button>
+              <button type="button" class="dc-stone-type-btn" data-stone-type="quartzite" onclick="dcSetStoneType('quartzite')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);cursor:pointer">Quartzite</button>
+              <button type="button" class="dc-stone-type-btn" data-stone-type="quartz" onclick="dcSetStoneType('quartz')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);cursor:pointer">Engineered Quartz</button>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button type="button" class="dc-color-tone-btn" data-color-tone="light" onclick="dcSetColorTone('light')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);cursor:pointer">Light</button>
+              <button type="button" class="dc-color-tone-btn" data-color-tone="medium" onclick="dcSetColorTone('medium')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);cursor:pointer">Medium</button>
+              <button type="button" class="dc-color-tone-btn" data-color-tone="dark" onclick="dcSetColorTone('dark')" style="font-size:11px;padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--muted);cursor:pointer">Dark</button>
+            </div>
+          </div>
         </div>
 
         <div class="dm-card">
@@ -11927,6 +11941,28 @@ function dcApplyStoneFill(ctx, x, y, w, h) {
   ctx.fillRect(x, y, w, h);
   dcDrawStoneTexture(ctx, x, y, w, h, dcStoneType, dcColorTone);
   ctx.restore();
+}
+
+// Sets the selected Stone Type (or clears it with a null argument, used by dcLoadDrawingState()
+// when restoring a snapshot saved before this feature existed), updates the picker buttons' active
+// styling to match (same active/inactive style-toggle pattern selectDrawShape() already uses for
+// its own shape buttons), and redraws.
+function dcSetStoneType(type) {
+  dcStoneType = type;
+  document.querySelectorAll('.dc-stone-type-btn').forEach(function(btn){
+    if (btn.getAttribute('data-stone-type') === type) { btn.style.background='var(--ar)'; btn.style.borderColor='var(--ab)'; btn.style.color='var(--a)'; }
+    else { btn.style.background='rgba(255,255,255,0.04)'; btn.style.borderColor='var(--border)'; btn.style.color='var(--muted)'; }
+  });
+  if (typeof drawCTPreview === 'function') drawCTPreview();
+}
+// Mirror of dcSetStoneType() for Color Tone -- see that function's comment.
+function dcSetColorTone(tone) {
+  dcColorTone = tone;
+  document.querySelectorAll('.dc-color-tone-btn').forEach(function(btn){
+    if (btn.getAttribute('data-color-tone') === tone) { btn.style.background='var(--ar)'; btn.style.borderColor='var(--ab)'; btn.style.color='var(--a)'; }
+    else { btn.style.background='rgba(255,255,255,0.04)'; btn.style.borderColor='var(--border)'; btn.style.color='var(--muted)'; }
+  });
+  if (typeof drawCTPreview === 'function') drawCTPreview();
 }
 
 // Drawing canvas with color-coded edges
