@@ -536,6 +536,80 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // Re-derives one entry's current status server-side -- never trusts the
+    // client's belief about it. Returns { interactionExists, status } —
+    // status is 'unreviewed'/'reviewed'/'rejected'/'used_in_filing', same
+    // rule as ai_list above, just scoped to a single log_entry_id instead
+    // of a full-license listing.
+    async function aiCurrentStatus(logEntryId) {
+      const interactionR = await fetch(rest('sairnlaw_audit_log?license_hash=eq.' + enc(licHash) +
+        '&id=eq.' + enc(logEntryId) + '&event_type=eq.ai_interaction&select=id&limit=1'), { headers });
+      const interactionRows = await interactionR.json();
+      if (!interactionR.ok) { const e = new Error('lookup failed'); e.detail = interactionRows; throw e; }
+      if (!Array.isArray(interactionRows) || !interactionRows.length) return { interactionExists: false, status: null };
+      const eventsR = await fetch(rest('sairnlaw_audit_log?license_hash=eq.' + enc(licHash) +
+        '&event_type=in.(ai_reviewed,ai_rejected,ai_used_in_filing)&select=event_type,detail,created_at&order=created_at.desc&limit=200'), { headers });
+      const events = await eventsR.json();
+      if (!eventsR.ok) { const e = new Error('lookup failed'); e.detail = events; throw e; }
+      const match = (events || []).find(function (e) { return e.detail && String(e.detail.log_entry_id) === String(logEntryId); });
+      if (!match) return { interactionExists: true, status: 'unreviewed' };
+      const status = match.event_type === 'ai_reviewed' ? 'reviewed' : (match.event_type === 'ai_rejected' ? 'rejected' : 'used_in_filing');
+      return { interactionExists: true, status: status };
+    }
+
+    if (action === 'ai_review') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller || !AI_COC_REVIEW_ROLES[caller.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Attorney can review AI Chain of Custody entries' } });
+        return;
+      }
+      const logEntryId = body.log_entry_id ? String(body.log_entry_id) : null;
+      if (!logEntryId) { res.status(400).json({ error: { message: 'log_entry_id is required' } }); return; }
+      let current;
+      try { current = await aiCurrentStatus(logEntryId); } catch (e) { return upstream(res, e.detail); }
+      if (!current.interactionExists) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such AI interaction' } }); return; }
+      if (current.status !== 'unreviewed') { res.status(409).json({ error: { code: 'ALREADY_REVIEWED', message: 'This entry is already ' + current.status } }); return; }
+      await audit('ai_reviewed', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId } });
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === 'ai_reject') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller || !AI_COC_REVIEW_ROLES[caller.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Attorney can review AI Chain of Custody entries' } });
+        return;
+      }
+      const logEntryId = body.log_entry_id ? String(body.log_entry_id) : null;
+      const reason = String(body.reason || '').trim().slice(0, 2000);
+      if (!logEntryId) { res.status(400).json({ error: { message: 'log_entry_id is required' } }); return; }
+      if (!reason) { res.status(400).json({ error: { message: 'A reason is required to reject an AI interaction' } }); return; }
+      let current;
+      try { current = await aiCurrentStatus(logEntryId); } catch (e) { return upstream(res, e.detail); }
+      if (!current.interactionExists) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such AI interaction' } }); return; }
+      if (current.status !== 'unreviewed') { res.status(409).json({ error: { code: 'ALREADY_REVIEWED', message: 'This entry is already ' + current.status } }); return; }
+      await audit('ai_rejected', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId, reason: reason } });
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === 'ai_used_in_filing') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller || !AI_COC_REVIEW_ROLES[caller.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Attorney can attest to AI Chain of Custody entries' } });
+        return;
+      }
+      const logEntryId = body.log_entry_id ? String(body.log_entry_id) : null;
+      if (!logEntryId) { res.status(400).json({ error: { message: 'log_entry_id is required' } }); return; }
+      let current;
+      try { current = await aiCurrentStatus(logEntryId); } catch (e) { return upstream(res, e.detail); }
+      if (!current.interactionExists) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such AI interaction' } }); return; }
+      if (current.status !== 'reviewed') { res.status(409).json({ error: { code: 'NOT_REVIEWED', message: 'This entry must be reviewed and approved before it can be marked used in a filing' } }); return; }
+      await audit('ai_used_in_filing', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId } });
+      res.status(200).json({ ok: true });
+      return;
+    }
+
     if (action === 'sso_start') {
       if (!oidcConfigured()) {
         res.status(503).json({ error: { code: 'NOT_CONFIGURED', message: 'Single sign-on is not set up for this deployment — your firm administrator must register SAIRNlaw with your identity provider first.' } });
