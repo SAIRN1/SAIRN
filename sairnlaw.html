@@ -1552,29 +1552,13 @@ lawRegisterTool(
 
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
-// AI Chain of Custody (2026-08-13): fire-and-forget from sendAI()'s point of
-// view -- a logging failure must never block or hide the AI response the
-// rep already received (same "best-effort" posture writeAuditLog() itself
-// documents), but it IS surfaced honestly via toast, not silently
-// swallowed, matching this platform's established saveOk-style discipline
-// rather than an empty catch(e){}.
-// matter (added 2026-08-13) is captured by the CALLER at send time, not
-// re-read from the DOM here -- see sendAI()'s "sentMatter" capture. Reading
-// $('aimatter').value at LOG time (after the AI round-trip, 5-15+ seconds
-// later) let a rep change the matter dropdown mid-request and silently
-// misattribute the interaction to the wrong matter, which is unacceptable
-// for an evidentiary/audit record.
-function lawLogAiInteraction(prompt,response,toolsUsed,matter){
-  lawAuth('ai_log',{prompt:prompt,response:response,matter_id:matter||'general',tools_used:toolsUsed||[]},true)
-    .then(function(r){ if(!r.ok) toast('AI interaction was not logged to the Chain of Custody record — ' + (r.msg||'try again')); })
-    .catch(function(){ toast('AI interaction was not logged to the Chain of Custody record — network error'); });
-}
 async function sendAI(){
   var inp=$('ainp'),q=(inp.value||'').trim();
   if(!q)return;
   var matterSel=$('aimatter');
   if(matterSel && !matterSel.value){ toast('Select a matter (or "General") before sending — required for the AI Chain of Custody record'); return; }
-  // Frozen at send time, not log time -- see lawLogAiInteraction()'s comment.
+  // Frozen at send time -- see docs/superpowers/specs/2026-08-13-sairnlaw-
+  // ai-chain-of-custody-server-side-capture-design.md.
   var sentMatter=matterSel?matterSel.value:'general';
   if(lawAiBusy){toast('Please wait for the current response first');return;}
   lawAiBusy=true;
@@ -1620,12 +1604,17 @@ async function sendAI(){
   // zero influence on that turn.
   var sys='You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to that citation restriction. '+LAW_FIRM_DATA_RULE+' Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop. This applies even to "rough" or "likely" answers.';
   try{
-    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:600,system:sys,
-        messages:aiHist.map(function(m){return {role:m.role,content:m.content};}),
-        tools:toolDefs})});
-    var data=await res.json();
-    var aiErr=lawAiError(data);
+    // AI Chain of Custody -- server-side capture (2026-08-13): ai_generate
+    // replaces a raw fetch(PROXY,...) -- one authenticated server round trip
+    // that also logs the FINAL leg's real response before returning it, so
+    // nothing user-facing can reach this chat unlogged. This first call
+    // never returns final text on its own when a tool is used (see
+    // ai_generate's own tool_use branch), so nothing here is logged yet.
+    var r=await lawAuth('ai_generate',{system:sys,
+      messages:aiHist.map(function(m){return {role:m.role,content:m.content};}),
+      max_tokens:600,tools:toolDefs,prompt_for_log:q,matter_id:sentMatter,tools_used:[]},true);
+    var data=r.data;
+    var aiErr=lawAiError(data)||(!r.ok?(r.msg||'AI request failed'):null);
     if(aiErr){thinking.textContent=aiErr;chat.scrollTop=chat.scrollHeight;return;}
     var blocks=(data&&data.content)||[];
     var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
@@ -1633,7 +1622,6 @@ async function sendAI(){
       var rep=(blocks[0]&&blocks[0].text)||'No response text returned.';
       thinking.textContent=rep;
       aiHist.push({role:'assistant',content:rep});
-      lawLogAiInteraction(q,rep,[],sentMatter);
       chat.scrollTop=chat.scrollHeight;
       return;
     }
@@ -1646,16 +1634,17 @@ async function sendAI(){
     // present in history before the tool_result turn that answers it.
     aiHist.push({role:'assistant',content:blocks});
     aiHist.push({role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]});
-    var res2=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:600,system:sys,
-        messages:aiHist.map(function(m){return {role:m.role,content:m.content};})})});
-    var data2=await res2.json();
-    var aiErr2=lawAiError(data2);
+    // Second, FINAL leg -- this is the one that actually logs, since it's
+    // the one that can return real user-facing text.
+    var r2=await lawAuth('ai_generate',{system:sys,
+      messages:aiHist.map(function(m){return {role:m.role,content:m.content};}),
+      max_tokens:600,prompt_for_log:q,matter_id:sentMatter,tools_used:[toolUse.name]},true);
+    var data2=r2.data;
+    var aiErr2=lawAiError(data2)||(!r2.ok?(r2.msg||'AI request failed'):null);
     if(aiErr2){thinking.textContent=aiErr2;chat.scrollTop=chat.scrollHeight;return;}
     var rep2=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
     thinking.textContent=rep2;
     aiHist.push({role:'assistant',content:rep2});
-    lawLogAiInteraction(q,rep2,[toolUse.name],sentMatter);
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
   finally{lawAiBusy=false;}
   chat.scrollTop=chat.scrollHeight;
