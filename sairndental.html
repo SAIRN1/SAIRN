@@ -1751,6 +1751,40 @@ function vEditContact(){
   toast('Contact saved for '+DNT_VENDORS[_dntActiveVendor].name);
 }
 
+function vendorOrderHistory(){return ld('dnt_vendor_order_history',[]);}
+
+function vPlaceOrder(){
+  var cart=vendorCart();
+  var all=vAllProducts();
+  var items=Object.keys(cart).map(function(id){var p=all.find(function(x){return x.id===id;});return p?Object.assign({},p,{qty:cart[id]}):null;}).filter(Boolean);
+  if(!items.length){toast('Cart is empty. Add items first.');return;}
+  // Every item's vendor must have a rep email on file -- Place Order sends
+  // one email per vendor represented in the cart, never a mailto: to
+  // nobody (see design spec's "Vendor contact info" section).
+  var contacts=ld('dnt_vendor_contacts',{});
+  var vendorKeysInCart=Array.from(new Set(items.map(function(i){return i.vendorKey;})));
+  var missing=vendorKeysInCart.filter(function(vk){return !(contacts[vk]&&contacts[vk].email);});
+  if(missing.length){
+    toast('Add rep contact info for '+missing.map(function(vk){return DNT_VENDORS[vk].name;}).join(', ')+' before placing this order');
+    return;
+  }
+  vendorKeysInCart.forEach(function(vk){
+    var vendorItems=items.filter(function(i){return i.vendorKey===vk;});
+    var total=vendorItems.reduce(function(s,i){return s+i.price*i.qty;},0);
+    var orderText=vendorItems.map(function(i){return i.qty+'x '+i.name+' ('+i.sku+') @ '+fmt(i.price)+' = '+fmt(i.price*i.qty);}).join('\n');
+    var subject='SAIRNdental Purchase Order -- '+fmt(total);
+    var body='Purchase Order\n\nDate: '+new Date().toLocaleDateString()+'\n\nItems:\n'+orderText+'\n\nTotal: '+fmt(total);
+    var email=contacts[vk].email;
+    window.open('mailto:'+email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank');
+    var order={id:newId('VORD'),date:new Date().toISOString(),vendor:DNT_VENDORS[vk].name,vendorKey:vk,items:vendorItems,total:total};
+    var hist=vendorOrderHistory();hist.unshift(order);
+    if(hist.length>200)hist=hist.slice(0,200);
+    st('dnt_vendor_order_history',hist);
+  });
+  vCartClear();
+  toast('Order'+(vendorKeysInCart.length>1?'s':'')+' submitted');
+}
+
 function init(){
   rDash();
   rComplaintsBadge();
