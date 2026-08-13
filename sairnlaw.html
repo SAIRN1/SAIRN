@@ -333,6 +333,10 @@ label.chk input{width:auto;}
       <span class="qt" onclick="askAI('Explain UTBMS litigation billing codes at a high level')">UTBMS Overview</span>
     </div>
     <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask for drafting help or general legal-practice explanations. It cannot look up this firm's actual matters, deadlines, trust balances, or billing -- check those panels directly.</div></div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <label for="aimatter" style="font-size:12px;color:var(--muted);white-space:nowrap">Matter (required for the record):</label>
+      <select id="aimatter" style="flex:1"><option value="">-- Select a matter --</option><option value="general">General (not matter-specific)</option></select>
+    </div>
     <div class="air"><input id="ainp" placeholder="Draft, explain, or ask a general question (no access to this firm's live data)..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
   </div></div>
 </div>
@@ -1313,6 +1317,16 @@ function fillMatterSelects(){
     el.innerHTML=(needsBlank[id]?'<option value="">All matters</option>':'')+opts;
     if(cur)el.value=cur;
   });
+  // AI Chain of Custody (2026-08-13): aimatter keeps its own two fixed
+  // leading options (blank + 'General') that the generic needsBlank/opts
+  // pattern above doesn't produce, so it's populated separately rather
+  // than added to that shared array.
+  var aim=$('aimatter');
+  if(aim){
+    var cur2=aim.value;
+    aim.innerHTML='<option value="">-- Select a matter --</option><option value="general">General (not matter-specific)</option>'+opts;
+    if(cur2)aim.value=cur2;
+  }
   var clopts=clients().map(function(c){return '<option value="'+c.id+'">'+H(c.name)+'</option>';}).join('');
   var el=$('mtclient');if(el){var cur=el.value;el.innerHTML=clopts;if(cur)el.value=cur;}
 }
@@ -1527,9 +1541,22 @@ lawRegisterTool(
 
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
+// AI Chain of Custody (2026-08-13): fire-and-forget from sendAI()'s point of
+// view -- a logging failure must never block or hide the AI response the
+// rep already received (same "best-effort" posture writeAuditLog() itself
+// documents), but it IS surfaced honestly via toast, not silently
+// swallowed, matching this platform's established saveOk-style discipline
+// rather than an empty catch(e){}.
+function lawLogAiInteraction(prompt,response,toolsUsed){
+  lawAuth('ai_log',{prompt:prompt,response:response,matter_id:$('aimatter')?$('aimatter').value:'general',tools_used:toolsUsed||[]},true)
+    .then(function(r){ if(!r.ok) toast('AI interaction was not logged to the Chain of Custody record — ' + (r.msg||'try again')); })
+    .catch(function(){ toast('AI interaction was not logged to the Chain of Custody record — network error'); });
+}
 async function sendAI(){
   var inp=$('ainp'),q=(inp.value||'').trim();
   if(!q)return;
+  var matterSel=$('aimatter');
+  if(matterSel && !matterSel.value){ toast('Select a matter (or "General") before sending — required for the AI Chain of Custody record'); return; }
   if(lawAiBusy){toast('Please wait for the current response first');return;}
   lawAiBusy=true;
   inp.value='';
@@ -1587,6 +1614,7 @@ async function sendAI(){
       var rep=(blocks[0]&&blocks[0].text)||'No response text returned.';
       thinking.textContent=rep;
       aiHist.push({role:'assistant',content:rep});
+      lawLogAiInteraction(q,rep,[]);
       chat.scrollTop=chat.scrollHeight;
       return;
     }
@@ -1608,6 +1636,7 @@ async function sendAI(){
     var rep2=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
     thinking.textContent=rep2;
     aiHist.push({role:'assistant',content:rep2});
+    lawLogAiInteraction(q,rep2,[toolUse.name]);
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
   finally{lawAiBusy=false;}
   chat.scrollTop=chat.scrollHeight;
