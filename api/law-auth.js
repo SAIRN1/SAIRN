@@ -548,11 +548,12 @@ module.exports = async (req, res) => {
       if (!interactionR.ok) { const e = new Error('lookup failed'); e.detail = interactionRows; throw e; }
       if (!Array.isArray(interactionRows) || !interactionRows.length) return { interactionExists: false, status: null };
       const eventsR = await fetch(rest('sairnlaw_audit_log?license_hash=eq.' + enc(licHash) +
-        '&event_type=in.(ai_reviewed,ai_rejected,ai_used_in_filing)&select=event_type,detail,created_at&order=created_at.desc&limit=200'), { headers });
+        '&event_type=in.(ai_reviewed,ai_rejected,ai_used_in_filing)&detail->>log_entry_id=eq.' + enc(logEntryId) +
+        '&select=event_type,detail,created_at&order=created_at.desc&limit=1'), { headers });
       const events = await eventsR.json();
       if (!eventsR.ok) { const e = new Error('lookup failed'); e.detail = events; throw e; }
-      const match = (events || []).find(function (e) { return e.detail && String(e.detail.log_entry_id) === String(logEntryId); });
-      if (!match) return { interactionExists: true, status: 'unreviewed' };
+      if (!Array.isArray(events) || !events.length) return { interactionExists: true, status: 'unreviewed' };
+      const match = events[0];
       const status = match.event_type === 'ai_reviewed' ? 'reviewed' : (match.event_type === 'ai_rejected' ? 'rejected' : 'used_in_filing');
       return { interactionExists: true, status: status };
     }
@@ -604,6 +605,7 @@ module.exports = async (req, res) => {
       let current;
       try { current = await aiCurrentStatus(logEntryId); } catch (e) { return upstream(res, e.detail); }
       if (!current.interactionExists) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such AI interaction' } }); return; }
+      if (current.status === 'used_in_filing') { res.status(409).json({ error: { code: 'ALREADY_USED', message: 'This entry has already been marked used in filing' } }); return; }
       if (current.status !== 'reviewed') { res.status(409).json({ error: { code: 'NOT_REVIEWED', message: 'This entry must be reviewed and approved before it can be marked used in a filing' } }); return; }
       await audit('ai_used_in_filing', { employee_id: caller.employee_id, role: caller.role, detail: { log_entry_id: logEntryId } });
       res.status(200).json({ ok: true });
