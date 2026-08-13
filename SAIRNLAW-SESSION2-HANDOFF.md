@@ -96,8 +96,7 @@ server-side-capture/progress.md` (workspace not yet deleted — see Section 4).
   proxy-observed capture) as accepted-and-deferred, explicitly scoped as
   "Phase 2." That was accurate when written; it is not accurate as of this
   session — gap 1 is now resolved, live-verified, not just code-complete.
-  Backlog updated in `d4f55be`'s predecessor edit (uncommitted as of this
-  commit list — see Section 4, this still needs a commit).
+  Backlog updated and committed/pushed as `5bdbfca`, alongside this file.
 - **A live-verification blocker that required a genuine pause, not a
   guess.** `LAW-TEST-2026`'s `coc-verify` account was already provisioned
   from an earlier session; this session didn't know its PIN. Rather than
@@ -115,30 +114,24 @@ server-side-capture/progress.md` (workspace not yet deleted — see Section 4).
 
 ## 4. Open items, prioritized
 
-1. **Commit the `SAIRN-BACKLOG.md` edits.** The gap-1-resolved and
-   nit-3-partially-addressed rewrites were made to the working tree this
-   session but — verify before trusting this line — check `git status
-   SAIRN-BACKLOG.md` and `git log -1 -- SAIRN-BACKLOG.md` before assuming
-   they're committed. If they show as modified/untracked, commit and push
-   them; this handoff itself is not a substitute for that commit.
-2. **This plan's SDD workspace has not been deleted.**
+1. **This plan's SDD workspace has not been deleted.**
    `.superpowers/sdd/2026-08-13-sairnlaw-ai-chain-of-custody-server-side-
    capture/` (ledger, briefs, reports, diff packages) still exists in the
    worktree. Per `subagent-driven-development`'s own Finish step, delete it
    once this handoff is confirmed accurate — the git history is the durable
    record now.
-3. **This session's worktree (`worktree-sairnlaw-ai-chain-of-custody-server-
+2. **This session's worktree (`worktree-sairnlaw-ai-chain-of-custody-server-
    side-capture`) has not been finished/merged via `finishing-a-development-
    branch`.** All its commits are already fast-forward-merged onto `main`
    directly (confirmed: `origin/main` HEAD equals this branch's HEAD), so
    there's nothing left to merge — but the branch/worktree itself is still
    on disk and should be cleaned up (`ExitWorktree` with `action:"remove"`,
    or the equivalent) rather than left indefinitely.
-4. **Backlog gap 2 (`matter_id` unvalidated against a real server-side
+3. **Backlog gap 2 (`matter_id` unvalidated against a real server-side
    `law_matters` record) remains fully open** — unchanged by this session,
    blocked on `law_matters` becoming server-backed first, tracked
    separately in `SAIRN-BACKLOG.md`.
-5. **Write-failure-blocking (plan Task 5 Step 4.2) was verified by code-path
+4. **Write-failure-blocking (plan Task 5 Step 4.2) was verified by code-path
    tracing during the final review, not forced live.** No safe way to
    trigger a real Supabase write failure against `sairnlaw_audit_log` from
    this session without DB access or a coordinated, reverted schema change.
@@ -146,13 +139,13 @@ server-side-capture/progress.md` (workspace not yet deleted — see Section 4).
    confirming the response is a 502 with no `content`, never the AI text)
    would upgrade this from "structurally verified by reading the code" to
    "observed."
-6. **`callAnthropic()` living in `api/claude.js` but required directly by
+5. **`callAnthropic()` living in `api/claude.js` but required directly by
    `api/law-auth.js`** was flagged Minor by the final review as an unusual
    cross-route-file import pattern (every other cross-file import in `api/`
    goes through `api/_lib/*`). Works correctly, deferred as out of this
    plan's scope — worth moving to `api/_lib/claude-client.js` if another app
    ever needs the same in-process pattern.
-7. **Two low-stakes cosmetic items deferred, not tracked as real gaps:** the
+6. **Two low-stakes cosmetic items deferred, not tracked as real gaps:** the
    now-dead `PROXY` constant in `sairnlaw.html` (zero remaining callers,
    comment above it still describes the old client-fetch flow) and the fact
    `sairnlaw_employee_auth` has no session-tying between a tool-use leg's
@@ -167,6 +160,6 @@ server-side-capture/progress.md` (workspace not yet deleted — see Section 4).
 Verify `origin/main` HEAD, verify which branch/worktree you're actually in,
 and re-run the local checks (`node --check`, `claude.test.js`,
 `checkblocks.py`) before trusting any claim in this document — including
-this one. In particular, re-check Section 4 item 1 first: this handoff
-describes backlog edits made in the working tree, and whether they actually
-reached `origin/main` needs its own confirmation, not just this sentence.
+this one. In particular, confirm `SAIRN-BACKLOG.md`'s gap-1-resolved edit
+and this file both actually reached `origin/main` (commit `5bdbfca`) rather
+than trusting Section 3's claim that they did.
