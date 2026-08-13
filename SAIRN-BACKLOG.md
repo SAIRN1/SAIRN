@@ -3,6 +3,43 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## StoneDesk saved quote history doesn't capture the drawing tool's own state
+
+**Logged:** 2026-08-13
+
+**What:** Found during the final independent completeness check (4-scanner
+sweep + silent-failure-sweep + adversarial review) on the full drawing
+tool, after the chamfered-corners/raised-bar/canvas-zoom feature series.
+`sdQuoteSaveHistory()` (`stonedesk.html:3405-3426`) persists only
+`{customer, project (material name), amount (final total), date,
+status}` to `sd_quote_history`. Verified via grep that no code path
+anywhere serializes `dcPoly` (the drawn/edited shape), `dcCutouts`
+(sinks/cooktops/holes), `dcSeams`, `dcRaisedBar`, or `dcChamferedCorners`
+— the in-memory `dcHistory` array is only an undo stack, never written to
+storage. The saved `amount` is correct (`calc()` genuinely sums every
+drawing-tool cost into it, independently re-verified this session), so
+past quotes aren't *wrong* — but nothing about *what was actually drawn*
+survives a save. This isn't new to tonight's three features; it appears
+to be true of the entire drawing tool, including the base preset
+dimensions and any custom-drawn polygon.
+
+**Why deferred:** A real fix is a genuine feature decision, not a bug
+patch — what to serialize (full `dcPoly`/`dcCutouts`/`dcSeams`/
+`dcRaisedBar`/`dcChamferedCorners` state vs. a lighter summary), where it
+lives (a new field on the existing `sd_quote_history` entry vs. a
+separate keyed-by-quote-id resource), and whether reopening a saved quote
+should actually re-render the drawing canvas (a real "load" path, not
+just a read) or only display a static summary. Each of those has real
+storage-size and UX tradeoffs worth their own design pass, not something
+to improvise inside an unrelated review/fix session.
+
+**Done looks like:** A saved quote captures enough of the drawing tool's
+real state (shape, dimensions, cutouts, seams, chamfers, raised bar) that
+reopening it later can either re-render the original canvas or at least
+show a real itemized breakdown of what generated that total — not just
+the flat dollar figure — with a deliberate decision on how far "load a
+saved quote back into the drawing tool" should go.
+
 ## SAIRNdental's new real-sync sweep can silently exhaust localStorage once photo-bearing bookings accumulate
 
 **Logged:** 2026-08-11
