@@ -13805,6 +13805,56 @@ function dcSnapshotDrawingState() {
   }
 }
 
+// Saved-quote drawing state -- restore (2026-08-13). Mirror image of dcSnapshotDrawingState()
+// above. Calls the REAL selectDrawShape() first so the shape-button active state, the freshly
+// rebuilt dimension inputs, and buildEdgeAssignmentArea()/buildRaisedBarArea() all get created
+// exactly as they would on an ordinary shape switch -- no shape-specific rebuild logic is
+// duplicated here. selectDrawShape() only ever fills those fresh inputs with hardcoded DEFAULT
+// values (it has no idea a snapshot is being loaded), so every field is then overwritten with the
+// snapshot's real saved value, and buildEdgeAssignmentArea()/buildRaisedBarArea() are called a
+// SECOND time -- both read dcChamferedCorners/dcRaisedBar at build time to sync their own
+// dropdowns, so they must run again AFTER those globals hold the restored values, not before.
+function dcLoadDrawingState(state) {
+  try {
+    if (!state || state.schemaVersion !== 1) return false;
+    if (typeof selectDrawShape === 'function') selectDrawShape(state.ctShape);
+
+    DC_STATE_DIM_FIELDS.forEach(function(id){
+      var e = document.getElementById(id);
+      if (e) e.value = (state.dims && state.dims[id]) ? state.dims[id] : '';
+    });
+    DC_STATE_EXTRAS_CB_FIELDS.forEach(function(id){
+      var e = document.getElementById(id);
+      if (e) e.checked = !!(state.extras && state.extras[id]);
+    });
+    DC_STATE_EXTRAS_NUM_FIELDS.forEach(function(id){
+      var e = document.getElementById(id);
+      if (e) e.value = (state.extras && state.extras[id]) ? state.extras[id] : '';
+    });
+    DC_STATE_JOB_TEXT_FIELDS.concat(DC_STATE_JOB_SELECT_FIELDS).forEach(function(id){
+      var e = document.getElementById(id);
+      if (e && state.jobDetails && state.jobDetails[id] != null) e.value = state.jobDetails[id];
+    });
+
+    dcPoly = JSON.parse(JSON.stringify(state.dcPoly || []));
+    dcPolyClosed = dcPoly.length > 0;
+    dcCutouts = JSON.parse(JSON.stringify(state.dcCutouts || []));
+    dcSeams = JSON.parse(JSON.stringify(state.dcSeams || []));
+    dcRaisedBar = state.dcRaisedBar ? JSON.parse(JSON.stringify(state.dcRaisedBar)) : null;
+    dcChamferedCorners = JSON.parse(JSON.stringify(state.dcChamferedCorners || {}));
+    dcEdgeTypes = JSON.parse(JSON.stringify(state.dcEdgeTypes || {}));
+    dcHistory = [];
+
+    if (typeof buildEdgeAssignmentArea === 'function') buildEdgeAssignmentArea();
+    if (typeof buildRaisedBarArea === 'function') buildRaisedBarArea();
+    if (typeof drawCTPreview === 'function') drawCTPreview();
+    if (typeof calcDrawing === 'function') calcDrawing();
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // Print cut sheet
 function printDrawCutSheet() {
   const aL=gN('da-len'),aD=gN('da-dep'),bL=gN('db-len'),bD=gN('db-dep'),cL=gN('dc-len'),cD=gN('dc-dep');
