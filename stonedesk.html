@@ -4139,6 +4139,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     {id:9,customer:'Carlos Mendez',project:'Commercial Reception Desk — Absolute Black',amount:12400,status:'Approved',date:'2026-04-18'},
     {id:10,customer:'Patricia Lane',project:'Bathroom Remodel x3 — Thassos White',amount:9200,status:'Pending',date:'2026-04-10'},
   ];
+  var sdHistoryDetailOpenId = null; // 2026-08-13: which entry's id the detail modal currently shows -- lets the Load button (no id param) know what to load
   function load(){
     var d=[];
     try{d=JSON.parse(localStorage.getItem('sd_quote_history')||'null')||[];}catch(e){}
@@ -4204,7 +4205,53 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     var d=load();
     var x=d.find(function(q){return q.id===id;});
     if(!x)return;
-    showToast(escHtml(x.customer||'')+' — $'+(x.amount||0).toLocaleString()+' — '+x.status);
+    sdHistoryDetailOpenId = id;
+    document.getElementById('sd-hdm-title').textContent = (x.customer||'Quote') + ' — $' + (x.amount||0).toLocaleString() + ' — ' + (x.status||'Pending');
+    var row = function(label, val){
+      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="color:var(--muted)">'+escHtml(label)+'</span><span style="font-weight:600;text-align:right;margin-left:12px">'+val+'</span></div>';
+    };
+    var body = document.getElementById('sd-hdm-body');
+    var loadBtn = document.getElementById('sd-hdm-load-btn');
+    var ds = x.drawingState;
+    if (!ds || ds.schemaVersion !== 1) {
+      body.innerHTML = '<div style="color:var(--muted);padding:10px 0;font-size:13px">No drawing detail saved — quotes saved before this update show total only.</div>';
+      loadBtn.disabled = true;
+      loadBtn.title = 'No drawing detail saved for this quote';
+    } else {
+      var rows = [];
+      rows.push(row('Shape', escHtml(ds.ctShape||'')));
+      if (ds.dims && ds.dims['da-len'] && ds.dims['da-dep']) rows.push(row('Section A', ds.dims['da-len']+'" × '+ds.dims['da-dep']+'"'));
+      if (ds.dims && ds.dims['db-len'] && ds.dims['db-dep']) rows.push(row('Section B', ds.dims['db-len']+'" × '+ds.dims['db-dep']+'"'));
+      if (ds.dims && ds.dims['dc-len'] && ds.dims['dc-dep']) rows.push(row('Section C', ds.dims['dc-len']+'" × '+ds.dims['dc-dep']+'"'));
+      if (ds.jobDetails && ds.jobDetails['draw-material']) rows.push(row('Material', escHtml(ds.jobDetails['draw-material'])));
+      if (ds.jobDetails && ds.jobDetails['draw-edge']) rows.push(row('Edge Profile', escHtml(ds.jobDetails['draw-edge'])));
+      if (ds.summary && ds.summary.seams) rows.push(row('Seams', escHtml(ds.summary.seams)));
+      if (ds.summary && ds.summary.chamfers) rows.push(row('Chamfered Corners', escHtml(ds.summary.chamfers)));
+      if (ds.summary && ds.summary.raisedBar) rows.push(row('Raised Bar', escHtml(ds.summary.raisedBar)));
+      if (ds.summary && ds.summary.cutouts) rows.push(row('Placed Cutouts', escHtml(ds.summary.cutouts)));
+      if (ds.jobDetails && ds.jobDetails['draw-notes']) rows.push(row('Notes', escHtml(ds.jobDetails['draw-notes'])));
+      body.innerHTML = rows.join('');
+      loadBtn.disabled = false;
+      loadBtn.title = '';
+    }
+    document.getElementById('sd-history-detail-modal').classList.add('open');
+  };
+  window.sdHistoryLoadIntoDrawingTool=function(){
+    var id = sdHistoryDetailOpenId;
+    if (id == null) return;
+    var d = load();
+    var x = d.find(function(q){return q.id===id;});
+    if (!x || !x.drawingState || x.drawingState.schemaVersion !== 1) return;
+    var hasUnsaved = (typeof dcPoly !== 'undefined' && dcPoly.length > 0)
+      || (typeof dcCutouts !== 'undefined' && dcCutouts.length > 0)
+      || (typeof dcSeams !== 'undefined' && dcSeams.length > 0)
+      || (typeof dcRaisedBar !== 'undefined' && dcRaisedBar)
+      || (typeof dcChamferedCorners !== 'undefined' && Object.keys(dcChamferedCorners).length > 0)
+      || (typeof gN === 'function' && (gN('da-len') > 0 || gN('da-dep') > 0));
+    if (hasUnsaved && !confirm('Loading this quote will replace your current drawing — continue?')) return;
+    document.getElementById('sd-history-detail-modal').classList.remove('open');
+    if (typeof dcLoadDrawingState === 'function') dcLoadDrawingState(x.drawingState);
+    if (typeof sbNav === 'function') sbNav('draw');
   };
   window.sdHistoryUpdateStatus=function(){
     var id=parseInt(document.getElementById('hist-status-sel').value);
@@ -14753,7 +14800,17 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 
 
 
-
+<!-- ===== QUOTE HISTORY DETAIL MODAL (2026-08-13) ===== -->
+<div class="sairn-modal-overlay" id="sd-history-detail-modal">
+<div class="sairn-modal">
+  <div class="sairn-modal-hdr">
+    <div class="sairn-modal-title" id="sd-hdm-title">Quote Detail</div>
+    <button class="sairn-modal-close" onclick="document.getElementById('sd-history-detail-modal').classList.remove('open')">✕</button>
+  </div>
+  <div id="sd-hdm-body"></div>
+  <button class="sairn-btn sairn-btn-primary" id="sd-hdm-load-btn" style="width:100%;margin-top:14px" onclick="sdHistoryLoadIntoDrawingTool()">Load into Drawing Tool</button>
+</div>
+</div>
 <!-- ===== FIELD QUOTE MODAL ===== -->
 <div class="sairn-modal-overlay" id="sairn-fq-modal">
 <div class="sairn-modal">
