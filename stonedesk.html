@@ -12110,7 +12110,7 @@ function drawCTPreview() {
     if(!aL||!aD) { ctx.fillStyle='rgba(51,85,119,0.45)'; ctx.font='13px Outfit,sans-serif'; ctx.textAlign='center'; ctx.fillText('Enter dimensions to see preview',W/2,H/2); return; }
     const sc=Math.min((W-pad*3)/aL,(H-pad*3)/aD);
     const x=(W-aL*sc)/2, y=(H-aD*sc)/2;
-    ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(x,y,aL*sc,aD*sc); ctx.fill();
+    ctx.beginPath(); ctx.rect(x,y,aL*sc,aD*sc); dcApplyStoneFill(ctx, x, y, aL*sc, aD*sc);
     // color edges — pull from user's Edge Assignment selections, default to prior hardcoded behavior
     const ea0 = ctShape==='straight'
       ? {top:ea('Back (wall)','wall'),right:ea('Right end','wall'),bottom:ea('Front (exposed)','polished'),left:ea('Left end','wall')}
@@ -12164,7 +12164,12 @@ function drawCTPreview() {
     const chamferAB = dcChamferedCorners['lshape-AB'];
     const chamferABMaxPx = Math.max(Math.min(bh, aw-bw) * DC_CHAMFER_MAX_FRACTION, 0);
     const chamferABOffPx = (hasStub && chamferAB && chamferAB.setbackIn > 0) ? Math.min(chamferAB.setbackIn * sc, chamferABMaxPx) : 0;
-    ctx.fillStyle='rgba(232,133,10,0.1)';
+    // Stone appearance (2026-08-13): both branches share one bounding box covering the whole L
+    // (A run + B stub when present), so the texture is one continuous pattern across the notch
+    // rather than two independently-seeded regions that would visibly seam at the A/B join.
+    const lshapeBoundsX = Math.min(ax, bx), lshapeBoundsY = Math.min(ay, by);
+    const lshapeBoundsW = Math.max(ax+aw, bx+bw) - lshapeBoundsX;
+    const lshapeBoundsH = Math.max(ay+ah, by+bh) - lshapeBoundsY;
     if (hasStub) {
       ctx.beginPath();
       ctx.moveTo(bx,by);
@@ -12179,9 +12184,9 @@ function drawCTPreview() {
       ctx.lineTo(ax+aw, ay+ah);
       ctx.lineTo(ax, ay+ah);
       ctx.closePath();
-      ctx.fill();
+      dcApplyStoneFill(ctx, lshapeBoundsX, lshapeBoundsY, lshapeBoundsW, lshapeBoundsH);
     } else {
-      ctx.beginPath(); ctx.rect(ax,ay,aw,ah); ctx.fill();
+      ctx.beginPath(); ctx.rect(ax,ay,aw,ah); dcApplyStoneFill(ctx, ax, ay, aw, ah);
     }
     window._ctRects.push({key:'A', x:ax, y:ay, w:aw, h:ah});
     if (hasStub) window._ctRects.push({key:'B', x:bx, y:by, w:bw, h:bh});
@@ -12253,7 +12258,12 @@ function drawCTPreview() {
     const chamferBRMaxPx = Math.max(Math.min(rightH, backFrontPx) * DC_CHAMFER_MAX_FRACTION, 0);
     const offBL = (chamferBL && chamferBL.setbackIn > 0) ? Math.min(chamferBL.setbackIn * sc, chamferBLMaxPx) : 0;
     const offBR = (chamferBR && chamferBR.setbackIn > 0) ? Math.min(chamferBR.setbackIn * sc, chamferBRMaxPx) : 0;
-    ctx.fillStyle='rgba(232,133,10,0.1)';
+    // Stone appearance (2026-08-13): one bounding box covering all three runs (Back/Left/Right),
+    // same reasoning as the L-shape above -- one continuous pattern across the whole U, not three
+    // independently-seeded regions.
+    const ushapeBoundsX = Math.min(bx, lx, rx), ushapeBoundsY = Math.min(by, ly, ry);
+    const ushapeBoundsW = Math.max(bx+backW, lx+leftW, rx+rightW) - ushapeBoundsX;
+    const ushapeBoundsH = Math.max(by+backH, ly+leftH, ry+rightH) - ushapeBoundsY;
     ctx.beginPath();
     ctx.moveTo(lx, ly+leftH);
     ctx.lineTo(lx, by);
@@ -12278,7 +12288,7 @@ function drawCTPreview() {
     }
     ctx.lineTo(lx+leftW, ly+leftH);
     ctx.closePath();
-    ctx.fill();
+    dcApplyStoneFill(ctx, ushapeBoundsX, ushapeBoundsY, ushapeBoundsW, ushapeBoundsH);
     window._ctRects.push({key:'Back', x:bx, y:by, w:backW, h:backH});
     window._ctRects.push({key:'Left', x:lx, y:ly, w:leftW, h:leftH});
     window._ctRects.push({key:'Right', x:rx, y:ry, w:rightW, h:rightH});
@@ -12336,7 +12346,7 @@ function drawCTPreview() {
     secs.forEach(s=>{
       const [sl,sd]=s.dims;
       const frontColor = ea(s.lbl.front,'polished'), backColor = ea(s.lbl.back,'wall');
-      ctx.fillStyle='rgba(232,133,10,0.1)'; ctx.beginPath(); ctx.rect(pad,cy,sl*sc,sd*sc); ctx.fill();
+      ctx.beginPath(); ctx.rect(pad,cy,sl*sc,sd*sc); dcApplyStoneFill(ctx, pad, cy, sl*sc, sd*sc);
       colorEdge(pad,cy,pad+sl*sc,cy,backColor); colorEdge(pad,cy+sd*sc,pad+sl*sc,cy+sd*sc,frontColor);
       colorEdge(pad,cy,pad,cy+sd*sc,backColor); colorEdge(pad+sl*sc,cy,pad+sl*sc,cy+sd*sc,ea('Left end','wall'));
       window._ctRects.push({key:s.lbl.front||('Section'+window._ctRects.length), x:pad, y:cy, w:sl*sc, h:sd*sc});
@@ -12368,10 +12378,30 @@ function drawDCPolygon(ctx, W, H) {
 
   // Fill (only meaningful once closed)
   if (dcPolyClosed && pts.length>=3) {
-    ctx.fillStyle='rgba(232,133,10,0.12)';
-    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
-    for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
-    ctx.closePath(); ctx.fill();
+    // Stone appearance (2026-08-13): bounding box of the real polygon points, same clip-based
+    // dcApplyStoneFill() used by every preset-shape branch above -- works unmodified for an
+    // arbitrary polygon since ctx.clip() accepts any path, not just rects.
+    let polyMinX=pts[0].x, polyMinY=pts[0].y, polyMaxX=pts[0].x, polyMaxY=pts[0].y;
+    for (let pi=1; pi<pts.length; pi++) {
+      if (pts[pi].x < polyMinX) polyMinX = pts[pi].x;
+      if (pts[pi].x > polyMaxX) polyMaxX = pts[pi].x;
+      if (pts[pi].y < polyMinY) polyMinY = pts[pi].y;
+      if (pts[pi].y > polyMaxY) polyMaxY = pts[pi].y;
+    }
+    // Falls back to this branch's own historical 0.12 alpha (not the 0.1 every preset-shape
+    // branch uses) when unset -- dcApplyStoneFill() always uses 0.1, a pre-existing, deliberately
+    // preserved inconsistency, not something this feature should silently unify.
+    if (!dcStoneType || !dcColorTone || !STONE_TONE_COLORS[dcStoneType] || !STONE_TONE_COLORS[dcStoneType][dcColorTone]) {
+      ctx.fillStyle='rgba(232,133,10,0.12)';
+      ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+      for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+      ctx.closePath(); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+      for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
+      ctx.closePath();
+      dcApplyStoneFill(ctx, polyMinX, polyMinY, polyMaxX-polyMinX, polyMaxY-polyMinY);
+    }
   }
 
   // Segments — color-coded by assigned edge type if set, otherwise a neutral "unassigned" tone
