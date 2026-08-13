@@ -96,11 +96,15 @@ const {
   ROLES_BY_APP
 } = require('./_lib/auth');
 // AI Chain of Custody server-side capture (2026-08-13): callAnthropic() and
-// the demo-limit helpers are the SAME functions/counter api/claude.js's own
-// HTTP handler uses for every other app -- imported directly (an in-process
-// function call, not a second HTTP round trip back through that endpoint),
-// so SAIRNlaw's existing is_demo daily-call cap is preserved exactly, not
-// silently dropped or double-counted against a second, independent counter.
+// the demo-limit helpers are imported directly from api/claude.js (an
+// in-process function call, not a second HTTP round trip back through that
+// endpoint), so this handler applies the SAME logic and limit -- same
+// DEMO_DAILY_LIMIT, same getDemoKey() day-bucketing, same increment-then-
+// compare shape -- as every other app's is_demo traffic. On Vercel each
+// api/*.js file is its own serverless function/bundle, so demoCallCounts
+// here is a separate in-memory object per instance, not literally shared
+// with the real /api/claude endpoint's instances -- best-effort and
+// per-instance, same documented limitation api/claude.js already has.
 const { callAnthropic, getDemoKey, demoCallCounts, DEMO_DAILY_LIMIT } = require('./claude.js');
 
 const APP = 'sairnlaw';
@@ -117,13 +121,13 @@ const ACTIONS = [
 // AI Chain of Custody roles (2026-08-13): licensed attorneys, not
 // paralegals, are the ones sanctioned for AI-generated fake citations --
 // review/reject/filing-attestation are restricted accordingly. Any
-// authenticated role may trigger an AI interaction (ai_log) -- everyone's
+// authenticated role may trigger an AI interaction (ai_generate) -- everyone's
 // usage gets logged the same way, only the review/attestation actions are
 // role-gated.
 const AI_COC_REVIEW_ROLES = { owner: true, attorney: true };
 const AI_PROMPT_RESPONSE_CAP = 20000;
 // Separate, smaller cap for LIST-time preview length. AI_PROMPT_RESPONSE_CAP
-// above governs what's stored at INSERT time (ai_log); this one governs what
+// above governs what's stored at INSERT time (ai_generate); this one governs what
 // ai_list returns per entry, so a listing of up to 1000 entries can't balloon
 // to multi-megabyte responses and risk exceeding Vercel's response size limit.
 const AI_LIST_PREVIEW_CAP = 500;
@@ -503,9 +507,10 @@ module.exports = async (req, res) => {
       const messages = Array.isArray(body.messages) ? body.messages : null;
       if (!messages || !messages.length) { res.status(400).json({ error: { message: 'messages array is required' } }); return; }
 
-      // Same is_demo daily-cap gate api/claude.js's own HTTP handler applies
-      // to every other app -- same shared counter, same 200-ish daily limit,
-      // preserved exactly rather than silently dropped for this path.
+      // Same is_demo daily-cap logic api/claude.js's own HTTP handler applies
+      // to every other app -- same DEMO_DAILY_LIMIT, same getDemoKey()
+      // day-bucketing, applied per-instance like everywhere else (see the
+      // import comment above), preserved rather than silently dropped here.
       const key = getDemoKey('sairnlaw');
       demoCallCounts[key] = (demoCallCounts[key] || 0) + 1;
       if (demoCallCounts[key] > DEMO_DAILY_LIMIT) {
@@ -533,10 +538,31 @@ module.exports = async (req, res) => {
 
       // Final text -- the only case a rep ever actually sees output.
       const responseText = (blocks[0] && blocks[0].text) || '';
-      const prompt = String(body.prompt_for_log || '').slice(0, AI_PROMPT_RESPONSE_CAP);
+      // Derive the logged prompt from the REAL messages array rather than
+      // trusting body.prompt_for_log outright -- a client could otherwise
+      // send a genuine question in `messages` (what Claude actually saw)
+      // and a different prompt_for_log (what gets logged). Fall back to
+      // prompt_for_log only for the one shape where the last user turn
+      // isn't plain text: sendAI()'s second leg, whose last user message
+      // is a tool_result content-block array, not a string.
+      const lastUser = messages.filter(function (m) { return m && m.role === 'user'; }).pop();
+      const derivedPrompt = (lastUser && typeof lastUser.content === 'string') ? lastUser.content : null;
+      const prompt = String(derivedPrompt || body.prompt_for_log || '').slice(0, AI_PROMPT_RESPONSE_CAP);
+      if (!prompt) { res.status(400).json({ error: { message: 'Could not establish a prompt to log — request rejected' } }); return; }
       const response = responseText.slice(0, AI_PROMPT_RESPONSE_CAP);
       const matter_id = body.matter_id ? String(body.matter_id) : 'general';
-      const tools_used = Array.isArray(body.tools_used) ? body.tools_used.map(String) : [];
+      // Derive tools_used from the REAL messages array rather than trusting
+      // body.tools_used -- on the final leg of a tool-use exchange, the
+      // assistant turn that requested the tool is right there in `messages`
+      // with a real tool_use block and real name, so there is no reason to
+      // trust client-asserted metadata about which tools were actually used.
+      var toolsUsedSet = {};
+      messages.forEach(function (m) {
+        if (m && m.role === 'assistant' && Array.isArray(m.content)) {
+          m.content.forEach(function (b) { if (b && b.type === 'tool_use' && b.name) { toolsUsedSet[String(b.name)] = true; } });
+        }
+      });
+      const tools_used = Object.keys(toolsUsedSet);
       const logged = await audit('ai_interaction', { employee_id: caller.employee_id, role: caller.role, detail: { prompt, response, matter_id, tools_used } });
       if (!logged) {
         res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — the AI response was generated but is being withheld until this is logged. Try again.' } });
