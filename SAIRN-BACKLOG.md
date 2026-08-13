@@ -850,3 +850,34 @@ problem will recur otherwise. The `graphify` skill is set to `"off"` in
 `.claude/settings.local.json`'s `skillOverrides` until this is done —
 its current output shouldn't be treated as authoritative for duplicate-
 feature checks in the meantime.
+
+## SAIRNdental pediatric guardian fields — `onPtDobChange()` not called at page init
+
+**Logged:** 2026-08-13. Found during the final whole-branch review of the
+pediatric guardian-fields feature (`docs/superpowers/plans/2026-08-13-
+sairndental-pediatric-fields.md`, commits `78f3d25..c6ca92f`), flagged
+Minor and explicitly deferred rather than fixed in that plan's fix wave.
+
+**What:** `onPtDobChange()` (toggles the guardian field group's visibility
+based on `pt-add-dob`'s current value) only fires on the input's own
+`change` event. If a browser restores a previously-typed value into
+`pt-add-dob` on page reload (Firefox notably does this for form fields),
+the guardian group can stay in its static `style="display:none"` state
+even though the restored DOB implies a minor — while `addPatient()`'s
+save-time validation still correctly re-evaluates `isMinorPatient(dob)`
+independently and will still block the save. Net effect: a confusing UX
+(a validation error demanding guardian info for fields the user can't
+see), not a data-integrity gap — the save-blocking gate itself is
+unaffected and was independently verified correct.
+
+**Why deferred:** Real but narrow (depends on specific browser
+form-restore behavior on an uncommitted-then-abandoned add flow), and the
+actual safety property (no minor patient record saves without guardian
+info) holds regardless, since validation doesn't depend on the group's
+visibility state.
+
+**Done looks like:** Call `onPtDobChange()` once during the app's `init()`
+sequence (guarded, since `pt-add-dob` exists unconditionally in this
+single-file app) so a browser-restored DOB value is reflected in the
+guardian group's visibility immediately on load, not only after the user
+next touches the DOB field.
