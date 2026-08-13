@@ -1628,6 +1628,7 @@ body.is-exec .exec-only-block{display:block}
   border-radius:7px;font-size:14px;font-weight:600;cursor:pointer;
   border:none;transition:all .12s;white-space:nowrap;
 }
+.sairn-btn:disabled{opacity:.45;cursor:default}
 .sairn-btn-primary { background:var(--brand2);color:#fff; }
 .sairn-btn-primary:hover { opacity:.88; }
 .sairn-btn-outline { background:#fff;color:#374151;border:1.5px solid #E5E7EB; }
@@ -3425,9 +3426,10 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       ? dcSnapshotDrawingState() : null;
     h.unshift({id:Date.now(),date:sdLocalToday(),customer:name,project:stone,amount:total,status:'Pending',drawingState:drawingState});
     if(h.length>200)h=h.slice(0,200);
-    try{localStorage.setItem('sd_quote_history',JSON.stringify(h));}catch(e){}
+    var saveOk=true;
+    try{localStorage.setItem('sd_quote_history',JSON.stringify(h));}catch(e){saveOk=false;}
     updateKPIs();
-    showToast('Quote saved to history for '+name+'!');
+    showToast(saveOk ? ('Quote saved to history for '+name+'!') : 'Storage full — quote NOT saved. Clear old quotes and retry.');
   };
   updateKPIs();
   setInterval(updateKPIs,5000);
@@ -4208,7 +4210,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     sdHistoryDetailOpenId = id;
     document.getElementById('sd-hdm-title').textContent = (x.customer||'Quote') + ' — $' + (x.amount||0).toLocaleString() + ' — ' + (x.status||'Pending');
     var row = function(label, val){
-      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="color:var(--muted)">'+escHtml(label)+'</span><span style="font-weight:600;text-align:right;margin-left:12px">'+val+'</span></div>';
+      return '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px"><span style="color:var(--muted)">'+label+'</span><span style="font-weight:600;text-align:right;margin-left:12px">'+escHtml(String(val))+'</span></div>';
     };
     var body = document.getElementById('sd-hdm-body');
     var loadBtn = document.getElementById('sd-hdm-load-btn');
@@ -4219,17 +4221,17 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       loadBtn.title = 'No drawing detail saved for this quote';
     } else {
       var rows = [];
-      rows.push(row('Shape', escHtml(ds.ctShape||'')));
+      rows.push(row('Shape', ds.ctShape||''));
       if (ds.dims && ds.dims['da-len'] && ds.dims['da-dep']) rows.push(row('Section A', ds.dims['da-len']+'" × '+ds.dims['da-dep']+'"'));
       if (ds.dims && ds.dims['db-len'] && ds.dims['db-dep']) rows.push(row('Section B', ds.dims['db-len']+'" × '+ds.dims['db-dep']+'"'));
       if (ds.dims && ds.dims['dc-len'] && ds.dims['dc-dep']) rows.push(row('Section C', ds.dims['dc-len']+'" × '+ds.dims['dc-dep']+'"'));
-      if (ds.jobDetails && ds.jobDetails['draw-material']) rows.push(row('Material', escHtml(ds.jobDetails['draw-material'])));
-      if (ds.jobDetails && ds.jobDetails['draw-edge']) rows.push(row('Edge Profile', escHtml(ds.jobDetails['draw-edge'])));
-      if (ds.summary && ds.summary.seams) rows.push(row('Seams', escHtml(ds.summary.seams)));
-      if (ds.summary && ds.summary.chamfers) rows.push(row('Chamfered Corners', escHtml(ds.summary.chamfers)));
-      if (ds.summary && ds.summary.raisedBar) rows.push(row('Raised Bar', escHtml(ds.summary.raisedBar)));
-      if (ds.summary && ds.summary.cutouts) rows.push(row('Placed Cutouts', escHtml(ds.summary.cutouts)));
-      if (ds.jobDetails && ds.jobDetails['draw-notes']) rows.push(row('Notes', escHtml(ds.jobDetails['draw-notes'])));
+      if (ds.jobDetails && ds.jobDetails['draw-material']) rows.push(row('Material', ds.jobDetails['draw-material']));
+      if (ds.jobDetails && ds.jobDetails['draw-edge']) rows.push(row('Edge Profile', ds.jobDetails['draw-edge']));
+      if (ds.summary && ds.summary.seams) rows.push(row('Seams', ds.summary.seams));
+      if (ds.summary && ds.summary.chamfers) rows.push(row('Chamfered Corners', ds.summary.chamfers));
+      if (ds.summary && ds.summary.raisedBar) rows.push(row('Raised Bar', ds.summary.raisedBar));
+      if (ds.summary && ds.summary.cutouts) rows.push(row('Placed Cutouts', ds.summary.cutouts));
+      if (ds.jobDetails && ds.jobDetails['draw-notes']) rows.push(row('Notes', ds.jobDetails['draw-notes']));
       body.innerHTML = rows.join('');
       loadBtn.disabled = false;
       loadBtn.title = '';
@@ -4250,9 +4252,9 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       || (typeof gN === 'function' && (gN('da-len') > 0 || gN('da-dep') > 0));
     if (hasUnsaved && !confirm('Loading this quote will replace your current drawing — continue?')) return;
     document.getElementById('sd-history-detail-modal').classList.remove('open');
+    if (typeof sbNav === 'function') sbNav('draw');
     var success = typeof dcLoadDrawingState === 'function' && dcLoadDrawingState(x.drawingState);
     if (!success) showToast('Could not load this quote\'s drawing — try again or contact support.');
-    if (typeof sbNav === 'function') sbNav('draw');
   };
   window.sdHistoryUpdateStatus=function(){
     var id=parseInt(document.getElementById('hist-status-sel').value);
@@ -13839,6 +13841,8 @@ function dcSnapshotDrawingState() {
       ctShape: (typeof ctShape !== 'undefined') ? ctShape : '',
       dims: dims,
       dcPoly: JSON.parse(JSON.stringify((typeof dcPoly !== 'undefined') ? dcPoly : [])),
+      dcMode: (typeof dcMode !== 'undefined') ? dcMode : 'preset',
+      dcPolyClosed: (typeof dcPolyClosed !== 'undefined') ? dcPolyClosed : false,
       dcCutouts: JSON.parse(JSON.stringify((typeof dcCutouts !== 'undefined') ? dcCutouts : [])),
       dcSeams: JSON.parse(JSON.stringify((typeof dcSeams !== 'undefined') ? dcSeams : [])),
       dcRaisedBar: (typeof dcRaisedBar !== 'undefined' && dcRaisedBar) ? JSON.parse(JSON.stringify(dcRaisedBar)) : null,
@@ -13885,7 +13889,7 @@ function dcLoadDrawingState(state) {
     });
 
     dcPoly = JSON.parse(JSON.stringify(state.dcPoly || []));
-    dcPolyClosed = dcPoly.length > 0;
+    dcPolyClosed = (typeof state.dcPolyClosed === 'boolean') ? state.dcPolyClosed : (dcPoly.length > 0);
     dcCutouts = JSON.parse(JSON.stringify(state.dcCutouts || []));
     dcSeams = JSON.parse(JSON.stringify(state.dcSeams || []));
     dcRaisedBar = state.dcRaisedBar ? JSON.parse(JSON.stringify(state.dcRaisedBar)) : null;
@@ -13893,8 +13897,11 @@ function dcLoadDrawingState(state) {
     dcEdgeTypes = JSON.parse(JSON.stringify(state.dcEdgeTypes || {}));
     dcHistory = [];
 
+    if (state.dcMode === 'draw' && typeof setDCMode === 'function') setDCMode('draw');
+
     if (typeof buildEdgeAssignmentArea === 'function') buildEdgeAssignmentArea();
     if (typeof buildRaisedBarArea === 'function') buildRaisedBarArea();
+    if (typeof updateDCSeamList === 'function') updateDCSeamList();
     if (typeof drawCTPreview === 'function') drawCTPreview();
     if (typeof calcDrawing === 'function') calcDrawing();
     return true;
