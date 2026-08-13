@@ -527,7 +527,7 @@ module.exports = async (req, res) => {
         // locally (unchanged; tool data is law_* localStorage, not
         // server-accessible) and calls this same action again with the
         // tool result appended to `messages` for the second, final leg.
-        res.status(200).json(result.data);
+        res.status(200).json(Object.assign({ok:true}, result.data));
         return;
       }
 
@@ -542,7 +542,7 @@ module.exports = async (req, res) => {
         res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — the AI response was generated but is being withheld until this is logged. Try again.' } });
         return;
       }
-      res.status(200).json(result.data);
+      res.status(200).json(Object.assign({ok:true}, result.data));
       return;
     }
 
