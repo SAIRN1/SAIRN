@@ -294,6 +294,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-pi" onclick="nav('pi')"><span class="sico">&#129704;</span>Personal Injury</button>
       <div class="ss">Legal Research</div>
       <button class="sb" id="sb-citator" onclick="nav('citator')"><span class="sico">&#128220;</span>Citator (Phase A)</button>
+      <button class="sb" id="sb-aicoc" onclick="nav('aicoc')"><span class="sico">&#128737;&#65039;</span>AI Chain of Custody</button>
       <div class="ss">Administration</div>
       <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Audit</button>
       <div class="sfoot">SAIRNlaw v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 3</span></div>
@@ -859,6 +860,14 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<div class="panel" id="panel-aicoc">
+  <div class="ph"><div><div class="ptitle">AI Chain of Custody</div><div class="psub">Every AI interaction, matter-linked and logged server-side the moment it happens. Nothing here can be edited or deleted -- there is no such code path.</div></div></div>
+  <div class="card"><div class="cb">
+    <button class="btn bo" onclick="aicocLoad()">Refresh</button>
+    <div id="aicoc-list" style="margin-top:12px"></div>
+  </div></div>
+</div>
+
 <!-- LEGAL RESEARCH CITATOR (Phase A -- foundation) -->
 <div class="panel" id="panel-citator">
   <div class="ph"><div><div class="ptitle">Legal Research Citator</div><div class="psub">Phase A foundation &mdash; real CourtListener case search and citation-treatment analysis</div></div></div>
@@ -1290,6 +1299,7 @@ function nav(id){
   if(id==='pi')rPi();
   if(id==='citator')rCitator();
   if(id==='security')rSecurity();
+  if(id==='aicoc')aicocLoad();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -3108,6 +3118,60 @@ function secMfaReset(){
   });
 }
 
+var AICOC_STATUS_LABEL={unreviewed:'Unreviewed',reviewed:'Reviewed',rejected:'Rejected',used_in_filing:'Used in Filing'};
+function aicocLoad(){
+  var box=$('aicoc-list');
+  box.innerHTML='<div style="color:var(--muted);font-size:13px">Loading…</div>';
+  lawAuth('ai_list',{limit:200},true).then(function(r){
+    if(!r.ok){box.innerHTML='<div style="color:var(--muted);font-size:13px">'+H(r.msg||'Could not load the AI Chain of Custody log.')+'</div>';return;}
+    var rows=r.data.entries||[];
+    if(!rows.length){box.innerHTML='<div style="color:var(--muted);font-size:13px">No AI interactions logged yet.</div>';return;}
+    var mmap={};matters().forEach(function(m){mmap[m.id]=m.matter_number+' -- '+m.matter_name;});
+    box.innerHTML=rows.map(function(e){
+      var matterLabel=e.matter_id==='general'?'General':(mmap[e.matter_id]||e.matter_id||'General');
+      var statusColor=e.status==='rejected'?'var(--danger)':(e.status==='used_in_filing'?'var(--ok)':(e.status==='reviewed'?'var(--brand)':'var(--warn)'));
+      var actions='';
+      if(e.status==='unreviewed'){
+        actions='<button class="btn bp" style="margin-right:6px" onclick="aicocReview(\''+e.id+'\')">Approve</button>'
+          +'<button class="btn bo" onclick="aicocReject(\''+e.id+'\')">Reject</button>';
+      } else if(e.status==='reviewed'){
+        actions='<button class="btn bp" onclick="aicocMarkFiled(\''+e.id+'\')">Mark Used in Filing</button>';
+      } else if(e.status==='rejected'){
+        actions='<div style="font-size:12px;color:var(--muted)">Rejected: '+H(e.reject_reason||'')+'</div>';
+      }
+      return '<div class="card" style="margin-bottom:10px"><div class="cb">'
+        +'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">'
+        +'<div style="font-size:12px;color:var(--muted)">'+H(fdatetime(e.created_at))+' &middot; '+H(e.employee_id||'--')+(e.role?' ('+H(e.role)+')':'')+' &middot; '+H(matterLabel)+'</div>'
+        +'<div style="font-size:11px;font-weight:700;color:'+statusColor+'">'+H(AICOC_STATUS_LABEL[e.status]||e.status)+'</div>'
+        +'</div>'
+        +'<div style="font-size:12px;color:var(--muted);font-style:italic;margin-bottom:6px">'+H(e.prompt||'')+'</div>'
+        +'<div style="font-size:13px;white-space:pre-wrap;max-height:140px;overflow-y:auto;background:var(--pt);padding:8px 10px;border-radius:6px;margin-bottom:8px">'+H(e.response||'')+'</div>'
+        +actions
+        +'</div></div>';
+    }).join('');
+  });
+}
+function aicocReview(id){
+  lawAuth('ai_review',{log_entry_id:id},true).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not approve this entry');return;}
+    toast('Marked reviewed');aicocLoad();
+  });
+}
+function aicocReject(id){
+  var reason=prompt('Reason for rejecting this AI output (required):');
+  if(!reason||!reason.trim())return;
+  lawAuth('ai_reject',{log_entry_id:id,reason:reason.trim()},true).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not reject this entry');return;}
+    toast('Marked rejected');aicocLoad();
+  });
+}
+function aicocMarkFiled(id){
+  if(!confirm('Confirm: you personally verified this AI output before relying on it in a filing?'))return;
+  lawAuth('ai_used_in_filing',{log_entry_id:id},true).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not mark this entry as used in filing');return;}
+    toast('Marked used in filing');aicocLoad();
+  });
+}
 function secLoadAudit(){
   var box=$('sec-audit-list');
   box.innerHTML='<div style="color:var(--muted);font-size:13px">Loading…</div>';
