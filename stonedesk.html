@@ -14007,6 +14007,11 @@ function dcSnapshotDrawingState() {
       dcRaisedBar: (typeof dcRaisedBar !== 'undefined' && dcRaisedBar) ? JSON.parse(JSON.stringify(dcRaisedBar)) : null,
       dcChamferedCorners: JSON.parse(JSON.stringify((typeof dcChamferedCorners !== 'undefined') ? dcChamferedCorners : {})),
       dcEdgeTypes: JSON.parse(JSON.stringify((typeof dcEdgeTypes !== 'undefined') ? dcEdgeTypes : {})),
+      // Stone appearance (2026-08-13): purely visual, doesn't affect pricing or the cut sheet, but
+      // captured anyway so a reloaded quote's canvas looks the same as when it was saved -- same
+      // reasoning and same pattern as every other job-detail field above.
+      stoneType: (typeof dcStoneType !== 'undefined') ? dcStoneType : null,
+      colorTone: (typeof dcColorTone !== 'undefined') ? dcColorTone : null,
       extras: extras,
       jobDetails: jobDetails,
       summary: summary
@@ -14055,6 +14060,13 @@ function dcLoadDrawingState(state) {
     dcChamferedCorners = JSON.parse(JSON.stringify(state.dcChamferedCorners || {}));
     dcEdgeTypes = JSON.parse(JSON.stringify(state.dcEdgeTypes || {}));
     dcHistory = [];
+
+    // Stone appearance (2026-08-13): reuse the real setter functions (not a direct global
+    // assignment) so the picker's button active-state stays in sync with the restored value --
+    // an old snapshot with no stoneType/colorTone field passes `undefined`, which these setters
+    // already treat as null-safe as any other falsy input.
+    if (typeof dcSetStoneType === 'function') dcSetStoneType(state.stoneType || null);
+    if (typeof dcSetColorTone === 'function') dcSetColorTone(state.colorTone || null);
 
     if (state.dcMode === 'draw' && typeof setDCMode === 'function') setDCMode('draw');
 
