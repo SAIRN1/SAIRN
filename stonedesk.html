@@ -3418,7 +3418,12 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     // string 'Q-' id (as this used to) meant every quote saved from here
     // showed up there with blank project/$0 amount and could never have
     // its status updated (parseInt('Q-...') is NaN).
-    h.unshift({id:Date.now(),date:sdLocalToday(),customer:name,project:stone,amount:total,status:'Pending'});
+    // drawingState (2026-08-13): captures the Drawing Tool's full state so this saved quote can
+    // be reopened later with more than just its flat total -- see dcSnapshotDrawingState(). Guarded
+    // so a save from a page state where the drawing tool script hasn't initialized can't throw.
+    var drawingState = (typeof dcPoly !== 'undefined' && typeof dcSnapshotDrawingState === 'function')
+      ? dcSnapshotDrawingState() : null;
+    h.unshift({id:Date.now(),date:sdLocalToday(),customer:name,project:stone,amount:total,status:'Pending',drawingState:drawingState});
     if(h.length>200)h=h.slice(0,200);
     try{localStorage.setItem('sd_quote_history',JSON.stringify(h));}catch(e){}
     updateKPIs();
@@ -13726,6 +13731,77 @@ async function getAIDrawingAdvice() {
     sugText.innerHTML=reply.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>');
   } catch(e) {
     sugText.textContent='Connection error. Please try again.';
+  }
+}
+
+// Saved-quote drawing state (2026-08-13): everything the Drawing Tool needs to fully reconstruct
+// itself later, not just the flat dollar total sdQuoteSaveHistory() already saves. These five
+// field lists are the single source of truth for "which DOM ids count as drawing state" -- both
+// dcSnapshotDrawingState() (capture) and dcLoadDrawingState() (restore, below) read the SAME
+// arrays, so the two functions can never drift out of sync with each other the way this app's old
+// duplicated sink-deduction table once did (see the BUGFIX comment above printDrawCutSheet()).
+var DC_STATE_DIM_FIELDS = ['da-len','da-dep','db-len','db-dep','dc-len','dc-dep','dd-len','dd-dep'];
+var DC_STATE_EXTRAS_CB_FIELDS = ['dh-wf-left','dh-wf-right','dh-splashceiling','dh-splashfull','dh-splash6','dh-faucet1','dh-faucet3','dh-soap','dh-airswitch','dh-potfiller','dh-ro','dh-outlet-std','dh-outlet-usb','dh-outlet-pop','dh-gfci'];
+var DC_STATE_EXTRAS_NUM_FIELDS = ['dh-wf-ht','dh-splashlen','dh-splashht','dh-outlet-count'];
+var DC_STATE_JOB_TEXT_FIELDS = ['draw-job-name','draw-material','draw-edge','draw-notes'];
+var DC_STATE_JOB_SELECT_FIELDS = ['draw-sink','draw-cooktop'];
+
+// Captures a full snapshot of the Drawing Tool -- called from sdQuoteSaveHistory() below. The
+// `summary` strings are built here, once, against LIVE globals, using the exact same formulas
+// printDrawCutSheet() uses for its Seams/Chamfered Corners/Raised Bar/Placed Cutouts rows --
+// captured now rather than re-derived later against an inert stored object, so the History
+// panel's detail view never needs a second copy of this labeling logic.
+function dcSnapshotDrawingState() {
+  try {
+    var dims = {}, extras = {}, jobDetails = {};
+    DC_STATE_DIM_FIELDS.forEach(function(id){ dims[id] = gN(id); });
+    DC_STATE_EXTRAS_CB_FIELDS.forEach(function(id){ extras[id] = getCBV(id); });
+    DC_STATE_EXTRAS_NUM_FIELDS.forEach(function(id){ extras[id] = gN(id); });
+    DC_STATE_JOB_TEXT_FIELDS.concat(DC_STATE_JOB_SELECT_FIELDS).forEach(function(id){
+      var e = document.getElementById(id);
+      jobDetails[id] = e ? e.value : '';
+    });
+
+    var summary = { seams: null, chamfers: null, raisedBar: null, cutouts: null };
+    if (typeof dcSeams !== 'undefined' && dcSeams.length) {
+      summary.seams = dcSeams.length + ' — ' + dcSeams.map(function(s){
+        return s.label + ' (' + (Math.hypot(s.x2-s.x1,s.y2-s.y1)/12).toFixed(1) + ' LF)';
+      }).join(', ');
+    }
+    if (typeof dcChamferActiveKeys === 'function') {
+      var chamferLabels = { 'lshape-AB':'Inside corner (A-B)', 'ushape-BackLeft':'Inside corner (Back-Left)', 'ushape-BackRight':'Inside corner (Back-Right)' };
+      var activeChamfers = dcChamferActiveKeys();
+      if (activeChamfers.length) {
+        summary.chamfers = activeChamfers.map(function(k){
+          return (chamferLabels[k]||k) + ': ' + dcChamferEffectiveSetbackIn(k).toFixed(2) + 'in chamfer';
+        }).join(', ');
+      }
+    }
+    var barInfo = (typeof dcRaisedBarPricingSummary === 'function') ? dcRaisedBarPricingSummary() : {active:false};
+    if (barInfo.active && typeof dcRaisedBar !== 'undefined' && dcRaisedBar) {
+      var barEdgeLabel = dcRaisedBar.edgeKey.slice(dcRaisedBar.edgeKey.indexOf(':')+1);
+      summary.raisedBar = barEdgeLabel + ': ' + barInfo.effLenIn.toFixed(1) + 'in \xd7 ' + barInfo.effDepthIn.toFixed(1) + 'in overhang, ' + dcRaisedBar.heightIn + 'in height' + (barInfo.corbelFlag ? ' ⚠ corbel support recommended' : '');
+    }
+    if (typeof dcCutouts !== 'undefined' && dcCutouts.length) {
+      summary.cutouts = dcCutouts.map(function(c){ return c.label; }).join(', ');
+    }
+
+    return {
+      schemaVersion: 1,
+      ctShape: (typeof ctShape !== 'undefined') ? ctShape : '',
+      dims: dims,
+      dcPoly: JSON.parse(JSON.stringify((typeof dcPoly !== 'undefined') ? dcPoly : [])),
+      dcCutouts: JSON.parse(JSON.stringify((typeof dcCutouts !== 'undefined') ? dcCutouts : [])),
+      dcSeams: JSON.parse(JSON.stringify((typeof dcSeams !== 'undefined') ? dcSeams : [])),
+      dcRaisedBar: (typeof dcRaisedBar !== 'undefined' && dcRaisedBar) ? JSON.parse(JSON.stringify(dcRaisedBar)) : null,
+      dcChamferedCorners: JSON.parse(JSON.stringify((typeof dcChamferedCorners !== 'undefined') ? dcChamferedCorners : {})),
+      dcEdgeTypes: JSON.parse(JSON.stringify((typeof dcEdgeTypes !== 'undefined') ? dcEdgeTypes : {})),
+      extras: extras,
+      jobDetails: jobDetails,
+      summary: summary
+    };
+  } catch (e) {
+    return null;
   }
 }
 
