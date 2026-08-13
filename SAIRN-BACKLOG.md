@@ -5,40 +5,103 @@ not mid-session. Each entry: what, why deferred, what "done" looks like.
 
 ## StoneDesk saved quote history doesn't capture the drawing tool's own state
 
-**Logged:** 2026-08-13
+**Logged:** 2026-08-13. **Resolved: 2026-08-13.**
 
 **What:** Found during the final independent completeness check (4-scanner
 sweep + silent-failure-sweep + adversarial review) on the full drawing
 tool, after the chamfered-corners/raised-bar/canvas-zoom feature series.
-`sdQuoteSaveHistory()` (`stonedesk.html:3405-3426`) persists only
+`sdQuoteSaveHistory()` (`stonedesk.html:3405-3426`) persisted only
 `{customer, project (material name), amount (final total), date,
-status}` to `sd_quote_history`. Verified via grep that no code path
-anywhere serializes `dcPoly` (the drawn/edited shape), `dcCutouts`
-(sinks/cooktops/holes), `dcSeams`, `dcRaisedBar`, or `dcChamferedCorners`
-— the in-memory `dcHistory` array is only an undo stack, never written to
-storage. The saved `amount` is correct (`calc()` genuinely sums every
-drawing-tool cost into it, independently re-verified this session), so
-past quotes aren't *wrong* — but nothing about *what was actually drawn*
-survives a save. This isn't new to tonight's three features; it appears
-to be true of the entire drawing tool, including the base preset
-dimensions and any custom-drawn polygon.
+status}` to `sd_quote_history`. No code path serialized `dcPoly` (the
+drawn/edited shape), `dcCutouts` (sinks/cooktops/holes), `dcSeams`,
+`dcRaisedBar`, or `dcChamferedCorners` — the saved `amount` was correct,
+but nothing about *what was actually drawn* survived a save.
 
-**Why deferred:** A real fix is a genuine feature decision, not a bug
-patch — what to serialize (full `dcPoly`/`dcCutouts`/`dcSeams`/
-`dcRaisedBar`/`dcChamferedCorners` state vs. a lighter summary), where it
-lives (a new field on the existing `sd_quote_history` entry vs. a
-separate keyed-by-quote-id resource), and whether reopening a saved quote
-should actually re-render the drawing canvas (a real "load" path, not
-just a read) or only display a static summary. Each of those has real
-storage-size and UX tradeoffs worth their own design pass, not something
-to improvise inside an unrelated review/fix session.
+**Why deferred (at logging time):** A real fix was a genuine feature
+decision, not a bug patch — what to serialize, where it lives, and
+whether reopening a saved quote should re-render the canvas or only
+display a static summary. Went through a full brainstorm → spec →
+implementation-plan → subagent-driven-development cycle rather than
+being improvised.
 
-**Done looks like:** A saved quote captures enough of the drawing tool's
-real state (shape, dimensions, cutouts, seams, chamfers, raised bar) that
-reopening it later can either re-render the original canvas or at least
-show a real itemized breakdown of what generated that total — not just
-the flat dollar figure — with a deliberate decision on how far "load a
-saved quote back into the drawing tool" should go.
+**Fixed:** `dcSnapshotDrawingState()`/`dcLoadDrawingState()` (mirror-image
+capture/restore functions, `stonedesk.html`, near `printDrawCutSheet()`)
+now capture the full drawing state — shape, dimensions, cutouts, seams,
+chamfers, raised bar, Custom Draw mode + edge types + polygon-closed
+state, and job-detail fields — as a new `drawingState` field on the
+existing `sd_quote_history` entry (one storage key, no schema migration).
+The History panel's `sdHistoryView()` (previously a toast stub) is now a
+real modal with an itemized breakdown and a "Load into Drawing Tool"
+button, gated by an unsaved-work confirm and disabled with an explanatory
+note for quotes saved before this shipped. A final whole-branch review
+caught and fixed a Critical bug the per-task reviews couldn't see (`sbNav`
+navigating to the Drawing Tool panel AFTER the restore ran, which wiped
+it via the panel's own default-shape init) plus three real Important
+bugs (Custom-Draw-mode quotes silently pricing off leftover preset
+dimensions on reload; restored seams not refreshing their list UI; a
+full/blocked localStorage on save showing a false success toast) — see
+`docs/superpowers/sdd/2026-08-13-stonedesk-saved-quote-drawing-state/progress.md`
+for the full fix-wave detail. Shipped, live-verified against
+`sairn.vercel.app/stonedesk` same day.
+
+**Two narrow items intentionally NOT fixed, logged as their own entries
+below** (both real, both accepted tradeoffs — not oversights): the
+overwrite-confirm's false-positive rate, and `dcMode` not resetting to
+`'preset'` on a same-session Custom-Draw-then-preset Load sequence.
+
+## StoneDesk Load-into-Drawing-Tool overwrite confirm fires on a merely-opened Drawing Tool tab
+
+**Logged:** 2026-08-13
+
+**What:** Found during the final whole-branch review of the saved-quote-
+drawing-state feature (see the resolved entry above). The "replace your
+current drawing?" confirm before Load checks `gN('da-len') > 0` (among
+other real-state checks) to decide whether the live canvas holds
+unsaved work — but `initDrawPanel()` auto-seeds `da-len=96` the moment
+the Drawing Tool tab is opened at all, whether or not the rep has drawn
+anything. Practical effect: the confirm fires almost every time a rep
+has ever visited the Drawing Tool tab this session, even with nothing
+actually drawn — friction, not data loss (it errs toward asking, never
+toward silently overwriting).
+
+**Why deferred:** A real fix needs an actual "has the rep changed
+anything since this shape was seeded" dirty flag, not a bigger pile of
+heuristic checks on the same shape of problem — a real, separate, small
+feature (a `dcDirty` flag set on any real edit, cleared on
+load/save/clear), not a quick patch on the existing check.
+
+**Done looks like:** The confirm only fires when the rep has actually
+placed a point, changed a dimension from its seeded default, added a
+cutout/seam/chamfer/bar, or otherwise made a real edit since the Drawing
+Tool was last in a known-clean state — not merely for having opened the
+tab.
+
+## StoneDesk dcMode doesn't reset to 'preset' on a same-session Custom-Draw-then-preset quote Load
+
+**Logged:** 2026-08-13
+
+**What:** Found during the final whole-branch review's fix-wave
+re-review for the saved-quote-drawing-state feature (see the resolved
+entry above). `dcLoadDrawingState()`'s `dcMode` restore only handles the
+`state.dcMode==='draw'` case (calls `setDCMode('draw')`) — by design, so
+old snapshots with no `dcMode` field default to today's existing
+`'preset'` behavior. But if, in the SAME session, a rep loads a
+Custom-Draw-mode quote (live `dcMode` becomes `'draw'`) and then loads a
+different, preset-mode quote right after without reloading the page,
+live `dcMode` stays `'draw'` even though the newly-restored data is
+preset-based — the draw-mode toolbar/UI doesn't switch back.
+
+**Why deferred:** Narrow, same-session-only edge case (a full page
+reload before the second Load sidesteps it entirely, since `dcMode`
+defaults to `'preset'` on fresh load); found in a scoped fix-wave
+re-review that correctly kept its own change minimal rather than
+expanding scope reactively.
+
+**Done looks like:** `dcLoadDrawingState()` explicitly sets `dcMode` to
+`state.dcMode || 'preset'` (calling `setDCMode()` with whichever value)
+rather than only ever handling the `'draw'` case, so the live mode always
+matches whatever was actually saved, regardless of what mode the rep was
+in immediately before clicking Load.
 
 ## SAIRNdental's new real-sync sweep can silently exhaust localStorage once photo-bearing bookings accumulate
 
