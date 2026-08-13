@@ -11922,6 +11922,12 @@ function dcDrawStoneTexture(ctx, x, y, w, h, stoneType, colorTone) {
   }
 }
 
+// Shared "is a stone selection active and valid" check -- used by dcApplyStoneFill() and
+// drawDCPolygon() so the 4-clause condition isn't duplicated verbatim at two call sites.
+function dcHasStoneSelection() {
+  return !!(dcStoneType && dcColorTone && STONE_TONE_COLORS[dcStoneType] && STONE_TONE_COLORS[dcStoneType][dcColorTone]);
+}
+
 // Replaces the flat placeholder fillStyle+fill() every shape branch in drawCTPreview() (and
 // drawDCPolygon) currently calls directly. The caller MUST have already built the shape's real
 // path via ctx.beginPath()+ctx.rect()/moveTo()/lineTo()/closePath() BEFORE calling this -- it only
@@ -11930,7 +11936,7 @@ function dcDrawStoneTexture(ctx, x, y, w, h, stoneType, colorTone) {
 // simplicity, never spill outside the real shape whether it's a simple rect or an arbitrary
 // polygon. Falls back to today's exact flat placeholder when no appearance is selected.
 function dcApplyStoneFill(ctx, x, y, w, h) {
-  if (!dcStoneType || !dcColorTone || !STONE_TONE_COLORS[dcStoneType] || !STONE_TONE_COLORS[dcStoneType][dcColorTone]) {
+  if (!dcHasStoneSelection()) {
     ctx.fillStyle = 'rgba(232,133,10,0.1)';
     ctx.fill();
     return;
@@ -11947,21 +11953,25 @@ function dcApplyStoneFill(ctx, x, y, w, h) {
 // when restoring a snapshot saved before this feature existed), updates the picker buttons' active
 // styling to match (same active/inactive style-toggle pattern selectDrawShape() already uses for
 // its own shape buttons), and redraws.
-function dcSetStoneType(type) {
-  dcStoneType = type;
-  document.querySelectorAll('.dc-stone-type-btn').forEach(function(btn){
-    if (btn.getAttribute('data-stone-type') === type) { btn.style.background='var(--ar)'; btn.style.borderColor='var(--ab)'; btn.style.color='var(--a)'; }
+function dcSetActiveBtn(selector, matchAttr, matchValue) {
+  document.querySelectorAll(selector).forEach(function(btn){
+    if (btn.getAttribute(matchAttr) === matchValue) { btn.style.background='var(--ar)'; btn.style.borderColor='var(--ab)'; btn.style.color='var(--a)'; }
     else { btn.style.background='rgba(255,255,255,0.04)'; btn.style.borderColor='var(--border)'; btn.style.color='var(--muted)'; }
   });
+}
+function dcSetStoneType(type) {
+  dcStoneType = type;
+  if (type && !dcColorTone) { dcColorTone = 'medium'; }
+  dcSetActiveBtn('.dc-stone-type-btn', 'data-stone-type', type);
+  if (dcColorTone === 'medium') { dcSetActiveBtn('.dc-color-tone-btn', 'data-color-tone', 'medium'); }
   if (typeof drawCTPreview === 'function') drawCTPreview();
 }
 // Mirror of dcSetStoneType() for Color Tone -- see that function's comment.
 function dcSetColorTone(tone) {
   dcColorTone = tone;
-  document.querySelectorAll('.dc-color-tone-btn').forEach(function(btn){
-    if (btn.getAttribute('data-color-tone') === tone) { btn.style.background='var(--ar)'; btn.style.borderColor='var(--ab)'; btn.style.color='var(--a)'; }
-    else { btn.style.background='rgba(255,255,255,0.04)'; btn.style.borderColor='var(--border)'; btn.style.color='var(--muted)'; }
-  });
+  if (tone && !dcStoneType) { dcStoneType = 'granite'; }
+  dcSetActiveBtn('.dc-color-tone-btn', 'data-color-tone', tone);
+  if (dcStoneType === 'granite') { dcSetActiveBtn('.dc-stone-type-btn', 'data-stone-type', 'granite'); }
   if (typeof drawCTPreview === 'function') drawCTPreview();
 }
 
@@ -12094,8 +12104,7 @@ function drawCTPreview() {
     if (!(effLenIn > 0)) return;
     var offsetPx = effOffsetIn * sc, lengthPx = effLenIn * sc, depthPx = dcRaisedBar.overhangDepthIn * sc;
     var barX = rectX + offsetPx, barY = rectY + rectH;
-    ctx.fillStyle = 'rgba(232,133,10,0.1)';
-    ctx.beginPath(); ctx.rect(barX, barY, lengthPx, depthPx); ctx.fill();
+    ctx.beginPath(); ctx.rect(barX, barY, lengthPx, depthPx); dcApplyStoneFill(ctx, barX, barY, lengthPx, depthPx);
     colorEdge(barX, barY + depthPx, barX + lengthPx, barY + depthPx, 'polished');
     colorEdge(barX, barY, barX, barY + depthPx, 'polished');
     colorEdge(barX + lengthPx, barY, barX + lengthPx, barY + depthPx, 'polished');
@@ -12167,10 +12176,10 @@ function drawCTPreview() {
     // Stone appearance (2026-08-13): both branches share one bounding box covering the whole L
     // (A run + B stub when present), so the texture is one continuous pattern across the notch
     // rather than two independently-seeded regions that would visibly seam at the A/B join.
-    const lshapeBoundsX = Math.min(ax, bx), lshapeBoundsY = Math.min(ay, by);
-    const lshapeBoundsW = Math.max(ax+aw, bx+bw) - lshapeBoundsX;
-    const lshapeBoundsH = Math.max(ay+ah, by+bh) - lshapeBoundsY;
     if (hasStub) {
+      const lshapeBoundsX = Math.min(ax, bx), lshapeBoundsY = Math.min(ay, by);
+      const lshapeBoundsW = Math.max(ax+aw, bx+bw) - lshapeBoundsX;
+      const lshapeBoundsH = Math.max(ay+ah, by+bh) - lshapeBoundsY;
       ctx.beginPath();
       ctx.moveTo(bx,by);
       ctx.lineTo(bx+bw,by);
@@ -12391,7 +12400,7 @@ function drawDCPolygon(ctx, W, H) {
     // Falls back to this branch's own historical 0.12 alpha (not the 0.1 every preset-shape
     // branch uses) when unset -- dcApplyStoneFill() always uses 0.1, a pre-existing, deliberately
     // preserved inconsistency, not something this feature should silently unify.
-    if (!dcStoneType || !dcColorTone || !STONE_TONE_COLORS[dcStoneType] || !STONE_TONE_COLORS[dcStoneType][dcColorTone]) {
+    if (!dcHasStoneSelection()) {
       ctx.fillStyle='rgba(232,133,10,0.12)';
       ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
       for (let i=1;i<pts.length;i++) ctx.lineTo(pts[i].x,pts[i].y);
