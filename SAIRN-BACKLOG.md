@@ -3,6 +3,87 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## StoneDesk procedural stone texture likely inflates canvas.toDataURL() PNG snapshots against an existing quota-risk pattern
+
+**Logged:** 2026-08-13
+
+**What:** Found during the final whole-branch review of the texture-only
+stone visualization feature. `sdDrawSave()` (`stonedesk.html:3778-3790`,
+a pre-existing, separate feature from the drawing-tool's own quote-save
+path) snapshots the live canvas via `canvas.toDataURL('image/png')` and
+stores up to 50 entries under a dedicated `sd_drawings` localStorage key
+(same pattern as `sdDrawPrint()`, `stonedesk.html:3774`, though that one
+isn't persisted). Before this feature, the canvas fill was a translucent
+flat rect over a regular grid — PNG compresses that to nearly nothing.
+The new procedural texture (dense anti-aliased speckle for Granite/
+Engineered Quartz, bezier veining for Marble/Quartzite) is close to
+incompressible visual noise by comparison — a real, not yet measured,
+size increase per saved drawing, plausibly a 5-15x jump based on how PNG
+compression works on structured-vs-noisy content. `sdDrawSave()`'s
+`try{localStorage.setItem(...)}catch(e){}` swallows a quota failure
+silently and unconditionally shows `"Saved: <jobName>"` regardless of
+whether the write actually succeeded — the exact silent-failure pattern
+this platform has been bitten by before (see the SAIRNdental photo-quota
+entry below, structurally the same problem).
+
+**Why deferred:** No real browser execution environment was available in
+the reviewing session to actually measure `toDataURL()` output size
+before vs. after texture, so no numbers exist to decide a fix from yet —
+recommended action was "measure first," not "fix blind." A real fix
+(surfacing the save failure honestly in `sdDrawSave()`'s status text,
+and/or switching this specific export to `canvas.toDataURL('image/jpeg',
+0.75)`, which compresses noisy/textured content dramatically better than
+PNG and is already the established pattern elsewhere in this same file
+for exactly this reason — see `stonedesk.html:19908` and other
+`toDataURL('image/jpeg', quality)` call sites) is real but shouldn't be
+built against a guessed number.
+
+**Done looks like:** Real before/after `canvas.toDataURL('image/png').length`
+measurements (with texture unset vs. a dense selection like Granite/Dark,
+on a full-size shape, via a real browser session) confirm whether this is
+actually a meaningful jump in practice — if so, `sdDrawSave()` either
+switches to JPEG export or gets an honest save-failure toast (matching
+`sdQuoteSaveHistory()`'s own already-fixed `saveOk` pattern,
+`stonedesk.html:3427-3430`) instead of the current unconditional success
+message.
+
+## StoneDesk stone-texture visualization — accepted cosmetic nits (2026-08-13)
+
+**Logged:** 2026-08-13. Both found and explicitly ruled accept-and-document
+during the texture-only stone visualization feature's final whole-branch
+review — real, but neither worth a code change on their own.
+
+**What:**
+1. `dcLoadDrawingState()` (the saved-quote restore path) redraws the
+   canvas 3 times during a single restore instead of once —
+   `dcSetStoneType()`/`dcSetColorTone()` each internally call
+   `drawCTPreview()`, plus the function's own final explicit call.
+   User-initiated, runs once, imperceptible (a few extra ~10ms renders).
+   A suppress-redraw parameter on both setters would remove this but adds
+   real API surface for zero user-facing benefit.
+2. The stone texture "boils" (fully re-randomizes) on every mousemove
+   while dragging a corner in Custom Draw mode, because the texture's
+   seed includes the shape's bounding box and a live drag changes that
+   box continuously — reads as TV static during the drag rather than a
+   stone that visually stretches, resolving cleanly on mouseup. Preset-
+   mode edge dragging is unaffected (it freezes a bitmap during the
+   drag). A fix exists (seed on `stoneType+colorTone` only, dropping the
+   shape-bounds component, so primitives stretch with the shape instead
+   of re-rolling) but changes the visual character of every rendered
+   texture (all sections of a multi-section shape would share one
+   relative pattern layout instead of independent ones) — a real design
+   tradeoff, not an obvious strict improvement, so not made unilaterally
+   during a final-review fix pass.
+
+**Why deferred:** Both are real but low-impact (transient/imperceptible),
+and both proposed fixes trade away something (API surface, or a
+different visual character) rather than being pure wins — worth a
+deliberate decision, not folding into a review-driven fix wave.
+
+**Done looks like:** A deliberate decision on each — accept as permanent
+behavior, or make the specific tradeoff described above, made outside the
+pressure of a final-review fix-and-ship pass.
+
 ## StoneDesk saved quote history doesn't capture the drawing tool's own state
 
 **Logged:** 2026-08-13. **Resolved: 2026-08-13.**
