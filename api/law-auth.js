@@ -95,6 +95,13 @@ const {
   oidcExchangeCode, oidcVerifyIdToken, signSsoState, verifySsoState,
   ROLES_BY_APP
 } = require('./_lib/auth');
+// AI Chain of Custody server-side capture (2026-08-13): callAnthropic() and
+// the demo-limit helpers are the SAME functions/counter api/claude.js's own
+// HTTP handler uses for every other app -- imported directly (an in-process
+// function call, not a second HTTP round trip back through that endpoint),
+// so SAIRNlaw's existing is_demo daily-call cap is preserved exactly, not
+// silently dropped or double-counted against a second, independent counter.
+const { callAnthropic, getDemoKey, demoCallCounts, DEMO_DAILY_LIMIT } = require('./claude.js');
 
 const APP = 'sairnlaw';
 const TABLE = 'sairnlaw_employee_auth';
@@ -105,7 +112,7 @@ const ACTIONS = [
   'check_license', 'bootstrap', 'login', 'setup',
   'mfa_setup', 'mfa_enable', 'mfa_verify', 'mfa_reset',
   'sso_start', 'sso_callback', 'audit_read',
-  'ai_log', 'ai_list', 'ai_review', 'ai_reject', 'ai_used_in_filing'
+  'ai_generate', 'ai_list', 'ai_review', 'ai_reject', 'ai_used_in_filing'
 ];
 // AI Chain of Custody roles (2026-08-13): licensed attorneys, not
 // paralegals, are the ones sanctioned for AI-generated fake citations --
@@ -479,24 +486,63 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ── AI CHAIN OF CUSTODY (2026-08-13) ────────────────────────────────
-    // Extends sairnlaw_audit_log (see sql/sairnlaw_ai_chain_of_custody.sql)
-    // rather than a new table -- the existing grant/revoke on that table
-    // already makes every row here immutable at the database level.
-    if (action === 'ai_log') {
+    // ── AI CHAIN OF CUSTODY -- SERVER-SIDE CAPTURE (2026-08-13) ─────────
+    // Replaces ai_log. The old design let the client submit an arbitrary
+    // prompt/response pair as a SEPARATE, unlinked request after the AI
+    // answer had already rendered -- a real capture gap (the second
+    // request might never fire) and a real fabrication gap (nothing tied
+    // a logged pair to a real Claude call). This action calls Claude
+    // itself and writes the log entry from the REAL response it just
+    // received, BEFORE the client ever sees that text -- a response
+    // literally cannot reach the rep without a genuine log entry already
+    // existing. See docs/superpowers/specs/2026-08-13-sairnlaw-ai-chain-of-
+    // custody-server-side-capture-design.md.
+    if (action === 'ai_generate') {
       const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
       if (!caller) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in required' } }); return; }
-      const prompt = String(body.prompt || '').slice(0, AI_PROMPT_RESPONSE_CAP);
-      const response = String(body.response || '').slice(0, AI_PROMPT_RESPONSE_CAP);
-      if (!prompt || !response) { res.status(400).json({ error: { message: 'prompt and response are both required' } }); return; }
+      const messages = Array.isArray(body.messages) ? body.messages : null;
+      if (!messages || !messages.length) { res.status(400).json({ error: { message: 'messages array is required' } }); return; }
+
+      // Same is_demo daily-cap gate api/claude.js's own HTTP handler applies
+      // to every other app -- same shared counter, same 200-ish daily limit,
+      // preserved exactly rather than silently dropped for this path.
+      const key = getDemoKey('sairnlaw');
+      demoCallCounts[key] = (demoCallCounts[key] || 0) + 1;
+      if (demoCallCounts[key] > DEMO_DAILY_LIMIT) {
+        res.status(200).json({ error: 'demo_limit' });
+        return;
+      }
+
+      const result = await callAnthropic({ system: body.system, messages: messages, max_tokens: body.max_tokens, tools: body.tools });
+      if (!result.ok) {
+        res.status(result.status).json({ error: result.error });
+        return;
+      }
+
+      const blocks = (result.data && result.data.content) || [];
+      const toolUse = blocks.filter(function (b) { return b.type === 'tool_use'; })[0];
+      if (toolUse) {
+        // Intermediate tool-use directive -- nothing user-facing yet, so
+        // there is nothing real to log. The client executes the tool
+        // locally (unchanged; tool data is law_* localStorage, not
+        // server-accessible) and calls this same action again with the
+        // tool result appended to `messages` for the second, final leg.
+        res.status(200).json(result.data);
+        return;
+      }
+
+      // Final text -- the only case a rep ever actually sees output.
+      const responseText = (blocks[0] && blocks[0].text) || '';
+      const prompt = String(body.prompt_for_log || '').slice(0, AI_PROMPT_RESPONSE_CAP);
+      const response = responseText.slice(0, AI_PROMPT_RESPONSE_CAP);
       const matter_id = body.matter_id ? String(body.matter_id) : 'general';
       const tools_used = Array.isArray(body.tools_used) ? body.tools_used.map(String) : [];
       const logged = await audit('ai_interaction', { employee_id: caller.employee_id, role: caller.role, detail: { prompt, response, matter_id, tools_used } });
       if (!logged) {
-        res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — try again' } });
+        res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — the AI response was generated but is being withheld until this is logged. Try again.' } });
         return;
       }
-      res.status(200).json({ ok: true });
+      res.status(200).json(result.data);
       return;
     }
 
