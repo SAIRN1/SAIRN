@@ -683,7 +683,7 @@ function rPatients(){
     return '<tr><td>'+H(p.name)+'</td><td>'+H(p.dob||'--')+'</td><td>'+H(p.phone||'--')+'</td><td>'+H(p.insurance_payer||'--')+'</td><td>'+H(p.insurance_member_id||'--')+'</td>'+
       '<td>'+H(isMinorPatient(p.dob)&&p.guardian_name?p.guardian_name+(p.guardian_relationship?' ('+p.guardian_relationship+')':''):'--')+'</td>'+
       '<td><button class="btn bo bs" onclick="removePatient(\''+p.id+'\')">Remove</button></td></tr>';
-  }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center">No patients on file yet</td></tr>';
+  }).join('')||'<tr><td colspan="7" style="color:var(--muted);text-align:center">No patients on file yet</td></tr>';
   fillDentalSelects();
 }
 // Pediatric fields (2026-08-13): single source of truth for minor status,
@@ -694,7 +694,9 @@ function rPatients(){
 // where DOB is optional and never blocks saving an adult patient.
 function isMinorPatient(dob){
   if(!dob)return false;
-  var b=new Date(dob),today=new Date();
+  var p=String(dob).split('-');
+  var b=new Date(+p[0],+p[1]-1,+p[2]),today=new Date();
+  if(isNaN(b))return false;
   var age=today.getFullYear()-b.getFullYear();
   var m=today.getMonth()-b.getMonth();
   if(m<0||(m===0&&today.getDate()<b.getDate()))age--;
@@ -709,11 +711,12 @@ async function addPatient(){
   var name=$('pt-add-name').value.trim();
   if(!name){toast('Patient name required');return;}
   var dob=$('pt-add-dob').value;
-  var gName=$('pt-add-guardian-name').value.trim();
-  var gRel=isMinorPatient(dob)?$('pt-add-guardian-relationship').value:'';
-  var gPhone=$('pt-add-guardian-phone').value.trim();
-  var gEmail=$('pt-add-guardian-email').value.trim();
-  if(isMinorPatient(dob)&&(!gName||(!gPhone&&!gEmail))){
+  var isMinor=isMinorPatient(dob);
+  var gName=isMinor?$('pt-add-guardian-name').value.trim():'';
+  var gRel=isMinor?$('pt-add-guardian-relationship').value:'';
+  var gPhone=isMinor?$('pt-add-guardian-phone').value.trim():'';
+  var gEmail=isMinor?$('pt-add-guardian-email').value.trim():'';
+  if(isMinor&&(!gName||(!gPhone&&!gEmail))){
     toast('Guardian name and at least one contact method (phone or email) are required for a minor patient');
     return;
   }
