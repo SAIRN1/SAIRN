@@ -88,6 +88,50 @@ function getDemoKey(appId) {
   return appId + '|' + day;
 }
 
+// Extracted (2026-08-13, SAIRNlaw AI Chain of Custody server-side capture) so
+// api/law-auth.js's ai_generate action can call the real Anthropic API
+// in-process -- one real server round trip that also writes the audit log,
+// not a second HTTP hop back through this same endpoint. Returns a plain
+// result object, never throws, so every caller (this file's own HTTP
+// handler below, and api/law-auth.js) handles success/failure the same way.
+async function callAnthropic({ system, messages, max_tokens, tools }) {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    // Server misconfiguration — do not leak details to the client, but make it loud in logs.
+    console.error('ANTHROPIC_API_KEY is not set in environment variables');
+    return { ok: false, status: 500, error: { message: 'Server configuration error — contact support' } };
+  }
+  try {
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: max_tokens || 1000,
+        system: system || undefined,
+        messages: messages,
+        tools: sanitizeTools(tools)
+      })
+    });
+
+    const data = await anthropicRes.json();
+
+    if (!anthropicRes.ok) {
+      const message = (data && data.error && data.error.message) ? data.error.message : ('Anthropic API error ' + anthropicRes.status);
+      return { ok: false, status: anthropicRes.status, error: { message } };
+    }
+
+    return { ok: true, status: 200, data };
+  } catch (err) {
+    console.error('api/claude proxy error:', err);
+    return { ok: false, status: 502, error: { message: 'Upstream connection error — try again' } };
+  }
+}
+
 async function claudeProxyHandler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
@@ -126,45 +170,17 @@ async function claudeProxyHandler(req, res) {
     }
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    // Server misconfiguration — do not leak details to the client, but make it loud in logs.
-    console.error('ANTHROPIC_API_KEY is not set in environment variables');
-    res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
+  const result = await callAnthropic({ system, messages, max_tokens, tools });
+  if (!result.ok) {
+    res.status(result.status).json({ error: result.error });
     return;
   }
-
-  try {
-    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: max_tokens || 1000,
-        system: system || undefined,
-        messages: messages,
-        tools: sanitizeTools(tools)
-      })
-    });
-
-    const data = await anthropicRes.json();
-
-    if (!anthropicRes.ok) {
-      const message = (data && data.error && data.error.message) ? data.error.message : ('Anthropic API error ' + anthropicRes.status);
-      res.status(anthropicRes.status).json({ error: { message } });
-      return;
-    }
-
-    res.status(200).json(data);
-  } catch (err) {
-    console.error('api/claude proxy error:', err);
-    res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
-  }
+  res.status(200).json(result.data);
 }
 
 claudeProxyHandler.sanitizeTools = sanitizeTools;
+claudeProxyHandler.callAnthropic = callAnthropic;
+claudeProxyHandler.getDemoKey = getDemoKey;
+claudeProxyHandler.demoCallCounts = demoCallCounts;
+claudeProxyHandler.DEMO_DAILY_LIMIT = DEMO_DAILY_LIMIT;
 module.exports = claudeProxyHandler;
