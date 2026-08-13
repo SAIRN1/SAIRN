@@ -4250,7 +4250,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       || (typeof gN === 'function' && (gN('da-len') > 0 || gN('da-dep') > 0));
     if (hasUnsaved && !confirm('Loading this quote will replace your current drawing — continue?')) return;
     document.getElementById('sd-history-detail-modal').classList.remove('open');
-    if (typeof dcLoadDrawingState === 'function') dcLoadDrawingState(x.drawingState);
+    var success = typeof dcLoadDrawingState === 'function' && dcLoadDrawingState(x.drawingState);
+    if (!success) showToast('Could not load this quote\'s drawing — try again or contact support.');
     if (typeof sbNav === 'function') sbNav('draw');
   };
   window.sdHistoryUpdateStatus=function(){
