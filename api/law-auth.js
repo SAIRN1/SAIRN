@@ -104,8 +104,17 @@ const LOCKOUT_MINUTES = 15;
 const ACTIONS = [
   'check_license', 'bootstrap', 'login', 'setup',
   'mfa_setup', 'mfa_enable', 'mfa_verify', 'mfa_reset',
-  'sso_start', 'sso_callback', 'audit_read'
+  'sso_start', 'sso_callback', 'audit_read',
+  'ai_log', 'ai_list', 'ai_review', 'ai_reject', 'ai_used_in_filing'
 ];
+// AI Chain of Custody roles (2026-08-13): licensed attorneys, not
+// paralegals, are the ones sanctioned for AI-generated fake citations --
+// review/reject/filing-attestation are restricted accordingly. Any
+// authenticated role may trigger an AI interaction (ai_log) -- everyone's
+// usage gets logged the same way, only the review/attestation actions are
+// role-gated.
+const AI_COC_REVIEW_ROLES = { owner: true, attorney: true };
+const AI_PROMPT_RESPONSE_CAP = 20000;
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -448,11 +457,81 @@ module.exports = async (req, res) => {
         // the log as if it covered more than it does. See
         // sql/sairnlaw_audit_log_schema.sql for the full reasoning.
         coverage: {
-          covered: ['authentication events', 'two-factor enrollment and verification', 'single sign-on', 'credential provisioning', 'citator research lookups'],
+          // AI interactions (2026-08-13) are tracked in this same table but
+          // deliberately NOT included in this general endpoint's own
+          // results (see ai_list below) -- their detail payload carries
+          // real prompt/response text, which may contain privileged client
+          // matter content, and does not belong in this page's generic
+          // JSON.stringify(detail) rendering. Disclosed here so this page
+          // stays honest about the fact that coverage without implying
+          // this view shows it.
+          covered: ['authentication events', 'two-factor enrollment and verification', 'single sign-on', 'credential provisioning', 'citator research lookups', 'AI interactions (see AI Chain of Custody, not shown on this page)'],
           not_covered: ['trust/IOLTA transactions', 'document access', 'matter changes'],
           not_covered_reason: 'Those features store their data in the browser only and never reach the server, so the server cannot observe or attest to them. Server-side auditing of those actions requires them to become server-backed first — a separate, real piece of work that has not been done.'
         }
       });
+      return;
+    }
+
+    // ── AI CHAIN OF CUSTODY (2026-08-13) ────────────────────────────────
+    // Extends sairnlaw_audit_log (see sql/sairnlaw_ai_chain_of_custody.sql)
+    // rather than a new table -- the existing grant/revoke on that table
+    // already makes every row here immutable at the database level.
+    if (action === 'ai_log') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in required' } }); return; }
+      const prompt = String(body.prompt || '').slice(0, AI_PROMPT_RESPONSE_CAP);
+      const response = String(body.response || '').slice(0, AI_PROMPT_RESPONSE_CAP);
+      if (!prompt || !response) { res.status(400).json({ error: { message: 'prompt and response are both required' } }); return; }
+      const matter_id = body.matter_id ? String(body.matter_id) : 'general';
+      const tools_used = Array.isArray(body.tools_used) ? body.tools_used.map(String) : [];
+      await audit('ai_interaction', { employee_id: caller.employee_id, role: caller.role, detail: { prompt, response, matter_id, tools_used } });
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (action === 'ai_list') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller || !AI_COC_REVIEW_ROLES[caller.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Attorney can view the AI Chain of Custody log' } });
+        return;
+      }
+      const limit = Math.min(Math.max(parseInt(body.limit, 10) || 200, 1), 1000);
+      const r = await fetch(rest('sairnlaw_audit_log?license_hash=eq.' + enc(licHash) +
+        '&event_type=in.(ai_interaction,ai_reviewed,ai_rejected,ai_used_in_filing)' +
+        '&select=id,employee_id,role,event_type,detail,created_at&order=created_at.desc&limit=' + limit), { headers });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const all = rows || [];
+      const interactions = all.filter(function (e) { return e.event_type === 'ai_interaction'; });
+      const statusEvents = all.filter(function (e) { return e.event_type !== 'ai_interaction'; });
+      // Most recent status event per log_entry_id wins -- statusEvents is
+      // already ordered newest-first (order=created_at.desc above), so the
+      // FIRST match found per id in this loop is the current status.
+      const statusById = {};
+      statusEvents.forEach(function (e) {
+        var lid = e.detail && e.detail.log_entry_id;
+        if (lid && !statusById[lid]) statusById[lid] = e;
+      });
+      const entries = interactions.map(function (e) {
+        var statusEvent = statusById[e.id];
+        var status = 'unreviewed';
+        if (statusEvent) {
+          if (statusEvent.event_type === 'ai_reviewed') status = 'reviewed';
+          else if (statusEvent.event_type === 'ai_rejected') status = 'rejected';
+          else if (statusEvent.event_type === 'ai_used_in_filing') status = 'used_in_filing';
+        }
+        return {
+          id: e.id, employee_id: e.employee_id, role: e.role, created_at: e.created_at,
+          matter_id: e.detail && e.detail.matter_id, prompt: e.detail && e.detail.prompt,
+          response: e.detail && e.detail.response, tools_used: (e.detail && e.detail.tools_used) || [],
+          status: status,
+          reject_reason: (statusEvent && statusEvent.event_type === 'ai_rejected') ? statusEvent.detail.reason : null,
+          reviewed_by: statusEvent ? statusEvent.employee_id : null,
+          reviewed_at: statusEvent ? statusEvent.created_at : null
+        };
+      });
+      res.status(200).json({ ok: true, entries: entries });
       return;
     }
 
