@@ -447,6 +447,7 @@ module.exports = async (req, res) => {
       }
       const limit = Math.min(Math.max(parseInt(body.limit, 10) || 100, 1), 500);
       const r = await fetch(rest('sairnlaw_audit_log?license_hash=eq.' + enc(licHash) +
+        '&event_type=not.in.(ai_interaction,ai_reviewed,ai_rejected,ai_used_in_filing)' +
         '&select=id,employee_id,role,event_type,detail,created_at&order=created_at.desc&limit=' + limit), { headers });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -526,7 +527,7 @@ module.exports = async (req, res) => {
           matter_id: e.detail && e.detail.matter_id, prompt: e.detail && e.detail.prompt,
           response: e.detail && e.detail.response, tools_used: (e.detail && e.detail.tools_used) || [],
           status: status,
-          reject_reason: (statusEvent && statusEvent.event_type === 'ai_rejected') ? statusEvent.detail.reason : null,
+          reject_reason: (statusEvent && statusEvent.event_type === 'ai_rejected' && statusEvent.detail) ? statusEvent.detail.reason : null,
           reviewed_by: statusEvent ? statusEvent.employee_id : null,
           reviewed_at: statusEvent ? statusEvent.created_at : null
         };
