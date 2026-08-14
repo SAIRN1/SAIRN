@@ -509,6 +509,31 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
+      <div class="panel" id="panel-supplies">
+        <div class="ph"><div><div class="ptitle">Supplies</div><div class="psub">Stock on hand for dental supplies/PPE/materials.</div></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-supplies','supplies')">Export CSV</button></div>
+        </div>
+        <div class="krow" id="supplies-kpis" style="grid-template-columns:repeat(3,1fr)"></div>
+        <div class="card"><div class="ch"><div class="ct">Add Supply Item</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Name</label><input type="text" id="sp-add-name" placeholder="e.g. Nitrile Exam Gloves, Medium"></div>
+            <div class="fg"><label>Category</label><select id="sp-add-category"></select></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Quantity on Hand</label><input type="number" id="sp-add-qty" min="0" value="0"></div>
+            <div class="fg"><label>Reorder Threshold</label><input type="number" id="sp-add-threshold" min="0" value="0"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Unit Cost</label><input type="number" id="sp-add-cost" min="0" step="0.01"></div>
+            <div class="fg"><label>Vendor SKU (optional, for low-stock matching in Vendor Catalog)</label><input type="text" id="sp-add-sku" placeholder="e.g. HS-PPE-NGM"></div>
+          </div>
+          <button class="btn bp" onclick="addSupply()">Add Item</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">On Hand</div></div><div class="cb" style="padding:0">
+          <table><thead><tr><th>Name</th><th>Category</th><th>Qty</th><th>Reorder At</th><th>Unit Cost</th><th></th></tr></thead><tbody id="supplies-tbody"></tbody></table>
+        </div></div>
+      </div>
+
       <div class="modal" id="completeVisitModal">
         <div class="mbox">
           <div class="mtitle">Complete Visit</div>
@@ -663,6 +688,7 @@ function nav(id){
   if(id==='referrals')rReferrals();
   if(id==='complaints')rComplaints();
   if(id==='vendorcat')rVendorCat();
+  if(id==='supplies')rSupplies();
 }
 
 function exportPanelCSV(panelId,name){
@@ -1717,7 +1743,8 @@ function rVendorCat(){
     var badge='';
     if(lowest&&lowest.price<p.price)badge=' <span class="badge" style="background:#FEF3C7;color:#92400E">Save '+fmt(p.price-lowest.price)+' at '+H(lowest.vendorName)+'</span>';
     else if(lowest&&p.price<lowest.price)badge=' <span class="badge" style="background:#F0FEF6;color:#15803D">Best Price</span>';
-    return '<tr><td>'+H(p.name)+badge+'<div style="font-size:11px;color:var(--muted)">'+H(DNT_VCAT_LABELS[p.cat])+' &middot; '+H(p.sku)+'</div></td>'+
+    var lowFlag=vLowStockItem(p.sku)?' <span class="badge" style="background:#FEE2E2;color:#991B1B">Low Stock</span>':'';
+    return '<tr><td>'+H(p.name)+badge+lowFlag+'<div style="font-size:11px;color:var(--muted)">'+H(DNT_VCAT_LABELS[p.cat])+' &middot; '+H(p.sku)+'</div></td>'+
       '<td>'+fmt(p.price)+'</td>'+
       '<td><input type="number" min="0" value="'+(cart[p.id]||0)+'" id="vqty-'+p.id+'" style="width:60px" onchange="vCartUpdate(\''+p.id+'\',this.value)"></td>'+
       '<td><button class="btn bp bs" onclick="vCartAdd(\''+p.id+'\',1)">Add</button></td></tr>';
@@ -1753,6 +1780,50 @@ function vEditContact(){
 
 function vendorOrderHistory(){return ld('dnt_vendor_order_history',[]);}
 
+function supplies(){return ld('dnt_supplies_list',[]);}
+function vLowStockItem(sku){
+  if(!sku)return null;
+  return supplies().find(function(s){return s.vendor_sku&&s.vendor_sku===sku&&Number(s.qty)<=Number(s.reorder_threshold);})||null;
+}
+function rSupplies(){
+  var sel=$('sp-add-category');
+  if(sel&&!sel.dataset.built){
+    sel.innerHTML=Object.keys(DNT_VCAT_LABELS).map(function(c){return '<option value="'+c+'">'+H(DNT_VCAT_LABELS[c])+'</option>';}).join('');
+    sel.dataset.built='1';
+  }
+  var list=supplies();
+  var low=list.filter(function(s){return Number(s.qty)<=Number(s.reorder_threshold);});
+  var value=list.reduce(function(s,i){return s+Number(i.qty)*Number(i.unit_cost||0);},0);
+  $('supplies-kpis').innerHTML=
+    '<div class="kpi"><div class="klbl">SKUs Tracked</div><div class="kval">'+list.length+'</div></div>'+
+    '<div class="kpi"><div class="klbl">Low Stock</div><div class="kval" style="color:'+(low.length?'var(--danger)':'var(--text)')+'">'+low.length+'</div></div>'+
+    '<div class="kpi"><div class="klbl">Stock Value</div><div class="kval">'+fmt(value)+'</div></div>';
+  $('supplies-tbody').innerHTML=list.length?list.map(function(s){
+    var isLow=Number(s.qty)<=Number(s.reorder_threshold);
+    return '<tr><td>'+H(s.name)+(isLow?' <span class="badge" style="background:#FEE2E2;color:#991B1B">Low</span>':'')+'</td>'+
+      '<td>'+H(DNT_VCAT_LABELS[s.category]||s.category)+'</td><td>'+H(s.qty)+'</td><td>'+H(s.reorder_threshold)+'</td>'+
+      '<td>'+fmt(s.unit_cost)+'</td>'+
+      '<td><button class="btn bo bs" onclick="removeSupply(\''+s.id+'\')">Remove</button></td></tr>';
+  }).join('') : '<tr><td colspan="6" style="color:var(--muted);text-align:center">No supply items on file yet</td></tr>';
+}
+function addSupply(){
+  var name=$('sp-add-name').value.trim();
+  if(!name){toast('Item name required');return;}
+  var rec={id:newId('SUP'),name:name,category:$('sp-add-category').value,
+    qty:parseInt($('sp-add-qty').value,10)||0,reorder_threshold:parseInt($('sp-add-threshold').value,10)||0,
+    unit_cost:parseFloat($('sp-add-cost').value)||0,vendor_sku:$('sp-add-sku').value.trim(),
+    created_at:dntLocalToday()};
+  var list=supplies();list.push(rec);st('dnt_supplies_list',list);
+  rSupplies();
+  ['sp-add-name','sp-add-qty','sp-add-threshold','sp-add-cost','sp-add-sku'].forEach(function(id){$(id).value=id==='sp-add-qty'||id==='sp-add-threshold'?'0':'';});
+  toast('Supply item added');
+}
+function removeSupply(id){
+  var list=supplies().filter(function(s){return s.id!==id;});
+  st('dnt_supplies_list',list);rSupplies();
+  toast('Supply item removed');
+}
+
 function vPlaceOrder(){
   var cart=vendorCart();
   var all=vAllProducts();
@@ -1781,6 +1852,18 @@ function vPlaceOrder(){
     if(hist.length>200)hist=hist.slice(0,200);
     st('dnt_vendor_order_history',hist);
   });
+  // Stock auto-increment, confirm-prompted -- matches StoneDesk's real
+  // vendorPlaceOrder() convention exactly (design spec's "Supplies panel"
+  // section). Matches by vendor_sku against the ordered items' real SKUs.
+  if(confirm('Order submitted! Update supply quantities to reflect ordered amounts?')){
+    var list=supplies();
+    items.forEach(function(item){
+      var s=list.find(function(x){return x.vendor_sku===item.sku;});
+      if(s)s.qty=Number(s.qty)+item.qty;
+    });
+    st('dnt_supplies_list',list);
+    if($('panel-supplies')&&$('panel-supplies').classList.contains('on'))rSupplies();
+  }
   vCartClear();
   toast('Order'+(vendorKeysInCart.length>1?'s':'')+' submitted');
 }
