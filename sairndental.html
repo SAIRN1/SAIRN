@@ -1693,6 +1693,8 @@ function vendorCart(){return ld('dnt_vendor_cart',{});}
 function vCartAdd(productId,qty){
   var cart=vendorCart();cart[productId]=(cart[productId]||0)+(parseInt(qty,10)||1);
   st('dnt_vendor_cart',cart);vRenderCart();
+  var inp=$('vqty-'+productId);
+  if(inp)inp.value=cart[productId];
 }
 function vCartUpdate(productId,val){
   var cart=vendorCart(),qty=parseInt(val,10)||0;
@@ -1713,7 +1715,8 @@ function vGetEffectivePrice(vendorKey,product){
   var catRule=rules.categoryDiscounts.find(function(r){return r.vendor===vendorKey&&r.category===product.cat;});
   var catDisc=catRule?(catRule.discount/100):0;
   var afterVendor=product.price*(1-vendorDisc);
-  return afterVendor*(1-catDisc);
+  var result=afterVendor*(1-catDisc);
+  return Math.round(result*100)/100;
 }
 function vSetVendorDiscount(){
   var pct=parseFloat($('vp-vendor-discount').value);
@@ -1736,7 +1739,8 @@ function vSetCategoryDiscount(){
 }
 function vSetProductOverride(){
   var sku=$('vp-sku').value.trim(),price=parseFloat($('vp-override-price').value);
-  if(!sku||isNaN(price)||price<0){toast('Enter a real SKU and a valid price');return;}
+  if(!sku||isNaN(price)||price<=0){toast('Enter a real SKU and a valid price greater than $0');return;}
+  if(!vAllProducts().some(function(x){return x.sku===sku;})){toast('No product found with SKU '+sku);return;}
   var rules=dntVendorPricingRules();
   rules.productOverrides[sku]=price;
   st('dnt_vendor_pricing_rules',rules);
@@ -1765,12 +1769,17 @@ async function vCompareAI(productId){
 
 function vShowSpendReport(){
   var hist=vendorOrderHistory();
-  var ytd=hist.reduce(function(s,o){return s+(o.total||0);},0);
+  var ytd=hist.filter(function(o){return new Date(o.date).getFullYear()===new Date().getFullYear();}).reduce(function(s,o){return s+(o.total||0);},0);
   var byVendor={};
-  hist.forEach(function(o){byVendor[o.vendor]=(byVendor[o.vendor]||0)+o.total;});
+  hist.forEach(function(o){byVendor[o.vendor]=(byVendor[o.vendor]||0)+(o.total||0);});
   var low=supplies().filter(function(s){return Number(s.qty)<=Number(s.reorder_threshold);});
   var rules=dntVendorPricingRules();
-  var deals=Object.keys(rules.productOverrides).length+rules.categoryDiscounts.length+Object.keys(rules.vendorDiscounts).filter(function(k){return rules.vendorDiscounts[k]>0;}).length;
+  var deals=Object.keys(rules.productOverrides).filter(function(sku){
+    var prod=vAllProducts().find(function(x){return x.sku===sku;});
+    return prod&&rules.productOverrides[sku]<prod.price;
+  }).length
+    +rules.categoryDiscounts.filter(function(r){return r.discount>0;}).length
+    +Object.keys(rules.vendorDiscounts).filter(function(k){return rules.vendorDiscounts[k]>0;}).length;
   var content=
     '<div class="krow" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">'+
       '<div class="kpi"><div class="klbl">YTD Spend</div><div class="kval">'+fmt(ytd)+'</div></div>'+
@@ -1788,7 +1797,7 @@ function vShowSpendReport(){
 
 async function vSpendAI(){
   var hist=vendorOrderHistory();
-  var ytd=hist.reduce(function(s,o){return s+(o.total||0);},0);
+  var ytd=hist.filter(function(o){return new Date(o.date).getFullYear()===new Date().getFullYear();}).reduce(function(s,o){return s+(o.total||0);},0);
   var low=supplies().filter(function(s){return Number(s.qty)<=Number(s.reorder_threshold);}).length;
   toast('Asking Claude for spend analysis...');
   try{
@@ -1871,13 +1880,13 @@ function rVendorCat(){
   var cart=vendorCart();
   var all=vAllProducts();
   $('vendor-products-tbody').innerHTML=products.length?products.map(function(p){
-    var matches=all.filter(function(x){return x.vendorKey!==_dntActiveVendor&&x.name===p.name;});
-    var lowest=matches.length?matches.sort(function(a,b){return a.price-b.price;})[0]:null;
-    var badge='';
-    if(lowest&&lowest.price<p.price)badge=' <span class="badge" style="background:#FEF3C7;color:#92400E">Save '+fmt(p.price-lowest.price)+' at '+H(lowest.vendorName)+'</span>';
-    else if(lowest&&p.price<lowest.price)badge=' <span class="badge" style="background:#F0FEF6;color:#15803D">Best Price</span>';
-    var lowFlag=vLowStockItem(p.sku)?' <span class="badge" style="background:#FEE2E2;color:#991B1B">Low Stock</span>':'';
     var eff=vGetEffectivePrice(_dntActiveVendor,p);
+    var matches=all.filter(function(x){return x.vendorKey!==_dntActiveVendor&&x.name===p.name;});
+    var lowest=matches.length?matches.slice().sort(function(a,b){return a.effectivePrice-b.effectivePrice;})[0]:null;
+    var badge='';
+    if(lowest&&lowest.effectivePrice<eff)badge=' <span class="badge" style="background:#FEF3C7;color:#92400E">Save '+fmt(eff-lowest.effectivePrice)+' at '+H(lowest.vendorName)+'</span>';
+    else if(lowest&&eff<lowest.effectivePrice)badge=' <span class="badge" style="background:#F0FEF6;color:#15803D">Best Price</span>';
+    var lowFlag=vLowStockItem(p.sku)?' <span class="badge" style="background:#FEE2E2;color:#991B1B">Low Stock</span>':'';
     var priceCell=eff<p.price?('<span style="text-decoration:line-through;color:var(--muted);font-size:11px">'+fmt(p.price)+'</span> '+fmt(eff)):fmt(p.price);
     return '<tr><td>'+H(p.name)+badge+lowFlag+'<div style="font-size:11px;color:var(--muted)">'+H(DNT_VCAT_LABELS[p.cat])+' &middot; '+H(p.sku)+'</div></td>'+
       '<td>'+priceCell+'</td>'+
@@ -1974,6 +1983,7 @@ function vPlaceOrder(){
     toast('Add rep contact info for '+missing.map(function(vk){return DNT_VENDORS[vk].name;}).join(', ')+' before placing this order');
     return;
   }
+  var blockedVendors=[];
   vendorKeysInCart.forEach(function(vk){
     var vendorItems=items.filter(function(i){return i.vendorKey===vk;});
     var total=vendorItems.reduce(function(s,i){return s+i.effectivePrice*i.qty;},0);
@@ -1981,7 +1991,8 @@ function vPlaceOrder(){
     var subject='SAIRNdental Purchase Order -- '+fmt(total);
     var body='Purchase Order\n\nDate: '+new Date().toLocaleDateString()+'\n\nItems:\n'+orderText+'\n\nTotal: '+fmt(total);
     var email=contacts[vk].email;
-    window.open('mailto:'+email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank');
+    var w=window.open('mailto:'+email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body),'_blank');
+    if(!w)blockedVendors.push(DNT_VENDORS[vk].name);
     var order={id:newId('VORD'),date:new Date().toISOString(),vendor:DNT_VENDORS[vk].name,vendorKey:vk,items:vendorItems,total:total};
     var hist=vendorOrderHistory();hist.unshift(order);
     if(hist.length>200)hist=hist.slice(0,200);
@@ -1993,14 +2004,16 @@ function vPlaceOrder(){
   if(confirm('Order submitted! Update supply quantities to reflect ordered amounts?')){
     var list=supplies();
     items.forEach(function(item){
-      var s=list.find(function(x){return x.vendor_sku===item.sku;});
-      if(s)s.qty=Number(s.qty)+item.qty;
+      list.filter(function(x){return x.vendor_sku===item.sku;}).forEach(function(s){
+        s.qty=Number(s.qty)+item.qty;
+      });
     });
     st('dnt_supplies_list',list);
     if($('panel-supplies')&&$('panel-supplies').classList.contains('on'))rSupplies();
   }
   vCartClear();
-  toast('Order'+(vendorKeysInCart.length>1?'s':'')+' submitted');
+  if(blockedVendors.length)toast('Order(s) recorded, but the email draft may have been blocked by your browser for: '+blockedVendors.join(', ')+'. Check your pop-up blocker.',6000);
+  else toast('Order'+(vendorKeysInCart.length>1?'s':'')+' submitted');
 }
 
 function init(){
