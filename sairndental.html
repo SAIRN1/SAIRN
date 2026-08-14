@@ -525,6 +525,14 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
+      <div class="modal" id="vendorSpendModal">
+        <div class="mbox">
+          <div class="mtitle">Vendor Spend Report</div>
+          <div id="vendor-spend-content"></div>
+          <button class="btn bo" style="margin-top:12px" onclick="$('vendorSpendModal').classList.remove('on')">Close</button>
+        </div>
+      </div>
+
       <div class="panel" id="panel-supplies">
         <div class="ph"><div><div class="ptitle">Supplies</div><div class="psub">Stock on hand for dental supplies/PPE/materials.</div></div>
           <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-supplies','supplies')">Export CSV</button></div>
@@ -1736,6 +1744,67 @@ function vSetProductOverride(){
   toast('Price override set for '+sku);
 }
 
+async function vCompareAI(productId){
+  var p=vAllProducts().find(function(x){return x.id===productId;});
+  if(!p)return;
+  var others=vAllProducts().filter(function(x){return x.name===p.name&&x.id!==p.id;});
+  var compareText=others.length?others.map(function(o){return o.vendorName+': '+fmt(o.effectivePrice);}).join(', '):'no matching product found at another vendor';
+  toast('Asking Claude to compare...');
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:300,
+        system:'You are a dental-practice purchasing assistant. You are given real, already-known prices for one product across vendors -- never invent additional vendors or prices, only compare what you were given.',
+        messages:[{role:'user',content:'Product: '+p.name+' ('+p.sku+'). Price at '+p.vendorName+': '+fmt(p.effectivePrice)+'. Prices at other vendors: '+compareText+'. Which is the better buy and why (consider unit, not just price)?'}]})});
+    var data=await res.json();
+    var err=dntAiError(data);
+    if(err){toast(err,5000);return;}
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    alert(text);
+  }catch(e){toast('Could not connect to Claude. Check your connection and try again.');}
+}
+
+function vShowSpendReport(){
+  var hist=vendorOrderHistory();
+  var ytd=hist.reduce(function(s,o){return s+(o.total||0);},0);
+  var byVendor={};
+  hist.forEach(function(o){byVendor[o.vendor]=(byVendor[o.vendor]||0)+o.total;});
+  var low=supplies().filter(function(s){return Number(s.qty)<=Number(s.reorder_threshold);});
+  var rules=dntVendorPricingRules();
+  var deals=Object.keys(rules.productOverrides).length+rules.categoryDiscounts.length+Object.keys(rules.vendorDiscounts).filter(function(k){return rules.vendorDiscounts[k]>0;}).length;
+  var content=
+    '<div class="krow" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">'+
+      '<div class="kpi"><div class="klbl">YTD Spend</div><div class="kval">'+fmt(ytd)+'</div></div>'+
+      '<div class="kpi"><div class="klbl">Active Deals</div><div class="kval">'+deals+'</div></div>'+
+      '<div class="kpi"><div class="klbl">Low Stock Items</div><div class="kval" style="color:'+(low.length?'var(--danger)':'var(--text)')+'">'+low.length+'</div></div>'+
+    '</div>'+
+    '<div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:10px">Spend by Vendor</div>'+
+    (Object.keys(byVendor).length?Object.keys(byVendor).sort(function(a,b){return byVendor[b]-byVendor[a];}).map(function(v){
+      return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">'+H(v)+'</span><span style="font-size:13px;font-weight:700;color:var(--p)">'+fmt(byVendor[v])+'</span></div>';
+    }).join(''):'<div style="color:var(--muted);font-size:13px;padding:12px 0">No orders placed yet. Orders you place will track spend automatically.</div>')+
+    '<div style="margin-top:20px"><button class="btn bp" style="width:100%" onclick="vSpendAI()">Claude Spend Analysis</button></div>';
+  $('vendor-spend-content').innerHTML=content;
+  $('vendorSpendModal').classList.add('on');
+}
+
+async function vSpendAI(){
+  var hist=vendorOrderHistory();
+  var ytd=hist.reduce(function(s,o){return s+(o.total||0);},0);
+  var low=supplies().filter(function(s){return Number(s.qty)<=Number(s.reorder_threshold);}).length;
+  toast('Asking Claude for spend analysis...');
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
+        system:'You are a dental-practice purchasing/spend analyst. You are given real, already-computed numbers -- never invent additional figures, and say plainly if the data is too sparse to draw a real conclusion.',
+        messages:[{role:'user',content:'YTD supply spend: '+fmt(ytd)+' across '+hist.length+' orders. Low-stock items: '+low+'. Vendors available: Henry Schein Dental, Patterson Dental, Benco Dental, Darby Dental Supply, Burkhart Dental. What should our purchasing strategy be? Where should we consolidate orders for better pricing leverage?'}]})});
+    var data=await res.json();
+    var err=dntAiError(data);
+    if(err){toast(err,5000);return;}
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
+    $('vendorSpendModal').classList.remove('on');
+    alert(text);
+  }catch(e){toast('Could not connect to Claude. Check your connection and try again.');}
+}
+
 function vAllProducts(){
   var out=[];
   Object.keys(DNT_VENDORS).forEach(function(vk){
@@ -1813,7 +1882,7 @@ function rVendorCat(){
     return '<tr><td>'+H(p.name)+badge+lowFlag+'<div style="font-size:11px;color:var(--muted)">'+H(DNT_VCAT_LABELS[p.cat])+' &middot; '+H(p.sku)+'</div></td>'+
       '<td>'+priceCell+'</td>'+
       '<td><input type="number" min="0" value="'+(cart[p.id]||0)+'" id="vqty-'+p.id+'" style="width:60px" onchange="vCartUpdate(\''+p.id+'\',this.value)"></td>'+
-      '<td><button class="btn bp bs" onclick="vCartAdd(\''+p.id+'\',1)">Add</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="vCompareAI(\''+p.id+'\')">Compare</button> <button class="btn bp bs" onclick="vCartAdd(\''+p.id+'\',1)">Add</button></td></tr>';
   }).join('') : '<tr><td colspan="4" style="color:var(--muted);text-align:center">No products in this category from '+H(v.name)+'</td></tr>';
   vRenderCart();
 }
