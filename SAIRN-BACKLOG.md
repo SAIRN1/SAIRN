@@ -881,3 +881,58 @@ sequence (guarded, since `pt-add-dob` exists unconditionally in this
 single-file app) so a browser-restored DOB value is reflected in the
 guardian group's visibility immediately on load, not only after the user
 next touches the DOB field.
+
+## SAIRNdental vendor/supply ordering — deferred items from the final whole-branch review
+
+**Logged:** 2026-08-13. Found during the final whole-branch review of the
+vendor/supply ordering feature (`docs/superpowers/plans/2026-08-13-
+sairndental-vendor-ordering.md`, commits `874e34b..0533ea2`). All Critical/
+Important findings from that review were fixed in the same session
+(commit `0533ea2`) before push — these are the items the reviewer
+explicitly separated out as real but smaller-scoped, not urgent enough to
+hold up merge.
+
+**What:**
+1. **No pricing-rule listing/removal UI.** Vendor discounts, category
+   discounts, and product overrides (`dnt_vendor_pricing_rules`) can be
+   set via the Vendor Catalog panel's Negotiated Pricing card, but there's
+   no way to see the full list of active rules or remove one — only
+   overwrite it with a new value. A mistyped SKU override or a discount
+   set for the wrong category has no undo path short of manually clearing
+   `localStorage`.
+2. **`mailto:` body can be silently truncated for a large cart.** Several
+   mail clients cap `mailto:` URL length around ~2000 characters; a
+   multi-item, multi-line purchase order can exceed that with no warning
+   to the rep placing the order.
+3. **Design spec's "savings" KPI was dropped at the plan-writing stage.**
+   The original design spec (`docs/superpowers/specs/2026-08-13-
+   sairndental-vendor-ordering-design.md`) listed "YTD spend, savings,
+   active deals, low-stock count" for the Spend Report; the implementation
+   plan only carried forward YTD spend, active deals, and low-stock count.
+   Not an implementation bug — a real scope reduction that happened when
+   the plan was written, flagged here so it isn't silently rediscovered
+   as "missing" later without context.
+4. **Minor perf nitpick, not correctness:** the "Active Deals" KPI's
+   product-override filter (`vShowSpendReport()`) calls `vAllProducts()`
+   once per override key instead of hoisting it outside the filter —
+   `vAllProducts()` itself recomputes every product's `effectivePrice`
+   across all 88 catalog items, so this is O(overrides × 88) instead of
+   O(88). Only runs when the Spend Report modal opens; not user-visible
+   at current catalog/rule-set sizes.
+
+**Why deferred:** Items 1-2 are genuine gaps but larger in scope than a
+same-session fix wave (a rule-management UI is a real feature; `mailto:`
+length limits have no clean fix without redesigning the order-submission
+flow, e.g. splitting into multiple emails or switching to a real backend
+send path). Item 3 is a plan-authorship note, not a code defect. Item 4 is
+harmless at current data volumes.
+
+**Done looks like:** Item 1 — a small table under the Negotiated Pricing
+card listing active vendor/category/product rules with a Remove button
+per row. Item 2 — either split a large order into multiple `mailto:`
+messages under the length cap, or (bigger lift) add a real
+order-submission backend path. Item 3 — a deliberate decision either to
+add a real "savings" computation (catalog price vs. effective price,
+summed across order history) or to formally drop it from the design
+spec's own stated scope. Item 4 — hoist `var all=vAllProducts();` once
+before the `productOverrides` filter callback.
