@@ -62,6 +62,10 @@ begin
     from public.law_trusttx
     where license_hash = p_license_hash and client_id = p_client_id
       and status = 'Posted';
+  if p_amount is null or p_amount <= 0 then
+    raise exception 'INVALID_AMOUNT: disbursement amount must be a positive number'
+      using errcode = 'P0001';
+  end if;
   if p_amount > v_balance then
     raise exception 'INSUFFICIENT_TRUST_BALANCE: disbursement % exceeds balance %', p_amount, v_balance
       using errcode = 'P0001';
