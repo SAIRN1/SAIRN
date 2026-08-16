@@ -88,7 +88,15 @@ const RESOURCES = {
   // promoted columns the EXCLUDE constraints check against -- still
   // listed here since this map only gates "is this a known resource
   // string," not which code path handles it.
-  dnt_settings: true, dnt_referrals: true, dnt_complaints: true
+  dnt_settings: true, dnt_referrals: true, dnt_complaints: true,
+  // SAIRNlaw trust disbursement server-sync, step 1 (2026-08-16) -- see
+  // sql/sairnlaw_data_schema.sql and
+  // docs/superpowers/specs/2026-08-14-sairnlaw-trust-data-schema-design.md.
+  // No role gating on these three -- all LAW_ROLES (owner/attorney/
+  // paralegal) may write, matching sairnlaw.html's current unrestricted
+  // client-side behavior. Auth is Bearer license key only, same as
+  // grd_jobs -- sdnData() never sends a session token to this endpoint.
+  law_clients: true, law_matters: true, law_trusttx: true
 };
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
@@ -176,7 +184,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx' } });
     return;
   }
 
