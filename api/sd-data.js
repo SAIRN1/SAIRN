@@ -1972,10 +1972,54 @@ module.exports = async (req, res) => {
     }
     if (resource === 'law_trusttx' && action === 'write') {
       if (!payload || !payload.id || !payload.matter_id || !payload.client_id) { res.status(400).json({ error: { message: 'law_trusttx payload.id, payload.matter_id, and payload.client_id are required' } }); return; }
+      // Atomic disbursement check-and-write (2026-08-16, step 2). A NEW
+      // Disbursement (not a void -- a void write always carries
+      // payload.status==='Voided', which stays on the plain upsert below)
+      // routes through law_check_and_insert_disbursement() instead of a
+      // plain upsert. That Postgres function takes an advisory lock scoped
+      // to (license_hash, client_id), re-sums the client's real balance
+      // server-side, and rejects atomically if the disbursement would go
+      // negative -- closing the cross-device race saveTrustTransaction()'s
+      // own local-only check (sairnlaw.html:2048-2050) cannot close on its
+      // own. See docs/superpowers/specs/2026-08-16-sairnlaw-trust-disbursement-atomic-check-design.md.
+      if (payload.type === 'Disbursement' && payload.status !== 'Voided') {
+        if (payload.amount === undefined || payload.amount === null || Number(payload.amount) <= 0) { res.status(400).json({ error: { message: 'law_trusttx payload.amount is required and must be greater than 0 for a Disbursement' } }); return; }
+        const r = await fetch(rest('rpc/law_check_and_insert_disbursement'), {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            p_license_hash: licHash, p_trusttx_id: String(payload.id), p_matter_id: String(payload.matter_id),
+            p_client_id: String(payload.client_id), p_amount: Number(payload.amount), p_method: payload.method || null,
+            p_reference_number: payload.reference_number || null, p_description: payload.description || null,
+            p_tx_date: payload.date || null, p_created_at: payload.created_at || nowISO()
+          })
+        });
+        if (r.status === 404) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_trust_disbursement_atomic_check.sql in Supabase first.' } }); return; }
+        if (r.status === 400) {
+          const bodyText = await r.text();
+          let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
+          const msg = (bodyJson && bodyJson.message) || bodyText || '';
+          if (/relation .* does not exist|function .* does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_trust_disbursement_atomic_check.sql in Supabase first.' } }); return; }
+          const balMatch = /INSUFFICIENT_TRUST_BALANCE: disbursement ([\d.]+) exceeds balance ([\d.]+)/.exec(msg);
+          if (balMatch) {
+            const reqAmount = Number(balMatch[1]), realBalance = Number(balMatch[2]);
+            res.status(409).json({ error: { code: 'INSUFFICIENT_TRUST_BALANCE', message: 'Disbursement of $' + reqAmount.toFixed(2) + ' exceeds this client\'s real trust balance of $' + realBalance.toFixed(2), real_balance: realBalance } });
+            return;
+          }
+          console.error('law_check_and_insert_disbursement error (status 400):', msg);
+          res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+          return;
+        }
+        if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
+        const rpcResult = await r.json();
+        const row = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+        res.status(200).json({ ok: true, data: row || payload });
+        return;
+      }
       const r = await fetch(rest('law_trusttx?on_conflict=license_hash,trusttx_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', trusttx_id: String(payload.id), matter_id: String(payload.matter_id), client_id: String(payload.client_id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', trusttx_id: String(payload.id), matter_id: String(payload.matter_id), client_id: String(payload.client_id), amount: (payload.amount !== undefined && payload.amount !== null) ? Number(payload.amount) : null, type: payload.type || null, status: payload.status || 'Posted', data: payload, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
