@@ -36,6 +36,18 @@ at all — no `sql/sairnlaw_data_schema.sql`, no `law_*` routes in
   filter the full in-memory transaction list by `client_id` — no existing
   logic depends on a server-side lookup yet.
 
+**Correction (2026-08-16, final review):** the "No `sairnlaw.html` client
+change needed" statements below (Routes section, and the "Migration not yet
+run" edge case) are true only for auth/write fallback behavior, not for
+reads generally — do not read them as "the client already reads from the
+server." `sairnlaw.html` has zero `sdnData('read',...)` calls anywhere
+(grep-confirmed), so the `law_clients`/`law_matters`/`law_trusttx` read
+routes described below are live on the server but currently unreachable
+from the client. Writes are genuinely durable server-side; reads are still
+100% localStorage. This is write-through, not full cross-device sync yet.
+Wiring real client-side reads (with local/server merge semantics) is
+deferred to a separate future spec, not part of this pass.
+
 ## Scope, decided during brainstorming
 
 - **Three resources, not just trust tx**: `law_clients`, `law_matters`,

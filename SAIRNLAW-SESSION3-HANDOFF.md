@@ -68,6 +68,21 @@ canvas-zoom/texture-visualization/saved-quote-drawing-state) — local
   verbal confirmation alone — re-ran the exact same curl sweep after a
   second confirmation and got real success responses that time. This is
   the reason Task 6 required two full verification passes, not one.
+- **The spec and plan overclaimed "no client change needed" for reads,
+  caught in the final whole-branch code review (2026-08-16)**: both docs'
+  "Produces" notes for `law_clients`/`law_matters`/`law_trusttx` described
+  the read routes as already consumed by `sairnlaw.html`'s `clients()`/
+  `matters()`/`trustTransactions()`. False — those three functions
+  (`sairnlaw.html:1307-1313`) read via `ld(...)` (localStorage) only;
+  `sairnlaw.html` has zero `sdnData('read',...)` calls anywhere
+  (grep-confirmed: `grep -c "sdnData('read'" sairnlaw.html` → 0). The three
+  read routes are live and correct on the server but currently unreachable
+  from the client. Writes are accurately described — they are genuinely
+  durable server-side. Net effect: this pass shipped write-through, not
+  full cross-device sync. Corrected with a disclosure comment in
+  `api/sd-data.js` above the read blocks, and correction notes added to
+  both the spec and the plan. Wiring real client-side reads is deferred to
+  a separate future spec.
 
 ## 4. Open items, prioritized
 

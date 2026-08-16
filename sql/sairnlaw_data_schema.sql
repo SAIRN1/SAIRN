@@ -42,7 +42,10 @@ create table if not exists public.law_clients (
   unique (license_hash, client_id),
   constraint lawclients_data_size check (octet_length(data::text) <= 65536)
 );
-create index if not exists idx_lawclients_license on public.law_clients(license_hash);
+-- idx_lawclients_license dropped (final review, 2026-08-16): redundant --
+-- the `unique (license_hash, client_id)` constraint above already creates
+-- a btree led by license_hash that fully serves this.
+drop index if exists public.idx_lawclients_license;
 
 create table if not exists public.law_matters (
   id           uuid primary key default gen_random_uuid(),
@@ -56,8 +59,16 @@ create table if not exists public.law_matters (
   unique (license_hash, matter_id),
   constraint lawmatters_data_size check (octet_length(data::text) <= 65536)
 );
-create index if not exists idx_lawmatters_license on public.law_matters(license_hash);
-create index if not exists idx_lawmatters_client on public.law_matters(client_id);
+-- Step-2-anticipatory composite index (final review, 2026-08-16): a future
+-- balance-check query will filter by license_hash AND client_id together.
+-- idx_lawmatters_license was redundant (unique(license_hash, matter_id)
+-- above already covers it) and idx_lawmatters_client was a bare client_id
+-- index, which would let Postgres match across every license before
+-- re-checking license_hash -- a cross-tenant-scan smell. Both dropped and
+-- replaced by one composite index.
+drop index if exists public.idx_lawmatters_license;
+drop index if exists public.idx_lawmatters_client;
+create index if not exists idx_lawmatters_license_client on public.law_matters(license_hash, client_id);
 
 create table if not exists public.law_trusttx (
   id           uuid primary key default gen_random_uuid(),
@@ -72,8 +83,14 @@ create table if not exists public.law_trusttx (
   unique (license_hash, trusttx_id),
   constraint lawtrusttx_data_size check (octet_length(data::text) <= 65536)
 );
-create index if not exists idx_lawtrusttx_license on public.law_trusttx(license_hash);
-create index if not exists idx_lawtrusttx_client on public.law_trusttx(client_id);
+-- Step-2-anticipatory composite index (final review, 2026-08-16): same
+-- reasoning as law_matters above -- idx_lawtrusttx_license was redundant
+-- (unique(license_hash, trusttx_id) above already covers it) and
+-- idx_lawtrusttx_client was a bare client_id index (cross-tenant-scan
+-- smell). Both dropped and replaced by one composite index.
+drop index if exists public.idx_lawtrusttx_license;
+drop index if exists public.idx_lawtrusttx_client;
+create index if not exists idx_lawtrusttx_license_client on public.law_trusttx(license_hash, client_id);
 
 -- ── RLS: service-role only (mirror sairngrounds_data_schema.sql) ─────────
 alter table public.law_clients enable row level security;

@@ -8,6 +8,20 @@
 
 **Tech Stack:** Vanilla Node.js serverless function (`api/sd-data.js`, Vercel), Supabase/PostgREST, plain SQL (Supabase SQL editor, no migration tool).
 
+**Correction (2026-08-16, final review):** several "no client change needed"
+notes below (Tasks 2-4's "Produces" lines) describe `clients()`/`matters()`/
+`trustTransactions()` as consuming these new read routes via existing
+`sdnData('read',...)` calls. That's inaccurate — those three functions
+(`sairnlaw.html:1307-1313`) read via `ld(...)` (localStorage) only;
+`sairnlaw.html` has zero `sdnData('read',...)` calls anywhere
+(grep-confirmed). The write side of those same notes is accurate — writes
+(`saveClient()`/`saveMatter()`/`saveTrustTransaction()`/`confirmVoid()`) do
+genuinely call `sdnData('write',...)` and are now durable server-side. So:
+writes are real server-sync, reads are still 100% localStorage — this
+shipped as write-through, not full cross-device sync. Wiring real
+client-side reads (with local/server merge semantics) is deferred to a
+separate future spec, not part of this pass.
+
 ## Global Constraints
 
 - **Zero role gating beyond the existing Bearer license key check.** All three `LAW_ROLES` (`owner`/`attorney`/`paralegal`) may write/void every resource in this plan — matches current unrestricted client behavior. Do not add a `verifySessionToken`/role check to any block in this plan.

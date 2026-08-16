@@ -1913,6 +1913,13 @@ module.exports = async (req, res) => {
     // see that spec's "Correction (2026-08-16)" section for why (sdnData()
     // never sends a session token to this endpoint; auth is the Bearer
     // license key alone, same as grd_jobs).
+    // NOTE (2026-08-16, final review finding): these three read routes are
+    // live but currently unreachable from the client -- sairnlaw.html has
+    // zero sdnData('read',...) calls anywhere (grep-confirmed). Writes are
+    // genuinely durable server-side; reads are still localStorage-only, so
+    // this is write-through, not full cross-device sync yet. Wiring real
+    // client-side reads (with local/server merge semantics) is deferred to
+    // a separate future spec, not part of this pass.
     if (resource === 'law_clients' && action === 'read') {
       const r = await fetch(rest('law_clients?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
