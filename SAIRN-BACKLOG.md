@@ -707,6 +707,40 @@ a real server-side atomic check-and-write on top that re-validates the
 balance at write time and rejects the transaction if it would go
 negative, with the client showing the real rejection reason.
 
+**Progress:** step 1 (durable server persistence for `law_trusttx`/
+`law_clients`/`law_matters`) shipped and live-verified 2026-08-16 —
+`docs/superpowers/specs/2026-08-14-sairnlaw-trust-data-schema-design.md`,
+commits `f79a2a9..ce81ccd`. Step 2 (the atomic check-and-write itself) is
+in design as of 2026-08-16 —
+`docs/superpowers/specs/2026-08-16-sairnlaw-trust-disbursement-atomic-check-design.md`.
+
+## SAIRNlaw void-of-deposit can retroactively negative a client's balance
+
+**Logged:** 2026-08-16, found while brainstorming step 2 of the trust
+disbursement atomic check above.
+
+**What:** The step-2 atomic check only guards Disbursement *creation*
+(`law_check_and_insert_disbursement`) — voiding a transaction goes through
+the plain, unguarded write path, same as every other void on this
+platform. Concrete sequence: Deposit $500 (balance $500) → Disbursement
+$500 (balance $0, correctly allowed) → someone later voids the *Deposit*
+(a required-reason action, already possible today) → the client's
+computed balance retroactively goes negative, with the $500 disbursement
+now standing against zero real deposited funds. Nothing today or in step
+2's design guards this.
+
+**Why deferred:** Explicitly scoped out of step 2 during brainstorming —
+a different failure mode (a single-actor, reason-required audit action,
+not a concurrent multi-device race) from the cross-device over-disbursement
+race step 2 exists to close. Folding it in would have doubled step 2's
+design/implementation surface for a lower-frequency risk.
+
+**Done looks like:** voiding a Deposit re-validates, server-side, that
+every client_id/matter_id whose balance depends on that deposit stays
+non-negative after the void — reusing the same advisory-lock pattern step
+2 introduces (`pg_advisory_xact_lock` keyed on `license_hash:client_id`),
+rejecting the void with a real reason if it would.
+
 ## SAIRNlegacy merchandise reservation needs a real server-side lock
 
 **Logged:** 2026-08-09. **Resolved: 2026-08-10.**
