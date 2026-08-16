@@ -103,10 +103,20 @@ the exact `grd_jobs` shape:
   block): `law_clients` write needs `payload.id`; `law_matters` needs
   `payload.id + payload.client_id`; `law_trusttx` needs `payload.id +
   payload.matter_id + payload.client_id`.
-- Every block re-verifies `verifySessionToken(tokenFromRequest(req),
-  licHash, 'sairnlaw')` before allowing the write (session must be a real
-  logged-in SAIRNlaw employee, any of the 3 roles) — no `role` check
-  beyond "is this a valid SAIRNlaw session," per the scope decision above.
+- **Correction (2026-08-16, found while writing the implementation plan):**
+  no session-token check. `sairnlaw.html`'s `sdnData()` (the function every
+  `law_trusttx`/`law_clients`/`law_matters` write goes through) never
+  attaches the `X-SD-Auth` session header — only `lawAuth()` calls do — so
+  a `verifySessionToken()` requirement as originally written here would
+  401 every real call this feature exists to fix. It also matches no
+  existing precedent: every other plain-write resource in `api/sd-data.js`
+  authenticates via the Bearer license key alone (scoped by
+  `license_hash`); `verifySessionToken`/role checks appear only on
+  specifically role-gated actions (QC decisions, payroll reads) — none of
+  which apply here per the "no new role restriction" decision above.
+  Auth for all six new blocks is Bearer license key only, same as
+  `grd_jobs`/`dnt_appointments`/every comparable resource. No
+  `sairnlaw.html` client change needed.
 
 ## Explicitly out of scope for this pass
 
@@ -151,7 +161,8 @@ project's standing Push Protocol) that `law_clients`/`law_matters`/
 `law_trusttx` writes round-trip correctly, that a missing-table read
 degrades to `provisioned:false` (test against a fresh/unmigrated license
 if available, otherwise verify the code path by inspection plus the
-existing `grd_jobs` live precedent), that an unauthenticated or
-wrong-app-session request is rejected by `verifySessionToken`, and that
+existing `grd_jobs` live precedent), that a request with a missing/invalid
+Bearer license key is rejected the same way every other resource already
+is (existing endpoint-level check, not new logic), and that
 `saveTrustTransaction()`/`confirmVoid()` in the live app now show "Transaction
 recorded"/"Transaction voided" instead of the server-sync-disabled toast.
