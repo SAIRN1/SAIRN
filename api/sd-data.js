@@ -1906,6 +1906,35 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SAIRNlaw trust disbursement server-sync, step 1 (2026-08-16) ──────
+    // See sql/sairnlaw_data_schema.sql and
+    // docs/superpowers/specs/2026-08-14-sairnlaw-trust-data-schema-design.md.
+    // No verifySessionToken/role check on any of these three resources --
+    // see that spec's "Correction (2026-08-16)" section for why (sdnData()
+    // never sends a session token to this endpoint; auth is the Bearer
+    // license key alone, same as grd_jobs).
+    if (resource === 'law_clients' && action === 'read') {
+      const r = await fetch(rest('law_clients?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'law_clients' && action === 'write') {
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'law_clients payload.id is required' } }); return; }
+      const r = await fetch(rest('law_clients?on_conflict=license_hash,client_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', client_id: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     // Should be unreachable given the guards above.
     res.status(400).json({ error: { message: 'Unsupported action/resource combination' } });
   } catch (err) {
