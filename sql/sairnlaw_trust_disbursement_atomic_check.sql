@@ -55,6 +55,8 @@ as $$
 declare
   v_balance numeric;
   v_row public.law_trusttx;
+  v_existing public.law_trusttx;
+  v_existing_found boolean;
 begin
   perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || p_client_id));
   -- Retry-idempotency: a genuine retry of an already-committed disbursement
@@ -63,36 +65,51 @@ begin
   -- include this disbursement, wrongly rejecting an already-valid,
   -- already-committed transaction. Closes a real retry-rejection bug found
   -- in final review (2026-08-17).
-  select * into v_row
+  --
+  -- Unified single-return-point follow-up (2026-08-17): the retry-lookup
+  -- used to `return v_row;` early from inside this `if`, while the
+  -- fresh-insert case reached a second, textually separate `return v_row;`
+  -- at the end of the function. That worked for money-safety (retries no
+  -- longer got wrongly re-validated against a balance that already
+  -- included them) but the retry's HTTP response came back with a null
+  -- `data` payload even though the stored row's `data` column was intact.
+  -- Root cause not fully confirmed with DB access unavailable in this
+  -- environment, but both return sites being byte-for-byte identical
+  -- eliminates the split return path as a possible source of divergence
+  -- regardless of the exact mechanism, so both cases now flow through one
+  -- `return v_row;` at the end of the function instead.
+  select * into v_existing
     from public.law_trusttx
     where license_hash = p_license_hash and trusttx_id = p_trusttx_id;
-  if found then
-    return v_row;
+  v_existing_found := found;
+  if v_existing_found then
+    v_row := v_existing;
+  else
+    select coalesce(sum(case when type = 'Deposit' then amount else -amount end), 0)
+      into v_balance
+      from public.law_trusttx
+      where license_hash = p_license_hash and client_id = p_client_id
+        and status = 'Posted';
+    if p_amount is null or p_amount <= 0 then
+      raise exception 'INVALID_AMOUNT: disbursement amount must be a positive number'
+        using errcode = 'P0001';
+    end if;
+    if p_amount > v_balance then
+      raise exception 'INSUFFICIENT_TRUST_BALANCE: disbursement % exceeds balance %', p_amount, v_balance
+        using errcode = 'P0001';
+    end if;
+    insert into public.law_trusttx (license_hash, app_id, trusttx_id, matter_id, client_id,
+      amount, type, status, data, created_at, updated_at)
+    values (p_license_hash, 'sairnlaw', p_trusttx_id, p_matter_id, p_client_id,
+      p_amount, 'Disbursement', 'Posted',
+      jsonb_build_object('id', p_trusttx_id, 'matter_id', p_matter_id, 'client_id', p_client_id,
+        'type', 'Disbursement', 'amount', p_amount, 'method', p_method,
+        'reference_number', p_reference_number, 'description', p_description,
+        'date', p_tx_date, 'status', 'Posted', 'created_at', p_created_at),
+      now(), now())
+    on conflict (license_hash, trusttx_id) do nothing
+    returning * into v_row;
   end if;
-  select coalesce(sum(case when type = 'Deposit' then amount else -amount end), 0)
-    into v_balance
-    from public.law_trusttx
-    where license_hash = p_license_hash and client_id = p_client_id
-      and status = 'Posted';
-  if p_amount is null or p_amount <= 0 then
-    raise exception 'INVALID_AMOUNT: disbursement amount must be a positive number'
-      using errcode = 'P0001';
-  end if;
-  if p_amount > v_balance then
-    raise exception 'INSUFFICIENT_TRUST_BALANCE: disbursement % exceeds balance %', p_amount, v_balance
-      using errcode = 'P0001';
-  end if;
-  insert into public.law_trusttx (license_hash, app_id, trusttx_id, matter_id, client_id,
-    amount, type, status, data, created_at, updated_at)
-  values (p_license_hash, 'sairnlaw', p_trusttx_id, p_matter_id, p_client_id,
-    p_amount, 'Disbursement', 'Posted',
-    jsonb_build_object('id', p_trusttx_id, 'matter_id', p_matter_id, 'client_id', p_client_id,
-      'type', 'Disbursement', 'amount', p_amount, 'method', p_method,
-      'reference_number', p_reference_number, 'description', p_description,
-      'date', p_tx_date, 'status', 'Posted', 'created_at', p_created_at),
-    now(), now())
-  on conflict (license_hash, trusttx_id) do nothing
-  returning * into v_row;
   return v_row;
 end;
 $$;
