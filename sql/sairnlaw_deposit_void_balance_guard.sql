@@ -102,8 +102,16 @@ begin
   select * into v_row
     from public.law_trusttx
     where license_hash = p_license_hash and trusttx_id = p_trusttx_id;
+  if v_row.type <> 'Deposit' then
+    raise exception 'NOT_A_DEPOSIT: trust transaction % is not a Deposit', p_trusttx_id
+      using errcode = 'P0001';
+  end if;
   if v_row.status <> 'Posted' then
     raise exception 'ALREADY_VOIDED: trust transaction % is not in Posted status', p_trusttx_id
+      using errcode = 'P0001';
+  end if;
+  if v_row.amount is null then
+    raise exception 'DATA_INTEGRITY: trust transaction % has no amount recorded', p_trusttx_id
       using errcode = 'P0001';
   end if;
   v_balance_without := public.law_client_balance(p_license_hash, v_row.client_id) - v_row.amount;
