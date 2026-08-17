@@ -1062,7 +1062,21 @@ function sdnData(action,resource,payload){
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
-      if(!r.ok||!d||!d.ok){console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      if(!r.ok||!d||!d.ok){
+        // Structured rejection (2026-08-16, trust disbursement atomic
+        // check): a genuine server-side rejection carries a real
+        // error.code the caller may need to react to differently from an
+        // ordinary sync failure (e.g. rolling back an optimistic local
+        // write). Scoped to this ONE known code -- every other failure
+        // (network error, NOT_PROVISIONED, a plain validation 400, etc.)
+        // still returns plain null, unchanged, so no existing caller's
+        // `if(syncResult)` truthy check breaks.
+        if(d&&d.error&&d.error.code==='INSUFFICIENT_TRUST_BALANCE'){
+          return {rejected:true,code:d.error.code,message:d.error.message};
+        }
+        console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');
+        return null;
+      }
       return d.data;
     });
   }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
@@ -2055,6 +2069,20 @@ async function saveTrustTransaction(){
   var list=trustTransactions();list.push(rec);st('law_trusttx',list);
   closeTrustModal();rTrust();rDash();
   var syncResult=await sdnData('write','law_trusttx',rec);
+  // Real server-side rejection (2026-08-16, atomic disbursement check):
+  // the optimistic local write above never actually happened server-side,
+  // so roll it back rather than leaving a phantom disbursement in local
+  // storage that would keep displaying as real (cut sheets, future local
+  // balance checks) until someone notices. A plain sync failure (network
+  // error, NOT_PROVISIONED, etc.) is unchanged below -- that still just
+  // means "not yet synced," a weaker claim than "the server rejected this."
+  if(syncResult&&syncResult.rejected){
+    var afterList=trustTransactions().filter(function(t){return t.id!==rec.id;});
+    st('law_trusttx',afterList);
+    rTrust();rDash();
+    toast(syncResult.message||'Disbursement rejected -- exceeds this client\'s real trust balance',7000);
+    return;
+  }
   toast(syncResult?'Transaction recorded':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
 }
 var voidTxId=null;
