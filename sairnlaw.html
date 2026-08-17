@@ -1071,7 +1071,7 @@ function sdnData(action,resource,payload){
         // (network error, NOT_PROVISIONED, a plain validation 400, etc.)
         // still returns plain null, unchanged, so no existing caller's
         // `if(syncResult)` truthy check breaks.
-        if(d&&d.error&&d.error.code==='INSUFFICIENT_TRUST_BALANCE'){
+        if(d&&d.error&&(d.error.code==='INSUFFICIENT_TRUST_BALANCE'||d.error.code==='VOID_WOULD_NEGATIVE_BALANCE'||d.error.code==='ALREADY_VOIDED')){
           return {rejected:true,code:d.error.code,message:d.error.message};
         }
         console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');
@@ -2103,6 +2103,21 @@ async function confirmVoid(){
   st('law_trusttx',list);
   closeVoidModal();rTrust();rDash();
   var syncResult=await sdnData('write','law_trusttx',t);
+  // Real server-side rejection (2026-08-17, deposit-void balance guard):
+  // the optimistic local void above never actually happened server-side,
+  // so revert it rather than leaving a phantom void in local storage that
+  // would keep displaying as real (future local balance checks) until
+  // someone notices. A plain sync failure (network error, NOT_PROVISIONED,
+  // etc.) is unchanged below -- that still just means "not yet synced."
+  if(syncResult&&syncResult.rejected){
+    var revertList=trustTransactions();
+    var revertT=revertList.find(function(x){return x.id===t.id;});
+    if(revertT){revertT.status='Posted';revertT.voided_reason='';revertT.voided_at='';}
+    st('law_trusttx',revertList);
+    rTrust();rDash();
+    toast(syncResult.message||'Void rejected -- this transaction was not voided',7000);
+    return;
+  }
   toast(syncResult?'Transaction voided':'Voided on this device only -- server sync not yet enabled',syncResult?3000:5000);
 }
 function openBankStatementModal(){
