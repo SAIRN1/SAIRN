@@ -741,6 +741,37 @@ non-negative after the void — reusing the same advisory-lock pattern step
 2 introduces (`pg_advisory_xact_lock` keyed on `license_hash:client_id`),
 rejecting the void with a real reason if it would.
 
+## SAIRNlaw law_check_and_insert_disbursement can return a null row on a cross-client trusttx_id collision
+
+**Logged:** 2026-08-17, found during step 2's final-review fix-round
+re-review (the retry-idempotency fix's own follow-up review).
+
+**What:** `law_check_and_insert_disbursement`'s `on conflict (license_hash,
+trusttx_id) do nothing` insert has no `client_id` in its conflict target.
+The function's advisory lock (`pg_advisory_xact_lock(hashtext(license_hash
+|| ':' || client_id))`) serializes two calls for the *same* client, so a
+same-client retry always correctly finds the existing row first and
+returns it. But if two calls for two *different* clients under the same
+license somehow generate the exact same `trusttx_id`, the lock doesn't
+serialize them (different lock keys) — the second to commit would hit
+`on conflict do nothing`, insert zero rows, and `returning * into v_row`
+would leave `v_row` all-NULL, returned with no error.
+
+**Why deferred:** `trusttx_id` values are client-generated via
+`newId('TR')` (`sairnlaw.html:1052`, timestamp + random suffix) —
+a same-millisecond, same-random-draw collision across two different
+clients is effectively unreachable in practice, a genuinely different
+risk class from the retry-idempotency bug this same review round already
+fixed (that one was guaranteed to hit on every legitimate retry). Matches
+how every other practically-unreachable finding this session was handled
+— logged, not chased into another fix round.
+
+**Done looks like:** after the insert, if zero rows were affected (no row
+in `v_row`), re-select the existing row by `(license_hash, trusttx_id)`
+into `v_row` before the function's single `return v_row;` — mirroring the
+existing-row branch's own behavior, so this path can never return a null
+composite either.
+
 ## SAIRNlegacy merchandise reservation needs a real server-side lock
 
 **Logged:** 2026-08-09. **Resolved: 2026-08-10.**
