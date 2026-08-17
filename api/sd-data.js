@@ -1973,6 +1973,46 @@ module.exports = async (req, res) => {
     if (resource === 'law_trusttx' && action === 'write') {
       if (!payload || !payload.id || !payload.matter_id || !payload.client_id) { res.status(400).json({ error: { message: 'law_trusttx payload.id, payload.matter_id, and payload.client_id are required' } }); return; }
       if (payload.type !== 'Deposit' && payload.type !== 'Disbursement') { res.status(400).json({ error: { message: "law_trusttx payload.type must be exactly 'Deposit' or 'Disbursement'" } }); return; }
+      // Atomic deposit-void balance guard (2026-08-17, step 3a). Voiding a
+      // Deposit is the one void that can DECREASE a client's balance (a
+      // Disbursement-void only ever increases it, so it stays on the plain
+      // upsert below, unguarded, same reasoning as step 2's Deposit-create/
+      // void-in-general exemption). Routes through
+      // law_check_and_void_deposit() instead of a plain upsert. See
+      // docs/superpowers/specs/2026-08-17-sairnlaw-deposit-void-balance-guard-design.md.
+      if (payload.type === 'Deposit' && payload.status === 'Voided') {
+        const r = await fetch(rest('rpc/law_check_and_void_deposit'), {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            p_license_hash: licHash, p_trusttx_id: String(payload.id),
+            p_voided_reason: payload.voided_reason || null
+          })
+        });
+        if (r.status === 404) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_deposit_void_balance_guard.sql in Supabase first.' } }); return; }
+        if (r.status === 400) {
+          const bodyText = await r.text();
+          let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
+          const msg = (bodyJson && bodyJson.message) || bodyText || '';
+          if (/relation .* does not exist|function .* does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_deposit_void_balance_guard.sql in Supabase first.' } }); return; }
+          if (/^ALREADY_VOIDED/.test(msg)) { res.status(409).json({ error: { code: 'ALREADY_VOIDED', message: 'This transaction has already been voided.' } }); return; }
+          if (/^NOT_FOUND/.test(msg)) { res.status(409).json({ error: { code: 'NOT_FOUND', message: 'This transaction could not be found on the server.' } }); return; }
+          const balMatch = /VOID_WOULD_NEGATIVE_BALANCE: void of (-?[\d.]+) would leave balance (-?[\d.]+)/.exec(msg);
+          if (balMatch) {
+            const realBalance = Number(balMatch[2]);
+            res.status(409).json({ error: { code: 'VOID_WOULD_NEGATIVE_BALANCE', message: 'Voiding this deposit would leave this client\'s real trust balance at $' + realBalance.toFixed(2) + ' — void rejected.', real_balance: realBalance } });
+            return;
+          }
+          console.error('law_check_and_void_deposit error (status 400):', msg);
+          res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+          return;
+        }
+        if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
+        const voidRpcResult = await r.json();
+        const voidRow = Array.isArray(voidRpcResult) ? voidRpcResult[0] : voidRpcResult;
+        res.status(200).json({ ok: true, data: voidRow ? voidRow.data : payload });
+        return;
+      }
       // Atomic disbursement check-and-write (2026-08-16, step 2). A NEW
       // Disbursement (not a void -- a void write always carries
       // payload.status==='Voided', which stays on the plain upsert below)
