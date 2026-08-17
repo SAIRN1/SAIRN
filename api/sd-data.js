@@ -1972,6 +1972,7 @@ module.exports = async (req, res) => {
     }
     if (resource === 'law_trusttx' && action === 'write') {
       if (!payload || !payload.id || !payload.matter_id || !payload.client_id) { res.status(400).json({ error: { message: 'law_trusttx payload.id, payload.matter_id, and payload.client_id are required' } }); return; }
+      if (payload.type !== 'Deposit' && payload.type !== 'Disbursement') { res.status(400).json({ error: { message: "law_trusttx payload.type must be exactly 'Deposit' or 'Disbursement'" } }); return; }
       // Atomic disbursement check-and-write (2026-08-16, step 2). A NEW
       // Disbursement (not a void -- a void write always carries
       // payload.status==='Voided', which stays on the plain upsert below)
@@ -2000,7 +2001,7 @@ module.exports = async (req, res) => {
           let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
           const msg = (bodyJson && bodyJson.message) || bodyText || '';
           if (/relation .* does not exist|function .* does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql and sql/sairnlaw_trust_disbursement_atomic_check.sql in Supabase first.' } }); return; }
-          const balMatch = /INSUFFICIENT_TRUST_BALANCE: disbursement ([\d.]+) exceeds balance ([\d.]+)/.exec(msg);
+          const balMatch = /INSUFFICIENT_TRUST_BALANCE: disbursement (-?[\d.]+) exceeds balance (-?[\d.]+)/.exec(msg);
           if (balMatch) {
             const reqAmount = Number(balMatch[1]), realBalance = Number(balMatch[2]);
             res.status(409).json({ error: { code: 'INSUFFICIENT_TRUST_BALANCE', message: 'Disbursement of $' + reqAmount.toFixed(2) + ' exceeds this client\'s real trust balance of $' + realBalance.toFixed(2), real_balance: realBalance } });
@@ -2013,7 +2014,7 @@ module.exports = async (req, res) => {
         if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
         const rpcResult = await r.json();
         const row = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
-        res.status(200).json({ ok: true, data: row || payload });
+        res.status(200).json({ ok: true, data: row ? row.data : payload });
         return;
       }
       const r = await fetch(rest('law_trusttx?on_conflict=license_hash,trusttx_id'), {
@@ -2021,7 +2022,16 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', trusttx_id: String(payload.id), matter_id: String(payload.matter_id), client_id: String(payload.client_id), amount: (payload.amount !== undefined && payload.amount !== null) ? Number(payload.amount) : null, type: payload.type || null, status: payload.status || 'Posted', data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 404) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 400) {
+        const bodyText = await r.text();
+        let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
+        const msg = (bodyJson && (bodyJson.message || bodyJson.details || bodyJson.hint)) || bodyText || '';
+        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
+        console.error('law_trusttx write error (status 400):', msg);
+        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        return;
+      }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });

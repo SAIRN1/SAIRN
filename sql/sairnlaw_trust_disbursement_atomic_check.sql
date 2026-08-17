@@ -57,6 +57,18 @@ declare
   v_row public.law_trusttx;
 begin
   perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || p_client_id));
+  -- Retry-idempotency: a genuine retry of an already-committed disbursement
+  -- (e.g. client response lost to a network blip) must return the existing
+  -- row, not re-run the balance check -- the balance sum below would already
+  -- include this disbursement, wrongly rejecting an already-valid,
+  -- already-committed transaction. Closes a real retry-rejection bug found
+  -- in final review (2026-08-17).
+  select * into v_row
+    from public.law_trusttx
+    where license_hash = p_license_hash and trusttx_id = p_trusttx_id;
+  if found then
+    return v_row;
+  end if;
   select coalesce(sum(case when type = 'Deposit' then amount else -amount end), 0)
     into v_balance
     from public.law_trusttx
