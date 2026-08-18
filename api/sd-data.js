@@ -1980,7 +1980,7 @@ module.exports = async (req, res) => {
       // void-in-general exemption). Routes through
       // law_check_and_void_deposit() instead of a plain upsert. See
       // docs/superpowers/specs/2026-08-17-sairnlaw-deposit-void-balance-guard-design.md.
-      if (payload.type === 'Deposit' && payload.status === 'Voided') {
+      if (payload.status === 'Voided') {
         const r = await fetch(rest('rpc/law_check_and_void_deposit'), {
           method: 'POST',
           headers,
@@ -2010,7 +2010,7 @@ module.exports = async (req, res) => {
         if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
         const voidRpcResult = await r.json();
         const voidRow = Array.isArray(voidRpcResult) ? voidRpcResult[0] : voidRpcResult;
-        res.status(200).json({ ok: true, data: voidRow ? voidRow.data : payload });
+        res.status(200).json({ ok: true, data: (voidRow && voidRow.data) ? voidRow.data : payload });
         return;
       }
       // Atomic disbursement check-and-write (2026-08-16, step 2). A NEW

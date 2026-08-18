@@ -5,6 +5,17 @@
 -- Safe to re-run -- every statement is idempotent, and the backfill only
 -- touches rows where the new columns are still null.
 
+-- SUPERSEDED (2026-08-17): law_check_and_insert_disbursement()'s definition
+-- below is now STALE -- sql/sairnlaw_deposit_void_balance_guard.sql
+-- redefines this same function to call the shared law_client_balance()
+-- helper instead of this file's inline balance query. Re-running THIS file
+-- would silently revert that function back to its old, non-shared-helper
+-- version (harmless today since the math is identical, but it would defeat
+-- the single-source-of-truth purpose of the newer file with no error
+-- anywhere). If this file ever needs to be re-run for its table/constraint
+-- DDL, re-run sql/sairnlaw_deposit_void_balance_guard.sql immediately
+-- after it to restore the correct function version.
+
 alter table public.law_trusttx add column if not exists amount numeric;
 alter table public.law_trusttx add column if not exists type text;
 alter table public.law_trusttx add column if not exists status text;

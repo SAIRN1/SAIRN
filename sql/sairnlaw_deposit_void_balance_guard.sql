@@ -99,25 +99,39 @@ begin
       using errcode = 'P0001';
   end if;
   perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || v_row.client_id));
+  -- Re-select after the lock: relies on PostgREST/Postgres's default READ
+  -- COMMITTED isolation, where each statement after this point takes a
+  -- fresh snapshot -- if this connection pool were ever changed to
+  -- REPEATABLE READ or SERIALIZABLE, this re-select would silently return
+  -- the same pre-lock tuple and this guard's whole point (seeing another
+  -- transaction's committed effects) would quietly stop working with no
+  -- error anywhere. Flagging the assumption here for that reason.
   select * into v_row
     from public.law_trusttx
     where license_hash = p_license_hash and trusttx_id = p_trusttx_id;
-  if v_row.type <> 'Deposit' then
-    raise exception 'NOT_A_DEPOSIT: trust transaction % is not a Deposit', p_trusttx_id
-      using errcode = 'P0001';
-  end if;
   if v_row.status <> 'Posted' then
     raise exception 'ALREADY_VOIDED: trust transaction % is not in Posted status', p_trusttx_id
       using errcode = 'P0001';
   end if;
-  if v_row.amount is null then
-    raise exception 'DATA_INTEGRITY: trust transaction % has no amount recorded', p_trusttx_id
-      using errcode = 'P0001';
-  end if;
-  v_balance_without := public.law_client_balance(p_license_hash, v_row.client_id) - v_row.amount;
-  if v_balance_without < 0 then
-    raise exception 'VOID_WOULD_NEGATIVE_BALANCE: void of % would leave balance %', v_row.amount, v_balance_without
-      using errcode = 'P0001';
+  -- Only a Deposit-void can decrease a client's balance (a Disbursement-void
+  -- only ever increases it) -- so the balance guard applies only when the
+  -- STORED row (not a client-supplied type claim) is actually a Deposit.
+  -- Every void now routes through this one function (api/sd-data.js gates
+  -- on payload.status==='Voided' alone), so the balance decision is made
+  -- from server state, not a client-asserted type -- closes a real hole
+  -- where a caller could previously claim an existing Deposit was a
+  -- 'Disbursement' to skip the balance-guarded RPC branch entirely and
+  -- flip it via the unguarded plain upsert instead.
+  if v_row.type = 'Deposit' then
+    if v_row.amount is null then
+      raise exception 'DATA_INTEGRITY: trust transaction % has no amount recorded', p_trusttx_id
+        using errcode = 'P0001';
+    end if;
+    v_balance_without := public.law_client_balance(p_license_hash, v_row.client_id) - v_row.amount;
+    if v_balance_without < 0 then
+      raise exception 'VOID_WOULD_NEGATIVE_BALANCE: void of % would leave balance %', v_row.amount, v_balance_without
+        using errcode = 'P0001';
+    end if;
   end if;
   v_voided_at := now();
   update public.law_trusttx
