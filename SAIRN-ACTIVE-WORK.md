@@ -7,4 +7,5 @@ it when done. Check this file before starting work to avoid two sessions
 touching the same file at once.
 
 - stonedesk.html (CC) — honest-failure localStorage wrapper (st()) sweep, resuming active edits now (Michael approved continuing). sairnvet.html already DONE (all 41 sites, pushed). stonedesk.html: 48/~120 done so far, finishing the remaining ~72 sites + tier-2 caller wiring on the highest-risk ones. Incremental commits, pushing as I go. 2026-08-18
+- sairnlaw.html (Hank) — read-only browser-level (Playwright) click-through verification of confirmVoid()'s optimistic-rollback UI, flagged as not-yet-done in SAIRNLAW-SESSION5-HANDOFF.md Open Item #2. No code edits planned. 2026-08-18
 
