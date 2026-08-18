@@ -10124,11 +10124,18 @@ function saveQuote() {
     if (chip) chip.innerHTML = '';
   }
   quoteHistory.unshift(q);
-  localStorage.setItem('stonedesk_quote_history', JSON.stringify(quoteHistory));
+  if(!st('stonedesk_quote_history', quoteHistory)){
+    quoteHistory.shift();
+    if (typeof showToast === 'function') showToast('Could not save quote -- storage may be full or unavailable, try again');
+    return;
+  }
   renderHistory();
   dbSaveQuoteHistory();
   currentQuoteNum = 'Q-' + (quoteCounter++);
-  localStorage.setItem('quoteCounter', String(quoteCounter));
+  // quoteCounter is a raw number-as-string, not JSON -- deliberately not
+  // routed through st() (st() always JSON.stringify()s its input, which
+  // would corrupt a raw non-JSON value read back via plain getItem()).
+  try{ localStorage.setItem('quoteCounter', String(quoteCounter)); }catch(e){}
   document.getElementById('quote-num').value = currentQuoteNum;
   // Flash confirmation
   const btn = document.querySelector('[onclick="saveQuote()"]');
@@ -14420,7 +14427,7 @@ function printDrawCutSheet() {
     var log=loadLog();
     log.unshift({id:'SH-'+Date.now(),date:new Date().toISOString(),question:q,answer:a,saved:true});
     if(log.length>500)log=log.slice(0,500);
-    try{localStorage.setItem('sd_stonehub_log',JSON.stringify(log));}catch(e){}
+    st('sd_stonehub_log',log);
     updateSHKPIs();
     showToast('Q&A saved to StoneHub log!');
   };
@@ -15430,8 +15437,8 @@ window.sairnFQShare = function() {
 window.sairnSaveQuote = function() {
   const quotes = JSON.parse(localStorage.getItem(SAIRN_APP_ID+'_quotes')||'[]');
   quotes.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:_fqTrade,text:_fqQuoteTxt});
-  localStorage.setItem(SAIRN_APP_ID+'_quotes', JSON.stringify(quotes));
-  sairnToast('Quote saved');
+  if(st(SAIRN_APP_ID+'_quotes', quotes)){ sairnToast('Quote saved'); }
+  else { sairnToast('Could not save -- storage may be full or unavailable'); }
 };
 
 window.sairnFQClose = function() {
@@ -15532,9 +15539,12 @@ window.sairnSavePricing = function() {
     minimumJob:500, depositPct:0.33,
     unitPricing:sairnGetPricing().unitPricing
   };
-  localStorage.setItem(SAIRN_APP_ID+'_pricing', JSON.stringify(p));
-  sairnToast('Pricing saved -- Field Quote will use your rates');
-  document.getElementById('sairn-pricing-modal').classList.remove('open');
+  if(st(SAIRN_APP_ID+'_pricing', p)){
+    sairnToast('Pricing saved -- Field Quote will use your rates');
+    document.getElementById('sairn-pricing-modal').classList.remove('open');
+  } else {
+    sairnToast('Could not save -- storage may be full or unavailable, try again');
+  }
 };
 
 // ---- CLAUDE API ----
@@ -32785,7 +32795,7 @@ function miSaveBriefingData(text){
   var entry={id:Date.now(),date:new Date().toLocaleString(),preview:text.slice(0,120)+'...',full:text};
   MI_STATE.history.unshift(entry);
   if(MI_STATE.history.length>20)MI_STATE.history.pop();
-  localStorage.setItem('sd_market_history',JSON.stringify(MI_STATE.history));
+  st('sd_market_history',MI_STATE.history);
   miRenderHistory();
 }
 
@@ -32873,7 +32883,7 @@ async function shAsk(question){
     var entry={id:Date.now(),q:q,a:answer,date:new Date().toLocaleString()};
     SH_STATE.history.unshift(entry);
     if(SH_STATE.history.length>50)SH_STATE.history.pop();
-    localStorage.setItem('sd_stonehead_history',JSON.stringify(SH_STATE.history));
+    st('sd_stonehead_history',SH_STATE.history);
     shRenderHistory();
 
     // Clear input
