@@ -148,21 +148,16 @@ instruction.
 
 ## 7. Open questions before implementation starts
 
-1. **Admin-renewal auth mechanism.** Recommend the `Bearer
-   SAIRNCASH_ADMIN_SECRET` env-var gate (§3, matches the existing
-   `CRON_SECRET` precedent) for v1 — meaning "renew this trial" is a
-   direct API call (curl, or a tiny internal-only unauthenticated-by-
-   click-but-secret-gated page), not a built admin dashboard with its
-   own login. Acceptable for v1, or do you want a real clickable
-   admin-approval UI (which would need its own auth system built first —
-   bigger scope)?
-2. **Anti-abuse strength.** v1 as designed only blocks re-trialing the
-   *same* email — someone can still get unlimited trials with new
-   emails. Acceptable for now (matches "renewal needs your manual
-   approval anyway, so abuse is capped by your attention" reasoning), or
-   do you want something stronger before this ships?
-3. **Trial-ending in-app notice** ("5 days left in your trial") — not
-   explicitly requested, but the existing pivot spec's "no dark
-   patterns, notice before anything happens" standard (§3.2) would
-   suggest one. Small addition — include in this pass, or hold for
-   later?
+**Resolved 2026-08-18 (Michael):**
+
+1. **Admin-renewal auth mechanism: `Bearer SAIRNCASH_ADMIN_SECRET`**
+   (§3's env-var gate, matching `CRON_SECRET`'s existing shape) —
+   confirmed for v1. No admin dashboard/login built.
+2. **Anti-abuse strength: email-uniqueness only** — confirmed for v1.
+   Someone can still get unlimited trials with new emails; accepted
+   given renewal is manual-approval-gated anyway.
+3. **Trial-ending in-app notice: included in this pass.** Add a
+   `pw-trial-note`-style banner (matches the existing element's naming
+   convention at `sairncash.html:91`/`253`) once `trial-verify.js`
+   reports fewer than N days remaining (suggest N=5, to confirm during
+   implementation) — e.g. "5 days left in your trial."
