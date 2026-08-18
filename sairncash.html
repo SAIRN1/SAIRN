@@ -353,6 +353,7 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
             </div>
             <div class="fin-list" id="deductionList"><div class="fin-empty">No deductions entered yet.</div></div>
           </div>
+          <div id="predictiveZone"></div>
         </div>
 
         <div class="fin-view" id="view-assistant">
@@ -957,8 +958,68 @@ function renderFinancePanel() {
   dedEl.innerHTML = deductionCache.length
     ? deductionCache.slice().reverse().map(e => `<div class="fin-item"><span>${H(e.description || '(no description)')}<span class="fin-item-cat">${H(e.category || 'Uncategorized')}</span></span><span class="fin-item-amt">$${(Number(e.amount)||0).toFixed(2)}</span></div>`).join('')
     : '<div class="fin-empty">No deductions entered yet.</div>';
+  renderPredictiveInsights();
 }
 function H(s) { const d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
+
+// ── PREDICTIVE BUSINESS INTELLIGENCE (2026-08-18) ───────────────────
+// Same anti-fabrication standard as SAIRNbiz's renderInvoicePredictiveInsights:
+// real signals computed live from incomeCache/deductionCache, never a
+// placeholder number, explicit "not enough history" below a minimum
+// sample size. Two signals, both grounded in fields that already exist:
+// (1) last completed calendar month's income vs. this user's OWN prior-
+// month average (deviation-from-own-baseline, same shape as SAIRNbiz's
+// slow-payer-vs-own-average check), (2) top deduction categories by
+// amount. Deliberately does NOT project a full-year total or claim any
+// forward-looking certainty -- both signals describe the past only.
+function computeIncomeTrend() {
+  const totals = {};
+  incomeCache.forEach(e => {
+    const d = new Date(e.date);
+    if (isNaN(d)) return;
+    const key = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    totals[key] = (totals[key] || 0) + (Number(e.amount) || 0);
+  });
+  const now = new Date();
+  const curKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const months = Object.keys(totals).filter(k => k !== curKey).sort(); // completed months only
+  if (months.length < 2) return null; // not enough completed-month history to compare
+  const lastKey = months[months.length - 1];
+  const priorMonths = months.slice(0, -1);
+  const priorAvg = priorMonths.reduce((s, k) => s + totals[k], 0) / priorMonths.length;
+  if (priorAvg <= 0) return null;
+  const lastTotal = totals[lastKey];
+  return { lastTotal, priorAvg, pctChange: Math.round((lastTotal - priorAvg) / priorAvg * 100), sampleMonths: priorMonths.length };
+}
+function computeTopDeductionCategories() {
+  const byCat = {};
+  deductionCache.forEach(e => { const c = e.category || 'Uncategorized'; byCat[c] = (byCat[c] || 0) + (Number(e.amount) || 0); });
+  return Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 3);
+}
+function renderPredictiveInsights() {
+  const el = document.getElementById('predictiveZone');
+  if (!el) return;
+  const totalEntries = incomeCache.length + deductionCache.length;
+  if (totalEntries < 5) {
+    el.innerHTML = '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;font-size:12px;color:var(--muted);margin-top:12px">📊 Predictive insights need more logged history to be meaningful — only ' + totalEntries + ' entr' + (totalEntries === 1 ? 'y' : 'ies') + ' on record so far.</div>';
+    return;
+  }
+  const trend = computeIncomeTrend();
+  const topCats = computeTopDeductionCategories();
+  let html = '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:12px">';
+  html += '<div style="font-weight:700;color:var(--text);margin-bottom:8px;font-size:13px">📊 Predictive Insights</div>';
+  if (trend) {
+    const dir = trend.pctChange >= 0 ? 'up' : 'down';
+    html += '<div style="font-size:12px;color:var(--text);padding:4px 0">Last month\'s income ($' + trend.lastTotal.toFixed(2) + ') is ' + Math.abs(trend.pctChange) + '% ' + dir + ' vs. your own ' + trend.sampleMonths + '-month average ($' + trend.priorAvg.toFixed(2) + ').</div>';
+  } else {
+    html += '<div style="font-size:12px;color:var(--muted);padding:4px 0">Income trend needs at least 2 completed months of logged income to compare.</div>';
+  }
+  if (topCats.length) {
+    html += '<div style="font-size:11px;color:var(--muted);line-height:1.7;border-top:1px solid var(--border);padding-top:8px;margin-top:4px">Top deduction categories: ' + topCats.map(c => H(c[0]) + ' ($' + c[1].toFixed(2) + ')').join(', ') + '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
 
 // ── ASSISTANT ─────────────────────────────────────────────────────
 const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need. When explaining a number, you will be given the already-computed figure and the inputs it came from in the user\'s message context -- explain it in plain language. Never recompute, restate a different number, or imply a different figure is more correct. You have one tool, get_attention_digest, that checks this user\'s real logged data for a small, fixed set of items worth flagging. Never provide your own estimate, guess, or general-knowledge substitute for anything that tool would answer -- if it errors or a question calls for data you have not actually retrieved via the tool this turn, say so plainly and stop.';
