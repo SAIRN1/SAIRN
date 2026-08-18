@@ -96,8 +96,29 @@ const RESOURCES = {
   // paralegal) may write, matching sairnlaw.html's current unrestricted
   // client-side behavior. Auth is Bearer license key only, same as
   // grd_jobs -- sdnData() never sends a session token to this endpoint.
-  law_clients: true, law_matters: true, law_trusttx: true
+  law_clients: true, law_matters: true, law_trusttx: true,
+  // SAIRNcode real data layer + per-employee auth (2026-08-18) -- see
+  // sql/sairncode_data_schema.sql and
+  // docs/superpowers/specs/2026-08-18-sairncode-real-data-layer-design.md.
+  // All 15 share one generic handler (SC_RESOURCES below) since they're
+  // identical in shape (one row per entry, license_hash-scoped, a jsonb
+  // data column) -- the only resource family on this endpoint with a
+  // real 'delete' action, admin-role-gated server-side (see SC_RESOURCES
+  // handler), because SAIRNcode's client already has real remove buttons
+  // for each of these (removeDenialEntry() etc.) that previously only
+  // filtered a local array -- this endpoint had never supported an
+  // actual delete verb for any resource before now (a platform-wide gap
+  // already logged in SAIRN-PLATFORM-SESSION3-HANDOFF.md item 4).
+  sc_denial: true, sc_revenue: true, sc_compliance: true, sc_fraud: true, sc_prebill: true,
+  sc_hcc: true, sc_drg: true, sc_query: true, sc_rac: true, sc_telehealth: true,
+  sc_anesthesia: true, sc_auth: true, sc_ar: true, sc_providers: true, sc_encoder: true
 };
+
+const SC_RESOURCES = [
+  'sc_denial', 'sc_revenue', 'sc_compliance', 'sc_fraud', 'sc_prebill',
+  'sc_hcc', 'sc_drg', 'sc_query', 'sc_rac', 'sc_telehealth',
+  'sc_anesthesia', 'sc_auth', 'sc_ar', 'sc_providers', 'sc_encoder'
+];
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
 // from the caller's own verified token) is allowed for every role and does
@@ -179,12 +200,16 @@ module.exports = async (req, res) => {
   const action = body && body.action;
   const resource = body && body.resource;
   const payload = (body && body.payload) || {};
-  if (action !== 'read' && action !== 'write') {
-    res.status(400).json({ error: { message: "action must be 'read' or 'write'" } });
+  const isScResource = SC_RESOURCES.indexOf(resource) !== -1;
+  // 'delete' is only ever valid for the SC_RESOURCES family (see that
+  // block's own header comment for why) -- every other resource on this
+  // endpoint keeps its original read/write-only behavior unchanged.
+  if (action !== 'read' && action !== 'write' && !(action === 'delete' && isScResource)) {
+    res.status(400).json({ error: { message: "action must be 'read' or 'write'" + (isScResource ? " or 'delete'" : '') } });
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder' } });
     return;
   }
 
@@ -2076,6 +2101,51 @@ module.exports = async (req, res) => {
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
       return;
+    }
+
+    if (isScResource) {
+      if (action === 'read') {
+        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=entry_id,data&order=created_at.asc'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: rows.map(function (row) { return row.data; }), provisioned: true });
+        return;
+      }
+      if (action === 'write') {
+        if (!payload || !payload.id) { res.status(400).json({ error: { message: 'payload.id is required' } }); return; }
+        const r = await fetch(rest(resource + '?on_conflict=license_hash,entry_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({ license_hash: licHash, app_id: 'sairncode', entry_id: String(payload.id), data: payload, updated_at: nowISO() })
+        });
+        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNcode data tables are not set up yet -- run sql/sairncode_data_schema.sql in Supabase first.' } }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+        return;
+      }
+      if (action === 'delete') {
+        if (!payload || !payload.id) { res.status(400).json({ error: { message: 'payload.id is required' } }); return; }
+        // Server-side RBAC re-check (2026-08-18, same discipline as
+        // grd_progress_photos' QC-decision gate, a8afe3e) -- the client's
+        // requireAdminForDelete() is a real UI convenience, never the actual
+        // authorization boundary. Only a real, currently-valid SAIRNcode
+        // admin session token can delete -- a tampered/forged client claim
+        // of admin-ness is rejected here regardless of what the UI showed.
+        const scCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode');
+        if (!scCaller || scCaller.role !== 'admin') {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Compliance Admin can delete records' } });
+          return;
+        }
+        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id))), {
+          method: 'DELETE', headers: headers
+        });
+        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNcode data tables are not set up yet -- run sql/sairncode_data_schema.sql in Supabase first.' } }); return; }
+        if (!r.ok) { const errRows = await r.json().catch(function () { return null; }); return upstream(res, errRows); }
+        res.status(200).json({ ok: true });
+        return;
+      }
     }
 
     // Should be unreachable given the guards above.
