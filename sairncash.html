@@ -1045,6 +1045,121 @@ function clearSession() {
   else showToast('Session cleared');
 }
 
+// ================================================================
+// SAIRN VOICE INPUT (2026-08-18) -- ported from stonedesk.html's proven
+// module via sairnbiz.html (attachVoiceInput itself is fully app-agnostic).
+// Free, browser-native SpeechRecognition, zero new vendor/cost. Wired to
+// the assistant chat input and the two Finance form description fields --
+// hands-free logging of an income/deduction entry while away from a
+// keyboard is this app's closest real analog to StoneDesk's Quick
+// Ballpark Estimate / SAIRNbiz's invoice fields.
+// Uses showToast() (this app's real toast function) on error -- SAIRNbiz's
+// port called toast(), which doesn't exist there either; checked
+// sairncash.html's actual function name (showToast(), sairncash.html:998)
+// before wiring this, not assumed from the ported code.
+// AR measurement (capability 2) and shared company-knowledge (capability 4)
+// are deliberately NOT built here -- see
+// docs/superpowers/specs/2026-08-18-sairncash-ai-advancement-design.md for
+// the fit-check reasoning (no physical-measurement workflow; shared-
+// knowledge's existing design is multi-employee and Supabase-keyed, this
+// app is single-freelancer and Firebase-keyed).
+// ================================================================
+(function() {
+'use strict';
+if (window._saircashVoiceInputInstalled) return;
+window._saircashVoiceInputInstalled = true;
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var VOICE_SUPPORTED = !!SR;
+
+window.attachVoiceInput = function(inputId, opts) {
+  if (!VOICE_SUPPORTED) return;
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('voicebtn-' + inputId)) return;
+  opts = opts || {};
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'voicebtn-' + inputId;
+  btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+  btn.title = 'Tap to dictate';
+  btn.textContent = '\u{1F3A4}';
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch;flex:1;min-width:0';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.style.flex = '1';
+  input.style.minWidth = '0';
+  wrap.appendChild(btn);
+
+  var recognizing = false;
+  var recognition = null;
+
+  function stop() {
+    recognizing = false;
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--border)';
+    btn.textContent = '\u{1F3A4}';
+    if (recognition) { try { recognition.stop(); } catch (e) {} }
+  }
+
+  btn.onclick = function() {
+    if (recognizing) { stop(); return; }
+    try {
+      recognition = new SR();
+    } catch (e) {
+      if (typeof showToast === 'function') showToast('Voice input unavailable in this browser.');
+      return;
+    }
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognizing = true;
+    btn.style.background = '#dc2626';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#dc2626';
+    btn.textContent = '\u{1F534}';
+
+    recognition.onresult = function(e) {
+      var transcript = '';
+      for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      transcript = transcript.trim();
+      if (!transcript) return;
+      if (opts.numeric) {
+        var m = transcript.match(/\d+(\.\d+)?/);
+        if (m) input.value = m[0];
+      } else if (input.tagName === 'TEXTAREA' && input.value) {
+        input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+      } else {
+        input.value = transcript;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    };
+    recognition.onerror = function() {
+      if (typeof showToast === 'function') showToast('Could not hear that — try again.');
+    };
+    recognition.onend = stop;
+
+    try { recognition.start(); } catch (e) { stop(); }
+  };
+};
+
+function installVoiceInputTargets() {
+  window.attachVoiceInput('inp', { label: 'your question' });
+  window.attachVoiceInput('incDesc', { label: 'income description' });
+  window.attachVoiceInput('dedDesc', { label: 'deduction description' });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installVoiceInputTargets);
+} else {
+  installVoiceInputTargets();
+}
+})();
+
 // ── INPUT ─────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', function(){
   const inpEl=document.getElementById('inp');
