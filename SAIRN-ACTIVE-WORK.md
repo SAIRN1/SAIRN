@@ -6,5 +6,5 @@ description, timestamp. Add a line before starting anything new; remove
 it when done. Check this file before starting work to avoid two sessions
 touching the same file at once.
 
-- stonedesk.html (CC) — honest-failure localStorage wrapper (st()) sweep. sairnvet.html is DONE (all 41 sites, pushed). stonedesk.html: 48/~120 sites converted and pushed, paused to report back to Michael, not actively editing right now -- safe for another session to pick up stonedesk.html if needed, just note it here first. 2026-08-18
+- stonedesk.html (CC) — honest-failure localStorage wrapper (st()) sweep, resuming active edits now (Michael approved continuing). sairnvet.html already DONE (all 41 sites, pushed). stonedesk.html: 48/~120 done so far, finishing the remaining ~72 sites + tier-2 caller wiring on the highest-risk ones. Incremental commits, pushing as I go. 2026-08-18
 
