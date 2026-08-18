@@ -3795,9 +3795,12 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     if(canvas){try{entry.dataUrl=canvas.toDataURL('image/png');}catch(e){}}
     drawings.unshift(entry);
     if(drawings.length>50)drawings=drawings.slice(0,50);
-    try{localStorage.setItem('sd_drawings',JSON.stringify(drawings));}catch(e){}
+    var drawingSaved = st('sd_drawings',drawings);
     var status=document.getElementById('draw-save-status');
-    if(status){status.textContent='Saved: '+jobName+' ('+entry.date+')';setTimeout(function(){status.textContent='';},3000);}
+    if(status){
+      status.textContent = drawingSaved ? ('Saved: '+jobName+' ('+entry.date+')') : 'Could not save -- storage may be full or unavailable';
+      setTimeout(function(){status.textContent='';},drawingSaved?3000:6000);
+    }
   };
 })();
 </script>
@@ -4173,7 +4176,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     try{var q=JSON.parse(localStorage.getItem('sd_aiquotes')||'[]');d=d.concat(q);}catch(e){}
     return (d.length||sdDemoCleared())?d:SEED;
   }
-  function save(d){try{localStorage.setItem('sd_quote_history',JSON.stringify(d));}catch(e){}}
+  function save(d){return st('sd_quote_history',d);}
   function updateKPIs(d){
     var total=d.length;
     var val=d.reduce(function(a,x){return a+(x.amount||0);},0);
@@ -4468,7 +4471,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 <script>
 (function(){
   function loadSettings(){try{return JSON.parse(localStorage.getItem('sd_settings')||'{}');}catch(e){return {};}}
-  function saveSettings(s){try{localStorage.setItem('sd_settings',JSON.stringify(s));}catch(e){}}
+  function saveSettings(s){return st('sd_settings',s);}
   var s=loadSettings();
   if(s.company)document.getElementById('adm-co').value=s.company;
   if(s.owner)document.getElementById('adm-owner').value=s.owner;
@@ -4662,9 +4665,12 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
     document.querySelectorAll('#panel-business [data-metric]').forEach(function(el){snap.kpis[el.dataset.metric]=el.textContent;});
     snaps.unshift(snap);
     if(snaps.length>90)snaps=snaps.slice(0,90);
-    try{localStorage.setItem('sd_business_snapshots',JSON.stringify(snaps));}catch(e){}
+    var snapSaved=st('sd_business_snapshots',snaps);
     var status=document.getElementById('biz-snap-status');
-    if(status){status.textContent='Snapshot saved '+new Date().toLocaleTimeString();setTimeout(function(){status.textContent='';},3000);}
+    if(status){
+      status.textContent = snapSaved ? ('Snapshot saved '+new Date().toLocaleTimeString()) : 'Could not save snapshot -- storage may be full';
+      setTimeout(function(){status.textContent='';},snapSaved?3000:6000);
+    }
   };
   // Auto-save snapshot daily
   var lastSnap=null;
@@ -8347,7 +8353,7 @@ function tmMigrateLegacyRecords(){
     if(added&&typeof notify==='function')notify(added+' template record'+(added===1?'':'s')+' migrated from the retired DXF manager','');
   }catch(e){}
 }
-function tmSave(){localStorage.setItem(TM_KEY,JSON.stringify(tmRecords));}
+function tmSave(){return st(TM_KEY,tmRecords);}
 tmLoad();
 
 function tmOpenUpload(){
@@ -9003,8 +9009,9 @@ function loadFM(){
   try{ sdFieldOrder = JSON.parse(localStorage.getItem('sd_field_order')||'{}'); }catch(e){}
 }
 function saveFM(){
-  localStorage.setItem('sd_field_stops', JSON.stringify(sdFieldStops));
-  localStorage.setItem('sd_field_order', JSON.stringify(sdFieldOrder));
+  var a = st('sd_field_stops', sdFieldStops);
+  var b = st('sd_field_order', sdFieldOrder);
+  return a && b;
 }
 
 var FM_TYPE_LABELS = {template:'Template',install:'Install',sales:'Sales Visit',repair:'Repair / Callback',other:'Other'};
@@ -19077,8 +19084,8 @@ function loadLearned() {
 function loadGlobal() {
   try { return JSON.parse(localStorage.getItem(GLOBAL_KEY) || '{}'); } catch(e) { return {}; }
 }
-function saveLearned(data) { localStorage.setItem(LEARN_KEY, JSON.stringify(data)); }
-function saveGlobal(data)  { localStorage.setItem(GLOBAL_KEY, JSON.stringify(data)); }
+function saveLearned(data) { return st(LEARN_KEY, data); }
+function saveGlobal(data)  { return st(GLOBAL_KEY, data); }
 
 var learned  = loadLearned();
 var global_l = loadGlobal();
@@ -20963,9 +20970,12 @@ function saveAlertSettings() {
     complete: document.getElementById('alert-complete').checked,
     newCust: document.getElementById('alert-new-cust').checked
   };
-  localStorage.setItem('sd_alert_settings', JSON.stringify(sdAlertSettings));
+  const alertSaved = st('sd_alert_settings', sdAlertSettings);
   const el = document.getElementById('alert-save-status');
-  if (el) { el.textContent = '✅ Alert settings saved. Monitoring active.'; el.style.color = '#16a34a'; }
+  if (el) {
+    if (alertSaved) { el.textContent = '✅ Alert settings saved. Monitoring active.'; el.style.color = '#16a34a'; }
+    else { el.textContent = '⚠️ Could not save -- storage may be full or unavailable'; el.style.color = '#dc2626'; }
+  }
 }
 
 function loadAlertSettingsUI() {
@@ -22175,7 +22185,7 @@ function pmClearAll() {
   if(!confirm('Clear ALL negotiated prices and discounts? This cannot be undone.')) return;
   sdPricingRules = {vendorDiscounts:{},categoryDiscounts:[],productOverrides:{}};
   sdNegotiatedPrices = {};
-  var clearedNP = st('sd_negotiated_prices','{}');
+  var clearedNP = st('sd_negotiated_prices',sdNegotiatedPrices);
   var clearedPR = savePricingRules();
   pmRenderVendorDiscounts();
   pmRenderCategoryDiscounts();
@@ -22900,7 +22910,7 @@ function nestingSave() {
   var layout={id:'NEST'+Date.now(),date:new Date().toISOString(),material:mat,slabW:sdNestingData.slabW,slabH:sdNestingData.slabH,cutouts:JSON.parse(JSON.stringify(sdNestingData.cutouts))};
   var saved=JSON.parse(localStorage.getItem('sd_nesting_saved')||'[]');
   saved.unshift(layout);if(saved.length>50)saved=saved.slice(0,50);
-  localStorage.setItem('sd_nesting_saved',JSON.stringify(saved));
+  if(!st('sd_nesting_saved',saved)){ notify('Could not save layout -- storage may be full or unavailable, try again','warn'); return; }
   nestingRenderSaved();notify('Layout saved','');
 }
 
@@ -23296,7 +23306,10 @@ function showExecRolePicker(){
 function setExecRoleAndClose(role){
   setExecRoleAndClose._close=true;
   sdExecRole=role;
-  localStorage.setItem('sd_exec_role',role);
+  // Raw string value, not JSON -- deliberately NOT routed through st() (which
+  // always JSON.stringify()s its second argument and would corrupt a raw
+  // string read back elsewhere via plain getItem(), not JSON.parse()).
+  try{ localStorage.setItem('sd_exec_role',role); }catch(e){}
   if(SD_EXEC_ROLES.includes(role)){
     document.body.classList.add('is-exec');
     setRoleBadge(role);
@@ -30377,9 +30390,9 @@ async function sdRunEmailScan() {
     {id:'adminsep',item:'Admin account separate from daily use'}
   ];
   function loadThreats(){try{return JSON.parse(localStorage.getItem(THREATS_KEY)||'[]');}catch(e){return [];}}
-  function saveThreats(d){try{localStorage.setItem(THREATS_KEY,JSON.stringify(d));}catch(e){}}
+  function saveThreats(d){return st(THREATS_KEY,d);}
   function loadChecklist(){try{return JSON.parse(localStorage.getItem(CHECKLIST_KEY)||'{}');}catch(e){return {};}}
-  function saveChecklist(d){try{localStorage.setItem(CHECKLIST_KEY,JSON.stringify(d));}catch(e){}}
+  function saveChecklist(d){return st(CHECKLIST_KEY,d);}
   var rColors={Critical:'#fee2e2',High:'#fef3c7',Medium:'#dbeafe',Low:'#f3f4f6'};
 
   function render(){
@@ -32939,7 +32952,7 @@ shRenderHistory();
 // ================================================================
 
 // -- SHARED HELPERS ----------------------------------------------
-function sdStore(key,val){try{localStorage.setItem(key,JSON.stringify(val));}catch(e){}}
+function sdStore(key,val){return st(key,val);}
 function sdFmt(n){return '$'+(parseFloat(n)||0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0});}
 function sdFmtHrs(ms){var h=ms/3600000;return h<1?(Math.round(h*60))+'m':h.toFixed(1)+'h';}
 function sdAgo(ts){var d=Math.floor((Date.now()-new Date(ts).getTime())/86400000);return d===0?'Today':d===1?'Yesterday':d+'d ago';}
@@ -33442,7 +33455,7 @@ document.addEventListener('DOMContentLoaded',function(){
 var ITA_USERS_KEY = 'sd_ita_users';
 var ITA_AUDIT_KEY = 'sd_ita_audit';
 function itaLoad(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
-function itaSave(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} }
+function itaSave(k, v) { return st(k, v); }
 function itaRender(){
   var users=itaLoad(ITA_USERS_KEY,[{name:'Owner',role:'admin',pin:'****',added:new Date().toISOString()}]);
   var ul=document.getElementById('ita-users-list');
