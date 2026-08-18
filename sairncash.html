@@ -961,7 +961,78 @@ function renderFinancePanel() {
 function H(s) { const d = document.createElement('div'); d.textContent = String(s == null ? '' : s); return d.innerHTML; }
 
 // ── ASSISTANT ─────────────────────────────────────────────────────
-const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need. When explaining a number, you will be given the already-computed figure and the inputs it came from in the user\'s message context -- explain it in plain language. Never recompute, restate a different number, or imply a different figure is more correct.';
+const SYSTEM_PROMPT = 'You are SAIRNcash, a financial co-pilot for freelancers and the self-employed (quarterly tax set-asides, deduction categorization, SEP IRA/Solo 401(k) contribution limits). Every number you give is an ESTIMATE, not a filing-ready figure -- say so plainly whenever you give one. You do not file taxes and must never imply that you do or that using SAIRNcash completes a filing obligation -- if a question calls for actually filing something, say plainly that SAIRNcash does not do that and the user should bring this to their accountant or filing software (TurboTax, H&R Block, a CPA) instead. Never provide your own estimate as a substitute for a real number the user hasn\'t given you -- ask for the real figures you need. When explaining a number, you will be given the already-computed figure and the inputs it came from in the user\'s message context -- explain it in plain language. Never recompute, restate a different number, or imply a different figure is more correct. You have one tool, get_attention_digest, that checks this user\'s real logged data for a small, fixed set of items worth flagging. Never provide your own estimate, guess, or general-knowledge substitute for anything that tool would answer -- if it errors or a question calls for data you have not actually retrieved via the tool this turn, say so plainly and stop.';
+
+// ── AI TOOL-CALLING (2026-08-18, agentic follow-up) ─────────────────
+// Single-user analog of SAIRNbiz's SB_TOOLS/sbRegisterTool pattern (see
+// docs/superpowers/specs/2026-08-09-sairnbiz-ai-tool-calling-design.md) --
+// no role/sensitive gate here since SAIRNcash has exactly one user per
+// license (no employee roles to restrict against), unlike SAIRNbiz.
+// Every tool is read-only and wrapped so a thrown error becomes an honest
+// {ok:false}, never a crash or a silently wrong answer.
+var SC_TOOLS = {};
+function scRegisterTool(name, description, inputSchema, run) {
+  SC_TOOLS[name] = { definition: { name: name, description: description, input_schema: inputSchema }, run: run };
+}
+function scExecuteTool(name, input) {
+  var tool = SC_TOOLS[name];
+  if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
+  try { return { ok: true, result: tool.run(input || {}) }; }
+  catch (e) { return { ok: false, error: 'Could not retrieve that data right now.' }; }
+}
+
+// Three checks only, each backed by a real field that already exists --
+// deliberately does NOT flag "haven't set aside enough for the deadline,"
+// because no field anywhere tracks an actual set-aside amount (only the
+// RECOMMENDED figure is computed, sairncash.html's calcQuarterlySetAside);
+// asserting compliance against a number the app never records would be a
+// fabricated claim, not a real check.
+function computeAttentionItems() {
+  var findings = [];
+  var deadline = nextQuarterlyDeadline();
+  if (deadline) {
+    findings.push({
+      area: 'quarterly_deadline',
+      severity: deadline.days <= 7 ? 'critical' : (deadline.days <= 30 ? 'warning' : 'info'),
+      detail: deadline.label + ' estimated-tax deadline is ' + deadline.dateStr + ' (' + deadline.days + ' days away).'
+    });
+  }
+  var uncategorized = deductionCache.filter(function (e) { return !e.category || e.category === 'Uncategorized'; });
+  if (uncategorized.length) {
+    findings.push({
+      area: 'uncategorized_deductions',
+      severity: 'warning',
+      detail: uncategorized.length + ' deduction entr' + (uncategorized.length === 1 ? 'y is' : 'ies are') + ' still filed as Uncategorized.',
+      count: uncategorized.length
+    });
+  }
+  // Mirrors the app's own inline #profileMissingNote condition
+  // (renderEstimator(), sairncash.html) -- same real signal, not a new one.
+  var ytd = ytdNetProfit();
+  var result = calcQuarterlySetAside(ytd, profileCache.filing_status || 'single', profileCache.prior_year_tax_liability, profileCache.prior_year_agi_over_150k);
+  if (!result.hasFullBasis) {
+    findings.push({
+      area: 'incomplete_profile',
+      severity: 'warning',
+      detail: 'Prior-year tax liability is not on file, so the quarterly estimate is a partial figure (90% of this year only), not the full safe-harbor calculation.'
+    });
+  }
+  return findings;
+}
+
+scRegisterTool(
+  'get_attention_digest',
+  'Check this user\'s real logged SAIRNcash data for three specific things: (1) how many days until the next quarterly estimated-tax deadline, (2) how many deduction entries are still filed under the default "Uncategorized" category, (3) whether the Tax Profile is missing prior-year tax liability, which makes the quarterly estimate partial rather than the full safe-harbor figure. IMPORTANT: this tool does NOT check whether the user has actually set aside enough money for the upcoming deadline -- SAIRNcash has no field anywhere that records an actual set-aside amount, only the recommended figure. Never imply this tool confirms the user is "on track" or "behind" on saving; it only reports the three items listed.',
+  { type: 'object', properties: {}, required: [] },
+  function (input) {
+    var findings = computeAttentionItems();
+    return {
+      critical_count: findings.filter(function (f) { return f.severity === 'critical'; }).length,
+      warning_count: findings.filter(function (f) { return f.severity === 'warning'; }).length,
+      findings: findings
+    };
+  }
+);
 
 let localHistory=[], loading=false, msgCount=0;
 
@@ -1011,12 +1082,44 @@ async function callClaude(userMsg) {
   loading=true; document.getElementById('sendBtn').disabled=true; showThinking();
   localHistory.push({role:'user',content:userMsg});
   try {
-    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncash',is_demo:false,max_tokens:1000,system:SYSTEM_PROMPT,messages:localHistory})});
+    const toolDefs=Object.keys(SC_TOOLS).map(k=>SC_TOOLS[k].definition);
+    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncash',is_demo:false,max_tokens:1000,system:SYSTEM_PROMPT,messages:localHistory,tools:toolDefs})});
     const data=await res.json();
+    if(data.error){
+      removeThinking();
+      addBubble('system','Error: '+(data.error.message||data.error));
+      loading=false; document.getElementById('sendBtn').disabled=false;
+      return;
+    }
+    const blocks=data.content||[];
+    const toolUses=blocks.filter(b=>b.type==='tool_use');
+    if(!toolUses.length){
+      removeThinking();
+      const aiText=(blocks[0]&&blocks[0].text)||'No response.';
+      localHistory.push({role:'assistant',content:aiText});
+      addBubble('ai',aiText);
+      if(window._fbPush) window._fbPush('ai',aiText);
+      msgCount++; incUsage();
+      document.getElementById('statMsgs').textContent=msgCount;
+      loading=false; document.getElementById('sendBtn').disabled=false;
+      return;
+    }
+    // Every tool_use in this assistant turn needs its own tool_result in ONE
+    // following user turn, or the next call 400s -- same contract SAIRNbiz's
+    // callAI() documents.
+    const toolResults=toolUses.map(toolUse=>{
+      const outcome=scExecuteTool(toolUse.name,toolUse.input);
+      const content=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the error plainly and stop.');
+      return {type:'tool_result',tool_use_id:toolUse.id,content:content};
+    });
+    localHistory.push({role:'assistant',content:blocks});
+    localHistory.push({role:'user',content:toolResults});
+    const res2=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncash',is_demo:false,max_tokens:1000,system:SYSTEM_PROMPT,messages:localHistory})});
+    const data2=await res2.json();
     removeThinking();
-    if(data.error){addBubble('system','Error: '+(data.error.message||data.error));}
+    if(data2.error){addBubble('system','Error: '+(data2.error.message||data2.error));}
     else {
-      const aiText=data.content[0].text;
+      const aiText=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response.';
       localHistory.push({role:'assistant',content:aiText});
       addBubble('ai',aiText);
       if(window._fbPush) window._fbPush('ai',aiText);
