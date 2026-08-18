@@ -113,22 +113,24 @@ This still isn't zero-risk (a user could mis-select "general" for a
 matter-specific question), but it's a real, structural reduction using a
 boundary the app already enforces, not a cosmetic warning label.
 
-## 3. Open questions before implementation starts
+## 3. Open questions — resolved 2026-08-18 (Michael)
 
-1. **Predictive-insights metric.** What should it actually compute?
-   Candidates from real data already in the file: deadline-miss rate
-   (deadlines that passed their due date while still open), average
-   matter resolution time (open → closed), or an Open Matters aging
-   breakdown (how many matters have had no activity in N days). Recommend
-   deadline-miss rate — the highest-stakes, most directly actionable
-   signal for a law firm, and `get_deadlines`' "live-computed urgency"
-   logic already exists to build on. Confirm before I build a specific
-   number nobody asked for.
-2. **Shared-knowledge: build the general-only-gated version (§2), or
-   skip shared-knowledge for SAIRNlaw entirely** (matching how AR got
-   excluded — "don't force it" applies to privilege risk as much as to
-   physical-workflow fit)? Recommend building the gated version — it's a
-   real, usable feature once scoped correctly, not just a risk to avoid.
-3. **Voice input target fields** — chat input only, or also Matter/Case
-   Management's note-taking fields (mirrors SAIRNcode's Denial/Encoder
-   cause-field pattern)? Recommend both, same low-risk reasoning as §1.2.
+1. **Predictive-insights metric: deadline-miss rate**, confirmed. Deadlines
+   that passed their due date while still open, vs. total — built on top
+   of `get_deadlines`' existing live-urgency computation.
+2. **Shared-knowledge: build the general-only-gated version.** Extraction
+   only ever runs on questions submitted with `aimatter` set to
+   `general` — a matter-specific question never feeds it, full stop.
+3. **Voice input: chat + Matter notes**, confirmed. Wire `ainp` (AI
+   Assistant chat) and Matter/Case Management's note-taking fields.
+
+## 4. Build order
+
+1. Fix the stale AI Assistant disclosure copy (§0) — small, independent,
+   ships first.
+2. Voice input (chat + matter notes) — lowest risk, no data-model change.
+3. Predictive insights (deadline-miss rate KPI) — pure computation over
+   existing deadline data, no new resource.
+4. Shared-knowledge (general-only-gated) — the one with a real design
+   constraint from §2, built last so the gating logic can be verified
+   against real matter-selector behavior already wired by then.
