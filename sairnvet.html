@@ -1898,7 +1898,14 @@ function escHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-function svStore(k,v){try{localStorage.setItem('sv_'+k,JSON.stringify(v));}catch(e){}}
+// Honest-failure localStorage wrapper (2026-08-18 platform audit) -- same shape as
+// SAIRNbuild's st() fix (sairnbuild.html:1886) and StoneDesk's equivalent added the same
+// day. Every save*() function below previously called localStorage.setItem() directly
+// inside its own bare try{}catch(e){}, with zero signal back to the caller -- a
+// quota-exceeded or private-browsing failure was silently swallowed while callers still
+// showed a success toast. This returns true/false so callers can show an honest message.
+function st(key,data){try{localStorage.setItem(key,JSON.stringify(data));return true;}catch(e){return false;}}
+function svStore(k,v){return st('sv_'+k,v);}
 function svLoad(k,d){try{var r=localStorage.getItem('sv_'+k);return r?JSON.parse(r):d;}catch(e){return d;}}
 
 async function callClaude(system, messages, maxTokens) {
@@ -2089,7 +2096,7 @@ function getWhiteboardPatients(){
 }
 
 function saveWhiteboardPatients(list){
-  try { localStorage.setItem('sv_whiteboard', JSON.stringify(list)); } catch(e){}
+  return st('sv_whiteboard', list);
 }
 
 function renderWhiteboard(){
@@ -2212,7 +2219,7 @@ function getScheduleAppts(){
 }
 
 function saveScheduleAppts(list){
-  try { localStorage.setItem('sv_scheduling', JSON.stringify(list)); } catch(e){}
+  return st('sv_scheduling', list);
 }
 
 function renderSchedule(){
@@ -2370,7 +2377,7 @@ function getVitals(){
 }
 
 function saveVitals(list){
-  try { localStorage.setItem('sv_vitals', JSON.stringify(list)); } catch(e){}
+  return st('sv_vitals', list);
 }
 
 function renderVitals(){
@@ -2528,7 +2535,7 @@ function getLabResults(){
 }
 
 function saveLabResults(list){
-  try { localStorage.setItem('sv_labresults', JSON.stringify(list)); } catch(e){}
+  return st('sv_labresults', list);
 }
 
 function renderLab(){
@@ -2665,7 +2672,7 @@ function getImagingStudies(){
 }
 
 function saveImagingStudies(list){
-  try { localStorage.setItem('sv_imaging', JSON.stringify(list)); } catch(e){}
+  return st('sv_imaging', list);
 }
 
 function renderImaging(){
@@ -2787,7 +2794,7 @@ function getSurgeries(){
 }
 
 function saveSurgeries(list){
-  try { localStorage.setItem('sv_surgery', JSON.stringify(list)); } catch(e){}
+  return st('sv_surgery', list);
 }
 
 function renderSurgery(){
@@ -2929,7 +2936,7 @@ function getDentalRecords(){
 }
 
 function saveDentalRecords(list){
-  try { localStorage.setItem('sv_dental', JSON.stringify(list)); } catch(e){}
+  return st('sv_dental', list);
 }
 
 function renderDental(){
@@ -3077,7 +3084,7 @@ function getExamRooms(){
 }
 
 function saveExamRooms(list){
-  try { localStorage.setItem('sv_examrooms', JSON.stringify(list)); } catch(e){}
+  return st('sv_examrooms', list);
 }
 
 function getExamRoomTurnoverLog(){
@@ -3089,7 +3096,7 @@ function getExamRoomTurnoverLog(){
 }
 
 function saveExamRoomTurnoverLog(list){
-  try { localStorage.setItem('sv_examrooms_turnover', JSON.stringify(list)); } catch(e){}
+  return st('sv_examrooms_turnover', list);
 }
 
 function renderExamRooms(){
@@ -3220,7 +3227,7 @@ function getTeleconsults(){
 }
 
 function saveTeleconsults(list){
-  try { localStorage.setItem('sv_teleconsults', JSON.stringify(list)); } catch(e){}
+  return st('sv_teleconsults', list);
 }
 
 function renderTeleconsult(){
@@ -3358,7 +3365,7 @@ function getLamenessExams(){
 }
 
 function saveLamenessExams(list){
-  try { localStorage.setItem('sv_lameness', JSON.stringify(list)); } catch(e){}
+  return st('sv_lameness', list);
 }
 
 function renderLameness(){
@@ -3485,7 +3492,7 @@ function getFarmCalls(){
 }
 
 function saveFarmCalls(list){
-  try { localStorage.setItem('sv_farmcalls', JSON.stringify(list)); } catch(e){}
+  return st('sv_farmcalls', list);
 }
 
 function renderFarmCalls(){
@@ -3613,7 +3620,7 @@ function getReproRecords(){
 }
 
 function saveReproRecords(list){
-  try { localStorage.setItem('sv_reproduction', JSON.stringify(list)); } catch(e){}
+  return st('sv_reproduction', list);
 }
 
 function renderRepro(){
@@ -3739,7 +3746,7 @@ function getEquineDentalRecords(){
 }
 
 function saveEquineDentalRecords(list){
-  try { localStorage.setItem('sv_equinedental', JSON.stringify(list)); } catch(e){}
+  return st('sv_equinedental', list);
 }
 
 function renderEquineDental(){
@@ -3867,7 +3874,7 @@ function getPPEs(){
 }
 
 function savePPEs(list){
-  try { localStorage.setItem('sv_prepurchase', JSON.stringify(list)); } catch(e){}
+  return st('sv_prepurchase', list);
 }
 
 function renderPPE(){
@@ -4007,7 +4014,7 @@ function getPatients(){
 }
 
 function savePatients(list){
-  try { localStorage.setItem('sv_patients', JSON.stringify(list)); } catch(e){}
+  return st('sv_patients', list);
 }
 
 // AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
@@ -4179,7 +4186,7 @@ function getDocuments(){
 }
 
 function saveDocuments(list){
-  try { localStorage.setItem('sv_documents', JSON.stringify(list)); } catch(e){}
+  return st('sv_documents', list);
 }
 
 function renderDocuments(){
@@ -4250,7 +4257,7 @@ function getMobileStops(){
 }
 
 function saveMobileStops(list){
-  try { localStorage.setItem('sv_mobilevet', JSON.stringify(list)); } catch(e){}
+  return st('sv_mobilevet', list);
 }
 
 function renderMobileVet(){
@@ -4334,7 +4341,7 @@ function getClaims(){
 }
 
 function saveClaims(list){
-  try { localStorage.setItem('sv_petinsurance', JSON.stringify(list)); } catch(e){}
+  return st('sv_petinsurance', list);
 }
 
 function renderPetInsurance(){
@@ -4402,7 +4409,7 @@ function getPortalRequests(){
 }
 
 function savePortalRequests(list){
-  try { localStorage.setItem('sv_portal', JSON.stringify(list)); } catch(e){}
+  return st('sv_portal', list);
 }
 
 function renderPortal(){
@@ -4463,7 +4470,7 @@ function getReferrals(){
 }
 
 function saveReferrals(list){
-  try { localStorage.setItem('sv_referrals', JSON.stringify(list)); } catch(e){}
+  return st('sv_referrals', list);
 }
 
 function renderReferrals(){
@@ -4524,7 +4531,7 @@ function getReminders(){
 }
 
 function saveReminders(list){
-  try { localStorage.setItem('sv_reminders', JSON.stringify(list)); } catch(e){}
+  return st('sv_reminders', list);
 }
 
 function renderReminders(){
@@ -4585,7 +4592,7 @@ function getWellnessPlans(){
 }
 
 function saveWellnessPlans(list){
-  try { localStorage.setItem('sv_wellness', JSON.stringify(list)); } catch(e){}
+  return st('sv_wellness', list);
 }
 
 function renderWellness(){
@@ -4645,7 +4652,7 @@ function getCogginsTests(){
 }
 
 function saveCogginsTests(list){
-  try { localStorage.setItem('sv_coggins', JSON.stringify(list)); } catch(e){}
+  return st('sv_coggins', list);
 }
 
 function renderCoggins(){
@@ -4766,7 +4773,7 @@ function getHerds(){
 }
 
 function saveHerds(list){
-  try { localStorage.setItem('sv_herdhealth', JSON.stringify(list)); } catch(e){}
+  return st('sv_herdhealth', list);
 }
 
 function renderHerdHealth(){
@@ -4903,7 +4910,7 @@ function getWildlifeCases(){
 }
 
 function saveWildlifeCases(list){
-  try { localStorage.setItem('sv_wildliferehab', JSON.stringify(list)); } catch(e){}
+  return st('sv_wildliferehab', list);
 }
 
 function renderWildlifeRehab(){
@@ -5029,7 +5036,7 @@ function getConservationRecords(){
 }
 
 function saveConservationRecords(list){
-  try { localStorage.setItem('sv_conservation', JSON.stringify(list)); } catch(e){}
+  return st('sv_conservation', list);
 }
 
 function renderConservation(){
@@ -5153,7 +5160,7 @@ function getComplianceItems(){
 }
 
 function saveComplianceItems(list){
-  try { localStorage.setItem('sv_compliance', JSON.stringify(list)); } catch(e){}
+  return st('sv_compliance', list);
 }
 
 function svComplianceStatus(dueDate, today){
@@ -5280,7 +5287,7 @@ function getClients(){
 }
 
 function saveClients(list){
-  try { localStorage.setItem('sv_clients', JSON.stringify(list)); } catch(e){}
+  return st('sv_clients', list);
 }
 
 function renderClientsPanel(){
@@ -5404,7 +5411,7 @@ function getInvoices(){
 }
 
 function saveInvoices(list){
-  try { localStorage.setItem('sv_invoicing', JSON.stringify(list)); } catch(e){}
+  return st('sv_invoicing', list);
 }
 
 function renderInvoicing(){
@@ -5479,7 +5486,7 @@ function saveInvoiceEdit(id){
   v.amount = isNaN(a) ? null : a;
   v.status = document.getElementById('inv-edit-status').value;
   v.date = document.getElementById('inv-edit-date').value || null;
-  saveInvoices(list);
+  if(!saveInvoices(list)){ showToast('Could not save -- storage may be full or unavailable, try again','error',5000); return; }
   cancelInvoiceEdit();
   renderInvoicing();
   showToast('Updated '+v.num,'success');
@@ -5488,8 +5495,8 @@ function saveInvoiceEdit(id){
 function removeInvoice(id){
   var list = getInvoices();
   var v = list.find(function(x){ return x.id===id; });
-  list = list.filter(function(x){ return x.id!==id; });
-  saveInvoices(list);
+  var filtered = list.filter(function(x){ return x.id!==id; });
+  if(!saveInvoices(filtered)){ showToast('Could not remove -- storage may be full or unavailable, try again','error',5000); return; }
   cancelInvoiceEdit();
   renderInvoicing();
   showToast((v?v.num:'Invoice')+' removed','success');
@@ -5507,7 +5514,7 @@ function addInvoice(){
   var list = getInvoices();
   var id = 'iv' + Date.now();
   list.push({id:id, num:num, client:client, amount:a, status:status, date:date||localToday()});
-  saveInvoices(list);
+  if(!saveInvoices(list)){ showToast('Could not save -- storage may be full or unavailable, try again','error',5000); return; }
   renderInvoicing();
   document.getElementById('inv-add-num').value='';
   document.getElementById('inv-add-client').value='';
@@ -5531,7 +5538,7 @@ function getBillingTx(){
 }
 
 function saveBillingTx(list){
-  try { localStorage.setItem('sv_billing', JSON.stringify(list)); } catch(e){}
+  return st('sv_billing', list);
 }
 
 function renderBilling(){
@@ -5658,7 +5665,7 @@ function getFinancials(){
 }
 
 function saveFinancials(list){
-  try { localStorage.setItem('sv_financials', JSON.stringify(list)); } catch(e){}
+  return st('sv_financials', list);
 }
 
 function renderFinancials(){
@@ -5780,7 +5787,7 @@ function getReports(){
 }
 
 function saveReports(list){
-  try { localStorage.setItem('sv_reports', JSON.stringify(list)); } catch(e){}
+  return st('sv_reports', list);
 }
 
 function renderReports(){
@@ -5950,7 +5957,7 @@ function getStaff(){
 }
 
 function saveStaff(list){
-  try { localStorage.setItem('sv_staff', JSON.stringify(list)); } catch(e){}
+  return st('sv_staff', list);
 }
 
 function renderStaff(){
@@ -6066,7 +6073,7 @@ function getLocations(){
 }
 
 function saveLocations(list){
-  try { localStorage.setItem('sv_multisite', JSON.stringify(list)); } catch(e){}
+  return st('sv_multisite', list);
 }
 
 function renderMultisite(){
@@ -6190,7 +6197,7 @@ function getControlledLog(){
 }
 
 function saveControlledLog(list){
-  try { localStorage.setItem('sv_controlled', JSON.stringify(list)); } catch(e){}
+  return st('sv_controlled', list);
 }
 
 function renderControlled(){
@@ -6244,7 +6251,11 @@ function logControlledUse(){
   var dateStr = localToday();
   var txnText = dateStr+' — '+amount+(entry?entry.unit:'')+' used'+(patient?', patient '+patient:'')+(witness?' (witnessed: '+witness+')':'');
 
+  var prevOnHand, prevLastTransaction, prevWitness, isNewEntry = !entry;
   if(entry){
+    prevOnHand = entry.onHand;
+    prevLastTransaction = entry.lastTransaction;
+    prevWitness = entry.witness;
     entry.onHand = entry.onHand - amount;
     entry.lastTransaction = txnText;
     if(witness) entry.witness = witness;
@@ -6253,7 +6264,17 @@ function logControlledUse(){
     showToast('New drug not in prior log — on-hand balance may be inaccurate until initial count is entered','error',6000);
   }
 
-  saveControlledLog(list);
+  var saved = saveControlledLog(list);
+  if(!saved){
+    // Roll back the in-memory mutation -- a failed write must not leave the
+    // on-screen running balance out of sync with what's actually persisted.
+    if(isNewEntry){ list.pop(); }
+    else { entry.onHand = prevOnHand; entry.lastTransaction = prevLastTransaction; entry.witness = prevWitness; }
+    renderControlled();
+    logDoseAudit({type:'controlled_log_failed', drug:drugName, amount:amount, reason:'storage_write_failed'});
+    showToast('Could not save — storage may be full or unavailable. Running balance NOT updated, try again.','error',6000);
+    return;
+  }
   renderControlled();
   logDoseAudit({type:'controlled_log', drug:drugName, amount:amount, patient:patient, witness:witness});
   document.getElementById('log-drug').value='';
@@ -6444,8 +6465,8 @@ function logDoseAudit(entry){
     entry.timestamp = new Date().toISOString();
     log.push(entry);
     if(log.length>500) log = log.slice(log.length-500);
-    localStorage.setItem('sv_audit_log', JSON.stringify(log));
-  }catch(e){}
+    return st('sv_audit_log', log);
+  }catch(e){ return false; }
 }
 
 function onDoseVetSignoff(){
@@ -6681,7 +6702,7 @@ function getSoapNotes(){
 }
 
 function saveSoapNotes(list){
-  try { localStorage.setItem('sv_soapnotes', JSON.stringify(list)); } catch(e){}
+  return st('sv_soapnotes', list);
 }
 
 function renderSoap(){
@@ -6731,7 +6752,7 @@ function getComms(){
 }
 
 function saveComms(list){
-  try { localStorage.setItem('sv_comms', JSON.stringify(list)); } catch(e){}
+  return st('sv_comms', list);
 }
 
 function renderComms(){
@@ -6796,7 +6817,7 @@ function getBoarding(){
 }
 
 function saveBoarding(list){
-  try { localStorage.setItem('sv_boarding', JSON.stringify(list)); } catch(e){}
+  return st('sv_boarding', list);
 }
 
 function renderBoarding(){
@@ -6936,7 +6957,7 @@ function getSpeciesRefs(){
 }
 
 function saveSpeciesRefs(list){
-  try { localStorage.setItem('sv_speciesref', JSON.stringify(list)); } catch(e){}
+  return st('sv_speciesref', list);
 }
 
 function renderSpeciesRef(){
@@ -7231,7 +7252,7 @@ function getPeerConsults(){
   try{ return JSON.parse(localStorage.getItem('sv_peerconsults')||'[]'); }catch(e){ return []; }
 }
 function savePeerConsults(list){
-  try{ localStorage.setItem('sv_peerconsults', JSON.stringify(list)); }catch(e){}
+  return st('sv_peerconsults', list);
 }
 
 function renderPeerConsults(){
