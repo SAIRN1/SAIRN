@@ -312,6 +312,7 @@ label.chk input{width:auto;}
   </div>
   <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
   <div class="card"><div class="ch"><span class="ct">Upcoming Deadlines</span></div><div class="cb" id="d-deadlines"></div></div>
+  <div class="card"><div class="ch"><span class="ct">Deadline Miss Rate</span></div><div class="cb" id="d-predictive"></div></div>
 </div>
 
 <!-- AI ASSISTANT -->
@@ -1690,6 +1691,55 @@ function rDash(){
   $('d-deadlines').innerHTML=upcoming.length?upcoming.map(function(d){
     return '<div class="srow"><span class="slbl">'+H(matterLabel(d.matter_id))+' -- '+H(d.title)+'</span><span class="sval">'+fdate(d.due_date)+'</span></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No upcoming deadlines</div>';
+
+  rDeadlineMissRate(dl,today);
+}
+
+// Predictive insight (2026-08-18, real-data-layer/AI-advancement rollout):
+// "missed" = a deadline whose due date has already passed and that is
+// still status:'Pending' (never marked complete before or after its due
+// date -- completeDeadline() doesn't stamp a completed_at timestamp, so
+// there is no way to distinguish "completed on time" from "completed
+// late" for deadlines already marked Complete; this only measures what
+// the current data model can actually support -- deadlines that blew
+// past their due date without ever being closed out, not a true
+// on-time-vs-late completion rate. Same anti-fabrication discipline as
+// every other app's predictive insight: honest "not enough history" gate
+// below a minimum sample, never a placeholder percentage.
+var DEADLINE_MISS_MIN_SAMPLE=4;
+function rDeadlineMissRate(dl,today){
+  var el=$('d-predictive');if(!el)return;
+  var pastDue=dl.filter(function(d){return d.due_date&&d.due_date<today;});
+  if(pastDue.length<DEADLINE_MISS_MIN_SAMPLE){
+    el.innerHTML='<div style="color:var(--muted);text-align:center;padding:12px">Not enough deadline history yet ('+pastDue.length+' past-due entry(ies) on record) -- this will start surfacing real patterns once there\'s more volume.</div>';
+    return;
+  }
+  var missed=pastDue.filter(function(d){return d.status==='Pending';});
+  var overallRate=missed.length/pastDue.length*100;
+  var byType={};
+  pastDue.forEach(function(d){
+    var t=d.type||'(no type)';
+    if(!byType[t])byType[t]={total:0,missed:0};
+    byType[t].total++;
+    if(d.status==='Pending')byType[t].missed++;
+  });
+  var flagged=[];
+  Object.keys(byType).forEach(function(t){
+    var b=byType[t];
+    if(b.total<DEADLINE_MISS_MIN_SAMPLE)return;
+    var typeRate=b.missed/b.total*100;
+    // overallRate===0 guard: 0*1.3 is still 0, which would otherwise flag
+    // every type at parity (0% missed, same as overall) as "30%+ worse" --
+    // a real edge case, not hypothetical, caught before shipping. Nothing
+    // is worse than a 0% overall rate by definition, so nothing gets
+    // flagged in that case.
+    if(overallRate>0&&typeRate>=overallRate*1.3)flagged.push({type:t,rate:typeRate,total:b.total});
+  });
+  var html='<div class="srow"><span class="slbl">Overall</span><span class="sval">'+overallRate.toFixed(1)+'% ('+missed.length+' of '+pastDue.length+' past-due entries still open)</span></div>';
+  flagged.forEach(function(f){
+    html+='<div style="font-size:12px;color:#111;padding:4px 0">&#9888;&#65039; <b>'+H(f.type)+'</b> -- '+f.rate.toFixed(1)+'% still open vs this firm\'s own '+overallRate.toFixed(1)+'% overall ('+f.total+' past-due entries) -- worth reviewing process for this deadline type.</div>';
+  });
+  el.innerHTML=html;
 }
 
 // ── CLIENT / MATTER INTAKE ────────────────────────────────────────────────
