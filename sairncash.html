@@ -89,6 +89,7 @@ footer{padding:40px;border-top:1px solid var(--border);display:flex;justify-cont
 .pw-price sup{font-size:24px;font-weight:500;vertical-align:top;margin-top:12px;display:inline-block}
 .pw-period{color:var(--muted);font-size:13px;margin-bottom:20px}
 .pw-trial-note{background:rgba(0,229,196,0.06);border:1px solid rgba(0,229,196,0.15);border-radius:12px;padding:12px 16px;font-size:12px;color:var(--pulse);margin-bottom:24px;text-align:left;line-height:1.6}
+.trial-badge{background:rgba(0,229,196,0.12);border:1px solid rgba(0,229,196,0.3);border-radius:8px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--pulse)}
 .pw-features{list-style:none;margin-bottom:28px;text-align:left}
 .pw-features li{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
 .pw-features li:last-child{border-bottom:none}
@@ -248,20 +249,19 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
     <div class="pw-logo">SAIRNcash</div>
     <div class="pw-tagline">AI Financial Co-Pilot for Freelancers</div>
     <div class="pw-card">
-      <div class="pw-price"><sup>$</sup>9<span style="font-size:30px">.99</span></div>
-      <div class="pw-period">per month · unlimited Claude AI</div>
-      <div class="pw-trial-note" id="pwTrialNote">You'll be charged $9.99/mo starting today when you subscribe. No trial is offered yet in this build -- see the implementation plan's deferred trial-notice UI before any real trial period is offered.</div>
+      <div class="pw-trial-note" id="pwTrialNote">Start with a 30-day free trial -- no credit card. After 30 days your trial ends; renewal is by request, reviewed manually (not an automatic charge).</div>
       <ul class="pw-features">
         <li><span>✓</span>Unlimited AI with Claude</li>
         <li><span>✓</span>Quarterly tax set-aside tracking</li>
         <li><span>✓</span>Deduction categorization</li>
         <li><span>✓</span>Phone + computer synced live</li>
       </ul>
-      <input class="pw-email" type="email" id="pwEmail" placeholder="your@email.com (optional)">
-      <button class="pw-btn" id="subBtn" onclick="startCheckout()">Get SAIRNcash Pro — $9.99/mo</button>
+      <input class="pw-email" type="email" id="pwEmail" placeholder="your@email.com">
+      <button class="pw-btn" id="trialBtn" onclick="startTrial()">Start your 30-day free trial</button>
       <div class="pw-error" id="pwError"></div>
-      <p class="pw-note">Secured by Stripe · Cancel anytime · No hidden fees</p>
+      <p class="pw-note">No credit card required · No hidden fees</p>
       <p class="pw-not-tax-filing">SAIRNcash tracks, categorizes, and estimates what you owe. It does not file your taxes -- hand off to your accountant or filing software (TurboTax, H&amp;R Block, a CPA) when it's time to file.</p>
+      <div class="pw-error" id="trialExpiredNote" style="display:none">Your trial has ended. Renewal is reviewed manually -- contact us to continue.</div>
     </div>
   </div>
 
@@ -271,6 +271,7 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
       <div class="app-topbar-right">
         <span class="status-dot"></span>
         <span class="pro-badge">PRO</span>
+        <span class="trial-badge" id="trialBadge" style="display:none"></span>
         <span class="app-badge" id="syncBadge">○ Sync</span>
         <button class="topbar-btn-sm" onclick="showAccount()">Account</button>
         <button class="topbar-btn-sm" onclick="signOut()">Sign out</button>
@@ -527,6 +528,66 @@ function signOut() {
   if (confirm('Sign out? You will need to resubscribe.')) { localStorage.removeItem('sairncash_sub'); location.reload(); }
 }
 
+// ── TRIAL (30-day, no Stripe dependency) ────────────────────────────
+// 2026-08-18: server-authoritative trial, same standard as
+// isSubscribed()/reverifySubscription() above -- real expires_at from
+// the server, never a client-only timer. Renewal is admin-approval-only
+// (api/sairncash/trial-renew.js) -- no self-service renew path exists
+// anywhere in this client code, by design.
+function getTrial() { try { return JSON.parse(localStorage.getItem('sairncash_trial') || 'null'); } catch { return null; } }
+function saveTrial(d) { localStorage.setItem('sairncash_trial', JSON.stringify(d)); }
+function isTrialActive() {
+  const t = getTrial();
+  if (!t || !t.expiresAt) return false;
+  return Date.now() < new Date(t.expiresAt).getTime();
+}
+async function reverifyTrial() {
+  const t = getTrial();
+  if (!t || !t.trialToken) return false;
+  try {
+    const res = await fetch('/api/sairncash/trial-verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trialToken: t.trialToken }) });
+    const data = await res.json();
+    if (data.valid) { saveTrial({ trialToken: t.trialToken, expiresAt: data.expiresAt, daysLeft: data.daysLeft }); return true; }
+    return false;
+  } catch (e) {
+    return isTrialActive();
+  }
+}
+async function startTrial() {
+  const btn = document.getElementById('trialBtn');
+  const err = document.getElementById('pwError');
+  const email = document.getElementById('pwEmail').value.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    err.textContent = 'Enter a valid email to start your trial'; err.style.display = 'block';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Starting trial...'; err.style.display = 'none';
+  try {
+    const res = await fetch('/api/sairncash/trial-start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    const data = await res.json();
+    if (data.trialToken) {
+      saveTrial({ trialToken: data.trialToken, expiresAt: data.expiresAt, daysLeft: 30 });
+      await initApp();
+    } else {
+      throw new Error((data.error && data.error.message) || 'Could not start trial');
+    }
+  } catch (e) {
+    err.textContent = 'Error: ' + e.message; err.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Start your 30-day free trial';
+  }
+}
+function renderTrialBadge() {
+  const t = getTrial();
+  const badge = document.getElementById('trialBadge');
+  if (!badge) return;
+  if (t && typeof t.daysLeft === 'number' && t.daysLeft <= 5) {
+    badge.textContent = t.daysLeft <= 0 ? 'Trial ending' : t.daysLeft + ' day' + (t.daysLeft === 1 ? '' : 's') + ' left';
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 async function startCheckout() {
   const btn = document.getElementById('subBtn');
   const err = document.getElementById('pwError');
@@ -561,8 +622,10 @@ async function handleStripeReturn() {
 
 async function initApp() {
   const justPaid = await handleStripeReturn();
-  if (justPaid || await reverifySubscription()) {
+  const hasTrial = getTrial() && await reverifyTrial();
+  if (justPaid || await reverifySubscription() || hasTrial) {
     showAppShell();
+    renderTrialBadge();
     // Firebase sync only starts once a real, verified customerId exists
     // (2026-08-10 isolation fix) -- never before, never with a fallback
     // shared path. initFinanceSync() waits for it to finish setting up
@@ -571,6 +634,9 @@ async function initApp() {
   } else {
     document.getElementById('paywall').style.display = 'flex';
     document.getElementById('appShell').classList.remove('show');
+    const hadTrial = getTrial();
+    document.getElementById('trialExpiredNote').style.display = hadTrial ? 'block' : 'none';
+    document.getElementById('trialBtn').style.display = hadTrial ? 'none' : 'block';
   }
 }
 
