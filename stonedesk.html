@@ -21733,12 +21733,18 @@ var sdNegotiatedPrices = JSON.parse(localStorage.getItem('sd_negotiated_prices')
 
 function vendorSaveNegotiated(sku, price) {
   if(!sku) return;
+  var hadPrev = Object.prototype.hasOwnProperty.call(sdNegotiatedPrices, sku);
+  var prevVal = sdNegotiatedPrices[sku];
   if(!price || isNaN(parseFloat(price))) {
     delete sdNegotiatedPrices[sku];
   } else {
     sdNegotiatedPrices[sku] = parseFloat(price);
   }
-  localStorage.setItem('sd_negotiated_prices', JSON.stringify(sdNegotiatedPrices));
+  if(!st('sd_negotiated_prices', sdNegotiatedPrices)){
+    if(hadPrev) sdNegotiatedPrices[sku] = prevVal; else delete sdNegotiatedPrices[sku];
+    notify('Could not save negotiated price -- storage may be full or unavailable, try again','warn');
+    return;
+  }
   renderVendor();
   notify('Negotiated price saved for '+sku,'');
 }
@@ -21988,9 +21994,10 @@ var sdPricingRules = JSON.parse(localStorage.getItem('sd_pricing_rules') || '{"v
 var sdOrderHistory = JSON.parse(localStorage.getItem('sd_order_history') || '[]');
 
 function savePricingRules() {
-  localStorage.setItem('sd_pricing_rules', JSON.stringify(sdPricingRules));
+  var saved = st('sd_pricing_rules', sdPricingRules);
   renderVendor();
   vendorUpdateKPIs();
+  return saved;
 }
 
 // -- EFFECTIVE PRICE CALCULATION (3-tier) -----------------------
@@ -22094,6 +22101,10 @@ function pmImportCSV() {
   if(!raw) { notify('Paste CSV data first','warn'); return; }
   var lines = raw.split('\n');
   var imported = 0; var skipped = 0;
+  // Snapshot both objects so a failed write can be rolled back wholesale
+  // rather than leaving a partial import applied in memory but not persisted.
+  var prevNegotiated = JSON.parse(JSON.stringify(sdNegotiatedPrices));
+  var prevOverrides = JSON.parse(JSON.stringify(sdPricingRules.productOverrides));
   lines.forEach(function(line) {
     var parts = line.split(',');
     if(parts.length < 2) { skipped++; return; }
@@ -22104,8 +22115,16 @@ function pmImportCSV() {
     sdNegotiatedPrices[sku] = price;
     imported++;
   });
-  localStorage.setItem('sd_negotiated_prices', JSON.stringify(sdNegotiatedPrices));
-  savePricingRules();
+  var savedNP = st('sd_negotiated_prices', sdNegotiatedPrices);
+  var savedPR = savePricingRules();
+  if(!savedNP || !savedPR){
+    sdNegotiatedPrices = prevNegotiated;
+    sdPricingRules.productOverrides = prevOverrides;
+    st('sd_negotiated_prices', sdNegotiatedPrices);
+    savePricingRules();
+    notify('Could not save import -- storage may be full or unavailable, nothing was imported','warn',6000);
+    return;
+  }
   pmRenderOverrides();
   var resultEl = document.getElementById('pm-import-result');
   if(resultEl) resultEl.innerHTML = '<span style="color:#16a34a;font-weight:700">&#9989; Imported '+imported+' prices.</span>' + (skipped?' <span style="color:#ca8a04">'+skipped+' lines skipped (bad format).</span>':'');
@@ -22156,12 +22175,16 @@ function pmClearAll() {
   if(!confirm('Clear ALL negotiated prices and discounts? This cannot be undone.')) return;
   sdPricingRules = {vendorDiscounts:{},categoryDiscounts:[],productOverrides:{}};
   sdNegotiatedPrices = {};
-  localStorage.setItem('sd_negotiated_prices','{}');
-  savePricingRules();
+  var clearedNP = st('sd_negotiated_prices','{}');
+  var clearedPR = savePricingRules();
   pmRenderVendorDiscounts();
   pmRenderCategoryDiscounts();
   pmRenderOverrides();
-  notify('All pricing deals cleared','');
+  if(!clearedNP || (typeof clearedPR!=='undefined' && !clearedPR)){
+    notify('Warning: clear may not have fully saved -- storage may be full, reload to check','warn');
+  } else {
+    notify('All pricing deals cleared','');
+  }
 }
 
 function pmRenderOverrides() {
@@ -22193,10 +22216,20 @@ function pmRenderOverrides() {
 }
 
 function pmRemoveOverride(sku) {
+  var hadOverride = Object.prototype.hasOwnProperty.call(sdPricingRules.productOverrides, sku);
+  var prevOverride = sdPricingRules.productOverrides[sku];
+  var hadNegotiated = Object.prototype.hasOwnProperty.call(sdNegotiatedPrices, sku);
+  var prevNegotiated = sdNegotiatedPrices[sku];
   delete sdPricingRules.productOverrides[sku];
   delete sdNegotiatedPrices[sku];
-  localStorage.setItem('sd_negotiated_prices', JSON.stringify(sdNegotiatedPrices));
-  savePricingRules();
+  var savedNP = st('sd_negotiated_prices', sdNegotiatedPrices);
+  var savedPR = savePricingRules();
+  if(!savedNP || !savedPR){
+    if(hadOverride) sdPricingRules.productOverrides[sku] = prevOverride;
+    if(hadNegotiated) sdNegotiatedPrices[sku] = prevNegotiated;
+    notify('Could not remove -- storage may be full or unavailable, try again','warn');
+    return;
+  }
   pmRenderOverrides();
 }
 
@@ -22324,7 +22357,9 @@ vendorPlaceOrder = function() {
     var order={id:'ORD'+Date.now(),date:new Date().toISOString(),vendor:VENDORS[_activeVendor].name,items:items,total:total};
     sdOrderHistory.unshift(order);
     if(sdOrderHistory.length>200) sdOrderHistory=sdOrderHistory.slice(0,200);
-    localStorage.setItem('sd_order_history',JSON.stringify(sdOrderHistory));
+    if(!st('sd_order_history',sdOrderHistory)){
+      notify('Order placed, but the order-history record could not be saved -- storage may be full','warn',6000);
+    }
     vendorUpdateKPIs();
   }
   _origPlaceOrder();
@@ -31366,7 +31401,7 @@ async function intakeRefresh() {
     var res = await sb.from(INTAKE_TABLE).select('*').order('created_at', { ascending: false }).limit(100);
     if (res.error) throw res.error;
     intakeSubmissions = res.data || [];
-    localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions));
+    st('sd_intake', intakeSubmissions); // best-effort local cache -- Supabase is the real source of truth here
   } catch(e) {
     intakeSubmissions = JSON.parse(localStorage.getItem('sd_intake') || '[]');
   }
@@ -31499,7 +31534,7 @@ async function intakeAccept(id) {
   s.status = 'accepted';
   var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
   if (sb) { try { await sb.from(INTAKE_TABLE).update({status:'accepted'}).eq('id', id); } catch(e){} }
-  localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions));
+  st('sd_intake', intakeSubmissions); // local cache; Supabase update above is the real record
 
   intakeRender();
   if (typeof showToast === 'function') showToast('Customer + Job created from intake!');
@@ -31510,7 +31545,7 @@ async function intakeDismiss(id) {
   intakeSubmissions = intakeSubmissions.filter(function(x){ return x.id !== id; });
   var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
   if (sb) { try { await sb.from(INTAKE_TABLE).delete().eq('id', id); } catch(e){} }
-  localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions));
+  st('sd_intake', intakeSubmissions); // local cache; Supabase delete above is the real record
   intakeRender();
 }
 
@@ -31559,7 +31594,7 @@ async function intakeAnalyzePhoto(id) {
     s.claude_analysis = analysis;
     var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
     if (sb) { try { await sb.from(INTAKE_TABLE).update({claude_analysis: analysis}).eq('id', id); } catch(e){} }
-    localStorage.setItem('sd_intake', JSON.stringify(intakeSubmissions));
+    st('sd_intake', intakeSubmissions); // local cache; Supabase update above is the real record
 
     resultEl.innerHTML =
       '<img src="'+s.photo_base64+'" style="width:100%;border-radius:10px;margin-bottom:12px">'+
@@ -32223,12 +32258,17 @@ function esigApprove(){
     approvedAt:new Date().toISOString(),
     depositStatus:'pending'
   };
+  var approvalSaved=false;
   try{
     var approvals=JSON.parse(localStorage.getItem('sd_approvals')||'[]');
     approvals.unshift(approval);
     if(approvals.length>100)approvals=approvals.slice(0,100);
-    localStorage.setItem('sd_approvals',JSON.stringify(approvals));
+    approvalSaved = st('sd_approvals',approvals);
   }catch(e){}
+  if(!approvalSaved){
+    showToast('Could not save the signed approval -- storage may be full or unavailable. Do not tell the customer this is approved yet, try again.','error',8000);
+    return;
+  }
 
   // Update matching customer record if exists
   if(typeof sdCustomers!=='undefined'){
