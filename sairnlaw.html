@@ -1567,6 +1567,47 @@ lawRegisterTool(
   }
 );
 
+// SHARED FIRM-KNOWLEDGE LAYER (2026-08-18, build order item 4/4 -- see
+// docs/superpowers/specs/2026-08-18-sairnlaw-ai-advancement-design.md
+// section 2). Same /api/sd-data shared_knowledge resource StoneDesk/
+// SAIRNbiz/SAIRNcode already use (generic, license_hash-scoped, no
+// per-app server change needed -- sdnData() above already points at
+// DATA_API with APP_ID='sairnlaw'). The one real difference from every
+// other app's port of this: extraction is GATED to general-only
+// questions. This app's own AI Assistant form already forces every
+// question to pick a real matter number or "general" before sending
+// (aimatter select, sairnlaw.html:341-342) -- a distinction other apps
+// don't have and this one shouldn't waste. A matter-specific question
+// (e.g. "how do I handle the Ostrander embezzlement defense") would leak
+// real client/matter facts firm-wide as "trending topics" if extracted
+// the same way SAIRNbiz/SAIRNcode do it unconditionally -- so
+// recordLawSharedTopics() is only ever called from sendAI() when
+// sentMatter==='general'. Reading the resulting topic list back into the
+// system prompt is safe for ANY question, since by construction it can
+// only ever contain words pulled from prior general (non-matter) questions.
+var _lawSharedKnowledge=null;
+function loadLawSharedKnowledge(){try{sdnData('read','shared_knowledge',{}).then(function(data){if(data)_lawSharedKnowledge=data;});}catch(e){}}
+function recordLawSharedTopics(text){
+  try{
+    if(!text)return;
+    var words=(String(text).toLowerCase().match(/\b[a-z]{5,}\b/g)||[]).slice(0,60);
+    if(!words.length)return;
+    sdnData('write','shared_knowledge',{words:words});
+  }catch(e){}
+}
+function buildLawSharedCompanyContext(){
+  var lines=['SHARED FIRM KNOWLEDGE (from general, non-matter-specific questions asked across the whole firm, not just this device):'];
+  if(_lawSharedKnowledge&&_lawSharedKnowledge.topics){
+    var topics=Object.entries(_lawSharedKnowledge.topics).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(e){return e[0];});
+    if(topics.length)lines.push('• Frequently discussed (general questions only, never matter-specific): '+topics.join(', '));
+  }
+  if(lines.length===1)return'';
+  return lines.join('\n');
+}
+loadLawSharedKnowledge();
+window.buildLawSharedCompanyContext=buildLawSharedCompanyContext;
+window.recordLawSharedTopics=recordLawSharedTopics;
+
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about matters, deadlines, trust accounting, or billing.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
@@ -1577,6 +1618,9 @@ async function sendAI(){
   // Frozen at send time -- see docs/superpowers/specs/2026-08-13-sairnlaw-
   // ai-chain-of-custody-server-side-capture-design.md.
   var sentMatter=matterSel?matterSel.value:'general';
+  // Gated extraction (2026-08-18) -- only ever runs on general (non-matter)
+  // questions, see buildLawSharedCompanyContext()'s comment above for why.
+  if(sentMatter==='general'&&typeof recordLawSharedTopics==='function')recordLawSharedTopics(q);
   if(lawAiBusy){toast('Please wait for the current response first');return;}
   lawAiBusy=true;
   inp.value='';
@@ -1620,6 +1664,8 @@ async function sendAI(){
   // it sends no `tools` field at all, so a tool's own description has
   // zero influence on that turn.
   var sys='You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to that citation restriction. '+LAW_FIRM_DATA_RULE+' Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop. This applies even to "rough" or "likely" answers.';
+  var sharedCtx=(typeof buildLawSharedCompanyContext==='function')?buildLawSharedCompanyContext():'';
+  if(sharedCtx)sys+='\n\n'+sharedCtx;
   try{
     // AI Chain of Custody -- server-side capture (2026-08-13): ai_generate
     // replaces a raw fetch(PROXY,...) -- one authenticated server round trip
