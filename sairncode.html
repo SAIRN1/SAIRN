@@ -527,25 +527,24 @@
 <div id="pin">
   <div class="pbox">
     <div class="plogo">SAIRNcode</div>
-    <div style="margin-bottom:12px;">
-      <select id="psel" onchange="pRoleChange()">
-        <option value="coder">Coder</option>
-        <option value="biller">Biller</option>
-        <option value="auditor">Auditor</option>
-        <option value="admin">Compliance Admin</option>
-      </select>
+    <div id="pin-signin-view">
+      <div style="margin-bottom:12px;font-size:13px;color:#64748b">Sign in</div>
+      <input class="ginp" id="p-empid" placeholder="Employee ID" autocomplete="off" style="margin-bottom:10px">
+      <input class="ginp" id="p-pin" placeholder="PIN" type="password" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')scLogin()" style="margin-bottom:10px">
+      <button class="gbtn" onclick="scLogin()" id="p-signin-btn">Sign In</button>
+      <div class="perr" id="perr"></div>
+      <div style="margin-top:14px;font-size:12px"><a href="#" onclick="pShowBootstrap();return false" style="color:#64748b">First-time setup</a></div>
     </div>
-    <div class="pdots">
-      <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
-      <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+    <div id="pin-bootstrap-view" style="display:none">
+      <div style="margin-bottom:4px;font-size:13px;color:#64748b">First-time setup</div>
+      <div style="margin-bottom:12px;font-size:11px;color:#94a3b8">Creates this practice's first Compliance Admin account. Only works once.</div>
+      <input class="ginp" id="b-empid" placeholder="Admin employee ID" autocomplete="off" style="margin-bottom:10px">
+      <input class="ginp" id="b-name" placeholder="Display name" autocomplete="off" style="margin-bottom:10px">
+      <input class="ginp" id="b-pin" placeholder="Choose a 6-8 digit PIN" type="password" inputmode="numeric" autocomplete="off" style="margin-bottom:10px">
+      <button class="gbtn" onclick="scBootstrap()" id="p-bootstrap-btn">Create Admin Account</button>
+      <div class="perr" id="berr"></div>
+      <div style="margin-top:14px;font-size:12px"><a href="#" onclick="pShowSignin();return false" style="color:#64748b">Back to sign in</a></div>
     </div>
-    <div class="ppad">
-      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
-      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
-      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
-      <button class="pkey" onclick="pk('C')" style="color:#94a3b8">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')" style="color:#dc2626">&#8592;</button>
-    </div>
-    <div class="perr" id="perr"></div>
   </div>
 </div>
 
@@ -1298,15 +1297,19 @@
         // execution access. Until then, gateGo() will correctly refuse the
         // documented demo key, which is the honest behavior of a real check,
         // not a bug in this gate.
-        var PINS = { coder: '1234', biller: '2345', auditor: '3456', admin: '4567' };
-        var pbuf = '';
         var currentRole = null;
-        // RBAC enforcement (2026-08-09 audit): currentRole was set on PIN entry
-        // but never read anywhere -- all 4 roles had identical destructive access.
-        // Minimal, defensible baseline given no other role/permission spec exists
-        // in this app: only Compliance Admin (the role the UI itself presents as
-        // the elevated one) can delete records. Coder/Biller/Auditor keep full
-        // add/view/export access -- this only gates the 15 remove*() functions.
+        // Fixed (2026-08-18 real-auth pass): PINS = one shared, hardcoded,
+        // identical-for-every-customer PIN per role (coder/biller/auditor/
+        // admin = 1234/2345/3456/4567) used to live here in this PUBLIC
+        // repo's client source -- real per-employee auth (api/sc-auth.js,
+        // sql/sairncode_employee_auth_schema.sql) replaces it entirely. This
+        // client-side check is still a real UI convenience (skip a round
+        // trip for an obviously-wrong-role click), but the actual
+        // authorization boundary is now server-side -- see api/sd-data.js's
+        // SC_RESOURCES delete branch, which independently re-verifies the
+        // caller's real session token and role before deleting anything,
+        // exactly because a client-side-only check like this one can be
+        // bypassed by anyone editing the DOM/devtools.
         function requireAdminForDelete(){
             if (currentRole === 'admin') return true;
             showToast('Only Compliance Admin can delete records');
@@ -1365,22 +1368,13 @@
             btn.disabled = false; btn.textContent = 'Activate';
         }
 
-        function pRoleChange() { pbuf = ''; dots(); document.getElementById('perr').textContent = ''; }
-
-        function dots() {
-            for (var i = 0; i < 4; i++) {
-                var d = document.getElementById('pd' + i);
-                if (d) d.className = 'pdot' + (i < pbuf.length ? ' on' : '');
-            }
+        function pShowBootstrap() {
+            document.getElementById('pin-signin-view').style.display = 'none';
+            document.getElementById('pin-bootstrap-view').style.display = 'block';
         }
-
-        function pk(k) {
-            document.getElementById('perr').textContent = '';
-            if (k === 'C') { pbuf = ''; dots(); return; }
-            if (k === 'X') { pbuf = pbuf.slice(0, -1); dots(); return; }
-            if (pbuf.length >= 4) return;
-            pbuf += k; dots();
-            if (pbuf.length === 4) setTimeout(chkPin, 120);
+        function pShowSignin() {
+            document.getElementById('pin-bootstrap-view').style.display = 'none';
+            document.getElementById('pin-signin-view').style.display = 'block';
         }
 
         // 30-day trial gate, keyed off a real timestamp written on first-ever
@@ -1408,26 +1402,91 @@
         }
         window.checkTrialGate = checkTrialGate;
 
-        function chkPin() {
-            var role = document.getElementById('psel').value;
-            if (pbuf === PINS[role]) {
-                currentRole = role;
-                localStorage.setItem('sc_role', currentRole);
-                if (!checkTrialGate()) return;
-                document.getElementById('pin').classList.remove('on');
-                document.getElementById('app').classList.add('on');
-                document.getElementById('huser').textContent = currentRole;
-                updateNavA11y();
-            } else {
-                document.getElementById('perr').textContent = 'Incorrect PIN';
-                pbuf = ''; dots();
+        // Real per-employee login (2026-08-18) -- replaces the old hardcoded
+        // shared-PIN-per-role check (PINS[role] above, now dead code left
+        // only as a comment trail -- see requireAdminForDelete()'s own
+        // updated comment). Calls api/sc-auth.js, same shape as every other
+        // app's real auth endpoint.
+        async function scAuthCall(action, body) {
+            var lic = null;
+            try { lic = localStorage.getItem('sc_license_key'); } catch (e) {}
+            if (!lic) return { ok: false, error: { message: 'No license key on file' } };
+            try {
+                var res = await fetch('https://sairn.vercel.app/api/sc-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+                    body: JSON.stringify(Object.assign({ action: action }, body))
+                });
+                var data = await res.json().catch(function () { return null; });
+                if (!res.ok || !data) {
+                    return { ok: false, error: (data && data.error) || { message: 'Request failed (' + res.status + ')' } };
+                }
+                return data;
+            } catch (e) {
+                return { ok: false, error: { message: 'Could not reach the server -- check your connection' } };
             }
+        }
+
+        async function scLogin() {
+            var err = document.getElementById('perr');
+            var btn = document.getElementById('p-signin-btn');
+            var employee_id = document.getElementById('p-empid').value.trim();
+            var pin = document.getElementById('p-pin').value.trim();
+            err.textContent = '';
+            if (!employee_id || !pin) { err.textContent = 'Employee ID and PIN are required'; return; }
+            btn.disabled = true; btn.textContent = 'Signing in...';
+            var result = await scAuthCall('login', { employee_id: employee_id, pin: pin });
+            btn.disabled = false; btn.textContent = 'Sign In';
+            if (!result.ok) {
+                err.textContent = (result.error && result.error.message) || 'Sign-in failed';
+                return;
+            }
+            await scOnAuthenticated(result.token, result.role, result.employee_id);
+        }
+
+        async function scBootstrap() {
+            var err = document.getElementById('berr');
+            var btn = document.getElementById('p-bootstrap-btn');
+            var employee_id = document.getElementById('b-empid').value.trim();
+            var display_name = document.getElementById('b-name').value.trim();
+            var pin = document.getElementById('b-pin').value.trim();
+            err.textContent = '';
+            if (!employee_id || !/^\d{6,8}$/.test(pin)) { err.textContent = 'Employee ID and a 6-8 digit PIN are required'; return; }
+            btn.disabled = true; btn.textContent = 'Creating...';
+            var result = await scAuthCall('bootstrap', { employee_id: employee_id, display_name: display_name, pin: pin });
+            btn.disabled = false; btn.textContent = 'Create Admin Account';
+            if (!result.ok) {
+                err.textContent = (result.error && result.error.message) || 'Setup failed';
+                return;
+            }
+            await scOnAuthenticated(result.token, result.role, result.employee_id);
+        }
+
+        async function scOnAuthenticated(token, role, employee_id) {
+            currentRole = role;
+            localStorage.setItem('sc_session_token', token);
+            localStorage.setItem('sc_role', role);
+            localStorage.setItem('sc_employee_id', employee_id);
+            if (!checkTrialGate()) return;
+            document.getElementById('pin').classList.remove('on');
+            document.getElementById('app').classList.add('on');
+            document.getElementById('huser').textContent = employee_id + ' (' + role + ')';
+            updateNavA11y();
+            // Real server sync now that we have a valid session -- see
+            // scSyncAllResources() below. Fire-and-forget from the caller's
+            // perspective (UI is already usable against local cache), but
+            // re-renders every panel once real data lands.
+            scSyncAllResources();
         }
 
         function doLogout() {
             localStorage.removeItem('sc_role');
+            localStorage.removeItem('sc_session_token');
+            localStorage.removeItem('sc_employee_id');
             currentRole = null;
-            pbuf = ''; dots();
+            document.getElementById('p-empid').value = '';
+            document.getElementById('p-pin').value = '';
+            pShowSignin();
             document.getElementById('app').classList.remove('on');
             document.getElementById('pin').classList.add('on');
         }
@@ -2904,12 +2963,20 @@ How to answer:
         // ================================================================
         var _scSharedKnowledge = null;
         function scData(action, resource, payload) {
-            var lic = null;
+            var lic = null, sessionToken = null;
             try { lic = localStorage.getItem('sc_license_key'); } catch (e) {}
+            try { sessionToken = localStorage.getItem('sc_session_token'); } catch (e) {}
             if (!lic) return Promise.resolve(null);
+            // X-SD-Auth carries the real per-employee session token (2026-08-18)
+            // -- required for any SC_RESOURCES 'delete' call, which
+            // api/sd-data.js independently re-verifies server-side before
+            // honoring. Harmless to send on read/write too (those branches
+            // ignore it).
+            var reqHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic };
+            if (sessionToken) reqHeaders['X-SD-Auth'] = sessionToken;
             return fetch('https://sairn.vercel.app/api/sd-data', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+                headers: reqHeaders,
                 body: JSON.stringify({ action: action, resource: resource, app_id: 'sairncode', payload: payload || {} })
             }).then(function(r) {
                 return r.json().then(function(d) {
@@ -2918,6 +2985,48 @@ How to answer:
                 });
             }).catch(function(e) { console.warn('scData network error:', e.message); return null; });
         }
+
+        // ── REAL SERVER SYNC for all 15 SAIRNcode business resources
+        // (2026-08-18) ────────────────────────────────────────────────────
+        // Runs once after a successful login/bootstrap. For each resource:
+        // if the server already has real rows, they're authoritative --
+        // overwrite this device's local cache. If the server has zero rows
+        // but this device has local (pre-existing, pre-Pass-2) data, migrate
+        // it up once, silently, per Michael's 2026-08-18 resolved open
+        // question -- no visible "syncing..." step, just happens on login.
+        var SC_RESOURCE_STORAGE_KEYS = {
+            sc_denial: 'sc_denial', sc_revenue: 'sc_revenue', sc_compliance: 'sc_compliance',
+            sc_fraud: 'sc_fraud', sc_prebill: 'sc_prebill', sc_hcc: 'sc_hcc', sc_drg: 'sc_drg',
+            sc_query: 'sc_query', sc_rac: 'sc_rac', sc_telehealth: 'sc_telehealth',
+            sc_anesthesia: 'sc_anesthesia', sc_auth: 'sc_auth', sc_ar: 'sc_ar',
+            sc_providers: 'sc_providers', sc_encoder: 'sc_encoder'
+        };
+        async function scSyncOneResource(resource) {
+            var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
+            var serverList = await scData('read', resource, {});
+            if (Array.isArray(serverList) && serverList.length > 0) {
+                try { localStorage.setItem(storageKey, JSON.stringify(serverList)); } catch (e) {}
+                return;
+            }
+            var local = [];
+            try { var s = localStorage.getItem(storageKey); if (s) local = JSON.parse(s); } catch (e) {}
+            if (Array.isArray(local) && local.length > 0) {
+                for (var i = 0; i < local.length; i++) {
+                    await scData('write', resource, local[i]);
+                }
+            }
+        }
+        async function scSyncAllResources() {
+            var resources = Object.keys(SC_RESOURCE_STORAGE_KEYS);
+            await Promise.all(resources.map(function (r) { return scSyncOneResource(r); }));
+            // Re-render every panel now that local caches may have just been
+            // overwritten (server-authoritative) or migrated (local-first-sync).
+            renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
+            renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
+            renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
+            renderAr(); renderProviders(); renderDashboard();
+        }
+
         function loadScSharedKnowledge() {
             try { scData('read', 'shared_knowledge', {}).then(function(data) { if (data) _scSharedKnowledge = data; }); } catch (e) {}
         }
