@@ -125,17 +125,31 @@ access on real medical billing/coding records.
   `sairnlaw_employee_auth`'s `failed_attempts`/`locked_until` columns
   already do; no new logging infra needed, just the same columns.
 
-## 4. Open questions before an implementation plan gets written
+## 4. Open questions — resolved 2026-08-18 (Michael)
 
-1. **Migration timing/UX** — does existing local data get migrated
-   silently on next login, or should there be a visible one-time "syncing
-   your data" step the user sees? Affects the implementation plan's
-   client-side flow directly.
-2. **Employee bootstrap** — same pattern as SAIRNlaw (`action:'bootstrap'`
-   creates the firm's first Owner/Admin, `action:'setup'` for everyone
-   after), or does SAIRNcode need something different since it currently
-   has no concept of "employees" at all, only shared role PINs?
-3. **Seed-fallback audit** — should I do the full 15-block review as part
-   of this same implementation pass, or as a quick separate pass before it
-   (faster to review in isolation, since some blocks may turn out to be
-   fine as-is and not worth bundling into the bigger auth/sync change)?
+1. **Migration timing/UX: silent, on next login.** Each `sc_*` key with
+   local data and no server row yet gets read and POSTed once to its new
+   resource automatically, then that resource switches to server-reads.
+   No user-visible step.
+2. **Employee bootstrap: same pattern as SAIRNlaw.** `action:'bootstrap'`
+   creates the practice's first Admin account (works once), `action:
+   'setup'` for every employee after that — no new UX design needed,
+   reuses the proven shape directly.
+3. **Seed-fallback audit: separate quick pass first**, before the bigger
+   auth/sync build — its own small task, independently shippable, faster
+   to verify in isolation.
+
+## 5. Build order
+
+Given question 3's resolution, this ships in two passes:
+
+**Pass 1 (next, standalone):** audit and fix all 15 `var seed = [...]`
+blocks — classify each as a real fabrication risk (delete or clearly
+DEMO-ONLY-label it) vs. genuinely fine as-is, commit+push independently.
+
+**Pass 2 (larger, follows Pass 1):** the real data layer + per-employee
+auth build described in §1 — `sairncode_employee_auth` schema, server-side
+RBAC re-check on deletes, 13 real `sc_*` resources wired into
+`api/sd-data.js` + `sql/sairncode_data_schema.sql`, silent on-login
+migration, employee bootstrap/setup flow. Gets its own implementation
+plan before any code, same discipline as every other build this session.
