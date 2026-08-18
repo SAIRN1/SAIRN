@@ -6670,7 +6670,7 @@ function sdInvExport(){
       // starting from its own empty default.
       var old=JSON.parse(localStorage.getItem('sd_slabs')||'null');
       if(Array.isArray(old)&&old.length&&old[0]&&typeof old[0].stone!=='undefined'){
-        localStorage.setItem('sd_slab_tracker',JSON.stringify(old));
+        st('sd_slab_tracker',old);
         try{localStorage.removeItem('sd_slabs');}catch(e2){}
         return old;
       }
@@ -20237,10 +20237,15 @@ function saveBizData() {
   ids.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
   data._machines = JSON.stringify(machines);
   data._employees = JSON.stringify(employees);
-  localStorage.setItem('stondesk_biz', JSON.stringify(data));dbSaveBizData(data);
+  const bizSaved = st('stondesk_biz', data);
+  dbSaveBizData(data);
   // Show confirmation
   const btn = document.querySelector('#panel-business button[onclick="saveBizData()"]');
-  if (btn) { btn.textContent = '✓ Saved!'; btn.style.background = '#16a34a'; setTimeout(() => { btn.textContent = 'Save All'; btn.style.background = ''; }, 2000); }
+  if (btn) {
+    if (bizSaved) { btn.textContent = '✓ Saved!'; btn.style.background = '#16a34a'; }
+    else { btn.textContent = '⚠️ Save failed'; btn.style.background = '#dc2626'; }
+    setTimeout(() => { btn.textContent = 'Save All'; btn.style.background = ''; }, 2000);
+  }
 }
 
 function loadBizData() {
@@ -24485,13 +24490,13 @@ async function syncSDProfileFromSupabase() {
   const data = await sdData('read', 'profile', {});
   if (data) {
     _sdBizProfile = data;
-    localStorage.setItem('stonedesk:business_profile', JSON.stringify(data));
+    st('stonedesk:business_profile', data); // local cache; server read above is the real record
   }
 }
 
 async function saveSDProfile(profile) {
   _sdBizProfile = profile;
-  localStorage.setItem('stonedesk:business_profile', JSON.stringify(profile));
+  st('stonedesk:business_profile', profile); // local cache; server write below is the real save
   // Endpoint scopes by the bearer license (license_hash) and stamps app_id
   // server-side; the client just sends the profile object as the payload.
   await sdData('write', 'profile', profile);
