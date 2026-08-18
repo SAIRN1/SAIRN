@@ -92,6 +92,13 @@ arrived here through this file rather than a trigger word:
    not proof the live app reflects the change.
 Neither step is optional, going forward, regardless of how small the change looks.
 
+## Verification Discipline (added 2026-08-18)
+A status report is a claim, not a fact, until checked against the real current state:
+- Never report a migration, config change, or prior fix as "already done" from memory or a prior session's summary — verify it live (query the DB, curl the real deployed endpoint, re-read the current file) before saying so.
+- When re-confirming something already marked done, check the CURRENT file/state, not a cached read from earlier in the session — code can change between when you last saw it and now, including from a parallel session.
+- A claim of "verified" needs the actual evidence in the report (the command run, the real output), not just the conclusion.
+- If a discrepancy between assumed and actual state turns up, report it plainly rather than downplaying or auto-correcting silently — the correction itself is often the most valuable part of the report.
+
 ## Model Selection
 - Default: Sonnet 5 High for all routine work (implementation, debugging, most fixes)
 - Proactively recommend switching to Opus 4.8 for: hard debugging with an unclear root cause, or security-critical code
