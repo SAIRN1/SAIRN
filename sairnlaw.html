@@ -1261,13 +1261,33 @@ function lawEnterApp(d){
 // Restores a still-valid session on reload. The token's expiry is enforced
 // SERVER-side on every protected call -- this only avoids showing the app
 // shell around a token that is already obviously dead.
+// FIXED 2026-08-18: two real gaps found by a live browser test (a stale
+// cached token displayed a since-deleted employee's identity indefinitely,
+// discovered while verifying an unrelated feature). (1) This never checked
+// payload.app -- decoding was purely for the exp field, so a token from a
+// different app landing in this key by any future bug would have been
+// trusted and rendered here with zero warning; self-checked now, the same
+// discipline api/_lib/auth.js's verifySessionToken already enforces server-
+// side. (2) Expiry alone can't detect server-side revocation (an admin
+// reset that deletes the employee row) -- a real server round trip
+// (action:'whoami', api/law-auth.js) now runs right after entering the app.
+// Deliberately NOT awaited before showing the app shell -- same optimistic-
+// then-verify shape as before, just closing the "revoked but still looks
+// logged in" window from indefinite down to one network round trip instead
+// of leaving it open until the user happens to hit some other protected
+// call. A failed whoami logs the user out with an explanation rather than
+// leaving a dead session rendered as live.
 function lawRestoreSession(){
   var s=null;try{s=JSON.parse(localStorage.getItem('law_session')||'null');}catch(e){}
   if(!s||!s.token||!s.role)return false;
   var payload=null;
   try{payload=JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}
   if(!payload||!payload.exp||Date.now()>=payload.exp){try{localStorage.removeItem('law_session');}catch(e){}return false;}
+  if(payload.app!=='sairnlaw'){try{localStorage.removeItem('law_session');}catch(e){}return false;}
   lawEnterApp(s);
+  lawAuth('whoami',{},true).then(function(r){
+    if(!r.ok){doLogout();toast('Your session is no longer valid -- please sign in again');}
+  });
   return true;
 }
 

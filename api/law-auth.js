@@ -21,6 +21,20 @@
 //   check_license  {}
 //     Confirms the key is real/active before the client stores it.
 //
+//   whoami         {}                      (session required)
+//     Re-verifies a locally-cached session token against the server, not
+//     just the token's own unexpired signature — verifySessionToken() (app
+//     + license_hash + expiry) THEN a real employee-row lookup (active=true),
+//     so an employee row deleted/deactivated since the token was issued
+//     (e.g. an admin reset) is caught immediately instead of silently
+//     looking "logged in" until the first unrelated protected call happens
+//     to fail. Added 2026-08-18 after finding sairnlaw.html's own page-load
+//     restore trusted a cached token's decoded payload for the UI's identity
+//     display with no server round-trip at all — cosmetic-only (every real
+//     data-touching action was already independently gated), but a revoked
+//     account could still render as logged in indefinitely. -> { ok, role,
+//     employee_id, mfa_enabled } or 401.
+//
 //   bootstrap      { employee_id, display_name, pin }
 //     Only works when this license has ZERO rows yet. Creates the first
 //     credential, always role 'owner'. 409 once any row exists — one-time
@@ -113,7 +127,7 @@ const LAW_ROLES = ROLES_BY_APP[APP];
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_MINUTES = 15;
 const ACTIONS = [
-  'check_license', 'bootstrap', 'login', 'setup',
+  'check_license', 'whoami', 'bootstrap', 'login', 'setup',
   'mfa_setup', 'mfa_enable', 'mfa_verify', 'mfa_reset',
   'sso_start', 'sso_callback', 'audit_read',
   'ai_generate', 'ai_list', 'ai_review', 'ai_reject', 'ai_used_in_filing'
@@ -237,6 +251,15 @@ module.exports = async (req, res) => {
   }
 
   try {
+    if (action === 'whoami') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const row = await loadEmployee(caller.employee_id);
+      if (!row) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'This session is no longer valid — sign in again' } }); return; }
+      res.status(200).json({ ok: true, role: row.role, employee_id: row.employee_id, mfa_enabled: !!row.mfa_enabled });
+      return;
+    }
+
     if (action === 'bootstrap') {
       const employee_id = String(body.employee_id || '').trim();
       const pin = String(body.pin || '').trim();
