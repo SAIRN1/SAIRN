@@ -67,7 +67,14 @@ const ROLES_BY_APP = {
   // is what makes MFA and genuine session independence possible at all --
   // MFA authenticates a specific person, and a "session" that's really
   // just a shared role PIN has no single person to independently log out.
-  sairnlaw: ['owner', 'attorney', 'paralegal']
+  sairnlaw: ['owner', 'attorney', 'paralegal'],
+  // SAIRNcode (2026-08-18, real-data-layer + auth pass): matches the app's
+  // existing role vocabulary exactly (its old client-only PIN gate already
+  // had these 4 names -- coder/biller/auditor/admin -- just as one shared,
+  // hardcoded, identical-for-every-customer PIN per role instead of a real
+  // per-employee credential). 'admin' is the bootstrap/top role, matching
+  // requireAdminForDelete()'s existing "Compliance Admin" framing in the UI.
+  sairncode: ['admin', 'coder', 'biller', 'auditor']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.
