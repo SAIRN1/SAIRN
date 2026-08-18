@@ -322,9 +322,11 @@ label.chk input{width:auto;}
     This assistant will never output a specific case citation, statute citation, or docket number in citable-
     reference format (e.g. "384 U.S. 436 (1966)") -- not even for a famous case, not even paired with a disclaimer.
     It can describe a case narratively (the holding, the parties, the era, the legal principle) but always directs
-    you to Westlaw, Lexis, or the court's own site for the actual citation. It also has no access to this firm's
-    real matters, deadlines, trust balances, or billing data -- it will say so and point you to the relevant panel
-    rather than guess. Both are enforced by the system prompt below, not a UI label bolted onto unverified output.
+    you to Westlaw, Lexis, or the court's own site for the actual citation. It can look up this firm's real matter
+    list and pending deadlines (matter number/name/client/practice area/status/attorney, deadline type/due date/
+    urgency) via tools, but has NO access to trust balances, invoices, time entries, matter notes, or deadline
+    notes -- it will say so plainly and point you to the relevant panel rather than guess. Both are enforced by
+    the system prompt below, not a UI label bolted onto unverified output.
   </div>
   <div class="card"><div class="cb">
     <div class="qts">
@@ -333,12 +335,12 @@ label.chk input{width:auto;}
       <span class="qt" onclick="askAI('Draft a polite deadline-reminder email to a client')">Deadline Reminder</span>
       <span class="qt" onclick="askAI('Explain UTBMS litigation billing codes at a high level')">UTBMS Overview</span>
     </div>
-    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask for drafting help or general legal-practice explanations. It cannot look up this firm's actual matters, deadlines, trust balances, or billing -- check those panels directly.</div></div>
+    <div class="achat" id="achat"><div style="color:var(--muted);text-align:center;padding:40px 0;">Ask for drafting help, general legal-practice explanations, or this firm's real matters/deadlines. It cannot see trust balances, invoices, time entries, or notes -- check those panels directly.</div></div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
       <label for="aimatter" style="font-size:12px;color:var(--muted);white-space:nowrap">Matter (required for the record):</label>
       <select id="aimatter" style="flex:1"><option value="">-- Select a matter --</option><option value="general">General (not matter-specific)</option></select>
     </div>
-    <div class="air"><input id="ainp" placeholder="Draft, explain, or ask a general question (no access to this firm's live data)..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
+    <div class="air"><input id="ainp" placeholder="Draft, explain, or ask about this firm's matters/deadlines..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn bp" onclick="sendAI()">Send</button></div>
   </div></div>
 </div>
 
