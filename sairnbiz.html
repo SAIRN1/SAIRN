@@ -1315,6 +1315,18 @@ function nav(id){
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   var p=$('panel-'+id),b=$('sb-'+id);
   if(p)p.classList.add('on');if(b)b.classList.add('on');
+  // Re-run voice-input attachment on every nav (2026-08-18 fix, found live-testing
+  // with real TESTOWNER1 credentials against SB-TEST-2026): the one-shot
+  // DOMContentLoaded install (installVoiceInputTargets(), defined near the
+  // bottom of this file) attached #ainp's mic button correctly but silently
+  // failed for the Invoices panel's targets (#ivcust/#ivamt) even though those
+  // fields are present in the static HTML from page load -- confirmed live,
+  // and confirmed that manually re-calling attachVoiceInput() after the fact
+  // worked instantly. attachVoiceInput() already guards against double-
+  // attaching to the same node, so this is a safe, cheap no-op on every other
+  // nav() call and only does real work the first time each target panel is
+  // actually visited.
+  if(typeof installVoiceInputTargets==='function')installVoiceInputTargets();
 }
 
 function seed(){
