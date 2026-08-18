@@ -8,3 +8,4 @@ touching the same file at once.
 
 - stonedesk.html (CC) — honest-failure localStorage wrapper (st()) sweep, resuming active edits now (Michael approved continuing). sairnvet.html already DONE (all 41 sites, pushed). stonedesk.html: 48/~120 done so far, finishing the remaining ~72 sites + tier-2 caller wiring on the highest-risk ones. Incremental commits, pushing as I go. 2026-08-18
 
+- [2026-08-18 07:25] sairncash.html, docs/superpowers/specs/2026-08-10-sairncash-pivot-design.md (read-only) — summarizing SAIRNcash's real current scope/purpose for Michael, no build work
