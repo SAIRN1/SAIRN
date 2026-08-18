@@ -39,7 +39,7 @@ module.exports = async (req, res) => {
 
   try {
     const r = await fetch(
-      SUPABASE_URL + '/rest/v1/sairncash_trial?trial_token=eq.' + encodeURIComponent(trialToken) + '&select=status,expires_at',
+      SUPABASE_URL + '/rest/v1/sairncash_trial?trial_token=eq.' + encodeURIComponent(trialToken) + '&select=id,status,expires_at',
       { headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY } }
     );
     if (r.status === 404) {
@@ -79,10 +79,17 @@ module.exports = async (req, res) => {
       ).catch((e) => console.error('SAIRNcash trial-verify status write-back failed:', e.message));
     }
 
+    // customerId (2026-08-18 sync fix): the trial row's own real uuid,
+    // same role Stripe's customer id plays for a paid subscriber -- this
+    // is what lets a trial user get real Firebase sync at all. Only
+    // returned when valid, matching the same trust boundary
+    // reverifySubscription() already uses for paid customerId (an
+    // expired/unknown trial gets no sync identity either).
     res.status(200).json({
       valid: valid,
       expiresAt: row.expires_at,
-      daysLeft: daysLeft(row.expires_at, now)
+      daysLeft: daysLeft(row.expires_at, now),
+      customerId: valid ? row.id : null
     });
   } catch (e) {
     console.error('SAIRNcash trial-verify error:', e.message);

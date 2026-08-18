@@ -394,10 +394,17 @@ import { getDatabase, ref, push, onValue, set, serverTimestamp, onDisconnect }
 // to a shared path. customerId comes from api/sairncash/verify.js's real
 // Stripe customer id (added alongside this fix), stored in sairncash_sub by
 // the existing saveSub()/reverifySubscription() flow -- not re-derived here.
+// 2026-08-18 fix: a trial-only user (no Stripe subscription) previously had
+// no customerId at all here, so sync silently never started for any trial
+// signup -- confirmed live (real trial account, a real income entry that
+// never saved). Trial's own real uuid (trial-verify.js's customerId, saved
+// by reverifyTrial() into getTrial()) now covers that path the same way
+// getSub().customerId covers the paid path.
 async function initFirebase() {
   try {
     const sub = getSub();
-    const customerId = sub && sub.customerId;
+    const trial = getTrial();
+    const customerId = (sub && sub.customerId) || (trial && trial.customerId);
     if (!customerId) { console.log('Sync unavailable -- no verified customer yet'); return; }
     const res = await fetch('/api/sairncash/firebase-config');
     if (!res.ok) return;
@@ -548,7 +555,12 @@ async function reverifyTrial() {
   try {
     const res = await fetch('/api/sairncash/trial-verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trialToken: t.trialToken }) });
     const data = await res.json();
-    if (data.valid) { saveTrial({ trialToken: t.trialToken, expiresAt: data.expiresAt, daysLeft: data.daysLeft }); return true; }
+    // customerId (2026-08-18 sync fix) -- same real uuid trial-verify.js now
+    // returns, saved here so initFirebase() can find it the same way it
+    // already finds a paid customer's Stripe id via getSub(). Saved on every
+    // successful reverify (not just the first), matching this function's
+    // existing "always trust the fresh server response" pattern.
+    if (data.valid) { saveTrial({ trialToken: t.trialToken, expiresAt: data.expiresAt, daysLeft: data.daysLeft, customerId: data.customerId }); return true; }
     return false;
   } catch (e) {
     return isTrialActive();
