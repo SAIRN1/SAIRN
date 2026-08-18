@@ -1590,13 +1590,13 @@ How to answer:
         }
 
         function getRevenueEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // charge entries on first view, showing real-looking dollar KPIs
+            // on an account with zero real activity -- Guardian 0b violation.
+            // Honest empty state now; every KPI below already handles list.length===0
+            // safely (0/-- fallbacks already in place).
             try { var s = localStorage.getItem('sc_revenue'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'rv1', payer:'Commercial', charge:2450.00, collected:2200.00, date:'2026-01-15'},
-                {id:'rv2', payer:'Government', charge:1825.50, collected:1650.00, date:'2026-01-16'}
-            ];
-            saveRevenueEntries(seed);
-            return seed;
+            return [];
         }
         function saveRevenueEntries(list){ try { localStorage.setItem('sc_revenue', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderRevenue(){
@@ -1649,16 +1649,12 @@ How to answer:
         }
 
         function getDenialEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 5 fake
+            // denial records (including a fabricated "Appeal Success Rate" KPI
+            // and the predictive-insights root-cause breakdown built on top of
+            // it) on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_denial'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'dn1', code:'CO-4', cause:'Lack of documentation', count:34, amount:47500, status:'In Appeal'},
-                {id:'dn2', code:'CO-97', cause:'Medical necessity', count:28, amount:38200, status:'In Appeal'},
-                {id:'dn3', code:'PR-1', cause:'Not covered service', count:22, amount:29800, status:'Denied'},
-                {id:'dn4', code:'N479', cause:'Duplicate claim', count:18, amount:24100, status:'Resolved'},
-                {id:'dn5', code:'CO-16', cause:'Claim form errors', count:16, amount:21400, status:'Correcting'}
-            ];
-            saveDenialEntries(seed);
-            return seed;
+            return [];
         }
         function saveDenialEntries(list){ try { localStorage.setItem('sc_denial', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function statusBadgeClass(status){
@@ -1719,14 +1715,10 @@ How to answer:
         }
 
         function getComplianceItems(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 3 fake
+            // compliance items on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_compliance'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'cp1', item:'Documentation accuracy review', cat:'OIG Focus Area', status:'In Progress', date:'2026-01-10'},
-                {id:'cp2', item:'Q1 internal chart audit', cat:'Audit', status:'Scheduled', date:'2026-02-01'},
-                {id:'cp3', item:'HIPAA refresher training', cat:'Training', status:'Complete', date:'2026-01-05'}
-            ];
-            saveComplianceItems(seed);
-            return seed;
+            return [];
         }
         function saveComplianceItems(list){ try { localStorage.setItem('sc_compliance', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderCompliance(){
@@ -1772,13 +1764,12 @@ How to answer:
         }
 
         function getFraudAlerts(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // fraud alerts (with a fabricated 82%/71% confidence score) on first
+            // view -- claiming real fraud-detection results that never ran.
+            // Honest empty state now.
             try { var s = localStorage.getItem('sc_fraud'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'fr1', desc:'Duplicate billing pattern, same CPT/date', conf:82, amount:4200, status:'Under Review'},
-                {id:'fr2', desc:'Unbundled procedure codes', conf:71, amount:1850, status:'Flagged'}
-            ];
-            saveFraudAlerts(seed);
-            return seed;
+            return [];
         }
         function saveFraudAlerts(list){ try { localStorage.setItem('sc_fraud', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderFraud(){
@@ -1861,13 +1852,10 @@ How to answer:
         }
 
         function getScrubEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // pre-bill scrub entries on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_prebill'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'pb1', claim:'CLM-2601', error:'Missing modifier', value:850, time:3.5, status:'Resolved'},
-                {id:'pb2', claim:'CLM-2609', error:'Mismatched diagnosis code', value:1200, time:5.0, status:'Detected'}
-            ];
-            saveScrubEntries(seed);
-            return seed;
+            return [];
         }
         function saveScrubEntries(list){ try { localStorage.setItem('sc_prebill', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderPrebill(){
@@ -1917,13 +1905,10 @@ How to answer:
         }
 
         function getHccEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // HCC gap entries on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_hcc'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'hc1', cat:'HCC 18 - Diabetes w/ Complications', patient:'PT-4021', value:3200, status:'Gap Identified'},
-                {id:'hc2', cat:'HCC 85 - Congestive Heart Failure', patient:'PT-4033', value:4100, status:'Captured'}
-            ];
-            saveHccEntries(seed);
-            return seed;
+            return [];
         }
         function saveHccEntries(list){ try { localStorage.setItem('sc_hcc', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderHcc(){
@@ -1982,13 +1967,10 @@ How to answer:
         }
 
         function getDrgEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // DRG cases on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_drg'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'dg1', code:'DRG-291', patient:'PT-4021', tier:'MCC', payment:9800},
-                {id:'dg2', code:'DRG-392', patient:'PT-4033', tier:'Base', payment:5200}
-            ];
-            saveDrgEntries(seed);
-            return seed;
+            return [];
         }
         function saveDrgEntries(list){ try { localStorage.setItem('sc_drg', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderDrg(){
@@ -2037,13 +2019,11 @@ How to answer:
         }
 
         function getQueryEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // physician queries, including named fake physicians ("Dr. Alvarez",
+            // "Dr. Kim") as if real. Honest empty state now.
             try { var s = localStorage.getItem('sc_query'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'qr1', patient:'PT-4021', physician:'Dr. Alvarez', type:'Diagnosis clarification', value:1800, status:'Responded'},
-                {id:'qr2', patient:'PT-4033', physician:'Dr. Kim', type:'Specificity - laterality', value:0, status:'Pending'}
-            ];
-            saveQueryEntries(seed);
-            return seed;
+            return [];
         }
         function saveQueryEntries(list){ try { localStorage.setItem('sc_query', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderQuery(){
@@ -2094,6 +2074,12 @@ How to answer:
         }
 
         function getEncoderCodes(){
+            // NOT changed by the 2026-08-18 fabrication audit: unlike every
+            // other getX() in this file, this seed isn't fake practice activity
+            // -- it's 3 real, accurate standard ICD-10/CPT/HCPCS codes with
+            // real official descriptions, used as a starter reference set (same
+            // role a starter parts catalog plays elsewhere on this platform).
+            // Kept as a legitimate default, not fabricated content.
             try { var s = localStorage.getItem('sc_encoder'); if (s) return JSON.parse(s); } catch(e){}
             var seed = [
                 {id:'ec1', code:'E11.9', type:'ICD-10', desc:'Type 2 diabetes without complications', bundling:''},
@@ -2150,13 +2136,10 @@ How to answer:
         }
 
         function getRacEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // RAC audit entries on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_rac'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'ra1', ref:'RAC-2026-014', amount:12500, status:'Active'},
-                {id:'ra2', ref:'RAC-2026-009', amount:6200, status:'Appealing'}
-            ];
-            saveRacEntries(seed);
-            return seed;
+            return [];
         }
         function saveRacEntries(list){ try { localStorage.setItem('sc_rac', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderRac(){
@@ -2204,13 +2187,10 @@ How to answer:
         }
 
         function getTelehealthEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // telehealth claim entries on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_telehealth'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'tl1', claim:'CLM-2610', pos:'02', mod:'GT', value:180, status:'Coded'},
-                {id:'tl2', claim:'CLM-2611', pos:'10', mod:'—', value:0, status:'Flagged'}
-            ];
-            saveTelehealthEntries(seed);
-            return seed;
+            return [];
         }
         function saveTelehealthEntries(list){ try { localStorage.setItem('sc_telehealth', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderTelehealth(){
@@ -2261,13 +2241,10 @@ How to answer:
         }
 
         function getAnesthesiaEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
+            // anesthesia cases on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_anesthesia'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'an1', caseRef:'CLM-2612', base:5, minutes:90, qc:'QS'},
-                {id:'an2', caseRef:'CLM-2613', base:6, minutes:60, qc:''}
-            ];
-            saveAnesthesiaEntries(seed);
-            return seed;
+            return [];
         }
         function saveAnesthesiaEntries(list){ try { localStorage.setItem('sc_anesthesia', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function renderAnesthesia(){
@@ -2322,17 +2299,14 @@ How to answer:
         }
 
         function getAuthEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 6 fake
+            // prior-auth entries with hardcoded 2026 expiration dates on first
+            // view -- worse than most of the other fixes in this same audit,
+            // since authStatusFor() compares those dates against today's real
+            // date, so the fake entries would silently drift into "Expired" as
+            // time passed, not just stay statically wrong. Honest empty state now.
             try { var s = localStorage.getItem('sc_auth'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'at1', authId:'AUTH-001', proc:'Hip Replacement', exp:'2026-08-15', units:1},
-                {id:'at2', authId:'AUTH-002', proc:'Cardiac Catheterization', exp:'2026-07-20', units:1},
-                {id:'at3', authId:'AUTH-003', proc:'MRI Scan', exp:'2026-07-10', units:1},
-                {id:'at4', authId:'AUTH-004', proc:'Physical Therapy', exp:'2026-06-30', units:20},
-                {id:'at5', authId:'AUTH-005', proc:'Knee Arthroscopy', exp:'2026-09-01', units:1},
-                {id:'at6', authId:'AUTH-006', proc:'Ultrasound', exp:'2026-06-15', units:1}
-            ];
-            saveAuthEntries(seed);
-            return seed;
+            return [];
         }
         function saveAuthEntries(list){ try { localStorage.setItem('sc_auth', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function authStatusFor(exp, today){
@@ -2398,14 +2372,10 @@ How to answer:
         }
 
         function getArEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 3 fake
+            // A/R aging entries on first view. Honest empty state now.
             try { var s = localStorage.getItem('sc_ar'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'ar1', patient:'PT-4021', amount:850, days:18, status:'Open'},
-                {id:'ar2', patient:'PT-4033', amount:1240, days:45, status:'Open'},
-                {id:'ar3', patient:'PT-4040', amount:620, days:75, status:'Open'}
-            ];
-            saveArEntries(seed);
-            return seed;
+            return [];
         }
         function saveArEntries(list){ try { localStorage.setItem('sc_ar', JSON.stringify(list)); return true; } catch(e){ return false; } }
         function arBucketFor(days){
@@ -2463,15 +2433,14 @@ How to answer:
         }
 
         function getProviderEntries(){
+            // Fixed (2026-08-18 fabrication audit): used to seed+persist 4 named
+            // fake providers ("Dr. Michael Chen" etc.) on first view -- the most
+            // severe instance in this file, since get_providers (the AI
+            // tool-calling dispatcher below) reads directly from this function,
+            // meaning the AI could tell a user these fabricated names were their
+            // practice's real roster. Honest empty state now.
             try { var s = localStorage.getItem('sc_providers'); if (s) return JSON.parse(s); } catch(e){}
-            var seed = [
-                {id:'pv1', name:'Dr. Michael Chen', specialty:'Internal Medicine', license:'MD-2847291', cred:'Yes', perf:97.2},
-                {id:'pv2', name:'Dr. Sarah Martinez', specialty:'Cardiology', license:'MD-2947382', cred:'Yes', perf:98.1},
-                {id:'pv3', name:'Dr. James Patel', specialty:'Orthopedic Surgery', license:'MD-3047291', cred:'Yes', perf:96.8},
-                {id:'pv4', name:'NP Rachel Kim', specialty:'Family Practice', license:'NP-3147382', cred:'Yes', perf:94.3}
-            ];
-            saveProviderEntries(seed);
-            return seed;
+            return [];
         }
         function saveProviderEntries(list){ try { localStorage.setItem('sc_providers', JSON.stringify(list)); return true; } catch(e){ return false; } }
 
