@@ -42,6 +42,10 @@ module.exports = async (req, res) => {
       SUPABASE_URL + '/rest/v1/sairncash_trial?trial_token=eq.' + encodeURIComponent(trialToken) + '&select=status,expires_at',
       { headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY } }
     );
+    if (r.status === 404) {
+      res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Trial table not set up yet -- run sql/sairncash_trial_schema.sql in Supabase first.' } });
+      return;
+    }
     if (!r.ok) {
       const bodyText = await r.text().catch(() => '');
       console.error('SAIRNcash trial-verify lookup failed:', r.status, bodyText);
