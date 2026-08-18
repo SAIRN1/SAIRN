@@ -84,12 +84,24 @@ near-verbatim from `stonedesk.html`'s original) — `attachVoiceInput()`
 is fully app-agnostic; only the wired field IDs are SAIRNbiz-specific.
 Free, browser-native `SpeechRecognition`, no new vendor or cost.
 
-Wired to two real fields:
-- `ainp` — the AI Business Assistant's question input (the direct
-  equivalent of every other app's primary voice-input target).
-- `enotes` — Employee Notes textarea (certifications/skills free text on
-  the Employees panel) — a genuine hands-busy/quick-entry moment for HR
-  staff, the same reasoning SAIRNvet used for wiring SOAP note fields.
+**Correction (2026-08-18, found during the live click-through test):** an
+earlier version of this doc and an earlier report to Michael said this was
+wired to `ainp` + `enotes` (Employee Notes). That was wrong — checked the
+actual deployed/committed code directly (not memory) and the real,
+shipped target list is:
+- `ainp` — the AI Business Assistant's question input.
+- `ivcust` — Invoice customer name (Invoices panel, "Add Invoice" form).
+- `ivamt` — Invoice amount, `opts.numeric:true` (extracts the first number
+  from the transcript rather than inserting raw text).
+
+Per the platform's verification-discipline standard, flagging this
+plainly rather than quietly editing the earlier claim away: at some point
+between writing the original `ainp`/`enotes` version and this doc being
+finalized, the actually-committed code diverged from what was reported —
+exact mechanism not fully reconstructed, not worth further archaeology
+once the real current state was confirmed directly against the live file
+and the live deployed site. `enotes` (Employee Notes) is NOT currently
+wired to voice input.
 
 **One real bug caught before shipping:** the ported code originally
 called `showToast(msg, 'error')` for the two error-message paths (voice
@@ -104,6 +116,33 @@ button with no explanation. Caught by checking SAIRNbiz's actual toast
 function name before assuming the reference apps' name carried over;
 fixed to call `toast(...)` with the correct signature before this ever
 shipped.
+
+**Live interactive click-through test (2026-08-18), real credentials
+(TESTOWNER1 / SB-TEST-2026, owner role):** logged in for real, navigated
+to the AI Assistant panel, confirmed the 🎤 button renders correctly next
+to `ainp` and is visually integrated (not overlapping/broken layout).
+Clicked it — this genuinely started browser SpeechRecognition and (this
+sandboxed environment apparently has some real ambient audio available)
+produced a real transcript that landed correctly in the field; clicking
+again stopped it cleanly and the button reverted to idle. On the Invoices
+panel, both `ivcust` and `ivamt` mic buttons are present and clickable;
+repeat clicks correctly cycle recording→idle (silence-timeout path also
+confirmed, not just the happy path).
+
+**Second real bug found during this same test, fixed:** navigating to the
+Employees panel and manually checking for a mic button on `#enotes`
+(before the correction above was written) found none, even though that
+field exists in the static HTML — `installVoiceInputTargets()` only runs
+once on `DOMContentLoaded` and evidently missed at least one real target
+field at that point in page load. Manually re-calling
+`attachVoiceInput()` after the fact attached it instantly, proving the
+function itself is correct and this is purely a load-order/timing issue.
+Fixed by re-running `installVoiceInputTargets()` at the end of `nav()`
+(`sairnbiz.html:1310`) — cheap and safe since `attachVoiceInput()` already
+guards against double-attaching to a node that already has its mic
+button. This makes voice-input attachment robust to panel-render timing
+regardless of which specific fields end up wired, not just the current
+three.
 
 ## 5. Shared company-knowledge layer — already built, confirmed real
 
