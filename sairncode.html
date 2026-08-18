@@ -1686,8 +1686,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Entries Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Charge records</div></div>';
             }
         }
-        function removeRevenueEntry(id){
+        async function removeRevenueEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_revenue', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             var list = getRevenueEntries().filter(function(r){ return r.id !== id; });
             saveRevenueEntries(list);
             renderRevenue();
@@ -1701,6 +1703,7 @@ How to answer:
             var list = getRevenueEntries();
             list.push({id:'rv'+Date.now(), payer:payer, charge:charge, collected:isNaN(collected)?0:collected, date:date||scLocalToday()});
             var saved = saveRevenueEntries(list);
+            if (saved) scData('write', 'sc_revenue', list[list.length - 1]);
             renderRevenue();
             document.getElementById('rev-add-charge').value = '';
             document.getElementById('rev-add-collected').value = '';
@@ -1748,8 +1751,10 @@ How to answer:
             }
             if (typeof renderDenialPredictiveInsights === 'function') renderDenialPredictiveInsights();
         }
-        function removeDenialEntry(id){
+        async function removeDenialEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_denial', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveDenialEntries(getDenialEntries().filter(function(d){return d.id!==id;}));
             renderDenial();
             renderDashboard();
@@ -1764,6 +1769,7 @@ How to answer:
             var list = getDenialEntries();
             list.push({id:'dn'+Date.now(), code:code, cause:cause||'—', count:count, amount:amount, status:status});
             var saved = saveDenialEntries(list);
+            if (saved) scData('write', 'sc_denial', list[list.length - 1]);
             renderDenial();
             renderDashboard();
             document.getElementById('den-add-code').value = '';
@@ -1804,8 +1810,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Policy Updates</div><div class="kpi-value">'+policy+'</div><div class="kpi-detail">Logged</div></div>';
             }
         }
-        function removeComplianceItem(id){
+        async function removeComplianceItem(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_compliance', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveComplianceItems(getComplianceItems().filter(function(c){return c.id!==id;}));
             renderCompliance();
         }
@@ -1817,6 +1825,7 @@ How to answer:
             var list = getComplianceItems();
             list.push({id:'cp'+Date.now(), item:item, cat:cat, status:status, date:scLocalToday()});
             var saved = saveComplianceItems(list);
+            if (saved) scData('write', 'sc_compliance', list[list.length - 1]);
             renderCompliance();
             document.getElementById('comp-add-item').value = '';
             showToast(saved ? 'Compliance item added' : 'Could not save -- storage may be full or unavailable, try again');
@@ -1854,8 +1863,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Prevented Loss</div><div class="kpi-value">$'+preventedLoss.toLocaleString()+'</div><div class="kpi-detail">From verified cases</div></div>';
             }
         }
-        function removeFraudAlert(id){
+        async function removeFraudAlert(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_fraud', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveFraudAlerts(getFraudAlerts().filter(function(f){return f.id!==id;}));
             renderFraud();
             renderDashboard();
@@ -1869,6 +1880,7 @@ How to answer:
             var list = getFraudAlerts();
             list.push({id:'fr'+Date.now(), desc:desc, conf:conf, amount:amount, status:status});
             var saved = saveFraudAlerts(list);
+            if (saved) scData('write', 'sc_fraud', list[list.length - 1]);
             renderFraud();
             renderDashboard();
             document.getElementById('frd-add-desc').value = '';
@@ -1940,8 +1952,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Avg Time Saved</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-detail">Per logged entry</div></div>';
             }
         }
-        function removeScrubEntry(id){
+        async function removeScrubEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_prebill', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveScrubEntries(getScrubEntries().filter(function(p){return p.id!==id;}));
             renderPrebill();
         }
@@ -1955,6 +1969,7 @@ How to answer:
             var list = getScrubEntries();
             list.push({id:'pb'+Date.now(), claim:claim, error:error, value:isNaN(value)?0:value, time:isNaN(time)?0:time, status:status});
             var saved = saveScrubEntries(list);
+            if (saved) scData('write', 'sc_prebill', list[list.length - 1]);
             renderPrebill();
             document.getElementById('pb-add-claim').value = '';
             document.getElementById('pb-add-error').value = '';
@@ -2004,8 +2019,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Capture Rate</div><div class="kpi-value">'+captureRate+'</div><div class="kpi-detail">Captured vs identified/documented</div></div>';
             }
         }
-        function removeHccEntry(id){
+        async function removeHccEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_hcc', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveHccEntries(getHccEntries().filter(function(h){return h.id!==id;}));
             renderHcc();
         }
@@ -2018,6 +2035,7 @@ How to answer:
             var list = getHccEntries();
             list.push({id:'hc'+Date.now(), cat:cat, patient:patient||'—', value:value, status:status});
             var saved = saveHccEntries(list);
+            if (saved) scData('write', 'sc_hcc', list[list.length - 1]);
             renderHcc();
             document.getElementById('hcc-add-cat').value = '';
             document.getElementById('hcc-add-patient').value = '';
@@ -2056,8 +2074,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Avg Payment/Case</div><div class="kpi-value">$'+avgPayment.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div class="kpi-detail">Logged cases</div></div>';
             }
         }
-        function removeDrgEntry(id){
+        async function removeDrgEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_drg', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveDrgEntries(getDrgEntries().filter(function(d){return d.id!==id;}));
             renderDrg();
         }
@@ -2070,6 +2090,7 @@ How to answer:
             var list = getDrgEntries();
             list.push({id:'dg'+Date.now(), code:code, patient:patient||'—', tier:tier, payment:payment});
             var saved = saveDrgEntries(list);
+            if (saved) scData('write', 'sc_drg', list[list.length - 1]);
             renderDrg();
             document.getElementById('drg-add-code').value = '';
             document.getElementById('drg-add-patient').value = '';
@@ -2109,8 +2130,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Value Impacted</div><div class="kpi-value">$'+valueImpacted.toLocaleString()+'</div><div class="kpi-detail">From responded queries</div></div>';
             }
         }
-        function removeQueryEntry(id){
+        async function removeQueryEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_query', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveQueryEntries(getQueryEntries().filter(function(q){return q.id!==id;}));
             renderQuery();
         }
@@ -2124,6 +2147,7 @@ How to answer:
             var list = getQueryEntries();
             list.push({id:'qr'+Date.now(), patient:patient, physician:physician||'—', type:type, value:isNaN(value)?0:value, status:status});
             var saved = saveQueryEntries(list);
+            if (saved) scData('write', 'sc_query', list[list.length - 1]);
             renderQuery();
             document.getElementById('qry-add-patient').value = '';
             document.getElementById('qry-add-physician').value = '';
@@ -2173,8 +2197,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Total Codes Indexed</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">This reference set</div></div>';
             }
         }
-        function removeEncoderCode(id){
+        async function removeEncoderCode(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_encoder', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveEncoderCodes(getEncoderCodes().filter(function(c){return c.id!==id;}));
             renderEncoder();
         }
@@ -2187,6 +2213,7 @@ How to answer:
             var list = getEncoderCodes();
             list.push({id:'ec'+Date.now(), code:code, type:type, desc:desc, bundling:bundling});
             var saved = saveEncoderCodes(list);
+            if (saved) scData('write', 'sc_encoder', list[list.length - 1]);
             renderEncoder();
             document.getElementById('enc-add-code').value = '';
             document.getElementById('enc-add-desc').value = '';
@@ -2226,8 +2253,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Reopened Claims</div><div class="kpi-value">'+reopened.length+'</div><div class="kpi-detail">Secondary audits</div></div>';
             }
         }
-        function removeRacEntry(id){
+        async function removeRacEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_rac', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveRacEntries(getRacEntries().filter(function(r){return r.id!==id;}));
             renderRac();
         }
@@ -2239,6 +2268,7 @@ How to answer:
             var list = getRacEntries();
             list.push({id:'ra'+Date.now(), ref:ref, amount:amount, status:status});
             var saved = saveRacEntries(list);
+            if (saved) scData('write', 'sc_rac', list[list.length - 1]);
             renderRac();
             document.getElementById('rac-add-ref').value = '';
             document.getElementById('rac-add-amount').value = '';
@@ -2276,8 +2306,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Compliance Value</div><div class="kpi-value">$'+complianceValue.toLocaleString()+'</div><div class="kpi-detail">From correctly coded entries</div></div>';
             }
         }
-        function removeTelehealthEntry(id){
+        async function removeTelehealthEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_telehealth', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveTelehealthEntries(getTelehealthEntries().filter(function(t){return t.id!==id;}));
             renderTelehealth();
         }
@@ -2291,6 +2323,7 @@ How to answer:
             var list = getTelehealthEntries();
             list.push({id:'tl'+Date.now(), claim:claim, pos:pos||'—', mod:mod||'—', value:isNaN(value)?0:value, status:status});
             var saved = saveTelehealthEntries(list);
+            if (saved) scData('write', 'sc_telehealth', list[list.length - 1]);
             renderTelehealth();
             document.getElementById('th-add-claim').value = '';
             document.getElementById('th-add-pos').value = '';
@@ -2335,8 +2368,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Total Units Billed</div><div class="kpi-value">'+totalUnitsAll.toFixed(2)+'</div><div class="kpi-detail">Sum, all logged cases</div></div>';
             }
         }
-        function removeAnesthesiaEntry(id){
+        async function removeAnesthesiaEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_anesthesia', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveAnesthesiaEntries(getAnesthesiaEntries().filter(function(a){return a.id!==id;}));
             renderAnesthesia();
         }
@@ -2349,6 +2384,7 @@ How to answer:
             var list = getAnesthesiaEntries();
             list.push({id:'an'+Date.now(), caseRef:caseRef, base:base, minutes:minutes, qc:qc});
             var saved = saveAnesthesiaEntries(list);
+            if (saved) scData('write', 'sc_anesthesia', list[list.length - 1]);
             renderAnesthesia();
             document.getElementById('an-add-case').value = '';
             document.getElementById('an-add-base').value = '';
@@ -2408,8 +2444,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Units Authorized</div><div class="kpi-value">'+totalUnits+'</div><div class="kpi-detail">Sum, all logged</div></div>';
             }
         }
-        function removeAuthEntry(id){
+        async function removeAuthEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_auth', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveAuthEntries(getAuthEntries().filter(function(a){return a.id!==id;}));
             renderAuth();
         }
@@ -2422,6 +2460,7 @@ How to answer:
             var list = getAuthEntries();
             list.push({id:'at'+Date.now(), authId:authId, proc:proc, exp:exp, units:isNaN(units)?1:units});
             var saved = saveAuthEntries(list);
+            if (saved) scData('write', 'sc_auth', list[list.length - 1]);
             renderAuth();
             document.getElementById('auth-add-id').value = '';
             document.getElementById('auth-add-proc').value = '';
@@ -2470,8 +2509,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Accounts Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Total</div></div>';
             }
         }
-        function removeArEntry(id){
+        async function removeArEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_ar', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveArEntries(getArEntries().filter(function(a){return a.id!==id;}));
             renderAr();
         }
@@ -2484,6 +2525,7 @@ How to answer:
             var list = getArEntries();
             list.push({id:'ar'+Date.now(), patient:patient, amount:amount, days:days, status:status});
             var saved = saveArEntries(list);
+            if (saved) scData('write', 'sc_ar', list[list.length - 1]);
             renderAr();
             document.getElementById('ar-add-patient').value = '';
             document.getElementById('ar-add-amount').value = '';
@@ -2576,8 +2618,10 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Non-Credentialed</div><div class="kpi-value">'+(list.length-credentialed.length)+'</div><div class="kpi-detail">Needs review</div></div>';
             }
         }
-        function removeProviderEntry(id){
+        async function removeProviderEntry(id){
             if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_providers', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveProviderEntries(getProviderEntries().filter(function(p){return p.id!==id;}));
             renderProviders();
         }
@@ -2591,6 +2635,7 @@ How to answer:
             var list = getProviderEntries();
             list.push({id:'pv'+Date.now(), name:name, specialty:specialty, license:license||'—', cred:cred, perf:isNaN(perf)?0:perf});
             var saved = saveProviderEntries(list);
+            if (saved) scData('write', 'sc_providers', list[list.length - 1]);
             renderProviders();
             document.getElementById('prov-add-name').value = '';
             document.getElementById('prov-add-specialty').value = '';
