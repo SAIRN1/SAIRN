@@ -717,7 +717,18 @@ in design as of 2026-08-16 —
 ## SAIRNlaw void-of-deposit can retroactively negative a client's balance
 
 **Logged:** 2026-08-16, found while brainstorming step 2 of the trust
-disbursement atomic check above.
+disbursement atomic check above. **Resolved: 2026-08-17/18** (step 3a),
+`docs/superpowers/specs/2026-08-17-sairnlaw-deposit-void-balance-guard-design.md`,
+commits `9cb1e82..38080e8`, live-verified against production (real
+concurrency test — a simultaneous deposit-void and disbursement-create for
+the same client, exactly one succeeded; a rigorous type-lying bypass
+attempt on the routing gate, closed in the final-review fix wave, was also
+proven closed live). **Scope note carried forward from the original "Done
+looks like" below:** the shipped guard is client-level only (matches this
+feature's existing client-level balance model everywhere else), not
+per-`matter_id` as the original entry's wording could be read to imply —
+that was never actually a separate requirement, just imprecise wording
+here; not a gap.
 
 **What:** The step-2 atomic check only guards Disbursement *creation*
 (`law_check_and_insert_disbursement`) — voiding a transaction goes through
