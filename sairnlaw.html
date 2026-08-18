@@ -3267,6 +3267,114 @@ function rSecEncryption(){
     +'<div style="margin-top:8px;color:var(--muted);font-size:12px"><strong>Honest limit:</strong> matter, document, trust and calendar records currently live in this browser\'s own local storage, which is <em>not</em> encrypted by this app. Device-level disk encryption is what protects them today. Moving that data server-side is real, separate work that has not been done.</div>';
 }
 
+// ── VOICE INPUT (2026-08-18) -- ported from sairncode.html's proven
+// module, near-verbatim (attachVoiceInput itself is fully app-agnostic).
+// Free, browser-native SpeechRecognition, zero new vendor/cost, nothing
+// leaves the device except whatever text the user would have typed
+// anyway. Wired to the AI Assistant chat input and the New Matter
+// modal's Notes field -- an attorney/paralegal dictating a client
+// intake note or a quick question while reviewing a file is the same
+// "hands busy, dictate instead of type" case every other app's voice
+// input was built for. AR measurement (StoneDesk/SAIRNbuild capability
+// 2) is deliberately NOT ported -- checked first: full 16-panel sweep
+// found no sqft/measurement/dimensions workflow anywhere in this legal
+// practice management platform, same judgment already applied to
+// SAIRNvet/SAIRNbiz/SAIRNcode. See
+// docs/superpowers/specs/2026-08-18-sairnlaw-ai-advancement-design.md.
+(function() {
+'use strict';
+if (window._lawVoiceInputInstalled) return;
+window._lawVoiceInputInstalled = true;
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var VOICE_SUPPORTED = !!SR;
+
+window.attachVoiceInput = function(inputId, opts) {
+    if (!VOICE_SUPPORTED) return;
+    var input = document.getElementById(inputId);
+    if (!input || document.getElementById('voicebtn-' + inputId)) return;
+    opts = opts || {};
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'voicebtn-' + inputId;
+    btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+    btn.title = 'Tap to dictate';
+    btn.textContent = '\u{1F3A4}';
+    btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid #ddd;background:#f8f8f8;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch;flex:1;min-width:0';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    input.style.flex = '1';
+    input.style.minWidth = '0';
+    wrap.appendChild(btn);
+
+    var recognizing = false;
+    var recognition = null;
+
+    function stop() {
+        recognizing = false;
+        btn.style.background = '#f8f8f8';
+        btn.style.borderColor = '#ddd';
+        btn.textContent = '\u{1F3A4}';
+        if (recognition) { try { recognition.stop(); } catch (e) {} }
+    }
+
+    btn.onclick = function() {
+        if (recognizing) { stop(); return; }
+        try {
+            recognition = new SR();
+        } catch (e) {
+            if (typeof toast === 'function') toast('Voice input unavailable in this browser.');
+            return;
+        }
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognizing = true;
+        btn.style.background = '#dc2626';
+        btn.style.color = '#fff';
+        btn.style.borderColor = '#dc2626';
+        btn.textContent = '\u{1F534}';
+
+        recognition.onresult = function(e) {
+            var transcript = '';
+            for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+            transcript = transcript.trim();
+            if (!transcript) return;
+            if (opts.numeric) {
+                var m = transcript.match(/\d+(\.\d+)?/);
+                if (m) input.value = m[0];
+            } else if (input.tagName === 'TEXTAREA' && input.value) {
+                input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+            } else {
+                input.value = transcript;
+            }
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.focus();
+        };
+        recognition.onerror = function() {
+            if (typeof toast === 'function') toast('Could not hear that — try again.');
+        };
+        recognition.onend = stop;
+
+        try { recognition.start(); } catch (e) { stop(); }
+    };
+};
+
+function installLawVoiceInputTargets() {
+    window.attachVoiceInput('ainp', { label: 'your question' });
+    window.attachVoiceInput('mtnotes', { label: 'matter notes' });
+}
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installLawVoiceInputTargets);
+} else {
+    installLawVoiceInputTargets();
+}
+})();
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 function init(){
   seed();
