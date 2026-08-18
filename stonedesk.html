@@ -1765,6 +1765,17 @@ body.is-exec .exec-only-block{display:block}
 <script>
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 window.escHtml=escHtml;
+// Honest-failure localStorage wrapper (2026-08-18 platform audit) -- same shape as
+// SAIRNbuild's st() fix (sairnbuild.html:1886). Every save*()/write path in this file
+// previously called localStorage.setItem() directly, each independently wrapped (or not)
+// in its own bare try{}catch(e){}, with zero signal back to the caller -- meaning a
+// quota-exceeded or private-browsing failure either threw uncaught (breaking the save
+// silently mid-function, no error shown) or was swallowed outright while the caller still
+// showed "Saved". This returns true/false so every call site can show an honest message.
+// Attached to window explicitly, same as escHtml above, so every script block on this
+// page can call it regardless of which IIFE it's defined in.
+function st(key,data){try{localStorage.setItem(key,JSON.stringify(data));return true;}catch(e){return false;}}
+window.st=st;
 // sdThemeColor (2026-08-06) -- white-label brand-color support, part of a real
 // resolved-color mechanism for the two contexts CSS custom properties genuinely
 // cannot reach: canvas 2D fillStyle/strokeStyle (canvas has no concept of CSS
@@ -8570,9 +8581,10 @@ var _tmOrigShow=typeof showPanel==='function'?showPanel:null;
 var sd_invoices = JSON.parse(localStorage.getItem('sd_invoices') || '[]');
 
 function invSaveStore() {
-  localStorage.setItem('sd_invoices', JSON.stringify(sd_invoices));
+  var saved = st('sd_invoices', sd_invoices);
   invUpdateKPIs();
   invRender();
+  return saved;
 }
 
 function invToggleCheckFields() {
@@ -8637,7 +8649,7 @@ function invFromQuote() {
 function invSave() {
   var cust = document.getElementById('inv2-cust').value.trim();
   var amt = parseFloat(document.getElementById('inv2-amount').value) || 0;
-  if (!cust || !amt) { notify('Customer name and amount required', 'warn'); return; }
+  if (!cust || !amt) { notify('Customer name and amount required', 'warn'); return false; }
   var dep = parseFloat(document.getElementById('inv2-deposit').value) || 0;
   var inv = {
     id: 'INV-' + Date.now(),
@@ -8660,14 +8672,21 @@ function invSave() {
     payments: dep > 0 ? [{ amount: dep, date: sdLocalToday(), method: document.getElementById('inv2-method').value, note: 'Deposit' }] : []
   };
   sd_invoices.unshift(inv);
-  invSaveStore();
+  var saved = invSaveStore();
+  if (!saved) {
+    sd_invoices.shift();
+    invUpdateKPIs();
+    invRender();
+    notify('Could not save invoice -- storage may be full or unavailable, try again', 'warn');
+    return false;
+  }
   document.getElementById('inv2-form').style.display = 'none';
   notify('Invoice ' + inv.num + ' saved', '');
+  return true;
 }
 
 function invSaveAndPrint() {
-  invSave();
-  if (sd_invoices.length) invPrint(sd_invoices[0].id);
+  if (invSave() && sd_invoices.length) invPrint(sd_invoices[0].id);
 }
 
 function invMarkPaid(id) {
