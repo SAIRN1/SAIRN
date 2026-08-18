@@ -1776,6 +1776,14 @@ window.escHtml=escHtml;
 // page can call it regardless of which IIFE it's defined in.
 function st(key,data){try{localStorage.setItem(key,JSON.stringify(data));return true;}catch(e){return false;}}
 window.st=st;
+// st()'s raw-string sibling (2026-08-18, added while finishing the sweep above) -- st()
+// always JSON.stringify()s its second argument, which is correct for every real save*()
+// record in this file but WRONG for the handful of sites that store an already-raw,
+// non-JSON string (read back elsewhere via plain getItem(), not JSON.parse()) -- routing
+// those through st() would double-encode them, exactly the sd_negotiated_prices bug this
+// same audit found and fixed in pmClearAll(). Same honest-failure shape, no JSON.stringify.
+function stRaw(key,value){try{localStorage.setItem(key,value);return true;}catch(e){return false;}}
+window.stRaw=stRaw;
 // sdThemeColor (2026-08-06) -- white-label brand-color support, part of a real
 // resolved-color mechanism for the two contexts CSS custom properties genuinely
 // cannot reach: canvas 2D fillStyle/strokeStyle (canvas has no concept of CSS
@@ -1953,7 +1961,7 @@ async function callClaude(system, messages, maxTokens) {
     try {
       var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
       memory.unshift(new Date().toLocaleDateString() + ': ' + text.substring(0, 120));
-      localStorage.setItem(APP_ID + '_memory', JSON.stringify(memory.slice(0, 30)));
+      st(APP_ID + '_memory', memory.slice(0, 30));
     } catch(e) {}
 
     return text;
@@ -1989,7 +1997,7 @@ function learnFromResponse(question, answer) {
       var insight = timestamp + ': ' + answer.substring(0, 150).replace(/\n/g, ' ');
       memory.unshift(insight);
       memory = memory.slice(0, 50);
-      localStorage.setItem(APP_ID + '_memory', JSON.stringify(memory));
+      st(APP_ID + '_memory', memory);
     }
 
     // Push to SAIRN Intelligence Network (async, non-blocking)
@@ -2034,7 +2042,7 @@ function saveBusinessFact(fact) {
   try {
     var memory = JSON.parse(localStorage.getItem(APP_ID + '_memory') || '[]');
     memory.unshift(new Date().toLocaleDateString() + ': ' + fact);
-    localStorage.setItem(APP_ID + '_memory', JSON.stringify(memory.slice(0, 50)));
+    st(APP_ID + '_memory', memory.slice(0, 50));
   } catch(e) {}
 }
 window.getBusinessContext = getBusinessContext;
@@ -2346,7 +2354,8 @@ window.saStore = {
     }
   },
   set: function(key, data) {
-    try { localStorage.setItem('_s_' + key, this._encode(data)); } catch(e) {}
+    // Custom XOR+base64 encoding, not JSON -- deliberately uses stRaw() not st().
+    return stRaw('_s_' + key, this._encode(data));
   },
   get: function(key) {
     try {
@@ -2442,7 +2451,7 @@ window.saSanitizeResponse = function(text) {
     var ageKey = 'sairn_created';
     var created = localStorage.getItem(ageKey);
     if (!created) {
-      localStorage.setItem(ageKey, Date.now().toString());
+      stRaw(ageKey, Date.now().toString());
       return;
     }
     var age = Date.now() - parseInt(created);
@@ -2454,7 +2463,7 @@ window.saSanitizeResponse = function(text) {
       Object.keys(localStorage).forEach(function(k) {
         if (keepKeys.indexOf(k) < 0) localStorage.removeItem(k);
       });
-      localStorage.setItem(ageKey, Date.now().toString());
+      stRaw(ageKey, Date.now().toString());
     }
   } catch(e) {}
 })();
@@ -2607,7 +2616,7 @@ window.saWipeAllData = function() {
 })();
 
 window.saAcceptPrivacy = function() {
-  localStorage.setItem('sairn_privacy_accepted', Date.now().toString());
+  stRaw('sairn_privacy_accepted', Date.now().toString());
   var n = document.getElementById('sairn-privacy-notice');
   if (n) n.remove();
   saLog('L28-CONSENT', 'Privacy consent accepted', 'info');
@@ -3299,7 +3308,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       appendMsg('assistant',reply);
       history.push({role:'assistant',content:reply});
       counts.today=(counts.today||0)+1;counts.total=(counts.total||0)+1;
-      try{localStorage.setItem('sd_ai_counts',JSON.stringify(counts));}catch(e){}
+      st('sd_ai_counts',counts);
       document.getElementById('ai-queries').textContent=counts.today;
       document.getElementById('ai-total').textContent=counts.total;
     }
@@ -3437,8 +3446,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       ? dcSnapshotDrawingState() : null;
     h.unshift({id:Date.now(),date:sdLocalToday(),customer:name,project:stone,amount:total,status:'Pending',drawingState:drawingState});
     if(h.length>200)h=h.slice(0,200);
-    var saveOk=true;
-    try{localStorage.setItem('sd_quote_history',JSON.stringify(h));}catch(e){saveOk=false;}
+    var saveOk=st('sd_quote_history',h);
     updateKPIs();
     showToast(saveOk ? ('Quote saved to history for '+name+'!') : 'Storage full — quote NOT saved. Clear old quotes and retry.');
   };
@@ -4525,7 +4533,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   window.sdDemoToggleChanged=function(){
     var cb=document.getElementById('adm-demo');
     if(cb.checked){
-      localStorage.setItem('sd_demo_cleared','0');
+      stRaw('sd_demo_cleared','0');
       document.getElementById('adm-demo-confirm').style.display='none';
       showToast('Demo mode re-enabled.');
       return;
@@ -4555,8 +4563,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       load() fix note at its ||DISPATCH fallback for why this was missed
       the first time (differently-named fallback variable, not ||SEED). */];
   function sdClearSafeDemoData(){
-    localStorage.setItem('sd_demo_cleared','1');
-    SAFE_DEMO_KEYS.forEach(function(k){try{localStorage.setItem(k,'[]');}catch(e){}});
+    stRaw('sd_demo_cleared','1');
+    SAFE_DEMO_KEYS.forEach(function(k){st(k,[]);});
   }
   window.sdClearDemoDataConfirmed=function(){
     sdClearSafeDemoData();
@@ -8321,9 +8329,9 @@ function tmMigrateLegacyRecords(){
   try{
     if(localStorage.getItem(FLAG)==='1')return;
     var raw=localStorage.getItem('sd_template_records');
-    if(!raw){localStorage.setItem(FLAG,'1');return;}
+    if(!raw){stRaw(FLAG,'1');return;}
     var legacy=JSON.parse(raw);
-    if(!Array.isArray(legacy)||!legacy.length){localStorage.setItem(FLAG,'1');return;}
+    if(!Array.isArray(legacy)||!legacy.length){stRaw(FLAG,'1');return;}
     // cncStatus (pending/programmed/running/complete) -> this module's
     // 5-state workflow. 'running' folds to reviewed: it is past programming
     // but not yet off the machine, and inventing a 6th state to hold it
@@ -8349,7 +8357,7 @@ function tmMigrateLegacyRecords(){
       added++;
     });
     if(added)tmSave();
-    localStorage.setItem(FLAG,'1');
+    stRaw(FLAG,'1');
     if(added&&typeof notify==='function')notify(added+' template record'+(added===1?'':'s')+' migrated from the retired DXF manager','');
   }catch(e){}
 }
@@ -10135,7 +10143,7 @@ function saveQuote() {
   // quoteCounter is a raw number-as-string, not JSON -- deliberately not
   // routed through st() (st() always JSON.stringify()s its input, which
   // would corrupt a raw non-JSON value read back via plain getItem()).
-  try{ localStorage.setItem('quoteCounter', String(quoteCounter)); }catch(e){}
+  stRaw('quoteCounter', String(quoteCounter));
   document.getElementById('quote-num').value = currentQuoteNum;
   // Flash confirmation
   const btn = document.querySelector('[onclick="saveQuote()"]');
@@ -15652,7 +15660,7 @@ function sairnUpdateLastSync(){
     el.textContent='Last sync: '+ts;
   });
   var key=(typeof SAIRN_APP_ID!=='undefined'?SAIRN_APP_ID:'sairn')+'_last_sync';
-  try{ localStorage.setItem(key,ts); }catch(e){}
+  stRaw(key,ts);
 }
 // Restore last sync on load
 document.addEventListener('DOMContentLoaded',function(){
@@ -15722,7 +15730,7 @@ async function scanDoc(input) {
       var key = appId + '_doc_scans';
       var scans = JSON.parse(localStorage.getItem(key) || '[]');
       scans.unshift({date: new Date().toLocaleDateString(), preview: r.substring(0,120)});
-      localStorage.setItem(key, JSON.stringify(scans.slice(0,20)));
+      st(key, scans.slice(0,20));
     } catch(err) {
       el.textContent = 'Scan failed. Check your internet connection and try again.';
     }
@@ -15840,7 +15848,7 @@ function crSendToBridge() {
   // Save locally
   var arr = JSON.parse(localStorage.getItem(_crExpKey) || '[]');
   arr.unshift(entry);
-  localStorage.setItem(_crExpKey, JSON.stringify(arr));
+  st(_crExpKey, arr);
   crRenderExpenses(arr);
 
   // Clear form
@@ -16048,12 +16056,14 @@ function saveShopSettings() {
   const addr=document.getElementById('admin-shop-addr').value.trim();
   const phone=document.getElementById('admin-shop-phone').value.trim();
   const email=document.getElementById('admin-shop-email').value.trim();
-  if(name) localStorage.setItem('fab_shop_name', name);
-  if(addr) localStorage.setItem('fab_shop_addr', addr);
-  if(phone) localStorage.setItem('fab_shop_phone', phone);
-  if(email) localStorage.setItem('fab_shop_email', email);
+  let allOk=true;
+  if(name) allOk = stRaw('fab_shop_name', name) && allOk;
+  if(addr) allOk = stRaw('fab_shop_addr', addr) && allOk;
+  if(phone) allOk = stRaw('fab_shop_phone', phone) && allOk;
+  if(email) allOk = stRaw('fab_shop_email', email) && allOk;
   const btn=document.querySelector('[onclick="saveShopSettings()"]');
-  btn.textContent='✓ Settings Saved'; btn.style.color='#4ADE80';
+  btn.textContent = allOk ? '✓ Settings Saved' : '⚠️ Save failed';
+  btn.style.color = allOk ? '#4ADE80' : '#dc2626';
   setTimeout(()=>{btn.textContent='Save Shop Settings';btn.style.color='';},2000);
 }
 
@@ -16864,7 +16874,7 @@ async function buildSessionSummary() {
     var summary = data.content && data.content[0] ? data.content?.[0]?.text || ''.trim() : '';
     if (summary && summary.length > 20) {
       _sessionSummary = summary;
-      localStorage.setItem(APP_KEY, summary);
+      stRaw(APP_KEY, summary);
       updateMemoryIndicator();
       var content = document.getElementById('sairn-memory-content');
       if (content) content.textContent = summary;
@@ -16990,7 +17000,7 @@ function buildToneBar() {
 
 function setTone(id, desc) {
   _currentTone = id;
-  localStorage.setItem(TONE_KEY, id);
+  stRaw(TONE_KEY, id);
   document.querySelectorAll('.stb-chip').forEach(function(c) {
     c.classList.toggle('active', c.dataset.tone === id);
   });
@@ -17096,7 +17106,7 @@ function loadPlans() {
   try { return JSON.parse(localStorage.getItem(PLAN_KEY) || '{}'); } catch(e) { return {}; }
 }
 function savePlans(plans) {
-  localStorage.setItem(PLAN_KEY, JSON.stringify(plans));
+  st(PLAN_KEY, plans);
 }
 
 // Detect numbered steps in AI response text
@@ -18796,7 +18806,7 @@ window._saircSmartFetch = async function(url, opts, retryCount) {
         var data = await clone.json();
         if (data.content && data.content[0]) {
           var cache = { text: data.content?.[0]?.text || '', ts: Date.now() };
-          localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+          st(CACHE_KEY, cache);
         }
       } catch(e) {}
     }
@@ -18993,8 +19003,8 @@ async function fetchLiveKnowledge() {
       _knowledgeReady = true;
 
       // Cache it
-      localStorage.setItem(KNOWLEDGE_KEY, data.knowledge);
-      localStorage.setItem(KNOWLEDGE_TS_KEY, Date.now().toString());
+      stRaw(KNOWLEDGE_KEY, data.knowledge);
+      stRaw(KNOWLEDGE_TS_KEY, Date.now().toString());
 
       patchFetch();
       showKnowledgeIndicator(!data.cached);
@@ -23321,10 +23331,7 @@ function showExecRolePicker(){
 function setExecRoleAndClose(role){
   setExecRoleAndClose._close=true;
   sdExecRole=role;
-  // Raw string value, not JSON -- deliberately NOT routed through st() (which
-  // always JSON.stringify()s its second argument and would corrupt a raw
-  // string read back elsewhere via plain getItem(), not JSON.parse()).
-  try{ localStorage.setItem('sd_exec_role',role); }catch(e){}
+  stRaw('sd_exec_role',role); // raw string, not JSON -- see stRaw()'s own header comment
   if(SD_EXEC_ROLES.includes(role)){
     document.body.classList.add('is-exec');
     setRoleBadge(role);
@@ -24519,7 +24526,7 @@ async function syncSDMemoriesFromSupabase() {
   const data = await sdData('read', 'memory', {});
   if (Array.isArray(data)) {
     _sdMemories = data;
-    localStorage.setItem('stonedesk:ai_memories', JSON.stringify(data));
+    st('stonedesk:ai_memories', data);
   }
 }
 
@@ -24545,7 +24552,7 @@ async function writeSDMemory() {
     const mem = { memory_text: memText, source: 'stonedesk', created_at: new Date().toISOString() };
     _sdMemories.unshift(mem);
     if (_sdMemories.length > 20) _sdMemories = _sdMemories.slice(0, 20);
-    localStorage.setItem('stonedesk:ai_memories', JSON.stringify(_sdMemories));
+    st('stonedesk:ai_memories', _sdMemories);
     // Endpoint stamps shop_id (from the profile) and license_hash server-side.
     await sdData('write', 'memory', mem);
   } catch(e) {}
@@ -24599,8 +24606,8 @@ async function loadNetworkIntelligence() {
     var res  = await fetch('https://sairn.vercel.app/api/network?app=stonedesk');
     var data = await res.json();
     window._sairnNetIntel = data;
-    localStorage.setItem('stonedesk_net_intel', JSON.stringify(data));
-    localStorage.setItem('stonedesk_net_intel_ts', String(Date.now()));
+    st('stonedesk_net_intel', data);
+    stRaw('stonedesk_net_intel_ts', String(Date.now()));
   } catch(e) { /* network intelligence is always optional -- never block the app */ }
 }
 
@@ -30592,8 +30599,7 @@ function fqSaveQuote() {
   var key='stonedesk_quotes';
   var q=JSON.parse(localStorage.getItem(key)||'[]');
   q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});
-  localStorage.setItem(key,JSON.stringify(q));
-  if(typeof showToast==='function') showToast('Quote saved');
+  if(typeof showToast==='function') showToast(st(key,q) ? 'Quote saved' : 'Could not save -- storage may be full or unavailable');
 }
 function fqClose() {
   fqSaveQuote();
@@ -30860,7 +30866,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
         if (errEl) { errEl.textContent = sdAuthErr(res.body, 'That license key was not recognized — check for typos'); errEl.style.display = 'block'; }
         return;
       }
-      try { localStorage.setItem('stonedesk_license_key', key); } catch (e) {}
+      stRaw('stonedesk_license_key', key);
       if (input) input.value = '';
       sdShowLogin();
     }).catch(function() {
@@ -31012,7 +31018,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     var startMs = parseInt(localStorage.getItem(TRIAL_KEY), 10);
     if (!startMs || isNaN(startMs)) {
       startMs = Date.now();
-      try { localStorage.setItem(TRIAL_KEY, String(startMs)); } catch(e) {}
+      stRaw(TRIAL_KEY, String(startMs));
     }
     var daysElapsed = Math.floor((Date.now() - startMs) / 86400000);
     if (daysElapsed < TRIAL_DAYS) return true;
@@ -33515,7 +33521,7 @@ function itaExportAll(){
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='StoneDesk_Backup_'+sdLocalToday()+'.json';a.click();
   itaAudit('Full data export performed');showToast('Data exported');
 }
-function itaImportPrompt(){var inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=function(e){var f=e.target.files[0];if(!f)return;var fr=new FileReader();fr.onload=function(ev){try{var d=JSON.parse(ev.target.result);Object.keys(d).forEach(function(k){localStorage.setItem(k,d[k]);});itaAudit('Data import performed');itaRender();showToast('Data restored — reload to see all changes');}catch(err){showToast('Invalid backup file');}};fr.readAsText(f);};inp.click();}
+function itaImportPrompt(){var inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=function(e){var f=e.target.files[0];if(!f)return;var fr=new FileReader();fr.onload=function(ev){try{var d=JSON.parse(ev.target.result);var keys=Object.keys(d);var failed=[];keys.forEach(function(k){if(!stRaw(k,d[k]))failed.push(k);});itaAudit('Data import performed'+(failed.length?' ('+failed.length+' of '+keys.length+' keys failed to write)':''));itaRender();showToast(failed.length?('Restored '+(keys.length-failed.length)+' of '+keys.length+' keys -- storage may be full, some data NOT restored'):'Data restored — reload to see all changes');}catch(err){showToast('Invalid backup file');}};fr.readAsText(f);};inp.click();}
 function itaClearData(){if(!confirm('This will clear all DEMO data. Your real data will NOT be affected unless this is a demo account. Continue?'))return;var keep=['sd_owner_pin','sd_license_key','sd_plan',ITA_USERS_KEY,ITA_AUDIT_KEY];Object.keys(localStorage).filter(function(k){return k.startsWith('sd_')&&!keep.includes(k);}).forEach(function(k){localStorage.removeItem(k);});itaAudit('Demo data cleared');showToast('Demo data cleared');itaRender();}
 
 // ================================================================
