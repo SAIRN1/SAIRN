@@ -15,6 +15,7 @@
 // See docs/superpowers/specs/2026-08-18-sairncash-trial-flow-design.md.
 
 const { isTrialValid, daysLeft } = require('../_lib/sairncash-trial.js');
+const { mintCustomToken } = require('../_lib/firebase-admin.js');
 
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -85,11 +86,32 @@ module.exports = async (req, res) => {
     // returned when valid, matching the same trust boundary
     // reverifySubscription() already uses for paid customerId (an
     // expired/unknown trial gets no sync identity either).
+    //
+    // firebaseToken (2026-08-19, real-auth fix): a Firebase custom auth
+    // token minted for this exact customerId, so the client can actually
+    // sign in before touching the RTDB instead of hitting it unauthenticated
+    // -- see api/_lib/firebase-admin.js's header for the full why. Best-
+    // effort: if minting fails (missing/bad service-account credential, a
+    // real Firebase outage), degrade to firebaseToken:null rather than
+    // failing the whole trial-verify response -- valid/expiresAt/daysLeft
+    // are this endpoint's real purpose and must keep working even if sync
+    // can't, same "optional integration degrades gracefully" standard
+    // firebase-config.js already established.
+    let firebaseToken = null;
+    if (valid) {
+      try {
+        firebaseToken = await mintCustomToken(row.id);
+      } catch (e) {
+        console.error('SAIRNcash trial-verify: mintCustomToken failed:', e.message);
+      }
+    }
+
     res.status(200).json({
       valid: valid,
       expiresAt: row.expires_at,
       daysLeft: daysLeft(row.expires_at, now),
-      customerId: valid ? row.id : null
+      customerId: valid ? row.id : null,
+      firebaseToken: firebaseToken
     });
   } catch (e) {
     console.error('SAIRNcash trial-verify error:', e.message);

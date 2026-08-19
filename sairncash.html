@@ -386,6 +386,8 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, push, onValue, set, serverTimestamp, onDisconnect }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, signInWithCustomToken }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 // 2026-08-10: every path below is scoped under sairncash/customers/{customerId}/
 // -- fixes a real cross-subscriber data-isolation bug found while designing
 // the tax/retirement estimator (the original single global 'sairncash/messages'
@@ -400,17 +402,34 @@ import { getDatabase, ref, push, onValue, set, serverTimestamp, onDisconnect }
 // never saved). Trial's own real uuid (trial-verify.js's customerId, saved
 // by reverifyTrial() into getTrial()) now covers that path the same way
 // getSub().customerId covers the paid path.
+// 2026-08-19 fix: customerId alone got sync this far and no further -- every
+// RTDB write still failed with PERMISSION_DENIED (confirmed live, both an
+// automatic presence write and a real income-entry write) because nothing
+// ever signed in to Firebase Auth; every read/write hit the database
+// completely unauthenticated. Both verify endpoints now mint a real Firebase
+// custom auth token scoped to this exact customerId (api/_lib/
+// firebase-admin.js) -- sign in with it here, BEFORE touching the database
+// at all, so RTDB rules can require a real `auth.uid === customerId` check
+// instead of trusting an unguessable id in the URL path.
 async function initFirebase() {
   try {
     const sub = getSub();
     const trial = getTrial();
     const customerId = (sub && sub.customerId) || (trial && trial.customerId);
-    if (!customerId) { console.log('Sync unavailable -- no verified customer yet'); return; }
+    const firebaseToken = (sub && sub.firebaseToken) || (trial && trial.firebaseToken);
+    if (!customerId || !firebaseToken) { console.log('Sync unavailable -- no verified customer yet'); return; }
     const res = await fetch('/api/sairncash/firebase-config');
     if (!res.ok) return;
     const config = await res.json();
     if (!config || !config.apiKey) return;
     const app = initializeApp(config);
+    const auth = getAuth(app);
+    try {
+      await signInWithCustomToken(auth, firebaseToken);
+    } catch (authErr) {
+      console.log('Sync unavailable -- Firebase sign-in failed: ' + authErr.message);
+      return;
+    }
     const db = getDatabase(app);
     let did = localStorage.getItem('sairncash_did');
     if (!did) { did = 'dev_' + Math.random().toString(36).substr(2,9); localStorage.setItem('sairncash_did', did); }
@@ -560,7 +579,9 @@ async function reverifyTrial() {
     // already finds a paid customer's Stripe id via getSub(). Saved on every
     // successful reverify (not just the first), matching this function's
     // existing "always trust the fresh server response" pattern.
-    if (data.valid) { saveTrial({ trialToken: t.trialToken, expiresAt: data.expiresAt, daysLeft: data.daysLeft, customerId: data.customerId }); return true; }
+    // firebaseToken (2026-08-19 real-auth fix) -- same treatment, see
+    // initFirebase()'s own comment for why this exists.
+    if (data.valid) { saveTrial({ trialToken: t.trialToken, expiresAt: data.expiresAt, daysLeft: data.daysLeft, customerId: data.customerId, firebaseToken: data.firebaseToken }); return true; }
     return false;
   } catch (e) {
     return isTrialActive();
