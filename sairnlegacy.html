@@ -298,6 +298,7 @@ label.chk input{width:auto;}
   </div>
   <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
   <div class="card"><div class="ch"><span class="ct">Recent Cases</span></div><div class="cb" id="d-cases"></div></div>
+  <div class="card"><div class="ch"><span class="ct">Case Cycle Trend</span></div><div class="cb" id="d-casecycle"></div></div>
 </div>
 
 <!-- AI ASSISTANT -->
@@ -1728,6 +1729,48 @@ function rDash(){
   $('d-cases').innerHTML=recent.length?recent.map(function(c){
     return '<div class="srow"><span class="slbl">'+H(c.case_number)+' -- '+H(c.decedent_name)+'</span><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No cases yet</div>';
+
+  rCaseCycleTrend();
+}
+
+// Predictive business intelligence (2026-08-19): case-open-to-scheduled-
+// service length -- real days elapsed from created_at (when the case was
+// opened) to service_date (the real date the family's service is set for),
+// both of which genuinely exist on every case with a service scheduled
+// (checked before building -- no separate "arrangement completed"
+// timestamp exists, so this uses the two real dates the record already
+// has rather than adding a new field). Deviation-from-own-baseline shape,
+// same as SAIRNdesign's Sales Cycle Trend: most recent 3 cases with a
+// service_date vs. this funeral home's own prior average. Honest 6+-case
+// minimum-sample gate with a real "not enough history yet" fallback.
+function rCaseCycleTrend(){
+  var el=$('d-casecycle');if(!el)return;
+  var DAY=24*60*60*1000;
+  var withService=cases().filter(function(c){
+    return c.created_at&&c.service_date;
+  }).map(function(c){
+    return {
+      case_number:c.case_number,
+      created_at:c.created_at,
+      days:(new Date(c.service_date+'T00:00:00').getTime()-new Date(c.created_at+'T00:00:00').getTime())/DAY
+    };
+  }).filter(function(x){return x.days>=0;}) // guards against bad/out-of-order manual data entry
+    .sort(function(a,b){return a.created_at.localeCompare(b.created_at);});
+
+  if(withService.length<6){
+    el.innerHTML='<div style="color:var(--muted);text-align:center;padding:12px">Not enough case history with a scheduled service date yet ('+withService.length+' on record, need at least 6) -- this will start surfacing a real trend once there\'s more volume.</div>';
+    return;
+  }
+  var recent=withService.slice(-3);
+  var prior=withService.slice(0,-3);
+  var avg=function(list){return list.reduce(function(s,x){return s+x.days;},0)/list.length;};
+  var recentAvg=avg(recent),priorAvg=avg(prior);
+  var delta=recentAvg-priorAvg;
+  var dir=delta<0?'faster':(delta>0?'slower':'unchanged versus');
+  var deltaTxt=Math.abs(delta)<0.5?'about the same as':(Math.round(Math.abs(delta)*10)/10+' day(s) '+dir);
+  el.innerHTML='<div class="srow"><span class="slbl">Most recent 3 cases (open to scheduled service)</span><span>'+(Math.round(recentAvg*10)/10)+' day(s) avg</span></div>'+
+    '<div class="srow"><span class="slbl">This home\'s own prior average ('+prior.length+' cases)</span><span>'+(Math.round(priorAvg*10)/10)+' day(s) avg</span></div>'+
+    '<div style="color:var(--muted);font-size:13px;margin-top:6px">Recent cases are reaching a scheduled service '+deltaTxt+' this home\'s own prior average -- not an industry benchmark, computed live from real case-open and service dates.</div>';
 }
 
 // ── CASE MANAGEMENT ───────────────────────────────────────────────────────
