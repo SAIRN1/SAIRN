@@ -670,33 +670,15 @@
                 <button class="btn btn-primary" onclick="exportCSV('claims')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Claims</div>
-                    <div class="kpi-value">8</div>
-                    <div class="kpi-detail">Seed data</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Clean Status</div>
-                    <div class="kpi-value">4</div>
-                    <div class="kpi-detail">Ready to submit</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Pending</div>
-                    <div class="kpi-value">2</div>
-                    <div class="kpi-detail">Awaiting response</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Denied</div>
-                    <div class="kpi-value">1</div>
-                    <div class="kpi-detail">Under appeal</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Hold</div>
-                    <div class="kpi-value">1</div>
-                    <div class="kpi-detail">Needs review</div>
-                </div>
-            </div>
+            <!-- Fixed (2026-08-19 audit): this whole panel used to be 8 hardcoded
+                 fake patient rows (CLM-2601..2608) with hardcoded "Seed data"
+                 KPIs and zero way to ever add a real claim -- the one panel the
+                 2026-08-18 fabrication audit missed while every sibling panel
+                 (Revenue/Denial/HCC/etc.) got real CRUD. Same real
+                 getX/saveX/renderX/addXEntry/removeXEntry pattern as every
+                 other panel now, dynamic kpi-grid + tbody instead of static
+                 markup. -->
+            <div class="kpi-grid" id="claims-kpis"></div>
             <div class="table-container">
                 <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table id="claimsTable">
                     <thead>
@@ -707,75 +689,20 @@
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Date</th>
+                            <th></th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>CLM-2601</td>
-                            <td>John Smith</td>
-                            <td>Aetna</td>
-                            <td>$2,450.00</td>
-                            <td><span class="status-badge status-clean">Clean</span></td>
-                            <td>2026-01-15</td>
-                        </tr>
-                        <tr>
-                            <td>CLM-2602</td>
-                            <td>Mary Johnson</td>
-                            <td>Medicare</td>
-                            <td>$1,825.50</td>
-                            <td><span class="status-badge status-clean">Clean</span></td>
-                            <td>2026-01-16</td>
-                        </tr>
-                        <tr>
-                            <td>CLM-2603</td>
-                            <td>Robert Williams</td>
-                            <td>UHC</td>
-                            <td>$3,100.00</td>
-                            <td><span class="status-badge status-pending">Pending</span></td>
-                            <td>2026-01-17</td>
-                        </tr>
-                        <tr>
-                            <td>CLM-2604</td>
-                            <td>Patricia Brown</td>
-                            <td>BCBS</td>
-                            <td>$2,675.25</td>
-                            <td><span class="status-badge status-clean">Clean</span></td>
-                            <td>2026-01-18</td>
-                        </tr>
-                        <tr>
-                            <td>CLM-2605</td>
-                            <td>Michael Davis</td>
-                            <td>Cigna</td>
-                            <td>$1,950.75</td>
-                            <td><span class="status-badge status-hold">Hold</span></td>
-                            <td>2026-01-19</td>
-                        </tr>
-                        <tr>
-                            <td>CLM-2606</td>
-                            <td>Jennifer Miller</td>
-                            <td>Aetna</td>
-                            <td>$2,200.00</td>
-                            <td><span class="status-badge status-clean">Clean</span></td>
-                            <td>2026-01-20</td>
-                        </tr>
-                        <tr>
-                            <td>CLM-2607</td>
-                            <td>David Wilson</td>
-                            <td>Medicare</td>
-                            <td>$2,800.50</td>
-                            <td><span class="status-badge status-pending">Pending</span></td>
-                            <td>2026-01-21</td>
-                        </tr>
-                        <tr>
-                            <td>CLM-2608</td>
-                            <td>Linda Moore</td>
-                            <td>UHC</td>
-                            <td>$2,350.00</td>
-                            <td><span class="status-badge status-denied">Denied</span></td>
-                            <td>2026-01-22</td>
-                        </tr>
-                    </tbody>
+                    <tbody id="claims-tbody"></tbody>
                 </table></div>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="clm-add-id" placeholder="Claim ID" class="search-input">
+                <input type="text" id="clm-add-patient" placeholder="Patient" class="search-input">
+                <input type="text" id="clm-add-payer" placeholder="Payer" class="search-input">
+                <input type="number" step="0.01" id="clm-add-amount" placeholder="Amount" class="search-input">
+                <select id="clm-add-status"><option>Clean</option><option>Pending</option><option>Denied</option><option>Hold</option></select>
+                <input type="date" id="clm-add-date" class="search-input">
+                <button class="btn btn-primary" onclick="addClaimEntry()">Add Claim</button>
             </div>
         </div>
 
@@ -2666,6 +2593,77 @@ How to answer:
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Provider added' : 'Provider added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
+        // Claims Management (2026-08-19 audit) -- real CRUD, same shape as
+        // every sibling panel (getX/saveX/renderX/addXEntry/removeXEntry),
+        // replacing the 8 hardcoded fake patient rows + hardcoded "Seed data"
+        // KPIs the 2026-08-18 fabrication audit missed on this one panel.
+        // Honest empty state from the start -- never seeds fake claims.
+        function getClaimEntries(){
+            try { var s = localStorage.getItem('sc_claims'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveClaimEntries(list){ try { localStorage.setItem('sc_claims', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        function claimStatusBadgeClass(status){
+            if (status==='Clean') return 'status-clean';
+            if (status==='Denied') return 'status-denied';
+            if (status==='Hold') return 'status-hold';
+            return 'status-pending';
+        }
+        function renderClaims(){
+            var list = getClaimEntries();
+            var tbody = document.getElementById('claims-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            list.forEach(function(c){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(c.claimId)+'</td><td>'+escHtml(c.patient)+'</td><td>'+escHtml(c.payer)+'</td><td>$'+c.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td><span class="status-badge '+claimStatusBadgeClass(c.status)+'">'+escHtml(c.status)+'</span></td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeClaimEntry(\''+c.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var clean = list.filter(function(c){return c.status==='Clean';}).length;
+            var pending = list.filter(function(c){return c.status==='Pending';}).length;
+            var denied = list.filter(function(c){return c.status==='Denied';}).length;
+            var hold = list.filter(function(c){return c.status==='Hold';}).length;
+            var kpis = document.getElementById('claims-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Total Claims</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Logged</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Clean Status</div><div class="kpi-value">'+clean+'</div><div class="kpi-detail">Ready to submit</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Pending</div><div class="kpi-value">'+pending+'</div><div class="kpi-detail">Awaiting response</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Denied</div><div class="kpi-value">'+denied+'</div><div class="kpi-detail">Under appeal</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Hold</div><div class="kpi-value">'+hold+'</div><div class="kpi-detail">Needs review</div></div>';
+            }
+        }
+        async function removeClaimEntry(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_claims', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveClaimEntries(getClaimEntries().filter(function(c){return c.id!==id;}));
+            renderClaims();
+            renderDashboard();
+        }
+        async function addClaimEntry(){
+            var claimId = document.getElementById('clm-add-id').value.trim();
+            var patient = document.getElementById('clm-add-patient').value.trim();
+            var payer = document.getElementById('clm-add-payer').value.trim();
+            var amount = parseFloat(document.getElementById('clm-add-amount').value);
+            var status = document.getElementById('clm-add-status').value;
+            var date = document.getElementById('clm-add-date').value;
+            if (!claimId || !patient || isNaN(amount)) { showToast('Claim ID, patient, and amount required'); return; }
+            var list = getClaimEntries();
+            list.push({id:'cl'+Date.now(), claimId:claimId, patient:patient, payer:payer||'—', amount:amount, status:status, date:date||scLocalToday()});
+            var saved = saveClaimEntries(list);
+            // Same await+sync-check discipline as every other add-function on this
+            // page (2026-08-19 audit, code-scrubber Check 4).
+            var synced = saved ? await scData('write', 'sc_claims', list[list.length - 1]) : null;
+            renderClaims();
+            renderDashboard();
+            document.getElementById('clm-add-id').value = '';
+            document.getElementById('clm-add-patient').value = '';
+            document.getElementById('clm-add-payer').value = '';
+            document.getElementById('clm-add-amount').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Claim added' : 'Claim added on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -2810,6 +2808,7 @@ How to answer:
             updateNavA11y();
             const lastPanel = localStorage.getItem('sc_last_panel') || 'dashboard';
             showPanel(lastPanel);
+            renderClaims();
             renderRevenue();
             renderDenial();
             renderCompliance();
@@ -3066,7 +3065,11 @@ How to answer:
             sc_fraud: 'sc_fraud', sc_prebill: 'sc_prebill', sc_hcc: 'sc_hcc', sc_drg: 'sc_drg',
             sc_query: 'sc_query', sc_rac: 'sc_rac', sc_telehealth: 'sc_telehealth',
             sc_anesthesia: 'sc_anesthesia', sc_auth: 'sc_auth', sc_ar: 'sc_ar',
-            sc_providers: 'sc_providers', sc_encoder: 'sc_encoder'
+            sc_providers: 'sc_providers', sc_encoder: 'sc_encoder',
+            // Added 2026-08-19 (Claims CRUD build) -- same real server-sync
+            // treatment as the other 15 resources, participates in login-time
+            // scSyncOneResource() the same way.
+            sc_claims: 'sc_claims'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -3088,7 +3091,7 @@ How to answer:
             await Promise.all(resources.map(function (r) { return scSyncOneResource(r); }));
             // Re-render every panel now that local caches may have just been
             // overwritten (server-authoritative) or migrated (local-first-sync).
-            renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
+            renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
             renderAr(); renderProviders(); renderDashboard();
