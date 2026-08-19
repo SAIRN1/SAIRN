@@ -24848,6 +24848,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Value</th>
         <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Stage</th>
         <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Source</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Assigned</th>
       </tr></thead>
       <tbody id="crm-tbody"></tbody>
     </table>
@@ -24867,6 +24868,14 @@ document.addEventListener('DOMContentLoaded', function() {
       <select id="crm-source" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text)">
         <option>Referral</option><option>Google</option><option>Yelp</option><option>Houzz</option><option>Walk-in</option><option>Contractor</option>
       </select>
+      <!-- Management-only (owner/admin) -- hidden for Sales/Install via JS, same
+           "no client-side toggle, server still enforces regardless" discipline as
+           every other permission gate this session. A non-management caller who
+           adds a lead gets auto-assigned to themselves server-side, this control
+           never renders for them at all. -->
+      <select id="crm-assignee" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);display:none">
+        <option value="">Unassigned</option>
+      </select>
       <button class="q-btn primary" style="width:100%" onclick="sdCRMAdd()">Add Lead</button>
     </div>
     <div id="crm-ai-out" style="display:none;padding:14px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.6"></div>
@@ -24884,10 +24893,71 @@ document.addEventListener('DOMContentLoaded', function() {
     {name:'James Lee',proj:'Full Kitchen Reno',val:11000,stage:'Hot',source:'Contractor',date:'2024-06-07',phone:'(555) 501-1005'},
     {name:'Carol White',proj:'Kitchen + 2 Baths',val:7200,stage:'Quote Sent',source:'Referral',date:'2024-06-05',phone:'(555) 501-1006'},
   ];
+  // Privacy gate (2026-08-19, confirmed with Michael): a lead is visible only
+  // to management (Owner/Manager) or the salesperson it's assigned to --
+  // platform rule, StoneDesk is the first app to get it since it already had
+  // real per-employee auth (api/sd-auth.js). ENFORCED SERVER-SIDE
+  // (api/sd-data.js's sd_crm branch, the real boundary) -- these client-side
+  // reads are for UI convenience only (show/hide the assignee controls),
+  // never trust them as the actual gate.
+  function crmRole(){try{return sessionStorage.getItem('sd_session_role')||'';}catch(e){return'';}}
+  function crmEmployeeId(){try{return sessionStorage.getItem('sd_session_employee_id')||'';}catch(e){return'';}}
+  function crmIsManagement(){var r=crmRole();return r==='owner'||r==='admin';}
+
+  // load()/save() are now a LOCAL CACHE of the last real server read, not
+  // the source of truth -- refresh() (below) is what actually syncs. Kept
+  // synchronous so render() can still paint instantly from cache (same
+  // optimistic-local pattern every other resource in this file already
+  // uses), sdDemoCleared() fallback unchanged from before.
   function load(){try{return JSON.parse(localStorage.getItem('sd_crm')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){return st('sd_crm',d);}
+
+  // Roster cache for the Assign-To/reassign controls -- management only
+  // (api/sd-auth.js's 'roster' action refuses non-management server-side
+  // regardless of what this cache holds).
+  var _roster=null;
+  function refreshRoster(){
+    if(!crmIsManagement())return;
+    var lic=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
+    if(!lic)return;
+    var h={'Content-Type':'application/json',Authorization:'Bearer '+lic};
+    try{var tok=sessionStorage.getItem('sd_session_token');if(tok)h['X-SD-Auth']=tok;}catch(e){}
+    fetch('/api/sd-auth',{method:'POST',headers:h,body:JSON.stringify({action:'roster'})})
+      .then(function(r){return r.json();}).then(function(d){
+        if(d&&d.ok&&Array.isArray(d.employees)){_roster=d.employees;populateAssigneeControls();}
+      }).catch(function(){});
+  }
+  function employeeName(id){
+    if(!id)return'Unassigned';
+    if(_roster){var m=_roster.find(function(e){return e.employee_id===id;});if(m)return m.display_name||m.employee_id;}
+    return id;
+  }
+  function populateAssigneeControls(){
+    var sel=document.getElementById('crm-assignee');
+    if(!sel||!_roster)return;
+    sel.innerHTML='<option value="">Unassigned</option>'+_roster.map(function(e){
+      return '<option value="'+escHtml(e.employee_id)+'">'+escHtml(e.display_name||e.employee_id)+' ('+escHtml(e.role)+')</option>';
+    }).join('');
+  }
+
+  // Real server sync -- sd_crm never had one before this (was pure
+  // localStorage). Null means "no session / network failure", not "zero
+  // leads" -- leaves the local cache untouched rather than wiping it on a
+  // transient failure, same honest-degrade discipline as every other
+  // resource's sync call.
+  function refresh(){
+    if(typeof sdData!=='function')return;
+    sdData('read','sd_crm',{}).then(function(d){
+      if(Array.isArray(d)){save(d);render();}
+    });
+  }
+
   function render(){
     var d=load();
+    var isMgmt=crmIsManagement();
+    var assigneeSel=document.getElementById('crm-assignee');
+    if(assigneeSel)assigneeSel.style.display=isMgmt?'block':'none';
+    if(isMgmt&&!_roster)refreshRoster();
     var active=d.filter(function(x){return !x.won&&!x.lost;});
     document.getElementById('crm-leads').textContent=active.length;
     document.getElementById('crm-pipeline').textContent='$'+active.reduce(function(a,x){return a+(x.val||0);},0).toLocaleString();
@@ -24909,26 +24979,70 @@ document.addEventListener('DOMContentLoaded', function() {
         +'</div>';
     }).join('');
     document.getElementById('crm-tbody').innerHTML=d.map(function(x){
+      var assignedCell=isMgmt&&x.id
+        ? '<select onchange="sdCRMReassign(\''+x.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
+          +'<option value="">Unassigned</option>'
+          +(_roster||[]).map(function(e){return '<option value="'+escHtml(e.employee_id)+'"'+(e.employee_id===x.assigned_employee_id?' selected':'')+'>'+escHtml(e.display_name||e.employee_id)+'</option>';}).join('')
+          +'</select>'
+        : escHtml(employeeName(x.assigned_employee_id));
       return '<tr><td style="padding:8px;border-bottom:1px solid var(--border);font-weight:600">'+escHtml(x.name)+'</td>'
         +'<td style="padding:8px;border-bottom:1px solid var(--border)">'+escHtml(x.proj)+'</td>'
         +'<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-weight:700;color:var(--brand2)">$'+(x.val||0).toLocaleString()+'</td>'
         +'<td style="padding:8px;border-bottom:1px solid var(--border)"><span style="background:'+(stageColors[x.stage]||'#f3f4f6')+';padding:2px 8px;border-radius:8px;font-size:11px">'+x.stage+'</span></td>'
-        +'<td style="padding:8px;border-bottom:1px solid var(--border);color:var(--muted)">'+x.source+'</td></tr>';
+        +'<td style="padding:8px;border-bottom:1px solid var(--border);color:var(--muted)">'+x.source+'</td>'
+        +'<td style="padding:8px;border-bottom:1px solid var(--border)">'+assignedCell+'</td></tr>';
     }).join('');
   }
-  window.sdCRMRender=render;
+  // Paint instantly from local cache, THEN re-sync from the server -- same
+  // shape as this session's other panels' nav-triggered live reads. Exposed
+  // as sdCRMRender so whatever already calls it on panel-show (unchanged)
+  // now also gets a real refresh, not just a re-paint of stale cache.
+  window.sdCRMRender=function(){render();refresh();};
   window.sdCRMGetLeads=load;
   window.sdCRMAdd=function(){
     var name=document.getElementById('crm-name').value.trim();
     if(!name){showToast('Enter customer name');return;}
-    var d=load();
-    d.push({name:name,proj:document.getElementById('crm-proj').value||'Project',
+    var isMgmt=crmIsManagement();
+    var assigneeEl=document.getElementById('crm-assignee');
+    // Management picks from the dropdown (may leave Unassigned). A
+    // non-management caller (Sales/Install) always gets auto-assigned to
+    // themselves -- the server would reject anything else from them anyway
+    // (only management can assign/reassign), so there's no real choice to
+    // offer here.
+    var assignedTo=isMgmt?(assigneeEl?assigneeEl.value:''):crmEmployeeId();
+    var lead={id:'CRM-'+Date.now()+'-'+Math.floor(Math.random()*1000),
+      name:name,proj:document.getElementById('crm-proj').value||'Project',
       val:parseFloat(document.getElementById('crm-val').value)||0,
       stage:document.getElementById('crm-stage').value,
       source:document.getElementById('crm-source').value,
-      date:sdLocalToday()});
-    save(d);render();
+      date:sdLocalToday(),assigned_employee_id:assignedTo};
+    var d=load();d.push(lead);save(d);render();
     ['crm-name','crm-proj','crm-val'].forEach(function(id){document.getElementById(id).value='';});
+    if(typeof sdData==='function'){
+      sdData('write','sd_crm',lead).then(function(saved){
+        if(!saved){showToast('Lead saved on this device only — server sync failed, try again with a connection',6000);}
+      });
+    }
+  };
+  // Reassignment -- management-only UI (the select this is wired to only
+  // renders for isMgmt in render() above), but the REAL boundary is
+  // server-side: api/sd-data.js refuses this write from a non-management
+  // session regardless. Sends the FULL current lead record, not just the
+  // assignee field -- the server's write path replaces the whole stored
+  // record each call (same simple whole-record semantics as every other
+  // resource here), so a partial payload would silently wipe the rest of
+  // the lead's fields.
+  window.sdCRMReassign=function(leadId,newEmployeeId){
+    var d=load();
+    var lead=d.find(function(x){return x.id===leadId;});
+    if(!lead){showToast('Lead not found');return;}
+    lead.assigned_employee_id=newEmployeeId||'';
+    save(d);render();
+    if(typeof sdData==='function'){
+      sdData('write','sd_crm',lead).then(function(saved){
+        showToast(saved?(lead.name+' reassigned to '+employeeName(newEmployeeId)):'Reassignment saved on this device only — server sync failed, try again with a connection',saved?3000:6000);
+      });
+    }
   };
   window.sdCRMAI=function(){
     var d=load();
@@ -24957,7 +25071,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='crm-pipeline-pinnacle-'+sdLocalToday()+'.csv';a.click();
   };
-  render();
+  render();refresh();
 })();
 </script>
   </div>

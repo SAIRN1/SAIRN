@@ -58,8 +58,8 @@ module.exports = async (req, res) => {
     }
   }
   const action = body && body.action;
-  if (['bootstrap', 'login', 'setup', 'check_license'].indexOf(action) === -1) {
-    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', 'setup', or 'check_license'" } });
+  if (['bootstrap', 'login', 'setup', 'check_license', 'roster'].indexOf(action) === -1) {
+    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', 'setup', 'check_license', or 'roster'" } });
     return;
   }
 
@@ -249,6 +249,26 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, employee_id, role });
+      return;
+    }
+
+    // Added 2026-08-19 for the CRM/Lead Pipeline reassignment control --
+    // owner/admin need a real roster to assign/reassign a lead to, and
+    // there was no read path for StoneDesk's own sd_employee_auth roster
+    // anywhere before this (the 'employees' resource in api/sd-data.js is
+    // a different table entirely -- SAIRNbiz-owned HR data cross-read by
+    // StoneDesk, not this app's own login credentials). Read-only, no PIN
+    // hashes/salts/lockout state ever leave this endpoint.
+    if (action === 'roster') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!caller || (caller.role !== 'owner' && caller.role !== 'admin')) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can view the employee roster' } });
+        return;
+      }
+      const r = await fetch(rest('sd_employee_auth?license_hash=eq.' + enc(licHash) + '&active=eq.true&select=employee_id,display_name,role'), { headers });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, employees: rows || [] });
       return;
     }
   } catch (err) {
