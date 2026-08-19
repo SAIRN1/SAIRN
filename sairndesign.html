@@ -1338,6 +1338,39 @@ sdnRegisterTool(
   }
 );
 
+// ================================================================
+// SHARED STUDIO-KNOWLEDGE LAYER (2026-08-19) -- reuses the SAME
+// /api/sd-data shared_knowledge resource StoneDesk/SAIRNbiz/SAIRNcode
+// already use (generic, license_hash-scoped -- sdnData() above already
+// points DATA_API at it with APP_ID='sairndesign', no server change
+// needed). Unconditional-extraction pattern (confirmed, not SAIRNlaw's
+// gated one) -- unlike SAIRNlaw, no per-question matter/client selector
+// exists anywhere on this AI Assistant panel to gate on, and the privacy
+// bar here is lower than attorney-client privilege.
+// ================================================================
+var _sdnSharedKnowledge=null;
+function loadSdnSharedKnowledge(){try{sdnData('read','shared_knowledge',{}).then(function(data){if(data)_sdnSharedKnowledge=data;});}catch(e){}}
+function recordSdnSharedTopics(text){
+  try{
+    if(!text)return;
+    var words=(String(text).toLowerCase().match(/\b[a-z]{5,}\b/g)||[]).slice(0,60);
+    if(!words.length)return;
+    sdnData('write','shared_knowledge',{words:words});
+  }catch(e){}
+}
+function buildSdnSharedStudioContext(){
+  var lines=['SHARED STUDIO KNOWLEDGE (from everyone at this studio, not just this device):'];
+  if(_sdnSharedKnowledge&&_sdnSharedKnowledge.topics){
+    var topics=Object.entries(_sdnSharedKnowledge.topics).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(e){return e[0];});
+    if(topics.length)lines.push('• Frequently discussed across the studio: '+topics.join(', '));
+  }
+  if(lines.length===1)return'';
+  return lines.join('\n');
+}
+loadSdnSharedKnowledge();
+window.buildSdnSharedStudioContext=buildSdnSharedStudioContext;
+window.recordSdnSharedTopics=recordSdnSharedTopics;
+
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about clients, specs, vendors, or studio operations.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
@@ -1367,13 +1400,15 @@ async function sendAI(){
   // "allow concurrent questions" design the 2026-08-09 fix established.
   var myUserTurn={role:'user',content:q};
   aiHist.push(myUserTurn);
+  if(typeof recordSdnSharedTopics==='function')recordSdnSharedTopics(q);
+  var sharedCtx=(typeof buildSdnSharedStudioContext==='function')?buildSdnSharedStudioContext():'';
   var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
   var toolDefs=Object.keys(SDN_TOOLS).map(function(k){return SDN_TOOLS[k].definition;});
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
-        system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.',
+        system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.'+(sharedCtx?('\n\n'+sharedCtx):''),
         messages:aiHist.map(function(m){return {role:m.role,content:m.content};}),
         tools:toolDefs})});
     var data=await res.json();
@@ -1404,7 +1439,7 @@ async function sendAI(){
     ];
     var res2=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
-        system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.',
+        system:'You are a studio operations assistant for an interior design business (trade markup, client proposals, vendor management, project scheduling). Be concise and practical. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.'+(sharedCtx?('\n\n'+sharedCtx):''),
         messages:followUpMessages})});
     var data2=await res2.json();
     var aiErr2=sdnAiError(data2);
