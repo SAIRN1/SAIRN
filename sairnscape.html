@@ -1715,6 +1715,48 @@ scpRegisterTool(
   }
 );
 
+// Agentic follow-up (2026-08-19) -- the real gap the tool-calling foundation
+// left (get_customers was the v1 proof tool, same shape as SAIRNgrounds'
+// get_grounds_attention built alongside this). Reuses the exact same
+// signals already honestly computed and shown elsewhere in this file
+// (scpRDash's openQ filter, scpRInsights' 30-day invoice-aging check)
+// rather than inventing new checks. Quotes don't have a real "sent date"
+// field (only a "valid until" date, checked before building -- not
+// assumed), so this deliberately reports only the honest Sent-status fact,
+// not a fabricated "days waiting" figure.
+function scpAttentionDigest(){
+  var jobs=scpLd('scp_jobs',[]),quotes=scpLd('scp_quotes',[]),invs=scpLd('scp_invoices',[]);
+  var now=new Date();
+  var needsScheduling=jobs.filter(function(j){return j.status==='Requested';});
+  var awaitingResponse=quotes.filter(function(q){return q.status==='Sent';});
+  var agingInvoices=invs.filter(function(i){
+    if(i.status!=='Unpaid')return false;
+    return (now-new Date(i.issued))/86400000>30;
+  });
+  return {
+    jobs_needing_scheduling: needsScheduling.map(function(j){
+      return {customer:scpCustName(j.customer_id),scope:j.scope,requested:j.date};
+    }),
+    quotes_awaiting_response: awaitingResponse.map(function(q){
+      return {customer:scpCustName(q.customer_id),valid_until:q.valid};
+    }),
+    invoices_unpaid_30plus_days: agingInvoices.map(function(i){
+      return {customer:scpCustName(i.customer_id),amount:i.amount,issued:i.issued};
+    })
+  };
+}
+scpRegisterTool(
+  'get_landscape_attention',
+  'Look up what needs attention across the landscaping business right now: jobs still in Requested status (need scheduling), quotes sent to a customer and still awaiting a response, and invoices unpaid for more than 30 days. All computed live from real job/quote/invoice records, never from a placeholder. Does NOT include progress photos, irrigation, or vendor data -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  false,
+  function (input) {
+    // input intentionally unused -- see get_customers' own comment for why
+    // the parameter still exists.
+    return scpAttentionDigest();
+  }
+);
+
 function scpH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function scpSt(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function scpLd(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
