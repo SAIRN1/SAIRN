@@ -1448,6 +1448,14 @@ function legEnterApp(d){
   init();
   sdnHydrateAll().then(function(merged){if(merged)init();});
   if(typeof loadLegSharedKnowledge==='function')loadLegSharedKnowledge();
+  // Refresh Security & Access directly here, not just via nav('security') --
+  // found live (2026-08-19): switching users while ALREADY on that panel
+  // (logout -> sign back in as someone else, panel never re-navigated to)
+  // left "Your Account" showing the PREVIOUS user's identity, since init()
+  // doesn't touch panel-security and nav() only fires on an actual
+  // navigation. Real bug, not cosmetic -- the account card is exactly the
+  // one place a stale identity display is most misleading.
+  if(typeof rSecurity==='function')rSecurity();
 }
 
 // Restores a still-valid session on reload. The token's expiry is enforced
