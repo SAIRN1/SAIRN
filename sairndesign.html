@@ -1259,6 +1259,77 @@ sdnRegisterTool(
   }
 );
 
+// Agentic follow-up (2026-08-19) -- the real gap the tool-calling foundation
+// spec (docs/superpowers/specs/2026-08-10-sairndesign-ai-tool-calling-design.md)
+// deliberately deferred ("no real tool beyond get_clients in this pass").
+// Same shape as SAIRNbiz's/SAIRNcash's get_attention_digest: several
+// honest, LIVE-computed cross-checks over real data, never a stored status
+// label alone for anything time-sensitive. Invoice status has a defined
+// 'Overdue' value in this file's own badge-color map but nothing ever sets
+// it (checked -- setInvoiceStatus() callers only ever pass 'Sent' or
+// 'Paid') -- so overdue is computed here from due_date vs. today directly,
+// same discipline as SAIRNlaw's get_deadlines urgency field.
+function sdnAttentionDigest(){
+  var today=sdnLocalToday();
+  var todayMs=new Date(today+'T00:00:00').getTime();
+  var DAY=24*60*60*1000;
+
+  var overdueInvoices=invoices().filter(function(i){
+    return i.status==='Sent'&&i.due_date&&new Date(i.due_date+'T00:00:00').getTime()<todayMs;
+  });
+
+  // "Awaiting decision" -- Sent, not yet Approved/Declined, sent 7+ days ago.
+  // sent_date is real and genuinely set on the Draft->Sent transition (not a
+  // dormant field), so age is computed from it directly rather than guessed.
+  var staleProposals=proposals().filter(function(p){
+    if(p.status!=='Sent'||!p.sent_date)return false;
+    return (todayMs-new Date(p.sent_date+'T00:00:00').getTime())>=7*DAY;
+  });
+
+  var upcomingSchedule=scheduleEvents().filter(function(s){
+    if(!s.date||s.status!=='Scheduled')return false;
+    var dMs=new Date(s.date+'T00:00:00').getTime();
+    return dMs>=todayMs&&dMs<=todayMs+7*DAY;
+  });
+
+  // Cross-referenced against the requesting vendor's own real
+  // lead_time_typical_weeks -- a sample still 'Requested' past that vendor's
+  // typical window is worth flagging; one still within it is not, so this
+  // is NOT just "older than N days" for every vendor alike.
+  var overdueSamples=sampleRequests().filter(function(r){
+    if(r.status!=='Requested'||!r.requested_date)return false;
+    var v=vendors().find(function(x){return x.id===r.vendor_id;});
+    var leadDays=(v&&v.lead_time_typical_weeks)?Number(v.lead_time_typical_weeks)*7:14;
+    return (todayMs-new Date(r.requested_date+'T00:00:00').getTime())>leadDays*DAY;
+  });
+
+  return {
+    overdue_invoices: overdueInvoices.map(function(i){
+      return {invoice_number:i.invoice_number,client:clientLabel(i.client_id),amount:i.amount,due_date:i.due_date};
+    }),
+    proposals_awaiting_decision: staleProposals.map(function(p){
+      return {title:p.title,client:clientLabel(p.client_id),sent_date:p.sent_date};
+    }),
+    upcoming_schedule_next_7_days: upcomingSchedule.map(function(s){
+      return {type:s.type,project:projectLabel(s.project_id),date:s.date,assignee:s.assignee||''};
+    }),
+    sample_requests_past_vendor_lead_time: overdueSamples.map(function(r){
+      var v=vendors().find(function(x){return x.id===r.vendor_id;});
+      return {item:r.item_description,vendor:v?v.name:'(unknown vendor)',requested_date:r.requested_date};
+    })
+  };
+}
+sdnRegisterTool(
+  'get_studio_attention',
+  'Look up what needs attention across the studio right now: invoices past their due date and still unpaid, proposals sent to a client 7+ days ago with no decision yet, schedule events in the next 7 days, and sample requests still outstanding past that vendor\'s own typical lead time. All computed live from real dates, never from a stale status label. Does NOT include spec-item, contract, team, or time-tracking data -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  function (input) {
+    // input intentionally unused -- see get_clients' own comment for why the
+    // parameter still exists.
+    return sdnAttentionDigest();
+  }
+);
+
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about clients, specs, vendors, or studio operations.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
