@@ -1053,6 +1053,13 @@ function nav(id){
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   var p=$('panel-'+id),b=$('sb-'+id);
   if(p)p.classList.add('on');if(b)b.classList.add('on');
+  // Re-run voice-input attachment on every nav (same fix SAIRNbiz needed live,
+  // 2026-08-18 -- a one-shot DOMContentLoaded install silently missed targets
+  // inside panels not visible at load time; attachVoiceInput() already guards
+  // against double-attaching to the same node, so this is a safe, cheap no-op
+  // on every other nav() call). Applied proactively here rather than waiting
+  // to rediscover the same bug live.
+  if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
   if(id==='dashboard')rDash();
   if(id==='ai'){}
   if(id==='clients')rClients();
@@ -1894,6 +1901,7 @@ function openClientModal(){
   ceid=null;['clname','clcompany','clphone','clemail','claddr','clnotes'].forEach(function(f){$(f).value='';});
   $('clstatus').value='Lead';
   $('clientmodal').classList.add('on');
+  if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
 }
 function closeClientModal(){$('clientmodal').classList.remove('on');}
 function editClient(id){
@@ -1901,6 +1909,7 @@ function editClient(id){
   ceid=id;$('clname').value=c.name;$('clcompany').value=c.company||'';$('clphone').value=c.phone||'';
   $('clemail').value=c.email||'';$('claddr').value=c.address||'';$('clstatus').value=c.status;$('clnotes').value=c.notes||'';
   $('clientmodal').classList.add('on');
+  if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
 }
 async function saveClient(){
   var name=$('clname').value.trim();
@@ -1918,6 +1927,7 @@ function openProjectModal(){
   pjeid=null;fillProjectSelects();
   $('pjname').value='';$('pjbudget').value='';$('pjtarget').value='';$('pjnotes').value='';$('pjstatus').value='Planning';
   $('projectmodal').classList.add('on');
+  if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
 }
 function closeProjectModal(){$('projectmodal').classList.remove('on');}
 function editProject(id){
@@ -1926,6 +1936,7 @@ function editProject(id){
   $('pjclient').value=p.client_id;$('pjname').value=p.name;$('pjbudget').value=p.budget;
   $('pjtarget').value=p.target_install_date;$('pjstatus').value=p.status;$('pjnotes').value=p.notes||'';
   $('projectmodal').classList.add('on');
+  if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
 }
 async function saveProject(){
   var name=$('pjname').value.trim();
@@ -3059,6 +3070,113 @@ async function sdnHydrateAll(){
   }
   return anyMerged;
 }
+// ================================================================
+// SAIRN VOICE INPUT (2026-08-19) -- ported near-verbatim from
+// sairnbiz.html's proven module (attachVoiceInput itself is fully
+// app-agnostic; StoneDesk originated it). Free, browser-native
+// SpeechRecognition, zero new vendor/cost. Wired to the AI Studio
+// Assistant chat input and the Client/Project note fields -- the two
+// "hands busy, describing something" moments in this app, same framing
+// as every prior rollout.
+// ================================================================
+(function() {
+'use strict';
+if (window._sdnVoiceInputInstalled) return;
+window._sdnVoiceInputInstalled = true;
+
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var VOICE_SUPPORTED = !!SR;
+
+window.attachVoiceInput = function(inputId, opts) {
+  if (!VOICE_SUPPORTED) return;
+  var input = document.getElementById(inputId);
+  if (!input || document.getElementById('voicebtn-' + inputId)) return;
+  opts = opts || {};
+
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.id = 'voicebtn-' + inputId;
+  btn.setAttribute('aria-label', 'Dictate ' + (opts.label || 'this field'));
+  btn.title = 'Tap to dictate';
+  btn.textContent = '\u{1F3A4}';
+  btn.style.cssText = 'min-width:44px;min-height:44px;width:44px;height:44px;flex-shrink:0;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s';
+
+  var wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch;flex:1;min-width:0';
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  input.style.flex = '1';
+  input.style.minWidth = '0';
+  wrap.appendChild(btn);
+
+  var recognizing = false;
+  var recognition = null;
+
+  function stop() {
+    recognizing = false;
+    btn.style.background = 'var(--bg)';
+    btn.style.color = 'var(--text)';
+    btn.style.borderColor = 'var(--border)';
+    btn.textContent = '\u{1F3A4}';
+    if (recognition) { try { recognition.stop(); } catch (e) {} }
+  }
+
+  btn.onclick = function() {
+    if (recognizing) { stop(); return; }
+    try {
+      recognition = new SR();
+    } catch (e) {
+      if (typeof toast === 'function') toast('Voice input unavailable in this browser.');
+      return;
+    }
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognizing = true;
+    btn.style.background = '#dc2626';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#dc2626';
+    btn.textContent = '\u{1F534}';
+
+    recognition.onresult = function(e) {
+      var transcript = '';
+      for (var i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      transcript = transcript.trim();
+      if (!transcript) return;
+      if (opts.numeric) {
+        var m = transcript.match(/\d+(\.\d+)?/);
+        if (m) input.value = m[0];
+      } else if (input.tagName === 'TEXTAREA' && input.value) {
+        input.value = input.value.replace(/\s+$/, '') + ' ' + transcript;
+      } else {
+        input.value = transcript;
+      }
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.focus();
+    };
+    recognition.onerror = function() {
+      if (typeof toast === 'function') toast('Could not hear that — try again.');
+    };
+    recognition.onend = stop;
+
+    try { recognition.start(); } catch (e) { stop(); }
+  };
+};
+
+function installSdnVoiceInputTargets() {
+  window.attachVoiceInput('ainp', { label: 'your question' });
+  window.attachVoiceInput('clnotes', { label: 'client notes' });
+  window.attachVoiceInput('pjnotes', { label: 'project notes' });
+}
+window.installSdnVoiceInputTargets = installSdnVoiceInputTargets;
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', installSdnVoiceInputTargets);
+} else {
+  installSdnVoiceInputTargets();
+}
+})();
+
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('sdn_license_key');
   if(lic){$('gate').style.display='none';$('pin').classList.add('on');}
