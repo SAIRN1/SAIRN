@@ -1,6 +1,6 @@
 ---
 name: sairn-guardian-v2
-description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-09 — was listed as 11, missing SAIRNhr and SAIRNacc; SAIRNfuneral corrected to SAIRNlegacy, the name it actually shipped under). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNhr, SAIRNacc. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 28 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
+description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 28 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
 ---
 
 # SAIRN Guardian v2
@@ -279,24 +279,37 @@ drifts exactly like any other unverified claim in this skill set.
 | SAIRNvet | sairnvet.html | #7C3AED | sairnvet |
 | SAIRNlegacy | sairnlegacy.html | #6B7280 | sairnlegacy |
 | SAIRNmechanical | sairnmechanical.html | #84CC16 | sairnmechanical |
-| SAIRNhr | hr.html | #2563EB | sairnhr |
-| SAIRNacc | sairnaccounting.html | #0D9488 | sairnacc |
+| SAIRNcash | sairncash.html | #7C6FFF | sairncash |
+| SAIRNgrounds | sairngrounds.html | #16A34A | sairngrounds |
 
-**SAIRNhr/SAIRNvet collision resolved (2026-07-30):** both previously showed
-#7C3AED. SAIRNhr moved to #2563EB (distinct from every other color in this
-table) rather than SAIRNvet, because SAIRNvet is a real, live, already-built
-app (`sairnvet.html` exists and is deployed) while SAIRNhr is still only a
-planned table entry — `hr.html` does not exist anywhere in the repo yet
-(confirmed via `git ls-tree`). Moving the not-yet-built app's planned color
-costs nothing; moving SAIRNvet's would mean re-theming a real live product.
-This is not yet a "SAIRNhr is being worked on" situation — no SAIRNhr file
-exists, this was a planning-table fix only, done ahead of that work starting.
+**Corrected 2026-08-13** — removed the planned `SAIRNhr -> hr.html` and
+`SAIRNacc -> sairnaccounting.html` rows entirely. Neither is a real or
+needed app; both were speculative planning-table entries with no file ever
+built and no product decision behind them, unlike SAIRNcare (above, in the
+table), which is a real, needed future app (extended-care facilities) just
+not yet built. Removing the two rows also resolves the previously-flagged
+SAIRNcare/SAIRNacc `#0D9488` color collision by elimination — SAIRNcare's
+`#0D9488` is now unique in this table, confirmed against every other row
+above. If SAIRNhr or SAIRNacc becomes a real planned app later, treat that
+as a fresh addition with its own color decision, not a restoration of
+these rows.
 
-**SAIRNcare/SAIRNacc collision — still pending, not resolved.** Both show
-#0D9488. Neither `sairncare.html` nor `sairnaccounting.html` exists in the
-repo yet either, so this carries the same low-risk resolution path once
-either is actually touched — flagging here rather than silently picking one
-now, since guessing which app should move is a product decision.
+**Corrected 2026-08-19** — added SAIRNcash and SAIRNgrounds, both real,
+live, deployed apps with substantial work already done this session (a
+full Firebase real-auth sync build on SAIRNcash; an agentic-follow-up tool
+on SAIRNgrounds) that were entirely absent from this table despite that.
+Found independently, not from any list, during a skill-inventory ground-
+truth check (comparing this file's user-level and project-level copies) --
+the map is a claim about the repo, not derived from it, so it drifts
+exactly like this file's own prior corrections already warned it would.
+Colors pulled from each app's own real CSS (SAIRNcash's `--glow`,
+SAIRNgrounds' `--p` root variable), not invented — SAIRNcash's `#7C6FFF`
+is visually close to (but not identical to, so not a strict collision by
+this table's own hex-match definition) SAIRNvet's `#7C3AED`; SAIRNgrounds'
+`#16A34A` is likewise close to but distinct from SAIRNscape's `#22C55E`.
+Flagging the near-similarity rather than silently re-theming either real
+app to avoid it -- this table's job is to reflect the real deployed color,
+not to guarantee visual distinctness after the fact.
 
 ---
 
@@ -305,7 +318,7 @@ now, since guessing which app should move is a product decision.
 **CORRECTED 2026-07-26:** The Contents API silently fails on files over ~1MB — it
 returns HTTP 200 with an empty/null `content` field, no error. This was discovered
 against stonedesk.html (2,049,441 bytes) which decoded to 0 bytes with zero warning.
-Any file this size or larger (StoneDesk, SAIRNvet, SAIRNhr, likely others) MUST use
+Any file this size or larger (StoneDesk, SAIRNvet, likely others) MUST use
 raw.githubusercontent.com instead — the opposite of what this skill said before today.
 
 ```bash
