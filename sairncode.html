@@ -368,10 +368,16 @@
             margin-bottom: 1rem;
         }
         @media print {
+            /* Fixed (2026-08-19 audit): the old rule forced EVERY .panel to
+               display:block regardless of .active, so clicking Print on any
+               one panel (18 panels have a Print button) printed all 20
+               panels concatenated with a page break each -- code-scrubber
+               Check 3's exact named bug class. Now only the currently-active
+               panel prints; every other panel keeps its normal display:none. */
             body { background: #fff; }
             .header, .nav { display: none; }
             .container { padding: 0; }
-            .panel { display: block !important; page-break-after: always; }
+            .panel.active { display: block !important; }
             .toolbar { display: none; }
             .btn { display: none; }
             .kpi-card, .table-container { border: 1px solid #d1d5db; }
@@ -1287,16 +1293,12 @@
         // api/sd-data.js's license check, reused per Guardian Check 0e rather
         // than building a parallel system) -- not a client-side-only check.
         //
-        // KNOWN GAP, flagged not hidden: the demo key SC-PINNACLE-2026
-        // referenced in this file's own demo badge has NO row in license_keys
-        // yet (confirmed live 2026-08-01 -- api/sd-data.js returns
-        // INVALID_LICENSE for it today). Someone with Supabase access needs to
-        // insert one (key='SC-PINNACLE-2026', app_id='sairncode',
-        // status='active') before the documented demo credentials will pass
-        // this real check. Not something this file/session can do -- no SQL
-        // execution access. Until then, gateGo() will correctly refuse the
-        // documented demo key, which is the honest behavior of a real check,
-        // not a bug in this gate.
+        // RESOLVED (was a known gap as of 2026-08-01, re-verified live
+        // 2026-08-19 during a full audit pass -- do not trust this comment's
+        // date indefinitely, re-check the same way if it matters again):
+        // SC-PINNACLE-2026 now has a real active row in license_keys (curl-
+        // confirmed against api/sd-data.js, ok:true/provisioned:true), so
+        // gateGo() passes it as intended.
         var currentRole = null;
         // Fixed (2026-08-18 real-auth pass): PINS = one shared, hardcoded,
         // identical-for-every-customer PIN per role (coder/biller/auditor/
@@ -1694,7 +1696,7 @@ How to answer:
             saveRevenueEntries(list);
             renderRevenue();
         }
-        function addRevenueEntry(){
+        async function addRevenueEntry(){
             var payer = document.getElementById('rev-add-payer').value;
             var charge = parseFloat(document.getElementById('rev-add-charge').value);
             var collected = parseFloat(document.getElementById('rev-add-collected').value);
@@ -1703,11 +1705,17 @@ How to answer:
             var list = getRevenueEntries();
             list.push({id:'rv'+Date.now(), payer:payer, charge:charge, collected:isNaN(collected)?0:collected, date:date||scLocalToday()});
             var saved = saveRevenueEntries(list);
-            if (saved) scData('write', 'sc_revenue', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4): write used to be
+            // fire-and-forget -- "Entry added" fired on local save alone, so a
+            // failed server sync was 100% silent, and the next scSyncOneResource()
+            // login would overwrite this device's local cache with the server's
+            // (still-missing) list, silently dropping the entry. Now awaited and
+            // reflected in the toast.
+            var synced = saved ? await scData('write', 'sc_revenue', list[list.length - 1]) : null;
             renderRevenue();
             document.getElementById('rev-add-charge').value = '';
             document.getElementById('rev-add-collected').value = '';
-            showToast(saved ? 'Entry added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Entry added' : 'Entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getDenialEntries(){
@@ -1759,7 +1767,7 @@ How to answer:
             renderDenial();
             renderDashboard();
         }
-        function addDenialEntry(){
+        async function addDenialEntry(){
             var code = document.getElementById('den-add-code').value.trim();
             var cause = document.getElementById('den-add-cause').value.trim();
             var count = parseInt(document.getElementById('den-add-count').value, 10);
@@ -1769,14 +1777,15 @@ How to answer:
             var list = getDenialEntries();
             list.push({id:'dn'+Date.now(), code:code, cause:cause||'—', count:count, amount:amount, status:status});
             var saved = saveDenialEntries(list);
-            if (saved) scData('write', 'sc_denial', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_denial', list[list.length - 1]) : null;
             renderDenial();
             renderDashboard();
             document.getElementById('den-add-code').value = '';
             document.getElementById('den-add-cause').value = '';
             document.getElementById('den-add-count').value = '';
             document.getElementById('den-add-amount').value = '';
-            showToast(saved ? 'Denial record added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Denial record added' : 'Denial record added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getComplianceItems(){
@@ -1817,7 +1826,7 @@ How to answer:
             saveComplianceItems(getComplianceItems().filter(function(c){return c.id!==id;}));
             renderCompliance();
         }
-        function addComplianceItem(){
+        async function addComplianceItem(){
             var item = document.getElementById('comp-add-item').value.trim();
             var cat = document.getElementById('comp-add-cat').value;
             var status = document.getElementById('comp-add-status').value;
@@ -1825,10 +1834,11 @@ How to answer:
             var list = getComplianceItems();
             list.push({id:'cp'+Date.now(), item:item, cat:cat, status:status, date:scLocalToday()});
             var saved = saveComplianceItems(list);
-            if (saved) scData('write', 'sc_compliance', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_compliance', list[list.length - 1]) : null;
             renderCompliance();
             document.getElementById('comp-add-item').value = '';
-            showToast(saved ? 'Compliance item added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Compliance item added' : 'Compliance item added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getFraudAlerts(){
@@ -1871,7 +1881,7 @@ How to answer:
             renderFraud();
             renderDashboard();
         }
-        function addFraudAlert(){
+        async function addFraudAlert(){
             var desc = document.getElementById('frd-add-desc').value.trim();
             var conf = parseFloat(document.getElementById('frd-add-conf').value);
             var amount = parseFloat(document.getElementById('frd-add-amount').value);
@@ -1880,13 +1890,14 @@ How to answer:
             var list = getFraudAlerts();
             list.push({id:'fr'+Date.now(), desc:desc, conf:conf, amount:amount, status:status});
             var saved = saveFraudAlerts(list);
-            if (saved) scData('write', 'sc_fraud', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_fraud', list[list.length - 1]) : null;
             renderFraud();
             renderDashboard();
             document.getElementById('frd-add-desc').value = '';
             document.getElementById('frd-add-conf').value = '';
             document.getElementById('frd-add-amount').value = '';
-            showToast(saved ? 'Fraud alert logged' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Fraud alert logged' : 'Fraud alert logged on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function renderDashboard(){
@@ -1959,7 +1970,7 @@ How to answer:
             saveScrubEntries(getScrubEntries().filter(function(p){return p.id!==id;}));
             renderPrebill();
         }
-        function addScrubEntry(){
+        async function addScrubEntry(){
             var claim = document.getElementById('pb-add-claim').value.trim();
             var error = document.getElementById('pb-add-error').value.trim();
             var value = parseFloat(document.getElementById('pb-add-value').value);
@@ -1969,13 +1980,14 @@ How to answer:
             var list = getScrubEntries();
             list.push({id:'pb'+Date.now(), claim:claim, error:error, value:isNaN(value)?0:value, time:isNaN(time)?0:time, status:status});
             var saved = saveScrubEntries(list);
-            if (saved) scData('write', 'sc_prebill', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_prebill', list[list.length - 1]) : null;
             renderPrebill();
             document.getElementById('pb-add-claim').value = '';
             document.getElementById('pb-add-error').value = '';
             document.getElementById('pb-add-value').value = '';
             document.getElementById('pb-add-time').value = '';
-            showToast(saved ? 'Scrub entry added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Scrub entry added' : 'Scrub entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getHccEntries(){
@@ -2026,7 +2038,7 @@ How to answer:
             saveHccEntries(getHccEntries().filter(function(h){return h.id!==id;}));
             renderHcc();
         }
-        function addHccEntry(){
+        async function addHccEntry(){
             var cat = document.getElementById('hcc-add-cat').value.trim();
             var patient = document.getElementById('hcc-add-patient').value.trim();
             var value = parseFloat(document.getElementById('hcc-add-value').value);
@@ -2035,12 +2047,13 @@ How to answer:
             var list = getHccEntries();
             list.push({id:'hc'+Date.now(), cat:cat, patient:patient||'—', value:value, status:status});
             var saved = saveHccEntries(list);
-            if (saved) scData('write', 'sc_hcc', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_hcc', list[list.length - 1]) : null;
             renderHcc();
             document.getElementById('hcc-add-cat').value = '';
             document.getElementById('hcc-add-patient').value = '';
             document.getElementById('hcc-add-value').value = '';
-            showToast(saved ? 'HCC entry added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'HCC entry added' : 'HCC entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getDrgEntries(){
@@ -2081,7 +2094,7 @@ How to answer:
             saveDrgEntries(getDrgEntries().filter(function(d){return d.id!==id;}));
             renderDrg();
         }
-        function addDrgEntry(){
+        async function addDrgEntry(){
             var code = document.getElementById('drg-add-code').value.trim();
             var patient = document.getElementById('drg-add-patient').value.trim();
             var tier = document.getElementById('drg-add-tier').value;
@@ -2090,12 +2103,13 @@ How to answer:
             var list = getDrgEntries();
             list.push({id:'dg'+Date.now(), code:code, patient:patient||'—', tier:tier, payment:payment});
             var saved = saveDrgEntries(list);
-            if (saved) scData('write', 'sc_drg', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_drg', list[list.length - 1]) : null;
             renderDrg();
             document.getElementById('drg-add-code').value = '';
             document.getElementById('drg-add-patient').value = '';
             document.getElementById('drg-add-payment').value = '';
-            showToast(saved ? 'DRG entry added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'DRG entry added' : 'DRG entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getQueryEntries(){
@@ -2137,7 +2151,7 @@ How to answer:
             saveQueryEntries(getQueryEntries().filter(function(q){return q.id!==id;}));
             renderQuery();
         }
-        function addQueryEntry(){
+        async function addQueryEntry(){
             var patient = document.getElementById('qry-add-patient').value.trim();
             var physician = document.getElementById('qry-add-physician').value.trim();
             var type = document.getElementById('qry-add-type').value.trim();
@@ -2147,13 +2161,14 @@ How to answer:
             var list = getQueryEntries();
             list.push({id:'qr'+Date.now(), patient:patient, physician:physician||'—', type:type, value:isNaN(value)?0:value, status:status});
             var saved = saveQueryEntries(list);
-            if (saved) scData('write', 'sc_query', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_query', list[list.length - 1]) : null;
             renderQuery();
             document.getElementById('qry-add-patient').value = '';
             document.getElementById('qry-add-physician').value = '';
             document.getElementById('qry-add-type').value = '';
             document.getElementById('qry-add-value').value = '';
-            showToast(saved ? 'Query added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Query added' : 'Query added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getEncoderCodes(){
@@ -2204,7 +2219,7 @@ How to answer:
             saveEncoderCodes(getEncoderCodes().filter(function(c){return c.id!==id;}));
             renderEncoder();
         }
-        function addEncoderCode(){
+        async function addEncoderCode(){
             var code = document.getElementById('enc-add-code').value.trim();
             var type = document.getElementById('enc-add-type').value;
             var desc = document.getElementById('enc-add-desc').value.trim();
@@ -2213,12 +2228,13 @@ How to answer:
             var list = getEncoderCodes();
             list.push({id:'ec'+Date.now(), code:code, type:type, desc:desc, bundling:bundling});
             var saved = saveEncoderCodes(list);
-            if (saved) scData('write', 'sc_encoder', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_encoder', list[list.length - 1]) : null;
             renderEncoder();
             document.getElementById('enc-add-code').value = '';
             document.getElementById('enc-add-desc').value = '';
             document.getElementById('enc-add-bundling').value = '';
-            showToast(saved ? 'Code added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Code added' : 'Code added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getRacEntries(){
@@ -2260,7 +2276,7 @@ How to answer:
             saveRacEntries(getRacEntries().filter(function(r){return r.id!==id;}));
             renderRac();
         }
-        function addRacEntry(){
+        async function addRacEntry(){
             var ref = document.getElementById('rac-add-ref').value.trim();
             var amount = parseFloat(document.getElementById('rac-add-amount').value);
             var status = document.getElementById('rac-add-status').value;
@@ -2268,11 +2284,12 @@ How to answer:
             var list = getRacEntries();
             list.push({id:'ra'+Date.now(), ref:ref, amount:amount, status:status});
             var saved = saveRacEntries(list);
-            if (saved) scData('write', 'sc_rac', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_rac', list[list.length - 1]) : null;
             renderRac();
             document.getElementById('rac-add-ref').value = '';
             document.getElementById('rac-add-amount').value = '';
-            showToast(saved ? 'Audit entry added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Audit entry added' : 'Audit entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getTelehealthEntries(){
@@ -2313,7 +2330,7 @@ How to answer:
             saveTelehealthEntries(getTelehealthEntries().filter(function(t){return t.id!==id;}));
             renderTelehealth();
         }
-        function addTelehealthEntry(){
+        async function addTelehealthEntry(){
             var claim = document.getElementById('th-add-claim').value.trim();
             var pos = document.getElementById('th-add-pos').value.trim();
             var mod = document.getElementById('th-add-mod').value.trim();
@@ -2323,13 +2340,14 @@ How to answer:
             var list = getTelehealthEntries();
             list.push({id:'tl'+Date.now(), claim:claim, pos:pos||'—', mod:mod||'—', value:isNaN(value)?0:value, status:status});
             var saved = saveTelehealthEntries(list);
-            if (saved) scData('write', 'sc_telehealth', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_telehealth', list[list.length - 1]) : null;
             renderTelehealth();
             document.getElementById('th-add-claim').value = '';
             document.getElementById('th-add-pos').value = '';
             document.getElementById('th-add-mod').value = '';
             document.getElementById('th-add-value').value = '';
-            showToast(saved ? 'Telehealth entry added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Telehealth entry added' : 'Telehealth entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getAnesthesiaEntries(){
@@ -2375,7 +2393,7 @@ How to answer:
             saveAnesthesiaEntries(getAnesthesiaEntries().filter(function(a){return a.id!==id;}));
             renderAnesthesia();
         }
-        function addAnesthesiaEntry(){
+        async function addAnesthesiaEntry(){
             var caseRef = document.getElementById('an-add-case').value.trim();
             var base = parseFloat(document.getElementById('an-add-base').value);
             var minutes = parseFloat(document.getElementById('an-add-minutes').value);
@@ -2384,13 +2402,14 @@ How to answer:
             var list = getAnesthesiaEntries();
             list.push({id:'an'+Date.now(), caseRef:caseRef, base:base, minutes:minutes, qc:qc});
             var saved = saveAnesthesiaEntries(list);
-            if (saved) scData('write', 'sc_anesthesia', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_anesthesia', list[list.length - 1]) : null;
             renderAnesthesia();
             document.getElementById('an-add-case').value = '';
             document.getElementById('an-add-base').value = '';
             document.getElementById('an-add-minutes').value = '';
             document.getElementById('an-add-qc').value = '';
-            showToast(saved ? 'Anesthesia case added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Anesthesia case added' : 'Anesthesia case added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getAuthEntries(){
@@ -2451,7 +2470,7 @@ How to answer:
             saveAuthEntries(getAuthEntries().filter(function(a){return a.id!==id;}));
             renderAuth();
         }
-        function addAuthEntry(){
+        async function addAuthEntry(){
             var authId = document.getElementById('auth-add-id').value.trim();
             var proc = document.getElementById('auth-add-proc').value.trim();
             var exp = document.getElementById('auth-add-exp').value;
@@ -2460,13 +2479,14 @@ How to answer:
             var list = getAuthEntries();
             list.push({id:'at'+Date.now(), authId:authId, proc:proc, exp:exp, units:isNaN(units)?1:units});
             var saved = saveAuthEntries(list);
-            if (saved) scData('write', 'sc_auth', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_auth', list[list.length - 1]) : null;
             renderAuth();
             document.getElementById('auth-add-id').value = '';
             document.getElementById('auth-add-proc').value = '';
             document.getElementById('auth-add-exp').value = '';
             document.getElementById('auth-add-units').value = '';
-            showToast(saved ? 'Authorization added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Authorization added' : 'Authorization added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getArEntries(){
@@ -2516,7 +2536,7 @@ How to answer:
             saveArEntries(getArEntries().filter(function(a){return a.id!==id;}));
             renderAr();
         }
-        function addArEntry(){
+        async function addArEntry(){
             var patient = document.getElementById('ar-add-patient').value.trim();
             var amount = parseFloat(document.getElementById('ar-add-amount').value);
             var days = parseInt(document.getElementById('ar-add-days').value, 10);
@@ -2525,12 +2545,13 @@ How to answer:
             var list = getArEntries();
             list.push({id:'ar'+Date.now(), patient:patient, amount:amount, days:days, status:status});
             var saved = saveArEntries(list);
-            if (saved) scData('write', 'sc_ar', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_ar', list[list.length - 1]) : null;
             renderAr();
             document.getElementById('ar-add-patient').value = '';
             document.getElementById('ar-add-amount').value = '';
             document.getElementById('ar-add-days').value = '';
-            showToast(saved ? 'A/R entry added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'A/R entry added' : 'A/R entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getProviderEntries(){
@@ -2625,7 +2646,7 @@ How to answer:
             saveProviderEntries(getProviderEntries().filter(function(p){return p.id!==id;}));
             renderProviders();
         }
-        function addProviderEntry(){
+        async function addProviderEntry(){
             var name = document.getElementById('prov-add-name').value.trim();
             var specialty = document.getElementById('prov-add-specialty').value.trim();
             var license = document.getElementById('prov-add-license').value.trim();
@@ -2635,13 +2656,14 @@ How to answer:
             var list = getProviderEntries();
             list.push({id:'pv'+Date.now(), name:name, specialty:specialty, license:license||'—', cred:cred, perf:isNaN(perf)?0:perf});
             var saved = saveProviderEntries(list);
-            if (saved) scData('write', 'sc_providers', list[list.length - 1]);
+            // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
+            var synced = saved ? await scData('write', 'sc_providers', list[list.length - 1]) : null;
             renderProviders();
             document.getElementById('prov-add-name').value = '';
             document.getElementById('prov-add-specialty').value = '';
             document.getElementById('prov-add-license').value = '';
             document.getElementById('prov-add-perf').value = '';
-            showToast(saved ? 'Provider added' : 'Could not save -- storage may be full or unavailable, try again');
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Provider added' : 'Provider added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function filterTable(tableId, searchInputId) {
