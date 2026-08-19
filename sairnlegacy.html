@@ -1557,6 +1557,74 @@ legRegisterTool(
   }
 );
 
+// Agentic follow-up (2026-08-19) -- the real gap the tool-calling foundation
+// spec (docs/superpowers/specs/2026-08-10-sairnlegacy-ai-tool-calling-design.md)
+// deliberately deferred ("get_cases is the v1 proof tool"). Same shape as
+// SAIRNdesign's get_studio_attention: several honest, LIVE-computed
+// cross-checks over real data, never a placeholder. Same field-minimization
+// discipline as get_cases above -- returns only what's operationally needed
+// (case_number, not family contact info/notes; doc_type, not content_text).
+function legAttentionDigest(){
+  var today=legLocalToday();
+  var todayMs=new Date(today+'T00:00:00').getTime();
+  var DAY=24*60*60*1000;
+
+  // Permits still Pending 5+ days after the record was opened -- created_at
+  // is the only real timestamp on a fresh death record (filed_date/issued_date
+  // are genuinely set on their own transitions, but null until then), so
+  // "days pending" is computed from created_at, not guessed.
+  var stalePermits=deathRecords().filter(function(r){
+    if(r.permit_status!=='Pending'||!r.created_at)return false;
+    return (todayMs-new Date(r.created_at+'T00:00:00').getTime())>=5*DAY;
+  });
+
+  // No real sent_date field exists on a document record (checked before
+  // building -- only created_at and, once Signed, esign_at), so this
+  // deliberately does NOT claim a "days waiting" figure it can't back with
+  // a real timestamp -- just the honest fact that it's Sent and unsigned.
+  var awaitingSignature=documents().filter(function(d){return d.status==='Sent';});
+
+  var upcomingServices=cases().filter(function(c){
+    if(!c.service_date||c.status==='Complete')return false;
+    var dMs=new Date(c.service_date+'T00:00:00').getTime();
+    return dMs>=todayMs&&dMs<=todayMs+7*DAY;
+  });
+
+  // reserved_at is genuinely set on reserveUnit() (checked before building,
+  // not assumed) -- a unit still Reserved 5+ days later without being
+  // marked Sold is real inventory sitting tied up, not a guess.
+  var staleReservations=merchUnits().filter(function(u){
+    if(u.status!=='Reserved'||!u.reserved_at)return false;
+    return (todayMs-new Date(u.reserved_at+'T00:00:00').getTime())>=5*DAY;
+  });
+
+  return {
+    permits_pending_5plus_days: stalePermits.map(function(r){
+      return {case:caseLabel(r.case_id),permit_type:r.permit_type,cause_pending:r.cause_pending,opened:r.created_at};
+    }),
+    documents_awaiting_signature: awaitingSignature.map(function(d){
+      return {case:caseLabel(d.case_id),doc_type:d.doc_type};
+    }),
+    upcoming_services_next_7_days: upcomingServices.map(function(c){
+      return {decedent_name:c.decedent_name,service_type:c.service_type,service_date:c.service_date,assigned_director:c.assigned_director};
+    }),
+    merchandise_reserved_5plus_days: staleReservations.map(function(u){
+      var mc=merchCatalog().find(function(c){return c.id===u.merch_id;});
+      return {item:mc?mc.model_name:'(unknown item)',reserved_for:caseLabel(u.reserved_for_case_id),reserved_at:u.reserved_at};
+    })
+  };
+}
+legRegisterTool(
+  'get_home_attention',
+  'Look up what needs attention across the funeral home right now: death-record permits still Pending 5+ days after being opened, documents sent for e-signature and still unsigned, services scheduled in the next 7 days, and merchandise units reserved 5+ days ago and still not marked Sold. All computed live from real dates, never from a stale status label alone. Does NOT include family contact information, decedent birth/death dates, document content, or case notes -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  function (input) {
+    // input intentionally unused -- see get_cases' own comment for why the
+    // parameter still exists.
+    return legAttentionDigest();
+  }
+);
+
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about cases, documents, merchandise, or operations.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
