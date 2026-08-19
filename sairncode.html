@@ -660,6 +660,20 @@
                     <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
                 </div>
             </div>
+
+            <!-- Forced explainability (2026-08-19 expansion, item 2) -- every
+                 suggested code must come with an exact quoted phrase from the
+                 submitted note. The client then mechanically checks that
+                 phrase actually appears in the note text (case/whitespace-
+                 normalized) -- a real, independent check, not just trusting
+                 the model's own claim that it grounded the suggestion. -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Suggest Codes From a Note</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Paste clinical note text. Every suggested code must cite the exact phrase in the note that supports it -- this page independently checks that the quoted phrase is actually present in what you pasted, and flags any suggestion whose citation can't be verified rather than trusting it silently.</div>
+            <textarea id="note-input" rows="6" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;" placeholder="Paste clinical note text here..."></textarea>
+            <div class="toolbar" style="margin-top:8px;">
+                <button class="btn btn-primary" onclick="suggestCodesFromNote()" id="note-suggest-btn">Suggest Codes</button>
+            </div>
+            <div id="note-suggest-result" style="margin-top:12px;"></div>
         </div>
 
         <!-- Claims Panel -->
@@ -715,6 +729,22 @@
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
             <div class="kpi-grid" id="prebill-kpis"></div>
+
+            <!-- Rule-based scrubbing (2026-08-19 expansion, item 1) -- real
+                 deterministic checks against Scrub Rules Reference below,
+                 with a live-web-search fallback for anything not in the
+                 local table. Never a placeholder "all clear" -- an empty
+                 result always says explicitly what was and wasn't checked. -->
+            <div style="font-weight:700;font-size:16px;margin:20px 0 8px;">Run a Rule-Based Scrub</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Checks a code pair against your Scrub Rules Reference (below) first -- if nothing local matches, checks live web search for current CMS/AMA guidance. This is a real check, not an AI guess: a local match is a deterministic rule your practice has verified; a web-search result is cited to its source; "no conflict found" means both were checked and neither found one, not that it's guaranteed clean.</div>
+            <div class="toolbar">
+                <input type="text" id="scrub-code1" placeholder="Code 1 (CPT/HCPCS/ICD-10)" class="search-input">
+                <input type="text" id="scrub-code2" placeholder="Code 2 (CPT/HCPCS/ICD-10)" class="search-input">
+                <input type="text" id="scrub-claim-ref" placeholder="Claim ref (optional, for the log)" class="search-input">
+                <button class="btn btn-primary" onclick="runClaimScrub()" id="scrub-run-btn">Scrub</button>
+            </div>
+            <div id="scrub-result" style="margin-bottom:20px;"></div>
+
             <div class="table-container">
                 <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead><tr><th>Claim Ref</th><th>Error Type</th><th>Value Protected</th><th>Time Saved</th><th>Status</th><th></th></tr></thead>
@@ -728,6 +758,31 @@
                 <input type="number" step="0.1" id="pb-add-time" placeholder="Time saved (min)" class="search-input">
                 <select id="pb-add-status"><option>Detected</option><option>Resolved</option></select>
                 <button class="btn btn-primary" onclick="addScrubEntry()">Add</button>
+            </div>
+
+            <!-- Scrub Rules Reference (2026-08-19) -- deliberately empty by
+                 default. See sql/sairncode_scrubrules_schema.sql's header
+                 for why no rules are seeded: this session has no live,
+                 authoritative NCCI/AMA data source to verify specific code-
+                 pair rules against, and hardcoding an unverified rule into
+                 a billing-compliance tool would be a real fabrication risk.
+                 A coder/admin adds rules they've personally verified,
+                 required Source field included so every rule is traceable. -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Scrub Rules Reference</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Rules your practice has verified and added. Empty by default -- this is not a pre-loaded copy of the CMS NCCI/AMA guidance, it only contains what your team has added below with a real source.</div>
+            <div class="toolbar">
+                <select id="rule-add-type"><option>PTP (NCCI)</option><option>Excludes1</option><option>Excludes2</option><option>Modifier Required</option></select>
+                <input type="text" id="rule-add-code1" placeholder="Code 1" class="search-input">
+                <input type="text" id="rule-add-code2" placeholder="Code 2 (or modifier)" class="search-input">
+                <input type="text" id="rule-add-note" placeholder="Note / guidance" class="search-input">
+                <input type="text" id="rule-add-source" placeholder="Source (required)" class="search-input">
+                <button class="btn btn-primary" onclick="addScrubRule()">Add Rule</button>
+            </div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>Type</th><th>Code 1</th><th>Code 2</th><th>Note</th><th>Source</th><th></th></tr></thead>
+                    <tbody id="scrubrules-tbody"></tbody>
+                </table></div>
             </div>
         </div>
 
@@ -1917,6 +1972,124 @@ How to answer:
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Scrub entry added' : 'Scrub entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
+        // ================================================================
+        // RULE-BASED CLAIM SCRUBBING (2026-08-19 expansion, item 1) --
+        // deterministic local reference table checked FIRST (real, no AI
+        // involved), web search used only as a fallback when nothing local
+        // matches, never the other way around. See sql/sairncode_
+        // scrubrules_schema.sql's header for why the reference table starts
+        // empty rather than pre-seeded.
+        // ================================================================
+        function getScrubRules(){
+            try { var s = localStorage.getItem('sc_scrubrules'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveScrubRules(list){ try { localStorage.setItem('sc_scrubrules', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        function renderScrubRules(){
+            var list = getScrubRules();
+            var tbody = document.getElementById('scrubrules-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = list.length ? '' : '<tr><td colspan="6" style="text-align:center;color:#666;padding:16px">No rules added yet -- add ones you\'ve verified above, or rely on live web search for anything not yet in this table.</td></tr>';
+            list.forEach(function(r){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(r.type)+'</td><td>'+escHtml(r.code1)+'</td><td>'+escHtml(r.code2)+'</td><td>'+escHtml(r.note)+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeScrubRule(\''+r.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+        }
+        async function removeScrubRule(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_scrubrules', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveScrubRules(getScrubRules().filter(function(r){return r.id!==id;}));
+            renderScrubRules();
+        }
+        async function addScrubRule(){
+            var type = document.getElementById('rule-add-type').value;
+            var code1 = document.getElementById('rule-add-code1').value.trim();
+            var code2 = document.getElementById('rule-add-code2').value.trim();
+            var note = document.getElementById('rule-add-note').value.trim();
+            var source = document.getElementById('rule-add-source').value.trim();
+            // Source is required, not optional -- every rule in this table
+            // needs to be traceable to where a human verified it (design
+            // intent, see the panel's own inline explanation above the form).
+            if (!code1 || !source) { showToast('Code 1 and Source are required -- this table only holds rules someone has verified'); return; }
+            var list = getScrubRules();
+            list.push({id:'sr'+Date.now(), type:type, code1:code1, code2:code2||'—', note:note||'—', source:source});
+            var saved = saveScrubRules(list);
+            var synced = saved ? await scData('write', 'sc_scrubrules', list[list.length - 1]) : null;
+            renderScrubRules();
+            document.getElementById('rule-add-code1').value = '';
+            document.getElementById('rule-add-code2').value = '';
+            document.getElementById('rule-add-note').value = '';
+            document.getElementById('rule-add-source').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Rule added' : 'Rule added on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+
+        function findLocalScrubMatch(code1, code2){
+            var rules = getScrubRules();
+            var c1 = code1.trim().toUpperCase(), c2 = (code2||'').trim().toUpperCase();
+            for (var i = 0; i < rules.length; i++) {
+                var r = rules[i];
+                var rc1 = (r.code1||'').toUpperCase(), rc2 = (r.code2||'').toUpperCase();
+                if ((rc1===c1 && rc2===c2) || (rc1===c2 && rc2===c1)) return r;
+            }
+            return null;
+        }
+
+        async function runClaimScrub(){
+            var code1 = document.getElementById('scrub-code1').value.trim();
+            var code2 = document.getElementById('scrub-code2').value.trim();
+            var claimRef = document.getElementById('scrub-claim-ref').value.trim();
+            var resultEl = document.getElementById('scrub-result');
+            var btn = document.getElementById('scrub-run-btn');
+            if (!code1) { showToast('At least Code 1 is required'); return; }
+
+            // Deterministic local check FIRST -- real, instant, no AI involved.
+            var localMatch = findLocalScrubMatch(code1, code2);
+            if (localMatch) {
+                resultEl.innerHTML = '<div style="background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;font-size:13px;color:#991b1b"><b>⚠ Verified rule match (local reference table)</b><br>Type: '+escHtml(localMatch.type)+' &middot; '+escHtml(localMatch.code1)+' + '+escHtml(localMatch.code2)+'<br>'+escHtml(localMatch.note)+'<br><span style="font-size:11px;color:#7f1d1d">Source: '+escHtml(localMatch.source)+'</span></div>';
+                if (claimRef) { document.getElementById('pb-add-claim').value = claimRef; document.getElementById('pb-add-error').value = localMatch.type + ': ' + localMatch.code1 + '+' + localMatch.code2; }
+                return;
+            }
+
+            // No local rule -- fall back to a real, live-web-search-grounded
+            // check rather than silently declaring it clean. Same no-
+            // fabrication standard as everywhere else on this platform: if
+            // search finds nothing specific, say so honestly, never invent
+            // a plausible-sounding finding.
+            btn.disabled = true; btn.textContent = 'Checking...';
+            resultEl.innerHTML = '<div style="font-size:12px;color:#666">No local rule for this pair -- checking live web search for current CMS/AMA guidance...</div>';
+            try {
+                var sys = 'You are checking exactly one thing: whether CPT/HCPCS/ICD-10 codes "' + code1 + '"' + (code2 ? (' and "' + code2 + '"') : '') + ' have a known NCCI/CCI procedure-to-procedure edit conflict, an ICD-10-CM Excludes1/Excludes2 diagnosis-pairing conflict, or a specific required modifier, according to current CMS/AMA guidance. Use web search to check this -- do not answer from memory alone, your training data may be stale for code-edit specifics. If search surfaces a specific, real, citable conflict or modifier requirement, state it plainly with its source. If search does not surface anything specific and current for this exact pair, say so explicitly ("No specific NCCI/Excludes/modifier conflict found via web search for this code pair") -- never state a plausible-sounding conflict you cannot trace to an actual search result. Keep the answer under 100 words, no preamble.';
+                var response = await fetch(APP_CONFIG.proxy, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'Check code' + (code2 ? 's' : '') + ': ' + code1 + (code2 ? (' + ' + code2) : '') }],
+                        system: sys,
+                        app_id: APP_CONFIG.app_id,
+                        is_demo: APP_CONFIG.is_demo,
+                        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }]
+                    })
+                });
+                if (!response.ok) { resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Error: could not reach the AI/search service.</div>'; return; }
+                var data = await response.json();
+                var blocks = (data && data.content) || [];
+                var textBlocks = blocks.filter(function(b){ return b.type === 'text'; });
+                var answer = textBlocks.length ? textBlocks[textBlocks.length - 1].text : null;
+                if (!answer) {
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">No answer returned -- could not verify this pair via local rules or web search.</div>';
+                    return;
+                }
+                resultEl.innerHTML = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;color:#111"><b>🔍 Live web-search-assisted check</b> <span style="font-size:11px;color:#666">(no local rule for this pair)</span><br>'+escHtml(answer)+'</div>';
+                if (claimRef) { document.getElementById('pb-add-claim').value = claimRef; }
+            } catch (e) {
+                resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Connection error -- could not check this pair.</div>';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Scrub';
+            }
+        }
+
         function getHccEntries(){
             // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
             // HCC gap entries on first view. Honest empty state now.
@@ -2797,6 +2970,93 @@ How to answer:
             }
         }
 
+        // ================================================================
+        // FORCED EXPLAINABILITY (2026-08-19 expansion, item 2) -- every
+        // suggested code must cite an exact phrase from the submitted note.
+        // The verification below is real and independent of the model: it
+        // checks the quoted phrase is actually a substring of the note text
+        // the user pasted (case/whitespace-normalized), not just that the
+        // model claims it is. A suggestion whose quote can't be found is
+        // flagged, never silently trusted.
+        // ================================================================
+        function normalizeForMatch(s){
+            return String(s||'').toLowerCase().replace(/\s+/g, ' ').trim();
+        }
+        function quoteFoundInNote(quote, noteText){
+            var q = normalizeForMatch(quote);
+            if (!q) return false;
+            return normalizeForMatch(noteText).indexOf(q) !== -1;
+        }
+        // Model output is asked for as JSON but may arrive wrapped in prose
+        // or a markdown fence -- extract the first well-formed JSON array
+        // rather than assuming response.text() is valid JSON on its own.
+        function extractJsonArray(text){
+            if (!text) return null;
+            var start = text.indexOf('[');
+            var end = text.lastIndexOf(']');
+            if (start === -1 || end === -1 || end < start) return null;
+            try { return JSON.parse(text.slice(start, end + 1)); } catch(e) { return null; }
+        }
+        async function suggestCodesFromNote(){
+            var noteText = document.getElementById('note-input').value;
+            var resultEl = document.getElementById('note-suggest-result');
+            var btn = document.getElementById('note-suggest-btn');
+            if (!noteText.trim()) { showToast('Paste some note text first'); return; }
+
+            btn.disabled = true; btn.textContent = 'Analyzing...';
+            resultEl.innerHTML = '<div style="font-size:12px;color:#666">Analyzing note...</div>';
+
+            var sys = SAIRNCODE_SYSTEM_PROMPT + '\n\nFor this task specifically: respond with ONLY a JSON array, no prose before or after, no markdown code fence. Each element: {"code": the suggested ICD-10/CPT/HCPCS code, "type": "ICD-10"|"CPT"|"HCPCS", "quote": the EXACT phrase copied verbatim from the note text below that supports this code -- character-for-character from the note, not a paraphrase, "reasoning": a short explanation}. CRITICAL: "quote" must be copied exactly from the note -- if you cannot find a specific supporting phrase in the note for a code, do not suggest that code at all. If nothing in the note supports any code suggestion, return an empty array []. Never suggest a code you cannot ground in a real, exact quote from this specific note.';
+
+            try {
+                var response = await fetch(APP_CONFIG.proxy, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'Note:\n\n' + noteText }],
+                        system: sys,
+                        app_id: APP_CONFIG.app_id,
+                        is_demo: APP_CONFIG.is_demo
+                    })
+                });
+                if (!response.ok) { resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Error: could not reach the AI service.</div>'; return; }
+                var data = await response.json();
+                var blocks = (data && data.content) || [];
+                var rawText = (blocks[0] && blocks[0].text) || '';
+                var suggestions = extractJsonArray(rawText);
+
+                if (suggestions === null) {
+                    // Honest failure -- never silently treat unparseable output
+                    // as "no suggestions." Show the raw answer so nothing is
+                    // hidden, but make clear no citation could be verified.
+                    resultEl.innerHTML = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;font-size:13px;color:#92400e">Could not parse a structured response -- no citations could be verified. Raw answer below:<div style="margin-top:8px;white-space:pre-wrap;font-size:12px;">'+escHtml(rawText)+'</div></div>';
+                    return;
+                }
+                if (!suggestions.length) {
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#666">No codes suggested -- the note didn\'t contain anything the model could ground a specific code in.</div>';
+                    return;
+                }
+
+                var html = '';
+                suggestions.forEach(function(s){
+                    var verified = quoteFoundInNote(s.quote, noteText);
+                    var badge = verified
+                        ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">✓ Verified in note</span>'
+                        : '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">⚠ Citation not found in note text</span>';
+                    html += '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:8px;font-size:13px;">'
+                        + '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+escHtml(s.code||'(no code)')+'</b> <span style="color:#666;font-size:11px;">'+escHtml(s.type||'')+'</span> '+badge+'</div>'
+                        + '<div style="margin-top:6px;font-style:italic;color:#374151;">"'+escHtml(s.quote||'')+'"</div>'
+                        + '<div style="margin-top:6px;color:#111;">'+escHtml(s.reasoning||'')+'</div>'
+                        + '</div>';
+                });
+                resultEl.innerHTML = html;
+            } catch (e) {
+                resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Connection error -- could not analyze this note.</div>';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Suggest Codes';
+            }
+        }
+
         window.addEventListener('load', () => {
             // Skip re-typing the license key on reload if one already passed
             // the real check this session -- still require PIN re-entry
@@ -2825,6 +3085,7 @@ How to answer:
             renderAuth();
             renderAr();
             renderProviders();
+            renderScrubRules();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -3069,7 +3330,10 @@ How to answer:
             // Added 2026-08-19 (Claims CRUD build) -- same real server-sync
             // treatment as the other 15 resources, participates in login-time
             // scSyncOneResource() the same way.
-            sc_claims: 'sc_claims'
+            sc_claims: 'sc_claims',
+            // Added 2026-08-19 (rule-based scrubbing expansion) -- same real
+            // server-sync treatment as every other resource.
+            sc_scrubrules: 'sc_scrubrules'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -3094,7 +3358,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {
