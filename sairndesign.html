@@ -286,6 +286,7 @@ label.chk input{width:auto;}
     <div class="card"><div class="ch"><span class="ct">Projects Needing Attention</span></div><div class="cb" id="d-attention"></div></div>
     <div class="card"><div class="ch"><span class="ct">Recent Proposals</span></div><div class="cb" id="d-proposals"></div></div>
   </div>
+  <div class="card"><div class="ch"><span class="ct">Sales Cycle Trend</span></div><div class="cb" id="d-salescycle"></div></div>
 </div>
 
 <!-- AI -->
@@ -2083,6 +2084,48 @@ function rDash(){
   $('d-proposals').innerHTML=recent.length?recent.map(function(p){
     return '<div class="srow"><span class="slbl">'+H(p.title)+'</span><span class="badge '+(statusColors[p.status]||'bx')+'">'+H(p.status)+'</span></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">No proposals yet</div>';
+
+  rSalesCycleTrend();
+}
+
+// Predictive business intelligence (2026-08-19): sales-cycle length --
+// real days elapsed from sent_date to decided_date, both of which are
+// genuinely set on the Draft->Sent and ->Approved/Declined transitions
+// (checked before building -- not dormant fields). Deviation-from-own-
+// baseline shape, same as SAIRNbiz's slow-payer check / SAIRNcash's income
+// trend: most recent 3 decided proposals vs. this studio's own prior
+// average, never an industry benchmark. Honest minimum-sample gate (6+
+// decided proposals with both dates present) with a real "not enough
+// history yet" fallback -- never a placeholder number for a studio too
+// new to have a real trend yet.
+function rSalesCycleTrend(){
+  var el=$('d-salescycle');if(!el)return;
+  var DAY=24*60*60*1000;
+  var decided=proposals().filter(function(p){
+    return (p.status==='Approved'||p.status==='Declined')&&p.sent_date&&p.decided_date;
+  }).map(function(p){
+    return {
+      title:p.title,
+      decided_date:p.decided_date,
+      days:(new Date(p.decided_date+'T00:00:00').getTime()-new Date(p.sent_date+'T00:00:00').getTime())/DAY
+    };
+  }).filter(function(x){return x.days>=0;}) // guards against bad/out-of-order manual data entry
+    .sort(function(a,b){return a.decided_date.localeCompare(b.decided_date);});
+
+  if(decided.length<6){
+    el.innerHTML='<div style="color:var(--muted);text-align:center;padding:12px">Not enough decided-proposal history yet ('+decided.length+' on record, need at least 6) -- this will start surfacing a real trend once there\'s more volume.</div>';
+    return;
+  }
+  var recent=decided.slice(-3);
+  var prior=decided.slice(0,-3);
+  var avg=function(list){return list.reduce(function(s,x){return s+x.days;},0)/list.length;};
+  var recentAvg=avg(recent),priorAvg=avg(prior);
+  var delta=recentAvg-priorAvg;
+  var dir=delta<0?'faster':(delta>0?'slower':'unchanged versus');
+  var deltaTxt=Math.abs(delta)<0.5?'about the same as':(Math.round(Math.abs(delta)*10)/10+' day(s) '+dir);
+  el.innerHTML='<div class="srow"><span class="slbl">Most recent 3 decided proposals</span><span>'+(Math.round(recentAvg*10)/10)+' day(s) avg</span></div>'+
+    '<div class="srow"><span class="slbl">This studio\'s own prior average ('+prior.length+' decided)</span><span>'+(Math.round(priorAvg*10)/10)+' day(s) avg</span></div>'+
+    '<div style="color:var(--muted);font-size:13px;margin-top:6px">Recent deals are closing '+deltaTxt+' this studio\'s own prior average -- not an industry benchmark, computed live from real sent/decided dates.</div>';
 }
 
 // ── TEAM & ROLES ──────────────────────────────────────────────────────────
