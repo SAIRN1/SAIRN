@@ -1179,6 +1179,48 @@ grdRegisterTool(
   }
 );
 
+// Agentic follow-up (2026-08-19) -- the real gap the tool-calling foundation
+// left (get_properties was the v1 proof tool, same shape as SAIRNlegacy's
+// own get_home_attention/get_cases precedent). Reuses the exact same three
+// signals already honestly computed and shown on the dashboard (rDash's
+// "actions" list and rInsights' zones-overdue check, both above) rather
+// than inventing new checks -- if the dashboard's own logic is wrong,
+// that's a pre-existing bug this tool would just inherit, not a new
+// fabrication risk this tool introduces.
+function grdAttentionDigest(){
+  var jobs=ld('grd_jobs',[]),quotes=ld('grd_quotes',[]),zones=ld('grd_golf_zones',[]);
+  var OVERDUE_DAYS=7;
+  var now=new Date();
+  var needsScheduling=jobs.filter(function(j){return j.status==='Requested';});
+  var awaitingResponse=quotes.filter(function(q){return q.status==='Sent';});
+  var overdueZones=zones.filter(function(z){
+    if(!z.serviced)return true;
+    return (now-new Date(z.serviced))/86400000>OVERDUE_DAYS;
+  });
+  return {
+    jobs_needing_scheduling: needsScheduling.map(function(j){
+      return {property:propName(j.property_id),scope:j.scope,requested:j.date};
+    }),
+    quotes_awaiting_response: awaitingResponse.map(function(q){
+      return {property:propName(q.property_id),sent:q.date};
+    }),
+    golf_zones_overdue_for_service: overdueZones.map(function(z){
+      return {zone:z.name,property:propName(z.property_id),last_serviced:z.serviced||null};
+    })
+  };
+}
+grdRegisterTool(
+  'get_grounds_attention',
+  'Look up what needs attention across the grounds-maintenance business right now: jobs still in Requested status (need scheduling), quotes sent to a customer and still awaiting a response, and golf zones overdue for service (no service on record, or last serviced more than 7 days ago). All computed live from real job/quote/zone records, never from a placeholder. Does NOT include invoices, progress photos, irrigation, or vendor data -- those are not available to this tool.',
+  { type: 'object', properties: {}, required: [] },
+  false,
+  function (input) {
+    // input intentionally unused -- see get_properties' own comment for why
+    // the parameter still exists.
+    return grdAttentionDigest();
+  }
+);
+
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function ld(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
