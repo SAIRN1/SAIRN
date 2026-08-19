@@ -74,7 +74,18 @@ const ROLES_BY_APP = {
   // hardcoded, identical-for-every-customer PIN per role instead of a real
   // per-employee credential). 'admin' is the bootstrap/top role, matching
   // requireAdminForDelete()'s existing "Compliance Admin" framing in the UI.
-  sairncode: ['admin', 'coder', 'biller', 'auditor']
+  sairncode: ['admin', 'coder', 'biller', 'auditor'],
+  // SAIRNlegacy (2026-08-19, real employee auth for the shared-knowledge
+  // permission gate): matches sairnlegacy.html's existing role vocabulary
+  // exactly (its old client-only PIN gate already had these 3 names --
+  // owner/director/staff -- just as one shared, hardcoded, identical-for-
+  // every-employee PIN per role instead of a real per-employee credential,
+  // same starting point SAIRNlaw's owner/attorney/paralegal had before its
+  // own Phase 3 hardening). 'owner' and 'director' are this app's
+  // management tier (confirmed with Michael) -- 'staff' needs an explicit
+  // per-employee grant for shared-knowledge access specifically, tracked
+  // on the employee row itself, not a 4th role.
+  sairnlegacy: ['owner', 'director', 'staff']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.

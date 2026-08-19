@@ -27,13 +27,11 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
 .plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
 .prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
-.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
-.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s;}
-.pdot.on{background:var(--p);border-color:var(--p);}
-.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;}
-.pkey:hover{background:var(--pt);border-color:var(--p);}
 .perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+/* Real per-employee login (2026-08-19) -- replaced the old shared-PIN-per-
+   role keypad (.pdots/.pdot/.ppad/.pkey, removed) the same way SAIRNlaw's
+   own Phase 3 hardening replaced its identical starting scaffold. */
+.plink{background:none;border:none;color:var(--p);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:underline;}
 /* LAYOUT */
 #app{display:none;}
 #app.on{display:flex;flex-direction:column;height:100vh;}
@@ -207,14 +205,34 @@ label.chk input{width:auto;}
 <div id="pin">
   <div class="pbox">
     <div class="plogo">SAIRNlegacy</div>
-    <div class="prole">Enter your 4-digit PIN</div>
-    <div class="pdots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
-    <div class="ppad">
-      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
-      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
-      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
-      <button class="pkey" onclick="pk('C')">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')">&larr;</button>
+
+    <!-- STEP 1: real per-employee credentials, verified server-side by
+         api/leg-auth.js. Replaced the old shared-PIN-per-role keypad
+         (DEFAULT_PINS in the page source, no server involvement) on
+         2026-08-19 -- per-person identity is the prerequisite for the real
+         shared-knowledge permission gate this build exists for. -->
+    <div id="lstep-login">
+      <div class="prole">Sign in</div>
+      <input class="ginp" id="l-eid" placeholder="Employee ID or email" autocomplete="username" style="letter-spacing:0;text-align:left"
+             onkeydown="if(event.key==='Enter')$('l-pin').focus()">
+      <input class="ginp" id="l-pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')legLogin()">
+      <button class="gbtn" onclick="legLogin()">Sign In</button>
+      <div style="margin-top:14px"><button class="plink" onclick="legShowBootstrap()">First-time setup</button></div>
     </div>
+
+    <!-- STEP 2: one-time first-owner provisioning. Server refuses this
+         with 409 once any credential exists for the funeral home. -->
+    <div id="lstep-bootstrap" style="display:none">
+      <div class="prole">First-time setup</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Creates the funeral home's first Owner account. Only works once.</div>
+      <input class="ginp" id="b-eid" placeholder="Owner employee ID or email" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-name" placeholder="Display name" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-pin" type="password" inputmode="numeric" placeholder="Choose a 6-8 digit PIN">
+      <button class="gbtn" onclick="legBootstrap()">Create Owner Account</button>
+      <div style="margin-top:12px"><button class="plink" onclick="legLoginReset()">Back to sign in</button></div>
+    </div>
+
     <div class="perr" id="perr" role="alert" aria-live="polite"></div>
   </div>
 </div>
@@ -283,6 +301,8 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-clergy" onclick="nav('clergy')"><span class="sico">&#128591;</span>Clergy / Officiant</button>
       <button class="sb" id="sb-livery" onclick="nav('livery')"><span class="sico">&#128663;</span>Transportation / Livery</button>
       <button class="sb" id="sb-tribute" onclick="nav('tribute')"><span class="sico">&#127795;</span>Trees, Donations &amp; Crowdfunding</button>
+      <div class="ss">Administration</div>
+      <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Access</button>
       <div class="sfoot">SAIRNlegacy v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 4</span></div>
     </aside>
     <main>
@@ -1196,6 +1216,42 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<!-- SECURITY & ACCESS -->
+<div class="panel" id="panel-security">
+  <div class="ph"><div><div class="ptitle">Security &amp; Access</div><div class="psub">Your account, employee credentials, and shared-knowledge permissions</div></div></div>
+
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:10px">Your Account</div>
+    <div id="sec-account" style="font-size:13px;color:var(--muted)"></div>
+  </div></div>
+
+  <div class="card" id="sec-admin-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Employee Accounts</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
+    <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
+    <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="director">Director</option><option value="staff">Staff</option><option value="owner">Owner</option></select></div>
+    <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
+    <button class="btn bp" onclick="secProvision()">Save Employee</button>
+    <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
+  </div></div>
+
+  <div class="card" id="sec-share-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Shared Company-Knowledge Access</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+      Owner and Director already see this by role. Grant one named Staff member access here to let their
+      general (non-case-specific) AI Assistant questions contribute to and read the funeral home's shared
+      trending-topics context &mdash; checked server-side on every request, not a client-side toggle.
+    </div>
+    <div class="fg"><label>Staff employee ID or email</label><input id="sec-share-eid"></div>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <button class="btn bp bs" onclick="secGrantSharedKnowledge(true)">Grant Access</button>
+      <button class="btn bo bs" onclick="secGrantSharedKnowledge(false)">Revoke Access</button>
+    </div>
+    <div id="sec-share-msg" style="font-size:12px;margin-top:6px"></div>
+  </div></div>
+</div>
+
     </main>
   </div>
 </div>
@@ -1204,6 +1260,7 @@ label.chk input{width:auto;}
 var APP_ID='sairnlegacy';
 var PROXY='https://sairn.vercel.app/api/claude';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
+var AUTH_API='https://sairn.vercel.app/api/leg-auth';
 // Added (2026-08-09 audit): api/claude.js returns HTTP 200 with a body like
 // {error:'demo_limit'} or {error:{message:'...'}} on failure -- res.ok is
 // true either way. Same two-shape check used elsewhere on the platform.
@@ -1227,11 +1284,10 @@ function legLocalToday(){
 // app's demo key shipped in until sql/demo_license_keys_seed.sql-style
 // provisioning happens for this app too.
 var VALID=['LEG-','DEMO-','SAIRN-'];
-var DEFAULT_PINS={owner:'1234',director:'2345',staff:'3456'};
-var PINS=ld('leg_pins',null)||DEFAULT_PINS;
 
-var pbuf='',prole='owner',ceid=null,aiHist=[];
+var prole='owner',ceid=null,aiHist=[];
 var pyInvoiceId=null,acCompleteId=null;
+var legSession=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 // Added (2026-08-09 audit): Tribute external_link is free text typed by
@@ -1256,15 +1312,20 @@ function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()
 function legLicenseKey(){ return localStorage.getItem('leg_license_key') || ''; }
 
 // sdnData()-equivalent, matches every other app's pattern exactly -- see
-// api/sd-data.js. Server routes for leg_ resources are a separate follow-up
-// (same shape as the SAIRNdesign sync fix); this app runs fully on
-// localStorage until that lands, same as every other app's Phase 1 scaffold.
-function sdnData(action,resource,payload){
+// api/sd-data.js. withSession (2026-08-19, new 4th param, default off):
+// attaches this browser's real employee session token via X-SD-Auth --
+// only the shared_knowledge read/write calls actually need it (the
+// permission gate lives server-side in api/sd-data.js's shared_knowledge
+// branch, scoped to app_id==='sairnlegacy' only), every other resource
+// call in this file keeps working exactly as before, unauthenticated.
+function sdnData(action,resource,payload,withSession){
   var lic=legLicenseKey();
   if(!lic)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&legSession&&legSession.token)h['X-SD-Auth']=legSession.token;
   return fetch(DATA_API,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    headers:h,
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
@@ -1274,24 +1335,83 @@ function sdnData(action,resource,payload){
   }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
 }
 
+// ── AUTH CLIENT (2026-08-19) ────────────────────────────────────────────
+// Every call below is a real server round trip to api/leg-auth.js. The
+// client decides nothing about identity or role -- it displays what the
+// signed token says, and every protected endpoint re-verifies that token
+// server-side regardless of what this page believes. Same client shape as
+// sairnlaw.html's lawAuth(), minus the MFA/SSO paths this build doesn't
+// include.
+function legAuth(action,payload,withSession){
+  var lic=legLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&legSession&&legSession.token)h['X-SD-Auth']=legSession.token;
+  return fetch(AUTH_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+function legLoginErr(m){var e=$('perr');if(e)e.textContent=m||'';}
+function legShowStep(id){
+  ['lstep-login','lstep-bootstrap'].forEach(function(s){
+    var el=$(s);if(el)el.style.display=(s===id?'block':'none');
+  });
+  legLoginErr('');
+}
+function legLoginReset(){var e=$('l-eid');if(e)e.value='';var p=$('l-pin');if(p)p.value='';legShowStep('lstep-login');}
+function legShowBootstrap(){legShowStep('lstep-bootstrap');}
+
 function gateGo(){
   var k=($('gkey').value||'').trim().toUpperCase();
   var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
   if(!ok){$('gerr').textContent='Invalid key format. Try LEG-PINNACLE-2026';return;}
   localStorage.setItem('leg_license_key',k);
-  $('gate').style.display='none';$('pin').classList.add('on');
+  $('gerr').textContent='Checking key…';
+  // Real server-side license check BEFORE moving on -- otherwise a bad key
+  // only surfaces later as a failed login, which misattributes the problem
+  // to a wrong PIN.
+  legAuth('check_license',{}).then(function(r){
+    if(!r.ok){
+      localStorage.removeItem('leg_license_key');
+      $('gerr').textContent=r.msg||'That license key was not accepted.';
+      return;
+    }
+    $('gerr').textContent='';
+    $('gate').style.display='none';$('pin').classList.add('on');
+    var e=$('l-eid');if(e)e.focus();
+  });
 }
-function pk(k){$('perr').textContent='';
-  if(k==='C'){pbuf='';dots();return;}
-  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
-  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+
+function legLogin(){
+  var eid=($('l-eid').value||'').trim();
+  var pin=($('l-pin').value||'').trim();
+  if(!eid||!pin){legLoginErr('Enter your employee ID and PIN.');return;}
+  legLoginErr('Signing in…');
+  legAuth('login',{employee_id:eid,pin:pin}).then(function(r){
+    if(!r.ok){legLoginErr(r.msg||'Sign-in failed.');return;}
+    legEnterApp(r.data);
+  });
 }
-function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+
+function legBootstrap(){
+  var eid=($('b-eid').value||'').trim(),nm=($('b-name').value||'').trim(),pin=($('b-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){legLoginErr('Employee ID and a 6-8 digit PIN are required.');return;}
+  legLoginErr('Creating account…');
+  legAuth('bootstrap',{employee_id:eid,display_name:nm||eid,pin:pin}).then(function(r){
+    if(!r.ok){legLoginErr(r.msg||'Setup failed.');return;}
+    legEnterApp(r.data);
+  });
+}
+
 // 30-day trial gate, keyed off a real timestamp written on first-ever
-// login (never a fabricated countdown). Checked in chkPin() -- the one
-// choke point every entry path routes through (no separate restore-on-
-// reload path bypasses PIN entry here). Same proven pattern as
-// stonedesk.html's / sairnlaw.html's checkTrialGate().
+// login (never a fabricated countdown). Checked in legEnterApp() --
+// deliberately the ONE choke point every entry path already routes
+// through (legLogin, legBootstrap, AND legRestoreSession()'s reload-
+// restore path), same proven pattern as stonedesk.html's / sairnlaw.html's
+// checkTrialGate().
 function checkTrialGate(){
   var TRIAL_KEY='leg_trial_start';
   var TRIAL_DAYS=30;
@@ -1313,19 +1433,54 @@ function checkTrialGate(){
 }
 window.checkTrialGate=checkTrialGate;
 
-function chkPin(){
-  var match=null;
-  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
-  if(match){
-    prole=match;st('leg_role',prole);
-    if(!checkTrialGate())return;
-    $('pin').classList.remove('on');$('app').classList.add('on');
-    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
-    init();
-    sdnHydrateAll().then(function(merged){if(merged)init();});
-  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+function legEnterApp(d){
+  legSession={token:d.token,role:d.role,employee_id:d.employee_id};
+  prole=d.role;
+  // Persisted so a refresh doesn't force a re-login. This is THIS browser's
+  // own copy of THIS user's token.
+  try{localStorage.setItem('leg_session',JSON.stringify(legSession));}catch(e){}
+  st('leg_role',prole);
+  if(!checkTrialGate())return;
+  $('pin').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=(d.employee_id||prole)+' · '+prole.charAt(0).toUpperCase()+prole.slice(1);
+  legLoginErr('');
+  var p=$('l-pin');if(p)p.value='';
+  init();
+  sdnHydrateAll().then(function(merged){if(merged)init();});
+  if(typeof loadLegSharedKnowledge==='function')loadLegSharedKnowledge();
 }
-function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+// Restores a still-valid session on reload. The token's expiry is enforced
+// SERVER-side on every protected call -- this only avoids showing the app
+// shell around a token that is already obviously dead. Self-checks
+// payload.app and re-verifies server-side via whoami right after entering
+// (not blocking initial paint) -- same fix SAIRNlaw needed live
+// (2026-08-18) after a stale cached token kept displaying a since-deleted
+// employee's identity indefinitely, applied here from the start rather
+// than waiting to rediscover the same gap.
+function legRestoreSession(){
+  var s=null;try{s=JSON.parse(localStorage.getItem('leg_session')||'null');}catch(e){}
+  if(!s||!s.token||!s.role)return false;
+  var payload=null;
+  try{payload=JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}
+  if(!payload||!payload.exp||Date.now()>=payload.exp){try{localStorage.removeItem('leg_session');}catch(e){}return false;}
+  if(payload.app!=='sairnlegacy'){try{localStorage.removeItem('leg_session');}catch(e){}return false;}
+  legEnterApp(s);
+  legAuth('whoami',{},true).then(function(r){
+    if(!r.ok){doLogout();toast('Your session is no longer valid -- please sign in again');}
+  });
+  return true;
+}
+
+function doLogout(){
+  // Clears only this browser's own token. No server call and no shared
+  // state is touched -- this cannot end anyone else's session.
+  legSession=null;
+  try{localStorage.removeItem('leg_session');}catch(e){}
+  $('app').classList.remove('on');$('pin').classList.add('on');
+  legLoginReset();
+  toast('Logged out');
+}
 
 function toggleNav(){
   var a=$('aside');if(!a)return;
@@ -1378,6 +1533,7 @@ function nav(id){
   if(id==='clergy')rClergy();
   if(id==='livery')rLivery();
   if(id==='tribute')rTribute();
+  if(id==='security')rSecurity();
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
@@ -1520,9 +1676,15 @@ function seed(){
 //   - read-only (never creates/modifies/deletes anything)
 //   - wrapped so a thrown error or unexpected data shape becomes an honest
 //     {ok:false} result, never a crash or a silently wrong answer
-// No sensitivity/role-gate concept here -- SAIRNlegacy has no real,
-// server-verified auth (prole comes from a client-side PIN match), same
-// reasoning already applied to every prior non-real-auth dispatcher.
+// No sensitivity/role-gate concept on these tools specifically -- real,
+// server-verified per-employee auth now exists (api/leg-auth.js, added
+// 2026-08-19 for the shared-knowledge permission gate below), but
+// get_cases/get_home_attention stay open to every authenticated role: both
+// are already read-only, already field-minimized (no family contact info,
+// no notes), and every role in this app legitimately needs case/attention
+// visibility to do their job. The one real access-sensitive addition this
+// pass introduced -- shared company-knowledge -- has its own real gate,
+// see recordLegSharedTopics()/buildLegSharedFuneralContext() below.
 // See docs/superpowers/specs/2026-08-10-sairnlegacy-ai-tool-calling-design.md
 var LEG_TOOLS = {};
 
@@ -1632,6 +1794,51 @@ legRegisterTool(
   }
 );
 
+// ================================================================
+// SHARED FUNERAL-HOME-KNOWLEDGE LAYER (2026-08-19) -- reuses the SAME
+// /api/sd-data shared_knowledge resource StoneDesk/SAIRNbiz/SAIRNcode
+// already use, but PERMISSION-gated rather than unconditional (confirmed
+// with Michael): a funeral home's "trending topics" can carry a grieving
+// family's name plus something sensitive (a real dispute over a case),
+// closer to SAIRNlaw's privilege concern than any other app's shared-
+// knowledge risk -- but unlike SAIRNlaw, there was no existing per-
+// question selector to gate on, so the gate is a real server-side
+// PERMISSION check instead (api/sd-data.js's shared_knowledge branch,
+// scoped to app_id==='sairnlegacy'): owner/director by role, 'staff' only
+// with an explicit grant (Security & Access panel, secGrantSharedKnowledge
+// below). withSession:true on every call here -- these are the only
+// sdnData() calls in this file that need the X-SD-Auth header.
+// ================================================================
+var _legSharedKnowledge=null;
+function loadLegSharedKnowledge(){try{sdnData('read','shared_knowledge',{},true).then(function(data){if(data)_legSharedKnowledge=data;});}catch(e){}}
+function recordLegSharedTopics(text){
+  try{
+    if(!text)return;
+    var words=(String(text).toLowerCase().match(/\b[a-z]{5,}\b/g)||[]).slice(0,60);
+    if(!words.length)return;
+    // A 403 here just means this employee isn't permitted -- expected and
+    // silent for most 'staff' logins, not an error to surface to the user.
+    sdnData('write','shared_knowledge',{words:words},true);
+  }catch(e){}
+}
+function buildLegSharedFuneralContext(){
+  var lines=['SHARED FUNERAL HOME KNOWLEDGE (from everyone permitted to see it, not just this device):'];
+  if(_legSharedKnowledge&&_legSharedKnowledge.topics){
+    var topics=Object.entries(_legSharedKnowledge.topics).sort(function(a,b){return b[1]-a[1];}).slice(0,8).map(function(e){return e[0];});
+    if(topics.length)lines.push('• Frequently discussed: '+topics.join(', '));
+  }
+  if(lines.length===1)return'';
+  return lines.join('\n');
+}
+// Called from legEnterApp() (not at page load -- there is no session token
+// to attach until sign-in completes). Not gated client-side either: a
+// 'staff' employee without access just gets a real 401/403 response and
+// _legSharedKnowledge stays null, same honest-degrade shape as every other
+// permission check in this codebase.
+window.buildLegSharedFuneralContext=buildLegSharedFuneralContext;
+window.recordLegSharedTopics=recordLegSharedTopics;
+window.loadLegSharedKnowledge=loadLegSharedKnowledge;
+
 function clrAI(){aiHist=[];$('achat').innerHTML='<div style="color:var(--muted);text-align:center;padding:40px 0;">Ask anything about cases, documents, merchandise, or operations.</div>';}
 function askAI(q){$('ainp').value=q;sendAI();}
 async function sendAI(){
@@ -1654,13 +1861,15 @@ async function sendAI(){
   // order or how many other exchanges have inserted ahead of it.
   var myUserTurn={role:'user',content:q};
   aiHist.push(myUserTurn);
+  if(typeof recordLegSharedTopics==='function')recordLegSharedTopics(q);
+  var sharedCtx=(typeof buildLegSharedFuneralContext==='function')?buildLegSharedFuneralContext():'';
   var thinking=document.createElement('div');thinking.className='ama';thinking.textContent='Thinking...';chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
   var toolDefs=Object.keys(LEG_TOOLS).map(function(k){return LEG_TOOLS[k].definition;});
   try{
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
-        system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.',
+        system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.'+(sharedCtx?('\n\n'+sharedCtx):''),
         messages:aiHist.map(function(m){return {role:m.role,content:m.content};}),
         tools:toolDefs})});
     var data=await res.json();
@@ -1691,7 +1900,7 @@ async function sendAI(){
     ];
     var res2=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:APP_ID,is_demo:true,max_tokens:500,
-        system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.',
+        system:'You are an operations assistant for a funeral home (case intake, family communication, documents, merchandise, and permit workflow). Be concise, practical, and compassionate in tone -- families reading drafted messages are grieving. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.'+(sharedCtx?('\n\n'+sharedCtx):''),
         messages:followUpMessages})});
     var data2=await res2.json();
     var aiErr2=legAiError(data2);
@@ -3600,6 +3809,39 @@ function rTribute(){
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No options on file yet</td></tr>';
 }
 
+// ── SECURITY & ACCESS ─────────────────────────────────────────────────────
+function rSecurity(){
+  var s=legSession||{};
+  $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(s.role||'--')+'</strong>';
+  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+  // Management tier (owner+director) can grant/revoke -- matches Michael's
+  // own framing ("management able to grant access"), not owner-only.
+  $('sec-share-card').style.display=((s.role==='owner'||s.role==='director')?'block':'none');
+}
+
+function secProvision(){
+  var m=$('sec-admin-msg');
+  var eid=($('sec-new-eid').value||'').trim(),nm=($('sec-new-name').value||'').trim();
+  var role=$('sec-new-role').value,pin=($('sec-new-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){m.style.color='var(--danger)';m.textContent='Employee ID and a 6-8 digit PIN are required.';return;}
+  legAuth('setup',{employee_id:eid,display_name:nm||eid,role:role,pin:pin},true).then(function(r){
+    if(!r.ok){m.style.color='var(--danger)';m.textContent=r.msg||'Could not save.';return;}
+    m.style.color='var(--muted)';m.textContent='Saved '+eid+' as '+role+'.';
+    $('sec-new-pin').value='';
+  });
+}
+
+function secGrantSharedKnowledge(granted){
+  var m=$('sec-share-msg');
+  var eid=($('sec-share-eid').value||'').trim();
+  if(!eid){m.style.color='var(--danger)';m.textContent='Enter a staff employee ID.';return;}
+  m.style.color='var(--muted)';m.textContent=granted?'Granting…':'Revoking…';
+  legAuth('grant_shared_knowledge_access',{employee_id:eid,granted:granted},true).then(function(r){
+    if(!r.ok){m.style.color='var(--danger)';m.textContent=r.msg||'Could not update access.';return;}
+    m.style.color='var(--ok)';m.textContent=eid+' shared-knowledge access is now '+(granted?'GRANTED':'REVOKED')+'.';
+  });
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────
 function init(){
   seed();
@@ -3755,7 +3997,11 @@ if (document.readyState === 'loading') {
 
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('leg_license_key');
-  if(lic){$('gate').style.display='none';$('pin').classList.add('on');}
+  if(!lic)return;
+  $('gate').style.display='none';
+  if(legRestoreSession())return;
+  $('pin').classList.add('on');
+  legShowStep('lstep-login');
 });
 </script>
 </body>

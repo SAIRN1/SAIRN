@@ -1548,8 +1548,38 @@ module.exports = async (req, res) => {
     // One row per shop (license_hash), not per employee/device — see
     // sql/sd_shared_knowledge_schema.sql for the full scope note on what deliberately does NOT
     // carry forward from the old per-browser personalization module. No employee-token gate on
-    // either action — this is aggregate topic-frequency data, not the payroll/pay-rate class of
-    // sensitivity that got 'employees' and the subcontractor roster their per-role gates.
+    // either action for most apps — this is aggregate topic-frequency data, not the payroll/
+    // pay-rate class of sensitivity that got 'employees' and the subcontractor roster their
+    // per-role gates.
+    //
+    // SAIRNlegacy is the one deliberate exception (2026-08-19, confirmed with Michael): a
+    // funeral home's "trending topics" can carry a grieving family's name and a real conflict
+    // ("the Fenwick cremation dispute"), read closer to SAIRNlaw's privilege concern than to
+    // any other app's shared-knowledge risk -- but unlike SAIRNlaw, there was no existing
+    // per-question selector to gate on, and Michael's call was a real server-side PERMISSION
+    // gate (management/owner-tier by default, individually grantable) rather than a content
+    // gate. Scoped narrowly to app_id==='sairnlegacy' only -- zero behavior change for every
+    // other app's shared_knowledge calls, which is why this check lives inline here rather than
+    // as a blanket change to the branch above.
+    async function legSharedKnowledgePermission() {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy');
+      if (!caller) return { ok: false, status: 401, code: 'NO_SESSION', message: 'Sign in first' };
+      if (caller.role === 'owner' || caller.role === 'director') return { ok: true };
+      // 'staff' -- checked fresh against the employee row on every call, not embedded in the
+      // session token, so a revoke takes effect immediately rather than waiting out the
+      // token's 12h lifetime.
+      const r = await fetch(rest('sairnlegacy_employee_auth?license_hash=eq.' + enc(licHash) +
+        '&employee_id=eq.' + enc(caller.employee_id) + '&active=eq.true&select=shared_knowledge_access&limit=1'), { headers });
+      if (!r.ok) return { ok: false, status: 502, code: 'UPSTREAM', message: 'Could not verify access — try again' };
+      const rows = await r.json();
+      const row = Array.isArray(rows) && rows[0];
+      if (row && row.shared_knowledge_access) return { ok: true };
+      return { ok: false, status: 403, code: 'FORBIDDEN', message: 'This employee does not have shared-knowledge access — ask an Owner or Director to grant it' };
+    }
+    if (resource === 'shared_knowledge' && (action === 'read' || action === 'write') && body.app_id === 'sairnlegacy') {
+      const perm = await legSharedKnowledgePermission();
+      if (!perm.ok) { res.status(perm.status).json({ error: { code: perm.code, message: perm.message } }); return; }
+    }
     if (resource === 'shared_knowledge' && action === 'read') {
       const r = await fetch(rest('sd_shared_knowledge?license_hash=eq.' + enc(licHash) + '&select=data&limit=1'), { headers });
       if (r.status === 404 || r.status === 400) {
