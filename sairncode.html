@@ -682,6 +682,7 @@
                 <button class="nav-btn" onclick="showPanel('telehealth')" data-tip="Coding and billing rules for telehealth visits">Telehealth</button>
                 <button class="nav-btn" onclick="showPanel('anesthesia')" data-tip="Anesthesia-specific coding and time-unit calculations">Anesthesia</button>
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
+                <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1212,6 +1213,45 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
         </div>
 
         <!-- Anesthesia Panel -->
+        <!-- Critical Care Transport (Phase 4 item 8). Every rule enforced
+             here was verified against a primary source during the build and
+             displays that source inline, so a reviewing coder can check it
+             directly instead of trusting an opaque gate. Two corrections
+             found during that verification are why the age and interfacility
+             gates exist at all -- the 994xx codes are pediatric (<=24 months)
+             and interfacility, not the generic physician time codes they are
+             often described as. Ground ALS/BLS/SCT codes are deliberately
+             ABSENT: only the four air codes were verified here. -->
+        <div id="panel-transport" class="panel">
+            <h1 class="panel-title">Critical Care Transport</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                Two billing streams that must never be conflated: the <b>air transport codes</b> are billed
+                by the transport supplier, the <b>994xx codes</b> by the physician, often to a different
+                payer. Every rule below shows the source it came from &mdash; check them yourself.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="tr-codes" placeholder="Codes, comma separated e.g. A0431, A0436" class="search-input" style="min-width:280px;">
+                <input type="number" id="tr-age" placeholder="Patient age (months)" class="search-input">
+                <input type="number" id="tr-minutes" placeholder="Face-to-face minutes" class="search-input">
+                <select id="tr-interfacility">
+                    <option value="">Interfacility? (not recorded)</option>
+                    <option value="yes">Yes &mdash; interfacility</option>
+                    <option value="no">No</option>
+                </select>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+                    <input type="checkbox" id="tr-necessity"> Medical necessity documented
+                </label>
+                <button class="btn btn-primary" onclick="runTransportCheck()">Check Claim</button>
+            </div>
+            <div id="tr-result"></div>
+            <div style="font-size:11px;color:#666;margin-top:14px;border-top:1px solid #ddd;padding-top:8px;">
+                Codes recognised here: A0430, A0431 (air transport), A0435, A0436 (air mileage),
+                99466/99467 (physician face-to-face), 99485/99486 (physician supervisory), and the
+                ventilation-management family for bundling checks. Ground ambulance codes are not
+                included &mdash; they were not verified during this build and are absent rather than guessed.
+            </div>
+        </div>
+
         <div id="panel-anesthesia" class="panel">
             <h1 class="panel-title">Anesthesia Time Units Calculator</h1>
             <div class="toolbar">
@@ -5316,6 +5356,243 @@ How to answer:
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveCredentialScopes(getCredentialScopes().filter(function(r){ return r.id !== id; }));
             renderCredentialScopes();
+        }
+
+        // ================================================================
+        // CRITICAL CARE TRANSPORT MODULE (2026-08-20, Phase 4 item 8).
+        //
+        // EVERY factual rule below was verified against a primary source
+        // during this build before it was allowed into the app, and each one
+        // carries that source in SC_TRANSPORT_SOURCES so a reviewing coder
+        // can check it themselves in seconds rather than trusting an opaque
+        // gate. If you change a rule here, change its source with it.
+        //
+        // TWO CORRECTIONS WERE FOUND DURING THAT VERIFICATION, and they are
+        // the reason this module gates on age and interfacility status at
+        // all. The originating brief described 99466/99467 as generic
+        // "physician face-to-face" and 99485/99486 as generic "physician
+        // supervisory" time-based codes. Both descriptions are materially
+        // incomplete: all four are PEDIATRIC, 24 months of age or younger,
+        // and all four require INTERFACILITY transport. Reporting any of
+        // them for an adult, an older child, or a scene response would be
+        // flatly wrong, so the app refuses to treat them as generic.
+        //
+        // NOT INCLUDED, deliberately: the ground ALS/BLS/SCT A-code variants.
+        // The brief referenced them but this build verified only the four AIR
+        // codes against CMS, and an unverified ground code has no business in
+        // a billing tool. They are absent rather than guessed at.
+        // ================================================================
+        var SC_TRANSPORT_SOURCES = {
+            peds_age:      'AMA CPT code descriptor for 99466/99467/99485/99486; AAP Coding News, "Pediatric Critical Care Transport Services"',
+            interfacility: 'AMA CPT descriptor — face-to-face time begins when the physician assumes primary responsibility at the referring facility (AAP Coding News)',
+            air_codes:     'CMS Medicare Claims Processing Manual, Ch. 15 (Ambulance); CMS Ambulance HCPCS Codes Crosswalk and Definitions',
+            air_mileage:   'CMS Medicare Claims Processing Manual, Ch. 15 — air mileage reported in whole loaded statute miles; air ambulance payable only to a hospital',
+            vent_bundling: 'CMS NCCI Policy Manual, Chapter XI (Medicine) — ventilation management 94002-94004 and 94660-94662 are not separately reportable with E/M; only the E/M is payable',
+            nsa_idr:       'CMS No Surprises Act — air ambulance providers are subject to the balance-billing prohibition and the federal IDR process; ground ambulance providers are not'
+        };
+
+        // The two streams. Conflating them is the specific error this module
+        // exists to prevent: the A-codes are billed by the transport SUPPLIER,
+        // the 994xx codes by the PHYSICIAN, frequently to different payers.
+        var SC_TRANSPORT_AIR_CODES = {
+            A0430: { desc: 'Conventional air services, transport, one way, fixed wing', kind: 'air', wing: 'fixed' },
+            A0431: { desc: 'Conventional air services, transport, one way, rotary wing', kind: 'air', wing: 'rotary' },
+            A0435: { desc: 'Air mileage, fixed wing (per statute mile)', kind: 'mileage', wing: 'fixed' },
+            A0436: { desc: 'Rotary wing air mileage', kind: 'mileage', wing: 'rotary' }
+        };
+        var SC_TRANSPORT_PHYS_CODES = {
+            '99466': { desc: 'Critical care face-to-face, interfacility transport, pediatric ≤24 months, first 30-74 minutes', role: 'face_to_face', base: true },
+            '99467': { desc: 'Each additional 30 minutes of face-to-face transport critical care', role: 'face_to_face', base: false },
+            '99485': { desc: 'Supervision by control physician of interfacility transport, pediatric ≤24 months, first 30-74 minutes', role: 'supervisory', base: true },
+            '99486': { desc: 'Each additional 30 minutes of supervisory transport care', role: 'supervisory', base: false }
+        };
+        // Verified as bundled into E/M rather than separately reportable.
+        var SC_VENT_MGMT_CODES = ['94002','94003','94004','94660','94661','94662'];
+
+        function scTransportFinding(severity, rule, detail, sourceKey){
+            return { severity: severity, rule: rule, detail: detail, source: SC_TRANSPORT_SOURCES[sourceKey] || '' };
+        }
+
+        // input: { codes:[], patient_age_months:number|null, interfacility:bool|null,
+        //          face_to_face_minutes:number|null, medical_necessity_documented:bool }
+        function scValidateTransportBilling(input){
+            input = input || {};
+            var codes = (input.codes || []).map(function(c){ return String(c || '').trim().toUpperCase(); }).filter(Boolean);
+            var findings = [];
+
+            var airCodes  = codes.filter(function(c){ return SC_TRANSPORT_AIR_CODES[c]; });
+            var physCodes = codes.filter(function(c){ return SC_TRANSPORT_PHYS_CODES[c]; });
+            var ventCodes = codes.filter(function(c){ return SC_VENT_MGMT_CODES.indexOf(c) !== -1; });
+
+            // --- Stream separation ---
+            if (airCodes.length && physCodes.length) {
+                findings.push(scTransportFinding('block', 'Two billing streams on one claim',
+                    'This claim mixes transport-supplier codes (' + airCodes.join(', ') + ') with physician codes ('
+                    + physCodes.join(', ') + '). These are billed by different entities, often to different payers, and belong on separate claims.',
+                    'air_codes'));
+            }
+
+            // --- Pediatric age gate (CORRECTION #1) ---
+            if (physCodes.length) {
+                var age = input.patient_age_months;
+                if (age === null || age === undefined || age === '') {
+                    findings.push(scTransportFinding('block', 'Patient age not documented',
+                        physCodes.join(', ') + ' require a patient 24 months of age or younger. No age is recorded, so this cannot be validated.',
+                        'peds_age'));
+                } else if (Number(age) > 24) {
+                    findings.push(scTransportFinding('block', 'Patient exceeds the age limit for these codes',
+                        physCodes.join(', ') + ' apply only to a patient 24 months of age or younger. Recorded age is ' + Number(age) + ' months.',
+                        'peds_age'));
+                }
+
+                // --- Interfacility gate (CORRECTION #2) ---
+                if (input.interfacility === false) {
+                    findings.push(scTransportFinding('block', 'Not an interfacility transport',
+                        physCodes.join(', ') + ' require interfacility transport. This encounter is not recorded as one.',
+                        'interfacility'));
+                } else if (input.interfacility !== true) {
+                    findings.push(scTransportFinding('block', 'Interfacility status not documented',
+                        physCodes.join(', ') + ' require interfacility transport, and that is not recorded here.',
+                        'interfacility'));
+                }
+
+                // --- Time, read straight off the verified descriptor ---
+                var mins = input.face_to_face_minutes;
+                var hasBase = physCodes.some(function(c){ return SC_TRANSPORT_PHYS_CODES[c].base; });
+                var hasAddl = physCodes.some(function(c){ return !SC_TRANSPORT_PHYS_CODES[c].base; });
+                if (mins !== null && mins !== undefined && mins !== '') {
+                    var m = Number(mins);
+                    if (hasBase && m < 30) {
+                        findings.push(scTransportFinding('block', 'Recorded time is below the base code descriptor',
+                            'The base code descriptor covers the first 30-74 minutes. Recorded time is ' + m + ' minutes.',
+                            'peds_age'));
+                    }
+                    if (hasAddl && m <= 74) {
+                        findings.push(scTransportFinding('warn', 'Add-on code reported without time beyond the base range',
+                            'The add-on code covers each additional 30 minutes beyond the first 30-74. Recorded time is ' + m + ' minutes.',
+                            'peds_age'));
+                    }
+                } else if (physCodes.length) {
+                    findings.push(scTransportFinding('warn', 'Face-to-face time not recorded',
+                        'These are time-based codes and no minutes are recorded.', 'peds_age'));
+                }
+
+                // Add-on reported with no base code present on the claim.
+                if (hasAddl && !hasBase) {
+                    findings.push(scTransportFinding('warn', 'Add-on code without its base code',
+                        'An additional-time code is present but no corresponding first-30-74-minute base code is on this claim.',
+                        'peds_age'));
+                }
+            }
+
+            // --- Ventilator management bundling ---
+            if (ventCodes.length && physCodes.length) {
+                findings.push(scTransportFinding('block', 'Ventilation management is bundled into the E/M',
+                    ventCodes.join(', ') + ' is not separately reportable alongside ' + physCodes.join(', ')
+                    + '. Only the E/M is payable.',
+                    'vent_bundling'));
+            }
+
+            // --- Air mileage sanity, per the CMS manual ---
+            var mileageCodes = airCodes.filter(function(c){ return SC_TRANSPORT_AIR_CODES[c].kind === 'mileage'; });
+            var transportCodes = airCodes.filter(function(c){ return SC_TRANSPORT_AIR_CODES[c].kind === 'air'; });
+            if (mileageCodes.length && !transportCodes.length) {
+                findings.push(scTransportFinding('warn', 'Air mileage without an air transport code',
+                    mileageCodes.join(', ') + ' is reported with no corresponding air transport code on this claim.',
+                    'air_mileage'));
+            }
+            // Wing type must agree between transport and mileage.
+            transportCodes.forEach(function(t){
+                mileageCodes.forEach(function(mc){
+                    if (SC_TRANSPORT_AIR_CODES[t].wing !== SC_TRANSPORT_AIR_CODES[mc].wing) {
+                        findings.push(scTransportFinding('block', 'Wing type mismatch between transport and mileage',
+                            t + ' is ' + SC_TRANSPORT_AIR_CODES[t].wing + '-wing but ' + mc + ' is '
+                            + SC_TRANSPORT_AIR_CODES[mc].wing + '-wing mileage.',
+                            'air_codes'));
+                    }
+                });
+            });
+
+            // --- Medical necessity, gating the whole module ---
+            if (codes.length && input.medical_necessity_documented !== true) {
+                findings.push(scTransportFinding('block', 'Medical necessity not documented',
+                    'Transport billing requires documented medical necessity, and it is not recorded for this claim.',
+                    'air_mileage'));
+            }
+
+            // --- No Surprises Act: air only, never ground ---
+            var nsa = null;
+            if (transportCodes.length) {
+                nsa = {
+                    applies: true,
+                    detail: 'Air ambulance (' + transportCodes.join(', ') + ') falls under the No Surprises Act balance-billing prohibition and the federal IDR process. Ground ambulance does not.',
+                    source: SC_TRANSPORT_SOURCES.nsa_idr
+                };
+            }
+
+            return {
+                findings: findings,
+                blocking: findings.filter(function(f){ return f.severity === 'block'; }).length,
+                streams: { supplier: airCodes, physician: physCodes },
+                nsa: nsa
+            };
+        }
+
+        function runTransportCheck(){
+            var raw = (document.getElementById('tr-codes').value || '').split(',');
+            var codes = raw.map(function(c){ return c.trim(); }).filter(Boolean);
+            var el = document.getElementById('tr-result');
+            if (!codes.length) { showToast('Enter at least one code'); return; }
+            var ageVal = document.getElementById('tr-age').value;
+            var minVal = document.getElementById('tr-minutes').value;
+            var ifVal  = document.getElementById('tr-interfacility').value;
+            var res = scValidateTransportBilling({
+                codes: codes,
+                patient_age_months: ageVal === '' ? null : Number(ageVal),
+                face_to_face_minutes: minVal === '' ? null : Number(minVal),
+                interfacility: ifVal === 'yes' ? true : (ifVal === 'no' ? false : null),
+                medical_necessity_documented: document.getElementById('tr-necessity').checked
+            });
+
+            var html = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;">';
+            html += '<div style="font-weight:700;margin-bottom:8px;">'
+                  + (res.blocking ? res.blocking + ' issue' + (res.blocking === 1 ? '' : 's') + ' to resolve before submitting'
+                                  : 'No blocking issues found by the checks that ran')
+                  + '</div>';
+
+            // Show the two streams explicitly -- the separation IS the point.
+            if (res.streams.supplier.length || res.streams.physician.length) {
+                html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;">'
+                      + '<div style="flex:1;min-width:200px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px 12px;">'
+                      + '<div style="font-size:11px;color:#666;font-weight:700;">TRANSPORT SUPPLIER BILLS</div><div>'
+                      + (res.streams.supplier.length ? escHtml(res.streams.supplier.join(', ')) : '<span style="color:#666">none</span>')
+                      + '</div></div>'
+                      + '<div style="flex:1;min-width:200px;background:#fff;border:1px solid #ddd;border-radius:6px;padding:8px 12px;">'
+                      + '<div style="font-size:11px;color:#666;font-weight:700;">PHYSICIAN BILLS</div><div>'
+                      + (res.streams.physician.length ? escHtml(res.streams.physician.join(', ')) : '<span style="color:#666">none</span>')
+                      + '</div></div></div>';
+            }
+
+            if (res.findings.length) {
+                res.findings.forEach(function(f){
+                    var block = f.severity === 'block';
+                    html += '<div style="background:' + (block ? '#fee2e2' : '#fef3c7') + ';border:1px solid '
+                          + (block ? '#fecaca' : '#fde68a') + ';border-radius:6px;padding:8px 12px;margin-bottom:6px;color:'
+                          + (block ? '#991b1b' : '#92400e') + ';">'
+                          + '<b>' + escHtml(f.rule) + '</b><div style="margin-top:2px;">' + escHtml(f.detail) + '</div>'
+                          // The source is the whole point of Option 1 -- always visible, never hidden behind a tooltip.
+                          + (f.source ? '<div style="font-size:11px;margin-top:4px;opacity:.85;">Source: ' + escHtml(f.source) + '</div>' : '')
+                          + '</div>';
+                });
+            }
+
+            if (res.nsa) {
+                html += '<div style="background:#dbeafe;border:1px solid #bfdbfe;border-radius:6px;padding:8px 12px;margin-top:6px;color:#1e40af;">'
+                      + '<b>No Surprises Act applies</b><div style="margin-top:2px;">' + escHtml(res.nsa.detail) + '</div>'
+                      + '<div style="font-size:11px;margin-top:4px;opacity:.85;">Source: ' + escHtml(res.nsa.source) + '</div></div>';
+            }
+            html += '</div>';
+            el.innerHTML = html;
         }
 
         // ================================================================
