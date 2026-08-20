@@ -684,6 +684,7 @@
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
+                <button class="nav-btn" onclick="showPanel('pt')" data-tip="Physical Therapy -- 8-minute rule, KX threshold, CQ modifier, MPPR, 2026 RTM codes">Physical Therapy</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1296,6 +1297,33 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <button class="btn btn-primary" onclick="runEdCheck()">Check Encounter</button>
             </div>
             <div id="ed-result"></div>
+        </div>
+
+        <!-- Physical Therapy (Phase 5 item 11). One correction baked in:
+             the CQ reduction is 15% of the FULL fee schedule amount (paid at
+             85%), NOT of the practice-expense component -- the PE component
+             belongs to MPPR, a different reduction. Also note 98986 is
+             included: it is a real 2026 RTM code that was missing from the
+             originating brief. -->
+        <div id="panel-pt" class="panel">
+            <h1 class="panel-title">Physical Therapy</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                The 8-minute rule <b>aggregates the whole session first</b>, then converts to units &mdash;
+                counting each code independently is the classic over-bill. Every rule shows its source.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="pt-timed" placeholder="Timed minutes e.g. 97110:22, 97140:12" class="search-input" style="min-width:260px;">
+                <input type="number" id="pt-units" placeholder="Units billed" class="search-input">
+                <input type="number" id="pt-ytd" placeholder="PT+SLP $ year-to-date" class="search-input">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="pt-kx"> KX applied</label>
+                <input type="text" id="pt-kxjust" placeholder="KX justification (real, not boilerplate)" class="search-input" style="min-width:240px;">
+                <input type="text" id="pt-pta" placeholder="PTA % e.g. 97110:40" class="search-input">
+                <input type="text" id="pt-cq" placeholder="CQ applied to e.g. 97110" class="search-input">
+                <input type="text" id="pt-rtm" placeholder="RTM codes e.g. 98985" class="search-input">
+                <input type="number" id="pt-rtmdays" placeholder="RTM monitoring days" class="search-input">
+                <button class="btn btn-primary" onclick="runPtCheck()">Check Session</button>
+            </div>
+            <div id="pt-result"></div>
         </div>
 
         <div id="panel-anesthesia" class="panel">
@@ -5602,6 +5630,53 @@ How to answer:
             }).join('');
         }
 
+        // Parses "code:minutes, code:minutes" into a real map. Anything that
+        // is not a clean code:number pair is ignored rather than guessed at.
+        function scParsePairs(raw){
+            var out = {};
+            String(raw || '').split(',').forEach(function(part){
+                var bits = part.split(':');
+                if (bits.length !== 2) return;
+                var k = bits[0].trim().toUpperCase();
+                var v = Number(bits[1].trim());
+                if (k && isFinite(v)) out[k] = v;
+            });
+            return out;
+        }
+        function scParseList(raw){
+            return String(raw || '').split(',').map(function(c){ return c.trim().toUpperCase(); }).filter(Boolean);
+        }
+        function runPtCheck(){
+            var timed = scParsePairs(document.getElementById('pt-timed').value);
+            var el = document.getElementById('pt-result');
+            var units = document.getElementById('pt-units').value;
+            var ytd = document.getElementById('pt-ytd').value;
+            var rtmDays = document.getElementById('pt-rtmdays').value;
+            var res = scValidatePtSession({
+                timed_minutes_by_code: timed,
+                units_billed: units === '' ? null : Number(units),
+                ytd_pt_slp_dollars: ytd === '' ? null : Number(ytd),
+                kx_applied: document.getElementById('pt-kx').checked,
+                kx_justification: document.getElementById('pt-kxjust').value,
+                pta_percent_by_code: scParsePairs(document.getElementById('pt-pta').value),
+                cq_applied_codes: scParseList(document.getElementById('pt-cq').value),
+                same_day_codes: Object.keys(timed),
+                rtm_codes: scParseList(document.getElementById('pt-rtm').value),
+                rtm_monitoring_days: rtmDays === '' ? null : Number(rtmDays)
+            });
+            var html = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;">'
+                     + '<div style="font-weight:700;margin-bottom:4px;">'
+                     + (res.blocking ? res.blocking + ' issue' + (res.blocking===1?'':'s') + ' to resolve before submitting'
+                                     : 'No blocking issues found by the checks that ran')
+                     + '</div>'
+                     + '<div style="font-size:12px;color:#666;margin-bottom:8px;">'
+                     + res.total_timed_minutes + ' total timed minutes &rarr; <b>' + res.units_supported
+                     + '</b> unit' + (res.units_supported===1?'':'s') + ' supported (aggregated across the session)</div>'
+                     + scRenderRuleFindings(res.findings)
+                     + '</div>';
+            el.innerHTML = html;
+        }
+
         function runEdCheck(){
             var codes = (document.getElementById('ed-codes').value || '').split(',').map(function(c){ return c.trim(); }).filter(Boolean);
             var el = document.getElementById('ed-result');
@@ -5831,6 +5906,157 @@ How to answer:
                 findings: findings,
                 blocking: findings.filter(function(f){ return f.severity === 'block'; }).length,
                 em: emCodes, critical_care: ccCodes, separately_billable: procs
+            };
+        }
+
+        // ================================================================
+        // PHYSICAL THERAPY MODULE (2026-08-20, Phase 5 item 11).
+        // Every rule verified against CMS/APTA/ASHA before entering the app.
+        //
+        // ONE CORRECTION, and one case where MY OWN DOUBT WAS WRONG:
+        //  * Correction: the CQ reduction is 15% of the FULL fee schedule
+        //    amount (paid at 85%), NOT of the practice-expense component.
+        //    The PE component belongs to MPPR, a different reduction. The
+        //    originating brief attached "practice expense" to CQ; keeping
+        //    that would have mis-stated how much a PTA-delivered unit pays.
+        //  * Not a correction: the new 2026 RTM codes 98979/98984/98985 are
+        //    REAL. They were checked precisely because they looked wrong
+        //    against the older 98975-98981 family, and they turned out to be
+        //    genuine 2026 additions for shorter 2-15 day monitoring windows.
+        //    98986 is also real and was simply missing from the brief, so it
+        //    is included here.
+        // ================================================================
+        var SC_PT_SOURCES = {
+            eight_min:  'CMS Medicare Claims Processing Manual Ch. 5; APTA "Coding for Timed Codes" — total timed minutes are aggregated for the session, then converted to units: 8-22 min = 1, 23 = 2, 38 = 3, 53 = 4',
+            kx:         'CMS Transmittal R13437CP, 2026 Annual Update of Per-Beneficiary Threshold Amounts — CY2026 KX threshold is $2,480 for PT and SLP COMBINED, and a separate $2,480 for OT; targeted medical review threshold is $3,000',
+            cq:         'CMS MM12397 / CY2020 PFS final rule — the CQ modifier is required when a PTA furnishes more than 10% of a service; those services are paid at 85% of the otherwise applicable fee schedule amount (a 15% reduction of the FULL payment, not of the practice-expense component), effective 1 Jan 2022',
+            mppr:       'APTA "Multiple Procedure Payment Reduction and the Physician Fee Schedule" — MPPR applies to the PRACTICE EXPENSE component of always-therapy services; the service with the highest PE RVU is paid at 100% and each remaining service at 50%, since 1 Apr 2013',
+            rtm_2026:   'ASHA "CPT and HCPCS Code Changes for 2026" — the RTM set was expanded with 98979 (treatment management, first 10 minutes, at least one real-time interactive communication), 98984 (respiratory device supply 2-15 days), 98985 (musculoskeletal 2-15 days) and 98986 (cognitive behavioral therapy 2-15 days); the pre-existing device-supply codes now specify 16-30 days'
+        };
+
+        // 8-minute rule thresholds, straight from the verified table.
+        function scPtUnitsFromMinutes(totalMinutes){
+            var m = Number(totalMinutes);
+            if (!isFinite(m) || m < 8) return 0;
+            // 8-22 = 1, then every additional 15 minutes adds a unit
+            // (23, 38, 53, 68 ...), which is exactly the published table.
+            return Math.floor((m - 8) / 15) + 1;
+        }
+
+        var SC_RTM_SHORT_WINDOW = { '98984': 'respiratory', '98985': 'musculoskeletal', '98986': 'cognitive behavioral therapy' };
+        var SC_RTM_LONG_WINDOW  = { '98976': 'respiratory', '98977': 'musculoskeletal', '98978': 'cognitive behavioral therapy' };
+
+        function scPtFinding(sev, rule, detail, srcKey){
+            return { severity: sev, rule: rule, detail: detail, source: SC_PT_SOURCES[srcKey] || '' };
+        }
+
+        // input: { timed_minutes_by_code:{code:minutes}, units_billed:n|null,
+        //          ytd_pt_slp_dollars:n|null, kx_applied:bool, kx_justification:'',
+        //          pta_percent_by_code:{code:pct}, cq_applied_codes:[],
+        //          rtm_codes:[], rtm_monitoring_days:n|null,
+        //          same_day_codes:[] }
+        function scValidatePtSession(input){
+            input = input || {};
+            var findings = [];
+            var byCode = input.timed_minutes_by_code || {};
+            var codes = Object.keys(byCode);
+
+            // --- 8-minute rule: AGGREGATE FIRST, then allocate ---
+            var total = 0;
+            codes.forEach(function(c){ total += Number(byCode[c]) || 0; });
+            var allowed = scPtUnitsFromMinutes(total);
+            // The classic error this prevents: computing units per code and
+            // summing them, which over-bills whenever several codes each have
+            // a remainder under 8 minutes.
+            var perCodeSum = 0;
+            codes.forEach(function(c){ perCodeSum += scPtUnitsFromMinutes(byCode[c]); });
+            if (codes.length) {
+                if (perCodeSum > allowed) {
+                    findings.push(scPtFinding('warn', 'Per-code unit counting would over-bill',
+                        'Counting units per code independently gives ' + perCodeSum + ' unit' + (perCodeSum===1?'':'s')
+                        + ', but the 8-minute rule aggregates the session first: ' + total + ' total timed minutes supports '
+                        + allowed + '. Bill ' + allowed + '.', 'eight_min'));
+                }
+                if (input.units_billed !== null && input.units_billed !== undefined && input.units_billed !== '') {
+                    var billed = Number(input.units_billed);
+                    if (billed > allowed) {
+                        findings.push(scPtFinding('block', 'More units billed than the session time supports',
+                            total + ' total timed minutes supports ' + allowed + ' unit' + (allowed===1?'':'s')
+                            + '; ' + billed + ' billed.', 'eight_min'));
+                    } else if (billed < allowed) {
+                        findings.push(scPtFinding('warn', 'Fewer units billed than supported',
+                            total + ' minutes supports ' + allowed + ' unit' + (allowed===1?'':'s') + '; ' + billed + ' billed.', 'eight_min'));
+                    }
+                }
+            }
+
+            // --- KX threshold, cumulative per patient per calendar year ---
+            var ytd = input.ytd_pt_slp_dollars;
+            if (ytd !== null && ytd !== undefined && ytd !== '') {
+                var y = Number(ytd);
+                if (y > 2480) {
+                    if (!input.kx_applied) {
+                        findings.push(scPtFinding('block', 'KX modifier required above the threshold',
+                            'PT and SLP combined year-to-date is $' + y.toLocaleString() + ', above the CY2026 KX threshold of $2,480. Claims above it without KX are denied.', 'kx'));
+                    } else if (!input.kx_justification || !String(input.kx_justification).trim()) {
+                        // The KX modifier is an attestation, so boilerplate
+                        // defeats its purpose -- it must point at real
+                        // documentation.
+                        findings.push(scPtFinding('block', 'KX applied without a documented justification',
+                            'KX attests that continued services are medically necessary as justified in the record. No justification is recorded here.', 'kx'));
+                    }
+                    if (y > 3000) {
+                        findings.push(scPtFinding('warn', 'Above the targeted medical review threshold',
+                            'Year-to-date $' + y.toLocaleString() + ' exceeds the $3,000 targeted medical review threshold.', 'kx'));
+                    }
+                }
+            }
+
+            // --- CQ modifier: >10% by a PTA ---
+            var ptaPct = input.pta_percent_by_code || {};
+            var cqApplied = (input.cq_applied_codes || []).map(function(c){ return String(c).trim().toUpperCase(); });
+            Object.keys(ptaPct).forEach(function(c){
+                var pct = Number(ptaPct[c]);
+                var code = String(c).trim().toUpperCase();
+                var needs = pct > 10;
+                var has = cqApplied.indexOf(code) !== -1;
+                if (needs && !has) {
+                    findings.push(scPtFinding('block', 'CQ modifier missing on ' + code,
+                        'A PTA furnished ' + pct + '% of this service, above the 10% de minimis standard, so CQ is required. It is paid at 85% of the full fee schedule amount.', 'cq'));
+                } else if (!needs && has) {
+                    findings.push(scPtFinding('warn', 'CQ applied below the de minimis threshold on ' + code,
+                        'A PTA furnished ' + pct + '%, which does not exceed 10%. CQ is not required and triggers an avoidable 15% reduction.', 'cq'));
+                }
+            });
+
+            // --- MPPR ranking, on the PE component ---
+            var sameDay = input.same_day_codes || [];
+            if (sameDay.length > 1) {
+                findings.push(scPtFinding('info', 'MPPR applies to this same-day set',
+                    sameDay.length + ' always-therapy services on one day: the service with the highest practice-expense RVU is paid at 100% of its PE component and each remaining service at 50%. This reduces the PE component only, not the whole payment.', 'mppr'));
+            }
+
+            // --- RTM window consistency (the real 2026 addition) ---
+            var rtm = (input.rtm_codes || []).map(function(c){ return String(c).trim().toUpperCase(); });
+            var days = input.rtm_monitoring_days;
+            if (rtm.length && days !== null && days !== undefined && days !== '') {
+                var d = Number(days);
+                rtm.forEach(function(c){
+                    if (SC_RTM_SHORT_WINDOW[c] && (d < 2 || d > 15)) {
+                        findings.push(scPtFinding('block', c + ' requires a 2-15 day window',
+                            c + ' (' + SC_RTM_SHORT_WINDOW[c] + ', 2-15 days) was reported with ' + d + ' days of monitoring.', 'rtm_2026'));
+                    }
+                    if (SC_RTM_LONG_WINDOW[c] && (d < 16 || d > 30)) {
+                        findings.push(scPtFinding('block', c + ' requires a 16-30 day window',
+                            c + ' (' + SC_RTM_LONG_WINDOW[c] + ', 16-30 days) was reported with ' + d + ' days of monitoring.', 'rtm_2026'));
+                    }
+                });
+            }
+
+            return {
+                findings: findings,
+                blocking: findings.filter(function(f){ return f.severity === 'block'; }).length,
+                total_timed_minutes: total, units_supported: allowed
             };
         }
 
