@@ -85,7 +85,20 @@ const ROLES_BY_APP = {
   // management tier (confirmed with Michael) -- 'staff' needs an explicit
   // per-employee grant for shared-knowledge access specifically, tracked
   // on the employee row itself, not a 4th role.
-  sairnlegacy: ['owner', 'director', 'staff']
+  sairnlegacy: ['owner', 'director', 'staff'],
+  // SAIRNdesign (2026-08-20, real employee auth for the client/lead
+  // privacy gate -- Task 2 of the platform sales-lead-privacy rule):
+  // matches sairndesign.html's existing role vocabulary exactly
+  // (owner/designer/office). 'owner' and 'office' are this app's
+  // management tier -- 'office' is the closest thing this app has to a
+  // back-office/coordinator role (no separate 'admin'/'manager' role
+  // exists here, unlike StoneDesk), needing broad client visibility for
+  // scheduling/invoicing the same way StoneDesk's 'admin' does; 'designer'
+  // is the assigned-party role whose own clients get scoped, the analog
+  // of StoneDesk's 'sales'. Flagged as a judgment call, not confirmed with
+  // Michael ahead of building -- same reasoning documented in
+  // api/sd-data.js's sdn_clients gate.
+  sairndesign: ['owner', 'designer', 'office']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.

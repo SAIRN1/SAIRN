@@ -27,16 +27,11 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
 .plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
 .prole{display:inline-block;background:var(--pt);color:var(--pd);border-radius:20px;padding:4px 14px;font-size:12px;font-weight:600;margin-bottom:12px;}
-.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
-.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;transition:all .15s;}
-.pdot.on{background:var(--p);border-color:var(--p);}
-.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;transition:all .15s;}
-.pkey:hover{background:var(--pt);border-color:var(--p);}
 .perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
-.proleselect{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap;}
-.prolebtn{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);}
-.prolebtn.sel{background:var(--p);color:#fff;border-color:var(--p);}
+/* Real per-employee login (2026-08-20) -- replaced the old shared-PIN-per-
+   role keypad (.pdots/.pdot/.ppad/.pkey/.proleselect/.prolebtn, removed)
+   the same way SAIRNlegacy's build did 2026-08-19. */
+.plink{background:none;border:none;color:var(--p);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:underline;}
 /* LAYOUT */
 #app{display:none;}
 #app.on{display:flex;flex-direction:column;height:100vh;}
@@ -202,14 +197,34 @@ label.chk input{width:auto;}
 <div id="pin">
   <div class="pbox">
     <div class="plogo">SAIRNdesign</div>
-    <div class="prole">Enter your 4-digit PIN</div>
-    <div class="pdots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
-    <div class="ppad">
-      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
-      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
-      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
-      <button class="pkey" onclick="pk('C')">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')">&larr;</button>
+
+    <!-- STEP 1: real per-employee credentials, verified server-side by
+         api/sdn-auth.js. Replaced the old shared-PIN-per-role keypad
+         (DEFAULT_PINS in the page source, no server involvement) on
+         2026-08-20 -- per-person identity is the prerequisite for the
+         real client/lead assignment privacy gate this build exists for. -->
+    <div id="lstep-login">
+      <div class="prole">Sign in</div>
+      <input class="ginp" id="l-eid" placeholder="Employee ID or email" autocomplete="username" style="letter-spacing:0;text-align:left"
+             onkeydown="if(event.key==='Enter')$('l-pin').focus()">
+      <input class="ginp" id="l-pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')sdnLogin()">
+      <button class="gbtn" onclick="sdnLogin()">Sign In</button>
+      <div style="margin-top:14px"><button class="plink" onclick="sdnShowBootstrap()">First-time setup</button></div>
     </div>
+
+    <!-- STEP 2: one-time first-owner provisioning. Server refuses this
+         with 409 once any credential exists for the studio. -->
+    <div id="lstep-bootstrap" style="display:none">
+      <div class="prole">First-time setup</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Creates the studio's first Owner account. Only works once.</div>
+      <input class="ginp" id="b-eid" placeholder="Owner employee ID or email" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-name" placeholder="Display name" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-pin" type="password" inputmode="numeric" placeholder="Choose a 6-8 digit PIN">
+      <button class="gbtn" onclick="sdnBootstrap()">Create Owner Account</button>
+      <div style="margin-top:12px"><button class="plink" onclick="sdnLoginReset()">Back to sign in</button></div>
+    </div>
+
     <div class="perr" id="perr" role="alert" aria-live="polite"></div>
   </div>
 </div>
@@ -267,6 +282,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reporting</button>
       <div class="ss">Admin</div>
       <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;</span>Settings</button>
+      <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Access</button>
       <div class="sfoot">SAIRNdesign v1.0 &middot; <span style="color:var(--p);font-weight:700;">Phase 3</span></div>
     </aside>
     <main>
@@ -317,7 +333,7 @@ label.chk input{width:auto;}
   </div>
   <div class="card"><div class="ch"><span class="ct">Clients</span></div><div class="cb">
     <div class="sbar"><input id="csrch" placeholder="Search by name, company..." oninput="filterClients()"></div>
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Name</th><th>Company</th><th>Phone</th><th>Email</th><th>Status</th><th>Projects</th><th>Actions</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Name</th><th>Company</th><th>Phone</th><th>Email</th><th>Status</th><th>Assigned To</th><th>Projects</th><th>Actions</th></tr></thead>
     <tbody id="ctbody"></tbody></table></div>
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Projects</span></div><div class="cb">
@@ -333,6 +349,11 @@ label.chk input{width:auto;}
     <div class="fg"><label>Address</label><input id="claddr" placeholder="123 Lakeshore Dr, Avon Lake OH"></div>
     <div class="fg"><label>Status</label><select id="clstatus"><option>Lead</option><option>Active</option><option>Completed</option></select></div>
     <div class="fg"><label>Notes</label><textarea id="clnotes" rows="2"></textarea></div>
+    <!-- Management-only (owner/office) -- server-side is the real gate
+         (api/sd-data.js's sdn_clients write branch rejects any non-
+         management assignment change regardless of this field), same
+         precedent as StoneDesk's sd_crm Assign-To control. -->
+    <div class="fg" id="cl-assignee-row" style="display:none"><label>Assigned To</label><select id="classignee"><option value="">Unassigned</option></select></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeClientModal()">Cancel</button>
       <button class="btn bp" onclick="saveClient()">Save Client</button>
@@ -859,13 +880,10 @@ label.chk input{width:auto;}
   <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">License, branding, and role PINs</div></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">License Key</div><div class="kval" id="set-license" style="font-size:15px">--</div><div class="kt">This install</div></div>
-    <div class="kpi"><div class="klbl">PIN-Protected Roles</div><div class="kval" id="set-roles">0</div><div class="kt">Owner / Designer / Office</div></div>
   </div>
   <div class="g2">
     <div class="card"><div class="ch"><span class="ct">Branding</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openBrandingModal()">Edit</button></div></div>
       <div class="cb" id="set-branding"></div></div>
-    <div class="card"><div class="ch"><span class="ct">Role PINs</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openPinsModal()">Edit PINs</button></div></div>
-      <div class="cb" id="set-pins"></div></div>
   </div>
 </div>
 <div class="modal" id="brandingmodal">
@@ -879,18 +897,26 @@ label.chk input{width:auto;}
     </div>
   </div>
 </div>
-<div class="modal" id="pinsmodal">
-  <div class="mbox">
-    <div class="mtitle">Edit Role PINs</div>
-    <div class="fg"><label>Owner PIN (4 digits)</label><input id="pm-owner" maxlength="4" inputmode="numeric"></div>
-    <div class="fg"><label>Designer PIN (4 digits)</label><input id="pm-designer" maxlength="4" inputmode="numeric"></div>
-    <div class="fg"><label>Office PIN (4 digits)</label><input id="pm-office" maxlength="4" inputmode="numeric"></div>
-    <div class="perr" id="pins-err" role="alert" aria-live="polite"></div>
-    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
-      <button class="btn bo" onclick="closePinsModal()">Cancel</button>
-      <button class="btn bp" onclick="savePins()">Save PINs</button>
-    </div>
-  </div>
+
+<!-- Security & Access (2026-08-20) -- real per-employee accounts replaced
+     the old shared-PIN-per-role Settings card above (removed, see the
+     .plink comment near #lstep-login for why). -->
+<div class="panel" id="panel-security">
+  <div class="ph"><div><div class="ptitle">Security &amp; Access</div><div class="psub">Your account and employee credentials</div></div></div>
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:10px">Your Account</div>
+    <div id="sec-account" style="font-size:13px;color:var(--muted)"></div>
+  </div></div>
+  <div class="card" id="sec-admin-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Employee Accounts</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
+    <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
+    <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="designer">Designer</option><option value="office">Office</option><option value="owner">Owner</option></select></div>
+    <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
+    <button class="btn bp" onclick="secProvision()">Save Employee</button>
+    <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
+  </div></div>
 </div>
 
     </main>
@@ -901,6 +927,7 @@ label.chk input{width:auto;}
 var APP_ID='sairndesign';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
 var PROXY='https://sairn.vercel.app/api/claude';
+var AUTH_API='https://sairn.vercel.app/api/sdn-auth';
 // Added (2026-08-09 audit): api/claude.js returns HTTP 200 with a body like
 // {error:'demo_limit'} or {error:{message:'...'}} on failure -- res.ok is
 // true either way. Same two-shape check used elsewhere on the platform.
@@ -929,14 +956,8 @@ window.sdnLocalToday=sdnLocalToday;
 // in -- see sql/demo_license_keys_seed.sql for the pattern used to
 // provision one when this app is ready to be tested for real).
 var VALID=['SDN-','DEMO-','SAIRN-'];
-// Simple role picker (Phase 1 scaffold, same shape as SAIRNbuild's
-// DEFAULT_PINS -- NOT the later per-employee server-auth upgrade StoneDesk/
-// SAIRNbiz/SAIRNgrounds/SAIRNscape graduated to. Loaded from storage if a
-// Settings panel ever makes these editable, falling back to defaults.
-var DEFAULT_PINS={owner:'1234',designer:'2345',office:'3456'};
-var PINS=ld('sdn_pins',null)||DEFAULT_PINS;
-
-var pbuf='',prole='owner',ceid=null,pjeid=null,speid=null,veid=null,qcurrentProjectId=null;
+var prole='owner',ceid=null,pjeid=null,speid=null,veid=null,qcurrentProjectId=null;
+var sdnSession=null;
 var xrSession=null,xrHitTestSource=null,xrRefSpace=null,xrPoints=[],xrCaptureTarget='width',xrLastHitPose=null;
 var qrStream=null,qrDetector=null,qrLoopId=null;
 var cceid=null;
@@ -959,12 +980,19 @@ function sdnLicenseKey(){ return localStorage.getItem('sdn_license_key') || ''; 
 // table by design (confirmed platform-wide this session), and StoneDesk/
 // SAIRNbiz/SAIRNbuild all had to abandon or never attempt direct client
 // calls for exactly that reason.
-function sdnData(action,resource,payload){
+// withSession (2026-08-20, new 4th param, default off): attaches this
+// browser's real employee session token via X-SD-Auth -- only the
+// sdn_clients calls actually need it (the privacy gate lives server-side
+// in api/sd-data.js's sdn_clients branch), every other resource call in
+// this file keeps working exactly as before, unauthenticated.
+function sdnData(action,resource,payload,withSession){
   var lic=sdnLicenseKey();
   if(!lic)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&sdnSession&&sdnSession.token)h['X-SD-Auth']=sdnSession.token;
   return fetch(DATA_API,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    headers:h,
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
@@ -974,24 +1002,77 @@ function sdnData(action,resource,payload){
   }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
 }
 
+// ── AUTH CLIENT (2026-08-20) ────────────────────────────────────────────
+// Every call below is a real server round trip to api/sdn-auth.js. Same
+// client shape as sairnlegacy.html's legAuth() (built 2026-08-19), minus
+// nothing -- this app never had MFA/SSO to begin with.
+function sdnAuth(action,payload,withSession){
+  var lic=sdnLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&sdnSession&&sdnSession.token)h['X-SD-Auth']=sdnSession.token;
+  return fetch(AUTH_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+function sdnLoginErr(m){var e=$('perr');if(e)e.textContent=m||'';}
+function sdnShowStep(id){
+  ['lstep-login','lstep-bootstrap'].forEach(function(s){
+    var el=$(s);if(el)el.style.display=(s===id?'block':'none');
+  });
+  sdnLoginErr('');
+}
+function sdnLoginReset(){var e=$('l-eid');if(e)e.value='';var p=$('l-pin');if(p)p.value='';sdnShowStep('lstep-login');}
+function sdnShowBootstrap(){sdnShowStep('lstep-bootstrap');}
+
 function gateGo(){
   var k=($('gkey').value||'').trim().toUpperCase();
   var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
   if(!ok){$('gerr').textContent='Invalid key format. Try SDN-PINNACLE-2026';return;}
   localStorage.setItem('sdn_license_key',k);
-  $('gate').style.display='none';$('pin').classList.add('on');
+  $('gerr').textContent='Checking key…';
+  sdnAuth('check_license',{}).then(function(r){
+    if(!r.ok){
+      localStorage.removeItem('sdn_license_key');
+      $('gerr').textContent=r.msg||'That license key was not accepted.';
+      return;
+    }
+    $('gerr').textContent='';
+    $('gate').style.display='none';$('pin').classList.add('on');
+    var e=$('l-eid');if(e)e.focus();
+  });
 }
-function pk(k){$('perr').textContent='';
-  if(k==='C'){pbuf='';dots();return;}
-  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
-  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+
+function sdnLogin(){
+  var eid=($('l-eid').value||'').trim();
+  var pin=($('l-pin').value||'').trim();
+  if(!eid||!pin){sdnLoginErr('Enter your employee ID and PIN.');return;}
+  sdnLoginErr('Signing in…');
+  sdnAuth('login',{employee_id:eid,pin:pin}).then(function(r){
+    if(!r.ok){sdnLoginErr(r.msg||'Sign-in failed.');return;}
+    sdnEnterApp(r.data);
+  });
 }
-function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+
+function sdnBootstrap(){
+  var eid=($('b-eid').value||'').trim(),nm=($('b-name').value||'').trim(),pin=($('b-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){sdnLoginErr('Employee ID and a 6-8 digit PIN are required.');return;}
+  sdnLoginErr('Creating account…');
+  sdnAuth('bootstrap',{employee_id:eid,display_name:nm||eid,pin:pin}).then(function(r){
+    if(!r.ok){sdnLoginErr(r.msg||'Setup failed.');return;}
+    sdnEnterApp(r.data);
+  });
+}
+
 // 30-day trial gate, keyed off a real timestamp written on first-ever
-// login (never a fabricated countdown). Checked in chkPin() -- the one
-// choke point every entry path routes through (no separate restore-on-
-// reload path bypasses PIN entry here). Same proven pattern as
-// stonedesk.html's / sairnlaw.html's checkTrialGate().
+// login (never a fabricated countdown). Checked in sdnEnterApp() --
+// deliberately the ONE choke point every entry path already routes
+// through (sdnLogin, sdnBootstrap, AND sdnRestoreSession()'s reload-
+// restore path), same proven pattern as stonedesk.html's / sairnlaw.html's
+// checkTrialGate().
 function checkTrialGate(){
   var TRIAL_KEY='sdn_trial_start';
   var TRIAL_DAYS=30;
@@ -1013,19 +1094,46 @@ function checkTrialGate(){
 }
 window.checkTrialGate=checkTrialGate;
 
-function chkPin(){
-  var match=null;
-  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
-  if(match){
-    prole=match;st('sdn_role',prole);
-    if(!checkTrialGate())return;
-    $('pin').classList.remove('on');$('app').classList.add('on');
-    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
-    init();
-    sdnHydrateAll().then(function(merged){if(merged)init();});
-  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+function sdnEnterApp(d){
+  sdnSession={token:d.token,role:d.role,employee_id:d.employee_id};
+  prole=d.role;
+  try{localStorage.setItem('sdn_session',JSON.stringify(sdnSession));}catch(e){}
+  st('sdn_role',prole);
+  if(!checkTrialGate())return;
+  $('pin').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=(d.employee_id||prole)+' · '+prole.charAt(0).toUpperCase()+prole.slice(1);
+  sdnLoginErr('');
+  var p=$('l-pin');if(p)p.value='';
+  init();
+  sdnHydrateAll().then(function(merged){if(merged)init();});
+  if(typeof rSecurity==='function')rSecurity();
 }
-function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+// Restores a still-valid session on reload. Self-checks payload.app and
+// re-verifies server-side via whoami right after entering (not blocking
+// initial paint) -- same fix SAIRNlaw needed live (2026-08-18), applied
+// here from the start rather than waiting to rediscover the same gap.
+function sdnRestoreSession(){
+  var s=null;try{s=JSON.parse(localStorage.getItem('sdn_session')||'null');}catch(e){}
+  if(!s||!s.token||!s.role)return false;
+  var payload=null;
+  try{payload=JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}
+  if(!payload||!payload.exp||Date.now()>=payload.exp){try{localStorage.removeItem('sdn_session');}catch(e){}return false;}
+  if(payload.app!=='sairndesign'){try{localStorage.removeItem('sdn_session');}catch(e){}return false;}
+  sdnEnterApp(s);
+  sdnAuth('whoami',{},true).then(function(r){
+    if(!r.ok){doLogout();toast('Your session is no longer valid -- please sign in again');}
+  });
+  return true;
+}
+
+function doLogout(){
+  sdnSession=null;
+  try{localStorage.removeItem('sdn_session');}catch(e){}
+  $('app').classList.remove('on');$('pin').classList.add('on');
+  sdnLoginReset();
+  toast('Logged out');
+}
 
 function toggleNav(){
   var a=$('aside');if(!a)return;
@@ -1060,6 +1168,7 @@ function nav(id){
   // on every other nav() call). Applied proactively here rather than waiting
   // to rediscover the same bug live.
   if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
+  if(id==='security')rSecurity();
   if(id==='dashboard')rDash();
   if(id==='ai'){}
   if(id==='clients')rClients();
@@ -1931,10 +2040,45 @@ function rProposals(){
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No proposals yet</td></tr>';
 }
 
+// ── ROSTER (2026-08-20) ──────────────────────────────────────────────────
+// Backs the Assign-To/reassign controls below. Read-only, management-only
+// (api/sdn-auth.js's 'roster' action refuses non-management server-side
+// regardless of what this cache holds) -- same shape as StoneDesk's sd_crm
+// roster cache built 2026-08-19 for the identical reason.
+var _sdnRoster=null;
+function sdnRefreshRoster(cb){
+  if(!sdnIsManagement())return;
+  sdnAuth('roster',{},true).then(function(r){
+    if(r.ok&&r.data&&Array.isArray(r.data.employees)){_sdnRoster=r.data.employees;sdnPopulateAssigneeControls();}
+    if(cb)cb();
+  });
+}
+function sdnEmployeeName(id){
+  if(!id)return'Unassigned';
+  if(_sdnRoster){var m=_sdnRoster.find(function(e){return e.employee_id===id;});if(m)return m.display_name||m.employee_id;}
+  return id;
+}
+function sdnPopulateAssigneeControls(){
+  var sel=$('classignee');
+  if(!sel||!_sdnRoster)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Unassigned</option>'+_sdnRoster.map(function(e){
+    return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+' ('+H(e.role)+')</option>';
+  }).join('');
+  sel.value=cur;
+}
+
 // ── CLIENTS / PROJECTS ────────────────────────────────────────────────────
+function sdnIsManagement(){return prole==='owner'||prole==='office';}
 function openClientModal(){
   ceid=null;['clname','clcompany','clphone','clemail','claddr','clnotes'].forEach(function(f){$(f).value='';});
   $('clstatus').value='Lead';
+  var row=$('cl-assignee-row');
+  if(row){
+    row.style.display=sdnIsManagement()?'block':'none';
+    var sel=$('classignee');if(sel)sel.value='';
+    if(sdnIsManagement())sdnRefreshRoster();
+  }
   $('clientmodal').classList.add('on');
   if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
 }
@@ -1943,20 +2087,51 @@ function editClient(id){
   var c=clients().find(function(x){return x.id===id;});if(!c)return;
   ceid=id;$('clname').value=c.name;$('clcompany').value=c.company||'';$('clphone').value=c.phone||'';
   $('clemail').value=c.email||'';$('claddr').value=c.address||'';$('clstatus').value=c.status;$('clnotes').value=c.notes||'';
+  var row=$('cl-assignee-row');
+  if(row){
+    row.style.display=sdnIsManagement()?'block':'none';
+    if(sdnIsManagement())sdnRefreshRoster(function(){var sel=$('classignee');if(sel)sel.value=c.assigned_employee_id||'';});
+  }
   $('clientmodal').classList.add('on');
   if(typeof installSdnVoiceInputTargets==='function')installSdnVoiceInputTargets();
 }
 async function saveClient(){
   var name=$('clname').value.trim();
   if(!name){toast('Client name required');return;}
+  var existing=ceid?clients().find(function(x){return x.id===ceid;}):null;
+  // Management picks from the Assign-To dropdown (may leave Unassigned). A
+  // non-management (designer) caller always keeps the client's existing
+  // assignment (or self-assigns on create) -- the server rejects anything
+  // else from them anyway (only management can assign/reassign), same
+  // reasoning as StoneDesk's sd_crm Assign-To control.
+  var assignedTo=sdnIsManagement()
+    ?(($('classignee')&&$('classignee').value)||'')
+    :(existing?existing.assigned_employee_id||'':(sdnSession&&sdnSession.employee_id)||'');
   var rec={id:ceid||newId('CL'),name:name,company:$('clcompany').value.trim(),phone:$('clphone').value.trim(),
-    email:$('clemail').value.trim(),address:$('claddr').value.trim(),status:$('clstatus').value,notes:$('clnotes').value.trim(),created_at:sdnLocalToday()};
+    email:$('clemail').value.trim(),address:$('claddr').value.trim(),status:$('clstatus').value,notes:$('clnotes').value.trim(),
+    created_at:sdnLocalToday(),assigned_employee_id:assignedTo};
   var list=clients();
   if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
   st('sdn_clients',list);
   closeClientModal();rClients();rDash();fillProjectSelects();
-  var syncResult=await sdnData('write','sdn_clients',rec);
+  var syncResult=await sdnData('write','sdn_clients',rec,true);
   toast(syncResult?'Client saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+}
+// Reassignment from the Clients table -- management-only UI (the select
+// this is wired to only renders for isMgmt in rClients() below), but the
+// REAL boundary is server-side: api/sd-data.js refuses this write from a
+// non-management session regardless. Sends the full current client
+// record, not just the assignee field -- the server's write path replaces
+// the whole stored record each call, so a partial payload would silently
+// wipe the rest of the client's fields.
+async function sdnReassignClient(id,newEmployeeId){
+  var list=clients();
+  var c=list.find(function(x){return x.id===id;});
+  if(!c){toast('Client not found');return;}
+  c.assigned_employee_id=newEmployeeId||'';
+  st('sdn_clients',list);rClients();
+  var syncResult=await sdnData('write','sdn_clients',c,true);
+  toast(syncResult?(c.name+' reassigned to '+sdnEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
 function openProjectModal(){
   pjeid=null;fillProjectSelects();
@@ -1996,13 +2171,21 @@ function rClients(){
   var q=($('csrch').value||'').toLowerCase();
   var filtered=cl.filter(function(c){return !q||(c.name||'').toLowerCase().indexOf(q)!==-1||(c.company||'').toLowerCase().indexOf(q)!==-1;});
   var statusColors={Lead:'bw',Active:'bg',Completed:'bx'};
+  var isMgmt=sdnIsManagement();
+  if(isMgmt&&!_sdnRoster)sdnRefreshRoster(rClients);
   var ctb=$('ctbody');
   ctb.innerHTML=filtered.length?filtered.map(function(c){
     var projCount=pj.filter(function(p){return p.client_id===c.id;}).length;
+    var assignedCell=isMgmt
+      ? '<select onchange="sdnReassignClient(\''+c.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
+        +'<option value="">Unassigned</option>'
+        +(_sdnRoster||[]).map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===c.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
+        +'</select>'
+      : H(sdnEmployeeName(c.assigned_employee_id));
     return '<tr><td>'+H(c.name)+'</td><td>'+H(c.company||'--')+'</td><td>'+H(c.phone||'--')+'</td><td>'+H(c.email||'--')+'</td>'+
-      '<td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td><td>'+projCount+'</td>'+
+      '<td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status)+'</span></td><td>'+assignedCell+'</td><td>'+projCount+'</td>'+
       '<td><button class="btn bo bs" onclick="editClient(\''+c.id+'\')">Edit</button></td></tr>';
-  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No clients found</td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No clients found</td></tr>';
   var statusColors2={Planning:'bw','In Progress':'bb',Complete:'bg'};
   var ptb=$('ptbody');
   ptb.innerHTML=pj.length?pj.map(function(p){
@@ -3015,50 +3198,34 @@ function saveBranding(){
   closeBrandingModal();rSettings();rDash();
   toast('Branding saved');
 }
-// RBAC enforcement (2026-08-09 audit): prole was set at PIN entry and shown
-// in the header, but nothing anywhere ever read it for a real permission
-// decision -- Owner/Designer/Office had identical access to every action,
-// including any role being able to open this exact modal and read or
-// change the OWNER's own PIN. That's the single clearest, highest-value
-// privilege-escalation risk in the app (an Office employee could lock the
-// owner out or grant themselves owner access), so it's the one gated here,
-// same minimal-baseline pattern already applied to SAIRNbuild. Everything
-// else in the app is unchanged.
-function requireOwnerForPins(){
-  if(prole==='owner') return true;
-  toast('Only Owner can view or edit role PINs');
-  return false;
-}
-function openPinsModal(){
-  if(!requireOwnerForPins()) return;
-  $('pm-owner').value=PINS.owner||'';$('pm-designer').value=PINS.designer||'';$('pm-office').value=PINS.office||'';
-  $('pins-err').textContent='';
-  $('pinsmodal').classList.add('on');
-}
-function closePinsModal(){$('pinsmodal').classList.remove('on');}
-function savePins(){
-  if(!requireOwnerForPins()) return;
-  var owner=$('pm-owner').value.trim(),designer=$('pm-designer').value.trim(),office=$('pm-office').value.trim();
-  var re=/^\d{4}$/;
-  if(!re.test(owner)||!re.test(designer)||!re.test(office)){$('pins-err').textContent='Each PIN must be exactly 4 digits';return;}
-  if(owner===designer||owner===office||designer===office){$('pins-err').textContent='Each role needs a different PIN';return;}
-  PINS={owner:owner,designer:designer,office:office};
-  st('sdn_pins',PINS);
-  $('pins-err').textContent='';
-  closePinsModal();rSettings();
-  toast('PINs updated');
-}
 function rSettings(){
   var lic=sdnLicenseKey();
   $('set-license').textContent=lic?lic.slice(0,3)+'-***-'+lic.slice(-4):'--';
-  $('set-roles').textContent=Object.keys(PINS).length;
   var b=sdnBranding();
   $('set-branding').innerHTML=
     '<div class="srow"><span class="slbl">Studio Name</span><span class="sval">'+H(b.studio_name)+'</span></div>'+
     '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(b.demo_company)+'</span></div>';
-  $('set-pins').innerHTML=Object.keys(PINS).map(function(r){
-    return '<div class="srow"><span class="slbl">'+H(r.charAt(0).toUpperCase()+r.slice(1))+'</span><span class="sval">&bull;&bull;&bull;&bull;</span></div>';
-  }).join('');
+}
+
+// ── SECURITY & ACCESS (2026-08-20) ──────────────────────────────────────
+// Employee Accounts, same shape as sairnlegacy.html's rSecurity()/
+// secProvision() (built 2026-08-19) -- no shared-knowledge grant here,
+// SAIRNdesign never had that feature to begin with.
+function rSecurity(){
+  var s=sdnSession||{};
+  $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(s.role||'--')+'</strong>';
+  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+}
+function secProvision(){
+  var m=$('sec-admin-msg');
+  var eid=($('sec-new-eid').value||'').trim(),nm=($('sec-new-name').value||'').trim();
+  var role=$('sec-new-role').value,pin=($('sec-new-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){m.style.color='var(--danger)';m.textContent='Employee ID and a 6-8 digit PIN are required.';return;}
+  sdnAuth('setup',{employee_id:eid,display_name:nm||eid,role:role,pin:pin},true).then(function(r){
+    if(!r.ok){m.style.color='var(--danger)';m.textContent=r.msg||'Could not save.';return;}
+    m.style.color='var(--muted)';m.textContent='Saved '+eid+' as '+role+'.';
+    $('sec-new-pin').value='';
+  });
 }
 
 // ── WIRE EVERYTHING ON DOM READY ──────────────────────────────────────────
@@ -3089,7 +3256,10 @@ var SDN_SYNC_RESOURCES=['sdn_clients','sdn_projects','sdn_specitems','sdn_propos
   'sdn_timeentries','sdn_schedule','sdn_samples','sdn_contracts','sdn_referrals','sdn_discounts','sdn_roomdims'];
 async function sdnHydrateAll(){
   if(!sdnLicenseKey())return;
-  var results=await Promise.all(SDN_SYNC_RESOURCES.map(function(key){return sdnData('read',key);}));
+  // sdn_clients is the one resource whose server-side read is gated by
+  // session (api/sd-data.js's sdn_clients branch) -- every other resource
+  // here stays unauthenticated, unchanged.
+  var results=await Promise.all(SDN_SYNC_RESOURCES.map(function(key){return sdnData('read',key,null,key==='sdn_clients');}));
   var anyMerged=false;
   for(var i=0;i<SDN_SYNC_RESOURCES.length;i++){
     var key=SDN_SYNC_RESOURCES[i],serverRows=results[i];
@@ -3214,7 +3384,11 @@ if (document.readyState === 'loading') {
 
 document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('sdn_license_key');
-  if(lic){$('gate').style.display='none';$('pin').classList.add('on');}
+  if(!lic)return;
+  $('gate').style.display='none';
+  if(sdnRestoreSession())return;
+  $('pin').classList.add('on');
+  sdnShowStep('lstep-login');
 });
 </script>
 </body>

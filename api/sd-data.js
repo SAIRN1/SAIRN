@@ -1764,6 +1764,81 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SAIRNDESIGN: sdn_clients PRIVACY GATE (2026-08-20) ──────────────────────────────────
+    // Task 2 of the platform sales-lead-privacy rule (StoneDesk's sd_crm was item 1,
+    // 2026-08-19): a client/lead is visible only to management (Owner/Office) or the designer
+    // it's assigned to. This bespoke branch runs BEFORE the generic SDN_RESOURCES loop below
+    // (which still handles sdn_clients too, unauthenticated) -- inserted first in file order so
+    // it matches first, carving sdn_clients out of the generic ungated path the same way
+    // StoneDesk's sd_crm and shared_knowledge's sairnlegacy carve-out were done. Every other
+    // sdn_ resource (projects, spec items, moodboards, etc.) is unaffected, still fully
+    // generic/ungated -- this rule is specifically about client/lead data, not the whole app.
+    const SDN_CLIENT_MANAGEMENT_ROLES = { owner: true, office: true };
+    if (resource === 'sdn_clients' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairndesign');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('sdn_clients?license_hash=eq.' + enc(licHash) + '&select=client_id,assigned_employee_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      // Management sees every client. A non-management (designer) caller sees only clients
+      // assigned to them -- an UNASSIGNED client is management-only-visible too, same
+      // reasoning (and same confirmed-correct default, per Michael's call on StoneDesk's
+      // build) as an already-assigned client belonging to someone else.
+      let out = rows || [];
+      if (!SDN_CLIENT_MANAGEMENT_ROLES[session.role]) {
+        out = out.filter((r) => r.assigned_employee_id === session.employee_id);
+      }
+      const data = out.map((r) => Object.assign({ id: r.client_id, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'sdn_clients' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairndesign');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sdn_clients payload.id is required' } }); return; }
+      const isManagement = !!SDN_CLIENT_MANAGEMENT_ROLES[session.role];
+      const existingR = await fetch(rest('sdn_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Client assignment tracking is not set up yet — run sql/sairndesign_clients_assignment_migration.sql in Supabase first.' } });
+        return;
+      }
+      const existingRows = await existingR.json();
+      if (!existingR.ok) return upstream(res, existingRows);
+      const existingRow = Array.isArray(existingRows) && existingRows[0];
+      const requestedAssignee = payload.assigned_employee_id !== undefined
+        ? (payload.assigned_employee_id || null)
+        : (existingRow ? existingRow.assigned_employee_id : null);
+      if (!isManagement) {
+        // A designer may only write a client already assigned to them, and may never change
+        // the assignment -- reassignment (including self-assigning a currently-unassigned,
+        // invisible-to-them client) is management-only.
+        if (existingRow && existingRow.assigned_employee_id !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This client is not assigned to you' } });
+          return;
+        }
+        if (requestedAssignee !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign or reassign a client' } });
+          return;
+        }
+      }
+      const clientData = Object.assign({}, payload);
+      delete clientData.id;
+      delete clientData.assigned_employee_id;
+      const r = await fetch(rest('sdn_clients?on_conflict=license_hash,client_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairndesign', client_id: String(payload.id),
+          assigned_employee_id: requestedAssignee, data: clientData, updated_at: nowISO()
+        })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, clientData) });
+      return;
+    }
+
     // ── SAIRNDESIGN: 18 resources (2026-08-07, closing the whole-app sync gap) ─────────────
     // SAIRNdesign shipped Phases 1-4 calling sdnData('write', <bare resource name>, ...) at
     // ~27 call sites, but no 'sairndesign'-scoped resource was ever added to RESOURCES above --
