@@ -46,7 +46,16 @@ const KNOWN_APP_IDS = [
   // any future AI use. Standard license-key-gated B2B app, is_demo
   // used the same way every other non-SAIRNcash app on this platform
   // already does.
-  'sairndental'
+  'sairndental',
+  // SAIRNsenior (2026-08-20) -- MISSED at build time despite having a real
+  // AI Assistant panel calling this proxy with app_id:'sairnsenior' since
+  // Phase 1 (3157ac9): every call has been 400ing with "unrecognized
+  // app_id" and failing silently into the chat's generic "AI request
+  // failed" message. Found while wiring the agentic ops-attention tool --
+  // same missing-from-allowlist bug class as the 2026-07-26 correction
+  // above, caught live via a direct curl against this proxy before
+  // assuming the existing chat worked.
+  'sairnsenior'
 ];
 
 // Server tools a frontend is allowed to request. Server-executed tool TYPES

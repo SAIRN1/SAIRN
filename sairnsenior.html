@@ -522,6 +522,7 @@ function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionD
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
 function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 function senLocalToday(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function senAddDays(dateStr,delta){var d=new Date(dateStr+'T00:00:00');d.setDate(d.getDate()+delta);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 
 // Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
 // validation is server-side in api/_lib/license.js.
@@ -1294,11 +1295,17 @@ function renderReadyToBill(){
       '<td><button class="btn bp bs" onclick="generateClaim(\''+v.id+'\')">Generate Claim</button></td></tr>';
   }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Nothing ready to bill</td></tr>';
 }
+// Shared with the get_ops_attention AI tool below so both compute
+// delivered hours the same way -- a claim and an insufficient-hours
+// finding must never silently diverge on this arithmetic.
+function visitHours(v){
+  if(!v||!v.clock_in_at||!v.clock_out_at)return 0;
+  return Math.round(((new Date(v.clock_out_at)-new Date(v.clock_in_at))/3600000)*100)/100;
+}
 async function generateClaim(visitId){
   var v=visits().find(function(x){return x.id===visitId;});if(!v){toast('Visit not found');return;}
   var cl=clients().find(function(c){return c.id===v.client_id;});
-  var hoursBilled=0;
-  if(v.clock_in_at&&v.clock_out_at){hoursBilled=Math.round(((new Date(v.clock_out_at)-new Date(v.clock_in_at))/3600000)*100)/100;}
+  var hoursBilled=visitHours(v);
   var rec={id:newId('CLM'),visit_id:v.id,client_id:v.client_id,client_name:v.client_name||(cl&&cl.name)||'',
     payer:(cl&&cl.payer)||'',service_date:v.scheduled_date,hours_billed:hoursBilled,rate:0,amount:0,status:'draft'};
   var list=claims();list.push(rec);st('sen_claims',list);
@@ -1472,28 +1479,138 @@ function saveEvvConfig(){
 
 // ── AI ASSISTANT ─────────────────────────────────────────────────────────
 var aiHist=[];
+var aiApiHistory=[];
 function aiRenderHist(){
   $('ai-hist').innerHTML=aiHist.map(function(m){
     return '<div style="margin-bottom:10px"><strong>'+(m.role==='user'?'You':'AI')+':</strong> '+H(m.text)+'</div>';
   }).join('');
 }
+
+// ── AI TOOL-CALLING (2026-08-20, agentic ops-attention follow-up) ───────
+// Same register/execute/wrap-errors shape as SAIRNcash's SC_TOOLS and
+// SAIRNbiz's SB_TOOLS (docs/superpowers/specs/2026-08-09-sairnbiz-ai-tool-
+// calling-design.md). Every tool is read-only and a thrown error becomes
+// an honest {ok:false}, never a crash or a silently wrong answer.
+var SEN_TOOLS={};
+function senRegisterTool(name,description,inputSchema,run){
+  SEN_TOOLS[name]={definition:{name:name,description:description,input_schema:inputSchema},run:run};
+}
+function senExecuteTool(name,input){
+  var tool=SEN_TOOLS[name];
+  if(!tool)return{ok:false,error:'No tool named "'+name+'" exists.'};
+  try{return{ok:true,result:tool.run(input||{})};}
+  catch(e){return{ok:false,error:'Could not retrieve that data right now.'};}
+}
+
+// Insufficient-hours: compares each visible active client's real delivered
+// hours (completed visits' clock_in/clock_out, same visitHours() the
+// Billing panel bills from) against their Authorized Hours/Week, over the
+// most recently FULLY COMPLETED 7-day window (ending yesterday) -- never
+// the current in-progress week, which would flag a client as "behind" on
+// a week that hasn't finished yet. Scoped by the same three-tier read gate
+// as sen_clients itself: broad-read roles see the whole active roster,
+// a caregiver sees only their own assigned clients.
+function computeInsufficientHoursFindings(){
+  var windowStart=senAddDays(senLocalToday(),-7),windowEnd=senAddDays(senLocalToday(),-1);
+  var myId=(senSession&&senSession.employee_id)||'';
+  var visible=clients().filter(function(c){
+    return c.status==='active'&&(Number(c.authorized_hours)>0)&&(senIsBroadRead()||c.assigned_employee_id===myId);
+  });
+  var v=visits();
+  return visible.map(function(c){
+    var delivered=v.filter(function(x){return x.client_id===c.id&&x.status==='completed'&&x.scheduled_date>=windowStart&&x.scheduled_date<=windowEnd;})
+      .reduce(function(sum,x){return sum+visitHours(x);},0);
+    delivered=Math.round(delivered*100)/100;
+    var gap=Math.round((c.authorized_hours-delivered)*100)/100;
+    return {client_name:c.name,authorized_hours_per_week:c.authorized_hours,delivered_hours_last_completed_week:delivered,gap:gap,window:windowStart+' to '+windowEnd};
+  }).filter(function(f){return f.gap>0;}).sort(function(a,b){return b.gap-a.gap;});
+}
+
+// Denial patterns: management-only (owner/billing), same real gate as the
+// Billing & Claims panel itself -- a caregiver has no HIPAA
+// minimum-necessary reason to see claim/payer denial data. Requires at
+// least 2 real denied claims before calling anything a "pattern", same
+// discipline as SAIRNcode's DENIAL_PATTERN_MIN_EVENTS.
+var DENIAL_PATTERN_MIN_CLAIMS=2;
+function computeDenialPatternFindings(){
+  if(!senIsManagement())return null;
+  var denied=claims().filter(function(c){return c.status==='denied';});
+  if(denied.length<DENIAL_PATTERN_MIN_CLAIMS)return{denied_claim_count:denied.length,note:'Not enough denied claims yet ('+denied.length+', need '+DENIAL_PATTERN_MIN_CLAIMS+'+) for a real pattern breakdown.'};
+  var counts={},amounts={};
+  denied.forEach(function(c){
+    var k=(c.denial_reason||'').trim()||'Unspecified reason';
+    counts[k]=(counts[k]||0)+1;amounts[k]=(amounts[k]||0)+(Number(c.amount)||0);
+  });
+  var byReason=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];}).map(function(k){
+    return{reason:k,denied_count:counts[k],total_amount:Math.round(amounts[k]*100)/100};
+  });
+  return{denied_claim_count:denied.length,by_reason:byReason};
+}
+
+function computeOpsAttentionFindings(){
+  return{
+    insufficient_hours:computeInsufficientHoursFindings(),
+    denial_patterns:computeDenialPatternFindings() // null when this role can't see billing data
+  };
+}
+
+senRegisterTool(
+  'get_ops_attention',
+  'Check this agency\'s real logged SAIRNsenior data for two things, both scoped to what THIS user is allowed to see (same server-enforced privacy gate as the rest of the app): (1) insufficient_hours -- active clients whose real delivered hours (from completed, clocked-in/out visits) fell short of their Authorized Hours/Week during the most recently FULLY COMPLETED 7-day window (never the current, still-in-progress week). Only clients with a real gap (delivered less than authorized) are included. (2) denial_patterns -- denied claims grouped by denial reason with counts and dollar totals; this is null if the current user\'s role cannot see billing data (caregivers never can, matching the Billing & Claims panel\'s own gate), and returns a note instead of a breakdown if fewer than 2 denied claims exist yet. Never invent a client, hours figure, or denial reason not present in this tool\'s real result.',
+  {type:'object',properties:{},required:[]},
+  function(input){return computeOpsAttentionFindings();}
+);
+
 async function aiAsk(){
   var q=($('ai-input').value||'').trim();
   if(!q){toast('Enter a question');return;}
   aiHist.push({role:'user',text:q});aiRenderHist();
   $('ai-input').value='';
-  // Scoped context: only what this role is allowed to see -- a caregiver's
-  // AI context is their own assigned clients only, never the full roster.
-  var isMgmt=senIsManagement();
-  var myClients=isMgmt?clients():clients().filter(function(c){return c.assigned_employee_id===((senSession&&senSession.employee_id)||'');});
+  // Scoped roster context, same baseline as before this pass -- a
+  // caregiver's context is their own assigned clients only, never the
+  // full roster. Fixed to use senIsBroadRead() here too: this previously
+  // used senIsManagement() alone, silently narrowing coordinator/scheduler
+  // down to own-assigned-only in AI answers even though the real
+  // sen_clients gate (and every other screen) already grants them
+  // agency-wide read -- same bug class SAIRNsenior batch 2 fixed
+  // elsewhere, missed in this function until now.
+  var myClients=senIsBroadRead()?clients():clients().filter(function(c){return c.assigned_employee_id===((senSession&&senSession.employee_id)||'');});
   var context='Client roster visible to this user ('+myClients.length+' clients): '+JSON.stringify(myClients.map(function(c){return {name:c.name,status:c.status,payer:c.payer,authorized_hours:c.authorized_hours};}));
+  var sysPrompt='You are SAIRNsenior\'s operations assistant for a home care agency. Answer only from the provided roster context and, when relevant, the get_ops_attention tool\'s real result. Never invent a client, number, or denial reason not present in either. If a question needs insufficient-hours or denial-pattern analysis, use the tool rather than guessing from the roster context alone.';
+  aiApiHistory.push({role:'user',content:context+'\n\nQuestion: '+q});
   try{
+    var toolDefs=Object.keys(SEN_TOOLS).map(function(k){return SEN_TOOLS[k].definition;});
     var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:'You are SAIRNsenior\'s operations assistant for a home care agency. Answer only from the provided context. Never invent a client or number not present in the context.',
-        messages:[{role:'user',content:context+'\n\nQuestion: '+q}]})});
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sysPrompt,messages:aiApiHistory,tools:toolDefs})});
     var data=await res.json();
-    var text=(data&&data.error)?'AI request failed -- try again.':((data.content&&data.content[0]&&data.content[0].text)||'No response text returned.');
-    aiHist.push({role:'assistant',text:text});aiRenderHist();
+    if(data&&data.error){
+      aiHist.push({role:'assistant',text:'AI request failed -- try again.'});aiRenderHist();
+      return;
+    }
+    var blocks=data.content||[];
+    var toolUses=blocks.filter(function(b){return b.type==='tool_use';});
+    if(!toolUses.length){
+      var text=(blocks[0]&&blocks[0].text)||'No response text returned.';
+      aiApiHistory.push({role:'assistant',content:text});
+      aiHist.push({role:'assistant',text:text});aiRenderHist();
+      return;
+    }
+    // Every tool_use in this assistant turn needs its own tool_result in
+    // ONE following user turn, or the next call 400s -- same contract as
+    // every other tool-calling app on this platform (SAIRNcash, SAIRNbiz).
+    var toolResults=toolUses.map(function(tu){
+      var outcome=senExecuteTool(tu.name,tu.input);
+      var content=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not guess or substitute your own figures for this -- state the error plainly and stop.');
+      return{type:'tool_result',tool_use_id:tu.id,content:content};
+    });
+    aiApiHistory.push({role:'assistant',content:blocks});
+    aiApiHistory.push({role:'user',content:toolResults});
+    var res2=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sysPrompt,messages:aiApiHistory})});
+    var data2=await res2.json();
+    var text2=(data2&&data2.error)?'AI request failed -- try again.':((data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.');
+    aiApiHistory.push({role:'assistant',content:text2});
+    aiHist.push({role:'assistant',text:text2});aiRenderHist();
   }catch(e){
     aiHist.push({role:'assistant',text:'Network error -- try again.'});aiRenderHist();
   }
