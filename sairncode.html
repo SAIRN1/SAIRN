@@ -685,6 +685,7 @@
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
                 <button class="nav-btn" onclick="showPanel('pt')" data-tip="Physical Therapy -- 8-minute rule, KX threshold, CQ modifier, MPPR, 2026 RTM codes">Physical Therapy</button>
+                <button class="nav-btn" onclick="showPanel('mh')" data-tip="Mental Health -- license-gated codes, split time, telehealth POS, psychotherapy-notes tier">Mental Health</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1324,6 +1325,43 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <button class="btn btn-primary" onclick="runPtCheck()">Check Session</button>
             </div>
             <div id="pt-result"></div>
+        </div>
+
+        <!-- Mental Health / Counseling (Phase 5 item 14). One correction:
+             MFTs/MHCs are paid at 75% of the CLINICAL PSYCHOLOGIST rate, not
+             75% of the physician fee schedule as briefed. Two figures are
+             deliberately NOT asserted: the "~$42/session" POS swing (direction
+             verified and enforced, amount is code/locality-specific and was
+             not verified) and a definition for H0020 (unverified). -->
+        <div id="panel-mh" class="panel">
+            <h1 class="panel-title">Mental Health &amp; Counseling</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                Some limits here are <b>licensure</b> limits, not documentation ones &mdash; better notes cannot
+                unlock a code the license does not permit. Every rule shows its source.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="mh-codes" placeholder="Codes e.g. 90837, 90833" class="search-input" style="min-width:220px;">
+                <select id="mh-license">
+                    <option value="">Rendering license</option>
+                    <option value="LPC">LPC</option><option value="LMFT">LMFT</option><option value="LMHC">LMHC</option>
+                    <option value="PSY">Clinical psychologist</option><option value="MD">Physician / NP / CNS</option>
+                </select>
+                <select id="mh-enrolled">
+                    <option value="">Medicare enrollment (not recorded)</option>
+                    <option value="yes">Enrolled (855I/PECOS complete)</option>
+                    <option value="no">Not yet enrolled</option>
+                </select>
+                <input type="number" id="mh-ptmin" placeholder="Psychotherapy min" class="search-input">
+                <input type="number" id="mh-emmin" placeholder="E/M min" class="search-input">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="mh-both"> Both billed, same encounter</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="mh-tele"> Telehealth</label>
+                <select id="mh-pos"><option value="">POS</option><option value="10">10 &mdash; patient home</option><option value="02">02 &mdash; other</option></select>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="mh-family"> Family therapy</label>
+                <input type="text" id="mh-dx" placeholder="Anchor diagnosis" class="search-input">
+                <select id="mh-notes"><option value="">Psychotherapy-notes tier</option><option value="restricted">Restricted (walled off)</option><option value="standard">Standard chart</option></select>
+                <button class="btn btn-primary" onclick="runMhCheck()">Check Encounter</button>
+            </div>
+            <div id="mh-result"></div>
         </div>
 
         <div id="panel-anesthesia" class="panel">
@@ -5646,6 +5684,32 @@ How to answer:
         function scParseList(raw){
             return String(raw || '').split(',').map(function(c){ return c.trim().toUpperCase(); }).filter(Boolean);
         }
+        function runMhCheck(){
+            var el = document.getElementById('mh-result');
+            var codes = scParseList(document.getElementById('mh-codes').value);
+            var enr = document.getElementById('mh-enrolled').value;
+            var ptm = document.getElementById('mh-ptmin').value;
+            var emm = document.getElementById('mh-emmin').value;
+            var res = scValidateMentalHealth({
+                codes: codes,
+                license_type: document.getElementById('mh-license').value,
+                medicare_enrolled: enr === 'yes' ? true : (enr === 'no' ? false : null),
+                psychotherapy_minutes: ptm === '' ? null : Number(ptm),
+                em_minutes: emm === '' ? null : Number(emm),
+                same_encounter_both: document.getElementById('mh-both').checked,
+                telehealth: document.getElementById('mh-tele').checked,
+                pos: document.getElementById('mh-pos').value,
+                family_therapy: document.getElementById('mh-family').checked,
+                anchor_diagnosis: document.getElementById('mh-dx').value,
+                notes_access_tier: document.getElementById('mh-notes').value
+            });
+            el.innerHTML = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;">'
+                + '<div style="font-weight:700;margin-bottom:8px;">'
+                + (res.blocking ? res.blocking + ' issue' + (res.blocking===1?'':'s') + ' to resolve before submitting'
+                                : 'No blocking issues found by the checks that ran')
+                + '</div>' + scRenderRuleFindings(res.findings) + '</div>';
+        }
+
         function runPtCheck(){
             var timed = scParsePairs(document.getElementById('pt-timed').value);
             var el = document.getElementById('pt-result');
@@ -6057,6 +6121,150 @@ How to answer:
                 findings: findings,
                 blocking: findings.filter(function(f){ return f.severity === 'block'; }).length,
                 total_timed_minutes: total, units_supported: allowed
+            };
+        }
+
+        // ================================================================
+        // MENTAL HEALTH / COUNSELING MODULE (2026-08-20, Phase 5 item 14).
+        //
+        // ONE CORRECTION, and TWO FIGURES DELIBERATELY NOT ENCODED:
+        //  * Correction: MFTs/MHCs are paid at 75% of what a CLINICAL
+        //    PSYCHOLOGIST is paid under the PFS -- NOT "75% of the physician
+        //    fee schedule" as briefed. Those are different numbers, and the
+        //    brief's version would materially overstate expected payment.
+        //  * Not encoded: the "~$42/session" POS 10 vs POS 02 swing. The
+        //    DIRECTION is verified (POS 10 pays the non-facility rate, POS 02
+        //    the facility rate) and is enforced; the dollar amount varies by
+        //    code and locality and could not be verified, so no figure is
+        //    asserted.
+        //  * Not encoded: a definition for H0020. The other four H-codes were
+        //    verified; H0020 was not, so it is listed as unverified rather
+        //    than given a guessed description.
+        // ================================================================
+        var SC_MH_SOURCES = {
+            rate_75:    'CMS "Marriage and Family Therapists & Mental Health Counselors" — Medicare Part B pays MFTs and MHCs at 75% of what a CLINICAL PSYCHOLOGIST is paid under the Physician Fee Schedule (not 75% of the physician rate)',
+            em_addon:   'CMS Billing and Coding: Psychiatry and Psychology Services — psychotherapy codes that include an evaluation and management component (90833, 90836, 90838) are payable only to physicians, NPs and CNSs',
+            code_90792: 'CMS — 90792 is a psychiatric diagnostic evaluation WITH MEDICAL SERVICES, furnished by a physician or NPP who can perform the medical assessment; it is not available to a provider who cannot furnish that component',
+            enrollment: 'CMS — effective 1 Jan 2024 MFTs and MHCs may bill Medicare independently, after enrolling and self-designating their specialty via CMS-855I or PECOS. Enrollment must be complete before billing',
+            pos:        'CMS MM12427 / Transmittal R12671CP — POS 10 (telehealth in the patient’s home) is paid at the Physician Fee Schedule NON-FACILITY rate; POS 02 (telehealth other than the home) is paid at the facility rate. The CPT code itself does not change for telehealth',
+            notes_45cfr:'45 CFR §164.501 defines "psychotherapy notes" as notes kept separate from the rest of the medical record; they carry protection beyond ordinary PHI and are excluded from standard chart-release authorizations',
+            hcodes:     'CMS / Medicaid SUD billing — H0001 AOD assessment; H0004 behavioral health counseling and therapy; H0005 AOD group counseling by a clinician; H0015 AOD intensive outpatient'
+        };
+
+        // Codes a non-medical licensed counselor (LPC/LMFT/LMHC) cannot bill,
+        // with the real reason attached rather than a bare denial.
+        var SC_MH_RESTRICTED_CODES = {
+            '90792': { reason: 'requires a medical assessment component', src: 'code_90792' },
+            '90833': { reason: 'E/M-paired add-on, payable only to physicians, NPs and CNSs', src: 'em_addon' },
+            '90836': { reason: 'E/M-paired add-on, payable only to physicians, NPs and CNSs', src: 'em_addon' },
+            '90838': { reason: 'E/M-paired add-on, payable only to physicians, NPs and CNSs', src: 'em_addon' }
+        };
+        var SC_MH_COUNSELOR_LICENSES = { LPC: true, LMFT: true, LMHC: true, MFT: true, MHC: true };
+        var SC_SUD_HCODES = {
+            H0001: 'AOD assessment', H0004: 'Behavioral health counseling and therapy',
+            H0005: 'AOD services, group counseling by a clinician', H0015: 'AOD services, intensive outpatient'
+        };
+        // Listed but deliberately without a description -- not verified here.
+        var SC_SUD_HCODES_UNVERIFIED = { H0020: true };
+
+        function scMhFinding(sev, rule, detail, srcKey){
+            return { severity: sev, rule: rule, detail: detail, source: SC_MH_SOURCES[srcKey] || '' };
+        }
+
+        // input: { codes:[], license_type:'LPC'|'MD'|..., medicare_enrolled:bool|null,
+        //          psychotherapy_minutes:n|null, em_minutes:n|null, same_encounter_both:bool,
+        //          telehealth:bool, pos:'10'|'02'|'', family_therapy:bool,
+        //          anchor_diagnosis:'', notes_access_tier:'standard'|'restricted'|'' }
+        function scValidateMentalHealth(input){
+            input = input || {};
+            var codes = (input.codes || []).map(function(c){ return String(c||'').trim().toUpperCase(); }).filter(Boolean);
+            var findings = [];
+            var lic = String(input.license_type || '').trim().toUpperCase();
+            var isCounselor = !!SC_MH_COUNSELOR_LICENSES[lic];
+
+            // --- License-gated code access ---
+            if (isCounselor) {
+                codes.forEach(function(c){
+                    var r = SC_MH_RESTRICTED_CODES[c];
+                    if (r) {
+                        findings.push(scMhFinding('block', c + ' is not available to a ' + lic,
+                            c + ' ' + r.reason + '. Documentation quality does not change this — it is a licensure limit, not a documentation one.', r.src));
+                    }
+                });
+                // --- Enrollment gate ---
+                if (input.medicare_enrolled === false) {
+                    findings.push(scMhFinding('block', 'Not yet enrolled in Medicare',
+                        lic + 's may bill Medicare independently only after enrollment via CMS-855I or PECOS is complete.', 'enrollment'));
+                } else if (input.medicare_enrolled !== true) {
+                    findings.push(scMhFinding('warn', 'Medicare enrollment status not recorded',
+                        'Billing Medicare requires completed CMS-855I/PECOS enrollment, and that is not recorded here.', 'enrollment'));
+                }
+                findings.push(scMhFinding('info', 'Reimbursement basis for this license',
+                    'Medicare pays ' + lic + 's at 75% of the CLINICAL PSYCHOLOGIST rate under the fee schedule — not 75% of the physician rate.', 'rate_75'));
+            }
+
+            // --- Psychotherapy vs E/M time must never double-count ---
+            var pt = Number(input.psychotherapy_minutes);
+            var em = Number(input.em_minutes);
+            if (input.same_encounter_both === true) {
+                if (!isFinite(pt) || !isFinite(em) || input.psychotherapy_minutes === null || input.em_minutes === null) {
+                    findings.push(scMhFinding('block', 'Split time not documented',
+                        'When a prescriber bills psychotherapy and E/M for one encounter, the minutes for each must be recorded separately.', 'em_addon'));
+                } else if (pt <= 0 || em <= 0) {
+                    findings.push(scMhFinding('block', 'One component has no time recorded',
+                        'Psychotherapy ' + pt + ' min, E/M ' + em + ' min. Both must be real, separately counted time.', 'em_addon'));
+                }
+            }
+
+            // --- Telehealth POS ---
+            if (input.telehealth === true) {
+                var pos = String(input.pos || '').trim();
+                if (!pos) {
+                    findings.push(scMhFinding('block', 'Telehealth place of service not recorded',
+                        'The CPT code does not change for telehealth, but POS does and it changes the payment rate.', 'pos'));
+                } else if (pos !== '10' && pos !== '02') {
+                    findings.push(scMhFinding('warn', 'Unexpected telehealth POS',
+                        'POS ' + pos + ' recorded. Telehealth is normally POS 10 (patient’s home) or POS 02 (other than the home).', 'pos'));
+                } else {
+                    findings.push(scMhFinding('info', 'Telehealth POS ' + pos + ' rate basis',
+                        pos === '10'
+                            ? 'POS 10 (patient’s home) is paid at the NON-FACILITY rate.'
+                            : 'POS 02 (other than the home) is paid at the FACILITY rate, which is lower than POS 10.', 'pos'));
+                }
+            }
+
+            // --- Family therapy must anchor on the PATIENT'S own diagnosis ---
+            if (input.family_therapy === true) {
+                var dx = String(input.anchor_diagnosis || '').trim();
+                if (!dx) {
+                    findings.push(scMhFinding('block', 'Family therapy has no anchoring diagnosis',
+                        'Medical necessity must rest on the identified patient’s own diagnosis. Without one, payers reclassify this as excluded marriage or relationship counseling.', 'notes_45cfr'));
+                } else if (/^Z6[0-9]/i.test(dx) || /^Z63/i.test(dx)) {
+                    // Z63.x is the relational-problem family; a real, checkable
+                    // pattern rather than a judgement about the clinical content.
+                    findings.push(scMhFinding('block', 'Anchor diagnosis is a relationship code',
+                        dx + ' is a relational/psychosocial-circumstance code, not the patient’s own clinical diagnosis. Payers treat this as excluded relationship counseling.', 'notes_45cfr'));
+                }
+            }
+
+            // --- Psychotherapy notes access tier ---
+            if (codes.some(function(c){ return /^908/.test(c); }) && input.notes_access_tier === 'standard') {
+                findings.push(scMhFinding('block', 'Psychotherapy notes on the standard access tier',
+                    'Psychotherapy notes must be kept separate from the rest of the record and walled off from standard chart-release, not merely tagged private.', 'notes_45cfr'));
+            }
+
+            // --- SUD H-codes ---
+            codes.forEach(function(c){
+                if (SC_SUD_HCODES_UNVERIFIED[c]) {
+                    findings.push(scMhFinding('warn', c + ' was not verified by this tool',
+                        c + ' is in the SUD H-code family but its definition was not independently verified here. Confirm it against your own source before billing.', 'hcodes'));
+                }
+            });
+
+            return {
+                findings: findings,
+                blocking: findings.filter(function(f){ return f.severity === 'block'; }).length,
+                license: lic, is_counselor: isCounselor
             };
         }
 
