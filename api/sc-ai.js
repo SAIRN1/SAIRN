@@ -76,7 +76,17 @@ const KNOWN_FEATURES = {
   // Added 2026-08-20 -- specialty spot-check harness. The AI's answer is
   // never itself the coverage verdict; a real coder records their own
   // pass/fail after reading it -- see sairncode.html's runSpecialtyCheck().
-  specialty_check: true
+  specialty_check: true,
+  // Added 2026-08-20, Phase 3 item 6 -- appeal letter drafting. DRAFT AND
+  // HOLD: the output is a working draft a human must review and send
+  // themselves. Note this app has no send path of any kind (no SMTP, no
+  // clearinghouse submit, no fax integration -- verified by grep across
+  // sairncode.html before building), so "never auto-sends" is a property of
+  // the application, not a guard this feature added. The real protection
+  // that IS added here is that the draft is grounded strictly in the
+  // practice's own recorded denial record and is explicitly forbidden from
+  // inventing clinical facts -- see sairncode.html's draftAppealLetter().
+  appeal_draft: true
 };
 
 // HIGH confidence: phrases that essentially never appear in a real clinical

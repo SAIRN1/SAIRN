@@ -854,6 +854,14 @@
                 <input type="date" id="clm-add-date" class="search-input">
                 <button class="btn btn-primary" onclick="addClaimEntry()">Add Claim</button>
             </div>
+
+            <!-- Pre-submission risk check (Phase 3 item 5). Deliberately NOT
+                 a denial-probability score: checked live before building and
+                 this practice has zero logged denial events, so there is no
+                 base rate to calibrate any percentage against. What this
+                 shows instead is real counts and real conflicts drawn from
+                 the practice's own records. See scPreSubmissionRisk(). -->
+            <div id="claim-risk-result" style="margin-top:14px;"></div>
         </div>
 
         <!-- Prebill Panel -->
@@ -1155,6 +1163,24 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <button class="btn btn-primary" onclick="addDenialEventEntry()">Log Denial</button>
             </div>
             <div id="denial-pattern-zone" style="margin-top:14px"></div>
+
+            <!-- Appeal drafting (Phase 3 item 6). Draft-and-hold. Note this
+                 app has no send capability of any kind, so the draft simply
+                 cannot go anywhere on its own -- that is a property of the
+                 application, not a guard this feature added, and the copy
+                 below says so rather than implying a safeguard that isn't
+                 doing any work. What this DOES enforce is grounding: the
+                 draft is built only from the recorded denial row, and the
+                 prompt requires [BRACKETED] placeholders instead of invented
+                 chart facts or made-up policy citations. -->
+            <div style="font-weight:700;font-size:15px;margin:24px 0 6px;">Appeal Draft</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                Use <b>Draft Appeal</b> on any logged denial above. The draft is built only from what that
+                denial record actually contains — anything it doesn't know comes back as a
+                <b>[BRACKETED]</b> placeholder for you to fill in, never a guess. Review every line before
+                using it; SAIRNcode cannot send anything itself.
+            </div>
+            <div id="appeal-draft-result"></div>
         </div>
 
         <!-- Telehealth Panel -->
@@ -2430,7 +2456,7 @@ How to answer:
                 tbody.innerHTML = list.length ? '' : '<tr><td colspan="7" style="text-align:center;color:#666;padding:16px">No denial events logged yet.</td></tr>';
                 list.forEach(function(e){
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.reason)+'</td><td>'+escHtml(e.specialty||'—')+'</td><td>$'+(e.amount||0).toLocaleString()+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDenialEventEntry(\''+e.id+'\')">×</button></td>';
+                    tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.reason)+'</td><td>'+escHtml(e.specialty||'—')+'</td><td>$'+(e.amount||0).toLocaleString()+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="draftAppealLetter(\''+e.id+'\')">Draft Appeal</button> <button class="btn" style="padding:2px 8px;" onclick="removeDenialEventEntry(\''+e.id+'\')">×</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -4482,7 +4508,7 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(c){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(c.claimId)+'</td><td>'+escHtml(c.patient)+'</td><td>'+escHtml(c.payer)+'</td><td>$'+c.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td><span class="status-badge '+claimStatusBadgeClass(c.status)+'">'+escHtml(c.status)+'</span></td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeClaimEntry(\''+c.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(c.claimId)+'</td><td>'+escHtml(c.patient)+'</td><td>'+escHtml(c.payer)+'</td><td>$'+c.amount.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})+'</td><td><span class="status-badge '+claimStatusBadgeClass(c.status)+'">'+escHtml(c.status)+'</span></td><td>'+escHtml(c.date)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="scRunClaimRiskCheck(\''+c.id+'\')">Risk Check</button> <button class="btn" style="padding:2px 8px;" onclick="removeClaimEntry(\''+c.id+'\')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var clean = list.filter(function(c){return c.status==='Clean';}).length;
@@ -5078,6 +5104,252 @@ How to answer:
                     + '<td>'+actions+'</td>';
                 tbody.appendChild(tr);
             });
+        }
+
+        // ================================================================
+        // PRE-SUBMISSION RISK CHECK (2026-08-20, Phase 3 item 5).
+        //
+        // WHAT THIS DELIBERATELY IS NOT: a denial-probability score. The
+        // request asked for "denial-probability scoring per claim," and the
+        // honest answer after checking the real data is that no such number
+        // can be computed here. Checked live against production with a real
+        // admin session before writing any of this: sc_denial_events had 0
+        // rows, sc_denial 0, sc_ar 0, sc_prebill 0, and sc_claims held
+        // exactly 1 row which is the known CLM-MIGRATION-TEST residue, not
+        // real data. There is no labelled outcome set, no base rate, and
+        // nothing to calibrate a predicted probability against.
+        //
+        // THE DISTINCTION THIS CODE IS BUILT ON, because it is the whole
+        // reason this was safe to ship at all:
+        //   "34% chance this claim is denied"  -> a PREDICTION. Requires a
+        //      calibrated model. We have none. Never produced here.
+        //   "this payer denied this exact code 3 of your 12 logged denials"
+        //      -> a COUNT of events the practice itself recorded. Real,
+        //      checkable, and genuinely useful. This is what gets produced.
+        // Everything below is counting, never predicting. If you are here to
+        // add a percentage, the data to justify one still has to exist first.
+        //
+        // Complements sc_denial_events rather than replacing it: this reads
+        // that log, and gets more useful precisely as real denials are
+        // logged into it.
+        // ================================================================
+        function scPreSubmissionRisk(claim){
+            var factors = [];
+            var codes = (claim && claim.codes) || [];
+            var payer = String((claim && claim.payer) || '').trim();
+
+            // (1) Unresolved coded items on this encounter. Real state from
+            // the Phase 1/2 review queue -- submitting a claim whose codes a
+            // coder has not signed off on is a concrete, checkable risk.
+            var enc = String((claim && claim.encounter_ref) || '').trim();
+            if (enc) {
+                var pending = getCodedItems().filter(function(it){
+                    return String(it.encounter_ref || '') === enc && it.review_status === 'needs_human_review';
+                });
+                if (pending.length) {
+                    factors.push({
+                        kind: 'unreviewed_codes',
+                        detail: pending.length + ' code' + (pending.length === 1 ? '' : 's') + ' on this encounter '
+                              + (pending.length === 1 ? 'is' : 'are') + ' still waiting on human review.'
+                    });
+                }
+            }
+
+            // (2) Conflict among this claim's own codes, per a rule THIS
+            // PRACTICE verified. Same sc_scrubrules source as Phase 2 -- a
+            // Source-required, never-seeded table. Silent when it is empty,
+            // so an empty reference cannot manufacture a risk factor.
+            if (typeof findLocalScrubMatch === 'function') {
+                for (var i = 0; i < codes.length; i++) {
+                    for (var j = i + 1; j < codes.length; j++) {
+                        var hit = null;
+                        try { hit = findLocalScrubMatch(codes[i], codes[j]); } catch (e) { hit = null; }
+                        if (hit) {
+                            factors.push({
+                                kind: 'verified_rule_conflict',
+                                detail: (hit.type || 'Rule') + ': ' + codes[i] + ' + ' + codes[j]
+                                      + (hit.note && hit.note !== '—' ? ' — ' + hit.note : '')
+                                      + ' (source: ' + (hit.source || 'practice-entered') + ')'
+                            });
+                        }
+                    }
+                }
+            }
+
+            // (3) Real prior-denial history. COUNTS ONLY. Gated on the same
+            // DENIAL_PATTERN_MIN_EVENTS the existing pattern breakdown
+            // already uses -- reusing this file's own accepted threshold
+            // rather than inventing a second, different one.
+            var events = (typeof getDenialEventEntries === 'function') ? getDenialEventEntries() : [];
+            var history;
+            if (events.length < DENIAL_PATTERN_MIN_EVENTS) {
+                history = {
+                    sufficient: false,
+                    logged_events: events.length,
+                    needed: DENIAL_PATTERN_MIN_EVENTS,
+                    note: 'Not enough logged denial history for a real rate (have ' + events.length
+                        + ', need ' + DENIAL_PATTERN_MIN_EVENTS + '+). No risk rate is shown rather than a guessed one.'
+                };
+            } else {
+                var matches = events.filter(function(e){
+                    var codeHit = codes.some(function(c){
+                        return String(e.code || '').trim().toUpperCase() === String(c || '').trim().toUpperCase();
+                    });
+                    var payerHit = payer && String(e.payer || '').trim().toUpperCase() === payer.toUpperCase();
+                    return codeHit && (payer ? payerHit : true);
+                });
+                history = {
+                    sufficient: true,
+                    logged_events: events.length,
+                    matching_denials: matches.length,
+                    // Plain observed count, phrased so it cannot be mistaken
+                    // for a predicted probability for THIS claim.
+                    note: matches.length
+                        ? matches.length + ' of your ' + events.length + ' logged denials involved '
+                          + (payer ? 'this payer and ' : '') + 'a code on this claim.'
+                        : 'None of your ' + events.length + ' logged denials involved '
+                          + (payer ? 'this payer and ' : '') + 'a code on this claim.',
+                    reasons: matches.map(function(m){ return m.reason || '—'; })
+                };
+                if (matches.length) {
+                    factors.push({
+                        kind: 'prior_denials',
+                        detail: history.note
+                    });
+                }
+            }
+
+            return { factors: factors, history: history };
+        }
+
+        // Runs the check for a real claim row. The claim record itself has no
+        // codes field, and rather than change its schema this uses the
+        // linkage that already exists: a coded item's "Claim / encounter
+        // reference" is exactly this claim's id when a coder typed it there.
+        // If nothing is linked, that is reported plainly -- the check must
+        // never look like it examined codes it never had.
+        function scRunClaimRiskCheck(claimRowId){
+            var claim = null, all = getClaimEntries();
+            for (var i = 0; i < all.length; i++) { if (all[i].id === claimRowId) { claim = all[i]; break; } }
+            var el = document.getElementById('claim-risk-result');
+            if (!claim || !el) return;
+
+            var linked = getCodedItems().filter(function(it){
+                return String(it.encounter_ref || '').trim() === String(claim.claimId || '').trim()
+                    && String(claim.claimId || '').trim() !== '';
+            });
+            var codes = linked.map(function(it){ return it.code; }).filter(Boolean);
+            var risk = scPreSubmissionRisk({ encounter_ref: claim.claimId, codes: codes, payer: claim.payer });
+
+            var html = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;">'
+                     + '<div style="font-weight:700;margin-bottom:6px;">Pre-submission check — ' + escHtml(claim.claimId || '(no claim id)') + '</div>';
+
+            html += codes.length
+                ? '<div style="font-size:12px;color:#666;margin-bottom:8px;">Checked ' + codes.length + ' linked code'
+                  + (codes.length === 1 ? '' : 's') + ': ' + escHtml(codes.join(', ')) + '</div>'
+                : '<div style="font-size:12px;color:#92400e;margin-bottom:8px;">No coded items are linked to this claim id, so no code-level checks could run. Capture codes with this claim id in their encounter reference to enable them.</div>';
+
+            if (risk.factors.length) {
+                html += '<div style="font-weight:600;margin-bottom:4px;">Risk factors found:</div>';
+                risk.factors.forEach(function(f){
+                    html += '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:8px 12px;margin-bottom:6px;color:#92400e;">'
+                          + escHtml(f.detail) + '</div>';
+                });
+            } else {
+                html += '<div style="color:#166534;margin-bottom:6px;">No risk factors found by the checks that could run.</div>';
+            }
+
+            // The honest-empty path. When there is not enough real denial
+            // history, this says so and shows NO rate -- rather than a
+            // softened or approximated number.
+            html += risk.history.sufficient
+                ? '<div style="font-size:12px;color:#374151;border-top:1px solid #ddd;margin-top:8px;padding-top:8px;">'
+                  + escHtml(risk.history.note) + '</div>'
+                : '<div style="font-size:12px;color:#666;border-top:1px solid #ddd;margin-top:8px;padding-top:8px;">'
+                  + escHtml(risk.history.note) + '</div>';
+
+            html += '<div style="font-size:11px;color:#666;margin-top:8px;">These are counts of things this practice actually recorded. SAIRNcode does not predict a denial probability for this claim — no such number is computed anywhere.</div>';
+            html += '</div>';
+            el.innerHTML = html;
+        }
+
+        // ================================================================
+        // APPEAL LETTER DRAFTING (2026-08-20, Phase 3 item 6).
+        // DRAFT AND HOLD. Two things are true and both are stated plainly
+        // rather than blurred:
+        //   1. This app has NO send path of any kind -- no SMTP, no
+        //      clearinghouse submit, no fax. Verified by grep before
+        //      building. So "never auto-sends" is a property of the
+        //      application, not a safeguard this feature invented, and it is
+        //      not claimed as one.
+        //   2. The real protection this DOES add is grounding: the draft is
+        //      built strictly from the practice's own recorded denial row,
+        //      and the prompt forbids inventing clinical facts, dates,
+        //      chart contents, or regulatory citations. An appeal letter is
+        //      exactly the kind of document where a fabricated "the chart
+        //      documents..." sentence would be materially harmful, so the
+        //      model is told to leave explicit [BRACKETED] gaps for the
+        //      human instead of filling them.
+        // ================================================================
+        var _scAppealDraft = null;
+        async function draftAppealLetter(eventId){
+            var events = getDenialEventEntries();
+            var ev = null;
+            for (var i = 0; i < events.length; i++) { if (events[i].id === eventId) { ev = events[i]; break; } }
+            if (!ev) { showToast('Denial record not found'); return; }
+            var resultEl = document.getElementById('appeal-draft-result');
+            if (resultEl) resultEl.innerHTML = '<div style="font-size:12px;color:#666">Drafting…</div>';
+
+            var sys = SAIRNCODE_SYSTEM_PROMPT + '\n\nYou are drafting an APPEAL LETTER for a denied claim. Hard rules:\n'
+                + '1. Use ONLY the denial facts given below. Do not invent chart contents, clinical findings, dates of service, provider names, or patient details that are not supplied.\n'
+                + '2. Wherever the letter needs a fact you were not given, insert an explicit placeholder in square brackets, e.g. [DATE OF SERVICE], [SUMMARIZE THE RELEVANT CHART DOCUMENTATION]. Never guess a value into one of these.\n'
+                + '3. Do not cite specific regulations, payer policy numbers, or CPT/ICD guideline sections unless that exact citation was supplied to you. If a citation would strengthen the letter, write [CITE THE APPLICABLE POLICY] instead of inventing one.\n'
+                + '4. Do not assert that documentation supports medical necessity. You have not seen the chart. Frame it as what the submitter should attach and point to.\n'
+                + '5. Output the letter body only, as plain text.';
+
+            var facts = 'Denial record (the only facts you have):\n'
+                + '- Code: ' + (ev.code || '(not recorded)') + '\n'
+                + '- Payer: ' + (ev.payer || '(not recorded)') + '\n'
+                + '- Denial reason as recorded: ' + (ev.reason || '(not recorded)') + '\n'
+                + '- Denied amount: ' + (ev.amount || '(not recorded)') + '\n'
+                + '- Date: ' + (ev.date || '(not recorded)') + '\n'
+                + (ev.specialty ? '- Specialty: ' + ev.specialty + '\n' : '');
+
+            try {
+                var response = await scAiFetch({
+                    messages: [{ role: 'user', content: facts }],
+                    system: sys
+                }, 'appeal_draft');
+                if (!response.ok) {
+                    var errText = await scAiErrorText(response);
+                    if (resultEl) resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">' + escHtml(errText || 'Could not reach the AI service.') + '</div>';
+                    return;
+                }
+                var data = await response.json();
+                var text = (data && data.content && data.content[0] && data.content[0].text) || '';
+                if (!text.trim()) {
+                    if (resultEl) resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">No draft text was returned.</div>';
+                    return;
+                }
+                _scAppealDraft = { event_id: eventId, text: text };
+                if (resultEl) {
+                    resultEl.innerHTML =
+                        '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:8px;">'
+                        + '<b>DRAFT — not reviewed, not sent.</b> This app cannot send anything. Read every line, replace every [BRACKETED] placeholder with real chart facts, and confirm the clinical claims yourself before this goes anywhere.'
+                        + '</div>'
+                        + '<textarea id="appeal-draft-text" rows="16" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;">' + escHtml(text) + '</textarea>'
+                        + '<div class="toolbar" style="margin-top:8px;"><button class="btn" onclick="copyAppealDraft()">Copy draft</button></div>';
+                }
+            } catch (e) {
+                if (resultEl) resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Connection error — could not draft this appeal.</div>';
+            }
+        }
+        function copyAppealDraft(){
+            var el = document.getElementById('appeal-draft-text');
+            if (!el) return;
+            el.select();
+            try { document.execCommand('copy'); showToast('Draft copied — review it before using'); }
+            catch (e) { showToast('Select the text and copy manually'); }
         }
 
         // ================================================================
