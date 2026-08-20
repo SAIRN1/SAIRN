@@ -4,6 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SAIRN Code - Medical Billing Intelligence</title>
+
+    <!-- Content Security Policy (2026-08-20, firewall audit layer 10).
+         Scoped against a real inventory of what this file actually uses:
+         exactly two external hosts (the SAIRN API and this project's
+         Supabase), one inline style block, one inline script block, 155
+         inline style attributes, zero external scripts, zero web fonts,
+         zero data: URIs.
+         (Deliberately worded without literal angle-bracket tag names: a
+         script tag name written inside a comment is picked up by naive
+         regex-based script extractors, which is the exact Check 0a hazard
+         CLAUDE.md warns about — caught here by that check failing.)
+
+         WHAT THIS HONESTLY DOES AND DOES NOT DO -- stated plainly, because
+         claiming more would be the same manufactured coverage the audit
+         rejected elsewhere:
+           DOES: block loading any external script, restrict outbound
+           connections to the two known hosts (so an injected exfiltration
+           call to an attacker's domain fails), block <object>/<embed>, block
+           <base> hijacking, and block form posts to any origin.
+           DOES NOT: stop inline-script XSS. This app is a single file with
+           its logic in an inline script block, so 'unsafe-inline' is needed for
+           script-src and that is precisely the directive that would otherwise
+           stop injected inline script. The real control against XSS here is
+           escHtml() on every rendered value (audit layers 11/18, verified
+           clean across all innerHTML writes) -- this CSP is defence in depth
+           behind that, not a replacement for it.
+
+         frame-ancestors is deliberately omitted: browsers IGNORE it in a
+         meta tag (it is header-only), so including it would look like
+         clickjacking protection while doing nothing. Real frame-busting is
+         implemented in script below instead.
+
+         A real HTTP-header CSP would be stronger than this meta tag. It is
+         not done here because vercel.json uses the legacy `routes` property,
+         and Vercel rejects a config where `headers` and `routes` are both
+         present -- adding headers would need a routes->rewrites migration
+         affecting all 14 app routes, which is a separate platform-wide
+         change, not part of a SAIRNcode security pass. Flagged, not bundled. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://sairn.vercel.app https://ejrlrrkvhtllxbbypdjb.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+
+    <!-- Clickjacking / frame-busting (2026-08-20, firewall audit layer 12).
+         Real JS because the meta-tag route above cannot do this. Runs before
+         any content renders. A PHI app framed inside an attacker's page is a
+         genuine risk (UI redress over a delete or a submit control), which is
+         why this one is worth building where the audit rejected other
+         browser-side controls as theatre: this defends against a THIRD PARTY
+         framing us, not against the user who already controls this page. -->
+    <script>
+        (function () {
+            if (window.top === window.self) return;
+            try {
+                // Same-origin or permissive parent: break out cleanly.
+                window.top.location = window.self.location;
+            } catch (e) {
+                // Cross-origin parent blocks the navigation. Refuse to render
+                // rather than display a framable, clickjackable UI.
+                document.documentElement.innerHTML =
+                    '<body style="font-family:sans-serif;padding:40px;color:#991b1b">' +
+                    'SAIRNcode cannot be displayed inside another site. ' +
+                    'Open it directly at sairn.vercel.app/sairncode.</body>';
+            }
+        })();
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -607,6 +670,7 @@
                 <button class="nav-btn" onclick="showPanel('fraud')" data-tip="Flag claims with potential fraud or billing irregularities">Fraud Detection</button>
                 <button class="nav-btn" onclick="showPanel('auth')" data-tip="Track prior authorization requests and approvals">Authorizations</button>
                 <button class="nav-btn" onclick="showPanel('eligibility')" data-tip="Real-time patient coverage verification (270/271) through your own clearinghouse account">Eligibility</button>
+                <button class="nav-btn" onclick="showPanel('privacy')" data-tip="Where your data goes, what the AI receives, and what is recorded">Privacy &amp; Data</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1155,6 +1219,48 @@
             </div>
         </div>
 
+        <!-- Privacy & Data Handling panel (2026-08-20, firewall audit layers
+             27 + 28). SAIRNcode routes real clinical notes (PHI) to a
+             third-party LLM and had no in-app disclosure of that anywhere.
+             This states what actually happens, in the app, where the person
+             sending the data can read it before sending it -- not in a
+             separate document nobody opens.
+             Every claim here is one this codebase can actually back up. -->
+        <div id="panel-privacy" class="panel">
+            <h1 class="panel-title">Privacy &amp; Data Handling</h1>
+            <div class="toolbar">
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+
+            <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:16px 20px;font-size:13px;line-height:1.65;max-width:900px">
+                <div style="font-weight:700;font-size:15px;margin-bottom:8px;">Where your data goes</div>
+                <p style="margin-bottom:10px;">Entries you create in SAIRNcode (claims, denials, authorizations, eligibility history and the rest) are stored two places: in this browser, and — once you are signed in — on SAIRN's server, scoped to your practice's license so other practices cannot read them.</p>
+
+                <div style="font-weight:700;font-size:15px;margin:14px 0 8px;">AI features and clinical notes</div>
+                <p style="margin-bottom:10px;">When you use an AI feature — the assistant, <b>Suggest Codes From a Note</b>, the rule-based scrub, or the 2026 code lookup — the text you submit is sent to <b>Anthropic</b>, which operates the Claude model, and is processed on their systems to produce the response. If you paste a clinical note, that note's contents go with it.</p>
+                <p style="margin-bottom:10px;"><b>Only send what the task needs.</b> A note stripped of the patient's name and identifiers usually produces the same coding answer as one that includes them.</p>
+                <p style="margin-bottom:10px;">The rule-based scrub and the 2026 code lookup additionally perform a live <b>web search</b> to ground their answers in current CMS/AMA guidance. The codes and terms you enter form the search query.</p>
+
+                <div style="font-weight:700;font-size:15px;margin:14px 0 8px;">What is recorded about AI use</div>
+                <p style="margin-bottom:10px;">Every AI request is recorded in an audit log: who made it, which feature, when, how much text was submitted, and whether it succeeded. <b>The note text, the prompt, and the AI's response are deliberately not stored in that log</b> — recording them would create a larger, permanent copy of the very data the log exists to make accountable.</p>
+
+                <div style="font-weight:700;font-size:15px;margin:14px 0 8px;">Third parties involved</div>
+                <ul style="margin:0 0 10px 20px;">
+                    <li><b>Anthropic</b> — processes AI requests, including any note text you submit.</li>
+                    <li><b>Vercel</b> — hosts this application and its API.</li>
+                    <li><b>Supabase</b> — stores your practice's saved records.</li>
+                    <li><b>Stedi</b> — only if your practice configures eligibility checks. Those requests go through <b>your own</b> Stedi account, not a SAIRN-owned one, so that relationship stays between your practice and Stedi.</li>
+                </ul>
+
+                <div style="font-weight:700;font-size:15px;margin:14px 0 8px;">Your control over this data</div>
+                <p style="margin-bottom:10px;">Every record has a delete control, and deletion is enforced server-side (a Compliance Admin session is required). Signing out clears your session from this device.</p>
+                <p style="margin-bottom:10px;"><b>Stated honestly:</b> there is no one-click "delete everything for this practice" function yet, and no automatic retention or expiry — records persist until deleted. Both are known gaps, not implied capabilities.</p>
+
+                <div style="font-weight:700;font-size:15px;margin:14px 0 8px;">Not legal advice</div>
+                <p style="margin-bottom:0;">This page describes how the software behaves. It is not a HIPAA compliance opinion and does not replace your practice's own agreements with SAIRN or with any third party named above.</p>
+            </div>
+        </div>
+
         <!-- Fraud Detection Panel -->
         <div id="panel-fraud" class="panel">
             <h1 class="panel-title">AI Fraud Detection Engine</h1>
@@ -1577,9 +1683,12 @@
             // perspective (UI is already usable against local cache), but
             // re-renders every panel once real data lands.
             scSyncAllResources();
+            // Arm the idle auto-lock only once a real session exists.
+            if (typeof scIdleArm === 'function') scIdleArm();
         }
 
         function doLogout() {
+            if (typeof scIdleDisarm === 'function') scIdleDisarm();
             localStorage.removeItem('sc_role');
             localStorage.removeItem('sc_session_token');
             localStorage.removeItem('sc_employee_id');
@@ -1590,6 +1699,61 @@
             document.getElementById('app').classList.remove('on');
             document.getElementById('pin').classList.add('on');
         }
+
+        // ================================================================
+        // IDLE AUTO-LOCK (2026-08-20). The 2026-08-20 firewall audit found
+        // the server-side session control (12h HMAC-signed token, plus PIN
+        // re-entry forced on every page load) is genuinely stronger than the
+        // original spec's layer 14 -- but it leaves one real residual gap:
+        // an unattended workstation. A coder who walks away from a logged-in
+        // machine in a shared clinic leaves real PHI on screen, and the 12h
+        // token happily keeps it there all day.
+        //
+        // This closes that specific gap and nothing more. It is a LOCAL LOCK,
+        // not a security boundary against the person at the keyboard -- the
+        // real boundary is the server-side session check on every privileged
+        // call, which is unchanged. Someone with devtools could clear the
+        // timer; that is fine and expected, because the threat here is an
+        // unattended screen, not an adversarial user.
+        //
+        // Locking clears the session token, so resuming requires a real PIN
+        // re-entry that is re-verified server-side -- it is not a cosmetic
+        // screen overlay hiding still-live state.
+        // ================================================================
+        var SC_IDLE_LIMIT_MS = 15 * 60 * 1000; // 15 minutes
+        var _scIdleTimer = null;
+        var _scIdleArmed = false;
+
+        function scIdleLock() {
+            if (!_scIdleArmed) return;
+            scIdleDisarm();
+            doLogout();
+            showToast('Locked after 15 minutes of inactivity — sign in again to continue');
+        }
+        function scIdleReset() {
+            if (!_scIdleArmed) return;
+            if (_scIdleTimer) clearTimeout(_scIdleTimer);
+            _scIdleTimer = setTimeout(scIdleLock, SC_IDLE_LIMIT_MS);
+        }
+        function scIdleArm() {
+            _scIdleArmed = true;
+            scIdleReset();
+        }
+        function scIdleDisarm() {
+            _scIdleArmed = false;
+            if (_scIdleTimer) { clearTimeout(_scIdleTimer); _scIdleTimer = null; }
+        }
+        // Listeners attach once and stay attached; the _scIdleArmed flag is
+        // what gates them, so a signed-out page does no timer work at all.
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function (evt) {
+            window.addEventListener(evt, scIdleReset, { passive: true });
+        });
+        // A tab restored from background may have been idle far longer than
+        // any timer that was throttled while hidden -- re-check on return
+        // rather than trusting the timer alone.
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) scIdleReset();
+        });
 
         // ── OFF-CANVAS NAV (mobile) — same drawer mechanics already proven in
         // StoneDesk/SAIRNbiz/SAIRNbuild, adapted to #navbar's horizontal-
@@ -2277,18 +2441,16 @@ How to answer:
             resultEl.innerHTML = '<div style="font-size:12px;color:#666">No local rule for this pair -- checking live web search for current CMS/AMA guidance...</div>';
             try {
                 var sys = 'You are checking exactly one thing: whether CPT/HCPCS/ICD-10 codes "' + code1 + '"' + (code2 ? (' and "' + code2 + '"') : '') + ' have a known NCCI/CCI procedure-to-procedure edit conflict, an ICD-10-CM Excludes1/Excludes2 diagnosis-pairing conflict, or a specific required modifier, according to current CMS/AMA guidance. Use web search to check this -- do not answer from memory alone, your training data may be stale for code-edit specifics. If search surfaces a specific, real, citable conflict or modifier requirement, state it plainly with its source. If search does not surface anything specific and current for this exact pair, say so explicitly ("No specific NCCI/Excludes/modifier conflict found via web search for this code pair") -- never state a plausible-sounding conflict you cannot trace to an actual search result. Keep the answer under 100 words, no preamble.';
-                var response = await fetch(APP_CONFIG.proxy, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [{ role: 'user', content: 'Check code' + (code2 ? 's' : '') + ': ' + code1 + (code2 ? (' + ' + code2) : '') }],
-                        system: sys,
-                        app_id: APP_CONFIG.app_id,
-                        is_demo: APP_CONFIG.is_demo,
-                        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }]
-                    })
-                });
-                if (!response.ok) { resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Error: could not reach the AI/search service.</div>'; return; }
+                var response = await scAiFetch({
+                    messages: [{ role: 'user', content: 'Check code' + (code2 ? 's' : '') + ': ' + code1 + (code2 ? (' + ' + code2) : '') }],
+                    system: sys,
+                    tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }]
+                }, 'claim_scrub');
+                if (!response.ok) {
+                    var scrubErr = await scAiErrorText(response);
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">' + escHtml(scrubErr || 'Error: could not reach the AI/search service.') + '</div>';
+                    return;
+                }
                 var data = await response.json();
                 var blocks = (data && data.content) || [];
                 var textBlocks = blocks.filter(function(b){ return b.type === 'text'; });
@@ -2821,6 +2983,93 @@ How to answer:
         // Same anti-fabrication contract as the scrub tool (item 1) and the
         // note-citation tool (item 2).
         // ================================================================
+
+        // ================================================================
+        // AUTHENTICATED AI TRANSPORT (2026-08-20, firewall audit layers 30
+        // and 20). Every AI call in this app goes through api/sc-ai.js
+        // instead of the shared api/claude.js proxy directly.
+        //
+        // Why: api/claude.js only ever receives an app_id -- it never sees a
+        // license or an employee session, so it structurally cannot record
+        // WHO made a call. This app sends real clinical notes (PHI) to an
+        // LLM, so "we have no record of that" was the single clearest gap
+        // the audit found. api/sc-ai.js authenticates, screens the submitted
+        // text for prompt injection, calls Anthropic in-process, and writes
+        // an audit row -- the same pattern already proven by SAIRNlaw's
+        // ai_generate action.
+        //
+        // Response shape is unchanged (the real Anthropic envelope), so every
+        // existing caller's data.content[0].text parsing still works. Two
+        // fields are added: `audited` (false = the call happened but the log
+        // write failed, surfaced honestly rather than implying a record
+        // exists) and `injection_flagged`.
+        // ================================================================
+        // ── First-use AI consent (firewall audit layer 27) ──
+        // Shown once per employee per device, before the first AI request
+        // that employee makes. Deliberately a real blocking confirm on the
+        // action itself rather than a banner: the thing being consented to is
+        // "text I submit, possibly including a clinical note, goes to a third
+        // party", and that decision belongs at the moment of sending, not on
+        // a dashboard the user scrolled past on day one.
+        // Declining simply cancels the request -- no AI call is made.
+        function scAiConsentKey() {
+            var who = '';
+            try { who = localStorage.getItem('sc_employee_id') || ''; } catch (e) {}
+            return 'sc_ai_consent_' + who;
+        }
+        function scHasAiConsent() {
+            try { return localStorage.getItem(scAiConsentKey()) === 'yes'; } catch (e) { return false; }
+        }
+        function scEnsureAiConsent() {
+            if (scHasAiConsent()) return true;
+            var ok = window.confirm(
+                'AI features send the text you submit to Anthropic, the third party that operates the Claude model.\n\n' +
+                'If you paste a clinical note, its contents are sent with it. Only include what the task actually needs — ' +
+                'a note without patient identifiers usually produces the same coding answer.\n\n' +
+                'Your use of AI is recorded in an audit log (who, which feature, when). The note text itself is NOT stored in that log.\n\n' +
+                'Full detail is in the Privacy & Data panel.\n\n' +
+                'Continue?'
+            );
+            if (ok) { try { localStorage.setItem(scAiConsentKey(), 'yes'); } catch (e) {} }
+            return ok;
+        }
+
+        var SC_AI_ENDPOINT = 'https://sairn.vercel.app/api/sc-ai';
+        async function scAiFetch(payload, feature) {
+            // Consent gate sits here, in the single transport every AI call
+            // goes through, so no feature can bypass it by accident and any
+            // future AI feature inherits it automatically.
+            if (!scEnsureAiConsent()) {
+                return new Response(
+                    JSON.stringify({ error: { code: 'CONSENT_DECLINED', message: 'AI request cancelled — nothing was sent.' } }),
+                    { status: 403, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+            var lic = null, sessionToken = null;
+            try { lic = localStorage.getItem('sc_license_key'); } catch (e) {}
+            try { sessionToken = localStorage.getItem('sc_session_token'); } catch (e) {}
+            var headers = { 'Content-Type': 'application/json' };
+            if (lic) headers['Authorization'] = 'Bearer ' + lic;
+            if (sessionToken) headers['X-SD-Auth'] = sessionToken;
+            return fetch(SC_AI_ENDPOINT, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(Object.assign({}, payload, { feature: feature }))
+            });
+        }
+        // Shared honest-failure reader. The injection block and the rate limit
+        // are real, expected outcomes with real explanations -- surfacing them
+        // as a generic "something went wrong" would hide the one thing the
+        // user actually needs to know in order to fix it.
+        async function scAiErrorText(response) {
+            var d = null;
+            try { d = await response.json(); } catch (e) {}
+            var code = d && d.error && d.error.code;
+            var msg = d && d.error && d.error.message;
+            if (code === 'INJECTION_BLOCKED' || code === 'RATE_LIMITED' || code === 'CONSENT_DECLINED') return msg;
+            if (code === 'NO_SESSION') return 'Your session has expired — sign in again to use AI features.';
+            return null;
+        }
 
         // Transport for the two new endpoints. Mirrors scData()'s shape
         // (license via Bearer, employee session via X-SD-Auth) but returns
@@ -3498,20 +3747,15 @@ How to answer:
                 const sys = SAIRNCODE_SYSTEM_PROMPT + (sharedCtx ? ('\n\n' + sharedCtx) : '') +
                     '\n\nNever provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
                 const toolDefs = Object.keys(SC_TOOLS).map(function (k) { return SC_TOOLS[k].definition; });
-                const response = await fetch(APP_CONFIG.proxy, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [{ role: 'user', content: message }],
-                        system: sys,
-                        app_id: APP_CONFIG.app_id,
-                        is_demo: APP_CONFIG.is_demo,
-                        tools: toolDefs
-                    })
-                });
+                const response = await scAiFetch({
+                    messages: [{ role: 'user', content: message }],
+                    system: sys,
+                    tools: toolDefs
+                }, 'chat');
 
                 if (!response.ok) {
-                    renderError('Error: Unable to process request');
+                    const chatErr = await scAiErrorText(response);
+                    renderError(chatErr || 'Error: Unable to process request');
                     return;
                 }
 
@@ -3535,16 +3779,10 @@ How to answer:
                     { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUse.id, content: toolResultContent }] }
                 ];
 
-                const response2 = await fetch(APP_CONFIG.proxy, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: followUpMessages,
-                        system: sys,
-                        app_id: APP_CONFIG.app_id,
-                        is_demo: APP_CONFIG.is_demo
-                    })
-                });
+                const response2 = await scAiFetch({
+                    messages: followUpMessages,
+                    system: sys
+                }, 'chat');
 
                 if (!response2.ok) {
                     renderError('Error: Unable to process request');
@@ -3597,17 +3835,15 @@ How to answer:
             var sys = SAIRNCODE_SYSTEM_PROMPT + '\n\nFor this task specifically: respond with ONLY a JSON array, no prose before or after, no markdown code fence. Each element: {"code": the suggested ICD-10/CPT/HCPCS code, "type": "ICD-10"|"CPT"|"HCPCS", "quote": the EXACT phrase copied verbatim from the note text below that supports this code -- character-for-character from the note, not a paraphrase, "reasoning": a short explanation}. CRITICAL: "quote" must be copied exactly from the note -- if you cannot find a specific supporting phrase in the note for a code, do not suggest that code at all. If nothing in the note supports any code suggestion, return an empty array []. Never suggest a code you cannot ground in a real, exact quote from this specific note.';
 
             try {
-                var response = await fetch(APP_CONFIG.proxy, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [{ role: 'user', content: 'Note:\n\n' + noteText }],
-                        system: sys,
-                        app_id: APP_CONFIG.app_id,
-                        is_demo: APP_CONFIG.is_demo
-                    })
-                });
-                if (!response.ok) { resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Error: could not reach the AI service.</div>'; return; }
+                var response = await scAiFetch({
+                    messages: [{ role: 'user', content: 'Note:\n\n' + noteText }],
+                    system: sys
+                }, 'note_to_code');
+                if (!response.ok) {
+                    var noteErr = await scAiErrorText(response);
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">' + escHtml(noteErr || 'Error: could not reach the AI service.') + '</div>';
+                    return;
+                }
                 var data = await response.json();
                 var blocks = (data && data.content) || [];
                 var rawText = (blocks[0] && blocks[0].text) || '';
@@ -3690,18 +3926,16 @@ How to answer:
             var sys = 'You are looking up the current 2026 CPT, HCPCS, or ICD-10 code for a described procedure or diagnosis. Use web search to check current CMS/AMA guidance -- do not answer from memory alone, your training data may be stale for this year\'s code changes or additions. Respond with ONLY a JSON object, no prose before or after, no markdown code fence: {"code": the code found, or null if none, "type": "CPT"|"HCPCS"|"ICD-10"|null, "description": the official short description of the code, or null, "source_snippet": the EXACT text from a search result that states this code -- character-for-character from the search result, not a paraphrase, "no_match": true if search did not surface a specific, current, citable code for this description, false otherwise}. CRITICAL: never invent a plausible-sounding code number. If search does not surface a specific, current, citable code, set no_match:true and code:null -- do not guess.';
 
             try {
-                var response = await fetch(APP_CONFIG.proxy, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: [{ role: 'user', content: 'Find the current 2026 code for: ' + desc }],
-                        system: sys,
-                        app_id: APP_CONFIG.app_id,
-                        is_demo: APP_CONFIG.is_demo,
-                        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }]
-                    })
-                });
-                if (!response.ok) { resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Error: could not reach the AI/search service.</div>'; return; }
+                var response = await scAiFetch({
+                    messages: [{ role: 'user', content: 'Find the current 2026 code for: ' + desc }],
+                    system: sys,
+                    tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }]
+                }, 'code_lookup');
+                if (!response.ok) {
+                    var lookupErr = await scAiErrorText(response);
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">' + escHtml(lookupErr || 'Error: could not reach the AI/search service.') + '</div>';
+                    return;
+                }
                 var data = await response.json();
                 var blocks = (data && data.content) || [];
                 var textBlocks = blocks.filter(function(b){ return b.type === 'text'; });

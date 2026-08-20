@@ -26,10 +26,29 @@
 // {ok:true}.
 // ---------------------------------------------------------------------------
 
-async function writeAuditLog(supabaseUrl, serviceKey, { license_hash, employee_id, role, event_type, detail }) {
+// TABLE PARAMETER (added 2026-08-20, SAIRNcode AI audit log): `table` is
+// optional and defaults to sairnlaw_audit_log, so every existing SAIRNlaw
+// caller (api/law-auth.js, api/legal-citator.js) is byte-for-byte unaffected
+// -- this is a purely additive change to a shared file, not a behavior change.
+// SAIRNcode passes 'sairncode_audit_log' (sql/sairncode_audit_log_schema.sql),
+// which is the same shape and the same immutability posture.
+//
+// The name is allowlisted rather than interpolated freely: this value becomes
+// part of a REST URL, and an unvalidated table name from a caller is exactly
+// the kind of thing that turns into an injection vector later even if every
+// caller today passes a constant.
+const AUDIT_TABLES = { sairnlaw_audit_log: true, sairncode_audit_log: true };
+const DEFAULT_AUDIT_TABLE = 'sairnlaw_audit_log';
+
+async function writeAuditLog(supabaseUrl, serviceKey, { license_hash, employee_id, role, event_type, detail, table }) {
   if (!supabaseUrl || !serviceKey || !license_hash || !event_type) return false;
+  const target = table || DEFAULT_AUDIT_TABLE;
+  if (!AUDIT_TABLES[target]) {
+    console.error('audit log write refused: unknown table', target);
+    return false;
+  }
   try {
-    const r = await fetch(supabaseUrl.replace(/\/+$/, '') + '/rest/v1/sairnlaw_audit_log', {
+    const r = await fetch(supabaseUrl.replace(/\/+$/, '') + '/rest/v1/' + target, {
       method: 'POST',
       headers: {
         apikey: serviceKey,

@@ -28,6 +28,8 @@
 // straight through to the Anthropic API without inspecting shape, so vision (base64 image + text in a
 // message) works with zero changes here once an app's frontend sends it in the standard API format.
 
+const { checkAiRateLimit } = require('./_lib/ai-rate-limit');
+
 const KNOWN_APP_IDS = [
   'stonedesk', 'sairnbiz', 'sairnscape', 'sairncode', 'sairnbuild',
   'sairnlaw', 'sairndesign', 'sairncare', 'sairnvet', 'sairnfuneral',
@@ -162,9 +164,29 @@ async function claudeProxyHandler(req, res) {
   }
 
   if (is_demo) {
+    // In-memory pre-check, kept deliberately. It is unreliable on its own
+    // (see the KNOWN LIMITATION note at the top of this file) but it is free
+    // and catches repeat traffic hitting the same warm instance without a DB
+    // round trip. It is no longer the only control -- see below.
     const key = getDemoKey(app_id);
     demoCallCounts[key] = (demoCallCounts[key] || 0) + 1;
     if (demoCallCounts[key] > DEMO_DAILY_LIMIT) {
+      res.status(200).json({ error: 'demo_limit' });
+      return;
+    }
+
+    // The real, persistent, cross-instance limit the KNOWN LIMITATION note
+    // above has always asked for (added 2026-08-20, firewall audit layer 22).
+    // Supabase-backed sliding window, same pattern as api/_lib/courtlistener.js.
+    //
+    // SHIPS IN OBSERVE MODE: 10 of 11 live apps send is_demo:true, and because
+    // the in-memory counter kept resetting, this limit has effectively never
+    // been enforced against real traffic. Enabling enforcement blind would risk
+    // a platform-wide outage on a threshold nobody has measured. It records and
+    // reports instead, until SAIRN_AI_RATE_LIMIT_MODE=enforce is set
+    // deliberately. Fails open on any infrastructure problem.
+    const rl = await checkAiRateLimit(app_id);
+    if (!rl.allowed) {
       res.status(200).json({ error: 'demo_limit' });
       return;
     }
