@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNcare - Assisted Living Operations</title>
+<style>
+/* Brand color: #2563EB (blue) -- confirmed distinct from every other live
+   SAIRN app's --p color (biz teal #14B8A6, build amber #F59E0B, dental sky
+   #0EA5E9, design indigo #6366F1, grounds/law green #16A34A/#15803D,
+   legacy gray #6B7280, senior pink #DB2777, scape green #22C55E, vet
+   violet #7C3AED) and from the old unused sairncare draft's #E11D48. */
+:root{--p:#2563EB;--pd:#1D4ED8;--pt:#EFF6FF;--pb:#BFDBFE;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* PIN / real per-employee login */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+#trial-expired-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9999;}
+#trial-expired-screen.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+.plink{background:none;border:none;color:var(--p);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:underline;}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--pd);}
+.bs{padding:6px 12px;font-size:12px;}
+.krow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:13px;color:var(--muted);}
+.sval{font-size:14px;font-weight:700;}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;font-family:inherit;}
+input:focus,select:focus{border-color:var(--p);}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.fg{margin-bottom:14px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+.note{background:var(--pt);border:1px solid var(--pb);border-radius:10px;padding:12px 14px;font-size:12px;color:#1E3A8A;margin-bottom:16px;}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;background-repeat:no-repeat;background-color:#fff;background-size:24px 100%,24px 100%,10px 100%,10px 100%;background-attachment:local,local,scroll,scroll;}
+.tw table{min-width:640px;}
+.navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+#scrim.on{display:block;}
+.photobox{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;margin-bottom:14px;}
+.photobox img{max-width:100%;max-height:220px;border-radius:8px;margin-top:10px;}
+@media (max-width:768px){
+  .navtog{display:flex;align-items:center;justify-content:center;}
+  aside{position:fixed;top:56px;left:0;bottom:0;width:250px;z-index:50;transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);}
+  aside.on{transform:translateX(0);}
+  main{padding:14px;}
+  header{padding:0 12px;gap:10px;}
+  .hlogo{font-size:17px;}
+  .hbadge{display:none;}
+  .huser{display:none;}
+  .hbtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
+  .sb{min-height:44px;font-size:14px;}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  .btn.bs{min-height:40px;}
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .kval{font-size:20px;}
+  .fr{grid-template-columns:1fr;}
+  .sbar{flex-wrap:wrap;}
+  .sbar input,.sbar select{width:100%!important;flex:1 1 100%;}
+  .ph{gap:8px;}
+  .ptitle{font-size:19px;}
+  .pa{margin-left:0;width:100%;}
+  .mbox{width:94%;padding:20px;}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media (max-width:420px){.krow{grid-template-columns:1fr 1fr;}}
+@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNcare</div>
+    <div class="gsub">Assisted Living Operations &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="ALF-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<!-- Real per-employee login from day one (2026-08-20) -- built ground-up
+     for SAIRNcare, modelled directly on SAIRNsenior's real-auth build.
+     Per-person identity is the prerequisite for the four-tier resident
+     privacy gate this app is built around (api/sd-data.js's alf_clients
+     branch). -->
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNcare</div>
+    <div id="lstep-login">
+      <div class="gsub">Sign in</div>
+      <input class="ginp" id="l-eid" placeholder="Employee ID or email" autocomplete="username" style="letter-spacing:0;text-align:left"
+             onkeydown="if(event.key==='Enter')$('l-pin').focus()">
+      <input class="ginp" id="l-pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')alfLogin()">
+      <button class="gbtn" onclick="alfLogin()">Sign In</button>
+      <div style="margin-top:14px"><button class="plink" onclick="alfShowBootstrap()">First-time setup</button></div>
+    </div>
+    <div id="lstep-bootstrap" style="display:none">
+      <div class="gsub">First-time setup</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Creates this facility's first Owner/Administrator login. Only works once.</div>
+      <input class="ginp" id="b-eid" placeholder="Administrator employee ID or email" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-name" placeholder="Display name" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-pin" type="password" inputmode="numeric" placeholder="Choose a 6-8 digit PIN">
+      <button class="gbtn" onclick="alfBootstrap()">Create Owner Account</button>
+      <div style="margin-top:12px"><button class="plink" onclick="alfLoginReset()">Back to sign in</button></div>
+    </div>
+    <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="trial-expired-screen">
+  <div class="gbox">
+    <div style="font-size:36px;margin-bottom:10px">&#9203;</div>
+    <div class="glogo" style="font-size:20px">Your 30-day trial has ended</div>
+    <div class="gsub" style="margin-bottom:20px">
+      Thanks for trying SAIRNcare. Your trial started on <strong id="trial-start-display">&mdash;</strong>
+      and access to the full app is now paused. Email us to unlock unlimited access &mdash; no data has been lost.
+    </div>
+    <a class="gbtn" style="display:block;text-decoration:none;box-sizing:border-box" href="mailto:michael@sairn.com?subject=SAIRNcare%20trial%20upgrade">Email michael@sairn.com to Upgrade</a>
+    <div style="font-size:11px;color:var(--muted);margin-top:14px">Your trial data is safe and will be here when you upgrade.</div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation">&#9776;</button>
+    <div class="hlogo">SAIRNcare</div>
+    <div class="hbadge">Assisted Living</div>
+    <div class="hr">
+      <span class="huser" id="huser">Owner</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div id="scrim" onclick="closeNav()"></div>
+  <div class="wrap">
+    <aside id="aside">
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
+      <div class="ss">Care</div>
+      <button class="sb" id="sb-residents" onclick="nav('residents')"><span class="sico">&#128100;</span>Residents</button>
+      <div class="ss">Company</div>
+      <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Access</button>
+      <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
+      <div class="sfoot">SAIRNcare v0.1 &middot; <span style="color:var(--p);font-weight:700;">Foundation</span></div>
+    </aside>
+    <main>
+
+<!-- DASHBOARD -->
+<div class="panel on" id="panel-dashboard">
+  <div class="ph"><div><div class="ptitle">Facility Dashboard</div><div class="psub">Resident census and what needs attention, scoped to what your role can see</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Residents Visible To You</div><div class="kval" id="d-residents">0</div><div class="kt">Active</div></div>
+    <div class="kpi"><div class="klbl">Unassigned</div><div class="kval" id="d-unassigned">0</div><div class="kt">Management-visible only</div></div>
+    <div class="kpi"><div class="klbl">In Intake</div><div class="kval" id="d-intake">0</div><div class="kt">Not yet active</div></div>
+    <div class="kpi"><div class="klbl">Your Role</div><div class="kval" id="d-role" style="font-size:16px">--</div><div class="kt">Access tier</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
+</div>
+
+<!-- AI ASSISTANT -->
+<div class="panel" id="panel-ai">
+  <div class="ph"><div><div class="ptitle">AI Assistant</div><div class="psub">Ask about your residents -- scoped to what you're allowed to see</div></div></div>
+  <div class="note">Answers are grounded in your own facility's real data, scoped by your role the same way every other screen is -- a Med Aide's AI answers never include a resident assigned to someone else.</div>
+  <div class="card"><div class="cb">
+    <div id="ai-hist" style="margin-bottom:12px;max-height:400px;overflow-y:auto"></div>
+    <div class="fg"><textarea id="ai-input" rows="2" placeholder="e.g. Which of my residents have a diagnosis I should be aware of?"></textarea></div>
+    <button class="btn bp" onclick="aiAsk()">Ask</button>
+  </div></div>
+</div>
+
+<!-- RESIDENTS -->
+<div class="panel" id="panel-residents">
+  <div class="ph"><div><div class="ptitle">Residents</div><div class="psub">Visible to you only where you're assigned, or per your broad-access role</div></div></div>
+  <div class="pa"><button class="btn bp bs" id="res-new-btn" onclick="openResidentModal()">+ New Resident</button></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Visible</div><div class="kval" id="r-total">0</div><div class="kt">To your role</div></div>
+    <div class="kpi"><div class="klbl">Private Pay</div><div class="kval" id="r-private">0</div><div class="kt">Payer: Private</div></div>
+    <div class="kpi"><div class="klbl">Medicaid HCBS</div><div class="kval" id="r-medicaid">0</div><div class="kt">Payer: Medicaid Waiver</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar"><input id="rsrch" placeholder="Search by name..." oninput="rResidents()"></div>
+    <div class="tw"><table><thead><tr><th>Name</th><th>Room</th><th>Care Level</th><th>Payer</th><th>Assigned To</th><th>Actions</th></tr></thead>
+    <tbody id="rtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="residentmodal">
+  <div class="mbox">
+    <div class="mtitle" id="res-modal-title">Add / Edit Resident</div>
+    <!-- Required v1 photo->Claude component (sairn-app-scaffold): a photo
+         of the MD order or medication list at intake gets read by Claude
+         and pre-fills these fields -- staff still reviews and can edit
+         everything before saving, never auto-submitted. Same proven
+         baseline as StoneDesk's Field Sketch Quote and SAIRNsenior's
+         intake -- free-text response + targeted extraction, not a
+         fragile JSON contract. -->
+    <div class="photobox" id="res-photobox">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Optional: photograph the MD order or medication list to pre-fill this form</div>
+      <input type="file" accept="image/*" capture="environment" id="res-photo-input" onchange="resHandlePhoto(event)">
+      <img id="res-photo-preview" style="display:none">
+      <div id="res-photo-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    </div>
+    <div class="fr"><div class="fg"><label>Resident Name</label><input id="res-name" placeholder="Eleanor Whitfield"></div><div class="fg"><label>Room Number</label><input id="res-room" placeholder="214"></div></div>
+    <div class="fg"><label>Diagnosis</label><input id="res-diagnosis" placeholder="e.g. Parkinson's, mild cognitive impairment"></div>
+    <div class="fg"><label>Medications (summary)</label><textarea id="res-medications" rows="2" placeholder="e.g. Levodopa 100mg 3x/day, Metformin 500mg 2x/day"></textarea></div>
+    <div class="fr"><div class="fg"><label>Care Level</label><select id="res-carelevel"><option value="al1">AL1 - Minimal Assistance</option><option value="al2">AL2 - Moderate Assistance</option><option value="al3">AL3 - Extensive Assistance</option></select></div>
+      <div class="fg"><label>Payer</label><select id="res-payer"><option value="private">Private Pay</option><option value="medicaid_hcbs">Medicaid HCBS Waiver</option><option value="va">VA</option><option value="self_pay">Self-Pay</option></select></div></div>
+    <div class="fg"><label>Status</label><select id="res-status"><option value="active">Active</option><option value="intake">Intake</option><option value="on_hold">On Hold</option><option value="discharged">Discharged</option></select></div>
+    <div class="fg"><label>General Notes</label><textarea id="res-notes" rows="2"></textarea></div>
+    <!-- Management-only control; server-side is the real gate (nursing
+         may edit details but never touches assignment -- shown read-only
+         instead of a dropdown for that tier, same disclosed-not-hidden
+         pattern as every other app's Assign-To control this session). -->
+    <div class="fg" id="res-assignee-row" style="display:none"><label>Assigned Staff</label><select id="resassignee"><option value="">Unassigned</option></select></div>
+    <div class="fg" id="res-assignee-readonly-row" style="display:none"><label>Assigned Staff</label><div class="sval" id="res-assignee-readonly-text" style="padding:9px 0">--</div></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeResidentModal()">Cancel</button>
+      <button class="btn bp" onclick="saveResident()">Save Resident</button>
+    </div>
+  </div>
+</div>
+
+<!-- SECURITY & ACCESS -->
+<div class="panel" id="panel-security">
+  <div class="ph"><div><div class="ptitle">Security &amp; Access</div><div class="psub">Your account and employee credentials</div></div></div>
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:10px">Your Account</div>
+    <div id="sec-account" style="font-size:13px;color:var(--muted)"></div>
+  </div></div>
+  <div class="card" id="sec-admin-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Employee Accounts</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
+    <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
+    <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="nursing">Resident Care Director (Nursing)</option><option value="med_aide">Med Aide</option><option value="caregiver">Caregiver</option><option value="billing">Business Office / Billing</option><option value="activities">Activities Coordinator</option><option value="owner">Owner / Administrator</option></select></div>
+    <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
+    <button class="btn bp" onclick="secProvision()">Save Employee</button>
+    <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
+  </div></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="panel" id="panel-settings">
+  <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">Facility profile</div></div></div>
+  <div class="card"><div class="ch"><span class="ct">Facility Profile</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openFacilityModal()">Edit</button></div></div>
+    <div class="cb" id="set-facility"></div></div>
+</div>
+<div class="modal" id="facilitymodal">
+  <div class="mbox">
+    <div class="mtitle">Edit Facility Profile</div>
+    <div class="fg"><label>Facility Name</label><input id="fc-name" placeholder="Lakeshore Assisted Living"></div>
+    <div class="fg"><label>Demo Company (shown on Dashboard)</label><input id="fc-company" placeholder="Lakeshore Assisted Living"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeFacilityModal()">Cancel</button>
+      <button class="btn bp" onclick="saveFacility()">Save</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairncare';
+var DATA_API='https://sairn.vercel.app/api/sd-data';
+var PROXY='https://sairn.vercel.app/api/claude';
+var AUTH_API='https://sairn.vercel.app/api/alf-auth';
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+
+// Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
+// validation is server-side in api/_lib/license.js.
+var VALID=['ALF-','DEMO-','SAIRN-'];
+
+var prole='owner',reid=null;
+var alfSession=null;
+
+function alfLicenseKey(){ return localStorage.getItem('alf_license_key') || ''; }
+
+// sdData()-equivalent. withSession (default off): attaches this browser's
+// real employee session token via X-SD-Auth -- only alf_clients calls
+// actually need it (the resident privacy gate lives server-side in
+// api/sd-data.js's alf_clients branch), every other resource stays
+// unauthenticated, same discipline as every other app this session.
+function alfData(action,resource,payload,withSession){
+  var lic=alfLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&alfSession&&alfSession.token)h['X-SD-Auth']=alfSession.token;
+  return fetch(DATA_API,{
+    method:'POST',
+    headers:h,
+    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('alfData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      return d.data;
+    });
+  }).catch(function(e){console.warn('alfData network error:',e.message);return null;});
+}
+
+// ── AUTH CLIENT ──────────────────────────────────────────────────────────
+function alfAuth(action,payload,withSession){
+  var lic=alfLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&alfSession&&alfSession.token)h['X-SD-Auth']=alfSession.token;
+  return fetch(AUTH_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+function alfLoginErr(m){var e=$('perr');if(e)e.textContent=m||'';}
+function alfShowStep(id){
+  ['lstep-login','lstep-bootstrap'].forEach(function(s){
+    var el=$(s);if(el)el.style.display=(s===id?'block':'none');
+  });
+  alfLoginErr('');
+}
+function alfLoginReset(){var e=$('l-eid');if(e)e.value='';var p=$('l-pin');if(p)p.value='';alfShowStep('lstep-login');}
+function alfShowBootstrap(){alfShowStep('lstep-bootstrap');}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key format. Try ALF-PINNACLE-2026';return;}
+  localStorage.setItem('alf_license_key',k);
+  $('gerr').textContent='Checking key…';
+  alfAuth('check_license',{}).then(function(r){
+    if(!r.ok){
+      localStorage.removeItem('alf_license_key');
+      $('gerr').textContent=r.msg||'That license key was not accepted.';
+      return;
+    }
+    $('gerr').textContent='';
+    $('gate').style.display='none';$('pin').classList.add('on');
+    var e=$('l-eid');if(e)e.focus();
+  });
+}
+
+function alfLogin(){
+  var eid=($('l-eid').value||'').trim();
+  var pin=($('l-pin').value||'').trim();
+  if(!eid||!pin){alfLoginErr('Enter your employee ID and PIN.');return;}
+  alfLoginErr('Signing in…');
+  alfAuth('login',{employee_id:eid,pin:pin}).then(function(r){
+    if(!r.ok){alfLoginErr(r.msg||'Sign-in failed.');return;}
+    alfEnterApp(r.data);
+  });
+}
+
+function alfBootstrap(){
+  var eid=($('b-eid').value||'').trim(),nm=($('b-name').value||'').trim(),pin=($('b-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){alfLoginErr('Employee ID and a 6-8 digit PIN are required.');return;}
+  alfLoginErr('Creating account…');
+  alfAuth('bootstrap',{employee_id:eid,display_name:nm||eid,pin:pin}).then(function(r){
+    if(!r.ok){alfLoginErr(r.msg||'Setup failed.');return;}
+    alfEnterApp(r.data);
+  });
+}
+
+// 30-day trial gate, keyed off a real timestamp written on first-ever
+// login (never a fabricated countdown). Same proven pattern as every
+// other app's checkTrialGate().
+function checkTrialGate(){
+  var TRIAL_KEY='alf_trial_start';
+  var TRIAL_DAYS=30;
+  var startMs=parseInt(localStorage.getItem(TRIAL_KEY),10);
+  if(!startMs||isNaN(startMs)){
+    startMs=Date.now();
+    try{localStorage.setItem(TRIAL_KEY,String(startMs));}catch(e){}
+  }
+  var daysElapsed=Math.floor((Date.now()-startMs)/86400000);
+  if(daysElapsed<TRIAL_DAYS)return true;
+  var scr=$('trial-expired-screen');
+  if(scr){
+    scr.classList.add('on');
+    var dEl=$('trial-start-display');
+    if(dEl)dEl.textContent=new Date(startMs).toLocaleDateString();
+  }
+  $('pin').classList.remove('on');
+  return false;
+}
+window.checkTrialGate=checkTrialGate;
+
+function alfEnterApp(d){
+  alfSession={token:d.token,role:d.role,employee_id:d.employee_id};
+  prole=d.role;
+  try{localStorage.setItem('alf_session',JSON.stringify(alfSession));}catch(e){}
+  st('alf_role',prole);
+  if(!checkTrialGate())return;
+  $('pin').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=(d.employee_id||prole)+' · '+alfRoleLabel(prole);
+  alfLoginErr('');
+  var p=$('l-pin');if(p)p.value='';
+  init();
+  alfHydrateResidents().then(function(merged){if(merged)rResidents();});
+  if(typeof rSecurity==='function')rSecurity();
+}
+
+function alfRoleLabel(r){
+  var m={owner:'Owner',nursing:'Nursing',med_aide:'Med Aide',caregiver:'Caregiver',billing:'Billing',activities:'Activities'};
+  return m[r]||r;
+}
+
+function alfRestoreSession(){
+  var s=null;try{s=JSON.parse(localStorage.getItem('alf_session')||'null');}catch(e){}
+  if(!s||!s.token||!s.role)return false;
+  var payload=null;
+  try{payload=JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}
+  if(!payload||!payload.exp||Date.now()>=payload.exp){try{localStorage.removeItem('alf_session');}catch(e){}return false;}
+  if(payload.app!=='sairncare'){try{localStorage.removeItem('alf_session');}catch(e){}return false;}
+  alfEnterApp(s);
+  alfAuth('whoami',{},true).then(function(r){
+    if(!r.ok){doLogout();toast('Your session is no longer valid -- please sign in again');}
+  });
+  return true;
+}
+
+function doLogout(){
+  alfSession=null;
+  try{localStorage.removeItem('alf_session');}catch(e){}
+  $('app').classList.remove('on');$('pin').classList.add('on');
+  alfLoginReset();
+  toast('Logged out');
+}
+
+function toggleNav(){var a=$('aside');if(!a)return;var open=a.classList.toggle('on');$('scrim').classList.toggle('on',open);}
+function closeNav(){var a=$('aside');if(a)a.classList.remove('on');$('scrim').classList.remove('on');}
+
+function nav(id){
+  closeNav();
+  document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='security')rSecurity();
+  if(id==='dashboard')rDash();
+  if(id==='residents')rResidents();
+  if(id==='settings')rSettings();
+}
+
+// ── ROLE TIERS (mirrors api/sd-data.js's alf_clients gate exactly) ─────────
+function alfIsManagement(){return prole==='owner'||prole==='billing';}
+function alfIsBroadEdit(){return alfIsManagement()||prole==='nursing';}
+function alfIsReadOnlyBroad(){return prole==='activities';}
+function alfIsBroadRead(){return alfIsBroadEdit()||alfIsReadOnlyBroad();}
+
+// ── ROSTER ────────────────────────────────────────────────────────────────
+// Backs the Assign-To/reassign controls. Read-only, management-only
+// (api/alf-auth.js's 'roster' action refuses non-management server-side
+// regardless of what this cache holds).
+var _alfRoster=null;
+function alfRefreshRoster(cb){
+  if(!alfIsManagement())return;
+  alfAuth('roster',{},true).then(function(r){
+    if(r.ok&&r.data&&Array.isArray(r.data.employees)){_alfRoster=r.data.employees;alfPopulateAssigneeControls();}
+    if(cb)cb();
+  });
+}
+function alfEmployeeName(id){
+  if(!id)return'Unassigned';
+  if(_alfRoster){var m=_alfRoster.find(function(e){return e.employee_id===id;});if(m)return m.display_name||m.employee_id;}
+  return id;
+}
+function alfPopulateAssigneeControls(){
+  var sel=$('resassignee');
+  if(!sel||!_alfRoster)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Unassigned</option>'+_alfRoster.map(function(e){
+    return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+' ('+H(alfRoleLabel(e.role))+')</option>';
+  }).join('');
+  sel.value=cur;
+}
+
+// ── SECURITY & ACCESS ────────────────────────────────────────────────────
+function rSecurity(){
+  var s=alfSession||{};
+  $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(alfRoleLabel(s.role))+'</strong>';
+  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+}
+function secProvision(){
+  var m=$('sec-admin-msg');
+  var eid=($('sec-new-eid').value||'').trim(),nm=($('sec-new-name').value||'').trim();
+  var role=$('sec-new-role').value,pin=($('sec-new-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){m.style.color='var(--danger)';m.textContent='Employee ID and a 6-8 digit PIN are required.';return;}
+  alfAuth('setup',{employee_id:eid,display_name:nm||eid,role:role,pin:pin},true).then(function(r){
+    if(!r.ok){m.style.color='var(--danger)';m.textContent=r.msg||'Could not save.';return;}
+    m.style.color='var(--muted)';m.textContent='Saved '+eid+' as '+alfRoleLabel(role)+'.';
+    $('sec-new-pin').value='';
+  });
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────
+function rDash(){
+  var rs=residents();
+  $('d-residents').textContent=rs.filter(function(r){return r.status==='active';}).length;
+  $('d-unassigned').textContent=rs.filter(function(r){return !r.assigned_employee_id;}).length;
+  $('d-intake').textContent=rs.filter(function(r){return r.status==='intake';}).length;
+  $('d-role').textContent=alfRoleLabel(prole);
+  var att=[];
+  rs.filter(function(r){return r.status==='intake';}).forEach(function(r){att.push({t:H(r.name)+' — intake in progress',b:'Intake',c:'bb'});});
+  $('d-attention').innerHTML=att.length?att.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
+}
+
+// ── RESIDENTS (four-tier privacy gate) ──────────────────────────────────
+function residents(){return ld('alf_clients',[]);}
+function alfHydrateResidents(){
+  if(!alfLicenseKey())return Promise.resolve(false);
+  return alfData('read','alf_clients',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var local=residents();
+    var localIds={};
+    local.forEach(function(r){if(r&&r.id)localIds[r.id]=true;});
+    var added=false;
+    serverRows.forEach(function(r){
+      if(r&&r.id&&!localIds[r.id]){local.push(r);localIds[r.id]=true;added=true;}
+    });
+    if(added)st('alf_clients',local);
+    return added;
+  });
+}
+function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
+
+function openResidentModal(){
+  if(alfIsReadOnlyBroad()){toast('Activities has read-only access to residents');return;}
+  reid=null;
+  $('res-modal-title').textContent='Add Resident';
+  ['res-name','res-room','res-diagnosis','res-medications','res-notes'].forEach(function(f){$(f).value='';});
+  $('res-carelevel').value='al1';$('res-payer').value='private';$('res-status').value='intake';
+  $('res-photo-preview').style.display='none';$('res-photo-status').textContent='';$('res-photo-input').value='';
+  var assignRow=$('res-assignee-row'),roRow=$('res-assignee-readonly-row');
+  if(alfIsManagement()){
+    assignRow.style.display='block';roRow.style.display='none';
+    var sel=$('resassignee');if(sel)sel.value='';
+    alfRefreshRoster();
+  }else if(alfIsBroadEdit()){
+    // Nursing: facility-wide edit, but never assigns -- new residents start
+    // unassigned from this tier, matching the server's rule exactly.
+    assignRow.style.display='none';roRow.style.display='block';
+    $('res-assignee-readonly-text').textContent='Unassigned (only management can assign)';
+  }else{
+    // Narrow tier: self-assigns on create, shown read-only (not editable).
+    assignRow.style.display='none';roRow.style.display='block';
+    $('res-assignee-readonly-text').textContent='You ('+H(alfSession&&alfSession.employee_id||'')+')';
+  }
+  $('residentmodal').classList.add('on');
+}
+function closeResidentModal(){$('residentmodal').classList.remove('on');}
+function editResident(id){
+  var r=residents().find(function(x){return x.id===id;});if(!r)return;
+  if(alfIsReadOnlyBroad()){toast('Activities has read-only access to residents');return;}
+  reid=id;
+  $('res-modal-title').textContent='Edit Resident';
+  $('res-name').value=r.name||'';$('res-room').value=r.room||'';$('res-diagnosis').value=r.diagnosis||'';
+  $('res-medications').value=r.medications||'';$('res-carelevel').value=r.care_level||'al1';
+  $('res-payer').value=r.payer||'private';$('res-status').value=r.status||'intake';$('res-notes').value=r.notes||'';
+  $('res-photo-preview').style.display='none';$('res-photo-status').textContent='';$('res-photo-input').value='';
+  var assignRow=$('res-assignee-row'),roRow=$('res-assignee-readonly-row');
+  if(alfIsManagement()){
+    assignRow.style.display='block';roRow.style.display='none';
+    alfRefreshRoster(function(){var sel=$('resassignee');if(sel)sel.value=r.assigned_employee_id||'';});
+  }else if(alfIsBroadEdit()){
+    assignRow.style.display='none';roRow.style.display='block';
+    $('res-assignee-readonly-text').textContent=r.assigned_employee_id?alfEmployeeName(r.assigned_employee_id):'Unassigned';
+  }else{
+    if(r.assigned_employee_id!==(alfSession&&alfSession.employee_id)){toast('This resident is not assigned to you');return;}
+    assignRow.style.display='none';roRow.style.display='block';
+    $('res-assignee-readonly-text').textContent='You ('+H(alfSession&&alfSession.employee_id||'')+')';
+  }
+  $('residentmodal').classList.add('on');
+}
+async function saveResident(){
+  var name=$('res-name').value.trim();
+  if(!name){toast('Resident name required');return;}
+  var existing=reid?residents().find(function(x){return x.id===reid;}):null;
+  // Management picks from the Assign-To dropdown. Nursing (broad-edit tier)
+  // never assigns -- keeps whatever the resident's current assignment
+  // already is (or stays unassigned for a brand-new resident). A Med Aide
+  // / Caregiver (narrow tier) self-assigns on create and keeps their
+  // existing assignment on edit -- the server enforces exactly this, this
+  // client always sends the explicit value the server expects.
+  var assignedTo=alfIsManagement()
+    ?(($('resassignee')&&$('resassignee').value)||'')
+    :(alfIsBroadEdit()
+      ?((existing&&existing.assigned_employee_id)||'')
+      :((existing&&existing.assigned_employee_id)||(alfSession&&alfSession.employee_id)||''));
+  var rec={
+    id:reid||newId('RES'),name:name,room:$('res-room').value.trim(),diagnosis:$('res-diagnosis').value.trim(),
+    medications:$('res-medications').value.trim(),care_level:$('res-carelevel').value,payer:$('res-payer').value,
+    status:$('res-status').value,notes:$('res-notes').value.trim(),
+    assigned_employee_id:assignedTo
+  };
+  var list=residents();
+  if(reid){list=list.map(function(x){return x.id===reid?rec:x;});}else{list.push(rec);}
+  st('alf_clients',list);
+  closeResidentModal();rResidents();rDash();
+  var syncResult=await alfData('write','alf_clients',rec,true);
+  toast(syncResult?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
+}
+async function alfReassignResident(id,newEmployeeId){
+  if(!alfIsManagement()){toast('Only management can reassign a resident');return;}
+  var list=residents();
+  var r=list.find(function(x){return x.id===id;});
+  if(!r){toast('Resident not found');return;}
+  r.assigned_employee_id=newEmployeeId||'';
+  st('alf_clients',list);rResidents();
+  var syncResult=await alfData('write','alf_clients',r,true);
+  toast(syncResult?(r.name+' reassigned to '+alfEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection');
+}
+var carelevelBadge={al1:'bg',al2:'bw',al3:'br'};
+function rResidents(){
+  var rs=residents();
+  var isMgmt=alfIsManagement();
+  var newBtn=$('res-new-btn');if(newBtn)newBtn.style.display=alfIsReadOnlyBroad()?'none':'inline-block';
+  if(isMgmt&&!_alfRoster)alfRefreshRoster(rResidents);
+  $('r-total').textContent=rs.length;
+  $('r-private').textContent=rs.filter(function(r){return r.payer==='private';}).length;
+  $('r-medicaid').textContent=rs.filter(function(r){return r.payer==='medicaid_hcbs';}).length;
+  var q=($('rsrch').value||'').toLowerCase();
+  var filtered=rs.filter(function(r){return !q||(r.name||'').toLowerCase().indexOf(q)!==-1;});
+  var rtb=$('rtbody');
+  rtb.innerHTML=filtered.length?filtered.map(function(r){
+    var assignedCell=isMgmt
+      ? '<select onchange="alfReassignResident(\''+r.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
+        +'<option value="">Unassigned</option>'
+        +(_alfRoster||[]).map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===r.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
+        +'</select>'
+      : H(alfEmployeeName(r.assigned_employee_id));
+    return '<tr><td>'+H(r.name)+'</td><td>'+H(r.room||'--')+'</td>'+
+      '<td><span class="badge '+(carelevelBadge[r.care_level]||'bx')+'">'+H((r.care_level||'').toUpperCase())+'</span></td>'+
+      '<td><span class="badge bx">'+H((r.payer||'').replace('_',' '))+'</span></td><td>'+assignedCell+'</td>'+
+      '<td>'+(alfIsReadOnlyBroad()?'--':'<button class="btn bo bs" onclick="editResident(\''+r.id+'\')">Edit</button>')+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No residents found</td></tr>';
+}
+
+// MD order / medication-list photo -> Claude extraction (required v1
+// component per sairn-app-scaffold). Free-text response + light targeted
+// extraction, same proven baseline as StoneDesk's Field Sketch Quote and
+// SAIRNsenior's intake -- not a fragile full-JSON contract. Always shown
+// to staff for review before saving, never auto-submitted.
+function resHandlePhoto(ev){
+  var file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var dataUrl=e.target.result;
+    var img=$('res-photo-preview');img.src=dataUrl;img.style.display='block';
+    resAnalyzePhoto(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+async function resAnalyzePhoto(dataUrl){
+  var status=$('res-photo-status');
+  status.textContent='Reading document…';
+  var b64=dataUrl.split(',')[1];
+  var mediaType=(dataUrl.match(/data:([^;]+);/)||[])[1]||'image/jpeg';
+  var msgs=[{role:'user',content:[
+    {type:'image',source:{type:'base64',media_type:mediaType,data:b64}},
+    {type:'text',text:'This is a photo of an MD order or medication list for an assisted-living resident. Extract: resident full name, diagnosis, a brief medication summary, and payer type (Medicaid HCBS Waiver, VA, private pay, or self-pay) if identifiable. Reply in plain text, one field per line, labelled exactly: Name:, Diagnosis:, Medications:, Payer:. If a field is not identifiable, write "not found" for that field. Do not guess or invent a value.'}
+  ]}];
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,messages:msgs})});
+    var data=await res.json();
+    if(data&&data.error){status.textContent='Could not read the document -- fill the form in manually.';return;}
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    if(!text){status.textContent='No response -- fill the form in manually.';return;}
+    var name=(text.match(/Name:\s*(.+)/i)||[])[1];
+    var diagnosis=(text.match(/Diagnosis:\s*(.+)/i)||[])[1];
+    var meds=(text.match(/Medications:\s*(.+)/i)||[])[1];
+    var payer=(text.match(/Payer:\s*(.+)/i)||[])[1];
+    if(name&&name.toLowerCase().indexOf('not found')===-1)$('res-name').value=name.trim();
+    if(diagnosis&&diagnosis.toLowerCase().indexOf('not found')===-1)$('res-diagnosis').value=diagnosis.trim();
+    if(meds&&meds.toLowerCase().indexOf('not found')===-1)$('res-medications').value=meds.trim();
+    if(payer){
+      var pl=payer.toLowerCase();
+      var payerMap={medicaid:'medicaid_hcbs',va:'va',private:'private',self:'self_pay'};
+      var matched=Object.keys(payerMap).find(function(k){return pl.indexOf(k)!==-1;});
+      if(matched)$('res-payer').value=payerMap[matched];
+    }
+    status.textContent='Fields pre-filled from the photo -- review before saving, nothing here is final yet.';
+  }catch(e){
+    status.textContent='Could not reach the AI service -- fill the form in manually.';
+  }
+}
+
+// ── AI ASSISTANT ─────────────────────────────────────────────────────────
+function aiAsk(){
+  var input=$('ai-input');
+  var q=(input.value||'').trim();
+  if(!q){toast('Enter a question first');return;}
+  var hist=$('ai-hist');
+  hist.innerHTML+='<div class="srow"><span class="slbl" style="font-weight:700">You</span></div><div style="margin-bottom:10px">'+H(q)+'</div>';
+  input.value='';
+  var rs=residents();
+  var ctx=rs.map(function(r){return r.name+': '+(r.diagnosis||'no diagnosis on file')+', care level '+(r.care_level||'--');}).join('\n');
+  var msgs=[{role:'user',content:'You are the SAIRNcare AI assistant. Here is the real resident data currently visible to this user (role: '+prole+'), already scoped server-side to what they are allowed to see -- never mention or infer residents beyond this list:\n'+(ctx||'(no residents visible)')+'\n\nQuestion: '+q}];
+  hist.innerHTML+='<div class="srow"><span class="slbl" style="font-weight:700">SAIRNcare AI</span></div><div id="ai-pending" style="margin-bottom:10px;color:var(--muted)">Thinking…</div>';
+  hist.scrollTop=hist.scrollHeight;
+  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:APP_ID,is_demo:true,messages:msgs})})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var el=$('ai-pending');
+      var text=(data&&data.content&&data.content[0]&&data.content[0].text)||(data&&data.error&&'Error: '+data.error.message)||'No response.';
+      if(el){el.removeAttribute('id');el.textContent=text;}
+      hist.scrollTop=hist.scrollHeight;
+    }).catch(function(e){
+      var el=$('ai-pending');
+      if(el){el.removeAttribute('id');el.textContent='Could not reach the AI service.';}
+    });
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────────────────
+function facility(){return ld('alf_facility',{name:'',company:''});}
+function rSettings(){
+  var f=facility();
+  $('set-facility').innerHTML='<div class="srow"><span class="slbl">Facility Name</span><span class="sval">'+H(f.name||'Not set')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(f.company||'Not set')+'</span></div>';
+}
+function openFacilityModal(){var f=facility();$('fc-name').value=f.name||'';$('fc-company').value=f.company||'';$('facilitymodal').classList.add('on');}
+function closeFacilityModal(){$('facilitymodal').classList.remove('on');}
+function saveFacility(){
+  var f={name:$('fc-name').value.trim(),company:$('fc-company').value.trim()};
+  st('alf_facility',f);closeFacilityModal();rSettings();toast('Facility profile saved');
+}
+
+// ── WIRE EVERYTHING ON DOM READY ────────────────────────────────────────
+function init(){
+  rDash();rResidents();rSettings();
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var lic=localStorage.getItem('alf_license_key');
+  if(!lic)return;
+  $('gate').style.display='none';
+  if(alfRestoreSession())return;
+  $('pin').classList.add('on');
+  alfShowStep('lstep-login');
+});
+</script>
+</body>
+</html>

@@ -237,7 +237,15 @@ const RESOURCES = {
   // read and write, no assignee-based visibility at all. A claim
   // references a completed EVV-verified visit, matching the app's own
   // real SOP User Guide's Ready-to-Bill workflow. Bespoke branch below.
-  sen_claims: true
+  sen_claims: true,
+  // SAIRNcare (assisted living) residents (2026-08-20) -- see
+  // sql/sairncare_clients_schema.sql. Ground-up app, real resident
+  // privacy gate from day one, same shape as sen_clients but with a
+  // real FOUR-tier gate instead of three -- Activities Coordinator gets
+  // read-only broad roster access with zero clinical/billing write
+  // authority, a genuinely different tier than nursing's broad-read-AND-
+  // edit. Bespoke branch below.
+  alf_clients: true
 };
 
 const SC_RESOURCES = [
@@ -350,7 +358,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, bld_bids, bld_tna, sen_clients, sen_caregivers, sen_visits, sen_claims' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, bld_bids, bld_tna, sen_clients, sen_caregivers, sen_visits, sen_claims, alf_clients' } });
     return;
   }
 
@@ -2361,6 +2369,105 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, claimData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_clients RESIDENT PRIVACY GATE (2026-08-20) ────────────────────────────
+    // Ground-up app (no prior scaffold to replace). A resident record is assisted-living PHI
+    // (name, diagnosis, care level, payer type) -- same minimum-necessary reasoning as every
+    // other assignment-based gate this session (sd_crm, sdn_clients, bld_bids, sen_clients).
+    //
+    // REAL FOUR-TIER GATE, not three like sen_clients -- built this way from the start per
+    // Michael's confirmed instruction to use SAIRNsenior's already-fixed pattern, extended for
+    // a real difference in this app's confirmed role scope (docs/superpowers/specs/2026-08-20-
+    // sairncare-v1-scope.md): Activities Coordinator gets READ-ONLY broad roster access with
+    // NO clinical or billing write authority at all -- a genuinely different tier than nursing's
+    // broad-read-AND-edit (which mirrors sen_clients' coordinator/scheduler tier exactly).
+    //   - MANAGEMENT (owner, billing): full read/write/reassign.
+    //   - BROAD READ+EDIT (+ nursing): facility-wide read, may edit any resident's details, may
+    //     NOT reassign -- same rule sen_clients already proved correct for coordinator/scheduler.
+    //   - BROAD READ ONLY (+ activities): facility-wide read, ZERO write access of any kind --
+    //     a write attempt from this tier is refused outright, not silently downgraded to
+    //     "own-assigned-only" the way the pre-fix sen_clients bug did.
+    //   - NARROW (med_aide, caregiver): own-assigned-residents-only, self-assign-on-create --
+    //     identical shape to sen_clients' caregiver tier and bld_bids' original fix.
+    // NULL assigned_employee_id = unassigned, management-only-visible, same default as every
+    // prior app's assignment gate.
+    const ALF_MANAGEMENT_ROLES = { owner: true, billing: true };
+    const ALF_EDIT_ROLES = { owner: true, billing: true, nursing: true };
+    const ALF_READ_ONLY_BROAD_ROLES = { activities: true };
+    const ALF_BROAD_READ_ROLES = { owner: true, billing: true, nursing: true, activities: true };
+    if (resource === 'alf_clients' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&select=client_id,assigned_employee_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      let out = rows || [];
+      if (!ALF_BROAD_READ_ROLES[session.role]) {
+        out = out.filter((r) => r.assigned_employee_id === session.employee_id);
+      }
+      const data = out.map((r) => Object.assign({ id: r.client_id, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'alf_clients' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (ALF_READ_ONLY_BROAD_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Activities has read-only access to residents' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_clients payload.id is required' } }); return; }
+      const isManagement = !!ALF_MANAGEMENT_ROLES[session.role];
+      const isBroadEdit = !!ALF_EDIT_ROLES[session.role];
+      const existingR = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Resident tracking is not set up yet — run sql/sairncare_clients_schema.sql in Supabase first.' } });
+        return;
+      }
+      const existingRows = await existingR.json();
+      if (!existingR.ok) return upstream(res, existingRows);
+      const existingRow = Array.isArray(existingRows) && existingRows[0];
+      const requestedAssignee = payload.assigned_employee_id !== undefined
+        ? (payload.assigned_employee_id || null)
+        : (existingRow ? existingRow.assigned_employee_id : null);
+      if (!isManagement && isBroadEdit) {
+        // Nursing: may edit any resident's details, matching facility-wide clinical
+        // oversight, but assignment must stay exactly as it already was -- same rule
+        // sen_clients already proved correct for its broad-read tier.
+        const currentAssignee = existingRow ? existingRow.assigned_employee_id : null;
+        if (requestedAssignee !== currentAssignee) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign or reassign a resident' } });
+          return;
+        }
+      } else if (!isManagement) {
+        // Med Aide / Caregiver (narrow tier): may only touch a resident already assigned
+        // to them, and a brand-new resident self-assigns to them on create.
+        if (existingRow && existingRow.assigned_employee_id !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This resident is not assigned to you' } });
+          return;
+        }
+        if (requestedAssignee !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign or reassign a resident' } });
+          return;
+        }
+      }
+      const clientData = Object.assign({}, payload);
+      delete clientData.id;
+      delete clientData.assigned_employee_id;
+      const r = await fetch(rest('alf_clients?on_conflict=license_hash,client_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', client_id: String(payload.id),
+          assigned_employee_id: requestedAssignee, data: clientData, updated_at: nowISO()
+        })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, clientData) });
       return;
     }
 

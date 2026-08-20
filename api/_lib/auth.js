@@ -130,7 +130,23 @@ const ROLES_BY_APP = {
   // scoped, the analog of every other app's field/individual-contributor
   // role. Judgment call, not confirmed with Michael ahead of building --
   // same disclosed-not-silent pattern as every other app's role mapping.
-  sairnsenior: ['owner', 'scheduler', 'coordinator', 'billing', 'caregiver']
+  sairnsenior: ['owner', 'scheduler', 'coordinator', 'billing', 'caregiver'],
+  // SAIRNcare (2026-08-20) -- ground-up, assisted-living facility app.
+  // Scoped from live research, not a real signed SOP the way most other
+  // apps' role lists were -- see docs/superpowers/specs/2026-08-20-
+  // sairncare-v1-scope.md, flagged there as needing a real AL operator's
+  // review before launch. 'owner' = Administrator/Executive Director, the
+  // state-licensed role of record. 'nursing' = Resident Care Director
+  // (often "Director of Nursing" depending on state licensing level) --
+  // clinical oversight, care plans, medication program. 'med_aide' =
+  // medication administration record access, own-assigned-residents-only
+  // like every other app's front-line clinical role. 'caregiver' =
+  // ADL/daily support, same scoping. 'billing' = Business Office/Billing
+  // Manager, full resident-billing visibility, no clinical write access --
+  // same split as sairnsenior's billing role. 'activities' = Activities
+  // Coordinator, lighter read-only roster access, no clinical or billing
+  // write access at all.
+  sairncare: ['owner', 'nursing', 'med_aide', 'caregiver', 'billing', 'activities']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.
