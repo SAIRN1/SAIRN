@@ -98,7 +98,20 @@ const ROLES_BY_APP = {
   // of StoneDesk's 'sales'. Flagged as a judgment call, not confirmed with
   // Michael ahead of building -- same reasoning documented in
   // api/sd-data.js's sdn_clients gate.
-  sairndesign: ['owner', 'designer', 'office']
+  sairndesign: ['owner', 'designer', 'office'],
+  // SAIRNbuild (2026-08-20, real employee auth built from zero -- unlike
+  // StoneDesk/SAIRNlegacy/SAIRNdesign this app had NO server auth at all
+  // before now, just the client-only shared-PIN scaffold): matches
+  // sairnbuild.html's existing DEFAULT_PINS role vocabulary exactly
+  // (owner/pm/office). 'owner' and 'office' are this app's management
+  // tier for the Bids & Proposals privacy gate -- 'office' is the closest
+  // thing this app has to a back-office/coordinator role, same reasoning
+  // as SAIRNdesign's 'office'; 'pm' (project manager) is the assigned-
+  // party role whose own bids get scoped, the analog of StoneDesk's
+  // 'sales'/SAIRNdesign's 'designer'. Judgment call, not confirmed with
+  // Michael ahead of building -- same disclosed-not-silent pattern as
+  // every prior app's role mapping in this file.
+  sairnbuild: ['owner', 'pm', 'office']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.

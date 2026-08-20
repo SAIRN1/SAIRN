@@ -26,13 +26,11 @@ body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emo
 #trial-expired-screen.on{display:flex;}
 .pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
 .plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
-.pdots{display:flex;gap:12px;justify-content:center;margin:20px 0;}
-.pdot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:#fff;}
-.pdot.on{background:var(--p);border-color:var(--p);}
-.ppad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-.pkey{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:15px;font-size:18px;font-weight:600;cursor:pointer;}
-.pkey:hover{background:var(--pt);border-color:var(--p);}
+/* Real per-employee login (2026-08-20) -- replaced the old shared-PIN-per-
+   role keypad (.pdots/.pdot/.ppad/.pkey, removed), same shape as
+   SAIRNdesign's build 2026-08-20. */
 .perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+.plink{background:none;border:none;color:var(--p);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:underline;}
 /* LAYOUT */
 #app{display:none;}
 #app.on{display:flex;flex-direction:column;height:100vh;}
@@ -193,17 +191,35 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 <div id="pin">
   <div class="pbox">
     <div class="plogo">SAIRNbuild</div>
-    <div class="pdots">
-      <div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div>
-      <div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div>
+
+    <!-- STEP 1: real per-employee credentials, verified server-side by
+         api/bld-auth.js. Replaced the old shared-PIN-per-role keypad
+         (DEFAULT_PINS in the page source, no server involvement) on
+         2026-08-20 -- per-person identity is the prerequisite for the
+         real bid/lead assignment privacy gate this build exists for. -->
+    <div id="lstep-login">
+      <div class="gsub">Sign in</div>
+      <input class="ginp" id="l-eid" placeholder="Employee ID or email" autocomplete="username" style="letter-spacing:0;text-align:left"
+             onkeydown="if(event.key==='Enter')$('l-pin').focus()">
+      <input class="ginp" id="l-pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')bldLogin()">
+      <button class="gbtn" onclick="bldLogin()">Sign In</button>
+      <div style="margin-top:14px"><button class="plink" onclick="bldShowBootstrap()">First-time setup</button></div>
     </div>
-    <div class="ppad">
-      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
-      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
-      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
-      <button class="pkey" onclick="pk('C')" style="color:var(--muted)">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')" style="color:var(--danger)">&#8592;</button>
+
+    <!-- STEP 2: one-time first-owner provisioning. Server refuses this
+         with 409 once any credential exists for the account. -->
+    <div id="lstep-bootstrap" style="display:none">
+      <div class="gsub">First-time setup</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Creates this account's first Owner login. Only works once.</div>
+      <input class="ginp" id="b-eid" placeholder="Owner employee ID or email" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-name" placeholder="Display name" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-pin" type="password" inputmode="numeric" placeholder="Choose a 6-8 digit PIN">
+      <button class="gbtn" onclick="bldBootstrap()">Create Owner Account</button>
+      <div style="margin-top:12px"><button class="plink" onclick="bldLoginReset()">Back to sign in</button></div>
     </div>
-    <div class="perr" id="perr"></div>
+
+    <div class="perr" id="perr" role="alert" aria-live="polite"></div>
   </div>
 </div>
 
@@ -276,6 +292,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-referrals" onclick="nav('referrals')"><span class="sico">&#129309;</span>Referrals</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-company" onclick="nav('company')"><span class="sico">&#127970;</span>Company Profile</button>
+      <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Access</button>
       <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
       <button class="sb" id="sb-market" onclick="nav('market')"><span class="sico">&#128225;</span>Market Intelligence</button>
@@ -390,7 +407,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="lost">Lost</option>
       </select>
     </div>
-    <div class="tw"><table><thead><tr><th>Client</th><th>Project Type</th><th>Source</th><th>Stage</th><th>Total</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Client</th><th>Project Type</th><th>Source</th><th>Stage</th><th>Total</th><th>Assigned To</th><th>Actions</th></tr></thead>
     <tbody id="btbody"></tbody></table></div>
   </div></div>
   <div class="note">Estimating line items group by <strong>phase</strong> or <strong>cost type</strong> &mdash; a fixed template is exactly the rigidity competitors in this space are criticized for; this stays user-selectable per bid, not baked into one structure.</div>
@@ -1096,18 +1113,15 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 
 <!-- SETTINGS -->
 <div class="panel" id="panel-settings">
-  <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">PINs and roles, cost-code list, default retainage and markup</div></div></div>
+  <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">Cost-code list, default retainage and markup</div></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Cost Codes on File</div><div class="kval" id="set-codes">0</div><div class="kt">Reference list</div></div>
     <div class="kpi"><div class="klbl">Default Retainage</div><div class="kval" id="set-retainage">0%</div><div class="kt">Pre-fills new draws</div></div>
     <div class="kpi"><div class="klbl">Default Markup</div><div class="kval" id="set-markup">0%</div><div class="kt">Pre-fills new bids</div></div>
-    <div class="kpi"><div class="klbl">PIN-Protected Roles</div><div class="kval" id="set-roles">0</div><div class="kt">Owner / PM / Office</div></div>
   </div>
   <div class="g2">
     <div class="card"><div class="ch"><span class="ct">Defaults</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openDefaultsModal()">Edit Defaults</button></div></div>
       <div class="cb" id="set-defaults"></div></div>
-    <div class="card"><div class="ch"><span class="ct">Role PINs</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openPinsModal()">Edit PINs</button></div></div>
-      <div class="cb" id="set-pins"></div></div>
   </div>
   <div class="card">
     <div class="ch"><span class="ct">Cost Code List</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openCostCodeModal()">+ Add Cost Code</button></div></div>
@@ -1116,6 +1130,26 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- Security & Access (2026-08-20) -- real per-employee accounts replaced
+     the old shared-PIN-per-role Settings card above (removed, see the
+     .plink comment near #lstep-login for why). -->
+<div class="panel" id="panel-security">
+  <div class="ph"><div><div class="ptitle">Security &amp; Access</div><div class="psub">Your account and employee credentials</div></div></div>
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:10px">Your Account</div>
+    <div id="sec-account" style="font-size:13px;color:var(--muted)"></div>
+  </div></div>
+  <div class="card" id="sec-admin-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Employee Accounts</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
+    <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
+    <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="pm">PM</option><option value="office">Office</option><option value="owner">Owner</option></select></div>
+    <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
+    <button class="btn bp" onclick="secProvision()">Save Employee</button>
+    <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
+  </div></div>
+</div>
 
 <!-- REPORTS -->
 <div class="panel" id="panel-reports">
@@ -1256,6 +1290,12 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="fr" id="bm-sentrow"><div class="fg"><label>Sent Date</label><input id="bm-sent" type="date"></div><div class="fg"><label>Decided Date</label><input id="bm-decided" type="date"></div></div>
     <div class="fg" id="bm-lostrow" style="display:none"><label>Lost Reason</label><input id="bm-lostreason" placeholder="Only if stage = Lost"></div>
     <div class="fg"><label>Notes</label><input id="bm-notes" placeholder="Optional"></div>
+    <!-- Management-only (owner/office) -- server-side is the real gate
+         (api/sd-data.js's bld_bids write branch rejects any non-
+         management assignment change regardless of this field), same
+         precedent as StoneDesk's sd_crm and SAIRNdesign's sdn_clients
+         Assign-To controls. -->
+    <div class="fg" id="bm-assignee-row" style="display:none"><label>Assigned To</label><select id="bm-assignee"><option value="">Unassigned</option></select></div>
 
     <div class="mtitle" style="font-size:14px;margin-top:18px;">Line Items <span style="font-weight:400;color:var(--muted);font-size:12px;">&mdash; group by</span>
       <select id="bm-groupby" onchange="renderBidLineDraft()" style="width:auto;display:inline-block;font-size:12px;padding:4px 8px;margin-left:6px;">
@@ -1760,19 +1800,6 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
-<div class="modal" id="pinsmodal">
-  <div class="mbox">
-    <div class="mtitle">Edit Role PINs</div>
-    <div class="note">Each PIN must be exactly 4 digits. Changing a PIN here takes effect immediately -- the next login for that role needs the new PIN.</div>
-    <div class="fg"><label>Owner PIN</label><input id="pm-owner" placeholder="1234" maxlength="4"></div>
-    <div class="fg"><label>PM PIN</label><input id="pm-pm" placeholder="2345" maxlength="4"></div>
-    <div class="fg"><label>Office PIN</label><input id="pm-office" placeholder="3456" maxlength="4"></div>
-    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
-      <button class="btn bo" onclick="closePinsModal()">Cancel</button>
-      <button class="btn bp" onclick="savePins()">Save PINs</button>
-    </div>
-  </div>
-</div>
 
 <div class="modal" id="ccmodal">
   <div class="mbox">
@@ -1834,6 +1861,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 var APP_ID='sairnbuild';
 var DATA_API='https://sairn.vercel.app/api/sd-data';
 var PROXY='https://sairn.vercel.app/api/claude';
+var AUTH_API='https://sairn.vercel.app/api/bld-auth';
 // Added (2026-08-09 audit): api/claude.js returns HTTP 200 with a body like
 // {error:'demo_limit'} or {error:{message:'...'}} on failure (see its own
 // header comment) -- res.ok is true either way, so every one of this file's
@@ -1873,14 +1901,9 @@ window.bldLocalToday=bldLocalToday;
 // returns 401 INVALID_LICENSE. That is correct, expected behaviour -- see
 // SAIRNBUILD-SCOPE.md SS4a. Never treat passing this list as authenticated.
 var VALID=['BLD-','DEMO-','SAIRN-'];
-// Settings panel makes these real editable PINs, not a hardcoded constant --
-// loaded from storage if present, falling back to the original defaults so
-// a fresh install (or a browser that never opened Settings) behaves exactly
-// as it always did.
-var DEFAULT_PINS={owner:'1234',pm:'2345',office:'3456'};
-var PINS=ld('bld_pins',null)||DEFAULT_PINS;
 
-var pbuf='',prole='owner',jeid=null,ceid=null,coeid=null;
+var prole='owner',jeid=null,ceid=null,coeid=null;
+var bldSession=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
@@ -1900,12 +1923,19 @@ function bldLicenseKey(){ return localStorage.getItem('bld_license_key') || ''; 
 // the license key as a bearer token. NO client-side Supabase: the anon key is
 // locked out of every table by design, and both StoneDesk and SAIRNbiz had to
 // abandon direct client calls for exactly that reason.
-function bldData(action,resource,payload){
+// withSession (2026-08-20, new 4th param, default off): attaches this
+// browser's real employee session token via X-SD-Auth -- only the bld_bids
+// calls actually need it (the privacy gate lives server-side in
+// api/sd-data.js's bld_bids branch), every other resource call in this
+// file keeps working exactly as before, unauthenticated.
+function bldData(action,resource,payload,withSession){
   var lic=bldLicenseKey();
   if(!lic)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&bldSession&&bldSession.token)h['X-SD-Auth']=bldSession.token;
   return fetch(DATA_API,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    headers:h,
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
@@ -1915,19 +1945,96 @@ function bldData(action,resource,payload){
   }).catch(function(e){console.warn('bldData network error:',e.message);return null;});
 }
 
+// ── BID HYDRATION (2026-08-20) ───────────────────────────────────────────
+// Closes the read-side half of bld_bids' sync gap: saveBid() only ever
+// wrote to localStorage before this session, so a second device/browser
+// showed nothing from the first. Runs once per login, additive-only merge
+// by id (server records not already present locally get appended; a
+// locally present id is never overwritten by this merge) -- deliberately
+// NOT full conflict resolution, same disclosed limitation as
+// sairndesign.html's sdnHydrateAll(). Scoped to just bld_bids -- the one
+// resource this app has real server sync for -- not a whole-app hydration
+// loop, since nothing else here has a server table yet.
+function bldHydrateBids(){
+  if(!bldLicenseKey())return Promise.resolve(false);
+  return bldData('read','bld_bids',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false; // read failed, no session, or not provisioned
+    var local=bldBids();
+    var localIds={};
+    local.forEach(function(b){if(b&&b.id)localIds[b.id]=true;});
+    var added=false;
+    serverRows.forEach(function(b){
+      if(b&&b.id&&!localIds[b.id]){local.push(b);localIds[b.id]=true;added=true;}
+    });
+    if(added)st('bld_bids',local);
+    return added;
+  });
+}
+
+// ── AUTH CLIENT (2026-08-20) ────────────────────────────────────────────
+// Every call below is a real server round trip to api/bld-auth.js. Same
+// client shape as sairndesign.html's sdnAuth() (built 2026-08-20), minus
+// nothing -- this app never had MFA/SSO to begin with.
+function bldAuth(action,payload,withSession){
+  var lic=bldLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&bldSession&&bldSession.token)h['X-SD-Auth']=bldSession.token;
+  return fetch(AUTH_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+function bldLoginErr(m){var e=$('perr');if(e)e.textContent=m||'';}
+function bldShowStep(id){
+  ['lstep-login','lstep-bootstrap'].forEach(function(s){
+    var el=$(s);if(el)el.style.display=(s===id?'block':'none');
+  });
+  bldLoginErr('');
+}
+function bldLoginReset(){var e=$('l-eid');if(e)e.value='';var p=$('l-pin');if(p)p.value='';bldShowStep('lstep-login');}
+function bldShowBootstrap(){bldShowStep('lstep-bootstrap');}
+
 function gateGo(){
   var k=($('gkey').value||'').trim().toUpperCase();
   var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
   if(!ok){$('gerr').textContent='Invalid key format. Try BLD-PINNACLE-2026';return;}
   localStorage.setItem('bld_license_key',k);
-  $('gate').style.display='none';$('pin').classList.add('on');
+  $('gerr').textContent='Checking key…';
+  bldAuth('check_license',{}).then(function(r){
+    if(!r.ok){
+      localStorage.removeItem('bld_license_key');
+      $('gerr').textContent=r.msg||'That license key was not accepted.';
+      return;
+    }
+    $('gerr').textContent='';
+    $('gate').style.display='none';$('pin').classList.add('on');
+    var e=$('l-eid');if(e)e.focus();
+  });
 }
-function pk(k){$('perr').textContent='';
-  if(k==='C'){pbuf='';dots();return;}
-  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
-  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+
+function bldLogin(){
+  var eid=($('l-eid').value||'').trim();
+  var pin=($('l-pin').value||'').trim();
+  if(!eid||!pin){bldLoginErr('Enter your employee ID and PIN.');return;}
+  bldLoginErr('Signing in…');
+  bldAuth('login',{employee_id:eid,pin:pin}).then(function(r){
+    if(!r.ok){bldLoginErr(r.msg||'Sign-in failed.');return;}
+    bldEnterApp(r.data);
+  });
 }
-function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+
+function bldBootstrap(){
+  var eid=($('b-eid').value||'').trim(),nm=($('b-name').value||'').trim(),pin=($('b-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){bldLoginErr('Employee ID and a 6-8 digit PIN are required.');return;}
+  bldLoginErr('Creating account…');
+  bldAuth('bootstrap',{employee_id:eid,display_name:nm||eid,pin:pin}).then(function(r){
+    if(!r.ok){bldLoginErr(r.msg||'Setup failed.');return;}
+    bldEnterApp(r.data);
+  });
+}
 // 30-day trial gate, keyed off a real timestamp written on first-ever
 // login (never a fabricated countdown). Checked on every successful
 // login, before the app is revealed. Same proven pattern as
@@ -1953,18 +2060,46 @@ function checkTrialGate(){
 }
 window.checkTrialGate=checkTrialGate;
 
-function chkPin(){
-  var match=null;
-  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
-  if(match){
-    prole=match;st('bld_role',prole);
-    if(!checkTrialGate())return;
-    $('pin').classList.remove('on');$('app').classList.add('on');
-    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
-    init();
-  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+function bldEnterApp(d){
+  bldSession={token:d.token,role:d.role,employee_id:d.employee_id};
+  prole=d.role;
+  try{localStorage.setItem('bld_session',JSON.stringify(bldSession));}catch(e){}
+  st('bld_role',prole);
+  if(!checkTrialGate())return;
+  $('pin').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=(d.employee_id||prole)+' · '+prole.charAt(0).toUpperCase()+prole.slice(1);
+  bldLoginErr('');
+  var p=$('l-pin');if(p)p.value='';
+  init();
+  bldHydrateBids().then(function(merged){if(merged)rBids();});
+  if(typeof rSecurity==='function')rSecurity();
 }
-function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+
+// Restores a still-valid session on reload. Self-checks payload.app and
+// re-verifies server-side via whoami right after entering (not blocking
+// initial paint) -- same fix SAIRNlaw needed live (2026-08-18), applied
+// here from the start rather than waiting to rediscover the same gap.
+function bldRestoreSession(){
+  var s=null;try{s=JSON.parse(localStorage.getItem('bld_session')||'null');}catch(e){}
+  if(!s||!s.token||!s.role)return false;
+  var payload=null;
+  try{payload=JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}
+  if(!payload||!payload.exp||Date.now()>=payload.exp){try{localStorage.removeItem('bld_session');}catch(e){}return false;}
+  if(payload.app!=='sairnbuild'){try{localStorage.removeItem('bld_session');}catch(e){}return false;}
+  bldEnterApp(s);
+  bldAuth('whoami',{},true).then(function(r){
+    if(!r.ok){doLogout();toast('Your session is no longer valid -- please sign in again');}
+  });
+  return true;
+}
+
+function doLogout(){
+  bldSession=null;
+  try{localStorage.removeItem('bld_session');}catch(e){}
+  $('app').classList.remove('on');$('pin').classList.add('on');
+  bldLoginReset();
+  toast('Logged out');
+}
 
 // Off-canvas nav. Only reachable below 768px (the toggle is display:none
 // above it), so desktop behaviour is unchanged.
@@ -1998,6 +2133,7 @@ function nav(id){
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   var p=$('panel-'+id),b=$('sb-'+id);
   if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='security')rSecurity();
   if(id==='dashboard')rDash();
   if(id==='ai')rAi();
   if(id==='jobs')rJobs();
@@ -3458,16 +3594,25 @@ function rBidsTbl(){
   $('b-avgwon').textContent=fmt(avgWon);
   $('b-lost').textContent=lost.length;
 
+  var isMgmt=bldIsManagement();
+  if(isMgmt&&!_bldRoster)bldRefreshRoster(rBidsTbl);
   var tb=$('btbody');
-  if(!list.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No bids match</td></tr>';}
+  if(!list.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No bids match</td></tr>';}
   else{
     tb.innerHTML=list.map(function(b){
       var s=BSTAGE[b.stage]||{l:b.stage,c:'bx'};
+      var assignedCell=isMgmt
+        ? '<select onchange="bldReassignBid(\''+H(b.id)+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
+          +'<option value="">Unassigned</option>'
+          +(_bldRoster||[]).map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===b.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
+          +'</select>'
+        : H(bldEmployeeName(b.assigned_employee_id));
       return '<tr><td><strong>'+H(b.client)+'</strong></td>'+
         '<td>'+H(b.type||'')+'</td>'+
         '<td>'+H((b.source||'').replace('_',' '))+'</td>'+
         '<td><span class="badge '+s.c+'">'+H(s.l)+'</span></td>'+
         '<td><strong>'+fmt(bidTotal(b))+'</strong></td>'+
+        '<td>'+assignedCell+'</td>'+
         '<td><button class="btn bo bs" onclick="editBid(\''+H(b.id)+'\')">Edit</button>'+
         (b.stage==='won'?' <button class="btn bp bs" onclick="convertBidToJob(\''+H(b.id)+'\')">Convert to Job</button>':'')+
         '</td></tr>';
@@ -3518,10 +3663,45 @@ function bidStageChanged(){
   $('bm-lostrow').style.display=stage==='lost'?'block':'none';
 }
 
+// ── ROSTER (2026-08-20) ──────────────────────────────────────────────────
+// Backs the Assign-To/reassign controls below. Read-only, management-only
+// (api/bld-auth.js's 'roster' action refuses non-management server-side
+// regardless of what this cache holds) -- same shape as SAIRNdesign's
+// roster cache built 2026-08-20 for the identical reason.
+function bldIsManagement(){return prole==='owner'||prole==='office';}
+var _bldRoster=null;
+function bldRefreshRoster(cb){
+  if(!bldIsManagement())return;
+  bldAuth('roster',{},true).then(function(r){
+    if(r.ok&&r.data&&Array.isArray(r.data.employees)){_bldRoster=r.data.employees;bldPopulateAssigneeControls();}
+    if(cb)cb();
+  });
+}
+function bldEmployeeName(id){
+  if(!id)return'Unassigned';
+  if(_bldRoster){var m=_bldRoster.find(function(e){return e.employee_id===id;});if(m)return m.display_name||m.employee_id;}
+  return id;
+}
+function bldPopulateAssigneeControls(){
+  var sel=$('bm-assignee');
+  if(!sel||!_bldRoster)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Unassigned</option>'+_bldRoster.map(function(e){
+    return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+' ('+H(e.role)+')</option>';
+  }).join('');
+  sel.value=cur;
+}
+
 function openBidModal(){
   bideid=null;bidLineDraft=[];
   ['bm-client','bm-phone','bm-type','bm-sent','bm-decided','bm-lostreason','bm-notes'].forEach(function(f){$(f).value='';});
   $('bm-source').value='referral';$('bm-stage').value='lead';$('bm-markup').value=bldSettings().default_markup_pct||18;
+  var row=$('bm-assignee-row');
+  if(row){
+    row.style.display=bldIsManagement()?'block':'none';
+    var sel=$('bm-assignee');if(sel)sel.value='';
+    if(bldIsManagement())bldRefreshRoster();
+  }
   bidStageChanged();renderBidLineDraft();
   $('bidmodal').classList.add('on');
 }
@@ -3533,10 +3713,15 @@ function editBid(id){
   $('bm-source').value=b.source||'referral';$('bm-stage').value=b.stage||'lead';$('bm-markup').value=b.markup||0;
   $('bm-sent').value=b.sent||'';$('bm-decided').value=b.decided||'';$('bm-lostreason').value=b.lostreason||'';
   $('bm-notes').value=b.notes||'';
+  var row=$('bm-assignee-row');
+  if(row){
+    row.style.display=bldIsManagement()?'block':'none';
+    if(bldIsManagement())bldRefreshRoster(function(){var sel=$('bm-assignee');if(sel)sel.value=b.assigned_employee_id||'';});
+  }
   bidStageChanged();renderBidLineDraft();
   $('bidmodal').classList.add('on');
 }
-function saveBid(){
+async function saveBid(){
   var client=$('bm-client').value.trim();
   if(!client){toast('Client name required');return;}
   var stage=$('bm-stage').value;
@@ -3545,6 +3730,23 @@ function saveBid(){
   if(stage==='lost'&&!$('bm-lostreason').value.trim()){toast('A lost bid needs a reason -- that is the whole point of tracking it');return;}
   var bids=bldBids();
   var existing=bideid?bids.find(function(x){return x.id===bideid;}):null;
+  // Management picks from the Assign-To dropdown (may leave Unassigned). A
+  // non-management (PM) caller always keeps the bid's existing assignment
+  // (or self-assigns on create) -- the server rejects anything else from
+  // them anyway (only management can assign/reassign), same reasoning as
+  // StoneDesk's sd_crm and SAIRNdesign's sdn_clients Assign-To controls.
+  // A non-management edit of a bid that predates this feature (no
+  // assigned_employee_id yet, e.g. every bid created before this session)
+  // self-assigns on save, same as a brand-new bid -- otherwise the server
+  // permanently 403s a PM's own pre-existing local bids on their first
+  // real sync attempt (an unassigned bid can only ever be written by
+  // management per the server's own rule), with no way for that PM to
+  // resolve it themselves. Only applies when the EXISTING assignment is
+  // genuinely empty -- a bid already explicitly assigned to someone else
+  // still can't be touched (existingRow check server-side still applies).
+  var assignedTo=bldIsManagement()
+    ?(($('bm-assignee')&&$('bm-assignee').value)||'')
+    :((existing&&existing.assigned_employee_id)||(bldSession&&bldSession.employee_id)||'');
   var rec={
     id:bideid||('B-'+Date.now()),
     client:client,phone:$('bm-phone').value.trim(),type:$('bm-type').value.trim(),
@@ -3552,12 +3754,30 @@ function saveBid(){
     lines:bidLineDraft.slice(),
     sent:$('bm-sent').value,decided:$('bm-decided').value,
     lostreason:stage==='lost'?$('bm-lostreason').value.trim():'',
-    notes:$('bm-notes').value.trim()
+    notes:$('bm-notes').value.trim(),
+    assigned_employee_id:assignedTo
   };
   if(existing){Object.assign(existing,rec);}else{bids.push(rec);}
   var saved=st('bld_bids',bids);
   closeBidModal();rBids();
-  toast(saved?('Saved - '+rec.client):'Could not save -- storage may be full or unavailable, try again');
+  var syncResult=await bldData('write','bld_bids',rec,true);
+  toast(syncResult?('Saved - '+rec.client):(saved?'Saved on this device only -- server sync failed, try again with a connection':'Could not save -- storage may be full or unavailable, try again'));
+}
+// Reassignment from the Bids table -- management-only UI (the select this
+// is wired to only renders for isMgmt in rBidsTbl() below), but the REAL
+// boundary is server-side: api/sd-data.js refuses this write from a
+// non-management session regardless. Sends the full current bid record,
+// not just the assignee field -- the server's write path replaces the
+// whole stored record each call, so a partial payload would silently wipe
+// the rest of the bid's fields.
+async function bldReassignBid(id,newEmployeeId){
+  var bids=bldBids();
+  var b=bids.find(function(x){return x.id===id;});
+  if(!b){toast('Bid not found');return;}
+  b.assigned_employee_id=newEmployeeId||'';
+  st('bld_bids',bids);rBidsTbl();
+  var syncResult=await bldData('write','bld_bids',b,true);
+  toast(syncResult?(b.client+' reassigned to '+bldEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection');
 }
 
 // A won bid becomes a real Job Board entry -- the funnel this panel exists
@@ -5888,14 +6108,10 @@ function rSettings(){
   $('set-codes').textContent=(s.cost_codes||[]).length;
   $('set-retainage').textContent=(s.default_retainage_pct||0)+'%';
   $('set-markup').textContent=(s.default_markup_pct||0)+'%';
-  $('set-roles').textContent=Object.keys(PINS).length;
   $('set-defaults').innerHTML=
     '<div class="srow"><span class="slbl">Default Retainage</span><span class="sval">'+(s.default_retainage_pct||0)+'%</span></div>'+
     '<div class="srow"><span class="slbl">Default Markup</span><span class="sval">'+(s.default_markup_pct||0)+'%</span></div>'+
     '<div class="note" style="margin:10px 0 0">These pre-fill the Draw Requests and Bids &amp; Proposals forms on a new record -- they do not change anything already saved.</div>';
-  $('set-pins').innerHTML=Object.keys(PINS).map(function(r){
-    return '<div class="srow"><span class="slbl">'+H(r.charAt(0).toUpperCase()+r.slice(1))+'</span><span class="sval">&bull;&bull;&bull;&bull;</span></div>';
-  }).join('');
   var tb=$('cctbody');
   var codes=s.cost_codes||[];
   if(!codes.length){tb.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px;">No cost codes on file</td></tr>';}
@@ -5920,36 +6136,25 @@ function saveDefaults(){
   closeDefaultsModal();rSettings();
   toast(saved?'Saved defaults':'Could not save -- storage may be full or unavailable, try again');
 }
-// RBAC enforcement (2026-08-09 audit): prole was set at PIN entry and shown
-// in the header, but nothing anywhere ever read it for a real permission
-// decision -- Owner/PM/Office had identical access to every action,
-// including any role being able to open this exact modal and read or
-// change the OWNER's own PIN. That's the single clearest, highest-value
-// privilege-escalation risk in the app (an Office employee could lock the
-// owner out or grant themselves owner access), so it's the one gated here.
-// Everything else in the app is unchanged -- this is a minimal baseline,
-// not a full permission system, given no other role spec exists.
-function requireOwnerForPins(){
-  if(prole==='owner') return true;
-  toast('Only Owner can view or edit role PINs');
-  return false;
+// ── SECURITY & ACCESS (2026-08-20) ──────────────────────────────────────
+// Employee Accounts, same shape as sairndesign.html's rSecurity()/
+// secProvision() (built 2026-08-20) -- no shared-knowledge grant here,
+// SAIRNbuild never had that feature to begin with.
+function rSecurity(){
+  var s=bldSession||{};
+  $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(s.role||'--')+'</strong>';
+  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
 }
-function openPinsModal(){
-  if(!requireOwnerForPins()) return;
-  $('pm-owner').value=PINS.owner||'';$('pm-pm').value=PINS.pm||'';$('pm-office').value=PINS.office||'';
-  $('pinsmodal').classList.add('on');
-}
-function closePinsModal(){$('pinsmodal').classList.remove('on');}
-function savePins(){
-  if(!requireOwnerForPins()) return;
-  var owner=$('pm-owner').value.trim(),pm=$('pm-pm').value.trim(),office=$('pm-office').value.trim();
-  var re=/^\d{4}$/;
-  if(!re.test(owner)||!re.test(pm)||!re.test(office)){toast('Each PIN must be exactly 4 digits');return;}
-  if(owner===pm||owner===office||pm===office){toast('Each role needs a different PIN');return;}
-  PINS={owner:owner,pm:pm,office:office};
-  var saved=st('bld_pins',PINS);
-  closePinsModal();rSettings();
-  toast(saved?'PINs updated':'Could not save -- storage may be full or unavailable, try again');
+function secProvision(){
+  var m=$('sec-admin-msg');
+  var eid=($('sec-new-eid').value||'').trim(),nm=($('sec-new-name').value||'').trim();
+  var role=$('sec-new-role').value,pin=($('sec-new-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){m.style.color='var(--danger)';m.textContent='Employee ID and a 6-8 digit PIN are required.';return;}
+  bldAuth('setup',{employee_id:eid,display_name:nm||eid,role:role,pin:pin},true).then(function(r){
+    if(!r.ok){m.style.color='var(--danger)';m.textContent=r.msg||'Could not save.';return;}
+    m.style.color='var(--muted)';m.textContent='Saved '+eid+' as '+role+'.';
+    $('sec-new-pin').value='';
+  });
 }
 function openCostCodeModal(){
   $('ccm-code').value='';$('ccm-label').value='';
@@ -7355,6 +7560,22 @@ loadBldSharedKnowledge();
 window.buildBldSharedCompanyContext = buildBldSharedCompanyContext;
 window.recordBldSharedTopics = recordBldSharedTopics;
 
+// Real session persistence (2026-08-20) -- previously this app had NO
+// reload-skip-gate at all (confirmed by grep: bld_license_key was only
+// ever read inside gateGo(), never checked on page load), so every reload
+// sent the user back to the license-key screen even with a valid key
+// already stored. Adding real per-employee session restore is the point
+// of this build, so a session that doesn't survive reload isn't real
+// persistence -- fixed here rather than left as a separate gap. Same
+// pattern as sairndesign.html/sairnlegacy.html's own DOMContentLoaded gate.
+document.addEventListener('DOMContentLoaded',function(){
+  var lic=localStorage.getItem('bld_license_key');
+  if(!lic)return;
+  $('gate').style.display='none';
+  if(bldRestoreSession())return;
+  $('pin').classList.add('on');
+  bldShowStep('lstep-login');
+});
 </script>
 </body>
 </html>

@@ -152,7 +152,16 @@ const RESOURCES = {
   // stored -- see sql/sairncode_eligibility_schema.sql's header. Same
   // generic shape/handler as every other sc_* resource. REQUIRES
   // sql/sairncode_eligibility_schema.sql to be run in Supabase.
-  sc_eligibility: true
+  sc_eligibility: true,
+  // SAIRNbuild Bids & Proposals real server sync (2026-08-20) -- see
+  // sql/sairnbuild_bids_schema.sql. Task 3 of the platform sales-lead-
+  // privacy rule (StoneDesk's sd_crm was item 1, SAIRNdesign's sdn_clients
+  // was item 2). Had ZERO server sync before this -- confirmed by grep, no
+  // bld_bids reference anywhere in this file, saveBid() was pure
+  // localStorage. Handled by its own bespoke read/write branch below (like
+  // sdn_clients), not the generic-loop pattern, because of the privacy
+  // gate -- this map only gates "is this a known resource string."
+  bld_bids: true
 };
 
 const SC_RESOURCES = [
@@ -257,7 +266,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, bld_bids' } });
     return;
   }
 
@@ -1845,6 +1854,80 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, clientData) });
+      return;
+    }
+
+    // ── SAIRNBUILD: bld_bids PRIVACY GATE (2026-08-20) ───────────────────────────────────────
+    // Task 3 of the platform sales-lead-privacy rule (StoneDesk's sd_crm was item 1,
+    // SAIRNdesign's sdn_clients was item 2): a bid is visible only to management (Owner/Office)
+    // or the PM it's assigned to. Same shape as SAIRNdesign's sdn_clients gate directly above --
+    // bespoke branch, runs before any generic resource loop, always returns. Unlike sdn_clients
+    // (which was retrofitted onto an existing generic resource), bld_bids never had ANY server
+    // sync before this, so there is no generic-loop fallback registered for it anywhere else in
+    // this file -- this branch is the only code path that ever handles this resource.
+    const BLD_BID_MANAGEMENT_ROLES = { owner: true, office: true };
+    if (resource === 'bld_bids' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('bld_bids?license_hash=eq.' + enc(licHash) + '&select=bid_id,assigned_employee_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      // Management sees every bid. A non-management (PM) caller sees only bids assigned to
+      // them -- an UNASSIGNED bid is management-only-visible too, same reasoning (and same
+      // confirmed-correct default, per Michael's call on StoneDesk's build) as an
+      // already-assigned bid belonging to someone else.
+      let out = rows || [];
+      if (!BLD_BID_MANAGEMENT_ROLES[session.role]) {
+        out = out.filter((r) => r.assigned_employee_id === session.employee_id);
+      }
+      const data = out.map((r) => Object.assign({ id: r.bid_id, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'bld_bids' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'bld_bids payload.id is required' } }); return; }
+      const isManagement = !!BLD_BID_MANAGEMENT_ROLES[session.role];
+      const existingR = await fetch(rest('bld_bids?license_hash=eq.' + enc(licHash) + '&bid_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Bid assignment tracking is not set up yet — run sql/sairnbuild_bids_schema.sql in Supabase first.' } });
+        return;
+      }
+      const existingRows = await existingR.json();
+      if (!existingR.ok) return upstream(res, existingRows);
+      const existingRow = Array.isArray(existingRows) && existingRows[0];
+      const requestedAssignee = payload.assigned_employee_id !== undefined
+        ? (payload.assigned_employee_id || null)
+        : (existingRow ? existingRow.assigned_employee_id : null);
+      if (!isManagement) {
+        // A PM may only write a bid already assigned to them, and may never change the
+        // assignment -- reassignment (including self-assigning a currently-unassigned,
+        // invisible-to-them bid) is management-only.
+        if (existingRow && existingRow.assigned_employee_id !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This bid is not assigned to you' } });
+          return;
+        }
+        if (requestedAssignee !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign or reassign a bid' } });
+          return;
+        }
+      }
+      const bidData = Object.assign({}, payload);
+      delete bidData.id;
+      delete bidData.assigned_employee_id;
+      const r = await fetch(rest('bld_bids?on_conflict=license_hash,bid_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnbuild', bid_id: String(payload.id),
+          assigned_employee_id: requestedAssignee, data: bidData, updated_at: nowISO()
+        })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, bidData) });
       return;
     }
 
