@@ -222,6 +222,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-mar" onclick="nav('mar')"><span class="sico">&#128138;</span>Medications (MAR)</button>
       <div class="ss">Staff</div>
       <button class="sb" id="sb-staff" onclick="nav('staff')"><span class="sico">&#128119;</span>Staff</button>
+      <div class="ss">Money</div>
+      <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128179;</span>Billing</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Access</button>
       <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
@@ -459,6 +461,39 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- BILLING -->
+<!-- Private-pay + state-gated Medicaid HCBS waiver, per the original v1
+     scope doc's real research finding: room/board is always private-pay,
+     HCBS covers only the care portion, never room/board, and many
+     facilities don't accept Medicaid at all. Management only (owner,
+     billing) -- financial data, no clinical role has a minimum-necessary
+     reason to see it, same simplification as SAIRNsenior's Billing panel. -->
+<div class="panel" id="panel-billing">
+  <div class="ph"><div><div class="ptitle">Billing</div><div class="psub">Private-pay room &amp; board + care-level rate, and state-gated Medicaid HCBS waiver claims -- never conflated</div></div></div>
+  <div class="card" id="bl-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Billing is not shown to your role.</div></div>
+  <div id="bl-content">
+    <div class="krow">
+      <div class="kpi"><div class="klbl">Residents</div><div class="kval" id="bl-total">0</div><div class="kt">Total</div></div>
+      <div class="kpi"><div class="klbl">Outstanding Private Balance</div><div class="kval" id="bl-outstanding">$0</div><div class="kt">Unpaid invoices</div></div>
+      <div class="kpi"><div class="klbl">Pending HCBS Claims</div><div class="kval" id="bl-hcbs-pending">0</div><div class="kt">Not yet paid</div></div>
+    </div>
+    <div class="card"><div class="cb">
+      <div class="tw"><table><thead><tr><th>Resident</th><th>Payer</th><th>Latest Invoice</th><th>Room &amp; Board</th><th>Care Amount</th><th>Private Total</th><th>Private Status</th><th>HCBS Status</th><th>Actions</th></tr></thead>
+      <tbody id="bltbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="hcbsstatusmodal">
+  <div class="mbox">
+    <div class="mtitle">Update HCBS Claim Status</div>
+    <div class="fg"><label>Status</label><select id="hs-status"><option value="not_submitted">Not Submitted</option><option value="submitted">Submitted</option><option value="paid">Paid</option><option value="denied">Denied</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeHcbsStatusModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmHcbsStatus()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- SECURITY & ACCESS -->
 <div class="panel" id="panel-security">
   <div class="ph"><div><div class="ptitle">Security &amp; Access</div><div class="psub">Your account and employee credentials</div></div></div>
@@ -499,6 +534,23 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <option value="mn_documented_disposal">Minnesota: Documented loss/disposal (Minn. Stat. 144G.71)</option>
     </select></div>
     <button class="btn bp bs" onclick="saveCsPolicy()">Save Policy</button>
+  </div></div>
+  <!-- Billing rate card (2026-08-20). Real research finding (see the
+       original SAIRNcare v1 scope doc): assisted-living billing is
+       primarily private-pay (room/board + care-level rate); Medicaid
+       coverage, where it exists, runs through a state HCBS waiver that
+       covers ONLY the care portion, never room/board, and many facilities
+       don't accept Medicaid at all -- hence the explicit accept-Medicaid
+       toggle, not an assumption that every facility takes it. -->
+  <div class="card"><div class="ch"><span class="ct">Billing Rate Card</span></div><div class="cb">
+    <div class="note">Room &amp; board is always private-pay -- Medicaid HCBS waivers never cover it. The care-level rate is billed privately unless this facility accepts Medicaid HCBS AND the resident's payer is set to Medicaid HCBS Waiver.</div>
+    <div class="fg"><label>Monthly Room &amp; Board Rate ($)</label><input id="rc-roomboard" type="number"></div>
+    <div class="fr"><div class="fg"><label>AL1 Care Rate ($/mo)</label><input id="rc-al1" type="number"></div>
+      <div class="fg"><label>AL2 Care Rate ($/mo)</label><input id="rc-al2" type="number"></div></div>
+    <div class="fg"><label>AL3 Care Rate ($/mo)</label><input id="rc-al3" type="number"></div>
+    <div class="fg"><label>Accept Medicaid HCBS Waiver?</label><select id="rc-hcbs-enabled" onchange="rcToggleHcbsState()"><option value="0">No -- private-pay only</option><option value="1">Yes</option></select></div>
+    <div class="fg" id="rc-hcbs-state-row" style="display:none"><label>HCBS Waiver State</label><input id="rc-hcbs-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
+    <button class="btn bp bs" onclick="saveRateCard()">Save Rate Card</button>
   </div></div>
 </div>
 <div class="modal" id="facilitymodal">
@@ -661,6 +713,7 @@ function alfEnterApp(d){
   alfHydrateResidents().then(function(merged){if(merged){rResidents();rCareplans();}});
   alfHydrateStaff().then(function(merged){if(merged)rStaff();});
   alfHydrateMar().then(function(merged){if(merged)rMar();});
+  alfHydrateBilling().then(function(merged){if(merged)rBilling();});
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -707,6 +760,7 @@ function nav(id){
   if(id==='careplans')rCareplans();
   if(id==='mar')rMarPanel();
   if(id==='staff')rStaff();
+  if(id==='billing')rBillingPanel();
   if(id==='settings')rSettings();
 }
 
@@ -1376,6 +1430,135 @@ function rStaff(){
   }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No staff on file</td></tr>';
 }
 
+// ── BILLING (private-pay + state-gated Medicaid HCBS) ────────────────────
+// Management only (owner, billing) -- financial data, no clinical role has
+// a minimum-necessary reason to see it. room_board_amount and
+// care_amount/hcbs_claim_amount are structurally separate fields end to
+// end so they can never be accidentally summed into one figure -- see
+// sql/sairncare_billing_schema.sql's header for the real research this is
+// grounded in (HCBS never covers room/board).
+function billingEntries(){return ld('alf_billing',[]);}
+// Additive-only merge for hydration; a same-id (resident+month) regen is a
+// real in-place upsert server-side, so an invoice edited on this device
+// always reflects locally -- only an invoice generated/changed on a
+// DIFFERENT device won't refresh here until this device also re-saves it,
+// same disclosed limitation as every other hydrate function this session.
+function alfHydrateBilling(){
+  if(!alfLicenseKey())return Promise.resolve(false);
+  return alfData('read','alf_billing',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var local=billingEntries();
+    var localIds={};
+    local.forEach(function(e){if(e&&e.id)localIds[e.id]=true;});
+    var added=false;
+    serverRows.forEach(function(e){
+      if(e&&e.id&&!localIds[e.id]){local.push(e);localIds[e.id]=true;added=true;}
+    });
+    if(added)st('alf_billing',local);
+    return added;
+  });
+}
+function currentMonth(){return new Date().toISOString().slice(0,7);}
+function fmt2(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function latestInvoiceFor(residentId){
+  var all=billingEntries().filter(function(e){return e.resident_id===residentId;}).sort(function(a,b){return (a.month||'')<(b.month||'')?1:-1;});
+  return all.length?all[0]:null;
+}
+function rBillingPanel(){
+  var denied=$('bl-denied'),content=$('bl-content');
+  if(!alfIsManagement()){denied.style.display='block';content.style.display='none';return;}
+  denied.style.display='none';content.style.display='block';
+  rBilling();
+}
+function rBilling(){
+  var rs=residents();
+  var f=facility();
+  $('bl-total').textContent=rs.length;
+  var outstanding=0,hcbsPending=0;
+  var rows=rs.map(function(r){
+    var inv=latestInvoiceFor(r.id);
+    if(inv&&inv.private_status==='unpaid')outstanding+=Number(inv.private_total)||0;
+    if(inv&&inv.hcbs_claim_amount>0&&inv.hcbs_status!=='paid'&&inv.hcbs_status!=='denied')hcbsPending++;
+    return {r:r,inv:inv};
+  });
+  $('bl-outstanding').textContent=fmt2(outstanding);
+  $('bl-hcbs-pending').textContent=hcbsPending;
+  var bltb=$('bltbody');
+  bltb.innerHTML=rows.length?rows.map(function(x){
+    var r=x.r,inv=x.inv;
+    var isHcbs=r.payer==='medicaid_hcbs'&&f.hcbs_enabled;
+    return '<tr><td>'+H(r.name)+'</td><td><span class="badge bx">'+H((r.payer||'').replace('_',' '))+'</span></td>'+
+      '<td>'+(inv?H(inv.month):'--')+'</td>'+
+      '<td>'+(inv?fmt2(inv.room_board_amount):'--')+'</td>'+
+      '<td>'+(inv?fmt2(inv.care_amount):'--')+'</td>'+
+      '<td>'+(inv?fmt2(inv.private_total):'--')+'</td>'+
+      '<td>'+(inv?'<button class="btn '+(inv.private_status==='paid'?'bo':'bp')+' bs" onclick="togglePrivateStatus(\''+r.id+'\')">'+(inv.private_status==='paid'?'Paid':'Unpaid')+'</button>':'--')+'</td>'+
+      '<td>'+(isHcbs&&inv&&inv.hcbs_claim_amount>0?'<button class="btn bo bs" onclick="openHcbsStatusModal(\''+r.id+'\')">'+H(inv.hcbs_status||'not_submitted')+'</button>':(isHcbs?'--':'<span style="color:var(--muted);font-size:12px">n/a</span>'))+'</td>'+
+      '<td><button class="btn bo bs" onclick="generateInvoice(\''+r.id+'\')">Generate '+currentMonth()+'</button></td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No residents found</td></tr>';
+}
+async function generateInvoice(residentId){
+  var r=residents().find(function(x){return x.id===residentId;});
+  if(!r){toast('Resident not found');return;}
+  var f=facility();
+  var roomBoard=Number(f.roomboard_rate)||0;
+  var care=careRateFor(r.care_level);
+  var isHcbs=r.payer==='medicaid_hcbs'&&f.hcbs_enabled;
+  // Structural separation, never summed: room & board is ALWAYS private,
+  // regardless of payer. The care-level rate goes to Medicaid HCBS only
+  // when the resident is enrolled AND this facility actually accepts it --
+  // otherwise it falls back to private-pay, matching the real research
+  // finding that many facilities don't accept Medicaid HCBS at all.
+  var month=currentMonth();
+  var rec={
+    id:'INV-'+residentId+'-'+month,month:month,room_board_amount:roomBoard,care_amount:care,
+    private_total:roomBoard+(isHcbs?0:care),private_status:'unpaid',
+    hcbs_claim_amount:isHcbs?care:0,hcbs_status:isHcbs?'not_submitted':'n/a',
+    generated_by:(alfSession&&alfSession.employee_id)||''
+  };
+  var list=billingEntries();
+  var idx=list.findIndex(function(x){return x.id===rec.id;});
+  if(idx===-1)list.push(Object.assign({resident_id:residentId},rec));else list[idx]=Object.assign({},list[idx],rec);
+  st('alf_billing',list);
+  rBilling();
+  var syncResult=await alfData('write','alf_billing',Object.assign({resident_id:residentId},rec),true);
+  toast(syncResult?('Invoice generated for '+r.name+' ('+month+')'):'Saved on this device only -- server sync failed, try again with a connection');
+}
+async function togglePrivateStatus(residentId){
+  var inv=latestInvoiceFor(residentId);
+  if(!inv){toast('No invoice to update');return;}
+  inv.private_status=inv.private_status==='paid'?'unpaid':'paid';
+  var list=billingEntries();
+  var idx=list.findIndex(function(x){return x.id===inv.id;});
+  if(idx!==-1)list[idx]=inv;
+  st('alf_billing',list);
+  rBilling();
+  var syncResult=await alfData('write','alf_billing',Object.assign({},inv),true);
+  toast(syncResult?'Private status updated':'Saved on this device only -- server sync failed');
+}
+var hcbsStatusResidentId=null;
+function openHcbsStatusModal(residentId){
+  var inv=latestInvoiceFor(residentId);
+  if(!inv||!(inv.hcbs_claim_amount>0)){toast('No HCBS claim on this invoice');return;}
+  hcbsStatusResidentId=residentId;
+  $('hs-status').value=inv.hcbs_status||'not_submitted';
+  $('hcbsstatusmodal').classList.add('on');
+}
+function closeHcbsStatusModal(){$('hcbsstatusmodal').classList.remove('on');hcbsStatusResidentId=null;}
+async function confirmHcbsStatus(){
+  if(!hcbsStatusResidentId)return;
+  var inv=latestInvoiceFor(hcbsStatusResidentId);
+  if(!inv)return;
+  inv.hcbs_status=$('hs-status').value;
+  var list=billingEntries();
+  var idx=list.findIndex(function(x){return x.id===inv.id;});
+  if(idx!==-1)list[idx]=inv;
+  st('alf_billing',list);
+  closeHcbsStatusModal();rBilling();
+  var syncResult=await alfData('write','alf_billing',Object.assign({},inv),true);
+  toast(syncResult?'HCBS claim status updated':'Saved on this device only -- server sync failed');
+}
+
 // ── AI ASSISTANT ─────────────────────────────────────────────────────────
 function aiAsk(){
   var input=$('ai-input');
@@ -1403,12 +1586,34 @@ function aiAsk(){
 }
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────
-function facility(){return ld('alf_facility',{name:'',company:'',cs_policy:'shift_change_count'});}
+function facility(){return ld('alf_facility',{name:'',company:'',cs_policy:'shift_change_count',
+  roomboard_rate:0,al1_rate:0,al2_rate:0,al3_rate:0,hcbs_enabled:false,hcbs_state:''});}
 function rSettings(){
   var f=facility();
   $('set-facility').innerHTML='<div class="srow"><span class="slbl">Facility Name</span><span class="sval">'+H(f.name||'Not set')+'</span></div>'+
     '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(f.company||'Not set')+'</span></div>';
   var csSel=$('set-cs-policy');if(csSel)csSel.value=f.cs_policy||'shift_change_count';
+  var rbEl=$('rc-roomboard');if(rbEl)rbEl.value=f.roomboard_rate||'';
+  var a1=$('rc-al1');if(a1)a1.value=f.al1_rate||'';
+  var a2=$('rc-al2');if(a2)a2.value=f.al2_rate||'';
+  var a3=$('rc-al3');if(a3)a3.value=f.al3_rate||'';
+  var hcbsSel=$('rc-hcbs-enabled');if(hcbsSel)hcbsSel.value=f.hcbs_enabled?'1':'0';
+  var hcbsState=$('rc-hcbs-state');if(hcbsState)hcbsState.value=f.hcbs_state||'';
+  rcToggleHcbsState();
+}
+function rcToggleHcbsState(){var el=$('rc-hcbs-state-row');if(el)el.style.display=($('rc-hcbs-enabled').value==='1')?'block':'none';}
+function saveRateCard(){
+  var f=Object.assign({},facility(),{
+    roomboard_rate:Number($('rc-roomboard').value)||0,al1_rate:Number($('rc-al1').value)||0,
+    al2_rate:Number($('rc-al2').value)||0,al3_rate:Number($('rc-al3').value)||0,
+    hcbs_enabled:$('rc-hcbs-enabled').value==='1',hcbs_state:$('rc-hcbs-state').value.trim().toUpperCase()
+  });
+  st('alf_facility',f);toast('Billing rate card saved');
+}
+function careRateFor(careLevel){
+  var f=facility();
+  var m={al1:f.al1_rate,al2:f.al2_rate,al3:f.al3_rate};
+  return Number(m[careLevel])||0;
 }
 function openFacilityModal(){var f=facility();$('fc-name').value=f.name||'';$('fc-company').value=f.company||'';$('facilitymodal').classList.add('on');}
 function closeFacilityModal(){$('facilitymodal').classList.remove('on');}
@@ -1428,7 +1633,7 @@ function csPolicyLabel(v){
 
 // ── WIRE EVERYTHING ON DOM READY ────────────────────────────────────────
 function init(){
-  rDash();rResidents();rCareplans();rMarPanel();rStaff();rSettings();
+  rDash();rResidents();rCareplans();rMarPanel();rStaff();rBillingPanel();rSettings();
 }
 
 document.addEventListener('DOMContentLoaded',function(){
