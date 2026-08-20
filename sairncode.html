@@ -660,6 +660,7 @@
                 <button class="nav-btn" onclick="showPanel('hcc')" data-tip="Hierarchical Condition Category coding for risk adjustment">HCC</button>
                 <button class="nav-btn" onclick="showPanel('drg')" data-tip="Diagnosis-Related Group assignment and validation">DRG</button>
                 <button class="nav-btn" onclick="showPanel('encoder')" data-tip="Look up and verify ICD-10, CPT, and HCPCS codes">Encoder</button>
+                <button class="nav-btn" onclick="showPanel('coded-items')" data-tip="Stored citation and reasoning per coded item, plus the human-review queue">Coded Items</button>
                 <button class="nav-btn" onclick="showPanel('query')" data-tip="Send and track clarification requests to physicians">Physician Query</button>
             </div>
         </div>
@@ -739,9 +740,48 @@
             <div style="font-size:12px;color:#666;margin-bottom:8px;">Paste clinical note text. Every suggested code must cite the exact phrase in the note that supports it -- this page independently checks that the quoted phrase is actually present in what you pasted, and flags any suggestion whose citation can't be verified rather than trusting it silently.</div>
             <textarea id="note-input" rows="6" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;" placeholder="Paste clinical note text here..."></textarea>
             <div class="toolbar" style="margin-top:8px;">
+                <input type="text" id="note-encounter-ref" placeholder="Claim / encounter reference (optional)" class="search-input">
                 <button class="btn btn-primary" onclick="suggestCodesFromNote()" id="note-suggest-btn">Suggest Codes</button>
             </div>
             <div id="note-suggest-result" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- Coded Items / review queue (2026-08-20, Phase 1 items 1+2).
+             Two things live here that did not exist before:
+             1. The citation and reasoning behind a code assignment are a
+                REAL STORED RECORD, not something that only ever existed on
+                screen. suggestCodesFromNote() was already doing the hard
+                part (requiring an exact quote and independently checking it
+                against the note); it just threw the result away.
+             2. The escalation flag is honest. Confidence is DERIVED from
+                mechanical signals this app can actually check -- a missing
+                citation, a citation that is not in the note, a missing
+                supporting rule -- never a percentage asked of the model.
+                This file already had fabricated 82%/71% confidence scores
+                removed from the Fraud panel in the 2026-08-18 audit; a
+                number here would be the same mistake with higher stakes.
+                Nothing promotes a flagged item automatically: it waits for
+                a real human coder, recorded with who and when. -->
+        <div id="panel-coded-items" class="panel">
+            <h1 class="panel-title">Coded Items &amp; Review Queue</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                Every captured code keeps the exact phrase it was grounded in, whether that phrase
+                was actually found in the note, the reasoning, and the rule behind it. Items that
+                fail any of those checks are held for a human coder instead of being assigned --
+                this app never picks a best guess on your behalf.
+            </div>
+            <div id="coded-items-queue-count" style="font-size:13px;font-weight:600;margin-bottom:10px;"></div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead>
+                        <tr>
+                            <th>Code</th><th>Encounter</th><th>Citation</th>
+                            <th>Reasoning</th><th>Source rule</th><th>Status</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="coded-items-tbody"></tbody>
+                </table></div>
+            </div>
         </div>
 
         <!-- Claims Panel -->
@@ -4677,8 +4717,15 @@ How to answer:
                 }
 
                 var html = '';
-                suggestions.forEach(function(s){
+                // Suggestions are held here so the Capture button can store
+                // the EXACT quote and the REAL verification result computed
+                // at suggestion time, rather than re-deriving either from
+                // the DOM afterwards (where escaping/truncation would have
+                // already changed the text).
+                window._scLastSuggestions = suggestions;
+                suggestions.forEach(function(s, idx){
                     var verified = quoteFoundInNote(s.quote, noteText);
+                    s._verified = verified;
                     var badge = verified
                         ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">✓ Verified in note</span>'
                         : '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">⚠ Citation not found in note text</span>';
@@ -4686,6 +4733,10 @@ How to answer:
                         + '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+escHtml(s.code||'(no code)')+'</b> <span style="color:#666;font-size:11px;">'+escHtml(s.type||'')+'</span> '+badge+'</div>'
                         + '<div style="margin-top:6px;font-style:italic;color:#374151;">"'+escHtml(s.quote||'')+'"</div>'
                         + '<div style="margin-top:6px;color:#111;">'+escHtml(s.reasoning||'')+'</div>'
+                        + '<div style="margin-top:8px;display:flex;gap:6px;align-items:center;">'
+                        +   '<input type="text" id="sug-rule-'+idx+'" placeholder="Rule / edit / guideline behind this code (optional)" style="flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;">'
+                        +   '<button class="btn" style="padding:4px 10px;" onclick="captureSuggestion('+idx+')">Capture with citation</button>'
+                        + '</div>'
                         + '</div>';
                 });
                 resultEl.innerHTML = html;
@@ -4694,6 +4745,227 @@ How to answer:
             } finally {
                 btn.disabled = false; btn.textContent = 'Suggest Codes';
             }
+        }
+
+        // Bridge from a rendered suggestion to a stored coded item. Reads
+        // the suggestion out of the held array (not the DOM) so the stored
+        // quote is byte-identical to the one the verification actually ran
+        // against.
+        function captureSuggestion(idx){
+            var list = window._scLastSuggestions || [];
+            var s = list[idx];
+            if (!s) { showToast('That suggestion is no longer available -- re-run Suggest Codes'); return; }
+            var ruleEl = document.getElementById('sug-rule-' + idx);
+            captureCodedItem({
+                code: s.code,
+                code_type: s.type,
+                quote: s.quote,
+                quote_verified: s._verified === true,
+                reasoning: s.reasoning,
+                source_rule: ruleEl ? ruleEl.value.trim() : ''
+            });
+        }
+
+        // ================================================================
+        // CODED-ITEM CITATION + REVIEW RECORD (2026-08-20, Phase 1 items
+        // 1 and 2). Before this, suggestCodesFromNote() above did real work
+        // and discarded it: it required an exact quote, independently
+        // verified that quote was actually in the note, rendered it, and
+        // persisted nothing. A compliance tool that cannot reproduce "why
+        // was this code assigned" after the screen is closed has the
+        // problem backwards. These records fix that.
+        //
+        // THE CONFIDENCE DECISION, stated here because it is the one thing
+        // in this section most likely to be "helpfully" changed later:
+        // confidence is DERIVED from mechanical signals, never asked of the
+        // model. This file already carries the scar that makes that
+        // non-negotiable -- see getFraudAlerts() above, which used to seed
+        // fabricated 82%/71% confidence scores until the 2026-08-18
+        // fabrication audit removed them. A model-supplied percentage on a
+        // code assignment would be the same bug with higher stakes, because
+        // a number like that reads as a measured accuracy rate to whoever
+        // sees it next. There is no numeric score anywhere below.
+        // ================================================================
+        // The signed-in employee id lives in localStorage (set by
+        // scOnAuthenticated) -- there is no session object global in this
+        // file. Read through one helper so a review record's "who" always
+        // comes from the same real place.
+        function scCurrentEmployeeId(){
+            try { return localStorage.getItem('sc_employee_id') || ''; } catch(e){ return ''; }
+        }
+        function getCodedItems(){
+            try { var s = localStorage.getItem('sc_coded_items'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveCodedItems(list){ try { localStorage.setItem('sc_coded_items', JSON.stringify(list)); return true; } catch(e){ return false; } }
+
+        // Every signal here is something this app can actually check. None
+        // of them is an opinion, and none comes from the model's own
+        // self-assessment. If any signal fires, the item cannot be
+        // auto-assigned -- it is stored needing a real human coder.
+        function scDeriveCodedItemConfidence(item){
+            var basis = [];
+            if (!item.quote || !String(item.quote).trim()) {
+                basis.push('No supporting phrase was cited from the note.');
+            } else if (item.quote_verified !== true) {
+                // Deliberately `!== true`, not `=== false`. This gate must
+                // fail CLOSED: an item whose verification result is missing
+                // or unknown is not evidence that the quote checked out, and
+                // treating "don't know" as "verified" would auto-assign a
+                // code on no grounds -- the exact thing this feature exists
+                // to prevent. Only a real, explicit true counts.
+                basis.push('The cited phrase was NOT confirmed present in the note text.');
+            }
+            if (!item.source_rule || !String(item.source_rule).trim()) {
+                basis.push('No rule, edit, or guideline was recorded behind this code choice.');
+            }
+            if (!item.code || !String(item.code).trim()) {
+                basis.push('No code value recorded.');
+            }
+            return {
+                confidence: basis.length ? 'low' : 'high',
+                confidence_basis: basis,
+                review_status: basis.length ? 'needs_human_review' : 'auto_assigned',
+                escalation_reason: basis.length
+                    ? 'Held for a human coder because: ' + basis.join(' ')
+                    : ''
+            };
+        }
+
+        // Capture a coded item WITH its citation. Called from the suggestion
+        // list (one button per suggestion) so the exact quote and the REAL
+        // verification result that was computed at suggestion time are what
+        // get stored -- not a re-derived guess afterwards.
+        async function captureCodedItem(payload){
+            var encounterRef = (document.getElementById('note-encounter-ref') || {}).value || '';
+            var base = {
+                id: 'ci' + Date.now(),
+                code: payload.code || '',
+                code_type: payload.code_type || '',
+                encounter_ref: String(encounterRef).trim(),
+                quote: payload.quote || '',
+                quote_verified: payload.quote_verified === true,
+                reasoning: payload.reasoning || '',
+                source_rule: payload.source_rule || '',
+                reviewed_by: '',
+                reviewed_at: '',
+                created_by: scCurrentEmployeeId(),
+                created_at: new Date().toISOString()
+            };
+            var derived = scDeriveCodedItemConfidence(base);
+            base.confidence = derived.confidence;
+            base.confidence_basis = derived.confidence_basis;
+            base.review_status = derived.review_status;
+            base.escalation_reason = derived.escalation_reason;
+
+            var list = getCodedItems();
+            list.push(base);
+            var saved = saveCodedItems(list);
+            var synced = saved ? await scData('write', 'sc_coded_items', base) : null;
+            renderCodedItems();
+            showToast(!saved
+                ? 'Could not save -- storage may be full or unavailable, try again'
+                : (synced
+                    ? (base.review_status === 'needs_human_review'
+                        ? 'Captured and flagged for human coder review'
+                        : 'Captured with citation')
+                    : 'Captured on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+
+        // A real human decision, recorded with who and when. This is the
+        // ONLY way an item leaves needs_human_review -- nothing in this app
+        // promotes a flagged item on its own.
+        async function reviewCodedItem(id, decision){
+            if (decision !== 'reviewed_accepted' && decision !== 'reviewed_rejected') return;
+            var list = getCodedItems();
+            var item = null;
+            for (var i = 0; i < list.length; i++) { if (list[i].id === id) { item = list[i]; break; } }
+            if (!item) { showToast('Coded item not found'); return; }
+            var reviewer = scCurrentEmployeeId();
+            if (!reviewer) {
+                showToast('Sign in before recording a review decision');
+                return;
+            }
+            item.review_status = decision;
+            item.reviewed_by = reviewer;
+            item.reviewed_at = new Date().toISOString();
+            var saved = saveCodedItems(list);
+            var synced = saved ? await scData('write', 'sc_coded_items', item) : null;
+            renderCodedItems();
+            showToast(!saved
+                ? 'Could not save -- storage may be full or unavailable, try again'
+                : (synced ? 'Review decision recorded' : 'Recorded on this device only -- server sync failed'));
+        }
+
+        async function removeCodedItem(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_coded_items', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveCodedItems(getCodedItems().filter(function(r){ return r.id !== id; }));
+            renderCodedItems();
+        }
+
+        function scCodedItemStatusBadge(status){
+            var map = {
+                auto_assigned:      ['#dcfce7', '#166534', 'Auto-assigned'],
+                needs_human_review: ['#fef3c7', '#92400e', 'Needs human review'],
+                reviewed_accepted:  ['#dbeafe', '#1e40af', 'Reviewed — accepted'],
+                reviewed_rejected:  ['#fee2e2', '#991b1b', 'Reviewed — rejected']
+            };
+            var m = map[status] || ['#f3f4f6', '#374151', status || 'unknown'];
+            return '<span style="background:'+m[0]+';color:'+m[1]+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">'+escHtml(m[2])+'</span>';
+        }
+
+        function renderCodedItems(){
+            var list = getCodedItems();
+            var tbody = document.getElementById('coded-items-tbody');
+            if (!tbody) return;
+            // Review queue first -- the whole point of the escalation flag is
+            // that flagged items are the ones a coder needs to see.
+            var sorted = list.slice().sort(function(a, b){
+                var aq = a.review_status === 'needs_human_review' ? 0 : 1;
+                var bq = b.review_status === 'needs_human_review' ? 0 : 1;
+                if (aq !== bq) return aq - bq;
+                return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+            });
+            var pending = list.filter(function(r){ return r.review_status === 'needs_human_review'; }).length;
+            var queueEl = document.getElementById('coded-items-queue-count');
+            if (queueEl) {
+                queueEl.textContent = pending === 0
+                    ? 'No items are waiting on a human coder.'
+                    : pending + ' item' + (pending === 1 ? '' : 's') + ' waiting on a human coder.';
+            }
+            tbody.innerHTML = sorted.length ? '' : '<tr><td colspan="7" style="text-align:center;color:#666;padding:16px">No coded items captured yet. Use "Suggest Codes From a Note" above, then capture a suggestion to store its citation.</td></tr>';
+            sorted.forEach(function(r){
+                var tr = document.createElement('tr');
+                var citation = r.quote
+                    ? '<div style="font-style:italic;color:#374151;">"'+escHtml(r.quote)+'"</div>'
+                      + (r.quote_verified
+                            ? '<div style="font-size:11px;color:#166534;">Quote found in note</div>'
+                            : '<div style="font-size:11px;color:#991b1b;">Quote NOT found in note</div>')
+                    : '<span style="color:#991b1b;font-size:12px;">No citation</span>';
+                var why = r.escalation_reason
+                    ? '<div style="font-size:11px;color:#92400e;margin-top:4px;">'+escHtml(r.escalation_reason)+'</div>'
+                    : '';
+                var actions = '';
+                if (r.review_status === 'needs_human_review') {
+                    actions += '<button class="btn" style="padding:2px 8px;" onclick="reviewCodedItem(\''+r.id+'\',\'reviewed_accepted\')">Accept</button> '
+                             + '<button class="btn" style="padding:2px 8px;" onclick="reviewCodedItem(\''+r.id+'\',\'reviewed_rejected\')">Reject</button> ';
+                }
+                actions += '<button class="btn" style="padding:2px 8px;" onclick="removeCodedItem(\''+r.id+'\')">×</button>';
+                var reviewedNote = r.reviewed_by
+                    ? '<div style="font-size:11px;color:#666;">by '+escHtml(r.reviewed_by)+'</div>'
+                    : '';
+                tr.innerHTML =
+                      '<td><b>'+escHtml(r.code || '—')+'</b><div style="font-size:11px;color:#666;">'+escHtml(r.code_type || '')+'</div></td>'
+                    + '<td>'+escHtml(r.encounter_ref || '—')+'</td>'
+                    + '<td style="max-width:280px;">'+citation+'</td>'
+                    + '<td style="max-width:220px;font-size:12px;">'+escHtml(r.reasoning || '—')+'</td>'
+                    + '<td style="font-size:12px;">'+escHtml(r.source_rule || '—')+'</td>'
+                    + '<td>'+scCodedItemStatusBadge(r.review_status)+why+reviewedNote+'</td>'
+                    + '<td>'+actions+'</td>';
+                tbody.appendChild(tr);
+            });
         }
 
         // ================================================================
@@ -5171,7 +5443,12 @@ How to answer:
             // the ASA base-units reference all sync like any other resource.
             sc_specialty_checks: 'sc_specialty_checks',
             sc_specialty_checklists: 'sc_specialty_checklists',
-            sc_anesthesia_base_units: 'sc_anesthesia_base_units'
+            sc_anesthesia_base_units: 'sc_anesthesia_base_units',
+            // Added 2026-08-20 (Phase 1) -- per-coded-item citation and
+            // review records. Syncs like any other resource; the escalation
+            // state travels with the record so a review queue is the same
+            // on every device.
+            sc_coded_items: 'sc_coded_items'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -5196,7 +5473,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderCodedItems(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {
