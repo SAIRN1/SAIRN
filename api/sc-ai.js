@@ -67,7 +67,12 @@ const KNOWN_FEATURES = {
   chat: true,
   note_to_code: true,
   claim_scrub: true,
-  code_lookup: true
+  code_lookup: true,
+  // Added 2026-08-20, Phase 2a -- AI-assisted prior-auth documentation
+  // assembly. Same audited/screened transport as every other AI feature;
+  // the output this produces is a DRAFT the coder's own working file, never
+  // auto-submitted -- see sairncode.html's assemblePriorAuthDraft().
+  prior_auth_draft: true
 };
 
 // HIGH confidence: phrases that essentially never appear in a real clinical

@@ -179,14 +179,25 @@ const RESOURCES = {
   // enforced in the write branch below precisely BECAUSE this value will one
   // day drive irreversible deletion. REQUIRES
   // sql/sairncode_settings_schema.sql to be run in Supabase.
-  sc_settings: true
+  sc_settings: true,
+  // Prior-auth REQUEST lifecycle (2026-08-20, Phase 2a/2b) -- the 21st
+  // SC_RESOURCES entry. A different object than sc_auth (an authorization
+  // already held): this is the submitted->pending->approved/denied
+  // lifecycle with a payer, a submission method, and a real regulatory
+  // clock. sc_auth is untouched -- see sql/sairncode_auth_requests_schema
+  // .sql's header for the full reasoning. Write carries one extra
+  // server-side gate below: signing off a request (moving it toward
+  // submission-ready) requires a real Compliance Admin session, same
+  // weight as the delete gate every other sc_* resource already has.
+  // REQUIRES sql/sairncode_auth_requests_schema.sql to be run in Supabase.
+  sc_auth_requests: true
 };
 
 const SC_RESOURCES = [
   'sc_denial', 'sc_revenue', 'sc_compliance', 'sc_fraud', 'sc_prebill',
   'sc_hcc', 'sc_drg', 'sc_query', 'sc_rac', 'sc_telehealth',
   'sc_anesthesia', 'sc_auth', 'sc_ar', 'sc_providers', 'sc_encoder', 'sc_claims', 'sc_scrubrules',
-  'sc_denial_events', 'sc_eligibility', 'sc_settings'
+  'sc_denial_events', 'sc_eligibility', 'sc_settings', 'sc_auth_requests'
 ];
 // Minimum data-retention any SAIRNcode practice may configure, in years.
 // Enforced server-side rather than trusted from the client because a value
@@ -291,7 +302,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, bld_bids, bld_tna' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, bld_bids, bld_tna' } });
     return;
   }
 
@@ -2552,6 +2563,32 @@ module.exports = async (req, res) => {
               }
             });
             return;
+          }
+        }
+        // Sign-off gate (2026-08-20, Phase 2a hard requirement). Only
+        // applies to sc_auth_requests, and only when the write is actually
+        // trying to sign off -- setting signedOffBy at all, or moving
+        // status to 'submitted'. Every other sc_auth_requests write (create
+        // a draft, edit before review, log a payer decision after the fact)
+        // is unaffected. Mirrors the delete gate immediately below in this
+        // same file, byte for byte in spirit: a client-side "reviewed"
+        // checkbox is a UI convenience, never the real boundary -- only a
+        // real, currently-valid Compliance Admin session can make a request
+        // submission-ready, regardless of what the client claims.
+        if (resource === 'sc_auth_requests') {
+          const attemptingSignOff = Object.prototype.hasOwnProperty.call(payload, 'signedOffBy') ||
+            payload.status === 'submitted';
+          if (attemptingSignOff) {
+            const arCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode');
+            if (!arCaller || arCaller.role !== 'admin') {
+              res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Compliance Admin can sign off a prior-auth request as submission-ready' } });
+              return;
+            }
+            // The server sets signedOffBy from the verified session, not from
+            // whatever the client sent -- a forged name in the payload must
+            // never end up in the sign-off record.
+            payload.signedOffBy = arCaller.employee_id;
+            payload.signedOffAt = nowISO();
           }
         }
         const r = await fetch(rest(resource + '?on_conflict=license_hash,entry_id'), {

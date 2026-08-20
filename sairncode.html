@@ -1148,6 +1148,57 @@
                 <input type="number" id="auth-add-units" placeholder="Units" class="search-input">
                 <button class="btn btn-primary" onclick="addAuthEntry()">Add</button>
             </div>
+
+            <!-- Prior Authorization Requests (2026-08-20, Phase 2a/2b) --
+                 a REQUEST lifecycle, deliberately separate from the
+                 authorizations-held table above (sc_auth). See
+                 sql/sairncode_auth_requests_schema.sql for the full
+                 reasoning. Two things below are anti-fabrication hard
+                 requirements, not polish:
+                   1. The AI draft is labelled DRAFT everywhere and its
+                      citation badge says only "quote found in note" --
+                      never "verified", because finding a quote is not the
+                      same as that quote justifying medical necessity. A
+                      human reviewer makes that call.
+                   2. Signing off is a real server-enforced admin gate
+                      (mirrors requireAdminForDelete's weight exactly) --
+                      this UI's own signedOffBy checkbox is convenience
+                      only, the write will be rejected server-side if the
+                      session isn't really admin. -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Prior Authorization Requests</div>
+
+            <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+                <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Assemble Documentation Draft (AI-assisted)</div>
+                <div style="font-size:12px;color:#666;margin-bottom:8px;">This produces a DRAFT for your own working file -- not a document sent to any payer. Every assertion must cite an exact phrase from the note you paste; this page independently checks that phrase is actually present in your note before showing it. <b>That check confirms the quote is present in the note -- it does not confirm the quote is sufficient to justify medical necessity.</b> Only a credentialed reviewer can make that judgment, and only a Compliance Admin sign-off (below) can move a request toward submission-ready.</div>
+                <div class="toolbar">
+                    <input type="text" id="pa-draft-procedure" placeholder="Requested procedure / code" class="search-input">
+                </div>
+                <textarea id="pa-draft-note" rows="5" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;margin-top:8px;" placeholder="Paste the clinical note text supporting this request..."></textarea>
+                <div class="toolbar" style="margin-top:8px;">
+                    <button class="btn btn-primary" onclick="assemblePriorAuthDraft()" id="pa-draft-btn">Assemble Draft</button>
+                </div>
+                <div id="pa-draft-result" style="margin-top:10px;"></div>
+            </div>
+
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>Payer</th><th>Patient Ref</th><th>Procedure</th><th>Urgency</th><th>Via</th><th>Status</th><th>Clock</th><th>Signed Off</th><th></th></tr></thead>
+                    <tbody id="authreq-tbody"></tbody>
+                </table></div>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="authreq-add-payer" placeholder="Payer" class="search-input">
+                <input type="text" id="authreq-add-patient" placeholder="Patient ref" class="search-input">
+                <input type="text" id="authreq-add-procedure" placeholder="Procedure / code" class="search-input">
+                <select id="authreq-add-urgency"><option value="Standard">Standard (7 days)</option><option value="Expedited">Expedited (72 hours)</option></select>
+            </div>
+            <div class="toolbar">
+                <select id="authreq-add-via"><option>Portal</option><option>Fax</option><option>Phone</option></select>
+                <input type="date" id="authreq-add-submitted" class="search-input" title="Date submitted">
+                <select id="authreq-add-status"><option>Draft</option><option>Pending</option><option>Approved</option><option>Denied</option><option>More Info Needed</option></select>
+                <button class="btn btn-primary" onclick="addAuthRequestEntry()">Log Request</button>
+            </div>
+            <div style="font-size:11px;color:#666;margin-top:6px;">No "FHIR PAS" submission option exists here on purpose -- real automated FHIR prior-auth submission isn't built (most payers aren't live on it yet; see the Privacy &amp; Data panel's engineering notes if curious). Portal/Fax/Phone are the real, honest options a coder actually uses today.</div>
         </div>
 
         <!-- Eligibility Verification Panel (2026-08-20 BYO-credential
@@ -3010,6 +3061,177 @@ How to answer:
         }
 
         // ================================================================
+        // PRIOR AUTHORIZATION REQUESTS (2026-08-20, Phase 2a/2b) -- a
+        // REQUEST lifecycle, deliberately separate from sc_auth
+        // (authorizations already held). See sql/sairncode_
+        // auth_requests_schema.sql for the full reasoning; sc_auth itself
+        // is untouched by this feature.
+        // ================================================================
+        function getAuthRequestEntries(){
+            try { var s = localStorage.getItem('sc_auth_requests'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveAuthRequestEntries(list){ try { localStorage.setItem('sc_auth_requests', JSON.stringify(list)); return true; } catch(e){ return false; } }
+
+        // Real regulatory clock, computed from real dates -- never a
+        // placeholder. Mirrors authStatusFor()'s own UTC-midnight parsing
+        // convention immediately above in this file. A request with no
+        // submittedOn renders as "Not submitted", never as an overdue clock
+        // computed from an undefined date.
+        function priorAuthClock(req, today){
+            if (!req.submittedOn) return { label: 'Not submitted', cls: 'status-pending' };
+            var deadlineHours = req.urgency === 'Expedited' ? 72 : (7 * 24);
+            var submitted = new Date(req.submittedOn + 'T00:00:00Z');
+            var deadline = new Date(submitted.getTime() + deadlineHours * 3600000);
+            var now = new Date(today + 'T00:00:00Z');
+            var hoursLeft = Math.round((deadline - now) / 3600000);
+            if (req.status === 'Approved' || req.status === 'Denied') {
+                return { label: req.status + (req.decisionOn ? (' ' + req.decisionOn) : ''), cls: req.status === 'Approved' ? 'status-clean' : 'status-denied' };
+            }
+            if (hoursLeft < 0) return { label: 'Overdue (' + req.urgency + ' deadline passed)', cls: 'status-denied' };
+            if (hoursLeft <= 24) return { label: hoursLeft + 'h left (' + req.urgency + ')', cls: 'status-pending' };
+            return { label: Math.round(hoursLeft / 24) + 'd left (' + req.urgency + ')', cls: 'status-pending' };
+        }
+
+        function renderAuthRequests(){
+            var list = getAuthRequestEntries();
+            var tbody = document.getElementById('authreq-tbody');
+            if (!tbody) return;
+            var today = scLocalToday();
+            tbody.innerHTML = list.length ? '' : '<tr><td colspan="9" style="text-align:center;color:#666;padding:16px">No prior-auth requests logged yet.</td></tr>';
+            list.forEach(function(r){
+                var clock = priorAuthClock(r, today);
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(r.payer)+'</td><td>'+escHtml(r.patientRef||'—')+'</td><td>'+escHtml(r.procedure)+'</td><td>'+escHtml(r.urgency)+'</td><td>'+escHtml(r.submittedVia||'—')+'</td>'
+                    + '<td><span class="status-badge '+(r.status==='Approved'?'status-clean':r.status==='Denied'?'status-denied':'status-pending')+'">'+escHtml(r.status)+'</span></td>'
+                    + '<td><span class="status-badge '+clock.cls+'">'+escHtml(clock.label)+'</span></td>'
+                    + '<td>'+(r.signedOffBy ? ('✓ '+escHtml(r.signedOffBy)) : '<button class="btn" style="padding:2px 8px;" onclick="signOffAuthRequest(\''+r.id+'\')">Sign Off</button>')+'</td>'
+                    + '<td><button class="btn" style="padding:2px 8px;" onclick="removeAuthRequestEntry(\''+r.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function addAuthRequestEntry(){
+            var payer = document.getElementById('authreq-add-payer').value.trim();
+            var patientRef = document.getElementById('authreq-add-patient').value.trim();
+            var procedure = document.getElementById('authreq-add-procedure').value.trim();
+            var urgency = document.getElementById('authreq-add-urgency').value;
+            var submittedVia = document.getElementById('authreq-add-via').value;
+            var submittedOn = document.getElementById('authreq-add-submitted').value;
+            var status = document.getElementById('authreq-add-status').value;
+            if (!payer || !procedure) { showToast('Payer and procedure are required'); return; }
+            var list = getAuthRequestEntries();
+            var rec = { id:'ar'+Date.now(), payer:payer, patientRef:patientRef||'', procedure:procedure, urgency:urgency, submittedVia:submittedOn?submittedVia:'', submittedOn:submittedOn||'', status:status, decisionOn:'', decisionNotes:'', signedOffBy:'', signedOffAt:'' };
+            list.push(rec);
+            var saved = saveAuthRequestEntries(list);
+            var synced = saved ? await scData('write', 'sc_auth_requests', rec) : null;
+            renderAuthRequests();
+            document.getElementById('authreq-add-payer').value = '';
+            document.getElementById('authreq-add-patient').value = '';
+            document.getElementById('authreq-add-procedure').value = '';
+            document.getElementById('authreq-add-submitted').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Request logged' : 'Request logged on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+        async function removeAuthRequestEntry(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_auth_requests', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveAuthRequestEntries(getAuthRequestEntries().filter(function(r){return r.id!==id;}));
+            renderAuthRequests();
+        }
+
+        // The one hard-gated transition in this panel: moving a request to
+        // 'submitted' (submission-ready). requireAdminForDelete() here is
+        // the same UI-convenience check used everywhere else in this app --
+        // it is NOT the real boundary. The real boundary is server-side in
+        // api/sd-data.js's sc_auth_requests write branch, which independently
+        // re-verifies a real Compliance Admin session and sets signedOffBy
+        // from that session, never from anything this client sends. A
+        // non-admin session reaches the server call and is correctly
+        // rejected with 403 regardless of what this check does.
+        async function signOffAuthRequest(id){
+            if (!requireAdminForDelete()) return;
+            var list = getAuthRequestEntries();
+            var rec = list.filter(function(r){return r.id===id;})[0];
+            if (!rec) return;
+            var next = Object.assign({}, rec, { status: 'submitted' });
+            var result = await scData('write', 'sc_auth_requests', next);
+            if (result === null) {
+                showToast('Could not sign off -- the server rejected this (only a real Compliance Admin session can sign off) or is unreachable');
+                return;
+            }
+            // Trust the server's own recorded signedOffBy/signedOffAt rather
+            // than assuming the local admin-flag check was the real gate.
+            saveAuthRequestEntries(list.map(function(r){ return r.id===id ? Object.assign({}, r, result) : r; }));
+            renderAuthRequests();
+            showToast('Request signed off — submission-ready');
+        }
+
+        // ── AI-assisted documentation draft assembly ──
+        // Reuses quoteFoundInNote/normalizeForMatch (item 2's proven
+        // mechanical citation check) and extractJsonArray (item 2's JSON
+        // parsing). The one thing this must NOT reuse unchanged is item 2's
+        // "✓ Verified in note" badge language -- see the panel's own inline
+        // disclosure and the badge text below, which says only "quote found
+        // in note," never "verified."
+        async function assemblePriorAuthDraft(){
+            var procedure = document.getElementById('pa-draft-procedure').value.trim();
+            var noteText = document.getElementById('pa-draft-note').value;
+            var resultEl = document.getElementById('pa-draft-result');
+            var btn = document.getElementById('pa-draft-btn');
+            if (!procedure) { showToast('Enter the requested procedure or code first'); return; }
+            if (!noteText.trim()) { showToast('Paste note text to assemble a draft from'); return; }
+
+            btn.disabled = true; btn.textContent = 'Assembling...';
+            resultEl.innerHTML = '<div style="font-size:12px;color:#666">Assembling draft...</div>';
+
+            var sys = SAIRNCODE_SYSTEM_PROMPT + '\n\nFor this task specifically: you are assembling a DRAFT set of medical-necessity justifications supporting a prior authorization request for "' + procedure + '". Respond with ONLY a JSON array, no prose before or after, no markdown code fence. Each element: {"assertion": a specific clinical fact or justification supporting medical necessity for this procedure, "quote": the EXACT phrase copied verbatim from the note below that supports this assertion -- character-for-character from the note, not a paraphrase, "reasoning": a short explanation of why this supports medical necessity}. CRITICAL: "quote" must be copied exactly from the note -- if you cannot find a specific supporting phrase for an assertion, do not include that assertion. If nothing in the note supports this request, return an empty array []. This is a DRAFT for a coder\'s own review only, never a final or complete justification, and never claim otherwise.';
+
+            try {
+                var response = await scAiFetch({
+                    messages: [{ role: 'user', content: 'Note:\n\n' + noteText }],
+                    system: sys
+                }, 'prior_auth_draft');
+                if (!response.ok) {
+                    var paErr = await scAiErrorText(response);
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">' + escHtml(paErr || 'Error: could not reach the AI service.') + '</div>';
+                    return;
+                }
+                var data = await response.json();
+                var blocks = (data && data.content) || [];
+                var rawText = (blocks[0] && blocks[0].text) || '';
+                var assertions = extractJsonArray(rawText);
+
+                if (assertions === null) {
+                    resultEl.innerHTML = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;font-size:13px;color:#92400e">Could not parse a structured draft -- no citations could be checked. Raw answer below:<div style="margin-top:8px;white-space:pre-wrap;font-size:12px;">'+escHtml(rawText)+'</div></div>';
+                    return;
+                }
+                if (!assertions.length) {
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#666">Nothing in this note could be grounded in a specific supporting quote for this procedure.</div>';
+                    return;
+                }
+
+                var html = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e;"><b>DRAFT -- for your own review, not submission-ready.</b> Each quote below is confirmed present in your note. That is NOT the same as confirming it justifies medical necessity -- that judgment is yours. Log this as a request below, then a Compliance Admin must sign off before it is submission-ready.</div>';
+                assertions.forEach(function(a){
+                    var verified = quoteFoundInNote(a.quote, noteText);
+                    var badge = verified
+                        ? '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">Quote found in note</span>'
+                        : '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">⚠ Quote NOT found in note</span>';
+                    html += '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:8px;font-size:13px;">'
+                        + '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+escHtml(a.assertion||'(no assertion text)')+'</b> '+badge+'</div>'
+                        + '<div style="margin-top:6px;font-style:italic;color:#374151;">"'+escHtml(a.quote||'')+'"</div>'
+                        + '<div style="margin-top:6px;color:#111;">'+escHtml(a.reasoning||'')+'</div>'
+                        + '</div>';
+                });
+                resultEl.innerHTML = html;
+            } catch (e) {
+                resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Connection error -- could not assemble this draft.</div>';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Assemble Draft';
+            }
+        }
+
+        // ================================================================
         // ELIGIBILITY VERIFICATION -- real X12 270/271 (2026-08-20,
         // BYO-credential expansion).
         //
@@ -4120,6 +4342,7 @@ How to answer:
             renderDenialEvents();
             renderEligibility();
             renderRetentionSetting();
+            renderAuthRequests();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -4379,7 +4602,11 @@ How to answer:
             // Added 2026-08-20 (retention policy setting) -- a single
             // 'default' row per practice. Syncs like any other resource so
             // the policy is consistent across devices.
-            sc_settings: 'sc_settings'
+            sc_settings: 'sc_settings',
+            // Added 2026-08-20 (Phase 2a/2b prior-auth requests) -- syncs
+            // like any other resource; the sign-off gate itself is enforced
+            // server-side regardless of what this device's cache shows.
+            sc_auth_requests: 'sc_auth_requests'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -4404,7 +4631,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {
