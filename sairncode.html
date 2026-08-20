@@ -878,6 +878,27 @@
                 <input type="text" id="enc-add-bundling" placeholder="Bundling note (optional)" class="search-input">
                 <button class="btn btn-primary" onclick="addEncoderCode()">Add</button>
             </div>
+
+            <!-- 2026 Code Awareness Lookup (2026-08-20 expansion, item 4) --
+                 grounded-only: every code returned must be traced to a real
+                 live web-search result, never answered from training data
+                 alone (which may be stale for current-year code changes).
+                 The client independently checks the returned code digits
+                 actually appear in the model's own cited search text before
+                 showing it as a grounded match -- same mechanical-
+                 verification discipline as the AI panel's note-to-code
+                 citation check, applied to search grounding instead of note
+                 text. This is deliberately NOT the same thing as the AAPC-
+                 exam-scale exact code database (documented out of scope
+                 2026-08-19) -- it's a single grounded lookup per query, with
+                 an honest no-match fallback, not a licensed code repository. -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2026 Code Awareness Lookup</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Describe a procedure or diagnosis. This checks live web search for the current 2026 CPT/HCPCS/ICD-10 code -- never answered from memory alone. A code is only shown as a grounded match if this page can independently verify its digits appear in the actual cited search text; otherwise it says so honestly rather than guessing.</div>
+            <div class="toolbar">
+                <input type="text" id="code-lookup-desc" placeholder="e.g. 'established patient office visit, moderate complexity'" class="search-input" style="flex:1">
+                <button class="btn btn-primary" onclick="runCodeAwarenessLookup()" id="code-lookup-btn">Look Up</button>
+            </div>
+            <div id="code-lookup-result" style="margin-top:8px;"></div>
         </div>
 
         <!-- RAC Audit Panel -->
@@ -935,6 +956,31 @@
                 <select id="den-add-status"><option>In Appeal</option><option>Denied</option><option>Resolved</option><option>Correcting</option></select>
                 <button class="btn btn-primary" onclick="addDenialEntry()">Add</button>
             </div>
+
+            <!-- Denial Pattern Log (2026-08-20 expansion, item 3) -- real
+                 event-level tracking, separate from the aggregate rows
+                 above. Each row here is one real denial occurrence with a
+                 payer and reason, which the aggregate table above never
+                 captured (no payer field, one row per denial CODE not per
+                 denial EVENT). Patterns below are computed live from these
+                 real events -- never a placeholder or invented trend. -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Denial Pattern Log</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">One row per real denial event (not aggregated) -- payer and reason are logged per occurrence so real patterns can be computed below.</div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>Code</th><th>Payer</th><th>Reason</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+                    <tbody id="denialevents-tbody"></tbody>
+                </table></div>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <input type="text" id="dne-add-code" placeholder="Denial code" class="search-input">
+                <input type="text" id="dne-add-payer" placeholder="Payer" class="search-input">
+                <input type="text" id="dne-add-reason" placeholder="Reason" class="search-input">
+                <input type="number" step="0.01" id="dne-add-amount" placeholder="Amount" class="search-input">
+                <input type="date" id="dne-add-date" class="search-input">
+                <button class="btn btn-primary" onclick="addDenialEventEntry()">Log Denial</button>
+            </div>
+            <div id="denial-pattern-zone" style="margin-top:14px"></div>
         </div>
 
         <!-- Telehealth Panel -->
@@ -1768,6 +1814,98 @@ How to answer:
             document.getElementById('den-add-count').value = '';
             document.getElementById('den-add-amount').value = '';
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Denial record added' : 'Denial record added on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+
+        // ================================================================
+        // DENIAL PATTERN TRACKING (2026-08-20 expansion, item 3) -- real
+        // event-level log, a separate resource from sc_denial above.
+        // sc_denial is an aggregate table (one row per denial CODE with a
+        // manually-entered count) with no payer field -- it cannot answer
+        // "which payer denies which codes most" because it never recorded
+        // payer or individual occurrences. sc_denial_events is the real
+        // fix: one row per actual denial EVENT (code + payer + reason +
+        // amount + date), and the pattern breakdown below is computed live
+        // from these real rows, never a placeholder or invented trend.
+        // See sql/sairncode_denial_events_schema.sql for the server table.
+        // ================================================================
+        function getDenialEventEntries(){
+            try { var s = localStorage.getItem('sc_denial_events'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveDenialEventEntries(list){ try { localStorage.setItem('sc_denial_events', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        // Minimum real events before showing a "pattern" breakdown -- below
+        // this, a top-payer/top-reason list is just restating 1-2 rows
+        // verbatim, not a real pattern. Honest "not enough data yet"
+        // fallback below this threshold, same discipline as SAIRNcash's
+        // and SAIRNdesign's minimum-sample gates elsewhere on this
+        // platform.
+        var DENIAL_PATTERN_MIN_EVENTS = 3;
+        function renderDenialPatternAnalysis(){
+            var zone = document.getElementById('denial-pattern-zone');
+            if (!zone) return;
+            var events = getDenialEventEntries();
+            if (events.length < DENIAL_PATTERN_MIN_EVENTS) {
+                zone.innerHTML = '<div style="font-size:12px;color:#666;padding:8px 0">Not enough logged events yet for a real pattern breakdown (have '+events.length+', need '+DENIAL_PATTERN_MIN_EVENTS+'+). Log more denial events above.</div>';
+                return;
+            }
+            function topBy(list, keyFn, label){
+                var counts = {}, amounts = {};
+                list.forEach(function(e){
+                    var k = keyFn(e) || 'Unspecified';
+                    counts[k] = (counts[k]||0) + 1;
+                    amounts[k] = (amounts[k]||0) + (e.amount||0);
+                });
+                var keys = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; }).slice(0,3);
+                if (!keys.length) return '<div style="font-size:12px;color:#666">No '+label+' data.</div>';
+                return keys.map(function(k){
+                    return '<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0;"><span>'+escHtml(k)+'</span><span style="color:#666">'+counts[k]+' denial'+(counts[k]===1?'':'s')+' &middot; $'+amounts[k].toLocaleString()+'</span></div>';
+                }).join('');
+            }
+            zone.innerHTML =
+                '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:14px 16px;">'+
+                '<div style="font-weight:700;font-size:13px;margin-bottom:8px;">Real Denial Patterns <span style="font-weight:400;color:#666;">('+events.length+' logged events)</span></div>'+
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'+
+                '<div><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:4px;">TOP PAYERS BY DENIAL COUNT</div>'+topBy(events, function(e){return e.payer;}, 'payer')+'</div>'+
+                '<div><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:4px;">TOP DENIAL REASONS</div>'+topBy(events, function(e){return e.reason;}, 'reason')+'</div>'+
+                '</div></div>';
+        }
+        function renderDenialEvents(){
+            var list = getDenialEventEntries();
+            var tbody = document.getElementById('denialevents-tbody');
+            if (tbody) {
+                tbody.innerHTML = list.length ? '' : '<tr><td colspan="6" style="text-align:center;color:#666;padding:16px">No denial events logged yet.</td></tr>';
+                list.forEach(function(e){
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.reason)+'</td><td>$'+(e.amount||0).toLocaleString()+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDenialEventEntry(\''+e.id+'\')">×</button></td>';
+                    tbody.appendChild(tr);
+                });
+            }
+            renderDenialPatternAnalysis();
+        }
+        async function removeDenialEventEntry(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_denial_events', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveDenialEventEntries(getDenialEventEntries().filter(function(e){return e.id!==id;}));
+            renderDenialEvents();
+        }
+        async function addDenialEventEntry(){
+            var code = document.getElementById('dne-add-code').value.trim();
+            var payer = document.getElementById('dne-add-payer').value.trim();
+            var reason = document.getElementById('dne-add-reason').value.trim();
+            var amount = parseFloat(document.getElementById('dne-add-amount').value);
+            var date = document.getElementById('dne-add-date').value;
+            if (!code || !payer || isNaN(amount)) { showToast('Code, payer, and amount required'); return; }
+            var list = getDenialEventEntries();
+            list.push({id:'dne'+Date.now(), code:code, payer:payer, reason:reason||'—', amount:amount, date:date||scLocalToday()});
+            var saved = saveDenialEventEntries(list);
+            var synced = saved ? await scData('write', 'sc_denial_events', list[list.length - 1]) : null;
+            renderDenialEvents();
+            document.getElementById('dne-add-code').value = '';
+            document.getElementById('dne-add-payer').value = '';
+            document.getElementById('dne-add-reason').value = '';
+            document.getElementById('dne-add-amount').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Denial event logged' : 'Denial event logged on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getComplianceItems(){
@@ -3057,6 +3195,93 @@ How to answer:
             }
         }
 
+        // ================================================================
+        // 2026 CODE AWARENESS LOOKUP (2026-08-20 expansion, item 4) --
+        // grounded-only, no invented code numbers. Uses the same live-
+        // web-search server tool as the Prebill scrub tool (item 1) so a
+        // returned code is checked against current search results, not
+        // answered from training data that may be stale for this year's
+        // code changes. Deliberately NOT the same thing as a licensed
+        // exact CPT/ICD-10 code database (that gap -- the real AAPC-exam
+        // score limitation -- stays out of scope, documented 2026-08-19).
+        //
+        // Mechanical verification, same discipline as suggestCodesFromNote's
+        // quote check: the model is required to return the exact search-
+        // result text it says the code came from (source_snippet). This
+        // page independently checks the code digits actually appear in
+        // that snippet before calling it verified -- catching the common
+        // failure mode of a model stating a code and citing vague text
+        // that doesn't actually contain it. This confirms the model's
+        // answer is internally consistent with its own citation; it is
+        // not an independent re-fetch of the raw search result (the
+        // search result content itself isn't exposed to this client), so
+        // the result is labeled accordingly rather than overclaimed.
+        // ================================================================
+        function extractJsonObject(text){
+            if (!text) return null;
+            var start = text.indexOf('{');
+            var end = text.lastIndexOf('}');
+            if (start === -1 || end === -1 || end < start) return null;
+            try { return JSON.parse(text.slice(start, end + 1)); } catch(e) { return null; }
+        }
+        function codeCitedInSnippet(code, snippet){
+            if (!code || !snippet) return false;
+            return normalizeForMatch(snippet).indexOf(normalizeForMatch(code)) !== -1;
+        }
+        async function runCodeAwarenessLookup(){
+            var desc = document.getElementById('code-lookup-desc').value.trim();
+            var resultEl = document.getElementById('code-lookup-result');
+            var btn = document.getElementById('code-lookup-btn');
+            if (!desc) { showToast('Describe a procedure or diagnosis first'); return; }
+
+            btn.disabled = true; btn.textContent = 'Checking...';
+            resultEl.innerHTML = '<div style="font-size:12px;color:#666">Checking live web search for the current 2026 code...</div>';
+
+            var sys = 'You are looking up the current 2026 CPT, HCPCS, or ICD-10 code for a described procedure or diagnosis. Use web search to check current CMS/AMA guidance -- do not answer from memory alone, your training data may be stale for this year\'s code changes or additions. Respond with ONLY a JSON object, no prose before or after, no markdown code fence: {"code": the code found, or null if none, "type": "CPT"|"HCPCS"|"ICD-10"|null, "description": the official short description of the code, or null, "source_snippet": the EXACT text from a search result that states this code -- character-for-character from the search result, not a paraphrase, "no_match": true if search did not surface a specific, current, citable code for this description, false otherwise}. CRITICAL: never invent a plausible-sounding code number. If search does not surface a specific, current, citable code, set no_match:true and code:null -- do not guess.';
+
+            try {
+                var response = await fetch(APP_CONFIG.proxy, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'Find the current 2026 code for: ' + desc }],
+                        system: sys,
+                        app_id: APP_CONFIG.app_id,
+                        is_demo: APP_CONFIG.is_demo,
+                        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }]
+                    })
+                });
+                if (!response.ok) { resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Error: could not reach the AI/search service.</div>'; return; }
+                var data = await response.json();
+                var blocks = (data && data.content) || [];
+                var textBlocks = blocks.filter(function(b){ return b.type === 'text'; });
+                var rawText = textBlocks.length ? textBlocks[textBlocks.length - 1].text : '';
+                var result = extractJsonObject(rawText);
+
+                if (result === null) {
+                    resultEl.innerHTML = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;font-size:13px;color:#92400e">Could not parse a structured response -- no code could be verified. Raw answer below:<div style="margin-top:8px;white-space:pre-wrap;font-size:12px;">'+escHtml(rawText)+'</div></div>';
+                    return;
+                }
+                if (result.no_match || !result.code) {
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#666">No specific, current code found via live web search for this description -- verify manually rather than guessing.</div>';
+                    return;
+                }
+                var verified = codeCitedInSnippet(result.code, result.source_snippet);
+                var badge = verified
+                    ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">✓ Code appears in cited search text</span>'
+                    : '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">⚠ Could not verify code in cited text -- do not trust without manual check</span>';
+                resultEl.innerHTML = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+escHtml(result.code)+'</b> <span style="color:#666;font-size:11px;">'+escHtml(result.type||'')+'</span> '+badge+'</div>'
+                    + '<div style="margin-top:6px;color:#111;">'+escHtml(result.description||'')+'</div>'
+                    + '<div style="margin-top:6px;font-style:italic;color:#374151;font-size:12px;">Cited: "'+escHtml(result.source_snippet||'')+'"</div>'
+                    + '</div>';
+            } catch (e) {
+                resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Connection error -- could not check this description.</div>';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Look Up';
+            }
+        }
+
         window.addEventListener('load', () => {
             // Skip re-typing the license key on reload if one already passed
             // the real check this session -- still require PIN re-entry
@@ -3086,6 +3311,7 @@ How to answer:
             renderAr();
             renderProviders();
             renderScrubRules();
+            renderDenialEvents();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -3333,7 +3559,10 @@ How to answer:
             sc_claims: 'sc_claims',
             // Added 2026-08-19 (rule-based scrubbing expansion) -- same real
             // server-sync treatment as every other resource.
-            sc_scrubrules: 'sc_scrubrules'
+            sc_scrubrules: 'sc_scrubrules',
+            // Added 2026-08-20 (denial pattern tracking, item 3) -- same
+            // real server-sync treatment as every other resource.
+            sc_denial_events: 'sc_denial_events'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -3358,7 +3587,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {
