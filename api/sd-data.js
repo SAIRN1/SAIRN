@@ -190,7 +190,14 @@ const RESOURCES = {
   // submission-ready) requires a real Compliance Admin session, same
   // weight as the delete gate every other sc_* resource already has.
   // REQUIRES sql/sairncode_auth_requests_schema.sql to be run in Supabase.
-  sc_auth_requests: true
+  sc_auth_requests: true,
+  // SAIRNsenior client (home-care recipient) data (2026-08-20) -- see
+  // sql/sairnsenior_clients_schema.sql. Ground-up app, built with a real
+  // HIPAA minimum-necessary privacy gate from day one -- a caregiver only
+  // ever sees clients assigned to them; owner/billing (management) see
+  // every client. Bespoke branch below, same shape as bld_bids/sdn_clients/
+  // sd_crm -- assignee-based visibility, not the generic resource loop.
+  sen_clients: true
 };
 
 const SC_RESOURCES = [
@@ -302,7 +309,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, bld_bids, bld_tna' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, bld_bids, bld_tna, sen_clients' } });
     return;
   }
 
@@ -2047,6 +2054,77 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: { id: subjectId + ':' + perspective, subject_employee_id: subjectId, perspective: perspective, responses: responses, disc_responses: discResponses, disc_profile: discProfile } });
+      return;
+    }
+
+    // ── SAIRNSENIOR: sen_clients HIPAA MINIMUM-NECESSARY PRIVACY GATE (2026-08-20) ───────────
+    // Ground-up app (no prior client-only scaffold to replace, unlike sdn_clients/bld_bids
+    // which retrofitted an existing gate onto data that predated it). A client is home-care PHI
+    // (name, address, diagnosis, authorized services) -- a caregiver may only ever see clients
+    // assigned to them; owner/billing (management) see every client. Same bespoke-branch shape
+    // as sdn_clients/bld_bids/bld_tna -- assignee-based visibility, not the generic resource loop.
+    const SEN_CLIENT_MANAGEMENT_ROLES = { owner: true, billing: true };
+    if (resource === 'sen_clients' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('sen_clients?license_hash=eq.' + enc(licHash) + '&select=client_id,assigned_employee_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      // Management sees every client. A non-management (caregiver, scheduler, coordinator)
+      // caller sees only clients assigned to them -- an UNASSIGNED client is management-only-
+      // visible too, same minimum-necessary reasoning as every other app's assignment gate.
+      let out = rows || [];
+      if (!SEN_CLIENT_MANAGEMENT_ROLES[session.role]) {
+        out = out.filter((r) => r.assigned_employee_id === session.employee_id);
+      }
+      const data = out.map((r) => Object.assign({ id: r.client_id, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'sen_clients' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_clients payload.id is required' } }); return; }
+      const isManagement = !!SEN_CLIENT_MANAGEMENT_ROLES[session.role];
+      const existingR = await fetch(rest('sen_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Client tracking is not set up yet — run sql/sairnsenior_clients_schema.sql in Supabase first.' } });
+        return;
+      }
+      const existingRows = await existingR.json();
+      if (!existingR.ok) return upstream(res, existingRows);
+      const existingRow = Array.isArray(existingRows) && existingRows[0];
+      const requestedAssignee = payload.assigned_employee_id !== undefined
+        ? (payload.assigned_employee_id || null)
+        : (existingRow ? existingRow.assigned_employee_id : null);
+      if (!isManagement) {
+        // A caregiver/scheduler/coordinator may only write a client already assigned to them,
+        // and may never change the assignment -- reassignment (including self-assigning a
+        // currently-unassigned, invisible-to-them client) is management-only.
+        if (existingRow && existingRow.assigned_employee_id !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This client is not assigned to you' } });
+          return;
+        }
+        if (requestedAssignee !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign or reassign a client' } });
+          return;
+        }
+      }
+      const clientData = Object.assign({}, payload);
+      delete clientData.id;
+      delete clientData.assigned_employee_id;
+      const r = await fetch(rest('sen_clients?on_conflict=license_hash,client_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnsenior', client_id: String(payload.id),
+          assigned_employee_id: requestedAssignee, data: clientData, updated_at: nowISO()
+        })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, clientData) });
       return;
     }
 

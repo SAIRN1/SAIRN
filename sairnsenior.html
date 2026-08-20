@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNsenior - Home Care Agency Operations</title>
+<style>
+/* Brand color: #DB2777 (pink) -- distinct from every other SAIRN app's
+   color, including the OLD, unused sairncare draft (#E11D48, a
+   different shade) so the two are never visually confused. Judgment
+   call, not confirmed with Michael ahead of building -- same disclosed-
+   not-silent pattern as every other app's color pick this session. */
+:root{--p:#DB2777;--pd:#9D174D;--pt:#FDF2F8;--pb:#FBCFE8;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+/* GATE */
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+/* PIN / real per-employee login */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+#trial-expired-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9999;}
+#trial-expired-screen.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+.plink{background:none;border:none;color:var(--p);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:underline;}
+/* LAYOUT */
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+aside{width:220px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column;}
+.ss{padding:12px 12px 4px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:1px 4px;color:var(--text);font-size:13px;font-weight:500;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+.sico{font-size:15px;width:20px;text-align:center;}
+.sfoot{margin-top:auto;padding:12px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;}
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--pd);}
+.bs{padding:6px 12px;font-size:12px;}
+.krow{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--sh);}
+.klbl{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.kval{font-size:24px;font-weight:800;color:var(--pd);margin:4px 0;}
+.kt{font-size:11px;color:var(--ok);}
+.kt.d{color:var(--danger);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--pt);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bw{background:#FEF3C7;color:#92400E;}
+.br{background:#FEE2E2;color:#991B1B;}
+.bx{background:#F1F5F9;color:#475569;}
+.srow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:13px;color:var(--muted);}
+.sval{font-size:14px;font-weight:700;}
+.sbar{display:flex;gap:8px;margin-bottom:14px;}
+.sbar input{flex:1;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;font-family:inherit;}
+input:focus,select:focus{border-color:var(--p);}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.fg{margin-bottom:14px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:560px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+.note{background:var(--pt);border:1px solid var(--pb);border-radius:10px;padding:12px 14px;font-size:12px;color:#831843;margin-bottom:16px;}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;background:linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,linear-gradient(to right,rgba(15,23,42,.18),rgba(15,23,42,0)),linear-gradient(to left,rgba(15,23,42,.18),rgba(15,23,42,0)) 100% 0;background-repeat:no-repeat;background-color:#fff;background-size:24px 100%,24px 100%,10px 100%,10px 100%;background-attachment:local,local,scroll,scroll;}
+.tw table{min-width:640px;}
+.navtog{display:none;background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;width:40px;height:40px;font-size:18px;cursor:pointer;flex-shrink:0;}
+#scrim{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:40;}
+#scrim.on{display:block;}
+.photobox{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;margin-bottom:14px;}
+.photobox img{max-width:100%;max-height:220px;border-radius:8px;margin-top:10px;}
+@media (max-width:768px){
+  .navtog{display:flex;align-items:center;justify-content:center;}
+  aside{position:fixed;top:56px;left:0;bottom:0;width:250px;z-index:50;transform:translateX(-100%);transition:transform .22s ease;box-shadow:0 8px 30px rgba(0,0,0,.18);}
+  aside.on{transform:translateX(0);}
+  main{padding:14px;}
+  header{padding:0 12px;gap:10px;}
+  .hlogo{font-size:17px;}
+  .hbadge{display:none;}
+  .huser{display:none;}
+  .hbtn{min-height:44px;padding:0 14px;display:inline-flex;align-items:center;}
+  .sb{min-height:44px;font-size:14px;}
+  .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
+  .btn.bs{min-height:40px;}
+  .krow{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px;}
+  .kval{font-size:20px;}
+  .g2{grid-template-columns:1fr;}
+  .fr{grid-template-columns:1fr;}
+  .sbar{flex-wrap:wrap;}
+  .sbar input,.sbar select{width:100%!important;flex:1 1 100%;}
+  .ph{gap:8px;}
+  .ptitle{font-size:19px;}
+  .pa{margin-left:0;width:100%;}
+  .mbox{width:94%;padding:20px;}
+  #toast{left:16px;right:16px;bottom:16px;max-width:none;}
+}
+@media (max-width:420px){.krow{grid-template-columns:1fr 1fr;}}
+@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNsenior</div>
+    <div class="gsub">Home Care Agency Operations &mdash; Enter License Key</div>
+    <input class="ginp" id="gkey" placeholder="SEN-XXXXXX-XXXX" autocomplete="off" onkeydown="if(event.key==='Enter')gateGo()">
+    <button class="gbtn" onclick="gateGo()">Activate</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<!-- Real per-employee login from day one (2026-08-20) -- built ground-up
+     for SAIRNsenior, never had an old shared-PIN scaffold to replace.
+     Per-person identity is the prerequisite for the HIPAA minimum-
+     necessary client-visibility gate this app is built around. -->
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNsenior</div>
+    <div id="lstep-login">
+      <div class="gsub">Sign in</div>
+      <input class="ginp" id="l-eid" placeholder="Employee ID or email" autocomplete="username" style="letter-spacing:0;text-align:left"
+             onkeydown="if(event.key==='Enter')$('l-pin').focus()">
+      <input class="ginp" id="l-pin" type="password" inputmode="numeric" placeholder="PIN" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')senLogin()">
+      <button class="gbtn" onclick="senLogin()">Sign In</button>
+      <div style="margin-top:14px"><button class="plink" onclick="senShowBootstrap()">First-time setup</button></div>
+    </div>
+    <div id="lstep-bootstrap" style="display:none">
+      <div class="gsub">First-time setup</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Creates this agency's first Owner login. Only works once.</div>
+      <input class="ginp" id="b-eid" placeholder="Owner employee ID or email" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-name" placeholder="Display name" style="letter-spacing:0;text-align:left">
+      <input class="ginp" id="b-pin" type="password" inputmode="numeric" placeholder="Choose a 6-8 digit PIN">
+      <button class="gbtn" onclick="senBootstrap()">Create Owner Account</button>
+      <div style="margin-top:12px"><button class="plink" onclick="senLoginReset()">Back to sign in</button></div>
+    </div>
+    <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+  </div>
+</div>
+
+<div id="trial-expired-screen">
+  <div class="gbox">
+    <div style="font-size:36px;margin-bottom:10px">&#9203;</div>
+    <div class="glogo" style="font-size:20px">Your 30-day trial has ended</div>
+    <div class="gsub" style="margin-bottom:20px">
+      Thanks for trying SAIRNsenior. Your trial started on <strong id="trial-start-display">&mdash;</strong>
+      and access to the full app is now paused. Email us to unlock unlimited access &mdash; no data has been lost.
+    </div>
+    <a class="gbtn" style="display:block;text-decoration:none;box-sizing:border-box" href="mailto:michael@sairn.com?subject=SAIRNsenior%20trial%20upgrade">Email michael@sairn.com to Upgrade</a>
+    <div style="font-size:11px;color:var(--muted);margin-top:14px">Your trial data is safe and will be here when you upgrade.</div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <button class="navtog" id="navtog" onclick="toggleNav()" aria-label="Toggle navigation">&#9776;</button>
+    <div class="hlogo">SAIRNsenior</div>
+    <div class="hbadge">Home Care Ops</div>
+    <div class="hr">
+      <span class="huser" id="huser">Owner</span>
+      <button class="hbtn" onclick="window.print()">Print</button>
+      <button class="hbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </header>
+  <div id="scrim" onclick="closeNav()"></div>
+  <div class="wrap">
+    <aside id="aside">
+      <div class="ss">Overview</div>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')"><span class="sico">&#128202;</span>Dashboard</button>
+      <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
+      <div class="ss">Care</div>
+      <button class="sb" id="sb-clients" onclick="nav('clients')"><span class="sico">&#128100;</span>Clients</button>
+      <div class="ss">Staff</div>
+      <button class="sb" id="sb-caregivers" onclick="nav('caregivers')"><span class="sico">&#128119;</span>Caregivers</button>
+      <div class="ss">Company</div>
+      <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Access</button>
+      <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
+      <div class="sfoot">SAIRNsenior v0.1 &middot; <span style="color:var(--p);font-weight:700;">Phase 1</span></div>
+    </aside>
+    <main>
+
+<!-- DASHBOARD -->
+<div class="panel on" id="panel-dashboard">
+  <div class="ph"><div><div class="ptitle">Operations Dashboard</div><div class="psub">Client census, caregiver assignments, and what needs attention</div></div></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Active Clients</div><div class="kval" id="d-clients">0</div><div class="kt">On active service</div></div>
+    <div class="kpi"><div class="klbl">Caregivers</div><div class="kval" id="d-caregivers">0</div><div class="kt">On staff</div></div>
+    <div class="kpi"><div class="klbl">Unassigned Clients</div><div class="kval" id="d-unassigned">0</div><div class="kt">Management-visible only</div></div>
+    <div class="kpi"><div class="klbl">Certs Expiring Soon</div><div class="kval" id="d-expiring">0</div><div class="kt">Within 30 days</div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
+</div>
+
+<!-- AI ASSISTANT -->
+<div class="panel" id="panel-ai">
+  <div class="ph"><div><div class="ptitle">AI Assistant</div><div class="psub">Ask about your clients, caregivers, and operations -- scoped to what you're allowed to see</div></div></div>
+  <div class="note">Answers are grounded in your own agency's real data, scoped by your role the same way every other screen is -- a caregiver's AI answers never include another caregiver's clients.</div>
+  <div class="card"><div class="cb">
+    <div id="ai-hist" style="margin-bottom:12px;max-height:400px;overflow-y:auto"></div>
+    <div class="fg"><textarea id="ai-input" rows="2" placeholder="e.g. Which of my clients haven't had a visit this week?"></textarea></div>
+    <button class="btn bp" onclick="aiAsk()">Ask</button>
+  </div></div>
+</div>
+
+<!-- CLIENTS -->
+<div class="panel" id="panel-clients">
+  <div class="ph"><div><div class="ptitle">Clients</div><div class="psub">Home care clients &mdash; visible to you only where you're assigned or management</div></div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openClientModal()">+ New Client</button></div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Total Clients</div><div class="kval" id="c-total">0</div><div class="kt">Visible to you</div></div>
+    <div class="kpi"><div class="klbl">Medicaid</div><div class="kval" id="c-medicaid">0</div><div class="kt">Payer: Medicaid</div></div>
+    <div class="kpi"><div class="klbl">Private Pay</div><div class="kval" id="c-private">0</div><div class="kt">Payer: Private</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="sbar"><input id="csrch" placeholder="Search by name..." oninput="rClients()"></div>
+    <div class="tw"><table><thead><tr><th>Name</th><th>Address</th><th>Payer</th><th>Authorized Hrs/wk</th><th>Assigned To</th><th>Actions</th></tr></thead>
+    <tbody id="ctbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="clientmodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Client</div>
+    <!-- Required v1 photo->Claude component (sairn-app-scaffold): a photo
+         of the MD order / authorization letter at intake gets read by
+         Claude and pre-fills these fields -- staff still reviews and can
+         edit everything before saving, never auto-submitted. -->
+    <div class="photobox">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Optional: photograph the MD order or authorization letter to pre-fill this form</div>
+      <input type="file" accept="image/*" capture="environment" id="cl-photo-input" onchange="clHandlePhoto(event)">
+      <img id="cl-photo-preview" style="display:none">
+      <div id="cl-photo-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+    </div>
+    <div class="fr"><div class="fg"><label>Client Name</label><input id="cl-name" placeholder="Eleanor Whitfield"></div><div class="fg"><label>Phone</label><input id="cl-phone" placeholder="(440) 555-0100"></div></div>
+    <div class="fg"><label>Address</label><input id="cl-address" placeholder="123 Lakeshore Dr, Avon Lake OH"></div>
+    <div class="fr"><div class="fg"><label>Diagnosis</label><input id="cl-diagnosis" placeholder="e.g. Parkinson's, post-hip-surgery recovery"></div>
+      <div class="fg"><label>Payer</label><select id="cl-payer"><option value="medicaid">Medicaid</option><option value="va">VA</option><option value="ltci">LTCI</option><option value="private">Private Pay</option><option value="self_pay">Self-Pay</option></select></div></div>
+    <div class="fr"><div class="fg"><label>Authorized Hours / Week</label><input id="cl-hours" type="number" placeholder="20"></div>
+      <div class="fg"><label>Status</label><select id="cl-status"><option value="active">Active</option><option value="intake">Intake</option><option value="on_hold">On Hold</option><option value="discharged">Discharged</option></select></div></div>
+    <div class="fg"><label>Care Plan / Notes</label><textarea id="cl-notes" rows="2"></textarea></div>
+    <!-- Management-only -- server-side is the real gate, same precedent as
+         every other app's Assign-To control this session. -->
+    <div class="fg" id="cl-assignee-row" style="display:none"><label>Assigned Caregiver</label><select id="classignee"><option value="">Unassigned</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeClientModal()">Cancel</button>
+      <button class="btn bp" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- CAREGIVERS -->
+<div class="panel" id="panel-caregivers">
+  <div class="ph"><div><div class="ptitle">Caregivers</div><div class="psub">Staff roster, certifications, and expiry tracking</div></div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openCaregiverModal()">+ New Caregiver</button></div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>CPR Expires</th><th>Background Check</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="cgtbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="caregivermodal">
+  <div class="mbox">
+    <div class="mtitle">Add / Edit Caregiver</div>
+    <div class="fr"><div class="fg"><label>Name</label><input id="cg-name"></div><div class="fg"><label>Phone</label><input id="cg-phone"></div></div>
+    <div class="fr"><div class="fg"><label>CPR Cert Expires</label><input id="cg-cpr" type="date"></div><div class="fg"><label>Background Check Date</label><input id="cg-bgcheck" type="date"></div></div>
+    <div class="fg"><label>Status</label><select id="cg-status"><option value="active">Active</option><option value="onboarding">Onboarding</option><option value="inactive">Inactive</option></select></div>
+    <div class="fg"><label>Notes</label><textarea id="cg-notes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCaregiverModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCaregiver()">Save Caregiver</button>
+    </div>
+  </div>
+</div>
+
+<!-- SECURITY & ACCESS -->
+<div class="panel" id="panel-security">
+  <div class="ph"><div><div class="ptitle">Security &amp; Access</div><div class="psub">Your account and employee credentials</div></div></div>
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:10px">Your Account</div>
+    <div id="sec-account" style="font-size:13px;color:var(--muted)"></div>
+  </div></div>
+  <div class="card" id="sec-admin-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Employee Accounts</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
+    <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
+    <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
+    <div class="fg"><label>Role</label><select id="sec-new-role"><option value="scheduler">Scheduler</option><option value="coordinator">Care Coordinator</option><option value="billing">Billing Manager</option><option value="caregiver">Caregiver</option><option value="owner">Owner</option></select></div>
+    <div class="fg"><label>PIN (6-8 digits)</label><input id="sec-new-pin" type="password" inputmode="numeric"></div>
+    <button class="btn bp" onclick="secProvision()">Save Employee</button>
+    <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
+  </div></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="panel" id="panel-settings">
+  <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">Agency profile and EVV configuration</div></div></div>
+  <div class="card"><div class="ch"><span class="ct">Agency Profile</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openAgencyModal()">Edit</button></div></div>
+    <div class="cb" id="set-agency"></div></div>
+  <div class="card"><div class="ch"><span class="ct">EVV Configuration</span></div><div class="cb">
+    <div class="note">Electronic Visit Verification is federally mandated (21st Century Cures Act) but each state chooses its own aggregator and format -- set this per your operating state(s), not hardcoded to one national standard.</div>
+    <div class="fg"><label>State</label><input id="set-evv-state" placeholder="OH"></div>
+    <div class="fg"><label>EVV Aggregator</label><select id="set-evv-aggregator"><option value="sandata">Sandata</option><option value="hhaexchange">HHAeXchange</option><option value="tellus">Tellus</option><option value="carebridge">CareBridge</option><option value="other">Other / State-Specific</option></select></div>
+    <button class="btn bp bs" onclick="saveEvvConfig()">Save EVV Config</button>
+  </div></div>
+</div>
+<div class="modal" id="agencymodal">
+  <div class="mbox">
+    <div class="mtitle">Edit Agency Profile</div>
+    <div class="fg"><label>Agency Name</label><input id="ag-name" placeholder="Lakeshore Home Care"></div>
+    <div class="fg"><label>Demo Company (shown on Dashboard)</label><input id="ag-company" placeholder="Lakeshore Home Care"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeAgencyModal()">Cancel</button>
+      <button class="btn bp" onclick="saveAgency()">Save</button>
+    </div>
+  </div>
+</div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+var APP_ID='sairnsenior';
+var DATA_API='https://sairn.vercel.app/api/sd-data';
+var PROXY='https://sairn.vercel.app/api/claude';
+var AUTH_API='https://sairn.vercel.app/api/sen-auth';
+
+function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
+function $(s){return document.getElementById(s);}
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+function senLocalToday(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+
+// Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
+// validation is server-side in api/_lib/license.js.
+var VALID=['SEN-','DEMO-','SAIRN-'];
+
+var prole='owner',ceid=null,cgeid=null;
+var senSession=null;
+
+function senLicenseKey(){ return localStorage.getItem('sen_license_key') || ''; }
+
+// sdData()-equivalent. withSession (default off): attaches this browser's
+// real employee session token via X-SD-Auth -- only sen_clients calls
+// actually need it (the HIPAA privacy gate lives server-side in
+// api/sd-data.js's sen_clients branch), every other resource stays
+// unauthenticated, same discipline as every other app this session.
+function senData(action,resource,payload,withSession){
+  var lic=senLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&senSession&&senSession.token)h['X-SD-Auth']=senSession.token;
+  return fetch(DATA_API,{
+    method:'POST',
+    headers:h,
+    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('senData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      return d.data;
+    });
+  }).catch(function(e){console.warn('senData network error:',e.message);return null;});
+}
+
+// ── AUTH CLIENT ──────────────────────────────────────────────────────────
+function senAuth(action,payload,withSession){
+  var lic=senLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&senSession&&senSession.token)h['X-SD-Auth']=senSession.token;
+  return fetch(AUTH_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+function senLoginErr(m){var e=$('perr');if(e)e.textContent=m||'';}
+function senShowStep(id){
+  ['lstep-login','lstep-bootstrap'].forEach(function(s){
+    var el=$(s);if(el)el.style.display=(s===id?'block':'none');
+  });
+  senLoginErr('');
+}
+function senLoginReset(){var e=$('l-eid');if(e)e.value='';var p=$('l-pin');if(p)p.value='';senShowStep('lstep-login');}
+function senShowBootstrap(){senShowStep('lstep-bootstrap');}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key format. Try SEN-PINNACLE-2026';return;}
+  localStorage.setItem('sen_license_key',k);
+  $('gerr').textContent='Checking key…';
+  senAuth('check_license',{}).then(function(r){
+    if(!r.ok){
+      localStorage.removeItem('sen_license_key');
+      $('gerr').textContent=r.msg||'That license key was not accepted.';
+      return;
+    }
+    $('gerr').textContent='';
+    $('gate').style.display='none';$('pin').classList.add('on');
+    var e=$('l-eid');if(e)e.focus();
+  });
+}
+
+function senLogin(){
+  var eid=($('l-eid').value||'').trim();
+  var pin=($('l-pin').value||'').trim();
+  if(!eid||!pin){senLoginErr('Enter your employee ID and PIN.');return;}
+  senLoginErr('Signing in…');
+  senAuth('login',{employee_id:eid,pin:pin}).then(function(r){
+    if(!r.ok){senLoginErr(r.msg||'Sign-in failed.');return;}
+    senEnterApp(r.data);
+  });
+}
+
+function senBootstrap(){
+  var eid=($('b-eid').value||'').trim(),nm=($('b-name').value||'').trim(),pin=($('b-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){senLoginErr('Employee ID and a 6-8 digit PIN are required.');return;}
+  senLoginErr('Creating account…');
+  senAuth('bootstrap',{employee_id:eid,display_name:nm||eid,pin:pin}).then(function(r){
+    if(!r.ok){senLoginErr(r.msg||'Setup failed.');return;}
+    senEnterApp(r.data);
+  });
+}
+
+// 30-day trial gate, keyed off a real timestamp written on first-ever
+// login (never a fabricated countdown). Same proven pattern as every
+// other app's checkTrialGate().
+function checkTrialGate(){
+  var TRIAL_KEY='sen_trial_start';
+  var TRIAL_DAYS=30;
+  var startMs=parseInt(localStorage.getItem(TRIAL_KEY),10);
+  if(!startMs||isNaN(startMs)){
+    startMs=Date.now();
+    try{localStorage.setItem(TRIAL_KEY,String(startMs));}catch(e){}
+  }
+  var daysElapsed=Math.floor((Date.now()-startMs)/86400000);
+  if(daysElapsed<TRIAL_DAYS)return true;
+  var scr=$('trial-expired-screen');
+  if(scr){
+    scr.classList.add('on');
+    var dEl=$('trial-start-display');
+    if(dEl)dEl.textContent=new Date(startMs).toLocaleDateString();
+  }
+  $('pin').classList.remove('on');
+  return false;
+}
+window.checkTrialGate=checkTrialGate;
+
+function senEnterApp(d){
+  senSession={token:d.token,role:d.role,employee_id:d.employee_id};
+  prole=d.role;
+  try{localStorage.setItem('sen_session',JSON.stringify(senSession));}catch(e){}
+  st('sen_role',prole);
+  if(!checkTrialGate())return;
+  $('pin').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=(d.employee_id||prole)+' · '+prole.charAt(0).toUpperCase()+prole.slice(1);
+  senLoginErr('');
+  var p=$('l-pin');if(p)p.value='';
+  init();
+  senHydrateClients().then(function(merged){if(merged)rClients();});
+  if(typeof rSecurity==='function')rSecurity();
+}
+
+function senRestoreSession(){
+  var s=null;try{s=JSON.parse(localStorage.getItem('sen_session')||'null');}catch(e){}
+  if(!s||!s.token||!s.role)return false;
+  var payload=null;
+  try{payload=JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}
+  if(!payload||!payload.exp||Date.now()>=payload.exp){try{localStorage.removeItem('sen_session');}catch(e){}return false;}
+  if(payload.app!=='sairnsenior'){try{localStorage.removeItem('sen_session');}catch(e){}return false;}
+  senEnterApp(s);
+  senAuth('whoami',{},true).then(function(r){
+    if(!r.ok){doLogout();toast('Your session is no longer valid -- please sign in again');}
+  });
+  return true;
+}
+
+function doLogout(){
+  senSession=null;
+  try{localStorage.removeItem('sen_session');}catch(e){}
+  $('app').classList.remove('on');$('pin').classList.add('on');
+  senLoginReset();
+  toast('Logged out');
+}
+
+function toggleNav(){var a=$('aside');if(!a)return;var open=a.classList.toggle('on');$('scrim').classList.toggle('on',open);}
+function closeNav(){var a=$('aside');if(a)a.classList.remove('on');$('scrim').classList.remove('on');}
+
+function nav(id){
+  closeNav();
+  document.querySelectorAll('.modal.on').forEach(function(m){m.classList.remove('on');});
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  var p=$('panel-'+id),b=$('sb-'+id);
+  if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='security')rSecurity();
+  if(id==='dashboard')rDash();
+  if(id==='clients')rClients();
+  if(id==='caregivers')rCaregivers();
+  if(id==='settings')rSettings();
+}
+
+// ── ROSTER ────────────────────────────────────────────────────────────────
+// Backs the Assign-To/reassign controls. Read-only, management-only
+// (api/sen-auth.js's 'roster' action refuses non-management server-side
+// regardless of what this cache holds).
+function senIsManagement(){return prole==='owner'||prole==='billing';}
+var _senRoster=null;
+function senRefreshRoster(cb){
+  if(!senIsManagement())return;
+  senAuth('roster',{},true).then(function(r){
+    if(r.ok&&r.data&&Array.isArray(r.data.employees)){_senRoster=r.data.employees;senPopulateAssigneeControls();}
+    if(cb)cb();
+  });
+}
+function senEmployeeName(id){
+  if(!id)return'Unassigned';
+  if(_senRoster){var m=_senRoster.find(function(e){return e.employee_id===id;});if(m)return m.display_name||m.employee_id;}
+  return id;
+}
+function senPopulateAssigneeControls(){
+  var sel=$('classignee');
+  if(!sel||!_senRoster)return;
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Unassigned</option>'+_senRoster.map(function(e){
+    return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+' ('+H(e.role)+')</option>';
+  }).join('');
+  sel.value=cur;
+}
+
+// ── SECURITY & ACCESS ────────────────────────────────────────────────────
+function rSecurity(){
+  var s=senSession||{};
+  $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(s.role||'--')+'</strong>';
+  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+}
+function secProvision(){
+  var m=$('sec-admin-msg');
+  var eid=($('sec-new-eid').value||'').trim(),nm=($('sec-new-name').value||'').trim();
+  var role=$('sec-new-role').value,pin=($('sec-new-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){m.style.color='var(--danger)';m.textContent='Employee ID and a 6-8 digit PIN are required.';return;}
+  senAuth('setup',{employee_id:eid,display_name:nm||eid,role:role,pin:pin},true).then(function(r){
+    if(!r.ok){m.style.color='var(--danger)';m.textContent=r.msg||'Could not save.';return;}
+    m.style.color='var(--muted)';m.textContent='Saved '+eid+' as '+role+'.';
+    $('sec-new-pin').value='';
+  });
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────
+function rDash(){
+  var cl=clients(),cg=caregivers();
+  $('d-clients').textContent=cl.filter(function(c){return c.status==='active';}).length;
+  $('d-caregivers').textContent=cg.filter(function(c){return c.status==='active';}).length;
+  $('d-unassigned').textContent=cl.filter(function(c){return !c.assigned_employee_id;}).length;
+  var soon=cg.filter(function(c){return c.cpr_expiry&&certDaysUntil(c.cpr_expiry)!==null&&certDaysUntil(c.cpr_expiry)<=30;});
+  $('d-expiring').textContent=soon.length;
+  var att=[];
+  soon.forEach(function(c){att.push({t:H(c.name)+' — CPR expires '+fdate(c.cpr_expiry),b:'Expiring',c:'bw'});});
+  cl.filter(function(c){return c.status==='intake';}).forEach(function(c){att.push({t:H(c.name)+' — intake in progress',b:'Intake',c:'bb'});});
+  $('d-attention').innerHTML=att.length?att.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
+}
+function certDaysUntil(d){if(!d)return null;var diff=(new Date(d+'T00:00:00')-new Date(senLocalToday()+'T00:00:00'))/86400000;return Math.round(diff);}
+
+// ── CLIENTS (HIPAA minimum-necessary privacy gate) ──────────────────────
+function clients(){return ld('sen_clients',[]);}
+function senHydrateClients(){
+  if(!senLicenseKey())return Promise.resolve(false);
+  return senData('read','sen_clients',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var local=clients();
+    var localIds={};
+    local.forEach(function(c){if(c&&c.id)localIds[c.id]=true;});
+    var added=false;
+    serverRows.forEach(function(c){
+      if(c&&c.id&&!localIds[c.id]){local.push(c);localIds[c.id]=true;added=true;}
+    });
+    if(added)st('sen_clients',local);
+    return added;
+  });
+}
+function openClientModal(){
+  ceid=null;['cl-name','cl-phone','cl-address','cl-diagnosis','cl-notes'].forEach(function(f){$(f).value='';});
+  $('cl-payer').value='medicaid';$('cl-hours').value='';$('cl-status').value='intake';
+  $('cl-photo-preview').style.display='none';$('cl-photo-status').textContent='';$('cl-photo-input').value='';
+  var row=$('cl-assignee-row');
+  if(row){
+    row.style.display=senIsManagement()?'block':'none';
+    var sel=$('classignee');if(sel)sel.value='';
+    if(senIsManagement())senRefreshRoster();
+  }
+  $('clientmodal').classList.add('on');
+}
+function closeClientModal(){$('clientmodal').classList.remove('on');}
+function editClient(id){
+  var c=clients().find(function(x){return x.id===id;});if(!c)return;
+  ceid=id;$('cl-name').value=c.name||'';$('cl-phone').value=c.phone||'';$('cl-address').value=c.address||'';
+  $('cl-diagnosis').value=c.diagnosis||'';$('cl-payer').value=c.payer||'medicaid';$('cl-hours').value=c.authorized_hours||'';
+  $('cl-status').value=c.status||'intake';$('cl-notes').value=c.notes||'';
+  $('cl-photo-preview').style.display='none';$('cl-photo-status').textContent='';$('cl-photo-input').value='';
+  var row=$('cl-assignee-row');
+  if(row){
+    row.style.display=senIsManagement()?'block':'none';
+    if(senIsManagement())senRefreshRoster(function(){var sel=$('classignee');if(sel)sel.value=c.assigned_employee_id||'';});
+  }
+  $('clientmodal').classList.add('on');
+}
+async function saveClient(){
+  var name=$('cl-name').value.trim();
+  if(!name){toast('Client name required');return;}
+  var existing=ceid?clients().find(function(x){return x.id===ceid;}):null;
+  var assignedTo=senIsManagement()
+    ?(($('classignee')&&$('classignee').value)||'')
+    :((existing&&existing.assigned_employee_id)||(senSession&&senSession.employee_id)||'');
+  var rec={
+    id:ceid||newId('CL'),name:name,phone:$('cl-phone').value.trim(),address:$('cl-address').value.trim(),
+    diagnosis:$('cl-diagnosis').value.trim(),payer:$('cl-payer').value,authorized_hours:Number($('cl-hours').value)||0,
+    status:$('cl-status').value,notes:$('cl-notes').value.trim(),created_at:senLocalToday(),
+    assigned_employee_id:assignedTo
+  };
+  var list=clients();
+  if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
+  st('sen_clients',list);
+  closeClientModal();rClients();rDash();
+  var syncResult=await senData('write','sen_clients',rec,true);
+  toast(syncResult?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
+}
+async function senReassignClient(id,newEmployeeId){
+  var list=clients();
+  var c=list.find(function(x){return x.id===id;});
+  if(!c){toast('Client not found');return;}
+  c.assigned_employee_id=newEmployeeId||'';
+  st('sen_clients',list);rClients();
+  var syncResult=await senData('write','sen_clients',c,true);
+  toast(syncResult?(c.name+' reassigned to '+senEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection');
+}
+function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()*1000);}
+function rClients(){
+  var cl=clients();
+  var isMgmt=senIsManagement();
+  if(isMgmt&&!_senRoster)senRefreshRoster(rClients);
+  $('c-total').textContent=cl.length;
+  $('c-medicaid').textContent=cl.filter(function(c){return c.payer==='medicaid';}).length;
+  $('c-private').textContent=cl.filter(function(c){return c.payer==='private';}).length;
+  var q=($('csrch').value||'').toLowerCase();
+  var filtered=cl.filter(function(c){return !q||(c.name||'').toLowerCase().indexOf(q)!==-1;});
+  var statusColors={active:'bg',intake:'bb',on_hold:'bw',discharged:'bx'};
+  var ctb=$('ctbody');
+  ctb.innerHTML=filtered.length?filtered.map(function(c){
+    var assignedCell=isMgmt
+      ? '<select onchange="senReassignClient(\''+c.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
+        +'<option value="">Unassigned</option>'
+        +(_senRoster||[]).map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===c.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
+        +'</select>'
+      : H(senEmployeeName(c.assigned_employee_id));
+    return '<tr><td>'+H(c.name)+'</td><td>'+H(c.address||'--')+'</td>'+
+      '<td><span class="badge bx">'+H((c.payer||'').replace('_',' '))+'</span></td>'+
+      '<td>'+(c.authorized_hours||0)+'</td><td>'+assignedCell+'</td>'+
+      '<td><button class="btn bo bs" onclick="editClient(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No clients found</td></tr>';
+}
+
+// MD order / authorization photo -> Claude extraction (required v1
+// component per sairn-app-scaffold). Free-text response + light targeted
+// extraction, same proven baseline as StoneDesk's Field Sketch Quote --
+// not a fragile full-JSON contract. Always shown to staff for review
+// before saving, never auto-submitted.
+function clHandlePhoto(ev){
+  var file=ev.target.files&&ev.target.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var dataUrl=e.target.result;
+    var img=$('cl-photo-preview');img.src=dataUrl;img.style.display='block';
+    clAnalyzePhoto(dataUrl);
+  };
+  reader.readAsDataURL(file);
+}
+async function clAnalyzePhoto(dataUrl){
+  var status=$('cl-photo-status');
+  status.textContent='Reading document…';
+  var b64=dataUrl.split(',')[1];
+  var mediaType=(dataUrl.match(/data:([^;]+);/)||[])[1]||'image/jpeg';
+  var msgs=[{role:'user',content:[
+    {type:'image',source:{type:'base64',media_type:mediaType,data:b64}},
+    {type:'text',text:'This is a photo of an MD order or home-care authorization letter. Extract: client full name, diagnosis, authorized service hours per week, and payer type (Medicaid, VA, LTCI, private pay, or self-pay) if identifiable. Reply in plain text, one field per line, labelled exactly: Name:, Diagnosis:, Hours:, Payer:. If a field is not identifiable, write "not found" for that field. Do not guess or invent a value.'}
+  ]}];
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,messages:msgs})});
+    var data=await res.json();
+    if(data&&data.error){status.textContent='Could not read the document -- fill the form in manually.';return;}
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    if(!text){status.textContent='No response -- fill the form in manually.';return;}
+    var name=(text.match(/Name:\s*(.+)/i)||[])[1];
+    var diagnosis=(text.match(/Diagnosis:\s*(.+)/i)||[])[1];
+    var hours=(text.match(/Hours:\s*(\d+)/i)||[])[1];
+    var payer=(text.match(/Payer:\s*(.+)/i)||[])[1];
+    if(name&&name.toLowerCase().indexOf('not found')===-1)$('cl-name').value=name.trim();
+    if(diagnosis&&diagnosis.toLowerCase().indexOf('not found')===-1)$('cl-diagnosis').value=diagnosis.trim();
+    if(hours)$('cl-hours').value=hours.trim();
+    if(payer){
+      var pl=payer.toLowerCase();
+      var payerMap={medicaid:'medicaid',va:'va',ltci:'ltci',private:'private','self':'self_pay'};
+      var matched=Object.keys(payerMap).find(function(k){return pl.indexOf(k)!==-1;});
+      if(matched)$('cl-payer').value=payerMap[matched];
+    }
+    status.textContent='Fields pre-filled from the photo -- review before saving, nothing here is final yet.';
+  }catch(e){
+    status.textContent='Could not reach the AI service -- fill the form in manually.';
+  }
+}
+
+// ── CAREGIVERS ────────────────────────────────────────────────────────────
+function caregivers(){return ld('sen_caregivers',[]);}
+function openCaregiverModal(){
+  cgeid=null;['cg-name','cg-phone','cg-cpr','cg-bgcheck','cg-notes'].forEach(function(f){$(f).value='';});
+  $('cg-status').value='onboarding';
+  $('caregivermodal').classList.add('on');
+}
+function closeCaregiverModal(){$('caregivermodal').classList.remove('on');}
+function editCaregiver(id){
+  var c=caregivers().find(function(x){return x.id===id;});if(!c)return;
+  cgeid=id;$('cg-name').value=c.name||'';$('cg-phone').value=c.phone||'';$('cg-cpr').value=c.cpr_expiry||'';
+  $('cg-bgcheck').value=c.bgcheck_date||'';$('cg-status').value=c.status||'onboarding';$('cg-notes').value=c.notes||'';
+  $('caregivermodal').classList.add('on');
+}
+function saveCaregiver(){
+  var name=$('cg-name').value.trim();
+  if(!name){toast('Caregiver name required');return;}
+  var rec={id:cgeid||newId('CG'),name:name,phone:$('cg-phone').value.trim(),cpr_expiry:$('cg-cpr').value,
+    bgcheck_date:$('cg-bgcheck').value,status:$('cg-status').value,notes:$('cg-notes').value.trim()};
+  var list=caregivers();
+  if(cgeid){list=list.map(function(x){return x.id===cgeid?rec:x;});}else{list.push(rec);}
+  var saved=st('sen_caregivers',list);
+  closeCaregiverModal();rCaregivers();rDash();
+  toast(saved?('Saved - '+rec.name):'Could not save -- storage may be full or unavailable, try again');
+}
+function rCaregivers(){
+  var cg=caregivers();
+  var cgtb=$('cgtbody');
+  cgtb.innerHTML=cg.length?cg.map(function(c){
+    var days=certDaysUntil(c.cpr_expiry);
+    var cprBadge=days===null?'--':(days<0?'<span class="badge br">Expired</span>':(days<=30?'<span class="badge bw">'+days+'d</span>':fdate(c.cpr_expiry)));
+    return '<tr><td>'+H(c.name)+'</td><td>'+H(c.phone||'--')+'</td><td>'+cprBadge+'</td><td>'+fdate(c.bgcheck_date)+'</td>'+
+      '<td><span class="badge '+(c.status==='active'?'bg':(c.status==='onboarding'?'bb':'bx'))+'">'+H(c.status)+'</span></td>'+
+      '<td><button class="btn bo bs" onclick="editCaregiver(\''+c.id+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No caregivers on file</td></tr>';
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────
+function senAgency(){return ld('sen_agency',{agency_name:'SAIRNsenior',demo_company:'Lakeshore Home Care'});}
+function openAgencyModal(){
+  var a=senAgency();
+  $('ag-name').value=a.agency_name;$('ag-company').value=a.demo_company;
+  $('agencymodal').classList.add('on');
+}
+function closeAgencyModal(){$('agencymodal').classList.remove('on');}
+function saveAgency(){
+  var a={agency_name:$('ag-name').value.trim()||'SAIRNsenior',demo_company:$('ag-company').value.trim()||'Lakeshore Home Care'};
+  st('sen_agency',a);
+  closeAgencyModal();rSettings();
+  toast('Agency profile saved');
+}
+function rSettings(){
+  var a=senAgency();
+  $('set-agency').innerHTML=
+    '<div class="srow"><span class="slbl">Agency Name</span><span class="sval">'+H(a.agency_name)+'</span></div>'+
+    '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(a.demo_company)+'</span></div>';
+  var evv=ld('sen_evv_config',{});
+  if(evv.state)$('set-evv-state').value=evv.state;
+  if(evv.aggregator)$('set-evv-aggregator').value=evv.aggregator;
+}
+function saveEvvConfig(){
+  var cfg={state:($('set-evv-state').value||'').trim().toUpperCase(),aggregator:$('set-evv-aggregator').value};
+  st('sen_evv_config',cfg);
+  toast('EVV configuration saved');
+}
+
+// ── AI ASSISTANT ─────────────────────────────────────────────────────────
+var aiHist=[];
+function aiRenderHist(){
+  $('ai-hist').innerHTML=aiHist.map(function(m){
+    return '<div style="margin-bottom:10px"><strong>'+(m.role==='user'?'You':'AI')+':</strong> '+H(m.text)+'</div>';
+  }).join('');
+}
+async function aiAsk(){
+  var q=($('ai-input').value||'').trim();
+  if(!q){toast('Enter a question');return;}
+  aiHist.push({role:'user',text:q});aiRenderHist();
+  $('ai-input').value='';
+  // Scoped context: only what this role is allowed to see -- a caregiver's
+  // AI context is their own assigned clients only, never the full roster.
+  var isMgmt=senIsManagement();
+  var myClients=isMgmt?clients():clients().filter(function(c){return c.assigned_employee_id===((senSession&&senSession.employee_id)||'');});
+  var context='Client roster visible to this user ('+myClients.length+' clients): '+JSON.stringify(myClients.map(function(c){return {name:c.name,status:c.status,payer:c.payer,authorized_hours:c.authorized_hours};}));
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,system:'You are SAIRNsenior\'s operations assistant for a home care agency. Answer only from the provided context. Never invent a client or number not present in the context.',
+        messages:[{role:'user',content:context+'\n\nQuestion: '+q}]})});
+    var data=await res.json();
+    var text=(data&&data.error)?'AI request failed -- try again.':((data.content&&data.content[0]&&data.content[0].text)||'No response text returned.');
+    aiHist.push({role:'assistant',text:text});aiRenderHist();
+  }catch(e){
+    aiHist.push({role:'assistant',text:'Network error -- try again.'});aiRenderHist();
+  }
+}
+
+// ── WIRE EVERYTHING ON DOM READY ────────────────────────────────────────
+function init(){
+  rDash();rClients();rCaregivers();rSettings();
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  var lic=localStorage.getItem('sen_license_key');
+  if(!lic)return;
+  $('gate').style.display='none';
+  if(senRestoreSession())return;
+  $('pin').classList.add('on');
+  senShowStep('lstep-login');
+});
+</script>
+</body>
+</html>

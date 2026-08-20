@@ -57,6 +57,10 @@
     {
       "src": "/sairndental-complaint$",
       "dest": "/sairndental-complaint.html"
+    },
+    {
+      "src": "/sairnsenior$",
+      "dest": "/sairnsenior.html"
     }
   ],
   "crons": [

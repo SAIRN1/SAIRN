@@ -111,7 +111,26 @@ const ROLES_BY_APP = {
   // 'sales'/SAIRNdesign's 'designer'. Judgment call, not confirmed with
   // Michael ahead of building -- same disclosed-not-silent pattern as
   // every prior app's role mapping in this file.
-  sairnbuild: ['owner', 'pm', 'office']
+  sairnbuild: ['owner', 'pm', 'office'],
+  // SAIRNsenior (2026-08-20, real employee auth built from zero, ground-up
+  // like SAIRNlegacy/SAIRNlaw/SAIRNbuild): a home-care-agency operations
+  // platform (caregivers travel to clients' homes, EVV/GPS visit
+  // verification, multi-payer billing) -- confirmed as a SEPARATE app from
+  // SAIRNcare (facility-based assisted living/hospice/retirement), a real
+  // scope conflict found and resolved before any code was written (see
+  // SAIRN-ACTIVE-WORK.md, 2026-08-20). Role vocabulary matches the app's
+  // own real, dated SOP User Guide (agency owner, scheduler, care
+  // coordinator, billing manager, caregiver), not invented. 'owner' and
+  // 'billing' are this app's management tier for the HIPAA minimum-
+  // necessary client-visibility gate -- billing needs claims/payer-level
+  // visibility across the whole client roster the same way StoneDesk's
+  // 'admin' does, and (unlike the pure-operational scheduler/coordinator
+  // roles) has no legitimate reason to be scoped to one caregiver's
+  // caseload. 'caregiver' is the assigned-party role whose own clients get
+  // scoped, the analog of every other app's field/individual-contributor
+  // role. Judgment call, not confirmed with Michael ahead of building --
+  // same disclosed-not-silent pattern as every other app's role mapping.
+  sairnsenior: ['owner', 'scheduler', 'coordinator', 'billing', 'caregiver']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.
