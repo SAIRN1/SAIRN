@@ -287,6 +287,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-warranty" onclick="nav('warranty')"><span class="sico">&#128737;&#65039;</span>Warranty</button>
       <div class="ss">Documents</div>
       <button class="sb" id="sb-documents" onclick="nav('documents')"><span class="sico">&#128193;</span>Documents</button>
+      <div class="ss">Team</div>
+      <button class="sb" id="sb-tna" onclick="nav('tna')"><span class="sico">&#127919;</span>Training Needs</button>
       <div class="ss">Growth</div>
       <button class="sb" id="sb-reviews" onclick="nav('reviews')"><span class="sico">&#11088;</span>Reviews</button>
       <button class="sb" id="sb-referrals" onclick="nav('referrals')"><span class="sico">&#129309;</span>Referrals</button>
@@ -1149,6 +1151,28 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <button class="btn bp" onclick="secProvision()">Save Employee</button>
     <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
   </div></div>
+</div>
+
+<!-- TRAINING NEEDS ASSESSMENT (2026-08-20) -- Hennessy-Hicks-style importance/
+     performance-gap instrument (real methodology, construction-adapted item
+     wording -- see sql/sairnbuild_tna_schema.sql for the full provenance
+     disclosure). Deliberately NOT a personality/cognitive/medical test --
+     framed as training and communication style throughout, never clinical
+     or diagnostic language, specifically to stay clear of ADA medical-
+     inquiry territory. A framing choice, not a legal opinion -- have real
+     employment counsel review this copy before using it for any personnel
+     decision. -->
+<div class="panel" id="panel-tna">
+  <div class="ph"><div><div class="ptitle">Training &amp; Development</div><div class="psub">Skills and training-needs check-in -- not a performance review</div></div></div>
+  <div class="krow" id="tna-kpi-row"></div>
+  <div class="card"><div class="cb" style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn bp bs" id="tna-tab-self" onclick="tnaShowTab('self')">My Training Needs</button>
+    <button class="btn bo bs" id="tna-tab-assess" onclick="tnaShowTab('assess')" style="display:none">Assess a Team Member</button>
+    <button class="btn bo bs" id="tna-tab-team" onclick="tnaShowTab('team')" style="display:none">Team Overview</button>
+  </div></div>
+  <div id="tna-view-self"></div>
+  <div id="tna-view-assess" style="display:none"></div>
+  <div id="tna-view-team" style="display:none"></div>
 </div>
 
 <!-- REPORTS -->
@@ -2134,6 +2158,7 @@ function nav(id){
   var p=$('panel-'+id),b=$('sb-'+id);
   if(p)p.classList.add('on');if(b)b.classList.add('on');
   if(id==='security')rSecurity();
+  if(id==='tna')tnaRender();
   if(id==='dashboard')rDash();
   if(id==='ai')rAi();
   if(id==='jobs')rJobs();
@@ -7559,6 +7584,351 @@ function buildBldSharedCompanyContext() {
 loadBldSharedKnowledge();
 window.buildBldSharedCompanyContext = buildBldSharedCompanyContext;
 window.recordBldSharedTopics = recordBldSharedTopics;
+
+// ================================================================
+// TRAINING NEEDS ASSESSMENT (2026-08-20) -- Hennessy-Hicks-style
+// importance/performance-gap instrument. Real methodology (30 items, dual
+// 1-7 importance/performance scales, gap = importance minus performance,
+// bigger gap = bigger training need), verified via live web research
+// before building -- NOT reconstructed from memory. The verbatim original
+// 30 healthcare item texts could not be retrieved (5 sources attempted,
+// all PDF-text-extraction failures) -- every item below is original
+// wording, adapted for construction operations, built on the verified
+// real domain structure. Labelled "Hennessy-Hicks-style" everywhere in
+// this app's copy for exactly that reason, never claimed as the literal
+// original instrument. Full provenance disclosure in
+// sql/sairnbuild_tna_schema.sql's header.
+//
+// Two-perspective structure (Michael's spec): the employee rates
+// themselves (soft, positive-reinforcement framing) and, separately,
+// their manager rates them (analytical framing) -- same 30 items, two
+// independent raters. Judgment call on visibility (flagged, not silently
+// assumed): an employee sees BOTH their own self-ratings and any
+// management ratings of them, always softly framed as growth
+// opportunities -- transparency between the two views is the actual point
+// of running both, and a hidden second assessment about someone is a
+// worse look than a visible one. Management sees the analytical,
+// unsoftened view across the whole team. Enforced server-side in
+// api/sd-data.js's bld_tna branch -- this is UI convenience only.
+var TNA_DOMAINS=[
+  {id:'field',label:'Field & Technical Skills'},
+  {id:'quality',label:'Quality & Safety Oversight'},
+  {id:'comm',label:'Communication & Teamwork'},
+  {id:'admin',label:'Administration & Technology'},
+  {id:'lead',label:'Leadership & Supervision'}
+];
+var TNA_ITEMS=[
+  {id:'item_1',domain:'field',text:'Reading and interpreting plans, specs, and shop drawings accurately'},
+  {id:'item_2',domain:'field',text:'Performing my trade tasks to the quality standard expected'},
+  {id:'item_3',domain:'field',text:'Identifying and correcting defects or non-conforming work before it\'s covered up'},
+  {id:'item_4',domain:'field',text:'Using tools and equipment safely and correctly'},
+  {id:'item_5',domain:'field',text:'Estimating material quantities and labor time accurately for a task'},
+  {id:'item_6',domain:'field',text:'Troubleshooting unexpected site conditions or problems in the field'},
+  {id:'item_7',domain:'quality',text:'Conducting a thorough quality walk-through or punch-list inspection'},
+  {id:'item_8',domain:'quality',text:'Identifying safety hazards before they cause an incident'},
+  {id:'item_9',domain:'quality',text:'Completing accurate daily logs, inspection reports, or safety documentation'},
+  {id:'item_10',domain:'quality',text:'Following up to confirm corrective actions were actually completed'},
+  {id:'item_11',domain:'quality',text:'Understanding and applying current code/regulatory requirements to my work'},
+  {id:'item_12',domain:'quality',text:'Reviewing completed work against the original scope or spec'},
+  {id:'item_13',domain:'comm',text:'Communicating clearly with crew members from different trades'},
+  {id:'item_14',domain:'comm',text:'Explaining technical issues in terms a client or non-tradesperson can understand'},
+  {id:'item_15',domain:'comm',text:'Raising a problem or concern early, before it becomes a bigger issue'},
+  {id:'item_16',domain:'comm',text:'Giving and receiving feedback constructively'},
+  {id:'item_17',domain:'comm',text:'Coordinating effectively with subcontractors or vendors'},
+  {id:'item_18',domain:'comm',text:'Resolving a disagreement or conflict on site without it escalating'},
+  {id:'item_19',domain:'admin',text:'Using the software/apps this company relies on day to day'},
+  {id:'item_20',domain:'admin',text:'Keeping accurate records of hours, materials, and costs'},
+  {id:'item_21',domain:'admin',text:'Managing my own paperwork and documentation on schedule'},
+  {id:'item_22',domain:'admin',text:'Prioritizing tasks when there\'s more to do than time allows'},
+  {id:'item_23',domain:'admin',text:'Preparing or reviewing a bid, change order, or cost estimate'},
+  {id:'item_24',domain:'admin',text:'Following the company\'s established processes and procedures'},
+  {id:'item_25',domain:'lead',text:'Planning and sequencing work for a crew or project phase'},
+  {id:'item_26',domain:'lead',text:'Delegating tasks appropriately to others'},
+  {id:'item_27',domain:'lead',text:'Training or mentoring a less experienced team member'},
+  {id:'item_28',domain:'lead',text:'Meeting deadlines and keeping multiple priorities on track'},
+  {id:'item_29',domain:'lead',text:'Making a sound decision on site without waiting for approval from above'},
+  {id:'item_30',domain:'lead',text:'Holding others accountable to a schedule or quality standard'}
+];
+// Generic, non-branded DISC-style communication/work-style questionnaire --
+// the underlying 4-factor model (Dominance/Influence/Steadiness/
+// Conscientiousness) is public domain (Marston, 1928); this wording is
+// original, not copied from any licensed commercial DISC product (those
+// are trademarked). 4 statements per dimension, 1-5 "not like me" to
+// "very like me", summed per dimension -- highest = primary style,
+// second-highest = secondary. Self-report only, optional, framed strictly
+// as communication style -- see the disclaimer rendered with the form.
+var DISC_ITEMS=[
+  {id:'d1',dim:'D',text:'I like to take charge and make quick decisions on the job.'},
+  {id:'d2',dim:'D',text:'I push hard to get results, even when it\'s uncomfortable for others.'},
+  {id:'d3',dim:'D',text:'I\'d rather tackle a problem head-on than wait for someone else to handle it.'},
+  {id:'d4',dim:'D',text:'I get impatient with slow processes or excessive discussion.'},
+  {id:'i1',dim:'I',text:'I enjoy talking with people and building relationships on the crew.'},
+  {id:'i2',dim:'I',text:'I like to persuade others and get everyone excited about a plan.'},
+  {id:'i3',dim:'I',text:'I\'m comfortable being the one who speaks up in a group.'},
+  {id:'i4',dim:'I',text:'I prefer working with people over working alone.'},
+  {id:'s1',dim:'S',text:'I prefer a steady, predictable pace over constant change.'},
+  {id:'s2',dim:'S',text:'I\'m the one people count on to stay calm when things go wrong.'},
+  {id:'s3',dim:'S',text:'I like to finish what I start before moving to something new.'},
+  {id:'s4',dim:'S',text:'I work well as part of a team and avoid unnecessary conflict.'},
+  {id:'c1',dim:'C',text:'I want to understand all the details before I commit to a plan.'},
+  {id:'c2',dim:'C',text:'Accuracy and doing things the right way matters more to me than speed.'},
+  {id:'c3',dim:'C',text:'I follow procedures and specifications closely.'},
+  {id:'c4',dim:'C',text:'I\'d rather double-check my work than risk a mistake.'}
+];
+var DISC_LABELS={
+  D:{name:'Dominance',desc:'Direct, decisive, results-focused. Prefers fast action and clear ownership.'},
+  I:{name:'Influence',desc:'Outgoing, persuasive, people-focused. Thrives on collaboration and enthusiasm.'},
+  S:{name:'Steadiness',desc:'Steady, dependable, team-oriented. Prefers consistency and staying calm under pressure.'},
+  C:{name:'Conscientiousness',desc:'Detail-oriented, careful, quality-focused. Prefers accuracy and clear procedures.'}
+};
+var _tnaData=null,_tnaTab='self',_tnaAssessSubject=null;
+function tnaDomainLabel(id){var d=TNA_DOMAINS.find(function(x){return x.id===id;});return d?d.label:id;}
+function tnaMyRows(){
+  if(!_tnaData)return {self:null,management:null};
+  var mine=_tnaData.filter(function(r){return r.subject_employee_id===((bldSession&&bldSession.employee_id)||'');});
+  return {
+    self:mine.find(function(r){return r.perspective==='self';})||null,
+    management:mine.find(function(r){return r.perspective==='management';})||null
+  };
+}
+function tnaGap(resp){
+  if(!resp||resp.importance==null||resp.performance==null)return null;
+  return Number(resp.importance)-Number(resp.performance);
+}
+function tnaDomainAvgGap(responses,domainId){
+  var items=TNA_ITEMS.filter(function(i){return i.domain===domainId;});
+  var gaps=items.map(function(i){return tnaGap((responses||{})[i.id]);}).filter(function(g){return g!==null;});
+  if(!gaps.length)return null;
+  return gaps.reduce(function(s,g){return s+g;},0)/gaps.length;
+}
+function tnaLoad(){
+  return bldData('read','bld_tna',null,true).then(function(rows){
+    _tnaData=Array.isArray(rows)?rows:[];
+    return _tnaData;
+  });
+}
+function tnaRender(){
+  var isMgmt=bldIsManagement();
+  $('tna-tab-assess').style.display=isMgmt?'inline-block':'none';
+  $('tna-tab-team').style.display=isMgmt?'inline-block':'none';
+  tnaLoad().then(function(){
+    var mine=tnaMyRows();
+    $('tna-kpi-row').innerHTML=
+      '<div class="kpi"><div class="klbl">My Self-Assessment</div><div class="kval" style="font-size:16px">'+(mine.self?'Complete':'Not started')+'</div><div class="kt">Update anytime</div></div>'+
+      '<div class="kpi"><div class="klbl">Manager Assessment</div><div class="kval" style="font-size:16px">'+(mine.management?'On file':'Not yet')+'</div><div class="kt">From your manager</div></div>'+
+      (isMgmt?'<div class="kpi"><div class="klbl">Team Assessed</div><div class="kval">'+(_tnaData||[]).filter(function(r){return r.perspective==='management';}).length+'</div><div class="kt">Management assessments on file</div></div>':'');
+    tnaShowTab(_tnaTab);
+  });
+}
+function tnaShowTab(tab){
+  _tnaTab=tab;
+  ['self','assess','team'].forEach(function(t){
+    var v=$('tna-view-'+t),b=$('tna-tab-'+t);
+    if(v)v.style.display=(t===tab?'block':'none');
+    if(b)b.className='btn '+(t===tab?'bp':'bo')+' bs';
+  });
+  if(tab==='self')renderTnaSelfView();
+  if(tab==='assess')renderTnaAssessView();
+  if(tab==='team')renderTnaTeamView();
+}
+
+// ── MY TRAINING NEEDS (self perspective) ─────────────────────────────────
+function renderTnaSelfView(){
+  var mine=tnaMyRows();
+  var el=$('tna-view-self');
+  if(!mine.self){el.innerHTML=renderTnaFormHtml('self',null);return;}
+  el.innerHTML=renderTnaResultsHtml(mine.self,mine.management)+renderDiscSectionHtml(mine.self);
+}
+function renderTnaFormHtml(mode,existingRow){
+  var prefix=mode==='self'?'tself':'tmgmt';
+  var intro=mode==='self'
+    ? '<div class="note">This is a quick, honest check-in on how you\'re doing across the skills your role calls for. There\'s no wrong answer -- the goal is figuring out where a bit of training or support would help you most. This does not affect your pay or job status.</div>'
+    : '<div class="note">Rate this employee\'s current skill level across the same areas, based on what you\'ve actually observed on the job. This feeds team-wide training planning -- it is not a performance review and is not shared as a standalone score.</div>';
+  var existing=(existingRow&&existingRow.responses)||{};
+  var body=TNA_DOMAINS.map(function(d){
+    var items=TNA_ITEMS.filter(function(i){return i.domain===d.id;});
+    return '<div style="margin-bottom:18px"><div style="font-weight:700;margin-bottom:8px">'+H(d.label)+'</div>'+
+      items.map(function(i){
+        var r=existing[i.id]||{};
+        return '<div class="fr" style="align-items:flex-end"><div class="fg" style="flex:2"><label>'+H(i.text)+'</label></div>'+
+          '<div class="fg"><label>Importance (1-7)</label><select id="'+prefix+'-'+i.id+'-imp">'+tnaScaleOptions(r.importance)+'</select></div>'+
+          '<div class="fg"><label>Current Performance (1-7)</label><select id="'+prefix+'-'+i.id+'-perf">'+tnaScaleOptions(r.performance)+'</select></div></div>';
+      }).join('')+
+    '</div>';
+  }).join('');
+  var saveBtn=mode==='self'
+    ? '<button class="btn bp" onclick="saveTnaSelf()">Save My Self-Assessment</button>'
+    : '<button class="btn bp" onclick="saveTnaManagement()">Save Assessment</button>';
+  return '<div class="card"><div class="cb">'+intro+body+saveBtn+'<div id="'+prefix+'-msg" style="font-size:12px;margin-top:10px"></div></div></div>';
+}
+function tnaScaleOptions(selected){
+  var out='<option value="">--</option>';
+  for(var n=1;n<=7;n++){out+='<option value="'+n+'"'+(String(selected)===String(n)?' selected':'')+'>'+n+'</option>';}
+  return out;
+}
+function tnaCollectResponses(prefix){
+  var responses={};
+  TNA_ITEMS.forEach(function(i){
+    var impEl=$(prefix+'-'+i.id+'-imp'),perfEl=$(prefix+'-'+i.id+'-perf');
+    var imp=impEl&&impEl.value?Number(impEl.value):null;
+    var perf=perfEl&&perfEl.value?Number(perfEl.value):null;
+    if(imp!=null||perf!=null)responses[i.id]={importance:imp,performance:perf};
+  });
+  return responses;
+}
+async function saveTnaSelf(){
+  var responses=tnaCollectResponses('tself');
+  var m=$('tself-msg');
+  if(m){m.style.color='var(--muted)';m.textContent='Saving…';}
+  var payload={subject_employee_id:(bldSession&&bldSession.employee_id)||'',perspective:'self',responses:responses};
+  var discRow=tnaMyRows().self;
+  if(discRow&&discRow.disc_responses){payload.disc_responses=discRow.disc_responses;payload.disc_profile=discRow.disc_profile;}
+  var saved=await bldData('write','bld_tna',payload,true);
+  if(!saved){if(m){m.style.color='var(--danger)';m.textContent='Could not save -- check your connection and try again.';}return;}
+  toast('Self-assessment saved');
+  await tnaLoad();
+  renderTnaSelfView();
+}
+function renderTnaResultsHtml(selfRow,mgmtRow){
+  var rows=TNA_DOMAINS.map(function(d){
+    var selfGap=tnaDomainAvgGap(selfRow.responses,d.id);
+    var mgmtGap=mgmtRow?tnaDomainAvgGap(mgmtRow.responses,d.id):null;
+    return {domain:d,selfGap:selfGap,mgmtGap:mgmtGap};
+  });
+  var ranked=rows.filter(function(r){return r.selfGap!==null;}).slice().sort(function(a,b){return (b.selfGap||0)-(a.selfGap||0);});
+  var top=ranked.slice(0,3);
+  var topHtml=top.length
+    ? '<div style="font-weight:700;margin-bottom:8px">Where a bit of training could help you most</div>'+
+      top.map(function(r){return '<div class="srow"><span class="slbl">'+H(r.domain.label)+'</span><span class="sval">'+(r.selfGap>0.5?'Growth opportunity':'Strength -- keep it up')+'</span></div>';}).join('')
+    : '';
+  var compareHtml=mgmtRow
+    ? '<div style="font-weight:700;margin:16px 0 8px">Your view vs. your manager\'s view</div><div class="tw"><table><thead><tr><th>Area</th><th>Your self-rating</th><th>Manager\'s rating</th></tr></thead><tbody>'+
+      rows.map(function(r){
+        return '<tr><td>'+H(r.domain.label)+'</td>'+
+          '<td>'+(r.selfGap!==null?tnaGapBadge(r.selfGap):'--')+'</td>'+
+          '<td>'+(r.mgmtGap!==null?tnaGapBadge(r.mgmtGap):'Not yet rated')+'</td></tr>';
+      }).join('')+'</tbody></table></div>'
+    : '<div class="note">Your manager hasn\'t completed an assessment for you yet.</div>';
+  return '<div class="card"><div class="cb">'+topHtml+compareHtml+
+    '<div style="margin-top:14px"><button class="btn bo bs" onclick="renderTnaSelfEditForm()">Update My Self-Assessment</button></div></div></div>';
+}
+function renderTnaSelfEditForm(){
+  var mine=tnaMyRows();
+  $('tna-view-self').innerHTML=renderTnaFormHtml('self',mine.self);
+}
+function tnaGapBadge(gap){
+  var cls=gap>1.5?'br':(gap>0.5?'bw':'bg');
+  var label=gap>1.5?'Growth opportunity':(gap>0.5?'Room to grow':'Strength');
+  return '<span class="badge '+cls+'">'+label+' ('+(gap>0?'+':'')+gap.toFixed(1)+')</span>';
+}
+
+// ── ASSESS A TEAM MEMBER (management perspective) ────────────────────────
+function renderTnaAssessView(){
+  if(!bldIsManagement())return;
+  if(!_bldRoster){bldRefreshRoster(renderTnaAssessView);return;}
+  var el=$('tna-view-assess');
+  var options='<option value="">Select an employee...</option>'+(_bldRoster||[]).map(function(e){
+    return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===_tnaAssessSubject?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';
+  }).join('');
+  var picker='<div class="card"><div class="cb"><div class="fg"><label>Employee</label><select id="tna-subject-picker" onchange="tnaPickSubject(this.value)">'+options+'</select></div></div></div>';
+  if(!_tnaAssessSubject){el.innerHTML=picker;return;}
+  var existing=(_tnaData||[]).find(function(r){return r.subject_employee_id===_tnaAssessSubject&&r.perspective==='management';});
+  el.innerHTML=picker+renderTnaFormHtml('management',existing);
+}
+function tnaPickSubject(id){_tnaAssessSubject=id||null;renderTnaAssessView();}
+async function saveTnaManagement(){
+  if(!_tnaAssessSubject){toast('Select an employee first');return;}
+  var responses=tnaCollectResponses('tmgmt');
+  var m=$('tmgmt-msg');
+  if(m){m.style.color='var(--muted)';m.textContent='Saving…';}
+  var saved=await bldData('write','bld_tna',{subject_employee_id:_tnaAssessSubject,perspective:'management',responses:responses},true);
+  if(!saved){if(m){m.style.color='var(--danger)';m.textContent='Could not save -- check your connection and try again.';}return;}
+  toast('Assessment saved for '+bldEmployeeName(_tnaAssessSubject));
+  await tnaLoad();
+  renderTnaAssessView();
+}
+
+// ── TEAM OVERVIEW (management perspective) ───────────────────────────────
+function renderTnaTeamView(){
+  if(!bldIsManagement())return;
+  if(!_bldRoster){bldRefreshRoster(renderTnaTeamView);return;}
+  var el=$('tna-view-team');
+  var rows=(_bldRoster||[]).map(function(e){
+    var selfRow=(_tnaData||[]).find(function(r){return r.subject_employee_id===e.employee_id&&r.perspective==='self';});
+    var mgmtRow=(_tnaData||[]).find(function(r){return r.subject_employee_id===e.employee_id&&r.perspective==='management';});
+    var overallGap=null;
+    if(mgmtRow){
+      var gaps=TNA_DOMAINS.map(function(d){return tnaDomainAvgGap(mgmtRow.responses,d.id);}).filter(function(g){return g!==null;});
+      if(gaps.length)overallGap=gaps.reduce(function(s,g){return s+g;},0)/gaps.length;
+    }
+    return {emp:e,selfRow:selfRow,mgmtRow:mgmtRow,overallGap:overallGap};
+  }).sort(function(a,b){return (b.overallGap||-99)-(a.overallGap||-99);});
+  el.innerHTML='<div class="card"><div class="cb"><div class="tw"><table><thead><tr><th>Employee</th><th>Self-Assessment</th><th>Management Assessment</th><th>Overall Gap</th></tr></thead><tbody>'+
+    rows.map(function(r){
+      return '<tr><td><strong>'+H(r.emp.display_name||r.emp.employee_id)+'</strong></td>'+
+        '<td>'+(r.selfRow?'Complete':'<span style="color:var(--muted)">Not started</span>')+'</td>'+
+        '<td>'+(r.mgmtRow?'On file':'<span style="color:var(--muted)">Not yet</span>')+'</td>'+
+        '<td>'+(r.overallGap!==null?tnaGapBadge(r.overallGap):'--')+'</td>'+
+        '<td><button class="btn bo bs" onclick="tnaPickSubject(\''+H(r.emp.employee_id)+'\');tnaShowTab(\'assess\')">Assess</button></td></tr>';
+    }).join('')+
+    '</tbody></table></div>'+
+    (rows.length?'':'<div style="text-align:center;color:var(--muted);padding:24px">No employees on the roster yet</div>')+
+    '</div></div>';
+}
+
+// ── DISC (optional, self-report, communication style only) ──────────────
+function renderDiscSectionHtml(selfRow){
+  if(selfRow&&selfRow.disc_profile){
+    var p=selfRow.disc_profile;
+    var primary=DISC_LABELS[p.primary],secondary=p.secondary?DISC_LABELS[p.secondary]:null;
+    return '<div class="card"><div class="cb">'+
+      '<div style="font-weight:700;margin-bottom:8px">Communication &amp; Work Style</div>'+
+      '<div class="note">This is a workplace communication-style questionnaire, not a personality, psychological, or medical assessment -- it has no bearing on employment decisions.</div>'+
+      '<div class="srow"><span class="slbl">Primary style</span><span class="sval">'+H(primary?primary.name:p.primary)+'</span></div>'+
+      (secondary?'<div class="srow"><span class="slbl">Secondary style</span><span class="sval">'+H(secondary.name)+'</span></div>':'')+
+      '<div style="font-size:12px;color:var(--muted);margin-top:8px">'+H(primary?primary.desc:'')+'</div>'+
+      '<button class="btn bo bs" style="margin-top:10px" onclick="renderDiscFormHtml()">Retake</button>'+
+      '</div></div>';
+  }
+  return '<div class="card"><div class="cb">'+
+    '<div style="font-weight:700;margin-bottom:4px">Communication &amp; Work Style (optional)</div>'+
+    '<div class="note">A short, optional questionnaire about how you prefer to communicate and work with others -- not a personality, psychological, or medical test, and it has no bearing on your employment. It\'s meant to help the team communicate better, that\'s all.</div>'+
+    '<button class="btn bo bs" onclick="renderDiscFormHtml()">Take the Communication Style Questionnaire</button>'+
+    '</div></div>';
+}
+function renderDiscFormHtml(){
+  var body=DISC_ITEMS.map(function(i){
+    return '<div class="fg"><label>'+H(i.text)+'</label><select id="disc-'+i.id+'">'+
+      '<option value="">--</option><option value="1">1 - Not like me</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5 - Very like me</option>'+
+      '</select></div>';
+  }).join('');
+  var el=$('tna-view-self');
+  el.innerHTML='<div class="card"><div class="cb">'+
+    '<div class="note">A short, optional questionnaire about how you prefer to communicate and work with others -- not a personality, psychological, or medical test.</div>'+
+    body+'<button class="btn bp" onclick="saveDisc()">Save</button> <button class="btn bo" onclick="renderTnaSelfView()">Cancel</button>'+
+    '<div id="disc-msg" style="font-size:12px;margin-top:10px"></div>'+
+    '</div></div>';
+}
+function computeDiscProfile(responses){
+  var totals={D:0,I:0,S:0,C:0};
+  DISC_ITEMS.forEach(function(i){var v=Number((responses[i.id]||{}).v||responses[i.id]||0);if(v)totals[i.dim]+=v;});
+  var ranked=Object.keys(totals).sort(function(a,b){return totals[b]-totals[a];});
+  return {D:totals.D,I:totals.I,S:totals.S,C:totals.C,primary:ranked[0],secondary:ranked[1]};
+}
+async function saveDisc(){
+  var responses={};
+  DISC_ITEMS.forEach(function(i){var el=$('disc-'+i.id);if(el&&el.value)responses[i.id]=Number(el.value);});
+  if(Object.keys(responses).length<DISC_ITEMS.length){var m=$('disc-msg');if(m){m.style.color='var(--danger)';m.textContent='Answer every question to see your results.';}return;}
+  var profile=computeDiscProfile(responses);
+  var mine=tnaMyRows();
+  var payload={subject_employee_id:(bldSession&&bldSession.employee_id)||'',perspective:'self',
+    responses:(mine.self&&mine.self.responses)||{},disc_responses:responses,disc_profile:profile};
+  var saved=await bldData('write','bld_tna',payload,true);
+  if(!saved){var m2=$('disc-msg');if(m2){m2.style.color='var(--danger)';m2.textContent='Could not save -- check your connection and try again.';}return;}
+  toast('Communication style saved');
+  await tnaLoad();
+  renderTnaSelfView();
+}
 
 // Real session persistence (2026-08-20) -- previously this app had NO
 // reload-skip-gate at all (confirmed by grep: bld_license_key was only

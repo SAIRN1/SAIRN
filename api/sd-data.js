@@ -161,7 +161,16 @@ const RESOURCES = {
   // localStorage. Handled by its own bespoke read/write branch below (like
   // sdn_clients), not the generic-loop pattern, because of the privacy
   // gate -- this map only gates "is this a known resource string."
-  bld_bids: true
+  bld_bids: true,
+  // SAIRNbuild Training Needs Assessment (2026-08-20) -- see
+  // sql/sairnbuild_tna_schema.sql. Hennessy-Hicks-style importance/
+  // performance-gap instrument (structure verified via live web research
+  // before building, item wording adapted for construction -- see that
+  // SQL file's header for the full provenance disclosure). Bespoke branch
+  // below, same reasoning as bld_bids/sdn_clients -- subject-based
+  // visibility, not assignee-based, so it needed its own read/write logic
+  // rather than reusing the bld_bids shape verbatim.
+  bld_tna: true
 };
 
 const SC_RESOURCES = [
@@ -266,7 +275,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, bld_bids' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, bld_bids, bld_tna' } });
     return;
   }
 
@@ -1928,6 +1937,89 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, bidData) });
+      return;
+    }
+
+    // ── SAIRNBUILD: bld_tna PRIVACY GATE (2026-08-20) ────────────────────────────────────────
+    // Training Needs Assessment (Hennessy-Hicks-style, see sql/sairnbuild_tna_schema.sql for the
+    // full methodology/provenance disclosure). Subject-based visibility, not assignee-based: a
+    // non-management employee may only read/write rows ABOUT THEMSELVES (subject_employee_id ===
+    // their own employee_id) -- both the 'self' row they filled out and any 'management' row a
+    // supervisor filled out about them, per Michael's spec ("employee sees their own results").
+    // Management may read every subject's rows ("management sees the analytical view across
+    // their team") and may write 'management'-perspective rows for any subject. A 'self' row is
+    // only ever writable by the subject themselves, including for a management-role caller
+    // assessing THEIR OWN self-perspective -- self-report integrity, nobody fills it out on
+    // someone else's behalf, matching the instrument's own single-rater design for that half.
+    const BLD_TNA_MANAGEMENT_ROLES = { owner: true, office: true };
+    if (resource === 'bld_tna' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('bld_tna_assessments?license_hash=eq.' + enc(licHash) +
+        '&select=subject_employee_id,perspective,assessor_employee_id,responses,disc_responses,disc_profile,submitted_at,updated_at'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      let out = rows || [];
+      if (!BLD_TNA_MANAGEMENT_ROLES[session.role]) {
+        out = out.filter((r) => r.subject_employee_id === session.employee_id);
+      }
+      const data = out.map((r) => ({
+        id: r.subject_employee_id + ':' + r.perspective,
+        subject_employee_id: r.subject_employee_id, perspective: r.perspective,
+        assessor_employee_id: r.assessor_employee_id, responses: r.responses || {},
+        disc_responses: r.disc_responses || null, disc_profile: r.disc_profile || null,
+        submitted_at: r.submitted_at, updated_at: r.updated_at
+      }));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'bld_tna' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const subjectId = String((payload && payload.subject_employee_id) || '').trim();
+      const perspective = payload && payload.perspective;
+      if (!subjectId || ['self', 'management'].indexOf(perspective) === -1) {
+        res.status(400).json({ error: { message: 'bld_tna payload.subject_employee_id and a valid perspective (self|management) are required' } });
+        return;
+      }
+      const isManagement = !!BLD_TNA_MANAGEMENT_ROLES[session.role];
+      if (perspective === 'self') {
+        if (subjectId !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only complete your own self-assessment' } });
+          return;
+        }
+      } else if (!isManagement) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can complete a management assessment' } });
+        return;
+      }
+      const responses = (payload && payload.responses && typeof payload.responses === 'object') ? payload.responses : {};
+      // DISC is a self-report communication-style questionnaire by design -- only meaningful
+      // attached to the 'self' row, silently dropped off a 'management' write rather than
+      // erroring, since a manager assessing someone else's DISC profile isn't a coherent action.
+      const discResponses = (perspective === 'self' && payload && payload.disc_responses && typeof payload.disc_responses === 'object') ? payload.disc_responses : null;
+      const discProfile = (perspective === 'self' && payload && payload.disc_profile && typeof payload.disc_profile === 'object') ? payload.disc_profile : null;
+      const r = await fetch(rest('bld_tna_assessments?on_conflict=license_hash,subject_employee_id,perspective'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnbuild', subject_employee_id: subjectId, perspective: perspective,
+          assessor_employee_id: session.employee_id, responses: responses,
+          disc_responses: discResponses, disc_profile: discProfile, updated_at: nowISO()
+        })
+      });
+      // 404/400 here means the table itself doesn't exist yet (PostgREST's "not found in
+      // schema cache" shape) -- a real, honest, currently-live state until Michael runs
+      // sql/sairnbuild_tna_schema.sql, same as every other new table this session. No
+      // isMissingTable() helper exists in this file (that's a *-auth.js-only helper, sd-data.js
+      // never had one) -- checking the status code directly instead of importing one.
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Training needs assessment tracking is not set up yet — run sql/sairnbuild_tna_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: { id: subjectId + ':' + perspective, subject_employee_id: subjectId, perspective: perspective, responses: responses, disc_responses: discResponses, disc_profile: discProfile } });
       return;
     }
 
