@@ -606,6 +606,7 @@
                 <button class="nav-btn" onclick="showPanel('compliance')" data-tip="Monitor coding compliance and audit risk">Compliance</button>
                 <button class="nav-btn" onclick="showPanel('fraud')" data-tip="Flag claims with potential fraud or billing irregularities">Fraud Detection</button>
                 <button class="nav-btn" onclick="showPanel('auth')" data-tip="Track prior authorization requests and approvals">Authorizations</button>
+                <button class="nav-btn" onclick="showPanel('eligibility')" data-tip="Real-time patient coverage verification (270/271) through your own clearinghouse account">Eligibility</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1082,6 +1083,75 @@
                 <input type="date" id="auth-add-exp" class="search-input">
                 <input type="number" id="auth-add-units" placeholder="Units" class="search-input">
                 <button class="btn btn-primary" onclick="addAuthEntry()">Add</button>
+            </div>
+        </div>
+
+        <!-- Eligibility Verification Panel (2026-08-20 BYO-credential
+             expansion) -- real-time X12 270/271 coverage checks through the
+             PRACTICE'S OWN Stedi clearinghouse account, never a SAIRN-owned
+             one (an eligibility request carries real patient identifiers;
+             see api/sc-credentials.js's header for the BAA reasoning).
+             Nothing on this panel is ever simulated: with no credential
+             configured the check button reports that honestly instead of
+             showing a sample result. -->
+        <div id="panel-eligibility" class="panel">
+            <h1 class="panel-title">Eligibility Verification (270/271)</h1>
+            <div class="toolbar">
+                <input type="text" class="search-input" id="eligibilitySearch" placeholder="Search checks...">
+                <button class="btn btn-primary" onclick="exportCSV('eligibility')">Export CSV</button>
+                <button class="btn" onclick="window.print()">Print</button>
+            </div>
+            <div class="kpi-grid" id="eligibility-kpis"></div>
+
+            <!-- Connection status. Rendered from a real api/sc-credentials
+                 'status' call -- metadata only, the key itself is never sent
+                 back to this page by design. -->
+            <div id="eligibility-conn" style="margin-bottom:14px"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:20px 0 8px;">Run an Eligibility Check</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Checks live coverage with the payer through your own Stedi account. The result shown is exactly what the payer returned — where a payer sends no data for a field, this page says so rather than showing a blank or $0. A failed or timed-out check is never reported as a coverage answer.</div>
+            <div class="toolbar">
+                <input type="text" id="elig-payer-search" placeholder="Search payer by name..." class="search-input">
+                <button class="btn" onclick="runPayerSearch()" id="elig-payer-search-btn">Find Payer ID</button>
+            </div>
+            <div id="elig-payer-results" style="margin-bottom:8px;"></div>
+            <div class="toolbar">
+                <input type="text" id="elig-payer-id" placeholder="Payer ID (required)" class="search-input">
+                <input type="text" id="elig-npi" placeholder="Provider NPI" class="search-input">
+                <input type="text" id="elig-org" placeholder="Provider / practice name" class="search-input">
+            </div>
+            <div class="toolbar">
+                <input type="text" id="elig-member-id" placeholder="Member ID" class="search-input">
+                <input type="text" id="elig-first" placeholder="Patient first name" class="search-input">
+                <input type="text" id="elig-last" placeholder="Patient last name" class="search-input">
+                <input type="date" id="elig-dob" class="search-input" title="Patient date of birth">
+            </div>
+            <div class="toolbar">
+                <input type="text" id="elig-service-type" placeholder="Service type code (default 30 = general)" class="search-input">
+                <input type="date" id="elig-service-date" class="search-input" title="Date of service">
+                <button class="btn btn-primary" onclick="runEligibilityCheck()" id="elig-run-btn">Check Eligibility</button>
+            </div>
+            <div id="elig-result" style="margin-bottom:20px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Check History</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Checks this practice has actually run. The full payer response is deliberately not stored — only the summary shown here.</div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table id="eligibilityTable">
+                    <thead><tr><th>Patient</th><th>Payer</th><th>Status</th><th>Plan</th><th>Checked</th><th></th></tr></thead>
+                    <tbody id="eligibility-tbody"></tbody>
+                </table></div>
+            </div>
+
+            <!-- Clearinghouse connection setup. Admin-only in the UI; the
+                 real gate is server-side in api/sc-credentials.js, which
+                 rejects a non-admin session regardless of what this page
+                 shows (same discipline as requireAdminForDelete). -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Clearinghouse Connection</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Your practice's own Stedi API key. Stedi bills eligibility checks (270/271) at $0 — the account just has to be yours, so patient data goes through your clearinghouse relationship, not ours. Stored encrypted; once saved it is never displayed again, here or anywhere else.</div>
+            <div class="toolbar">
+                <input type="password" id="elig-api-key" placeholder="Stedi API key" class="search-input" autocomplete="off">
+                <button class="btn btn-primary" onclick="saveStediKey()" id="elig-save-key-btn">Save Key</button>
+                <button class="btn" onclick="clearStediKey()">Remove Key</button>
             </div>
         </div>
 
@@ -1628,6 +1698,14 @@ How to answer:
             );
             if (activeBtn) {
                 activeBtn.classList.add('active');
+            }
+
+            // Connection status is re-read on every visit rather than cached
+            // once at login -- an admin on another device may have added or
+            // removed the key since, and a stale "Connected" badge would be a
+            // false claim about a real capability.
+            if (panelName === 'eligibility' && typeof refreshEligibilityConnection === 'function') {
+                refreshEligibilityConnection();
             }
 
             window.scrollTo(0, 0);
@@ -2727,6 +2805,315 @@ How to answer:
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Authorization added' : 'Authorization added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
+        // ================================================================
+        // ELIGIBILITY VERIFICATION -- real X12 270/271 (2026-08-20,
+        // BYO-credential expansion).
+        //
+        // Every coverage answer on this panel comes from a real payer
+        // response relayed by api/sc-eligibility.js through the PRACTICE'S
+        // OWN Stedi account. Nothing here is ever simulated, defaulted, or
+        // inferred:
+        //   - no credential configured -> the check reports that plainly
+        //   - payer/network error or timeout -> the real error is shown and
+        //     explicitly labelled NOT a coverage answer
+        //   - a field the payer omitted -> rendered as "payer returned no
+        //     data", never as blank, $0, or "covered"
+        // Same anti-fabrication contract as the scrub tool (item 1) and the
+        // note-citation tool (item 2).
+        // ================================================================
+
+        // Transport for the two new endpoints. Mirrors scData()'s shape
+        // (license via Bearer, employee session via X-SD-Auth) but returns
+        // the full envelope rather than just .data, because the real error
+        // code is the point here -- NOT_CONFIGURED vs STEDI_ERROR vs TIMEOUT
+        // are rendered differently and must not collapse into a null.
+        function scPostEndpoint(path, payload) {
+            var lic = null, sessionToken = null;
+            try { lic = localStorage.getItem('sc_license_key'); } catch (e) {}
+            try { sessionToken = localStorage.getItem('sc_session_token'); } catch (e) {}
+            if (!lic) return Promise.resolve({ ok: false, error: { code: 'NO_LICENSE', message: 'No license key on this device.' } });
+            var reqHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic };
+            if (sessionToken) reqHeaders['X-SD-Auth'] = sessionToken;
+            return fetch('https://sairn.vercel.app' + path, {
+                method: 'POST',
+                headers: reqHeaders,
+                body: JSON.stringify(payload || {})
+            }).then(function (r) {
+                return r.json().then(function (d) {
+                    if (!r.ok || !d || !d.ok) {
+                        return { ok: false, status: r.status, error: (d && d.error) || { message: 'Request failed (HTTP ' + r.status + ')' } };
+                    }
+                    return d;
+                });
+            }).catch(function (e) {
+                return { ok: false, error: { code: 'NETWORK', message: 'Could not reach the server: ' + e.message } };
+            });
+        }
+
+        // ── Clearinghouse credential (metadata only, never the key) ──
+        var _scEligibilityConfigured = null; // null = not yet checked
+        async function refreshEligibilityConnection() {
+            var el = document.getElementById('eligibility-conn');
+            var res = await scPostEndpoint('/api/sc-credentials', { action: 'status' });
+            if (!res.ok) {
+                _scEligibilityConfigured = false;
+                if (el) {
+                    var code = (res.error && res.error.code) || '';
+                    var msg = code === 'NOT_PROVISIONED'
+                        ? 'Credential storage is not set up on the server yet (the sc_credentials migration has not been run). Eligibility checks are unavailable until it is.'
+                        : ((res.error && res.error.message) || 'Could not read connection status.');
+                    el.innerHTML = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;">Not connected — ' + escHtml(msg) + '</div>';
+                }
+                return;
+            }
+            var stedi = (res.credentials && res.credentials.stedi) || { configured: false };
+            _scEligibilityConfigured = !!stedi.configured;
+            if (!el) return;
+            el.innerHTML = stedi.configured
+                ? '<div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;">Connected to Stedi — key ending <b>' + escHtml(stedi.last4 || '????') + '</b>' + (stedi.updated_at ? (', saved ' + escHtml(String(stedi.updated_at).slice(0, 10))) : '') + '. Eligibility checks will use your practice\'s own account.</div>'
+                : '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;">No Stedi API key configured. A Compliance Admin can add one under <b>Clearinghouse Connection</b> below — until then, eligibility checks cannot run (no simulated results are shown).</div>';
+        }
+        async function saveStediKey() {
+            var input = document.getElementById('elig-api-key');
+            var btn = document.getElementById('elig-save-key-btn');
+            var value = input.value.trim();
+            if (!value) { showToast('Paste your Stedi API key first'); return; }
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                var res = await scPostEndpoint('/api/sc-credentials', { action: 'set', service: 'stedi', value: value });
+                if (!res.ok) {
+                    var code = (res.error && res.error.code) || '';
+                    showToast(code === 'FORBIDDEN'
+                        ? 'Only a Compliance Admin can save service credentials'
+                        : ((res.error && res.error.message) || 'Could not save the key'));
+                    return;
+                }
+                // Clear the field immediately -- the key is stored server-side
+                // and is never readable again from this page by design.
+                input.value = '';
+                showToast('Stedi key saved');
+                await refreshEligibilityConnection();
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save Key';
+            }
+        }
+        async function clearStediKey() {
+            var res = await scPostEndpoint('/api/sc-credentials', { action: 'clear', service: 'stedi' });
+            if (!res.ok) {
+                var code = (res.error && res.error.code) || '';
+                showToast(code === 'FORBIDDEN'
+                    ? 'Only a Compliance Admin can change service credentials'
+                    : ((res.error && res.error.message) || 'Could not remove the key'));
+                return;
+            }
+            showToast('Stedi key removed');
+            await refreshEligibilityConnection();
+        }
+
+        // ── Payer search ──
+        async function runPayerSearch() {
+            var q = document.getElementById('elig-payer-search').value.trim();
+            var out = document.getElementById('elig-payer-results');
+            var btn = document.getElementById('elig-payer-search-btn');
+            if (!q) { showToast('Type part of a payer name first'); return; }
+            btn.disabled = true; btn.textContent = 'Searching...';
+            out.innerHTML = '<div style="font-size:12px;color:#666">Searching payers...</div>';
+            try {
+                var res = await scPostEndpoint('/api/sc-eligibility', { action: 'search_payer', query: q });
+                if (!res.ok) { out.innerHTML = renderEligibilityError(res.error); return; }
+                var items = res.items || [];
+                if (!items.length) {
+                    out.innerHTML = '<div style="font-size:12px;color:#666">No payers matched that search. Try fewer words, or enter the payer ID directly if you already have it.</div>';
+                    return;
+                }
+                out.innerHTML = items.map(function (it) {
+                    var p = it.payer || {};
+                    var pid = p.stediId || p.primaryPayerId || p.payerId || '';
+                    return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:#f8f8f8;border:1px solid #ddd;border-radius:6px;padding:6px 10px;margin-bottom:4px;font-size:12px;">'
+                        + '<span>' + escHtml(p.displayName || p.name || '(unnamed payer)') + ' <span style="color:#666">' + escHtml(pid) + '</span></span>'
+                        + (pid ? '<button class="btn" style="padding:2px 8px;" onclick="usePayerId(\'' + escHtml(pid).replace(/'/g, '') + '\')">Use</button>' : '')
+                        + '</div>';
+                }).join('');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Find Payer ID';
+            }
+        }
+        function usePayerId(pid) {
+            document.getElementById('elig-payer-id').value = pid;
+            document.getElementById('elig-payer-results').innerHTML = '';
+        }
+
+        function renderEligibilityError(err) {
+            var code = (err && err.code) || '';
+            var msg = (err && err.message) || 'Unknown error';
+            var extra = '';
+            if (code === 'NOT_CONFIGURED') {
+                extra = ' A Compliance Admin can add the key under Clearinghouse Connection below.';
+            } else if (code === 'TIMEOUT' || code === 'NETWORK') {
+                extra = ' This check did NOT complete — do not record it as a coverage decision.';
+            } else if (code === 'STEDI_ERROR' && err.detail) {
+                // Show the clearinghouse's own words rather than paraphrasing.
+                try { extra = ' Payer/clearinghouse detail: ' + JSON.stringify(err.detail).slice(0, 600); } catch (e) {}
+            }
+            return '<div style="background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;font-size:13px;color:#991b1b;">'
+                + '<b>Check not completed</b><br>' + escHtml(msg) + escHtml(extra) + '</div>';
+        }
+
+        // Renders ONLY fields the payer actually returned. A missing field is
+        // stated as missing -- never defaulted to $0, "none", or "covered".
+        function renderEligibilityResult(res) {
+            var html = '';
+            var errs = res.errors;
+            if (errs && errs.length) {
+                html += '<div style="background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;font-size:13px;color:#991b1b;margin-bottom:8px;">'
+                    + '<b>The payer returned errors for this request</b><br>'
+                    + escHtml(errs.map(function (e) { return (e && (e.description || e.message || e.code)) || JSON.stringify(e); }).join('; '))
+                    + '<br><span style="font-size:11px;">This is not a coverage determination.</span></div>';
+            }
+
+            var statuses = res.planStatus;
+            if (statuses && statuses.length) {
+                html += '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;margin-bottom:8px;">'
+                    + '<b>Plan status (as returned by the payer)</b>'
+                    + statuses.map(function (s) {
+                        return '<div style="margin-top:4px;">' + escHtml(s.statusCode ? (s.statusCode + ' — ') : '') + escHtml(s.status || '(no status text returned)')
+                            + (s.planDetails ? (' <span style="color:#666">' + escHtml(s.planDetails) + '</span>') : '')
+                            + (s.serviceTypeCodes && s.serviceTypeCodes.length ? (' <span style="color:#666;font-size:11px;">STC ' + escHtml(s.serviceTypeCodes.join(', ')) + '</span>') : '')
+                            + '</div>';
+                    }).join('')
+                    + '</div>';
+            } else {
+                html += '<div style="font-size:12px;color:#666;margin-bottom:8px;">Payer returned no plan-status data for this request.</div>';
+            }
+
+            var benefits = res.benefitsInformation;
+            if (benefits && benefits.length) {
+                var shown = benefits.slice(0, 25);
+                html += '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;">'
+                    + '<b>Benefits returned</b> <span style="color:#666;font-size:11px;">(' + benefits.length + ' item' + (benefits.length === 1 ? '' : 's') + (benefits.length > shown.length ? (', showing first ' + shown.length) : '') + ')</span>'
+                    + shown.map(function (b) {
+                        var bits = [];
+                        if (b.name) bits.push(escHtml(b.name));
+                        if (b.coverageLevel) bits.push(escHtml(b.coverageLevel));
+                        if (b.serviceTypes && b.serviceTypes.length) bits.push(escHtml(b.serviceTypes.join(', ')));
+                        if (b.benefitAmount) bits.push('$' + escHtml(String(b.benefitAmount)));
+                        if (b.benefitPercent) bits.push(escHtml(String(b.benefitPercent)) + '%');
+                        if (b.inPlanNetworkIndicator) bits.push('network: ' + escHtml(b.inPlanNetworkIndicator));
+                        return '<div style="margin-top:4px;border-top:1px solid #eee;padding-top:4px;">' + (bits.length ? bits.join(' &middot; ') : '<span style="color:#666">(payer returned this benefit line with no readable fields)</span>') + '</div>';
+                    }).join('')
+                    + '</div>';
+            } else {
+                html += '<div style="font-size:12px;color:#666;">Payer returned no benefits detail for this request.</div>';
+            }
+            return html;
+        }
+
+        async function runEligibilityCheck() {
+            var btn = document.getElementById('elig-run-btn');
+            var out = document.getElementById('elig-result');
+            var payerId = document.getElementById('elig-payer-id').value.trim();
+            var npi = document.getElementById('elig-npi').value.trim();
+            var org = document.getElementById('elig-org').value.trim();
+            var memberId = document.getElementById('elig-member-id').value.trim();
+            var first = document.getElementById('elig-first').value.trim();
+            var last = document.getElementById('elig-last').value.trim();
+            var dob = document.getElementById('elig-dob').value;
+            var stc = document.getElementById('elig-service-type').value.trim() || '30';
+            var svcDate = document.getElementById('elig-service-date').value;
+
+            if (!payerId) { showToast('Payer ID is required'); return; }
+            if (!npi && !org) { showToast('Provider NPI or practice name is required'); return; }
+            if (!memberId && !last && !dob) { showToast('At least one of member ID, patient last name, or date of birth is required'); return; }
+
+            var provider = {};
+            if (npi) provider.npi = npi;
+            if (org) provider.organizationName = org;
+            var subscriber = {};
+            if (memberId) subscriber.memberId = memberId;
+            if (first) subscriber.firstName = first;
+            if (last) subscriber.lastName = last;
+            // Stedi expects YYYYMMDD, the browser date input gives YYYY-MM-DD.
+            if (dob) subscriber.dateOfBirth = dob.replace(/-/g, '');
+            var encounter = { serviceTypeCodes: [stc] };
+            if (svcDate) encounter.dateOfService = svcDate.replace(/-/g, '');
+
+            btn.disabled = true; btn.textContent = 'Checking...';
+            out.innerHTML = '<div style="font-size:12px;color:#666">Contacting the payer through your clearinghouse...</div>';
+            try {
+                var res = await scPostEndpoint('/api/sc-eligibility', {
+                    action: 'check', payerId: payerId, provider: provider, subscriber: subscriber, encounter: encounter
+                });
+                if (!res.ok) { out.innerHTML = renderEligibilityError(res.error); return; }
+                out.innerHTML = renderEligibilityResult(res);
+
+                // Log only what was actually returned. summarizeEligibility
+                // never invents a status -- if the payer gave none, the log
+                // row says so.
+                var statusText = (res.planStatus && res.planStatus[0] && (res.planStatus[0].status || res.planStatus[0].statusCode))
+                    || ((res.errors && res.errors.length) ? 'Payer returned an error' : 'No status returned');
+                var planText = (res.planStatus && res.planStatus[0] && res.planStatus[0].planDetails) || '—';
+                await addEligibilityRecord({
+                    patient: [first, last].filter(Boolean).join(' ') || memberId || '(unnamed)',
+                    payer: payerId,
+                    status: statusText,
+                    plan: planText
+                });
+            } finally {
+                btn.disabled = false; btn.textContent = 'Check Eligibility';
+            }
+        }
+
+        // ── Check history (sc_eligibility resource) ──
+        function getEligibilityEntries(){
+            try { var s = localStorage.getItem('sc_eligibility'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveEligibilityEntries(list){ try { localStorage.setItem('sc_eligibility', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        function renderEligibility(){
+            var list = getEligibilityEntries();
+            var tbody = document.getElementById('eligibility-tbody');
+            if (tbody) {
+                tbody.innerHTML = list.length ? '' : '<tr><td colspan="6" style="text-align:center;color:#666;padding:16px">No eligibility checks run yet.</td></tr>';
+                list.forEach(function(e){
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>'+escHtml(e.patient)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.status)+'</td><td>'+escHtml(e.plan||'—')+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeEligibilityEntry(\''+e.id+'\')">×</button></td>';
+                    tbody.appendChild(tr);
+                });
+            }
+            var kpis = document.getElementById('eligibility-kpis');
+            if (kpis){
+                var today = scLocalToday();
+                var todayCount = list.filter(function(e){ return e.date === today; }).length;
+                var distinctPayers = {};
+                list.forEach(function(e){ if (e.payer) distinctPayers[e.payer] = true; });
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Checks Run</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Logged on this license</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Checked Today</div><div class="kpi-value">'+todayCount+'</div><div class="kpi-detail">'+escHtml(today)+'</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Payers Queried</div><div class="kpi-value">'+Object.keys(distinctPayers).length+'</div><div class="kpi-detail">Distinct payer IDs</div></div>';
+            }
+        }
+        async function addEligibilityRecord(rec){
+            var list = getEligibilityEntries();
+            list.push({
+                id: 'el' + Date.now(),
+                patient: rec.patient, payer: rec.payer,
+                status: rec.status, plan: rec.plan,
+                date: scLocalToday()
+            });
+            var saved = saveEligibilityEntries(list);
+            var synced = saved ? await scData('write', 'sc_eligibility', list[list.length - 1]) : null;
+            renderEligibility();
+            if (!saved) showToast('Check ran, but the history entry could not be saved locally');
+            else if (!synced) showToast('Check ran — history saved on this device only, server sync failed');
+        }
+        async function removeEligibilityEntry(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_eligibility', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveEligibilityEntries(getEligibilityEntries().filter(function(e){return e.id!==id;}));
+            renderEligibility();
+        }
+
         function getArEntries(){
             // Fixed (2026-08-18 fabrication audit): used to seed+persist 3 fake
             // A/R aging entries on first view. Honest empty state now.
@@ -2823,11 +3210,18 @@ How to answer:
             };
         }
 
-        function scExecuteTool(name, input) {
+        // async as of 2026-08-20: every tool registered before this point is
+        // synchronous (reads localStorage) and is unaffected -- an async
+        // function returning a plain value resolves to that value. The change
+        // exists because check_eligibility makes a real network call, and a
+        // sync dispatcher would hand the model a serialized Promise ({}) as
+        // though it were a real answer -- a silent-fabrication bug of exactly
+        // the class this app has been removing. Callers must await.
+        async function scExecuteTool(name, input) {
             var tool = SC_TOOLS[name];
             if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
             try {
-                return { ok: true, result: tool.run(input || {}) };
+                return { ok: true, result: await tool.run(input || {}) };
             } catch (e) {
                 return { ok: false, error: 'Could not retrieve that data right now.' };
             }
@@ -2852,6 +3246,62 @@ How to answer:
                 });
             }
         );
+        // Real eligibility from the AI assistant (2026-08-20). This is the
+        // capability Stedi's MCP server offers an agent -- delivered through
+        // SAIRNcode's own tool-calling path instead, because an MCP server is
+        // called by an agent runtime, not by a browser app. Routes through
+        // api/sc-eligibility.js exactly like the panel does, so it inherits
+        // the same credential gate and the same no-fabrication contract.
+        //
+        // This is the first ASYNC tool in the registry -- scExecuteTool was
+        // made await-aware for it (see its comment).
+        scRegisterTool(
+            'check_eligibility',
+            'Run a REAL, live X12 270/271 insurance eligibility check for one patient through this practice\'s own clearinghouse account, and return exactly what the payer responded. Requires payerId, plus a provider identifier (npi or organizationName), plus at least one patient identifier (memberId, lastName, or dateOfBirth as YYYYMMDD). IMPORTANT CAVEATS: this makes a real outbound request to a real payer -- only call it when the user is actually asking to verify a specific patient\'s coverage, never to illustrate or demonstrate. It returns the payer\'s raw response fields; it does NOT decide whether a service is covered, does not compute patient responsibility, and does not guarantee payment. If the practice has not configured a clearinghouse API key, or the payer/network errors or times out, this tool returns an error -- in that case say so plainly and do NOT substitute any estimate, sample, or general-knowledge answer about the patient\'s coverage.',
+            {
+                type: 'object',
+                properties: {
+                    payerId: { type: 'string', description: 'Payer ID (tradingPartnerServiceId), including any leading zeros' },
+                    npi: { type: 'string', description: 'Provider NPI' },
+                    organizationName: { type: 'string', description: 'Provider or practice name, if no NPI' },
+                    memberId: { type: 'string', description: 'Patient member ID' },
+                    firstName: { type: 'string' },
+                    lastName: { type: 'string' },
+                    dateOfBirth: { type: 'string', description: 'Patient date of birth, YYYYMMDD' },
+                    serviceTypeCode: { type: 'string', description: 'Service type code, defaults to 30 (general plan coverage)' }
+                },
+                required: ['payerId']
+            },
+            async function (input) {
+                var provider = {};
+                if (input.npi) provider.npi = input.npi;
+                if (input.organizationName) provider.organizationName = input.organizationName;
+                var subscriber = {};
+                if (input.memberId) subscriber.memberId = input.memberId;
+                if (input.firstName) subscriber.firstName = input.firstName;
+                if (input.lastName) subscriber.lastName = input.lastName;
+                if (input.dateOfBirth) subscriber.dateOfBirth = String(input.dateOfBirth).replace(/-/g, '');
+                var res = await scPostEndpoint('/api/sc-eligibility', {
+                    action: 'check',
+                    payerId: input.payerId,
+                    provider: provider,
+                    subscriber: subscriber,
+                    encounter: { serviceTypeCodes: [input.serviceTypeCode || '30'] }
+                });
+                if (!res.ok) {
+                    // Surfaced to the model as a real failure, never as an
+                    // empty-but-successful result it might narrate around.
+                    throw new Error('Eligibility check did not complete: ' + ((res.error && res.error.message) || 'unknown error'));
+                }
+                return {
+                    planStatus: res.planStatus || null,
+                    benefitsInformation: res.benefitsInformation || null,
+                    payerErrors: res.errors || null,
+                    note: 'These are the payer\'s own returned fields. A null field means the payer returned no data for it -- not that the benefit is absent or zero.'
+                };
+            }
+        );
+
         function renderProviders(){
             var list = getProviderEntries();
             var tbody = document.getElementById('providers-tbody');
@@ -3074,7 +3524,7 @@ How to answer:
                     return;
                 }
 
-                const outcome = scExecuteTool(toolUse.name, toolUse.input);
+                const outcome = await scExecuteTool(toolUse.name, toolUse.input);
                 const toolResultContent = outcome.ok
                     ? JSON.stringify(outcome.result)
                     : ('Error: ' + outcome.error + ' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
@@ -3312,6 +3762,7 @@ How to answer:
             renderProviders();
             renderScrubRules();
             renderDenialEvents();
+            renderEligibility();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -3562,7 +4013,12 @@ How to answer:
             sc_scrubrules: 'sc_scrubrules',
             // Added 2026-08-20 (denial pattern tracking, item 3) -- same
             // real server-sync treatment as every other resource.
-            sc_denial_events: 'sc_denial_events'
+            sc_denial_events: 'sc_denial_events',
+            // Added 2026-08-20 (eligibility verification) -- the check
+            // HISTORY log syncs like any other resource; the live 270/271
+            // call itself goes through api/sc-eligibility.js and is never
+            // cached here as authoritative.
+            sc_eligibility: 'sc_eligibility'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -3587,7 +4043,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {

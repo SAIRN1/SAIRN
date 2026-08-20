@@ -143,14 +143,23 @@ const RESOURCES = {
   // pattern analysis. Same generic shape/handler as every other sc_*
   // resource. REQUIRES sql/sairncode_denial_events_schema.sql to be run
   // in Supabase.
-  sc_denial_events: true
+  sc_denial_events: true,
+  // Eligibility check history (2026-08-20, BYO-credential expansion) -- the
+  // 19th SC_RESOURCES entry. A LOG of real 270/271 checks the practice has
+  // run, not the live call: the actual check goes out through
+  // api/sc-eligibility.js against the practice's own Stedi account, and is
+  // never cached here as authoritative. The raw 271 is deliberately not
+  // stored -- see sql/sairncode_eligibility_schema.sql's header. Same
+  // generic shape/handler as every other sc_* resource. REQUIRES
+  // sql/sairncode_eligibility_schema.sql to be run in Supabase.
+  sc_eligibility: true
 };
 
 const SC_RESOURCES = [
   'sc_denial', 'sc_revenue', 'sc_compliance', 'sc_fraud', 'sc_prebill',
   'sc_hcc', 'sc_drg', 'sc_query', 'sc_rac', 'sc_telehealth',
   'sc_anesthesia', 'sc_auth', 'sc_ar', 'sc_providers', 'sc_encoder', 'sc_claims', 'sc_scrubrules',
-  'sc_denial_events'
+  'sc_denial_events', 'sc_eligibility'
 ];
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
@@ -248,7 +257,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility' } });
     return;
   }
 
