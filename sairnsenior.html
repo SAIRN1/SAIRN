@@ -142,6 +142,18 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 <body>
 <div id="toast"></div>
 
+<!-- Family/Client Portal view (2026-08-20): a completely separate, minimal
+     read-only render path for the ?portal=TOKEN link -- no license gate,
+     no employee login screen, nothing from the normal app shell. Hidden
+     unless a valid portal token is detected on load (see the
+     DOMContentLoaded handler at the bottom of this file). -->
+<div id="portal-view" style="display:none;min-height:100vh;background:var(--bg);padding:24px;">
+  <div style="max-width:480px;margin:0 auto;">
+    <div style="font-size:20px;font-weight:800;color:var(--pd);margin-bottom:4px;">SAIRNsenior</div>
+    <div id="portal-content"></div>
+  </div>
+</div>
+
 <div id="gate">
   <div class="gbox">
     <div class="glogo">SAIRNsenior</div>
@@ -303,12 +315,36 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="fg"><label>Frequency</label><input id="cpt-freq" placeholder="3x/week"></div></div>
     <button class="btn bo bs" onclick="addCareTaskDraft()" style="margin-bottom:10px;">+ Add Task</button>
     <div id="cl-care-tasks"></div>
+    <!-- Family/Client Portal Links (2026-08-20): a scoped, revocable,
+         read-only link -- NOT a PIN account, a different actor class from
+         employees entirely. Only shown once a client has been saved
+         (needs a real id to attach links to). Generation permission
+         mirrors sen_clients' own write gate (broad tier: any client;
+         caregiver: only their own assigned client) -- enforced server-
+         side in api/sen-portal.js, this is UI convenience only. -->
+    <div class="mtitle" style="font-size:14px;margin-top:18px;">Family/Client Portal Links</div>
+    <div id="cl-portal-links" style="display:none">
+      <div id="cl-portal-links-list"></div>
+      <button class="btn bo bs" onclick="generatePortalLink()">+ Generate Link</button>
+    </div>
+    <div id="cl-portal-links-hint" class="note" style="display:none">Save this client first, then generate a portal link.</div>
     <!-- Management-only -- server-side is the real gate, same precedent as
          every other app's Assign-To control this session. -->
     <div class="fg" id="cl-assignee-row" style="display:none"><label>Assigned Caregiver</label><select id="classignee"><option value="">Unassigned</option></select></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeClientModal()">Cancel</button>
       <button class="btn bp" onclick="saveClient()">Save Client</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="newlinkmodal">
+  <div class="mbox">
+    <div class="mtitle">Portal Link Created</div>
+    <div class="note">Copy this link and share it directly -- it is shown only once. The link itself is the credential; there's no separate password to give out.</div>
+    <div class="fg"><label>Shareable Link</label><input id="nl-url" readonly onclick="this.select()"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bp" onclick="closeNewLinkModal()">Done</button>
     </div>
   </div>
 </div>
@@ -786,6 +822,53 @@ function renderCareTaskDraft(){
       '<span class="sval"><button class="btn bo bs" onclick="removeCareTaskDraft(\''+t.id+'\')" style="padding:2px 8px;">&times;</button></span></div>';
   }).join(''):'<div style="color:var(--muted);font-size:13px;">No care tasks yet</div>';
 }
+
+// ── FAMILY/CLIENT PORTAL LINKS ──────────────────────────────────────────
+// api/sen-portal.js's create/revoke/list actions require the same real
+// employee auth as everything else -- only the family/client-facing
+// 'view' action (called from the separate public portal render path
+// below) needs no session at all. This client function always sends
+// withSession=true for create/revoke/list.
+var PORTAL_API='https://sairn.vercel.app/api/sen-portal';
+function senPortal(action,payload){
+  var lic=senLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(senSession&&senSession.token)h['X-SD-Auth']=senSession.token;
+  return fetch(PORTAL_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+function loadPortalLinks(clientId){
+  var el=$('cl-portal-links-list');
+  el.innerHTML='<div style="color:var(--muted);font-size:12px">Loading…</div>';
+  senPortal('list',{client_id:clientId}).then(function(r){
+    if(!r.ok){el.innerHTML='<div style="color:var(--muted);font-size:12px">Could not load links.</div>';return;}
+    var links=(r.data&&r.data.links)||[];
+    var active=links.filter(function(l){return l.active;});
+    el.innerHTML=active.length?active.map(function(l){
+      return '<div class="srow"><span class="slbl">'+H(l.label||'Unlabeled link')+' <span style="color:var(--muted)">('+(l.last_accessed_at?'last viewed '+fdate(l.last_accessed_at.slice(0,10)):'never viewed')+')</span></span>'+
+        '<span class="sval"><button class="btn bo bs" onclick="revokePortalLink(\''+l.id+'\',\''+clientId+'\')" style="padding:2px 8px;">Revoke</button></span></div>';
+    }).join(''):'<div style="color:var(--muted);font-size:13px;">No active portal links</div>';
+  });
+}
+async function generatePortalLink(){
+  if(!ceid){toast('Save this client first');return;}
+  var r=await senPortal('create',{client_id:ceid,label:''});
+  if(!r.ok){toast(r.msg||'Could not create link');return;}
+  var url=window.location.origin+window.location.pathname+'?portal='+encodeURIComponent(r.data.token);
+  $('nl-url').value=url;
+  $('newlinkmodal').classList.add('on');
+  loadPortalLinks(ceid);
+}
+function closeNewLinkModal(){$('newlinkmodal').classList.remove('on');}
+async function revokePortalLink(linkId,clientId){
+  var r=await senPortal('revoke',{link_id:linkId});
+  if(!r.ok){toast(r.msg||'Could not revoke link');return;}
+  toast('Link revoked');
+  loadPortalLinks(clientId);
+}
 function openClientModal(){
   ceid=null;careTaskDraft=[];
   ['cl-name','cl-phone','cl-address','cl-diagnosis','cl-notes'].forEach(function(f){$(f).value='';});
@@ -798,6 +881,8 @@ function openClientModal(){
     var sel=$('classignee');if(sel)sel.value='';
     if(senIsManagement())senRefreshRoster();
   }
+  $('cl-portal-links').style.display='none';
+  $('cl-portal-links-hint').style.display='block';
   $('clientmodal').classList.add('on');
 }
 function closeClientModal(){$('clientmodal').classList.remove('on');}
@@ -814,6 +899,9 @@ function editClient(id){
     row.style.display=senIsManagement()?'block':'none';
     if(senIsManagement())senRefreshRoster(function(){var sel=$('classignee');if(sel)sel.value=c.assigned_employee_id||'';});
   }
+  $('cl-portal-links').style.display='block';
+  $('cl-portal-links-hint').style.display='none';
+  loadPortalLinks(id);
   $('clientmodal').classList.add('on');
 }
 async function saveClient(){
@@ -1416,7 +1504,48 @@ function init(){
   rDash();rClients();rCaregivers();rSettings();
 }
 
+// ── FAMILY/CLIENT PORTAL RENDER PATH (2026-08-20) ────────────────────────
+// Completely separate from the employee app: no license key, no session,
+// no PIN. The token in the URL is the entire credential, resolved
+// server-side on every load via api/sen-portal.js's 'view' action -- this
+// client never holds or trusts a client_id, only whatever the server
+// returns for that token.
+function renderPortalView(token){
+  document.getElementById('gate').style.display='none';
+  var pv=$('portal-view');pv.style.display='block';
+  var pc=$('portal-content');
+  pc.innerHTML='<div style="color:var(--muted);padding:20px 0;">Loading…</div>';
+  fetch(PORTAL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'view',token:token})})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){return {ok:r.ok&&d&&d.ok,data:d};});})
+    .then(function(r){
+      if(!r.ok){
+        pc.innerHTML='<div class="card"><div class="cb">This link is invalid or has been revoked. Contact the agency for a new one.</div></div>';
+        return;
+      }
+      var visits=(r.data.visits||[]);
+      var upcoming=visits.filter(function(v){return v.scheduled_date>=senLocalToday();}).sort(function(a,b){return (a.scheduled_date||'').localeCompare(b.scheduled_date||'');});
+      var recent=visits.filter(function(v){return v.scheduled_date<senLocalToday();});
+      pc.innerHTML=
+        '<div style="font-size:16px;font-weight:700;margin-bottom:16px">Care schedule for '+H(r.data.client_name)+'</div>'+
+        '<div class="card"><div class="ch"><span class="ct">Upcoming Visits</span></div><div class="cb">'+
+        (upcoming.length?upcoming.map(portalVisitRow).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No upcoming visits scheduled</div>')+
+        '</div></div>'+
+        '<div class="card"><div class="ch"><span class="ct">Recent Visits</span></div><div class="cb">'+
+        (recent.length?recent.slice(0,10).map(portalVisitRow).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No recent visits on record</div>')+
+        '</div></div>';
+    })
+    .catch(function(){pc.innerHTML='<div class="card"><div class="cb">Could not load this link right now -- try again shortly.</div></div>';});
+}
+function portalVisitRow(v){
+  var statusColors={scheduled:'bb',in_progress:'bw',completed:'bg',missed:'br',cancelled:'bx'};
+  return '<div class="srow"><span class="slbl">'+fdate(v.scheduled_date)+' '+H(v.scheduled_start||'')+(v.scheduled_end?' - '+H(v.scheduled_end):'')+'</span>'+
+    '<span class="sval"><span class="badge '+(statusColors[v.status]||'bx')+'">'+H(v.status||'scheduled')+'</span></span></div>';
+}
+
 document.addEventListener('DOMContentLoaded',function(){
+  var params=new URLSearchParams(window.location.search);
+  var portalToken=params.get('portal');
+  if(portalToken){renderPortalView(portalToken);return;}
   var lic=localStorage.getItem('sen_license_key');
   if(!lic)return;
   $('gate').style.display='none';
