@@ -219,6 +219,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Care</div>
       <button class="sb" id="sb-residents" onclick="nav('residents')"><span class="sico">&#128100;</span>Residents</button>
       <button class="sb" id="sb-careplans" onclick="nav('careplans')"><span class="sico">&#128203;</span>Care Plans / ADL</button>
+      <button class="sb" id="sb-mar" onclick="nav('mar')"><span class="sico">&#128138;</span>Medications (MAR)</button>
       <div class="ss">Staff</div>
       <button class="sb" id="sb-staff" onclick="nav('staff')"><span class="sico">&#128119;</span>Staff</button>
       <div class="ss">Company</div>
@@ -338,6 +339,102 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- MEDICATIONS / MAR -->
+<!-- Real research pass run before building this (2026-08-20), not
+     invented -- see SAIRN-ACTIVE-WORK.md for full sourcing. No single
+     uniform ALF standard exists for any of the 4 areas below; each is
+     labelled per its real source rather than presented as codified ALF
+     law. Access is deliberately narrower than Residents/Care Plans --
+     only Owner, Nursing, and Med Aide may touch medication data at all
+     (a real scope-of-practice restriction, not a HIPAA visibility one) --
+     Billing, Caregiver, and Activities get a real access-denied card. -->
+<div class="panel" id="panel-mar">
+  <div class="ph"><div><div class="ptitle">Medications (MAR)</div><div class="psub">Medication Administration Record -- Owner, Nursing, and Med Aide only</div></div></div>
+  <div class="card" id="mar-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Medication records are not available to your role -- this is a scope-of-practice restriction (Owner/Nursing/Med Aide only), not a general visibility setting.</div></div>
+  <div id="mar-content">
+    <div class="card"><div class="cb">
+      <div class="fg"><label>Resident</label><select id="mar-resident-select" onchange="rMar()"></select></div>
+    </div></div>
+    <div id="mar-resident-view"></div>
+  </div>
+</div>
+<div class="modal" id="medordermodal">
+  <div class="mbox">
+    <div class="mtitle" id="mo-modal-title">Add Medication Order</div>
+    <div class="note">Owner/Nursing only. Med Aide can view this list to know what to administer, but does not create or change the order itself.</div>
+    <div class="fr"><div class="fg"><label>Medication Name</label><input id="mo-name"></div><div class="fg"><label>Dose</label><input id="mo-dose" placeholder="500mg"></div></div>
+    <div class="fr"><div class="fg"><label>Route</label><select id="mo-route"><option value="oral">Oral</option><option value="topical">Topical</option><option value="injection">Injection</option><option value="inhaled">Inhaled</option><option value="other">Other</option></select></div>
+      <div class="fg"><label>Schedule</label><input id="mo-schedule" placeholder="e.g. 08:00, 14:00, 20:00 or twice daily"></div></div>
+    <div class="fr"><div class="fg"><label>PRN (as-needed)?</label><select id="mo-prn" onchange="moTogglePrnRow()"><option value="0">No -- scheduled</option><option value="1">Yes -- PRN</option></select></div>
+      <div class="fg"><label>Controlled Substance?</label><select id="mo-controlled"><option value="0">No</option><option value="1">Yes</option></select></div></div>
+    <div class="fg" id="mo-prn-instructions-row" style="display:none"><label>Standing PRN Instructions</label><input id="mo-prn-instructions" placeholder="e.g. for pain 4+/10, may repeat after 4 hours"></div>
+    <div class="fg"><label>High-Priority Medication? (insulin / BP / anti-seizure)</label><select id="mo-highpriority"><option value="0">No</option><option value="1">Yes -- weight refusal notification accordingly</option></select></div>
+    <div class="fr"><div class="fg"><label>Prescriber</label><input id="mo-prescriber"></div><div class="fg"><label>Start Date</label><input id="mo-startdate" type="date"></div></div>
+    <div class="fg"><label>Notes</label><textarea id="mo-notes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMedOrderModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMedOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="marAdminModal">
+  <div class="mbox">
+    <div class="mtitle" id="ma-modal-title">Log Administration</div>
+    <div class="fg"><label>Medication</label><select id="ma-medication" onchange="maToggleFields()"></select></div>
+    <div class="fr"><div class="fg"><label>Date</label><input id="ma-date" type="date"></div><div class="fg"><label>Time</label><input id="ma-time" type="time"></div></div>
+    <div class="fg"><label>Status</label><select id="ma-status" onchange="maToggleFields()"><option value="given">Given</option><option value="refused">Refused</option><option value="held">Held</option><option value="not_available">Not Available</option></select></div>
+    <div class="fg" id="ma-prn-row" style="display:none"><label>Reason for PRN</label><input id="ma-prn-reason" placeholder="e.g. reported pain 6/10"></div>
+    <div class="fg" id="ma-effectiveness-row" style="display:none"><label>Effectiveness Check (best practice -- no fixed time window is required by any ALF regulation found; use clinical judgment)</label><input id="ma-effectiveness" placeholder="e.g. checked 45 min later, pain reduced to 2/10"></div>
+    <div class="fg" id="ma-refusal-row" style="display:none"><label>Refusal Reason (if given)</label><input id="ma-refusal-reason"></div>
+    <div class="fg" id="ma-notify-row" style="display:none"><label><input type="checkbox" id="ma-supervisor-notified" style="width:auto;display:inline-block;margin-right:6px"> Supervisor/prescriber notified</label></div>
+    <div class="fg"><label>Notes</label><textarea id="ma-notes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeMarAdminModal()">Cancel</button>
+      <button class="btn bp" onclick="saveMarAdmin()">Save</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="csCountModal">
+  <div class="mbox">
+    <div class="mtitle" id="cs-modal-title">Log Controlled-Substance Count</div>
+    <div class="note" id="cs-policy-note"></div>
+    <div class="fg"><label>Medication</label><select id="cs-medication"></select></div>
+    <div class="fg"><label>Date</label><input id="cs-date" type="date"></div>
+    <div class="fg"><label>Count Value</label><input id="cs-count-value" type="number"></div>
+    <div class="fg"><label>Witness (second signature)</label><select id="cs-witness"></select></div>
+    <div class="fg"><label><input type="checkbox" id="cs-discrepancy" style="width:auto;display:inline-block;margin-right:6px" onchange="csToggleDiscrepancy()"> Discrepancy found</label></div>
+    <div class="fg" id="cs-discrepancy-row" style="display:none"><label>Discrepancy Notes</label><textarea id="cs-discrepancy-notes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCsCountModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCsCount()">Save Count</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="reconModal">
+  <div class="mbox">
+    <div class="mtitle">Log Medication Reconciliation</div>
+    <div class="note">Owner/Nursing only. This pattern (compare the medication list, resolve duplicates/omissions/dosage discrepancies) is borrowed from Joint Commission NPSG.03.06.01, a hospital accreditation standard -- it is not an ALF regulatory requirement, offered here as a real, well-defined best practice.</div>
+    <div class="fg"><label>Type</label><select id="rc-type"><option value="admission">Admission</option><option value="transfer">Transfer</option><option value="discharge">Discharge</option></select></div>
+    <div class="fg"><label>Summary of Changes / Discrepancies Resolved</label><textarea id="rc-summary" rows="3" placeholder="e.g. discontinued duplicate metformin order from prior facility; corrected lisinopril dose from 10mg to 20mg per transfer paperwork"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeReconModal()">Cancel</button>
+      <button class="btn bp" onclick="saveRecon()">Save Reconciliation</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="assessRefusalModal">
+  <div class="mbox">
+    <div class="mtitle">Log Refusal of Medication-Management Assessment</div>
+    <div class="note">Owner/Nursing only. Distinct from refusing a single dose (logged as a Refused administration entry) -- this documents refusal of the assessment itself, modelled on Minnesota Stat. 144G.71's real requirement.</div>
+    <div class="fg"><label><input type="checkbox" id="ar-legal-notified" style="width:auto;display:inline-block;margin-right:6px"> Legal representative notified</label></div>
+    <div class="fg"><label>Notes</label><textarea id="ar-notes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeAssessRefusalModal()">Cancel</button>
+      <button class="btn bp" onclick="saveAssessRefusal()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- STAFF -->
 <div class="panel" id="panel-staff">
   <div class="ph"><div><div class="ptitle">Staff</div><div class="psub">Facility staff roster, certifications, and expiry tracking</div></div></div>
@@ -386,6 +483,23 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="ph"><div><div class="ptitle">Settings</div><div class="psub">Facility profile</div></div></div>
   <div class="card"><div class="ch"><span class="ct">Facility Profile</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openFacilityModal()">Edit</button></div></div>
     <div class="cb" id="set-facility"></div></div>
+  <!-- Controlled-substance count policy (2026-08-20, real MAR research
+       pass -- see SAIRN-ACTIVE-WORK.md for sourcing). No federal or
+       uniform ALF rule exists; only 3 states were sourced (WI/NC/MN) and
+       none is presented here as universal -- the default is the one
+       genuinely converged best practice (a joint shift-change count with
+       a second signature), with each state's real confirmed pattern
+       offered as an explicit opt-in, never silently applied. -->
+  <div class="card"><div class="ch"><span class="ct">Controlled-Substance Count Policy</span></div><div class="cb">
+    <div class="note">No federal or uniform ALF requirement exists for this. Default below is the one converged best-practice pattern found in research (a joint count, two signatures). The state-specific options are each one real state's own confirmed rule, not a claim that any state's approach is universal -- select only the one that actually matches this facility's licensing state.</div>
+    <div class="fg"><label>Active Policy</label><select id="set-cs-policy">
+      <option value="shift_change_count">Default: Joint shift-change count (two signatures)</option>
+      <option value="wi_daily_count">Wisconsin: Daily Schedule II count (Wis. Admin. Code DHS 83.37)</option>
+      <option value="nc_witnessed_destruction">North Carolina: Witnessed destruction, dual signature (10A NCAC 13F .1008)</option>
+      <option value="mn_documented_disposal">Minnesota: Documented loss/disposal (Minn. Stat. 144G.71)</option>
+    </select></div>
+    <button class="btn bp bs" onclick="saveCsPolicy()">Save Policy</button>
+  </div></div>
 </div>
 <div class="modal" id="facilitymodal">
   <div class="mbox">
@@ -546,6 +660,7 @@ function alfEnterApp(d){
   init();
   alfHydrateResidents().then(function(merged){if(merged){rResidents();rCareplans();}});
   alfHydrateStaff().then(function(merged){if(merged)rStaff();});
+  alfHydrateMar().then(function(merged){if(merged)rMar();});
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -590,6 +705,7 @@ function nav(id){
   if(id==='dashboard')rDash();
   if(id==='residents')rResidents();
   if(id==='careplans')rCareplans();
+  if(id==='mar')rMarPanel();
   if(id==='staff')rStaff();
   if(id==='settings')rSettings();
 }
@@ -916,6 +1032,284 @@ async function saveAdlAssessment(){
   toast(syncResult?('ADL assessment saved for '+r.name):'Saved on this device only -- server sync failed, try again with a connection');
 }
 
+// ── MEDICATIONS / MAR ────────────────────────────────────────────────────
+// Only Owner, Nursing, and Med Aide may touch this at all -- a real
+// scope-of-practice restriction enforced server-side in api/sd-data.js's
+// alf_mar gate, separate from the general resident-edit gate. Built from
+// a real research pass (2026-08-20, see SAIRN-ACTIVE-WORK.md for full
+// sourcing) -- no single uniform ALF standard exists for any of these 4
+// areas; each is labelled per its real source in the HTML above rather
+// than presented as codified ALF law.
+function alfIsMarRole(){return prole==='owner'||prole==='nursing'||prole==='med_aide';}
+function alfIsMarOrderRole(){return prole==='owner'||prole==='nursing';}
+function marEntries(){return ld('alf_mar',[]);}
+// Additive-only merge for the append-only event types (administration,
+// count, reconciliation, assessment_refusal) -- same disclosed two-
+// devices limitation as every other hydrate function this session.
+// medication_order is mutable-in-place server-side, but this hydration
+// still only adds ids not already known locally -- an order edited on a
+// different device won't refresh here until THIS device also edits/re-
+// saves it. Disclosed, not silently accepted as fully synced.
+function alfHydrateMar(){
+  if(!alfLicenseKey())return Promise.resolve(false);
+  return alfData('read','alf_mar',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var local=marEntries();
+    var localIds={};
+    local.forEach(function(e){if(e&&e.id)localIds[e.id]=true;});
+    var added=false;
+    serverRows.forEach(function(e){
+      if(e&&e.id&&!localIds[e.id]){local.push(e);localIds[e.id]=true;added=true;}
+    });
+    if(added)st('alf_mar',local);
+    return added;
+  });
+}
+function marSelectedResidentId(){var sel=$('mar-resident-select');return sel?sel.value:'';}
+function rMarPanel(){
+  var denied=$('mar-denied'),content=$('mar-content');
+  if(!alfIsMarRole()){denied.style.display='block';content.style.display='none';return;}
+  denied.style.display='none';content.style.display='block';
+  var sel=$('mar-resident-select');
+  var cur=sel.value;
+  var rs=residents();
+  sel.innerHTML=rs.length?rs.map(function(r){return '<option value="'+H(r.id)+'">'+H(r.name)+'</option>';}).join(''):'<option value="">No residents visible</option>';
+  if(cur&&rs.some(function(r){return r.id===cur;}))sel.value=cur;
+  rMar();
+}
+function sortByDateDesc(a,b){return (a.date||'')<(b.date||'')?1:-1;}
+function medNameById(meds,id){var m=meds.find(function(x){return x.id===id;});return m?(m.name+' '+(m.dose||'')):'(unknown medication)';}
+function marStatusBadge(s){return s==='given'?'bg':(s==='refused'?'br':(s==='held'?'bw':'bx'));}
+function residentActiveMeds(rid){return marEntries().filter(function(e){return e.resident_id===rid&&e.entry_type==='medication_order'&&!e.discontinued;});}
+function residentAllMeds(rid){return marEntries().filter(function(e){return e.resident_id===rid&&e.entry_type==='medication_order';});}
+function rMar(){
+  var rid=marSelectedResidentId();
+  var view=$('mar-resident-view');
+  if(!rid){view.innerHTML='<div class="card"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">No resident selected</div></div>';return;}
+  var meds=residentAllMeds(rid);
+  var entries=marEntries().filter(function(e){return e.resident_id===rid;});
+  var admin=entries.filter(function(e){return e.entry_type==='administration';}).sort(sortByDateDesc);
+  var counts=entries.filter(function(e){return e.entry_type==='count';}).sort(sortByDateDesc);
+  var recons=entries.filter(function(e){return e.entry_type==='reconciliation';}).sort(sortByDateDesc);
+  var refusals=entries.filter(function(e){return e.entry_type==='assessment_refusal';}).sort(sortByDateDesc);
+  var canManageOrders=alfIsMarOrderRole();
+  var csMeds=meds.filter(function(m){return m.controlled_substance&&!m.discontinued;});
+  var html='';
+  html+='<div class="card"><div class="ch"><span class="ct">Medications</span>'+(canManageOrders?'<div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openMedOrderModal()">+ Add Medication</button></div>':'')+'</div><div class="cb">';
+  html+=meds.length?meds.map(function(m){
+    return '<div class="srow" style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between;align-items:center">'+
+      '<span class="sval">'+H(m.name)+' '+H(m.dose||'')+(m.discontinued?' <span class="badge br">Discontinued</span>':'')+(m.controlled_substance?' <span class="badge bw">Controlled</span>':'')+(m.prn?' <span class="badge bb">PRN</span>':'')+(m.high_priority?' <span class="badge bx">High-Priority</span>':'')+'</span>'+
+      (canManageOrders?'<span><button class="btn bo bs" onclick="openMedOrderModal(\''+m.id+'\')">Edit</button> '+(m.discontinued?'':'<button class="btn bo bs" onclick="discontinueMedOrder(\''+m.id+'\')">Discontinue</button>')+'</span>':'')+
+      '</div><div style="font-size:12px;color:var(--muted);margin-top:4px">'+H(m.route||'')+' &middot; '+H(m.schedule||'')+(m.prescriber?' &middot; Rx: '+H(m.prescriber):'')+'</div></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px;">No medications on file</div>';
+  html+='</div></div>';
+  html+='<div class="card"><div class="ch"><span class="ct">Administration</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openMarAdminModal()"'+(meds.filter(function(m){return !m.discontinued;}).length?'':' disabled')+'>+ Log Administration</button></div></div><div class="cb">';
+  html+=admin.length?'<div class="tw"><table><thead><tr><th>Date</th><th>Medication</th><th>Status</th><th>By</th><th>Notes</th></tr></thead><tbody>'+admin.map(function(a){
+    return '<tr><td>'+fdate(a.date)+' '+H(a.time||'')+'</td><td>'+H(medNameById(meds,a.medication_id))+'</td><td><span class="badge '+marStatusBadge(a.status)+'">'+H(a.status)+'</span></td><td>'+H(alfEmployeeName(a.administered_by))+'</td><td style="max-width:220px">'+H(a.notes||a.refusal_reason||a.prn_reason||'')+'</td></tr>';
+  }).join('')+'</tbody></table></div>':'<div style="color:var(--muted);font-size:13px;">No administration records yet</div>';
+  html+='</div></div>';
+  if(csMeds.length||counts.length){
+    html+='<div class="card"><div class="ch"><span class="ct">Controlled-Substance Counts</span><div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openCsCountModal()"'+(csMeds.length?'':' disabled')+'>+ Log Count</button></div></div><div class="cb">';
+    html+='<div class="note" style="margin-bottom:12px">Active policy: '+H(csPolicyLabel(facility().cs_policy))+' (Settings &gt; Controlled-Substance Count Policy)</div>';
+    html+=counts.length?'<div class="tw"><table><thead><tr><th>Date</th><th>Medication</th><th>Count</th><th>By</th><th>Witness</th><th>Discrepancy</th></tr></thead><tbody>'+counts.map(function(c){
+      return '<tr><td>'+fdate(c.date)+'</td><td>'+H(medNameById(meds,c.medication_id))+'</td><td>'+H(c.count_value)+'</td><td>'+H(alfEmployeeName(c.counted_by))+'</td><td>'+H(alfEmployeeName(c.witness_id))+'</td><td>'+(c.discrepancy?'<span class="badge br">Yes</span>':'<span class="badge bg">No</span>')+'</td></tr>';
+    }).join('')+'</tbody></table></div>':'<div style="color:var(--muted);font-size:13px;">No counts logged yet</div>';
+    html+='</div></div>';
+  }
+  if(canManageOrders||recons.length){
+    html+='<div class="card"><div class="ch"><span class="ct">Medication Reconciliation</span>'+(canManageOrders?'<div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openReconModal()">+ Log Reconciliation</button></div>':'')+'</div><div class="cb">';
+    html+='<div class="note" style="margin-bottom:12px">Borrowed from Joint Commission NPSG.03.06.01 (hospital accreditation), not an ALF requirement.</div>';
+    html+=recons.length?recons.map(function(r){
+      return '<div class="srow" style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between"><span class="sval">'+H((r.type||'').charAt(0).toUpperCase()+(r.type||'').slice(1))+'</span><span class="slbl">'+fdate(r.date)+' by '+H(alfEmployeeName(r.reconciled_by))+'</span></div><div style="margin-top:4px;font-size:13px">'+H(r.summary||'')+'</div></div>';
+    }).join(''):'<div style="color:var(--muted);font-size:13px;">No reconciliation on file</div>';
+    html+='</div></div>';
+  }
+  if(canManageOrders||refusals.length){
+    html+='<div class="card"><div class="ch"><span class="ct">Medication-Management Assessment Refusal</span>'+(canManageOrders?'<div class="pa" style="margin-left:auto"><button class="btn bp bs" onclick="openAssessRefusalModal()">+ Log Refusal</button></div>':'')+'</div><div class="cb">';
+    html+=refusals.length?refusals.map(function(r){
+      return '<div class="srow"><span class="slbl">'+fdate(r.date)+' by '+H(alfEmployeeName(r.documented_by))+(r.notes?' -- '+H(r.notes):'')+'</span><span class="badge '+(r.legal_rep_notified?'bg':'bw')+'">'+(r.legal_rep_notified?'Legal rep notified':'Legal rep NOT notified')+'</span></div>';
+    }).join(''):'<div style="color:var(--muted);font-size:13px;">None on file</div>';
+    html+='</div></div>';
+  }
+  view.innerHTML=html;
+}
+async function marWrite(entryType,rec){
+  var rid=marSelectedResidentId();
+  var payload=Object.assign({},rec,{resident_id:rid,entry_type:entryType});
+  return alfData('write','alf_mar',payload,true);
+}
+// ── Medication order (mutable-in-place, owner/nursing only) ──────────────
+var moEditId=null;
+function openMedOrderModal(id){
+  if(!alfIsMarOrderRole()){toast('Only management or nursing can manage the medication list');return;}
+  moEditId=id||null;
+  $('mo-modal-title').textContent=id?'Edit Medication':'Add Medication Order';
+  if(id){
+    var m=residentAllMeds(marSelectedResidentId()).find(function(x){return x.id===id;});
+    if(!m)return;
+    $('mo-name').value=m.name||'';$('mo-dose').value=m.dose||'';$('mo-route').value=m.route||'oral';
+    $('mo-schedule').value=m.schedule||'';$('mo-prn').value=m.prn?'1':'0';$('mo-controlled').value=m.controlled_substance?'1':'0';
+    $('mo-prn-instructions').value=m.prn_instructions||'';$('mo-highpriority').value=m.high_priority?'1':'0';
+    $('mo-prescriber').value=m.prescriber||'';$('mo-startdate').value=m.start_date||'';$('mo-notes').value=m.notes||'';
+  }else{
+    ['mo-name','mo-dose','mo-schedule','mo-prn-instructions','mo-prescriber','mo-startdate','mo-notes'].forEach(function(f){$(f).value='';});
+    $('mo-route').value='oral';$('mo-prn').value='0';$('mo-controlled').value='0';$('mo-highpriority').value='0';
+    $('mo-startdate').value=new Date().toISOString().slice(0,10);
+  }
+  moTogglePrnRow();
+  $('medordermodal').classList.add('on');
+}
+function moTogglePrnRow(){$('mo-prn-instructions-row').style.display=($('mo-prn').value==='1')?'block':'none';}
+function closeMedOrderModal(){$('medordermodal').classList.remove('on');moEditId=null;}
+async function saveMedOrder(){
+  var name=$('mo-name').value.trim();
+  if(!name){toast('Medication name required');return;}
+  var rec={
+    id:moEditId||newId('MED'),name:name,dose:$('mo-dose').value.trim(),route:$('mo-route').value,
+    schedule:$('mo-schedule').value.trim(),prn:$('mo-prn').value==='1',controlled_substance:$('mo-controlled').value==='1',
+    prn_instructions:$('mo-prn-instructions').value.trim(),high_priority:$('mo-highpriority').value==='1',
+    prescriber:$('mo-prescriber').value.trim(),start_date:$('mo-startdate').value,notes:$('mo-notes').value.trim(),
+    discontinued:false
+  };
+  if(moEditId){
+    var existing=residentAllMeds(marSelectedResidentId()).find(function(x){return x.id===moEditId;});
+    if(existing)rec.discontinued=!!existing.discontinued;
+  }
+  var list=marEntries();
+  var idx=list.findIndex(function(x){return x.id===rec.id;});
+  if(idx===-1)list.push(rec);else list[idx]=Object.assign({},list[idx],rec);
+  st('alf_mar',list);
+  closeMedOrderModal();rMar();
+  var syncResult=await marWrite('medication_order',rec);
+  toast(syncResult?('Medication saved: '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
+}
+async function discontinueMedOrder(id){
+  var list=marEntries();
+  var m=list.find(function(x){return x.id===id;});
+  if(!m)return;
+  m.discontinued=true;
+  st('alf_mar',list);rMar();
+  var syncResult=await marWrite('medication_order',m);
+  toast(syncResult?'Medication discontinued':'Saved on this device only -- server sync failed');
+}
+// ── Administration (append-only) ──────────────────────────────────────────
+function openMarAdminModal(){
+  if(!alfIsMarRole()){toast('Medication records are not available to your role');return;}
+  var meds=residentActiveMeds(marSelectedResidentId());
+  if(!meds.length){toast('No active medications on file for this resident');return;}
+  var sel=$('ma-medication');
+  sel.innerHTML=meds.map(function(m){return '<option value="'+H(m.id)+'">'+H(m.name)+' '+H(m.dose||'')+'</option>';}).join('');
+  $('ma-date').value=new Date().toISOString().slice(0,10);
+  $('ma-time').value=new Date().toTimeString().slice(0,5);
+  $('ma-status').value='given';$('ma-prn-reason').value='';$('ma-effectiveness').value='';
+  $('ma-refusal-reason').value='';$('ma-supervisor-notified').checked=false;$('ma-notes').value='';
+  maToggleFields();
+  $('marAdminModal').classList.add('on');
+}
+function maToggleFields(){
+  var meds=residentActiveMeds(marSelectedResidentId());
+  var med=meds.find(function(m){return m.id===$('ma-medication').value;});
+  var status=$('ma-status').value;
+  $('ma-prn-row').style.display=(med&&med.prn)?'block':'none';
+  $('ma-effectiveness-row').style.display=(med&&med.prn&&status==='given')?'block':'none';
+  $('ma-refusal-row').style.display=(status==='refused')?'block':'none';
+  $('ma-notify-row').style.display=(status==='refused'&&med&&med.high_priority)?'block':'none';
+}
+function closeMarAdminModal(){$('marAdminModal').classList.remove('on');}
+async function saveMarAdmin(){
+  var medId=$('ma-medication').value;
+  if(!medId){toast('Select a medication');return;}
+  var rec={
+    id:newId('ADM'),medication_id:medId,date:$('ma-date').value||new Date().toISOString().slice(0,10),
+    time:$('ma-time').value,status:$('ma-status').value,administered_by:(alfSession&&alfSession.employee_id)||'',
+    prn_reason:$('ma-prn-reason').value.trim(),effectiveness_check:$('ma-effectiveness').value.trim(),
+    refusal_reason:$('ma-refusal-reason').value.trim(),supervisor_notified:$('ma-supervisor-notified').checked,
+    notes:$('ma-notes').value.trim()
+  };
+  var list=marEntries();
+  list.push(Object.assign({resident_id:marSelectedResidentId(),entry_type:'administration'},rec));
+  st('alf_mar',list);
+  closeMarAdminModal();rMar();
+  var syncResult=await marWrite('administration',rec);
+  toast(syncResult?'Administration logged':'Saved on this device only -- server sync failed, try again with a connection');
+}
+// ── Controlled-substance count (append-only) ──────────────────────────────
+function openCsCountModal(){
+  if(!alfIsMarRole()){toast('Medication records are not available to your role');return;}
+  var meds=residentActiveMeds(marSelectedResidentId()).filter(function(m){return m.controlled_substance;});
+  if(!meds.length){toast('No active controlled-substance medications on file for this resident');return;}
+  var sel=$('cs-medication');
+  sel.innerHTML=meds.map(function(m){return '<option value="'+H(m.id)+'">'+H(m.name)+' '+H(m.dose||'')+'</option>';}).join('');
+  var witnessSel=$('cs-witness');
+  witnessSel.innerHTML='<option value="">Select witness…</option>'+(_alfRoster||[]).map(function(e){
+    return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';
+  }).join('');
+  $('cs-date').value=new Date().toISOString().slice(0,10);
+  $('cs-count-value').value='';$('cs-discrepancy').checked=false;$('cs-discrepancy-notes').value='';
+  csToggleDiscrepancy();
+  $('cs-policy-note').textContent='Active policy: '+csPolicyLabel(facility().cs_policy)+'. A second signature (witness) is required regardless of which policy is active -- the one converged best practice found in research.';
+  $('csCountModal').classList.add('on');
+  if(alfIsManagement()&&!_alfRoster)alfRefreshRoster(function(){
+    witnessSel.innerHTML='<option value="">Select witness…</option>'+(_alfRoster||[]).map(function(e){
+      return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';
+    }).join('');
+  });
+}
+function csToggleDiscrepancy(){$('cs-discrepancy-row').style.display=$('cs-discrepancy').checked?'block':'none';}
+function closeCsCountModal(){$('csCountModal').classList.remove('on');}
+async function saveCsCount(){
+  var medId=$('cs-medication').value;
+  var witness=$('cs-witness').value;
+  if(!medId){toast('Select a medication');return;}
+  if(!witness){toast('A witness (second signature) is required for a controlled-substance count');return;}
+  var rec={
+    id:newId('CNT'),medication_id:medId,date:$('cs-date').value||new Date().toISOString().slice(0,10),
+    count_value:Number($('cs-count-value').value)||0,counted_by:(alfSession&&alfSession.employee_id)||'',
+    witness_id:witness,discrepancy:$('cs-discrepancy').checked,discrepancy_notes:$('cs-discrepancy-notes').value.trim()
+  };
+  var list=marEntries();
+  list.push(Object.assign({resident_id:marSelectedResidentId(),entry_type:'count'},rec));
+  st('alf_mar',list);
+  closeCsCountModal();rMar();
+  var syncResult=await marWrite('count',rec);
+  toast(syncResult?'Count logged':'Saved on this device only -- server sync failed, try again with a connection');
+}
+// ── Reconciliation (append-only, owner/nursing only) ──────────────────────
+function openReconModal(){
+  if(!alfIsMarOrderRole()){toast('Only management or nursing can log a reconciliation');return;}
+  $('rc-type').value='admission';$('rc-summary').value='';
+  $('reconModal').classList.add('on');
+}
+function closeReconModal(){$('reconModal').classList.remove('on');}
+async function saveRecon(){
+  var summary=$('rc-summary').value.trim();
+  if(!summary){toast('Summary required');return;}
+  var rec={id:newId('REC'),type:$('rc-type').value,date:new Date().toISOString().slice(0,10),reconciled_by:(alfSession&&alfSession.employee_id)||'',summary:summary};
+  var list=marEntries();
+  list.push(Object.assign({resident_id:marSelectedResidentId(),entry_type:'reconciliation'},rec));
+  st('alf_mar',list);
+  closeReconModal();rMar();
+  var syncResult=await marWrite('reconciliation',rec);
+  toast(syncResult?'Reconciliation logged':'Saved on this device only -- server sync failed, try again with a connection');
+}
+// ── Assessment refusal (append-only, owner/nursing only) ──────────────────
+function openAssessRefusalModal(){
+  if(!alfIsMarOrderRole()){toast('Only management or nursing can log this');return;}
+  $('ar-legal-notified').checked=false;$('ar-notes').value='';
+  $('assessRefusalModal').classList.add('on');
+}
+function closeAssessRefusalModal(){$('assessRefusalModal').classList.remove('on');}
+async function saveAssessRefusal(){
+  var rec={id:newId('REF'),date:new Date().toISOString().slice(0,10),documented_by:(alfSession&&alfSession.employee_id)||'',
+    legal_rep_notified:$('ar-legal-notified').checked,notes:$('ar-notes').value.trim()};
+  var list=marEntries();
+  list.push(Object.assign({resident_id:marSelectedResidentId(),entry_type:'assessment_refusal'},rec));
+  st('alf_mar',list);
+  closeAssessRefusalModal();rMar();
+  var syncResult=await marWrite('assessment_refusal',rec);
+  toast(syncResult?'Refusal logged':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
 // ── STAFF (employment/certification roster -- lighter gate than Residents,
 // closing SAIRNsenior's own disclosed Phase-1 gap proactively from the
 // start) ──────────────────────────────────────────────────────────────────
@@ -1009,22 +1403,32 @@ function aiAsk(){
 }
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────
-function facility(){return ld('alf_facility',{name:'',company:''});}
+function facility(){return ld('alf_facility',{name:'',company:'',cs_policy:'shift_change_count'});}
 function rSettings(){
   var f=facility();
   $('set-facility').innerHTML='<div class="srow"><span class="slbl">Facility Name</span><span class="sval">'+H(f.name||'Not set')+'</span></div>'+
     '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(f.company||'Not set')+'</span></div>';
+  var csSel=$('set-cs-policy');if(csSel)csSel.value=f.cs_policy||'shift_change_count';
 }
 function openFacilityModal(){var f=facility();$('fc-name').value=f.name||'';$('fc-company').value=f.company||'';$('facilitymodal').classList.add('on');}
 function closeFacilityModal(){$('facilitymodal').classList.remove('on');}
 function saveFacility(){
-  var f={name:$('fc-name').value.trim(),company:$('fc-company').value.trim()};
+  var f=Object.assign({},facility(),{name:$('fc-name').value.trim(),company:$('fc-company').value.trim()});
   st('alf_facility',f);closeFacilityModal();rSettings();toast('Facility profile saved');
+}
+function saveCsPolicy(){
+  var f=Object.assign({},facility(),{cs_policy:$('set-cs-policy').value});
+  st('alf_facility',f);toast('Controlled-substance count policy saved');
+}
+function csPolicyLabel(v){
+  var m={shift_change_count:'Joint shift-change count',wi_daily_count:'Wisconsin: Daily Schedule II count',
+    nc_witnessed_destruction:'North Carolina: Witnessed destruction',mn_documented_disposal:'Minnesota: Documented loss/disposal'};
+  return m[v]||v;
 }
 
 // ── WIRE EVERYTHING ON DOM READY ────────────────────────────────────────
 function init(){
-  rDash();rResidents();rCareplans();rStaff();rSettings();
+  rDash();rResidents();rCareplans();rMarPanel();rStaff();rSettings();
 }
 
 document.addEventListener('DOMContentLoaded',function(){

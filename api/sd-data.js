@@ -264,7 +264,10 @@ const RESOURCES = {
   // gap (Caregivers/Staff shipped local-only there) proactively from the
   // start instead of leaving it for a later batch. See
   // sql/sairncare_staff_schema.sql's own header for the gate reasoning.
-  alf_staff: true
+  alf_staff: true,
+  // SAIRNcare MAR (2026-08-20) -- see sql/sairncare_mar_schema.sql's own
+  // header for the full research-grounded reasoning and entry_type shapes.
+  alf_mar: true
 };
 
 const SC_RESOURCES = [
@@ -378,7 +381,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, sc_coded_items, bld_bids, bld_tna, sen_clients, sen_caregivers, sen_visits, sen_claims, alf_clients, alf_staff' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, sc_coded_items, bld_bids, bld_tna, sen_clients, sen_caregivers, sen_visits, sen_claims, alf_clients, alf_staff, alf_mar' } });
     return;
   }
 
@@ -2532,6 +2535,119 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, staffData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_mar -- Medication Administration Record (2026-08-20) ──────────────────
+    // Separate table AND separate gate from alf_clients/alf_staff -- see
+    // sql/sairncare_mar_schema.sql's own header for both reasons in full
+    // (high-frequency append-only events would blow past alf_clients'
+    // 64KB cap; medication data carries scope-of-practice sensitivity that
+    // the general resident-edit gate doesn't distinguish). Only owner,
+    // nursing, med_aide may touch this resource at all -- billing,
+    // caregiver, activities get a real 403, never silent access via the
+    // general alf_clients write path. Real research pass (not assumed) run
+    // before building this -- no single uniform ALF standard exists for
+    // any of these; see SAIRN-ACTIVE-WORK.md for full sourcing.
+    const ALF_MAR_ROLES = { owner: true, nursing: true, med_aide: true };
+    const ALF_MAR_BROAD_ROLES = { owner: true, nursing: true };
+    // medication_order/reconciliation/assessment_refusal are clinical-
+    // decision entry types -- owner/nursing only, even though med_aide can
+    // read them and can write the other two (routine execution) types.
+    const ALF_MAR_ORDER_ROLES = { owner: true, nursing: true };
+    const ALF_MAR_ENTRY_TYPES = ['medication_order', 'administration', 'count', 'reconciliation', 'assessment_refusal'];
+    if (resource === 'alf_mar' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MAR_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Medication records are not available to your role' } });
+        return;
+      }
+      const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,assigned_employee_id,entry_type,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      let out = rows || [];
+      if (!ALF_MAR_BROAD_ROLES[session.role]) {
+        out = out.filter((r) => r.assigned_employee_id === session.employee_id);
+      }
+      const data = out.map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, entry_type: r.entry_type, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'alf_mar' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MAR_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Medication records are not available to your role' } });
+        return;
+      }
+      if (!payload || !payload.id || !payload.resident_id || !payload.entry_type) {
+        res.status(400).json({ error: { message: 'alf_mar payload.id, payload.resident_id, and payload.entry_type are required' } });
+        return;
+      }
+      if (ALF_MAR_ENTRY_TYPES.indexOf(payload.entry_type) === -1) {
+        res.status(400).json({ error: { message: 'entry_type must be one of: ' + ALF_MAR_ENTRY_TYPES.join(', ') } });
+        return;
+      }
+      // medication_order/reconciliation/assessment_refusal are clinical-
+      // decision entry types -- owner/nursing only, even for a med_aide
+      // who is otherwise allowed to write this table (administration and
+      // count, the routine execution types, are the only ones med_aide
+      // may create).
+      if (payload.entry_type !== 'administration' && payload.entry_type !== 'count' && !ALF_MAR_ORDER_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management or nursing can log this entry type' } });
+        return;
+      }
+      // Live-look-up the resident's CURRENT assignment -- never trust a
+      // client-supplied assigned_employee_id for this table, same
+      // discipline as alf_clients' own write path. This both denormalizes
+      // the column for the read-filter above and enforces med_aide's
+      // own-assigned-only restriction against real, current data.
+      const residentR = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.resident_id) + '&select=assigned_employee_id'), { headers });
+      if (residentR.status === 404 || residentR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Resident tracking is not set up yet — run sql/sairncare_clients_schema.sql in Supabase first.' } });
+        return;
+      }
+      const residentRows = await residentR.json();
+      if (!residentR.ok) return upstream(res, residentRows);
+      const residentRow = Array.isArray(residentRows) && residentRows[0];
+      if (!residentRow) { res.status(400).json({ error: { message: 'Unknown resident_id' } }); return; }
+      const residentAssignee = residentRow.assigned_employee_id || null;
+      if (!ALF_MAR_BROAD_ROLES[session.role] && residentAssignee !== session.employee_id) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This resident is not assigned to you' } });
+        return;
+      }
+      // Append-only integrity for the real event-log types: reject reusing
+      // an id already recorded as this entry_type, rather than silently
+      // overwriting a past administration/count record. medication_order
+      // is deliberately excluded -- it's a real mutable-in-place order
+      // (edit/discontinue), same upsert shape as alf_clients itself.
+      if (payload.entry_type !== 'medication_order') {
+        const existingR = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
+        const existingRows = existingR.ok ? await existingR.json() : [];
+        if (Array.isArray(existingRows) && existingRows.length > 0) {
+          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten' } });
+          return;
+        }
+      }
+      const marData = Object.assign({}, payload);
+      delete marData.id; delete marData.resident_id; delete marData.entry_type; delete marData.assigned_employee_id;
+      const r = await fetch(rest('alf_mar?on_conflict=license_hash,entry_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: String(payload.resident_id),
+          assigned_employee_id: residentAssignee, entry_type: payload.entry_type, data: marData, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'MAR tracking is not set up yet — run sql/sairncare_mar_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, resident_id: payload.resident_id, entry_type: payload.entry_type, assigned_employee_id: residentAssignee || '' }, marData) });
       return;
     }
 
