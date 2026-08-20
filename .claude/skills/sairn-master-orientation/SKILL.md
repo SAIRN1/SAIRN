@@ -39,6 +39,7 @@ description: 'Read this FIRST, every session, before anything else. One consolid
 | Merging a real feature/fix | `sairn-adversarial-reviewer` (4 personas), `ponytail-review` |
 | Anything visible/rendered | `sairn-visual-review` (browser must be focused — see its Environment Requirement) |
 | New app/feature architecture | `sairn-software-architect`, `sairn-mobile-sync` (if field/phone-facing) |
+| Employee training-needs / skills-gap / DISC assessment | `sairn-training-needs-assessment` — Hennessy-Hicks-style methodology, two-perspective privacy gate, ADA-safe DISC framing, real bugs already found and fixed |
 | Should we build this / is this claim true | `sairn-decision-gate` (Bid/No-Bid, Premortem, NIST AI RMF) |
 | Checking another app's real state | `sairn-portfolio-triage` (4 scanners: duplicate_global, missing_dom_target, panel_nesting, key_collision — note: key_collision's biggest false-positive class is comparing variable NAMES, not what they reference; trace before trusting a raw hit) |
 | Catastrophic-shaped risk (money, sync, infra config) before calling anything done | `sairn-silent-failure-sweep` — "no crash" is not "correct"; the single most common real defect class found across the whole portfolio |

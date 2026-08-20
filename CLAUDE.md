@@ -62,6 +62,13 @@ arrived here through this file rather than a trigger word:
   judgment layer above code quality.
 - `sairn-mobile-sync` — the standard pattern for any phone/field/POS/
   real-time feature, used identically across every SAIRN app.
+- `sairn-training-needs-assessment` — the standard pattern for an employee
+  training-needs / skills-gap tool (Hennessy-Hicks-style importance/
+  performance-gap methodology, two-perspective self+management structure,
+  optional DISC-style module), extracted from SAIRNbuild's real,
+  live-verified build. Reusable across every SAIRN app; per-app role
+  vocabulary and item-bank wording still need an explicit judgment call
+  each time, not silently copied.
 - `code-scrubber` — generic (non-SAIRN) code quality pass, now with the
   same Step 0 reality-check additions as Guardian.
 
@@ -107,4 +114,4 @@ A status report is a claim, not a fact, until checked against the real current s
 - State the recommendation clearly (e.g. "This looks like a hard-debugging case — worth switching to Opus 4.8") rather than silently staying on whatever model is currently active
 
 ---
-*Last Updated: 2026-07-27*
+*Last Updated: 2026-08-20*
