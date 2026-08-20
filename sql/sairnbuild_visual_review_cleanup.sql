@@ -14,8 +14,17 @@
 --    bld_bids write path (privacy gate, Assign-To/reassign UI) actually
 --    works in production (it does -- sql/sairnbuild_bids_schema.sql was
 --    already live too).
+-- 3. (2026-08-20, second session) Real self- and management-perspective
+--    bld_tna_assessments rows for 'visual-test-owner' were written to
+--    confirm the full TNA round trip once sql/sairnbuild_tna_schema.sql
+--    was confirmed run -- self-assessment save, results/comparison view,
+--    management assessment save, and Team Overview aggregation all
+--    verified genuinely live (real gap-score badges rendered correctly,
+--    not fabricated). Also caught and fixed a real bug during this pass:
+--    the TNA KPI cards went stale after a successful save (fixed in
+--    tnaRenderKpis(), pushed `802ec0b`).
 --
--- Run only the statements Michael actually wants -- both are safe,
+-- Run only the statements Michael actually wants -- all are safe,
 -- narrowly scoped to this one test row/account, nothing else touched.
 
 -- Remove the test bid:
@@ -26,3 +35,6 @@
 
 -- Remove the test employee credential:
 -- delete from public.sairnbuild_employee_auth where license_hash = (select license_hash from license_keys where license_key = 'BLD-PINNACLE-2026') and employee_id = 'visual-test-owner';
+
+-- Remove the test TNA assessment rows (both perspectives):
+-- delete from public.bld_tna_assessments where license_hash = (select license_hash from license_keys where license_key = 'BLD-PINNACLE-2026') and subject_employee_id = 'visual-test-owner';
