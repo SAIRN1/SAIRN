@@ -218,6 +218,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
       <div class="ss">Care</div>
       <button class="sb" id="sb-residents" onclick="nav('residents')"><span class="sico">&#128100;</span>Residents</button>
+      <button class="sb" id="sb-careplans" onclick="nav('careplans')"><span class="sico">&#128203;</span>Care Plans / ADL</button>
       <div class="ss">Staff</div>
       <button class="sb" id="sb-staff" onclick="nav('staff')"><span class="sico">&#128119;</span>Staff</button>
       <div class="ss">Company</div>
@@ -298,6 +299,42 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="btn bo" onclick="closeResidentModal()">Cancel</button>
       <button class="btn bp" onclick="saveResident()">Save Resident</button>
     </div>
+  </div>
+</div>
+
+<!-- CARE PLANS / ADL -->
+<!-- Real Katz Index of Independence in ADLs (bathing, dressing, toileting,
+     transferring, continence, feeding), scored per-domain on the standard
+     5-level long-term-care assistance scale (Independent / Supervision /
+     Limited Assistance / Extensive Assistance / Total Dependence) -- an
+     established clinical instrument, not invented for this app. Stored
+     inside each resident's own alf_clients data blob (adl_assessments
+     array), same reasoning as SAIRNsenior's Care Plan Tasks: this is
+     clearly resident-scoped clinical data that should inherit the exact
+     same four-tier privacy gate as the rest of the resident record, so no
+     new resource, table, or server-side gate is needed. -->
+<div class="panel" id="panel-careplans">
+  <div class="ph"><div><div class="ptitle">Care Plans / ADL</div><div class="psub">Katz Index of Independence in ADLs, scored per-domain -- visible to you only where you're assigned, or per your broad-access role</div></div></div>
+  <div class="note">Assisted-living operator review needed before launch, same as the Residents role vocabulary -- the 6-domain Katz Index and 5-level assistance scale are a real, established clinical instrument, but per-facility documentation policy on top of it (assessment frequency, who signs off) is not encoded here.</div>
+  <div class="card"><div class="cb">
+    <div class="tw"><table><thead><tr><th>Resident</th><th>Last Assessed</th><th>By</th><th>Actions</th></tr></thead>
+    <tbody id="adltbody"></tbody></table></div>
+  </div></div>
+</div>
+<div class="modal" id="adlmodal">
+  <div class="mbox" style="width:640px">
+    <div class="mtitle" id="adl-modal-title">ADL Assessment</div>
+    <div class="fg"><label>Assessment Date</label><input id="adl-date" type="date"></div>
+    <div class="fr"><div class="fg"><label>Bathing</label><select id="adl-bathing"></select></div><div class="fg"><label>Dressing</label><select id="adl-dressing"></select></div></div>
+    <div class="fr"><div class="fg"><label>Toileting</label><select id="adl-toileting"></select></div><div class="fg"><label>Transferring</label><select id="adl-transferring"></select></div></div>
+    <div class="fr"><div class="fg"><label>Continence</label><select id="adl-continence"></select></div><div class="fg"><label>Feeding</label><select id="adl-feeding"></select></div></div>
+    <div class="fg"><label>Notes</label><textarea id="adl-notes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeAdlModal()">Cancel</button>
+      <button class="btn bp" onclick="saveAdlAssessment()">Save Assessment</button>
+    </div>
+    <div class="mtitle" style="font-size:14px;margin-top:20px;">History</div>
+    <div id="adl-history"></div>
   </div>
 </div>
 
@@ -507,7 +544,7 @@ function alfEnterApp(d){
   alfLoginErr('');
   var p=$('l-pin');if(p)p.value='';
   init();
-  alfHydrateResidents().then(function(merged){if(merged)rResidents();});
+  alfHydrateResidents().then(function(merged){if(merged){rResidents();rCareplans();}});
   alfHydrateStaff().then(function(merged){if(merged)rStaff();});
   if(typeof rSecurity==='function')rSecurity();
 }
@@ -552,6 +589,7 @@ function nav(id){
   if(id==='security')rSecurity();
   if(id==='dashboard')rDash();
   if(id==='residents')rResidents();
+  if(id==='careplans')rCareplans();
   if(id==='staff')rStaff();
   if(id==='settings')rSettings();
 }
@@ -801,6 +839,83 @@ async function resAnalyzePhoto(dataUrl){
   }
 }
 
+// ── CARE PLANS / ADL (Katz Index of Independence in ADLs) ───────────────
+// Real, established clinical instrument: 6 domains (bathing, dressing,
+// toileting, transferring, continence, feeding), each scored on the
+// standard 5-level long-term-care assistance scale. Stored inside the
+// resident's own alf_clients record (adl_assessments array) -- inherits
+// the exact same four-tier privacy gate as everything else about that
+// resident, same reasoning as SAIRNsenior's Care Plan Tasks, so writes
+// go through the identical alf_clients write path saveResident() uses,
+// not a new resource.
+var ADL_LEVELS=[
+  {v:'independent',l:'Independent',badge:'bg'},
+  {v:'supervision',l:'Supervision',badge:'bb'},
+  {v:'limited',l:'Limited Assistance',badge:'bw'},
+  {v:'extensive',l:'Extensive Assistance',badge:'bx'},
+  {v:'total_dependence',l:'Total Dependence',badge:'br'}
+];
+var ADL_DOMAINS=[['bathing','Bathing'],['dressing','Dressing'],['toileting','Toileting'],['transferring','Transferring'],['continence','Continence'],['feeding','Feeding']];
+function adlLevelLabel(v){var m=ADL_LEVELS.find(function(x){return x.v===v;});return m?m.l:v;}
+function adlLevelBadge(v){var m=ADL_LEVELS.find(function(x){return x.v===v;});return m?m.badge:'bx';}
+function adlPopulateSelects(){
+  var opts=ADL_LEVELS.map(function(x){return '<option value="'+x.v+'">'+H(x.l)+'</option>';}).join('');
+  ADL_DOMAINS.forEach(function(d){var sel=$('adl-'+d[0]);if(sel)sel.innerHTML=opts;});
+}
+var adlResidentId=null;
+function rCareplans(){
+  var rs=residents();
+  var atb=$('adltbody');
+  atb.innerHTML=rs.length?rs.map(function(r){
+    var hist=r.adl_assessments||[];
+    var last=hist.length?hist[hist.length-1]:null;
+    var canAssess=!alfIsReadOnlyBroad();
+    return '<tr><td>'+H(r.name)+'</td><td>'+(last?fdate(last.date):'Never assessed')+'</td>'+
+      '<td>'+(last?H(alfEmployeeName(last.assessed_by)):'--')+'</td>'+
+      '<td>'+(canAssess?'<button class="btn bo bs" onclick="openAdlModal(\''+r.id+'\')">Assess</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No residents found</td></tr>';
+}
+function openAdlModal(residentId){
+  var r=residents().find(function(x){return x.id===residentId;});
+  if(!r){toast('Resident not found');return;}
+  if(alfIsReadOnlyBroad()){toast('Activities has read-only access to residents');return;}
+  if(!alfIsBroadRead()&&r.assigned_employee_id!==(alfSession&&alfSession.employee_id)){toast('This resident is not assigned to you');return;}
+  adlResidentId=residentId;
+  adlPopulateSelects();
+  $('adl-modal-title').textContent='ADL Assessment — '+r.name;
+  $('adl-date').value=new Date().toISOString().slice(0,10);
+  ADL_DOMAINS.forEach(function(d){$('adl-'+d[0]).value='independent';});
+  $('adl-notes').value='';
+  var hist=r.adl_assessments||[];
+  $('adl-history').innerHTML=hist.length?hist.slice().reverse().map(function(a){
+    return '<div class="srow" style="display:block;padding:10px 0"><div style="display:flex;justify-content:space-between"><span class="sval">'+fdate(a.date)+'</span><span class="slbl">by '+H(alfEmployeeName(a.assessed_by))+'</span></div>'+
+      '<div style="margin-top:6px">'+ADL_DOMAINS.map(function(d){return '<span class="badge '+adlLevelBadge(a[d[0]])+'" style="margin:2px">'+H(d[1])+': '+H(adlLevelLabel(a[d[0]]))+'</span>';}).join('')+'</div>'+
+      (a.notes?'<div style="margin-top:6px;color:var(--muted);font-size:12px">'+H(a.notes)+'</div>':'')+'</div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px;">No prior assessments</div>';
+  $('adlmodal').classList.add('on');
+}
+function closeAdlModal(){$('adlmodal').classList.remove('on');adlResidentId=null;}
+async function saveAdlAssessment(){
+  if(!adlResidentId)return;
+  var list=residents();
+  var r=list.find(function(x){return x.id===adlResidentId;});
+  if(!r){toast('Resident not found');return;}
+  var assessment={id:newId('ADL'),date:$('adl-date').value||new Date().toISOString().slice(0,10),assessed_by:(alfSession&&alfSession.employee_id)||''};
+  ADL_DOMAINS.forEach(function(d){assessment[d[0]]=$('adl-'+d[0]).value;});
+  assessment.notes=$('adl-notes').value.trim();
+  r.adl_assessments=(r.adl_assessments||[]).concat([assessment]);
+  st('alf_clients',list);
+  closeAdlModal();rCareplans();
+  // Assignment is never touched by an ADL write -- always pass the
+  // resident's own current assignment through unchanged, valid for every
+  // tier (narrow tier's own assignment already equals their own id since
+  // that's why they can see this resident at all; broad-edit/management
+  // both treat an unchanged value as a no-op reassignment).
+  var payload=Object.assign({},r,{assigned_employee_id:r.assigned_employee_id||''});
+  var syncResult=await alfData('write','alf_clients',payload,true);
+  toast(syncResult?('ADL assessment saved for '+r.name):'Saved on this device only -- server sync failed, try again with a connection');
+}
+
 // ── STAFF (employment/certification roster -- lighter gate than Residents,
 // closing SAIRNsenior's own disclosed Phase-1 gap proactively from the
 // start) ──────────────────────────────────────────────────────────────────
@@ -909,7 +1024,7 @@ function saveFacility(){
 
 // ── WIRE EVERYTHING ON DOM READY ────────────────────────────────────────
 function init(){
-  rDash();rResidents();rStaff();rSettings();
+  rDash();rResidents();rCareplans();rStaff();rSettings();
 }
 
 document.addEventListener('DOMContentLoaded',function(){
