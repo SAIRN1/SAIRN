@@ -741,6 +741,10 @@
             <textarea id="note-input" rows="6" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:13px;" placeholder="Paste clinical note text here..."></textarea>
             <div class="toolbar" style="margin-top:8px;">
                 <input type="text" id="note-encounter-ref" placeholder="Claim / encounter reference (optional)" class="search-input">
+                <!-- Billing provider drives the Phase 4 credential gate. Left
+                     unset, the gate reports that it could not check rather
+                     than passing the code -- it fails closed. -->
+                <select id="note-provider"><option value="">Billing provider (for credential check)</option></select>
                 <button class="btn btn-primary" onclick="suggestCodesFromNote()" id="note-suggest-btn">Suggest Codes</button>
             </div>
             <div id="note-suggest-result" style="margin-top:12px;"></div>
@@ -1738,6 +1742,50 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <select id="prov-add-cred"><option>Yes</option><option>No</option></select>
                 <input type="number" step="0.1" id="prov-add-perf" placeholder="Performance %" class="search-input">
                 <button class="btn btn-primary" onclick="addProviderEntry()">Add</button>
+            </div>
+
+            <!-- Credential scope (Phase 4 item 7). Empty by default and never
+                 seeded: which specialties may bill which codes varies by payer
+                 policy and state scope-of-practice law, none of which was
+                 verified against a primary source here. Source is required for
+                 the same reason it is on Scrub Rules -- this table only holds
+                 what a human actually confirmed. -->
+            <div style="font-weight:700;font-size:15px;margin:24px 0 6px;">Credentialed Code Scope</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                Records which codes each provider is actually credentialed to bill, as
+                <b>you</b> have verified it — SAIRNcode has no built-in opinion about which specialty may
+                bill which code, and nothing here is pre-filled. A code assigned to a provider with no
+                matching scope is held for your review rather than passed. Scope accepts an exact code
+                (<code>99291</code>), a prefix (<code>992*</code>), or a range (<code>99281-99285</code>).
+            </div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>Provider</th><th>Specialty</th><th>Scope</th><th>Source</th><th></th></tr></thead>
+                    <tbody id="credscope-tbody"></tbody>
+                </table></div>
+            </div>
+            <div class="toolbar" style="margin-top:12px;">
+                <select id="cs-add-provider"><option value="">Select provider</option></select>
+                <select id="cs-add-specialty">
+                    <option value="">Specialty</option>
+                    <option>Behavioral Health</option>
+                    <option>Orthopedics</option>
+                    <option>Podiatry</option>
+                    <option>Anesthesia</option>
+                    <option>Cardiology</option>
+                    <option>Oncology</option>
+                    <option>Interventional Radiology</option>
+                    <option>DME</option>
+                    <option>Ophthalmology</option>
+                    <option>Emergency Medicine</option>
+                    <option>Physical Therapy</option>
+                    <option>Optometry</option>
+                    <option>Urgent Care</option>
+                    <option>Other</option>
+                </select>
+                <input type="text" id="cs-add-scope" placeholder="Scope e.g. 99281-99285" class="search-input">
+                <input type="text" id="cs-add-source" placeholder="Source (required)" class="search-input">
+                <button class="btn btn-primary" onclick="addCredentialScope()">Add Scope</button>
             </div>
         </div>
 
@@ -4464,6 +4512,7 @@ How to answer:
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
             saveProviderEntries(getProviderEntries().filter(function(p){return p.id!==id;}));
             renderProviders();
+            renderCredentialScopes();
         }
         async function addProviderEntry(){
             var name = document.getElementById('prov-add-name').value.trim();
@@ -4478,6 +4527,7 @@ How to answer:
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
             var synced = saved ? await scData('write', 'sc_providers', list[list.length - 1]) : null;
             renderProviders();
+            renderCredentialScopes();
             document.getElementById('prov-add-name').value = '';
             document.getElementById('prov-add-specialty').value = '';
             document.getElementById('prov-add-license').value = '';
@@ -4935,6 +4985,16 @@ How to answer:
                 if (rejected) {
                     basis.push('A coder previously rejected this same code ' + rejected + ' time' + (rejected === 1 ? '' : 's') + '.');
                 }
+
+                // (c) Phase 4 item 7 -- credential gate. FAILS CLOSED: any
+                // state other than 'covered' holds the item for a human.
+                // Deliberately includes 'no_data' and 'no_provider', because
+                // "we could not check" is not evidence that the provider is
+                // credentialed for this code.
+                if (typeof scValidateCredentialForCode === 'function') {
+                    var cred = scValidateCredentialForCode(item.provider_id, item.code);
+                    if (cred.state !== 'covered') basis.push(cred.detail);
+                }
             }
 
             return {
@@ -4953,11 +5013,19 @@ How to answer:
         // get stored -- not a re-derived guess afterwards.
         async function captureCodedItem(payload){
             var encounterRef = (document.getElementById('note-encounter-ref') || {}).value || '';
+            var providerSel = document.getElementById('note-provider');
+            var providerId = providerSel ? providerSel.value : '';
+            var provRec = null;
+            if (providerId) {
+                provRec = getProviderEntries().filter(function(p){ return p.id === providerId; })[0] || null;
+            }
             var base = {
                 id: 'ci' + Date.now(),
                 code: payload.code || '',
                 code_type: payload.code_type || '',
                 encounter_ref: String(encounterRef).trim(),
+                provider_id: providerId,
+                provider_name: provRec ? provRec.name : '',
                 quote: payload.quote || '',
                 quote_verified: payload.quote_verified === true,
                 reasoning: payload.reasoning || '',
@@ -5104,6 +5172,150 @@ How to answer:
                     + '<td>'+actions+'</td>';
                 tbody.appendChild(tr);
             });
+        }
+
+        // ================================================================
+        // CREDENTIAL-GATING LAYER (2026-08-20, Phase 4 item 7).
+        //
+        // This is the reusable validation layer every Phase 5 specialty
+        // module depends on, so its contract is deliberately small and
+        // stable: scValidateCredentialForCode(providerId, code) -> a result
+        // object with a `state` and a human-readable `detail`. Callers should
+        // branch on `state`, never parse `detail`.
+        //
+        // WHY IT FAILS CLOSED (decision confirmed 2026-08-20): when a
+        // provider has no credential rows on file, this returns 'no_data',
+        // which routes the coded item to human review. It does NOT pass.
+        // An empty reference table silently green-lighting every code would
+        // be worse than having no gate at all -- the same principle as the
+        // quote_verified fail-open bug caught in Phase 1. This is a
+        // disclosed SOFT block: the coder can add the real credential data,
+        // or accept the code on their own recorded judgment, so an empty
+        // table never freezes the workflow.
+        //
+        // WHAT THIS LAYER DOES NOT KNOW, stated plainly: it has no built-in
+        // opinion about which specialties may bill which codes. That varies
+        // by payer policy and state scope-of-practice law and was not
+        // verified against a primary source here, so nothing is seeded. It
+        // only checks codes against scopes THIS PRACTICE entered and sourced.
+        // ================================================================
+        function getCredentialScopes(){
+            try { var s = localStorage.getItem('sc_credential_scope'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveCredentialScopes(list){ try { localStorage.setItem('sc_credential_scope', JSON.stringify(list)); return true; } catch(e){ return false; } }
+
+        // Literal matching only -- three documented forms, nothing inferred.
+        // See sql/sairncode_credential_scope_schema.sql for the same list.
+        function scCodeInScope(code, scope){
+            var c = String(code || '').trim().toUpperCase();
+            var s = String(scope || '').trim().toUpperCase();
+            if (!c || !s) return false;
+            if (s.indexOf('*') !== -1) {                       // prefix: "992*"
+                var pre = s.slice(0, s.indexOf('*'));
+                return pre.length > 0 && c.indexOf(pre) === 0;
+            }
+            var dash = s.indexOf('-');
+            if (dash > 0) {                                    // range: "99281-99285"
+                var lo = s.slice(0, dash).trim(), hi = s.slice(dash + 1).trim();
+                // Compare leading digits only, and require the code itself to
+                // be purely numeric. This stops an alphanumeric HCPCS code
+                // (e.g. A0430) from silently falling inside a numeric CPT
+                // range just because its digits happen to sort between them.
+                if (!/^\d+$/.test(c) || !/^\d+$/.test(lo) || !/^\d+$/.test(hi)) return false;
+                var n = parseInt(c, 10);
+                return n >= parseInt(lo, 10) && n <= parseInt(hi, 10);
+            }
+            return c === s;                                    // exact
+        }
+
+        function scValidateCredentialForCode(providerId, code){
+            var pid = String(providerId || '').trim();
+            if (!pid) {
+                return { state: 'no_provider', ok: false, detail: 'No billing provider was recorded for this code, so credentialing could not be checked.' };
+            }
+            if (!String(code || '').trim()) {
+                return { state: 'no_code', ok: false, detail: 'No code value to check against credentialing.' };
+            }
+            var mine = getCredentialScopes().filter(function(r){ return String(r.provider_id || '') === pid; });
+            if (!mine.length) {
+                return {
+                    state: 'no_data', ok: false,
+                    detail: 'No credentialed-specialty data on file for this provider, so this code could not be validated. Add it under Providers, or accept this code on your own judgment.'
+                };
+            }
+            for (var i = 0; i < mine.length; i++) {
+                if (scCodeInScope(code, mine[i].scope)) {
+                    return {
+                        state: 'covered', ok: true,
+                        matched: mine[i],
+                        detail: 'Covered by a credential this practice recorded: ' + (mine[i].specialty || 'specialty not stated')
+                              + ' — scope ' + mine[i].scope + ' (source: ' + (mine[i].source || 'practice-entered') + ').'
+                    };
+                }
+            }
+            return {
+                state: 'not_covered', ok: false,
+                detail: 'This provider has ' + mine.length + ' credential scope' + (mine.length === 1 ? '' : 's')
+                      + ' on file and none of them covers this code.'
+            };
+        }
+
+        function renderCredentialScopes(){
+            var list = getCredentialScopes();
+            var tbody = document.getElementById('credscope-tbody');
+            if (tbody) {
+                tbody.innerHTML = list.length ? '' : '<tr><td colspan="5" style="text-align:center;color:#666;padding:16px">No credential scopes recorded yet. Until a provider has one, codes billed under them are held for your review rather than passed.</td></tr>';
+                list.forEach(function(r){
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>'+escHtml(r.provider_name || r.provider_id || '—')+'</td><td>'+escHtml(r.specialty || '—')+'</td><td><code>'+escHtml(r.scope)+'</code></td><td>'+escHtml(r.source)+'</td>'
+                        + '<td><button class="btn" style="padding:2px 8px;" onclick="removeCredentialScope(\''+r.id+'\')">×</button></td>';
+                    tbody.appendChild(tr);
+                });
+            }
+            // Keep both provider pickers in sync with the real roster.
+            var provs = getProviderEntries();
+            var opts = '<option value="">Select provider</option>' + provs.map(function(p){
+                return '<option value="'+escHtml(p.id)+'">'+escHtml(p.name)+'</option>';
+            }).join('');
+            var csSel = document.getElementById('cs-add-provider');
+            if (csSel) { var keep = csSel.value; csSel.innerHTML = opts; csSel.value = keep; }
+            var noteSel = document.getElementById('note-provider');
+            if (noteSel) {
+                var keep2 = noteSel.value;
+                noteSel.innerHTML = '<option value="">Billing provider (for credential check)</option>' + provs.map(function(p){
+                    return '<option value="'+escHtml(p.id)+'">'+escHtml(p.name)+'</option>';
+                }).join('');
+                noteSel.value = keep2;
+            }
+        }
+        async function addCredentialScope(){
+            var providerId = document.getElementById('cs-add-provider').value;
+            var specialty = document.getElementById('cs-add-specialty').value;
+            var scope = document.getElementById('cs-add-scope').value.trim();
+            var source = document.getElementById('cs-add-source').value.trim();
+            // Source required for the same reason as Scrub Rules: this table
+            // only ever holds grants a human actually verified.
+            if (!providerId || !scope || !source) { showToast('Provider, Scope, and Source are all required'); return; }
+            var prov = getProviderEntries().filter(function(p){ return p.id === providerId; })[0];
+            var list = getCredentialScopes();
+            var rec = { id: 'cs' + Date.now(), provider_id: providerId, provider_name: prov ? prov.name : '',
+                        specialty: specialty, scope: scope, source: source, created_at: new Date().toISOString() };
+            list.push(rec);
+            var saved = saveCredentialScopes(list);
+            var synced = saved ? await scData('write', 'sc_credential_scope', rec) : null;
+            renderCredentialScopes(); renderCodedItems();
+            document.getElementById('cs-add-scope').value = '';
+            document.getElementById('cs-add-source').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again'
+                : (synced ? 'Credential scope added' : 'Added on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+        async function removeCredentialScope(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_credential_scope', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveCredentialScopes(getCredentialScopes().filter(function(r){ return r.id !== id; }));
+            renderCredentialScopes();
         }
 
         // ================================================================
@@ -5558,6 +5770,8 @@ How to answer:
             renderAsaBaseUnits();
             renderSpecialtyChecks();
             renderSpecialtyChecklists();
+            renderCodedItems();
+            renderCredentialScopes();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -5832,7 +6046,9 @@ How to answer:
             // review records. Syncs like any other resource; the escalation
             // state travels with the record so a review queue is the same
             // on every device.
-            sc_coded_items: 'sc_coded_items'
+            sc_coded_items: 'sc_coded_items',
+            // Added 2026-08-20 (Phase 4 item 7) -- provider credential scope.
+            sc_credential_scope: 'sc_credential_scope'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -5857,7 +6073,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderCodedItems(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderCodedItems(); renderCredentialScopes(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {
