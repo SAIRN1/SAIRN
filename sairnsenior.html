@@ -214,6 +214,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Care</div>
       <button class="sb" id="sb-clients" onclick="nav('clients')"><span class="sico">&#128100;</span>Clients</button>
       <button class="sb" id="sb-scheduling" onclick="nav('scheduling')"><span class="sico">&#128197;</span>Scheduling &amp; Visits</button>
+      <div class="ss">Money</div>
+      <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128179;</span>Billing &amp; Claims</button>
       <div class="ss">Staff</div>
       <button class="sb" id="sb-caregivers" onclick="nav('caregivers')"><span class="sico">&#128119;</span>Caregivers</button>
       <div class="ss">Company</div>
@@ -280,7 +282,18 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="fg"><label>Payer</label><select id="cl-payer"><option value="medicaid">Medicaid</option><option value="va">VA</option><option value="ltci">LTCI</option><option value="private">Private Pay</option><option value="self_pay">Self-Pay</option></select></div></div>
     <div class="fr"><div class="fg"><label>Authorized Hours / Week</label><input id="cl-hours" type="number" placeholder="20"></div>
       <div class="fg"><label>Status</label><select id="cl-status"><option value="active">Active</option><option value="intake">Intake</option><option value="on_hold">On Hold</option><option value="discharged">Discharged</option></select></div></div>
-    <div class="fg"><label>Care Plan / Notes</label><textarea id="cl-notes" rows="2"></textarea></div>
+    <div class="fg"><label>General Notes</label><textarea id="cl-notes" rows="2"></textarea></div>
+    <!-- Care Plan Tasks: specific ordered services/goals for this client
+         (e.g. "bathing assistance, 3x/week"), distinct from the free-text
+         notes above. Lives inside the client record's own data blob --
+         same privacy gate as everything else about this client, no new
+         resource or server code needed. Draft pattern (in-memory while
+         the modal is open) same shape as SAIRNbuild's bidLineDraft. -->
+    <div class="mtitle" style="font-size:14px;margin-top:18px;">Care Plan Tasks</div>
+    <div class="fr"><div class="fg"><label>Task</label><input id="cpt-desc" placeholder="Bathing assistance"></div>
+      <div class="fg"><label>Frequency</label><input id="cpt-freq" placeholder="3x/week"></div></div>
+    <button class="btn bo bs" onclick="addCareTaskDraft()" style="margin-bottom:10px;">+ Add Task</button>
+    <div id="cl-care-tasks"></div>
     <!-- Management-only -- server-side is the real gate, same precedent as
          every other app's Assign-To control this session. -->
     <div class="fg" id="cl-assignee-row" style="display:none"><label>Assigned Caregiver</label><select id="classignee"><option value="">Unassigned</option></select></div>
@@ -314,6 +327,35 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeVisitModal()">Cancel</button>
       <button class="btn bp" onclick="saveVisit()">Save Visit</button>
+    </div>
+  </div>
+</div>
+
+<!-- BILLING & CLAIMS -->
+<div class="panel" id="panel-billing">
+  <div class="ph"><div><div class="ptitle">Billing &amp; Claims</div><div class="psub">Management only &mdash; generate claims from EVV-verified visits, track submission status</div></div></div>
+  <div class="card" id="bl-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Management only -- billing and claims are not shown to your role.</div></div>
+  <div id="bl-content">
+    <div class="krow" id="bl-kpi-row"></div>
+    <div class="card"><div class="ch"><span class="ct">Ready to Bill</span></div><div class="cb">
+      <div class="note">Completed visits with EVV verification that don't have a claim yet -- matches the app's own SOP: "All completed visits with EVV verification appear" here.</div>
+      <div class="tw"><table><thead><tr><th>Client</th><th>Date</th><th>Payer</th><th>Caregiver</th><th>Actions</th></tr></thead>
+      <tbody id="bl-readytbody"></tbody></table></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">Claims</span></div><div class="cb">
+      <div class="tw"><table><thead><tr><th>Client</th><th>Date</th><th>Payer</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="bl-claimstbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="claimactionmodal">
+  <div class="mbox">
+    <div class="mtitle" id="cam-title">Update Claim</div>
+    <div class="fg" id="cam-rate-row" style="display:none"><label>Hourly Rate ($)</label><input id="cam-rate" type="number"></div>
+    <div class="fg" id="cam-reason-row" style="display:none"><label>Denial Reason</label><input id="cam-reason" placeholder="e.g. Missing authorization"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeClaimActionModal()">Cancel</button>
+      <button class="btn bp" onclick="confirmClaimAction()">Confirm</button>
     </div>
   </div>
 </div>
@@ -534,6 +576,7 @@ function senEnterApp(d){
   senHydrateClients().then(function(merged){if(merged)rClients();});
   senHydrateCaregivers().then(function(merged){if(merged)rCaregivers();});
   senHydrateVisits();
+  senHydrateClaims();
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -574,6 +617,7 @@ function nav(id){
   if(id==='clients')rClients();
   if(id==='caregivers')rCaregivers();
   if(id==='scheduling')vsRender();
+  if(id==='billing')blRender();
   if(id==='settings')rSettings();
 }
 
@@ -662,10 +706,27 @@ function senHydrateClients(){
     return added;
   });
 }
+var careTaskDraft=[];
+function addCareTaskDraft(){
+  var desc=$('cpt-desc').value.trim(),freq=$('cpt-freq').value.trim();
+  if(!desc){toast('Task description required');return;}
+  careTaskDraft.push({id:newId('CPT'),description:desc,frequency:freq,active:true});
+  $('cpt-desc').value='';$('cpt-freq').value='';
+  renderCareTaskDraft();
+}
+function removeCareTaskDraft(id){careTaskDraft=careTaskDraft.filter(function(t){return t.id!==id;});renderCareTaskDraft();}
+function renderCareTaskDraft(){
+  $('cl-care-tasks').innerHTML=careTaskDraft.length?careTaskDraft.map(function(t){
+    return '<div class="srow"><span class="slbl">'+H(t.description)+(t.frequency?' <span style="color:var(--muted)">('+H(t.frequency)+')</span>':'')+'</span>'+
+      '<span class="sval"><button class="btn bo bs" onclick="removeCareTaskDraft(\''+t.id+'\')" style="padding:2px 8px;">&times;</button></span></div>';
+  }).join(''):'<div style="color:var(--muted);font-size:13px;">No care tasks yet</div>';
+}
 function openClientModal(){
-  ceid=null;['cl-name','cl-phone','cl-address','cl-diagnosis','cl-notes'].forEach(function(f){$(f).value='';});
+  ceid=null;careTaskDraft=[];
+  ['cl-name','cl-phone','cl-address','cl-diagnosis','cl-notes'].forEach(function(f){$(f).value='';});
   $('cl-payer').value='medicaid';$('cl-hours').value='';$('cl-status').value='intake';
   $('cl-photo-preview').style.display='none';$('cl-photo-status').textContent='';$('cl-photo-input').value='';
+  renderCareTaskDraft();
   var row=$('cl-assignee-row');
   if(row){
     row.style.display=senIsManagement()?'block':'none';
@@ -677,10 +738,12 @@ function openClientModal(){
 function closeClientModal(){$('clientmodal').classList.remove('on');}
 function editClient(id){
   var c=clients().find(function(x){return x.id===id;});if(!c)return;
-  ceid=id;$('cl-name').value=c.name||'';$('cl-phone').value=c.phone||'';$('cl-address').value=c.address||'';
+  ceid=id;careTaskDraft=(c.care_tasks||[]).map(function(t){return Object.assign({},t);});
+  $('cl-name').value=c.name||'';$('cl-phone').value=c.phone||'';$('cl-address').value=c.address||'';
   $('cl-diagnosis').value=c.diagnosis||'';$('cl-payer').value=c.payer||'medicaid';$('cl-hours').value=c.authorized_hours||'';
   $('cl-status').value=c.status||'intake';$('cl-notes').value=c.notes||'';
   $('cl-photo-preview').style.display='none';$('cl-photo-status').textContent='';$('cl-photo-input').value='';
+  renderCareTaskDraft();
   var row=$('cl-assignee-row');
   if(row){
     row.style.display=senIsManagement()?'block':'none';
@@ -707,7 +770,7 @@ async function saveClient(){
   var rec={
     id:ceid||newId('CL'),name:name,phone:$('cl-phone').value.trim(),address:$('cl-address').value.trim(),
     diagnosis:$('cl-diagnosis').value.trim(),payer:$('cl-payer').value,authorized_hours:Number($('cl-hours').value)||0,
-    status:$('cl-status').value,notes:$('cl-notes').value.trim(),created_at:senLocalToday(),
+    status:$('cl-status').value,notes:$('cl-notes').value.trim(),care_tasks:careTaskDraft.slice(),created_at:senLocalToday(),
     assigned_employee_id:assignedTo
   };
   var list=clients();
@@ -1018,6 +1081,135 @@ async function saveVisit(){
   var saved=await senData('write','sen_visits',rec,true);
   toast(saved?'Visit scheduled':'Saved on this device only -- server sync failed, try again with a connection');
 }
+
+// ── BILLING & CLAIMS ─────────────────────────────────────────────────────
+// Management-only (owner/billing), matching api/sd-data.js's sen_claims
+// gate exactly -- financial/billing data, not clinical assignment data.
+function claims(){return ld('sen_claims',[]);}
+function senHydrateClaims(){
+  if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
+  return senData('read','sen_claims',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var local=claims();
+    var localIds={};
+    local.forEach(function(c){if(c&&c.id)localIds[c.id]=true;});
+    var added=false;
+    serverRows.forEach(function(c){
+      if(c&&c.id&&!localIds[c.id]){local.push(c);localIds[c.id]=true;added=true;}
+    });
+    if(added)st('sen_claims',local);
+    return added;
+  });
+}
+function blRender(){
+  var isMgmt=senIsManagement();
+  var denied=$('bl-denied'),content=$('bl-content');
+  if(denied)denied.style.display=isMgmt?'none':'block';
+  if(content)content.style.display=isMgmt?'block':'none';
+  if(!isMgmt)return;
+  senHydrateClaims().then(function(){
+    blRenderKpis();
+    renderReadyToBill();
+    renderClaimsTable();
+  });
+}
+function blRenderKpis(){
+  var cl=claims();
+  var readyCount=readyToBillVisits().length;
+  $('bl-kpi-row').innerHTML=
+    '<div class="kpi"><div class="klbl">Ready to Bill</div><div class="kval">'+readyCount+'</div><div class="kt">EVV-verified, unbilled</div></div>'+
+    '<div class="kpi"><div class="klbl">Submitted</div><div class="kval">'+cl.filter(function(c){return c.status==='submitted';}).length+'</div><div class="kt">Awaiting payer</div></div>'+
+    '<div class="kpi"><div class="klbl">Paid</div><div class="kval">'+cl.filter(function(c){return c.status==='paid';}).length+'</div><div class="kt">Total on record</div></div>'+
+    '<div class="kpi"><div class="klbl">Denied</div><div class="kval">'+cl.filter(function(c){return c.status==='denied';}).length+'</div><div class="kt d">Needs follow-up</div></div>';
+}
+// A visit is ready to bill once EVV-completed and no claim references it
+// yet -- matches the client_id/visit linkage the SOP describes, computed
+// live from real visit+claim data, never a placeholder count.
+function readyToBillVisits(){
+  var billedVisitIds={};
+  claims().forEach(function(c){if(c.visit_id)billedVisitIds[c.visit_id]=true;});
+  return visits().filter(function(v){return v.status==='completed'&&!billedVisitIds[v.id];});
+}
+function renderReadyToBill(){
+  var ready=readyToBillVisits();
+  var tb=$('bl-readytbody');
+  tb.innerHTML=ready.length?ready.map(function(v){
+    var cl=clients().find(function(c){return c.id===v.client_id;});
+    return '<tr><td>'+H(v.client_name||(cl&&cl.name)||'--')+'</td><td>'+fdate(v.scheduled_date)+'</td>'+
+      '<td><span class="badge bx">'+H((cl&&cl.payer||'').replace('_',' ')||'--')+'</span></td>'+
+      '<td>'+H(senEmployeeName(v.assigned_employee_id))+'</td>'+
+      '<td><button class="btn bp bs" onclick="generateClaim(\''+v.id+'\')">Generate Claim</button></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">Nothing ready to bill</td></tr>';
+}
+async function generateClaim(visitId){
+  var v=visits().find(function(x){return x.id===visitId;});if(!v){toast('Visit not found');return;}
+  var cl=clients().find(function(c){return c.id===v.client_id;});
+  var hoursBilled=0;
+  if(v.clock_in_at&&v.clock_out_at){hoursBilled=Math.round(((new Date(v.clock_out_at)-new Date(v.clock_in_at))/3600000)*100)/100;}
+  var rec={id:newId('CLM'),visit_id:v.id,client_id:v.client_id,client_name:v.client_name||(cl&&cl.name)||'',
+    payer:(cl&&cl.payer)||'',service_date:v.scheduled_date,hours_billed:hoursBilled,rate:0,amount:0,status:'draft'};
+  var list=claims();list.push(rec);st('sen_claims',list);
+  renderReadyToBill();renderClaimsTable();blRenderKpis();
+  var saved=await senData('write','sen_claims',rec,true);
+  toast(saved?'Claim created -- set a rate to compute the amount':'Saved on this device only -- server sync failed, try again with a connection');
+}
+function renderClaimsTable(){
+  var cl=claims().slice().sort(function(a,b){return (b.service_date||'').localeCompare(a.service_date||'');});
+  var statusColors={draft:'bx',ready:'bb',submitted:'bw',paid:'bg',denied:'br'};
+  var tb=$('bl-claimstbody');
+  tb.innerHTML=cl.length?cl.map(function(c){
+    var actions='';
+    if(c.status==='draft')actions+='<button class="btn bo bs" onclick="blSetRate(\''+c.id+'\')">Set Rate</button> <button class="btn bp bs" onclick="blSubmitClaim(\''+c.id+'\')">Submit</button>';
+    else if(c.status==='submitted')actions+='<button class="btn bo bs" onclick="blMarkPaid(\''+c.id+'\')">Mark Paid</button> <button class="btn bo bs" onclick="blMarkDenied(\''+c.id+'\')">Mark Denied</button>';
+    return '<tr><td>'+H(c.client_name||'--')+'</td><td>'+fdate(c.service_date)+'</td>'+
+      '<td><span class="badge bx">'+H((c.payer||'').replace('_',' ')||'--')+'</span></td>'+
+      '<td>'+fmt(c.amount||0)+'</td><td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status||'draft')+'</span></td>'+
+      '<td>'+actions+'</td></tr>';
+  }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No claims yet</td></tr>';
+}
+async function blUpdateClaim(id,patch){
+  var list=claims();
+  var c=list.find(function(x){return x.id===id;});
+  if(!c){toast('Claim not found');return;}
+  Object.assign(c,patch);
+  st('sen_claims',list);
+  renderClaimsTable();blRenderKpis();
+  var saved=await senData('write','sen_claims',c,true);
+  toast(saved?'Claim updated':'Saved on this device only -- server sync failed, try again with a connection');
+}
+// Real modal, not a native prompt() -- consistent with the rest of the
+// app's UI (no window.prompt/alert/confirm anywhere) and doesn't block
+// browser automation/testing the way a native dialog would.
+var _camMode=null,_camClaimId=null;
+function blSetRate(id){
+  var c=claims().find(function(x){return x.id===id;});if(!c)return;
+  _camMode='rate';_camClaimId=id;
+  $('cam-title').textContent='Set Rate';
+  $('cam-rate-row').style.display='block';$('cam-reason-row').style.display='none';
+  $('cam-rate').value=c.rate||'';
+  $('claimactionmodal').classList.add('on');
+}
+function blMarkDenied(id){
+  _camMode='deny';_camClaimId=id;
+  $('cam-title').textContent='Mark Claim Denied';
+  $('cam-rate-row').style.display='none';$('cam-reason-row').style.display='block';
+  $('cam-reason').value='';
+  $('claimactionmodal').classList.add('on');
+}
+function closeClaimActionModal(){$('claimactionmodal').classList.remove('on');_camMode=null;_camClaimId=null;}
+function confirmClaimAction(){
+  if(!_camClaimId){closeClaimActionModal();return;}
+  if(_camMode==='rate'){
+    var c=claims().find(function(x){return x.id===_camClaimId;});
+    var rateNum=Number($('cam-rate').value)||0;
+    blUpdateClaim(_camClaimId,{rate:rateNum,amount:Math.round(rateNum*((c&&c.hours_billed)||0)*100)/100});
+  }else if(_camMode==='deny'){
+    blUpdateClaim(_camClaimId,{status:'denied',denial_reason:($('cam-reason').value||'').trim()});
+  }
+  closeClaimActionModal();
+}
+function blSubmitClaim(id){blUpdateClaim(id,{status:'submitted',submitted_date:senLocalToday()});}
+function blMarkPaid(id){blUpdateClaim(id,{status:'paid'});}
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────
 function senAgency(){return ld('sen_agency',{agency_name:'SAIRNsenior',demo_company:'Lakeshore Home Care'});}
