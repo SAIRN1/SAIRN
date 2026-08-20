@@ -771,6 +771,16 @@
                 this app never picks a best guess on your behalf.
             </div>
             <div id="coded-items-queue-count" style="font-size:13px;font-weight:600;margin-bottom:10px;"></div>
+
+            <!-- Exception-based routing (Phase 2 item 3): the exceptions ARE
+                 the work queue. Auto-assigned items are kept in their own
+                 table below so they stay auditable without consuming
+                 attention -- the whole point of routing by exception. -->
+            <div style="font-weight:700;font-size:15px;margin:16px 0 6px;">Exceptions — need a human coder</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                Each row lists the exact checks it failed. Nothing here was assigned a code by the app;
+                it is waiting on your judgment.
+            </div>
             <div class="table-container">
                 <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
                     <thead>
@@ -780,6 +790,24 @@
                         </tr>
                     </thead>
                     <tbody id="coded-items-tbody"></tbody>
+                </table></div>
+            </div>
+
+            <div style="font-weight:700;font-size:15px;margin:24px 0 6px;">Auto-assigned — no action needed <span id="coded-items-auto-count" style="font-weight:400;color:#666;font-size:13px;"></span></div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                These cleared every check the app can actually make: a citation was present and confirmed
+                in the note, a supporting rule was recorded, and nothing conflicted with a rule this
+                practice verified. That is not a claim of clinical correctness — it means no check failed.
+            </div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead>
+                        <tr>
+                            <th>Code</th><th>Encounter</th><th>Citation</th>
+                            <th>Reasoning</th><th>Source rule</th><th>Status</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="coded-items-auto-tbody"></tbody>
                 </table></div>
             </div>
         </div>
@@ -4803,7 +4831,24 @@ How to answer:
         // of them is an opinion, and none comes from the model's own
         // self-assessment. If any signal fires, the item cannot be
         // auto-assigned -- it is stored needing a real human coder.
-        function scDeriveCodedItemConfidence(item){
+        //
+        // `context` (optional, added 2026-08-20 Phase 2 item 3) carries the
+        // already-captured items so the two history/interaction signals below
+        // can run. It is optional on purpose: called without it, this behaves
+        // exactly as it did in Phase 1, so the grounding checks never depend
+        // on having context available.
+        //
+        // ON "CONFIDENCE-SCORED", stated plainly because the phase name says
+        // "scored" and this deliberately does not produce a score: there is
+        // no numeric confidence anywhere here, and adding one would be
+        // fabrication rather than a feature. A percentage implies a measured
+        // accuracy rate, and nothing in this app measures one -- there is no
+        // labelled outcome set, no base rate, nothing to calibrate against.
+        // This file already had fabricated 82%/71% confidence numbers removed
+        // from the Fraud panel in the 2026-08-18 audit. What IS real is which
+        // concrete checks passed or failed, so that is what gets stored and
+        // shown: a label plus the exact list of reasons behind it.
+        function scDeriveCodedItemConfidence(item, context){
             var basis = [];
             if (!item.quote || !String(item.quote).trim()) {
                 basis.push('No supporting phrase was cited from the note.');
@@ -4822,6 +4867,50 @@ How to answer:
             if (!item.code || !String(item.code).trim()) {
                 basis.push('No code value recorded.');
             }
+
+            // ---- Phase 2 item 3: two additional REAL signals ----
+            // Both read only from data this practice itself created. Neither
+            // asserts any coding fact this app invented -- that distinction is
+            // the whole reason these two are safe to ship and, say, a
+            // hardcoded NCCI table would not be.
+            var others = (context && context.otherItems) || [];
+            var code = String(item.code || '').trim().toUpperCase();
+
+            if (code) {
+                // (a) Conflicts with a rule the practice ITSELF verified.
+                // findLocalScrubMatch reads sc_scrubrules, where every row
+                // required a human-entered Source and nothing is ever seeded.
+                // So a hit here is a real, deterministic, practice-verified
+                // conflict -- not this app's opinion about code interactions.
+                if (typeof findLocalScrubMatch === 'function' && item.encounter_ref) {
+                    for (var i = 0; i < others.length; i++) {
+                        var o = others[i];
+                        if (!o || o.id === item.id) continue;
+                        if (String(o.encounter_ref || '') !== String(item.encounter_ref)) continue;
+                        var oc = String(o.code || '').trim();
+                        if (!oc) continue;
+                        var hit = null;
+                        try { hit = findLocalScrubMatch(item.code, oc); } catch (e) { hit = null; }
+                        if (hit) {
+                            basis.push('Conflicts with a rule this practice verified (' + (hit.type || 'rule') + ': ' + hit.code1 + ' + ' + hit.code2 + ') against ' + oc + ' on the same encounter.');
+                            break;
+                        }
+                    }
+                }
+                // (b) A human already rejected this exact code before.
+                // Pure history from this app's own recorded review decisions.
+                var rejected = 0;
+                for (var j = 0; j < others.length; j++) {
+                    var p = others[j];
+                    if (!p || p.id === item.id) continue;
+                    if (p.review_status !== 'reviewed_rejected') continue;
+                    if (String(p.code || '').trim().toUpperCase() === code) rejected++;
+                }
+                if (rejected) {
+                    basis.push('A coder previously rejected this same code ' + rejected + ' time' + (rejected === 1 ? '' : 's') + '.');
+                }
+            }
+
             return {
                 confidence: basis.length ? 'low' : 'high',
                 confidence_basis: basis,
@@ -4852,7 +4941,9 @@ How to answer:
                 created_by: scCurrentEmployeeId(),
                 created_at: new Date().toISOString()
             };
-            var derived = scDeriveCodedItemConfidence(base);
+            // Context = everything already captured, so the rule-conflict and
+            // prior-rejection signals can run against real history.
+            var derived = scDeriveCodedItemConfidence(base, { otherItems: getCodedItems() });
             base.confidence = derived.confidence;
             base.confidence_basis = derived.confidence_basis;
             base.review_status = derived.review_status;
@@ -4916,27 +5007,48 @@ How to answer:
             return '<span style="background:'+m[0]+';color:'+m[1]+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">'+escHtml(m[2])+'</span>';
         }
 
+        // EXCEPTION-BASED ROUTING (2026-08-20, Phase 2 item 3). The point of
+        // routing is that high-confidence items stop consuming a coder's
+        // attention, so they are genuinely separated here rather than mixed
+        // into one list with a badge. The exceptions table is the work queue;
+        // the auto-assigned table is a record you can audit but do not have
+        // to work through. Nothing was auto-assigned unless every real check
+        // above passed.
+        function scRouteCodedItems(list){
+            var exceptions = [], auto = [];
+            list.forEach(function(r){
+                // Anything a human has already decided on leaves the queue --
+                // it is settled, whichever way it went.
+                if (r.review_status === 'needs_human_review') exceptions.push(r);
+                else auto.push(r);
+            });
+            var byNewest = function(a, b){ return String(b.created_at || '').localeCompare(String(a.created_at || '')); };
+            exceptions.sort(byNewest); auto.sort(byNewest);
+            return { exceptions: exceptions, auto: auto };
+        }
+
         function renderCodedItems(){
             var list = getCodedItems();
             var tbody = document.getElementById('coded-items-tbody');
             if (!tbody) return;
-            // Review queue first -- the whole point of the escalation flag is
-            // that flagged items are the ones a coder needs to see.
-            var sorted = list.slice().sort(function(a, b){
-                var aq = a.review_status === 'needs_human_review' ? 0 : 1;
-                var bq = b.review_status === 'needs_human_review' ? 0 : 1;
-                if (aq !== bq) return aq - bq;
-                return String(b.created_at || '').localeCompare(String(a.created_at || ''));
-            });
-            var pending = list.filter(function(r){ return r.review_status === 'needs_human_review'; }).length;
+            var routed = scRouteCodedItems(list);
+            var pending = routed.exceptions.length;
             var queueEl = document.getElementById('coded-items-queue-count');
             if (queueEl) {
                 queueEl.textContent = pending === 0
-                    ? 'No items are waiting on a human coder.'
-                    : pending + ' item' + (pending === 1 ? '' : 's') + ' waiting on a human coder.';
+                    ? 'Nothing needs you. ' + routed.auto.length + ' item' + (routed.auto.length === 1 ? '' : 's') + ' on record.'
+                    : pending + ' exception' + (pending === 1 ? '' : 's') + ' need' + (pending === 1 ? 's' : '') + ' a human coder — ' + routed.auto.length + ' other item' + (routed.auto.length === 1 ? '' : 's') + ' cleared every check and need no action.';
             }
-            tbody.innerHTML = sorted.length ? '' : '<tr><td colspan="7" style="text-align:center;color:#666;padding:16px">No coded items captured yet. Use "Suggest Codes From a Note" above, then capture a suggestion to store its citation.</td></tr>';
-            sorted.forEach(function(r){
+            var autoEl = document.getElementById('coded-items-auto-tbody');
+            if (autoEl) scRenderCodedRows(autoEl, routed.auto, 'Nothing auto-assigned yet.');
+            var autoCountEl = document.getElementById('coded-items-auto-count');
+            if (autoCountEl) autoCountEl.textContent = routed.auto.length ? '(' + routed.auto.length + ')' : '';
+            scRenderCodedRows(tbody, routed.exceptions, 'No exceptions. Codes that clear every check are auto-assigned and listed below instead.');
+        }
+
+        function scRenderCodedRows(tbody, rows, emptyMsg){
+            tbody.innerHTML = rows.length ? '' : '<tr><td colspan="7" style="text-align:center;color:#666;padding:16px">' + escHtml(emptyMsg) + '</td></tr>';
+            rows.forEach(function(r){
                 var tr = document.createElement('tr');
                 var citation = r.quote
                     ? '<div style="font-style:italic;color:#374151;">"'+escHtml(r.quote)+'"</div>'
