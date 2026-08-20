@@ -1,7 +1,61 @@
 # SAIRNcode Phase 2 — Prior Authorization: scope (design only, nothing built)
 
-**Status:** scope for review. No code written. Phase 1 (BYO credential layer +
-270/271 eligibility) shipped `fba67d9`, confirmed closed.
+**Status:** scope **CONFIRMED by Michael 2026-08-20**. No code written yet.
+Phase 1 (BYO credential layer + 270/271 eligibility) shipped `fba67d9`,
+confirmed closed. Phase 1's singleton `sc_credentials` row is confirmed
+correctly scoped **as-is** for its single-key shape — it was never intended to
+hold FHIR per-payer records, and is **not** being re-scoped.
+
+## Confirmed decisions (Michael, 2026-08-20)
+
+| # | Decision |
+|---|---|
+| 1 | `sc_auth_requests` as a **new** table alongside an **untouched** `sc_auth`. Confirmed. |
+| 2 | 2c storage: **one row per payer**. Confirmed. |
+| 3 | **2a's output is the coder's own working file, NOT a payer packet.** AI assembles a draft; a credentialed human reviews and signs off before it becomes anything submission-ready. |
+| 4 | The sign-off is a **hard gate**, carrying the same weight as `requireAdminForDelete()` elsewhere — not an implied checkbox. |
+| 5 | 2c target design accepted: **practices register SAIRN's JWKS; SAIRN never holds a practice private key.** Subject to the platform-key protection requirement below. |
+| 6 | `quoteFoundInNote()` disclosure risk confirmed real — see the UI requirement below. |
+| 7 | No 278 via Stedi: filed. The real PAS path needs a separate per-payer SMART-on-FHIR integration. No action now. |
+| 8 | **Standing platform rule:** no "CMS-0057-F compliant" language anywhere in SAIRNcode product copy or marketing. It is a claim about someone else's obligation. |
+
+### Requirement added on decision 5 — platform signing key protection
+
+Accepting "SAIRN holds the signing key, practices register our JWKS" moves the
+blast radius from *one practice* to *the whole platform*: compromising that one
+key is **platform-wide impersonation across every payer every practice has
+registered with**, not a single-tenant incident.
+
+**That key therefore may NOT use the existing `SD_AUTH_SECRET`-derived,
+encrypted-in-Postgres pattern used everywhere else on this platform.** It
+requires materially stronger protection — **KMS/HSM-backed, where the private
+key material is non-exportable and signing happens inside the KMS/HSM**, not
+merely encrypted at rest and decrypted into application memory.
+
+Concretely, before any code is written against decision 5:
+- Select a real KMS/HSM (e.g. AWS KMS asymmetric keys, GCP Cloud KMS, or an
+  equivalent with non-exportable key material and a sign operation).
+- The JWT assertion is signed **via a KMS sign call**, never by loading a PEM
+  into the Node process.
+- Key rotation and per-payer re-registration is a named, written procedure
+  before first use, not discovered at rotation time.
+- The JWKS endpoint publishes only public keys and must remain stable — treat
+  it as a versioned public contract, like `/api/bridge`.
+
+This is a **precondition on 2c**, not a nice-to-have, and it is deliberately
+scoped here before building rather than after.
+
+### Requirement added on decision 6 — citation UI must not overclaim
+
+`quoteFoundInNote()` proves a quoted phrase **is present in the note**. It does
+**not** prove the phrase **supports a medical-necessity conclusion**. The
+existing green "✓ Verified in note" styling (built for code suggestion, item 2)
+must **not** be reused unchanged here — in a prior-auth context it would imply
+clinical sufficiency it cannot establish.
+
+2a's UI must state plainly, in the panel itself, that verification confirms
+**presence in the note only**, and that judging whether the quoted text
+actually supports medical necessity is the credentialed reviewer's call.
 
 **Skills run:** `sairn-software-architect`, `sairn-decision-gate`.
 `graphify` could not be invoked — it is disabled for model invocation in

@@ -4,3 +4,6 @@
 .env*
 node_modules
 .superpowers/
+
+# graphify generated artifacts (rebuild with: graphify . --code-only)
+graphify-out/
