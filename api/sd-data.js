@@ -284,7 +284,15 @@ const RESOURCES = {
   alf_mar: true,
   // SAIRNcare Billing (2026-08-20) -- see sql/sairncare_billing_schema.sql's
   // own header for the private-pay vs Medicaid HCBS separation reasoning.
-  alf_billing: true
+  alf_billing: true,
+  // SAIRNcare Compliance/Incident Reporting (2026-08-20) -- see
+  // sql/sairncare_incidents_schema.sql's own header for the asymmetric
+  // read/write reasoning and the real research this is grounded in.
+  alf_incidents: true,
+  // SAIRNcare Activities calendar (2026-08-20) -- see
+  // sql/sairncare_activities_schema.sql's own header for the broad-read/
+  // narrow-write reasoning.
+  alf_activities: true
 };
 
 const SC_RESOURCES = [
@@ -398,7 +406,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, sc_coded_items, sc_credential_scope, bld_bids, bld_tna, sen_clients, sen_caregivers, sen_visits, sen_claims, alf_clients, alf_staff, alf_mar, alf_billing' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, sc_coded_items, sc_credential_scope, bld_bids, bld_tna, sen_clients, sen_caregivers, sen_visits, sen_claims, alf_clients, alf_staff, alf_mar, alf_billing, alf_incidents, alf_activities' } });
     return;
   }
 
@@ -2720,6 +2728,116 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, resident_id: payload.resident_id }, billingData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_incidents -- Compliance/Incident Reporting (2026-08-20) ───────────────
+    // Real research pass run before building (no code that pass) -- no single federal or
+    // uniform ALF incident-reporting standard exists; deadlines vary by state (real sourced
+    // examples: VA 24hr, MA 24hr, CA 7 days, FL 15 days, WA initial+5-day-followup), categories
+    // converge much more (falls w/ injury, med errors, elopement, abuse/neglect allegations,
+    // unexplained injury, unexpected death/hospitalization, behavioral incidents) -- see
+    // sql/sairncare_incidents_schema.sql's own header and SAIRN-ACTIVE-WORK.md for full sourcing.
+    // ASYMMETRIC gate, a deliberately different shape from every other alf_ resource this
+    // session: ANY authenticated employee may CREATE a new report (mandatory-reporting-by-
+    // whoever-witnessed-it, gating this would discourage reporting) but only management/
+    // nursing/billing may READ the log or UPDATE an existing report afterward -- the original
+    // filer cannot go back and alter their own submission once it exists.
+    const ALF_INCIDENT_READ_ROLES = { owner: true, nursing: true, billing: true };
+    if (resource === 'alf_incidents' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_INCIDENT_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'The incident log is not available to your role' } });
+        return;
+      }
+      const r = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'alf_incidents' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_incidents payload.id is required' } }); return; }
+      const existingR = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.' } });
+        return;
+      }
+      const existingRows = existingR.ok ? await existingR.json() : [];
+      const alreadyExists = Array.isArray(existingRows) && existingRows.length > 0;
+      // Any authenticated employee may file a brand-new report. Once it exists, only
+      // management/nursing/billing may update it (follow-up notes, status, state-reported
+      // tracking) -- the filer's own write access ends the moment their report is saved.
+      if (alreadyExists && !ALF_INCIDENT_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management, nursing, or billing can update an incident report after it is filed' } });
+        return;
+      }
+      const incidentData = Object.assign({}, payload);
+      delete incidentData.id; delete incidentData.resident_id;
+      const r = await fetch(rest('alf_incidents?on_conflict=license_hash,entry_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: payload.resident_id ? String(payload.resident_id) : null,
+          data: incidentData, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, resident_id: payload.resident_id || '' }, incidentData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_activities -- calendar + attendance (2026-08-20) ──────────────────────
+    // Broad-read (any authenticated employee, same reasoning as SAIRNsenior's Compliance
+    // panel treating operational data as non-PHI), narrow-write (owner + activities only --
+    // planning/running activities is the Activities Coordinator's own real job, the same
+    // scope-of-practice reasoning that shaped alf_mar in the other direction).
+    const ALF_ACTIVITIES_WRITE_ROLES = { owner: true, activities: true };
+    if (resource === 'alf_activities' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('alf_activities?license_hash=eq.' + enc(licHash) + '&select=entry_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'alf_activities' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_ACTIVITIES_WRITE_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management or the Activities Coordinator can manage the activities calendar' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_activities payload.id is required' } }); return; }
+      const activityData = Object.assign({}, payload);
+      delete activityData.id;
+      const r = await fetch(rest('alf_activities?on_conflict=license_hash,entry_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), data: activityData, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Activities tracking is not set up yet — run sql/sairncare_activities_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, activityData) });
       return;
     }
 
