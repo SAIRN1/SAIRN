@@ -72,7 +72,11 @@ const KNOWN_FEATURES = {
   // assembly. Same audited/screened transport as every other AI feature;
   // the output this produces is a DRAFT the coder's own working file, never
   // auto-submitted -- see sairncode.html's assemblePriorAuthDraft().
-  prior_auth_draft: true
+  prior_auth_draft: true,
+  // Added 2026-08-20 -- specialty spot-check harness. The AI's answer is
+  // never itself the coverage verdict; a real coder records their own
+  // pass/fail after reading it -- see sairncode.html's runSpecialtyCheck().
+  specialty_check: true
 };
 
 // HIGH confidence: phrases that essentially never appear in a real clinical

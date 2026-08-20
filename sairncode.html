@@ -20,8 +20,10 @@
          claiming more would be the same manufactured coverage the audit
          rejected elsewhere:
            DOES: block loading any external script, restrict outbound
-           connections to the two known hosts (so an injected exfiltration
-           call to an attacker's domain fails), block <object>/<embed>, block
+           connections to the three known hosts (so an injected exfiltration
+           call to an attacker's domain fails) -- clinicaltables.nlm.nih.gov
+           added 2026-08-20 for the free public ICD-10-CM lookup, same
+           reasoning as the other two -- block <object>/<embed>, block
            <base> hijacking, and block form posts to any origin.
            DOES NOT: stop inline-script XSS. This app is a single file with
            its logic in an inline script block, so 'unsafe-inline' is needed for
@@ -42,7 +44,7 @@
          present -- adding headers would need a routes->rewrites migration
          affecting all 14 app routes, which is a separate platform-wide
          change, not part of a SAIRNcode security pass. Flagged, not bundled. -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://sairn.vercel.app https://ejrlrrkvhtllxbbypdjb.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://sairn.vercel.app https://ejrlrrkvhtllxbbypdjb.supabase.co https://clinicaltables.nlm.nih.gov; object-src 'none'; base-uri 'none'; form-action 'none'">
 
     <!-- Clickjacking / frame-busting (2026-08-20, firewall audit layer 12).
          Real JS because the meta-tag route above cannot do this. Runs before
@@ -678,6 +680,7 @@
             <div class="nav-group-row">
                 <button class="nav-btn" onclick="showPanel('telehealth')" data-tip="Coding and billing rules for telehealth visits">Telehealth</button>
                 <button class="nav-btn" onclick="showPanel('anesthesia')" data-tip="Anesthesia-specific coding and time-unit calculations">Anesthesia</button>
+                <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
             </div>
         </div>
         <div class="nav-group">
@@ -938,10 +941,36 @@
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="enc-add-code" placeholder="Code" class="search-input">
-                <select id="enc-add-type"><option>ICD-10</option><option>CPT</option><option>HCPCS</option></select>
+                <select id="enc-add-type"><option>ICD-10</option><option>CPT</option><option>HCPCS</option><option>CDT</option></select>
                 <input type="text" id="enc-add-desc" placeholder="Description" class="search-input">
                 <input type="text" id="enc-add-bundling" placeholder="Bundling note (optional)" class="search-input">
                 <button class="btn btn-primary" onclick="addEncoderCode()">Add</button>
+            </div>
+
+            <!-- Connect Your Licensed Code Data (2026-08-20, Phase 3) --
+                 upload path for CPT and CDT, deliberately NOT a live vendor
+                 API integration. Researched live rather than guessed: the
+                 AMA's real "CPT Zip API" is a bulk file-download automation
+                 service (Releases + Files endpoints, requires an existing
+                 org-admin AMA account, 10 calls/day cap) -- not a per-code
+                 lookup API. The ADA has no confirmed self-serve API for CDT
+                 at all. Building a live-query proxy against either would
+                 mean inventing an integration shape nobody has confirmed --
+                 the exact mistake avoided on Phase 2c's FHIR PAS call. This
+                 is real value today: the practice exports their own
+                 licensed CPT/CDT data (they already hold the right to use
+                 it) and imports it here, once. ICD-10-CM needs none of
+                 this -- see the free, live, public NLM lookup below, which
+                 needs no upload at all. -->
+            <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+                <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Connect Your Licensed Code Data (CPT / CDT)</div>
+                <div style="font-size:12px;color:#666;margin-bottom:8px;">Paste rows exported from your own licensed CPT (AMA) or CDT (ADA) source -- one per line: <code>code,type,description,bundling note</code> (bundling note optional, type must be CPT or CDT). This becomes your practice's own connected reference, checked first by the 2026 Code Awareness Lookup below, before web search. Nothing is invented here -- only what you paste is stored, and only CPT/CDT rows are accepted through this importer (use the single Add form above for ICD-10/HCPCS).</div>
+                <textarea id="enc-bulk-import" rows="4" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-family:inherit;font-size:12px;" placeholder="99214,CPT,Office visit established patient moderate complexity,Do not bill with 99213 same visit
+D0120,CDT,Periodic oral evaluation established patient,"></textarea>
+                <div class="toolbar" style="margin-top:8px;">
+                    <button class="btn btn-primary" onclick="importEncoderBulk()" id="enc-bulk-import-btn">Import</button>
+                </div>
+                <div id="enc-bulk-import-result" style="margin-top:8px;font-size:12px;"></div>
             </div>
 
             <!-- 2026 Code Awareness Lookup (2026-08-20 expansion, item 4) --
@@ -958,7 +987,7 @@
                  2026-08-19) -- it's a single grounded lookup per query, with
                  an honest no-match fallback, not a licensed code repository. -->
             <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2026 Code Awareness Lookup</div>
-            <div style="font-size:12px;color:#666;margin-bottom:8px;">Describe a procedure or diagnosis. This checks live web search for the current 2026 CPT/HCPCS/ICD-10 code -- never answered from memory alone. A code is only shown as a grounded match if this page can independently verify its digits appear in the actual cited search text; otherwise it says so honestly rather than guessing.</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Describe a procedure or diagnosis. Checks three real sources in order, and tells you which one answered: (1) your own connected reference data below, if you've uploaded your licensed CPT/CDT export; (2) the free public ICD-10-CM database (National Library of Medicine, no license needed); (3) live web search for anything neither of those covers -- never answered from memory alone. A web-search code is only shown as a grounded match if this page can independently verify its digits appear in the actual cited search text; otherwise it says so honestly rather than guessing.</div>
             <div class="toolbar">
                 <input type="text" id="code-lookup-desc" placeholder="e.g. 'established patient office visit, moderate complexity'" class="search-input" style="flex:1">
                 <button class="btn btn-primary" onclick="runCodeAwarenessLookup()" id="code-lookup-btn">Look Up</button>
@@ -992,14 +1021,14 @@
         <div id="panel-denial" class="panel">
             <h1 class="panel-title">Denial Management & AI Appeals</h1>
             <div class="toolbar">
-                <input type="text" class="search-input" id="denialSearch" placeholder="Search denials...">
+                <input type="text" class="search-input" id="denialSearch" placeholder="Search denials..." onkeyup="filterTable('denialTable','denialSearch')">
                 <button class="btn btn-primary" onclick="exportCSV('denial')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
             <div class="kpi-grid" id="denial-kpis"></div>
             <div id="denial-predictive-zone" style="margin-bottom:14px"></div>
             <div class="table-container">
-                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table id="denialTable">
                     <thead>
                         <tr>
                             <th>Denial Code</th>
@@ -1033,7 +1062,7 @@
             <div style="font-size:12px;color:#666;margin-bottom:8px;">One row per real denial event (not aggregated) -- payer and reason are logged per occurrence so real patterns can be computed below.</div>
             <div class="table-container">
                 <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
-                    <thead><tr><th>Code</th><th>Payer</th><th>Reason</th><th>Amount</th><th>Date</th><th></th></tr></thead>
+                    <thead><tr><th>Code</th><th>Payer</th><th>Reason</th><th>Specialty</th><th>Amount</th><th>Date</th><th></th></tr></thead>
                     <tbody id="denialevents-tbody"></tbody>
                 </table></div>
             </div>
@@ -1041,6 +1070,18 @@
                 <input type="text" id="dne-add-code" placeholder="Denial code" class="search-input">
                 <input type="text" id="dne-add-payer" placeholder="Payer" class="search-input">
                 <input type="text" id="dne-add-reason" placeholder="Reason" class="search-input">
+                <select id="dne-add-specialty">
+                    <option value="">Specialty (optional)</option>
+                    <option>Behavioral Health</option>
+                    <option>Orthopedics</option>
+                    <option>Podiatry</option>
+                    <option>Anesthesia</option>
+                    <option>Cardiology</option>
+                    <option>Oncology</option>
+                    <option>Interventional Radiology</option>
+                    <option>DME</option>
+                    <option>Ophthalmology</option>
+                </select>
                 <input type="number" step="0.01" id="dne-add-amount" placeholder="Amount" class="search-input">
                 <input type="date" id="dne-add-date" class="search-input">
                 <button class="btn btn-primary" onclick="addDenialEventEntry()">Log Denial</button>
@@ -1082,16 +1123,42 @@
             <div class="kpi-grid" id="anesthesia-kpis"></div>
             <div class="table-container">
                 <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
-                    <thead><tr><th>Case Ref</th><th>Base Units</th><th>Minutes</th><th>Time Units</th><th>QC Modifier</th><th>Total Units</th><th></th></tr></thead>
+                    <thead><tr><th>Case Ref</th><th>CPT</th><th>Base Units</th><th>Minutes</th><th>Time Units</th><th>Phys. Status</th><th>QC Modifier</th><th>Total Units</th><th>$ Amount</th><th></th></tr></thead>
                     <tbody id="anesthesia-tbody"></tbody>
                 </table></div>
             </div>
             <div class="toolbar" style="margin-top:12px;">
                 <input type="text" id="an-add-case" placeholder="Case ref" class="search-input">
+                <input type="text" id="an-add-cpt" placeholder="CPT code (optional, checks reference below)" class="search-input" onblur="anLookupBaseUnits()">
                 <input type="number" step="0.1" id="an-add-base" placeholder="Base units" class="search-input">
                 <input type="number" id="an-add-minutes" placeholder="Minutes" class="search-input">
+            </div>
+            <div class="toolbar">
+                <select id="an-add-status" title="ASA Physical Status"><option value="">Physical Status (optional)</option><option>P1</option><option>P2</option><option>P3</option><option>P4</option><option>P5</option><option>P6</option></select>
                 <input type="text" id="an-add-qc" placeholder="QC modifier (optional)" class="search-input">
+                <input type="number" step="0.01" id="an-add-cf" placeholder="Conversion factor $/unit (optional)" class="search-input">
                 <button class="btn btn-primary" onclick="addAnesthesiaEntry()">Add</button>
+            </div>
+            <div id="an-base-lookup-note" style="font-size:11px;color:#666;margin-top:4px;"></div>
+
+            <!-- ASA Base Units Reference (2026-08-20) -- same empty-by-
+                 default, Source-required discipline as the Scrub Rules
+                 Reference. The time-unit math above (minutes/15 + base) was
+                 always correct; this is the real reference data that was
+                 always missing behind the free-typed Base Units field. -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">ASA Base Units Reference</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Real base-unit values your practice has verified against a current ASA Relative Value Guide or payer policy. Empty by default -- this is not a pre-loaded RVG, only what you've added below with a real source. Entering a CPT code above checks this table first.</div>
+            <div class="toolbar">
+                <input type="text" id="abu-add-cpt" placeholder="CPT code" class="search-input">
+                <input type="number" step="0.1" id="abu-add-units" placeholder="Base units" class="search-input">
+                <input type="text" id="abu-add-source" placeholder="Source (required)" class="search-input">
+                <button class="btn btn-primary" onclick="addAsaBaseUnit()">Add Reference</button>
+            </div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>CPT</th><th>Base Units</th><th>Source</th><th></th></tr></thead>
+                    <tbody id="abu-tbody"></tbody>
+                </table></div>
             </div>
         </div>
 
@@ -1209,6 +1276,88 @@
              Nothing on this panel is ever simulated: with no credential
              configured the check button reports that honestly instead of
              showing a sample result. -->
+
+        <!-- Specialty Coverage Panel (2026-08-20, pre-SAIRNcare gap pass).
+             THIS PAGE NEVER COMPUTES OR CLAIMS A COVERAGE VERDICT ITSELF.
+             A real credentialed coder asks a real question, reads the AI's
+             real answer, and records THEIR OWN pass/fail/needs-review
+             judgment -- that is the entire mechanism. Manufacturing a
+             verdict here (e.g. "behavioral health: 80% covered") would be
+             exactly the fabrication class this whole audit arc exists to
+             remove -- the same root cause as the original AAPC 65% score
+             this platform's own AI system prompt already discloses. -->
+        <div id="panel-specialty" class="panel">
+            <h1 class="panel-title">Specialty Coverage</h1>
+            <div class="kpi-grid" id="specialty-kpis"></div>
+
+            <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+                <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Spot-Check a Specialty Question</div>
+                <div style="font-size:12px;color:#666;margin-bottom:8px;">Ask a real coding question for a specialty. Read the AI's answer, then record <b>your own</b> judgment -- Pass, Fail, or Needs Review. This app never decides that for you; the verdict column below is only ever what a real credentialed coder recorded.</div>
+                <div class="toolbar">
+                    <select id="spc-specialty">
+                        <option>Behavioral Health</option>
+                        <option>Orthopedics</option>
+                        <option>Podiatry</option>
+                        <option>Anesthesia</option>
+                        <option>Cardiology</option>
+                        <option>Oncology</option>
+                        <option>Interventional Radiology</option>
+                        <option>DME</option>
+                        <option>Ophthalmology</option>
+                    </select>
+                    <input type="text" id="spc-question" placeholder="e.g. 'What modifier is required when...'" class="search-input" style="flex:1">
+                    <button class="btn btn-primary" onclick="askSpecialtyQuestion()" id="spc-ask-btn">Ask AI</button>
+                </div>
+                <div id="spc-answer-result" style="margin-top:10px;"></div>
+                <div id="spc-verdict-form" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid #ddd;">
+                    <div class="toolbar">
+                        <select id="spc-verdict"><option>Pass</option><option>Fail</option><option>Needs Review</option></select>
+                        <input type="text" id="spc-notes" placeholder="Your notes (optional)" class="search-input" style="flex:1">
+                        <button class="btn btn-primary" onclick="saveSpecialtyCheck()">Record My Verdict</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>Specialty</th><th>Question</th><th>Verdict</th><th>Notes</th><th>Checked By</th><th>Date</th><th></th></tr></thead>
+                    <tbody id="spc-tbody"></tbody>
+                </table></div>
+            </div>
+
+            <!-- Specialty documentation checklists (2026-08-20) -- same
+                 empty-by-default, Source-required discipline as Scrub
+                 Rules Reference. Not this app's claim about what a
+                 specialty requires -- only what a coder has personally
+                 verified and sourced. -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Specialty Documentation Checklists</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Requirements your practice has verified for a specialty -- empty by default, this is not a pre-loaded checklist, only what's added below with a real source.</div>
+            <div class="toolbar">
+                <select id="scl-add-specialty">
+                    <option>Behavioral Health</option>
+                    <option>Orthopedics</option>
+                    <option>Podiatry</option>
+                    <option>Anesthesia</option>
+                    <option>Cardiology</option>
+                    <option>Oncology</option>
+                    <option>Interventional Radiology</option>
+                    <option>DME</option>
+                    <option>Ophthalmology</option>
+                </select>
+                <input type="text" id="scl-add-item" placeholder="Documentation requirement" class="search-input" style="flex:1">
+            </div>
+            <div class="toolbar">
+                <input type="text" id="scl-add-source" placeholder="Source (required)" class="search-input" style="flex:1">
+                <button class="btn btn-primary" onclick="addSpecialtyChecklistItem()">Add Requirement</button>
+            </div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>Specialty</th><th>Requirement</th><th>Source</th><th></th></tr></thead>
+                    <tbody id="scl-tbody"></tbody>
+                </table></div>
+            </div>
+        </div>
+
         <div id="panel-eligibility" class="panel">
             <h1 class="panel-title">Eligibility Verification (270/271)</h1>
             <div class="toolbar">
@@ -1353,12 +1502,13 @@
             <h1 class="panel-title">AI Fraud Detection Engine</h1>
             <div class="patent-badge">Patent Candidate — Not Yet Filed</div>
             <div class="toolbar">
+                <input type="text" class="search-input" id="fraudSearch" placeholder="Search fraud alerts..." onkeyup="filterTable('fraudTable','fraudSearch')">
                 <button class="btn btn-primary" onclick="exportCSV('fraud')">Export CSV</button>
                 <button class="btn" onclick="window.print()">Print</button>
             </div>
             <div class="kpi-grid" id="fraud-kpis"></div>
             <div class="table-container">
-                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table id="fraudTable">
                     <thead><tr><th>Description</th><th>Confidence</th><th>Amount</th><th>Status</th><th></th></tr></thead>
                     <tbody id="fraud-tbody"></tbody>
                 </table></div>
@@ -2202,16 +2352,17 @@ How to answer:
                 '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'+
                 '<div><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:4px;">TOP PAYERS BY DENIAL COUNT</div>'+topBy(events, function(e){return e.payer;}, 'payer')+'</div>'+
                 '<div><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:4px;">TOP DENIAL REASONS</div>'+topBy(events, function(e){return e.reason;}, 'reason')+'</div>'+
+                '<div><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:4px;">TOP SPECIALTIES BY DENIAL COUNT</div>'+topBy(events, function(e){return e.specialty;}, 'specialty')+'</div>'+
                 '</div></div>';
         }
         function renderDenialEvents(){
             var list = getDenialEventEntries();
             var tbody = document.getElementById('denialevents-tbody');
             if (tbody) {
-                tbody.innerHTML = list.length ? '' : '<tr><td colspan="6" style="text-align:center;color:#666;padding:16px">No denial events logged yet.</td></tr>';
+                tbody.innerHTML = list.length ? '' : '<tr><td colspan="7" style="text-align:center;color:#666;padding:16px">No denial events logged yet.</td></tr>';
                 list.forEach(function(e){
                     var tr = document.createElement('tr');
-                    tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.reason)+'</td><td>$'+(e.amount||0).toLocaleString()+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDenialEventEntry(\''+e.id+'\')">×</button></td>';
+                    tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(e.payer)+'</td><td>'+escHtml(e.reason)+'</td><td>'+escHtml(e.specialty||'—')+'</td><td>$'+(e.amount||0).toLocaleString()+'</td><td>'+escHtml(e.date||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDenialEventEntry(\''+e.id+'\')">×</button></td>';
                     tbody.appendChild(tr);
                 });
             }
@@ -2228,17 +2379,19 @@ How to answer:
             var code = document.getElementById('dne-add-code').value.trim();
             var payer = document.getElementById('dne-add-payer').value.trim();
             var reason = document.getElementById('dne-add-reason').value.trim();
+            var specialty = document.getElementById('dne-add-specialty').value;
             var amount = parseFloat(document.getElementById('dne-add-amount').value);
             var date = document.getElementById('dne-add-date').value;
             if (!code || !payer || isNaN(amount)) { showToast('Code, payer, and amount required'); return; }
             var list = getDenialEventEntries();
-            list.push({id:'dne'+Date.now(), code:code, payer:payer, reason:reason||'—', amount:amount, date:date||scLocalToday()});
+            list.push({id:'dne'+Date.now(), code:code, payer:payer, reason:reason||'—', specialty:specialty||'', amount:amount, date:date||scLocalToday()});
             var saved = saveDenialEventEntries(list);
             var synced = saved ? await scData('write', 'sc_denial_events', list[list.length - 1]) : null;
             renderDenialEvents();
             document.getElementById('dne-add-code').value = '';
             document.getElementById('dne-add-payer').value = '';
             document.getElementById('dne-add-reason').value = '';
+            document.getElementById('dne-add-specialty').value = '';
             document.getElementById('dne-add-amount').value = '';
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Denial event logged' : 'Denial event logged on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
@@ -2379,12 +2532,23 @@ How to answer:
 
             var kpis = document.getElementById('dashboard-kpis');
             if (kpis){
+                // Drill-down (2026-08-20): every card below calls scDrillToKpi
+                // with the SAME predicate renderDashboard() itself just used
+                // to compute that number -- 'clean'/claimsTable/status-clean
+                // for Clean Claim Rate, 'denied'/claimsTable/status-denied for
+                // Denial Rate (not the Denial panel -- this KPI was always
+                // scoped to Claims, see the 2026-08-09 fix note above), the
+                // real not-Resolved exclusion for Denial Amount Pending, and
+                // the real Under-Review-or-Flagged inclusion for Fraud Alerts
+                // Open. The drilled-in row count can never silently diverge
+                // from the number on the card, because both come from the
+                // same filter, not two independently-written ones.
                 kpis.innerHTML =
-                    '<div class="kpi-card"><div class="kpi-label">Claims Volume</div><div class="kpi-value">'+claimsVolume+'</div><div class="kpi-detail">Logged in Claims panel</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Clean Claim Rate</div><div class="kpi-value">'+cleanRate+'</div><div class="kpi-detail">Of logged claims</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Denial Amount Pending</div><div class="kpi-value">$'+pendingDenialAmount.toLocaleString()+'</div><div class="kpi-detail">From Denial panel, unresolved</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Denial Rate</div><div class="kpi-value">'+denialRate+'</div><div class="kpi-detail">Claims marked Denied, of claims logged</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Fraud Alerts Open</div><div class="kpi-value">'+openFraud+'</div><div class="kpi-detail">From Fraud panel</div></div>';
+                    '<div class="kpi-card" style="cursor:pointer" onclick="scDrillToKpi(\'claims\',\'claimsTable\',\'all\',[])" title="Click to view all logged claims"><div class="kpi-label">Claims Volume</div><div class="kpi-value">'+claimsVolume+'</div><div class="kpi-detail">Logged in Claims panel</div></div>'+
+                    '<div class="kpi-card" style="cursor:pointer" onclick="scDrillToKpi(\'claims\',\'claimsTable\',\'include\',[\'Clean\'])" title="Click to view claims with Clean status"><div class="kpi-label">Clean Claim Rate</div><div class="kpi-value">'+cleanRate+'</div><div class="kpi-detail">Of logged claims</div></div>'+
+                    '<div class="kpi-card" style="cursor:pointer" onclick="scDrillToKpi(\'denial\',\'denialTable\',\'exclude\',[\'Resolved\'])" title="Click to view unresolved denial records"><div class="kpi-label">Denial Amount Pending</div><div class="kpi-value">$'+pendingDenialAmount.toLocaleString()+'</div><div class="kpi-detail">From Denial panel, unresolved</div></div>'+
+                    '<div class="kpi-card" style="cursor:pointer" onclick="scDrillToKpi(\'claims\',\'claimsTable\',\'include\',[\'Denied\'])" title="Click to view claims with Denied status"><div class="kpi-label">Denial Rate</div><div class="kpi-value">'+denialRate+'</div><div class="kpi-detail">Claims marked Denied, of claims logged</div></div>'+
+                    '<div class="kpi-card" style="cursor:pointer" onclick="scDrillToKpi(\'fraud\',\'fraudTable\',\'include\',[\'Under Review\',\'Flagged\'])" title="Click to view open fraud alerts"><div class="kpi-label">Fraud Alerts Open</div><div class="kpi-value">'+openFraud+'</div><div class="kpi-detail">From Fraud panel</div></div>';
             }
         }
 
@@ -2808,6 +2972,58 @@ How to answer:
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Code added' : 'Code added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
+        // Bulk import for the practice's own licensed CPT/CDT export
+        // (2026-08-20, Phase 3). Deliberately restrictive: only CPT/CDT rows
+        // are accepted here -- ICD-10/HCPCS already have their own real
+        // sources (the free NLM lookup, or the single Add form above) and
+        // accepting them through this importer would blur where a code
+        // actually came from. Every row is validated before any write;
+        // malformed lines are reported by line number, never silently
+        // dropped or silently guessed-at.
+        async function importEncoderBulk(){
+            var raw = document.getElementById('enc-bulk-import').value;
+            var resultEl = document.getElementById('enc-bulk-import-result');
+            var btn = document.getElementById('enc-bulk-import-btn');
+            var lines = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l.length;});
+            if (!lines.length) { showToast('Paste at least one row first'); return; }
+
+            var rows = [], errors = [];
+            lines.forEach(function(line, i){
+                var parts = line.split(',');
+                var code = (parts[0]||'').trim();
+                var type = (parts[1]||'').trim().toUpperCase();
+                var desc = (parts[2]||'').trim();
+                var bundling = parts.slice(3).join(',').trim();
+                if (!code || !desc) { errors.push('Line '+(i+1)+': missing code or description'); return; }
+                if (type !== 'CPT' && type !== 'CDT') { errors.push('Line '+(i+1)+': type must be CPT or CDT (got "'+(type||'blank')+'") -- use the single Add form above for ICD-10/HCPCS'); return; }
+                rows.push({id:'ec'+Date.now()+'-'+i, code:code, type:type, desc:desc, bundling:bundling});
+            });
+
+            if (!rows.length) {
+                resultEl.innerHTML = '<div style="color:#991b1b">No valid rows to import.<br>'+escHtml(errors.join('; '))+'</div>';
+                return;
+            }
+
+            btn.disabled = true; btn.textContent = 'Importing...';
+            var list = getEncoderCodes();
+            var syncFailures = 0;
+            for (var i = 0; i < rows.length; i++) {
+                list.push(rows[i]);
+                var synced = await scData('write', 'sc_encoder', rows[i]);
+                if (!synced) syncFailures++;
+            }
+            saveEncoderCodes(list);
+            renderEncoder();
+            document.getElementById('enc-bulk-import').value = '';
+            btn.disabled = false; btn.textContent = 'Import';
+
+            var summary = 'Imported ' + rows.length + ' row' + (rows.length===1?'':'s') + '.';
+            if (syncFailures) summary += ' ' + syncFailures + ' failed to sync to the server (saved on this device only).';
+            if (errors.length) summary += ' ' + errors.length + ' line' + (errors.length===1?'':'s') + ' skipped: ' + errors.join('; ');
+            resultEl.innerHTML = '<div style="color:'+(errors.length?'#92400e':'#166534')+'">'+escHtml(summary)+'</div>';
+            showToast(summary);
+        }
+
         function getRacEntries(){
             // Fixed (2026-08-18 fabrication audit): used to seed+persist 2 fake
             // RAC audit entries on first view. Honest empty state now.
@@ -2933,7 +3149,7 @@ How to answer:
             var tbody = document.getElementById('anesthesia-tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
-            var totalBase = 0, totalTime = 0, totalUnitsAll = 0, qcCount = 0;
+            var totalBase = 0, totalTime = 0, totalUnitsAll = 0, qcCount = 0, totalDollars = 0, dollarCases = 0;
             list.forEach(function(a){
                 var timeUnits = a.minutes / 15;
                 var totalUnits = a.base + timeUnits;
@@ -2941,8 +3157,10 @@ How to answer:
                 totalTime += timeUnits;
                 totalUnitsAll += totalUnits;
                 if (a.qc && a.qc.trim() !== '') qcCount++;
+                var dollarAmount = (a.conversionFactor != null && a.conversionFactor !== '') ? (totalUnits * a.conversionFactor) : null;
+                if (dollarAmount != null) { totalDollars += dollarAmount; dollarCases++; }
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(a.caseRef)+'</td><td>'+a.base+'</td><td>'+a.minutes+'</td><td>'+timeUnits.toFixed(2)+'</td><td>'+escHtml(a.qc||'—')+'</td><td>'+totalUnits.toFixed(2)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAnesthesiaEntry(\''+a.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(a.caseRef)+'</td><td>'+escHtml(a.cpt||'—')+'</td><td>'+a.base+'</td><td>'+a.minutes+'</td><td>'+timeUnits.toFixed(2)+'</td><td>'+escHtml(a.physicalStatus||'—')+'</td><td>'+escHtml(a.qc||'—')+'</td><td>'+totalUnits.toFixed(2)+'</td><td>'+(dollarAmount!=null?('$'+dollarAmount.toFixed(2)):'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAnesthesiaEntry(\''+a.id+'\')">×</button></td>';
                 tbody.appendChild(tr);
             });
             var avgBase = list.length ? (totalBase/list.length).toFixed(1) : '—';
@@ -2954,7 +3172,8 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Base Units Avg</div><div class="kpi-value">'+avgBase+'</div><div class="kpi-detail">Per logged case</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Time Units Avg</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-detail">Per 15 minutes</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">QC Modifiers</div><div class="kpi-value">'+qcCount+'</div><div class="kpi-detail">Quality codes logged</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Total Units Billed</div><div class="kpi-value">'+totalUnitsAll.toFixed(2)+'</div><div class="kpi-detail">Sum, all logged cases</div></div>';
+                    '<div class="kpi-card"><div class="kpi-label">Total Units Billed</div><div class="kpi-value">'+totalUnitsAll.toFixed(2)+'</div><div class="kpi-detail">Sum, all logged cases</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Billed Amount</div><div class="kpi-value">'+(dollarCases?('$'+totalDollars.toFixed(2)):'—')+'</div><div class="kpi-detail">'+(dollarCases?(dollarCases+' case(s) with a conversion factor'):'No cases have a conversion factor yet')+'</div></div>';
             }
         }
         async function removeAnesthesiaEntry(id){
@@ -2964,23 +3183,248 @@ How to answer:
             saveAnesthesiaEntries(getAnesthesiaEntries().filter(function(a){return a.id!==id;}));
             renderAnesthesia();
         }
+
+        // ── ASA Base Units Reference (2026-08-20) -- empty by default,
+        // Source required, same discipline as Scrub Rules Reference. ──
+        function getAsaBaseUnits(){
+            try { var s = localStorage.getItem('sc_anesthesia_base_units'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveAsaBaseUnits(list){ try { localStorage.setItem('sc_anesthesia_base_units', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        function findAsaBaseUnitMatch(cpt){
+            var q = normalizeForMatch(cpt);
+            if (!q) return null;
+            var list = getAsaBaseUnits();
+            for (var i = 0; i < list.length; i++) { if (normalizeForMatch(list[i].cpt) === q) return list[i]; }
+            return null;
+        }
+        function renderAsaBaseUnits(){
+            var list = getAsaBaseUnits();
+            var tbody = document.getElementById('abu-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = list.length ? '' : '<tr><td colspan="4" style="text-align:center;color:#666;padding:16px">No base-unit values added yet -- add ones you\'ve verified above.</td></tr>';
+            list.forEach(function(r){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(r.cpt)+'</td><td>'+r.units+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAsaBaseUnit(\''+r.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+        }
+        async function removeAsaBaseUnit(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_anesthesia_base_units', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveAsaBaseUnits(getAsaBaseUnits().filter(function(r){return r.id!==id;}));
+            renderAsaBaseUnits();
+        }
+        async function addAsaBaseUnit(){
+            var cpt = document.getElementById('abu-add-cpt').value.trim();
+            var units = parseFloat(document.getElementById('abu-add-units').value);
+            var source = document.getElementById('abu-add-source').value.trim();
+            if (!cpt || isNaN(units) || !source) { showToast('CPT code, base units, and source are all required -- this table only holds values someone has verified'); return; }
+            var list = getAsaBaseUnits();
+            list.push({id:'abu'+Date.now(), cpt:cpt, units:units, source:source});
+            var saved = saveAsaBaseUnits(list);
+            var synced = saved ? await scData('write', 'sc_anesthesia_base_units', list[list.length - 1]) : null;
+            renderAsaBaseUnits();
+            document.getElementById('abu-add-cpt').value = '';
+            document.getElementById('abu-add-units').value = '';
+            document.getElementById('abu-add-source').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Reference added' : 'Reference added on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+        // Fires on the CPT field losing focus -- checks the practice's own
+        // verified reference table and auto-fills Base Units if a real
+        // match exists. Never invents a value; if nothing matches, says so
+        // and leaves Base Units for manual entry exactly as before.
+        function anLookupBaseUnits(){
+            var cpt = document.getElementById('an-add-cpt').value.trim();
+            var note = document.getElementById('an-base-lookup-note');
+            if (!cpt) { note.textContent = ''; return; }
+            var match = findAsaBaseUnitMatch(cpt);
+            if (match) {
+                document.getElementById('an-add-base').value = match.units;
+                note.style.color = '#166534';
+                note.textContent = 'Base units filled from your reference table (source: ' + match.source + ') -- still editable.';
+            } else {
+                note.style.color = '#666';
+                note.textContent = 'No reference entry for this CPT code yet -- enter Base Units manually, or add it to the reference table below.';
+            }
+        }
         async function addAnesthesiaEntry(){
             var caseRef = document.getElementById('an-add-case').value.trim();
+            var cpt = document.getElementById('an-add-cpt').value.trim();
             var base = parseFloat(document.getElementById('an-add-base').value);
             var minutes = parseFloat(document.getElementById('an-add-minutes').value);
+            var physicalStatus = document.getElementById('an-add-status').value;
             var qc = document.getElementById('an-add-qc').value.trim();
+            var cfRaw = document.getElementById('an-add-cf').value;
+            var conversionFactor = cfRaw !== '' ? parseFloat(cfRaw) : null;
             if (!caseRef || isNaN(base) || isNaN(minutes)) { showToast('Case ref, base units, and minutes required'); return; }
             var list = getAnesthesiaEntries();
-            list.push({id:'an'+Date.now(), caseRef:caseRef, base:base, minutes:minutes, qc:qc});
+            list.push({id:'an'+Date.now(), caseRef:caseRef, cpt:cpt, base:base, minutes:minutes, physicalStatus:physicalStatus, qc:qc, conversionFactor:conversionFactor});
             var saved = saveAnesthesiaEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
             var synced = saved ? await scData('write', 'sc_anesthesia', list[list.length - 1]) : null;
             renderAnesthesia();
             document.getElementById('an-add-case').value = '';
+            document.getElementById('an-add-cpt').value = '';
             document.getElementById('an-add-base').value = '';
             document.getElementById('an-add-minutes').value = '';
+            document.getElementById('an-add-status').value = '';
             document.getElementById('an-add-qc').value = '';
+            document.getElementById('an-add-cf').value = '';
+            document.getElementById('an-base-lookup-note').textContent = '';
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Anesthesia case added' : 'Anesthesia case added on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+
+        // ================================================================
+        // SPECIALTY SPOT-CHECK HARNESS (2026-08-20, pre-SAIRNcare gap
+        // pass). This page NEVER computes or claims a coverage verdict.
+        // A real credentialed coder asks a real question, reads the AI's
+        // real answer through the same audited/screened api/sc-ai.js
+        // transport as every other AI feature, and records THEIR OWN
+        // pass/fail/needs-review judgment. See sql/sairncode_
+        // specialty_checks_schema.sql's header for the full reasoning.
+        // ================================================================
+        var _spcLastAnswer = null; // holds {specialty, question, answer} between "Ask AI" and "Record My Verdict"
+        function getSpecialtyChecks(){
+            try { var s = localStorage.getItem('sc_specialty_checks'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveSpecialtyChecks(list){ try { localStorage.setItem('sc_specialty_checks', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        function renderSpecialtyChecks(){
+            var list = getSpecialtyChecks();
+            var tbody = document.getElementById('spc-tbody');
+            if (tbody) {
+                tbody.innerHTML = list.length ? '' : '<tr><td colspan="7" style="text-align:center;color:#666;padding:16px">No spot-checks recorded yet.</td></tr>';
+                list.forEach(function(c){
+                    var badgeClass = c.verdict === 'Pass' ? 'status-clean' : (c.verdict === 'Fail' ? 'status-denied' : 'status-pending');
+                    var tr = document.createElement('tr');
+                    tr.innerHTML = '<td>'+escHtml(c.specialty)+'</td><td>'+escHtml(c.question)+'</td><td><span class="status-badge '+badgeClass+'">'+escHtml(c.verdict)+'</span></td><td>'+escHtml(c.notes||'—')+'</td><td>'+escHtml(c.checkedBy||'—')+'</td><td>'+escHtml(c.checkedAt||'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeSpecialtyCheck(\''+c.id+'\')">×</button></td>';
+                    tbody.appendChild(tr);
+                });
+            }
+            var kpis = document.getElementById('specialty-kpis');
+            if (kpis){
+                var pass = list.filter(function(c){return c.verdict==='Pass';}).length;
+                var fail = list.filter(function(c){return c.verdict==='Fail';}).length;
+                var review = list.filter(function(c){return c.verdict==='Needs Review';}).length;
+                var specialtiesTouched = {};
+                list.forEach(function(c){ if (c.specialty) specialtiesTouched[c.specialty] = true; });
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Checks Recorded</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">By your own coders</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Passed</div><div class="kpi-value">'+pass+'</div><div class="kpi-detail">Coder-recorded</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Failed</div><div class="kpi-value">'+fail+'</div><div class="kpi-detail">Coder-recorded</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Needs Review</div><div class="kpi-value">'+review+'</div><div class="kpi-detail">Coder-recorded</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Specialties Checked</div><div class="kpi-value">'+Object.keys(specialtiesTouched).length+'</div><div class="kpi-detail">Of 9 categories</div></div>';
+            }
+        }
+        async function removeSpecialtyCheck(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_specialty_checks', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveSpecialtyChecks(getSpecialtyChecks().filter(function(c){return c.id!==id;}));
+            renderSpecialtyChecks();
+        }
+        async function askSpecialtyQuestion(){
+            var specialty = document.getElementById('spc-specialty').value;
+            var question = document.getElementById('spc-question').value.trim();
+            var resultEl = document.getElementById('spc-answer-result');
+            var btn = document.getElementById('spc-ask-btn');
+            var verdictForm = document.getElementById('spc-verdict-form');
+            if (!question) { showToast('Enter a real question first'); return; }
+            verdictForm.style.display = 'none';
+            _spcLastAnswer = null;
+
+            btn.disabled = true; btn.textContent = 'Asking...';
+            resultEl.innerHTML = '<div style="font-size:12px;color:#666">Asking...</div>';
+            try {
+                var response = await scAiFetch({
+                    messages: [{ role: 'user', content: '[' + specialty + '] ' + question }],
+                    system: SAIRNCODE_SYSTEM_PROMPT
+                }, 'specialty_check');
+                if (!response.ok) {
+                    var spcErr = await scAiErrorText(response);
+                    resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">' + escHtml(spcErr || 'Error: could not reach the AI service.') + '</div>';
+                    return;
+                }
+                var data = await response.json();
+                var blocks = (data && data.content) || [];
+                var answer = (blocks[0] && blocks[0].text) || '(no answer text returned)';
+                _spcLastAnswer = { specialty: specialty, question: question, answer: answer };
+                resultEl.innerHTML = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;white-space:pre-wrap;">'+escHtml(answer)+'</div>';
+                verdictForm.style.display = 'block';
+            } catch (e) {
+                resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Connection error -- could not ask this question.</div>';
+            } finally {
+                btn.disabled = false; btn.textContent = 'Ask AI';
+            }
+        }
+        async function saveSpecialtyCheck(){
+            if (!_spcLastAnswer) { showToast('Ask a question first'); return; }
+            var verdict = document.getElementById('spc-verdict').value;
+            var notes = document.getElementById('spc-notes').value.trim();
+            var whoAmI = '';
+            try { whoAmI = localStorage.getItem('sc_employee_id') || ''; } catch (e) {}
+            var list = getSpecialtyChecks();
+            var rec = {
+                id: 'spc' + Date.now(),
+                specialty: _spcLastAnswer.specialty,
+                question: _spcLastAnswer.question,
+                verdict: verdict,
+                notes: notes,
+                checkedBy: whoAmI || 'unknown',
+                checkedAt: scLocalToday()
+            };
+            list.push(rec);
+            var saved = saveSpecialtyChecks(list);
+            var synced = saved ? await scData('write', 'sc_specialty_checks', rec) : null;
+            renderSpecialtyChecks();
+            document.getElementById('spc-question').value = '';
+            document.getElementById('spc-notes').value = '';
+            document.getElementById('spc-answer-result').innerHTML = '';
+            document.getElementById('spc-verdict-form').style.display = 'none';
+            _spcLastAnswer = null;
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Verdict recorded' : 'Verdict recorded on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+
+        // ── Specialty documentation checklists -- empty by default,
+        // Source required, same discipline as Scrub Rules Reference. ──
+        function getSpecialtyChecklist(){
+            try { var s = localStorage.getItem('sc_specialty_checklists'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveSpecialtyChecklist(list){ try { localStorage.setItem('sc_specialty_checklists', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        function renderSpecialtyChecklists(){
+            var list = getSpecialtyChecklist();
+            var tbody = document.getElementById('scl-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = list.length ? '' : '<tr><td colspan="4" style="text-align:center;color:#666;padding:16px">No requirements added yet -- add ones you\'ve verified above.</td></tr>';
+            list.forEach(function(r){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(r.specialty)+'</td><td>'+escHtml(r.item)+'</td><td>'+escHtml(r.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeSpecialtyChecklistItem(\''+r.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+        }
+        async function removeSpecialtyChecklistItem(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_specialty_checklists', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveSpecialtyChecklist(getSpecialtyChecklist().filter(function(r){return r.id!==id;}));
+            renderSpecialtyChecklists();
+        }
+        async function addSpecialtyChecklistItem(){
+            var specialty = document.getElementById('scl-add-specialty').value;
+            var item = document.getElementById('scl-add-item').value.trim();
+            var source = document.getElementById('scl-add-source').value.trim();
+            if (!item || !source) { showToast('Requirement and source are both required -- this table only holds items someone has verified'); return; }
+            var list = getSpecialtyChecklist();
+            list.push({id:'scl'+Date.now(), specialty:specialty, item:item, source:source});
+            var saved = saveSpecialtyChecklist(list);
+            var synced = saved ? await scData('write', 'sc_specialty_checklists', list[list.length - 1]) : null;
+            renderSpecialtyChecklists();
+            document.getElementById('scl-add-item').value = '';
+            document.getElementById('scl-add-source').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Requirement added' : 'Requirement added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
         function getAuthEntries(){
@@ -4018,6 +4462,33 @@ How to answer:
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Claim added' : 'Claim added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
 
+        // ── Dashboard KPI drill-down (2026-08-20) ──
+        // A small, separate helper from filterTable() above rather than an
+        // extension of it -- filterTable() is a single free-text substring
+        // box used by 20+ panels and changing its behavior would risk all
+        // of them. scDrillFilter supports the three real predicate shapes
+        // renderDashboard()'s own KPI math actually uses: show everything
+        // ('all'), show only rows matching any of a list of values
+        // ('include' -- e.g. Fraud's real "Under Review OR Flagged"), or
+        // show everything EXCEPT rows matching any value ('exclude' -- the
+        // real "status !== Resolved" Denial Amount Pending uses). Never an
+        // approximation of the KPI's own logic -- the same predicate shape.
+        function scDrillFilter(tableId, mode, values) {
+            var table = document.getElementById(tableId);
+            if (!table) return;
+            var rows = table.querySelectorAll('tbody tr');
+            rows.forEach(function (row) {
+                if (mode === 'all') { row.style.display = ''; return; }
+                var text = row.textContent.toLowerCase();
+                var matchesAny = (values || []).some(function (v) { return text.indexOf(String(v).toLowerCase()) !== -1; });
+                row.style.display = (mode === 'include' ? matchesAny : !matchesAny) ? '' : 'none';
+            });
+        }
+        function scDrillToKpi(panelName, tableId, mode, values) {
+            showPanel(panelName);
+            scDrillFilter(tableId, mode, values);
+        }
+
         function filterTable(tableId, searchInputId) {
             const table = document.getElementById(tableId);
             const input = document.getElementById(searchInputId);
@@ -4258,6 +4729,64 @@ How to answer:
             if (!code || !snippet) return false;
             return normalizeForMatch(snippet).indexOf(normalizeForMatch(code)) !== -1;
         }
+        // ================================================================
+        // AUTHORITATIVE-SOURCE-GROUNDED LOOKUP (2026-08-20, Phase 3 of the
+        // BYO-credential expansion). Tries REAL connected/free authoritative
+        // sources FIRST, before ever falling back to the existing web-
+        // search-grounded AI check below. Same tiered-priority pattern
+        // already proven by the Prebill scrub tool (local rule table first,
+        // web search only when nothing local matches).
+        //
+        // Tier 1 -- the practice's OWN connected reference data (sc_encoder,
+        // uploaded via "Connect Your Licensed Code Data" below -- CPT/CDT
+        // rows the practice's own AMA/ADA license entitles them to use).
+        // Tier 2 -- ICD-10-CM via the NLM Clinical Table Search Service --
+        // free, public, no license needed (ICD-10-CM is public domain),
+        // confirmed live 2026-08-20 with real CORS (Access-Control-Allow-
+        // Origin: *), called directly from the browser, no server proxy.
+        // Tier 3 -- the existing web-search-grounded AI check (unchanged).
+        //
+        // WHY THERE IS NO "CPT LIVE LOOKUP" TIER: researched live rather
+        // than guessed -- the AMA's "CPT Zip API" is a BULK FILE DOWNLOAD
+        // automation service (a Releases endpoint + a Files endpoint,
+        // org-admin AMA account required, 10 calls/day cap), not a
+        // per-code query API shaped like Stedi's. Building a live-query
+        // proxy against that would misrepresent what the real API actually
+        // does. CPT (like CDT) is therefore a REAL, CONNECTED reference the
+        // practice uploads from their own licensed export -- Tier 1 above
+        // -- not a Tier-2-style live API call. This is a deliberate,
+        // disclosed correction to the original "same pattern as Stedi"
+        // assumption, made before building rather than after.
+        function findLocalEncoderMatch(desc){
+            var q = normalizeForMatch(desc);
+            if (!q) return null;
+            var list = getEncoderCodes();
+            for (var i = 0; i < list.length; i++) {
+                var c = list[i];
+                if (normalizeForMatch(c.desc).indexOf(q) !== -1 || normalizeForMatch(c.code) === q) return c;
+            }
+            return null;
+        }
+        // Real, live, free, no-license call to NLM's public Clinical Table
+        // Search Service -- CORS-open, confirmed 2026-08-20. Searches both
+        // code and name fields so a diagnosis description matches, not just
+        // an exact code. Returns the single best match or null -- never
+        // invents a code if the API returns nothing.
+        async function findIcd10Match(desc){
+            try {
+                var url = 'https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search?terms=' + encodeURIComponent(desc) + '&sf=code,name&df=code,name&maxList=1';
+                var r = await fetch(url);
+                if (!r.ok) return null;
+                var data = await r.json();
+                // Documented shape: [totalCount, [codes...], extraData, [[code,name],...]]
+                var rows = data && data[3];
+                if (!rows || !rows.length) return null;
+                return { code: rows[0][0], type: 'ICD-10', description: rows[0][1] };
+            } catch (e) {
+                return null; // network/CORS failure -- fall through to web search, never block on this
+            }
+        }
+
         async function runCodeAwarenessLookup(){
             var desc = document.getElementById('code-lookup-desc').value.trim();
             var resultEl = document.getElementById('code-lookup-result');
@@ -4265,7 +4794,34 @@ How to answer:
             if (!desc) { showToast('Describe a procedure or diagnosis first'); return; }
 
             btn.disabled = true; btn.textContent = 'Checking...';
-            resultEl.innerHTML = '<div style="font-size:12px;color:#666">Checking live web search for the current 2026 code...</div>';
+
+            // Tier 1: the practice's own connected reference data.
+            var localMatch = findLocalEncoderMatch(desc);
+            if (localMatch) {
+                resultEl.innerHTML = '<div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:12px 16px;font-size:13px;">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+escHtml(localMatch.code)+'</b> <span style="color:#666;font-size:11px;">'+escHtml(localMatch.type||'')+'</span> <span style="background:#1e40af;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">From your connected reference data</span></div>'
+                    + '<div style="margin-top:6px;color:#111;">'+escHtml(localMatch.desc)+'</div>'
+                    + (localMatch.bundling ? ('<div style="margin-top:6px;font-size:12px;color:#666;">'+escHtml(localMatch.bundling)+'</div>') : '')
+                    + '</div>';
+                btn.disabled = false; btn.textContent = 'Look Up';
+                return;
+            }
+
+            // Tier 2: real, live, free ICD-10-CM via NLM -- no license needed.
+            resultEl.innerHTML = '<div style="font-size:12px;color:#666">Checking your connected reference and the free public ICD-10-CM database...</div>';
+            var icd10Match = await findIcd10Match(desc);
+            if (icd10Match) {
+                resultEl.innerHTML = '<div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:12px 16px;font-size:13px;">'
+                    + '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+escHtml(icd10Match.code)+'</b> <span style="color:#666;font-size:11px;">ICD-10</span> <span style="background:#166534;color:#fff;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">Live from NLM public ICD-10-CM database</span></div>'
+                    + '<div style="margin-top:6px;color:#111;">'+escHtml(icd10Match.description)+'</div>'
+                    + '<div style="margin-top:6px;font-size:11px;color:#666;">Free, public, no license required -- clinicaltables.nlm.nih.gov (National Library of Medicine)</div>'
+                    + '</div>';
+                btn.disabled = false; btn.textContent = 'Look Up';
+                return;
+            }
+
+            // Tier 3: existing web-search-grounded AI check (unchanged).
+            resultEl.innerHTML = '<div style="font-size:12px;color:#666">No match in your connected reference or the free ICD-10 database -- checking live web search for the current 2026 code...</div>';
 
             var sys = 'You are looking up the current 2026 CPT, HCPCS, or ICD-10 code for a described procedure or diagnosis. Use web search to check current CMS/AMA guidance -- do not answer from memory alone, your training data may be stale for this year\'s code changes or additions. Respond with ONLY a JSON object, no prose before or after, no markdown code fence: {"code": the code found, or null if none, "type": "CPT"|"HCPCS"|"ICD-10"|null, "description": the official short description of the code, or null, "source_snippet": the EXACT text from a search result that states this code -- character-for-character from the search result, not a paraphrase, "no_match": true if search did not surface a specific, current, citable code for this description, false otherwise}. CRITICAL: never invent a plausible-sounding code number. If search does not surface a specific, current, citable code, set no_match:true and code:null -- do not guess.';
 
@@ -4343,6 +4899,9 @@ How to answer:
             renderEligibility();
             renderRetentionSetting();
             renderAuthRequests();
+            renderAsaBaseUnits();
+            renderSpecialtyChecks();
+            renderSpecialtyChecklists();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -4606,7 +5165,13 @@ How to answer:
             // Added 2026-08-20 (Phase 2a/2b prior-auth requests) -- syncs
             // like any other resource; the sign-off gate itself is enforced
             // server-side regardless of what this device's cache shows.
-            sc_auth_requests: 'sc_auth_requests'
+            sc_auth_requests: 'sc_auth_requests',
+            // Added 2026-08-20 (pre-SAIRNcare gap pass) -- specialty
+            // spot-check harness, specialty documentation checklists, and
+            // the ASA base-units reference all sync like any other resource.
+            sc_specialty_checks: 'sc_specialty_checks',
+            sc_specialty_checklists: 'sc_specialty_checklists',
+            sc_anesthesia_base_units: 'sc_anesthesia_base_units'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -4631,7 +5196,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {
