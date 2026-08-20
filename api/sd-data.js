@@ -214,7 +214,23 @@ const RESOURCES = {
   // Source field required, same discipline as sc_scrubrules. See
   // sql/sairncode_anesthesia_base_units_schema.sql for why. REQUIRES that
   // migration to be run in Supabase.
-  sc_anesthesia_base_units: true
+  sc_anesthesia_base_units: true,
+  // SAIRNsenior caregiver/staff roster (2026-08-20, closing the Phase 1
+  // disclosed gap) -- see sql/sairnsenior_caregivers_schema.sql. Lighter
+  // gate than sen_clients: readable by any authenticated employee (a
+  // scheduler/coordinator genuinely needs the whole roster to staff a
+  // visit), writable only by management (owner/billing). Bespoke branch
+  // below, not the generic loop, for that read-broad/write-narrow shape.
+  sen_caregivers: true,
+  // SAIRNsenior scheduled visits + EVV (2026-08-20) -- see
+  // sql/sairnsenior_visits_schema.sql. Combines scheduling and Electronic
+  // Visit Verification in one resource (EVV verifies a scheduled visit,
+  // it isn't a separate concept). Assignee-based privacy gate like
+  // sen_clients, but with a field-level write split the client gate
+  // doesn't need: scheduling fields are writable by management/
+  // coordinator/scheduler, EVV clock-in/out fields are writable ONLY by
+  // the assigned caregiver. Bespoke branch below.
+  sen_visits: true
 };
 
 const SC_RESOURCES = [
@@ -327,7 +343,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, bld_bids, bld_tna, sen_clients' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, bld_bids, bld_tna, sen_clients, sen_caregivers, sen_visits' } });
     return;
   }
 
@@ -2081,7 +2097,17 @@ module.exports = async (req, res) => {
     // (name, address, diagnosis, authorized services) -- a caregiver may only ever see clients
     // assigned to them; owner/billing (management) see every client. Same bespoke-branch shape
     // as sdn_clients/bld_bids/bld_tna -- assignee-based visibility, not the generic resource loop.
+    // THREE-TIER fix (2026-08-20, this session): the original Phase 1 gate only had a
+    // MANAGEMENT/everyone-else binary, which silently narrowed coordinator (and scheduler, not
+    // named in Michael's approval either -- same judgment call applied to both, flagged here
+    // rather than silently picked) down to the same own-assigned-only view as caregiver. The
+    // approved scope was "coordinator = broad caseload visibility" -- a real third tier, not
+    // "management" and not "caregiver." No team/caseload-grouping concept exists anywhere in
+    // this app, so "broad caseload visibility" is implemented as full agency-wide READ (their
+    // effective caseload is the whole roster, absent any per-team structure) -- but NOT
+    // reassignment rights, which stay exactly where they were confirmed: management-only.
     const SEN_CLIENT_MANAGEMENT_ROLES = { owner: true, billing: true };
+    const SEN_CLIENT_BROAD_READ_ROLES = { owner: true, billing: true, coordinator: true, scheduler: true };
     if (resource === 'sen_clients' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -2089,11 +2115,12 @@ module.exports = async (req, res) => {
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      // Management sees every client. A non-management (caregiver, scheduler, coordinator)
-      // caller sees only clients assigned to them -- an UNASSIGNED client is management-only-
-      // visible too, same minimum-necessary reasoning as every other app's assignment gate.
+      // Management AND coordinator/scheduler (broad-read tier) see every client. Only a
+      // caregiver is scoped to clients assigned to them -- an UNASSIGNED client is
+      // management-only-visible too, same minimum-necessary reasoning as every other app's
+      // assignment gate.
       let out = rows || [];
-      if (!SEN_CLIENT_MANAGEMENT_ROLES[session.role]) {
+      if (!SEN_CLIENT_BROAD_READ_ROLES[session.role]) {
         out = out.filter((r) => r.assigned_employee_id === session.employee_id);
       }
       const data = out.map((r) => Object.assign({ id: r.client_id, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
@@ -2105,6 +2132,7 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_clients payload.id is required' } }); return; }
       const isManagement = !!SEN_CLIENT_MANAGEMENT_ROLES[session.role];
+      const isBroadRead = !!SEN_CLIENT_BROAD_READ_ROLES[session.role];
       const existingR = await fetch(rest('sen_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Client tracking is not set up yet — run sql/sairnsenior_clients_schema.sql in Supabase first.' } });
@@ -2116,10 +2144,22 @@ module.exports = async (req, res) => {
       const requestedAssignee = payload.assigned_employee_id !== undefined
         ? (payload.assigned_employee_id || null)
         : (existingRow ? existingRow.assigned_employee_id : null);
-      if (!isManagement) {
-        // A caregiver/scheduler/coordinator may only write a client already assigned to them,
-        // and may never change the assignment -- reassignment (including self-assigning a
-        // currently-unassigned, invisible-to-them client) is management-only.
+      if (!isManagement && isBroadRead) {
+        // Coordinator/scheduler (broad-read tier): may edit any client's details, matching
+        // their agency-wide read access, but the assignment must stay exactly as it already
+        // was (or exactly unassigned for a brand-new client) -- broad visibility for
+        // coordination purposes is not the same as authority to assign or reassign a client,
+        // which stays management-only regardless of how much this tier can see.
+        const currentAssignee = existingRow ? existingRow.assigned_employee_id : null;
+        if (requestedAssignee !== currentAssignee) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign or reassign a client' } });
+          return;
+        }
+      } else if (!isManagement) {
+        // Caregiver (narrow tier): may only touch a client already assigned to them, and a
+        // brand-new client self-assigns to them on create -- matches saveClient()'s own
+        // client-side logic (the same self-assign-on-create fix already proven correct on
+        // SAIRNbuild's bld_bids).
         if (existingRow && existingRow.assigned_employee_id !== session.employee_id) {
           res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This client is not assigned to you' } });
           return;
@@ -2143,6 +2183,135 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, clientData) });
+      return;
+    }
+
+    // ── SAIRNSENIOR: sen_caregivers (2026-08-20, closing the Phase 1 disclosed gap) ──────────
+    // Employment/certification data, not client PHI -- lighter gate than sen_clients.
+    // Read: any authenticated employee (scheduling/coordination needs the whole roster).
+    // Write: management only (owner/billing) -- caregivers don't self-edit their own cert
+    // records through this resource, matching every other app's roster-write pattern.
+    if (resource === 'sen_caregivers' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('sen_caregivers?license_hash=eq.' + enc(licHash) + '&select=caregiver_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const data = (rows || []).map((r) => Object.assign({ id: r.caregiver_id }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'sen_caregivers' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!SEN_CLIENT_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can add or edit caregiver records' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_caregivers payload.id is required' } }); return; }
+      const caregiverData = Object.assign({}, payload);
+      delete caregiverData.id;
+      const r = await fetch(rest('sen_caregivers?on_conflict=license_hash,caregiver_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnsenior', caregiver_id: String(payload.id),
+          data: caregiverData, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Caregiver tracking is not set up yet — run sql/sairnsenior_caregivers_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, caregiverData) });
+      return;
+    }
+
+    // ── SAIRNSENIOR: sen_visits SCHEDULING + EVV (2026-08-20) ────────────────────────────────
+    // Assignee-based read gate like sen_clients (caregiver sees only their own visits,
+    // management/coordinator/scheduler see all). Write is a FIELD-LEVEL split, not a role-vs-
+    // role split like sen_clients: scheduling fields (client, caregiver assignment, scheduled
+    // time) are writable by management/coordinator/scheduler -- scheduling IS their job, unlike
+    // client (re)assignment which stays management-only. EVV fields (clock in/out, GPS, service
+    // notes) are writable ONLY by the assigned caregiver, and only on a visit that already
+    // exists -- nobody schedules a visit by clocking into it.
+    const SEN_VISIT_SCHEDULER_ROLES = { owner: true, billing: true, coordinator: true, scheduler: true };
+    const SEN_VISIT_SCHEDULE_FIELDS = ['client_id', 'client_name', 'scheduled_date', 'scheduled_start', 'scheduled_end'];
+    const SEN_VISIT_EVV_FIELDS = ['clock_in_at', 'clock_in_lat', 'clock_in_lng', 'clock_out_at', 'clock_out_lat', 'clock_out_lng', 'services_notes', 'status'];
+    if (resource === 'sen_visits' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&select=visit_id,assigned_employee_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      let out = rows || [];
+      if (!SEN_VISIT_SCHEDULER_ROLES[session.role]) {
+        out = out.filter((r) => r.assigned_employee_id === session.employee_id);
+      }
+      const data = out.map((r) => Object.assign({ id: r.visit_id, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'sen_visits' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_visits payload.id is required' } }); return; }
+      const isScheduler = !!SEN_VISIT_SCHEDULER_ROLES[session.role];
+      const existingR = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&visit_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Visit/EVV tracking is not set up yet — run sql/sairnsenior_visits_schema.sql in Supabase first.' } });
+        return;
+      }
+      const existingRows = await existingR.json();
+      if (!existingR.ok) return upstream(res, existingRows);
+      const existingRow = Array.isArray(existingRows) && existingRows[0];
+      let requestedAssignee;
+      let visitData;
+      if (isScheduler) {
+        // Full write of the scheduling shape, including who it's assigned to. EVV fields are
+        // NEVER accepted from a scheduler-tier caller, even on an edit -- preserved from
+        // whatever the assigned caregiver already recorded, so a scheduler can never forge a
+        // clock-in/out. This mirrors the field split, not just a role check.
+        requestedAssignee = payload.assigned_employee_id !== undefined ? (payload.assigned_employee_id || null) : (existingRow ? existingRow.assigned_employee_id : null);
+        visitData = Object.assign({}, existingRow ? existingRow.data : {});
+        SEN_VISIT_SCHEDULE_FIELDS.forEach((f) => { if (payload[f] !== undefined) visitData[f] = payload[f]; });
+        // A scheduler MAY set status to 'cancelled' (cancelling a visit is scheduling, not EVV)
+        // but may not set any other EVV-controlled status value.
+        if (payload.status === 'cancelled') visitData.status = 'cancelled';
+        else if (existingRow && existingRow.data && existingRow.data.status) visitData.status = existingRow.data.status;
+        else visitData.status = 'scheduled';
+      } else {
+        // Caregiver: must be the assigned party on an EXISTING visit -- cannot create a new
+        // visit (that's scheduling) and cannot touch anyone else's. Only the EVV fields are
+        // accepted; the scheduling fields are preserved exactly as they were, regardless of
+        // what the payload contains.
+        if (!existingRow) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only scheduling staff can create a new visit' } });
+          return;
+        }
+        if (existingRow.assigned_employee_id !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This visit is not assigned to you' } });
+          return;
+        }
+        requestedAssignee = existingRow.assigned_employee_id;
+        visitData = Object.assign({}, existingRow.data || {});
+        SEN_VISIT_EVV_FIELDS.forEach((f) => { if (payload[f] !== undefined) visitData[f] = payload[f]; });
+      }
+      const r = await fetch(rest('sen_visits?on_conflict=license_hash,visit_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnsenior', visit_id: String(payload.id),
+          assigned_employee_id: requestedAssignee, data: visitData, updated_at: nowISO()
+        })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, visitData) });
       return;
     }
 

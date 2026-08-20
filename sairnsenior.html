@@ -213,6 +213,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-ai" onclick="nav('ai')"><span class="sico">&#129302;</span>AI Assistant</button>
       <div class="ss">Care</div>
       <button class="sb" id="sb-clients" onclick="nav('clients')"><span class="sico">&#128100;</span>Clients</button>
+      <button class="sb" id="sb-scheduling" onclick="nav('scheduling')"><span class="sico">&#128197;</span>Scheduling &amp; Visits</button>
       <div class="ss">Staff</div>
       <button class="sb" id="sb-caregivers" onclick="nav('caregivers')"><span class="sico">&#128119;</span>Caregivers</button>
       <div class="ss">Company</div>
@@ -290,10 +291,37 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- SCHEDULING & VISITS (scheduling + EVV, one entity -- EVV verifies a
+     scheduled visit, it isn't a separate concept) -->
+<div class="panel" id="panel-scheduling">
+  <div class="ph"><div><div class="ptitle">Scheduling &amp; Visits</div><div class="psub">Assign caregivers to clients, then verify each visit with EVV</div></div></div>
+  <div class="krow" id="vs-kpi-row"></div>
+  <div class="card"><div class="cb" style="display:flex;gap:10px;flex-wrap:wrap">
+    <button class="btn bp bs" id="vs-tab-schedule" onclick="vsShowTab('schedule')">Schedule</button>
+    <button class="btn bo bs" id="vs-tab-clock" onclick="vsShowTab('clock')">Clock In / Out</button>
+  </div></div>
+  <div id="vs-view-schedule"></div>
+  <div id="vs-view-clock" style="display:none"></div>
+</div>
+<div class="modal" id="visitmodal">
+  <div class="mbox">
+    <div class="mtitle">Schedule a Visit</div>
+    <div class="fg"><label>Client</label><select id="vs-client"></select></div>
+    <div class="fg"><label>Caregiver</label><select id="vs-caregiver"><option value="">Unassigned</option></select></div>
+    <div class="fr"><div class="fg"><label>Date</label><input id="vs-date" type="date"></div>
+      <div class="fg"><label>Start Time</label><input id="vs-start" type="time"></div></div>
+    <div class="fg"><label>End Time</label><input id="vs-end" type="time"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeVisitModal()">Cancel</button>
+      <button class="btn bp" onclick="saveVisit()">Save Visit</button>
+    </div>
+  </div>
+</div>
+
 <!-- CAREGIVERS -->
 <div class="panel" id="panel-caregivers">
   <div class="ph"><div><div class="ptitle">Caregivers</div><div class="psub">Staff roster, certifications, and expiry tracking</div></div></div>
-  <div class="pa"><button class="btn bp bs" onclick="openCaregiverModal()">+ New Caregiver</button></div>
+  <div class="pa"><button class="btn bp bs" id="cg-new-btn" onclick="openCaregiverModal()">+ New Caregiver</button></div>
   <div class="card"><div class="cb">
     <div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>CPR Expires</th><th>Background Check</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="cgtbody"></tbody></table></div>
@@ -504,6 +532,8 @@ function senEnterApp(d){
   var p=$('l-pin');if(p)p.value='';
   init();
   senHydrateClients().then(function(merged){if(merged)rClients();});
+  senHydrateCaregivers().then(function(merged){if(merged)rCaregivers();});
+  senHydrateVisits();
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -543,6 +573,7 @@ function nav(id){
   if(id==='dashboard')rDash();
   if(id==='clients')rClients();
   if(id==='caregivers')rCaregivers();
+  if(id==='scheduling')vsRender();
   if(id==='settings')rSettings();
 }
 
@@ -551,6 +582,13 @@ function nav(id){
 // (api/sen-auth.js's 'roster' action refuses non-management server-side
 // regardless of what this cache holds).
 function senIsManagement(){return prole==='owner'||prole==='billing';}
+// Broad-read tier (2026-08-20): coordinator/scheduler get agency-wide READ
+// visibility on clients (approved scope: "coordinator = broad caseload
+// visibility" -- applied to scheduler too, same judgment call, since
+// neither role was named separately and both need to see across the
+// roster to do their job) but never assignment authority -- that stays
+// management-only, matching api/sd-data.js's sen_clients gate exactly.
+function senIsBroadRead(){return senIsManagement()||prole==='coordinator'||prole==='scheduler';}
 var _senRoster=null;
 function senRefreshRoster(cb){
   if(!senIsManagement())return;
@@ -654,9 +692,18 @@ async function saveClient(){
   var name=$('cl-name').value.trim();
   if(!name){toast('Client name required');return;}
   var existing=ceid?clients().find(function(x){return x.id===ceid;}):null;
+  // Management picks from the Assign-To dropdown. A caregiver (narrow tier)
+  // self-assigns on create and keeps their existing assignment on edit --
+  // the server allows exactly this. A coordinator/scheduler (broad-read
+  // tier) can never self-assign -- the server rejects any assignment
+  // change from them regardless -- so their write always preserves
+  // whatever the client's current assignment already is (or stays
+  // unassigned for a brand-new client), matching api/sd-data.js's gate.
   var assignedTo=senIsManagement()
     ?(($('classignee')&&$('classignee').value)||'')
-    :((existing&&existing.assigned_employee_id)||(senSession&&senSession.employee_id)||'');
+    :(senIsBroadRead()
+      ?((existing&&existing.assigned_employee_id)||'')
+      :((existing&&existing.assigned_employee_id)||(senSession&&senSession.employee_id)||''));
   var rec={
     id:ceid||newId('CL'),name:name,phone:$('cl-phone').value.trim(),address:$('cl-address').value.trim(),
     diagnosis:$('cl-diagnosis').value.trim(),payer:$('cl-payer').value,authorized_hours:Number($('cl-hours').value)||0,
@@ -758,39 +805,218 @@ async function clAnalyzePhoto(dataUrl){
 
 // ── CAREGIVERS ────────────────────────────────────────────────────────────
 function caregivers(){return ld('sen_caregivers',[]);}
+// Read: any authenticated employee. Write: management (owner/billing)
+// only -- server-side is the real gate, matching api/sd-data.js's
+// sen_caregivers branch exactly. Additive-only merge, same disclosed
+// two-devices-editing-the-same-record limitation as every other app's
+// hydration this session.
+function senHydrateCaregivers(){
+  if(!senLicenseKey())return Promise.resolve(false);
+  return senData('read','sen_caregivers',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var local=caregivers();
+    var localIds={};
+    local.forEach(function(c){if(c&&c.id)localIds[c.id]=true;});
+    var added=false;
+    serverRows.forEach(function(c){
+      if(c&&c.id&&!localIds[c.id]){local.push(c);localIds[c.id]=true;added=true;}
+    });
+    if(added)st('sen_caregivers',local);
+    return added;
+  });
+}
 function openCaregiverModal(){
+  if(!senIsManagement()){toast('Only management can add or edit caregiver records');return;}
   cgeid=null;['cg-name','cg-phone','cg-cpr','cg-bgcheck','cg-notes'].forEach(function(f){$(f).value='';});
   $('cg-status').value='onboarding';
   $('caregivermodal').classList.add('on');
 }
 function closeCaregiverModal(){$('caregivermodal').classList.remove('on');}
 function editCaregiver(id){
+  if(!senIsManagement()){toast('Only management can add or edit caregiver records');return;}
   var c=caregivers().find(function(x){return x.id===id;});if(!c)return;
   cgeid=id;$('cg-name').value=c.name||'';$('cg-phone').value=c.phone||'';$('cg-cpr').value=c.cpr_expiry||'';
   $('cg-bgcheck').value=c.bgcheck_date||'';$('cg-status').value=c.status||'onboarding';$('cg-notes').value=c.notes||'';
   $('caregivermodal').classList.add('on');
 }
-function saveCaregiver(){
+async function saveCaregiver(){
   var name=$('cg-name').value.trim();
   if(!name){toast('Caregiver name required');return;}
   var rec={id:cgeid||newId('CG'),name:name,phone:$('cg-phone').value.trim(),cpr_expiry:$('cg-cpr').value,
     bgcheck_date:$('cg-bgcheck').value,status:$('cg-status').value,notes:$('cg-notes').value.trim()};
   var list=caregivers();
   if(cgeid){list=list.map(function(x){return x.id===cgeid?rec:x;});}else{list.push(rec);}
-  var saved=st('sen_caregivers',list);
+  st('sen_caregivers',list);
   closeCaregiverModal();rCaregivers();rDash();
-  toast(saved?('Saved - '+rec.name):'Could not save -- storage may be full or unavailable, try again');
+  var syncResult=await senData('write','sen_caregivers',rec,true);
+  toast(syncResult?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
 }
 function rCaregivers(){
   var cg=caregivers();
+  var isMgmt=senIsManagement();
+  var newBtn=$('cg-new-btn');if(newBtn)newBtn.style.display=isMgmt?'inline-block':'none';
   var cgtb=$('cgtbody');
   cgtb.innerHTML=cg.length?cg.map(function(c){
     var days=certDaysUntil(c.cpr_expiry);
     var cprBadge=days===null?'--':(days<0?'<span class="badge br">Expired</span>':(days<=30?'<span class="badge bw">'+days+'d</span>':fdate(c.cpr_expiry)));
     return '<tr><td>'+H(c.name)+'</td><td>'+H(c.phone||'--')+'</td><td>'+cprBadge+'</td><td>'+fdate(c.bgcheck_date)+'</td>'+
       '<td><span class="badge '+(c.status==='active'?'bg':(c.status==='onboarding'?'bb':'bx'))+'">'+H(c.status)+'</span></td>'+
-      '<td><button class="btn bo bs" onclick="editCaregiver(\''+c.id+'\')">Edit</button></td></tr>';
+      '<td>'+(isMgmt?'<button class="btn bo bs" onclick="editCaregiver(\''+c.id+'\')">Edit</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No caregivers on file</td></tr>';
+}
+
+// ── SCHEDULING & VISITS (scheduling + EVV) ──────────────────────────────
+// One resource covers both halves, matching sql/sairnsenior_visits_schema
+// .sql's own reasoning: EVV verifies a scheduled visit, it isn't a
+// separate concept. Field-level write split enforced server-side in
+// api/sd-data.js's sen_visits branch -- scheduling fields writable by
+// management/coordinator/scheduler, EVV fields writable only by the
+// assigned caregiver. This client only ever sends the fields it has real
+// permission to change; the server is the actual boundary regardless.
+function visits(){return ld('sen_visits',[]);}
+function senIsScheduler(){return senIsBroadRead();} // same three roles as sen_clients' broad-read tier, plus management
+function senHydrateVisits(){
+  if(!senLicenseKey())return Promise.resolve(false);
+  return senData('read','sen_visits',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var local=visits();
+    var localIds={};
+    local.forEach(function(v){if(v&&v.id)localIds[v.id]=true;});
+    var added=false;
+    serverRows.forEach(function(v){
+      if(v&&v.id&&!localIds[v.id]){local.push(v);localIds[v.id]=true;added=true;}
+    });
+    if(added)st('sen_visits',local);
+    return added;
+  });
+}
+var _vsTab='schedule';
+function vsRenderKpis(){
+  var vs=visits();
+  var today=senLocalToday();
+  var todays=vs.filter(function(v){return v.scheduled_date===today;});
+  $('vs-kpi-row').innerHTML=
+    '<div class="kpi"><div class="klbl">Today\'s Visits</div><div class="kval">'+todays.length+'</div><div class="kt">Scheduled</div></div>'+
+    '<div class="kpi"><div class="klbl">Completed Today</div><div class="kval">'+todays.filter(function(v){return v.status==='completed';}).length+'</div><div class="kt">EVV-verified</div></div>'+
+    '<div class="kpi"><div class="klbl">In Progress</div><div class="kval">'+vs.filter(function(v){return v.status==='in_progress';}).length+'</div><div class="kt">Clocked in, not out</div></div>'+
+    '<div class="kpi"><div class="klbl">Missed</div><div class="kval">'+todays.filter(function(v){return v.status==='missed';}).length+'</div><div class="kt d">Today</div></div>';
+}
+function vsRender(){
+  vsHydrateAndRoster(function(){
+    vsRenderKpis();
+    vsShowTab(_vsTab);
+  });
+}
+function vsHydrateAndRoster(cb){
+  senHydrateVisits().then(function(){
+    if(senIsManagement()&&!_senRoster){senRefreshRoster(cb);}else{if(cb)cb();}
+  });
+}
+function vsShowTab(tab){
+  _vsTab=tab;
+  ['schedule','clock'].forEach(function(t){
+    var v=$('vs-view-'+t),b=$('vs-tab-'+t);
+    if(v)v.style.display=(t===tab?'block':'none');
+    if(b)b.className='btn '+(t===tab?'bp':'bo')+' bs';
+  });
+  if(tab==='schedule')renderScheduleView();
+  if(tab==='clock')renderClockView();
+}
+function renderScheduleView(){
+  var isSched=senIsScheduler();
+  var vs=visits().slice().sort(function(a,b){return (a.scheduled_date||'').localeCompare(b.scheduled_date||'');});
+  var statusColors={scheduled:'bb',in_progress:'bw',completed:'bg',missed:'br',cancelled:'bx'};
+  var rows=vs.length?vs.map(function(v){
+    return '<tr><td>'+H(v.client_name||v.client_id||'--')+'</td><td>'+H(senEmployeeName(v.assigned_employee_id))+'</td>'+
+      '<td>'+fdate(v.scheduled_date)+'</td><td>'+H(v.scheduled_start||'--')+' - '+H(v.scheduled_end||'--')+'</td>'+
+      '<td><span class="badge '+(statusColors[v.status]||'bx')+'">'+H(v.status||'scheduled')+'</span></td></tr>';
+  }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No visits scheduled</td></tr>';
+  var newBtn=isSched?'<button class="btn bp bs" onclick="openVisitModal()">+ New Visit</button>':'';
+  $('vs-view-schedule').innerHTML='<div class="card"><div class="ch"><span class="ct">All Visits</span><div class="pa" style="margin-left:auto">'+newBtn+'</div></div>'+
+    '<div class="cb"><div class="tw"><table><thead><tr><th>Client</th><th>Caregiver</th><th>Date</th><th>Time</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div></div></div>';
+}
+function renderClockView(){
+  var mine=visits().filter(function(v){return v.assigned_employee_id===((senSession&&senSession.employee_id)||'');});
+  var today=senLocalToday();
+  mine=mine.filter(function(v){return v.scheduled_date===today||v.status==='in_progress';});
+  var el=$('vs-view-clock');
+  if(!mine.length){el.innerHTML='<div class="card"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">No visits assigned to you today</div></div>';return;}
+  el.innerHTML=mine.map(function(v){
+    var canClockIn=!v.clock_in_at;
+    var canClockOut=v.clock_in_at&&!v.clock_out_at;
+    return '<div class="card"><div class="cb">'+
+      '<div style="font-weight:700;margin-bottom:4px">'+H(v.client_name||v.client_id||'Client')+'</div>'+
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Scheduled '+H(v.scheduled_start||'--')+' - '+H(v.scheduled_end||'--')+'</div>'+
+      (v.clock_in_at?'<div class="srow"><span class="slbl">Clocked in</span><span class="sval">'+new Date(v.clock_in_at).toLocaleTimeString()+'</span></div>':'')+
+      (v.clock_out_at?'<div class="srow"><span class="slbl">Clocked out</span><span class="sval">'+new Date(v.clock_out_at).toLocaleTimeString()+'</span></div>':'')+
+      (canClockIn?'<button class="btn bp" style="margin-top:10px" onclick="vsClockIn(\''+v.id+'\')">Clock In</button>':'')+
+      (canClockOut?'<div class="fg" style="margin-top:10px"><label>Services Performed</label><textarea id="vs-notes-'+v.id+'" rows="2"></textarea></div><button class="btn bp" onclick="vsClockOut(\''+v.id+'\')">Clock Out</button>':'')+
+      '</div></div>';
+  }).join('');
+}
+// Real GPS capture, honest fallback -- EVV's whole point is verifying the
+// caregiver was actually at the client's location, so a missing/denied
+// geolocation permission is disclosed (lat/lng left null), never faked.
+function vsGetPosition(){
+  return new Promise(function(resolve){
+    if(!navigator.geolocation){resolve(null);return;}
+    navigator.geolocation.getCurrentPosition(
+      function(pos){resolve({lat:pos.coords.latitude,lng:pos.coords.longitude});},
+      function(){resolve(null);},
+      {timeout:8000}
+    );
+  });
+}
+async function vsClockIn(id){
+  var pos=await vsGetPosition();
+  var payload={id:id,clock_in_at:new Date().toISOString(),status:'in_progress'};
+  if(pos){payload.clock_in_lat=pos.lat;payload.clock_in_lng=pos.lng;}
+  var saved=await senData('write','sen_visits',payload,true);
+  if(!saved){toast('Could not clock in -- check your connection and try again');return;}
+  var list=visits();
+  var v=list.find(function(x){return x.id===id;});
+  if(v)Object.assign(v,saved);
+  st('sen_visits',list);
+  toast(pos?'Clocked in (location captured)':'Clocked in -- location unavailable, flagged for review');
+  renderClockView();vsRenderKpis();
+}
+async function vsClockOut(id){
+  var pos=await vsGetPosition();
+  var notesEl=$('vs-notes-'+id);
+  var payload={id:id,clock_out_at:new Date().toISOString(),status:'completed',services_notes:(notesEl&&notesEl.value.trim())||''};
+  if(pos){payload.clock_out_lat=pos.lat;payload.clock_out_lng=pos.lng;}
+  var saved=await senData('write','sen_visits',payload,true);
+  if(!saved){toast('Could not clock out -- check your connection and try again');return;}
+  var list=visits();
+  var v=list.find(function(x){return x.id===id;});
+  if(v)Object.assign(v,saved);
+  st('sen_visits',list);
+  toast('Visit completed');
+  renderClockView();vsRenderKpis();
+}
+function openVisitModal(){
+  if(!senIsScheduler()){toast('Only scheduling staff can create a visit');return;}
+  var cl=clients();
+  $('vs-client').innerHTML=cl.map(function(c){return '<option value="'+H(c.id)+'">'+H(c.name)+'</option>';}).join('')||'<option value="">No clients on file</option>';
+  var sel=$('vs-caregiver');
+  if(_senRoster){sel.innerHTML='<option value="">Unassigned</option>'+_senRoster.map(function(e){return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';}).join('');}
+  $('vs-date').value='';$('vs-start').value='';$('vs-end').value='';
+  $('visitmodal').classList.add('on');
+}
+function closeVisitModal(){$('visitmodal').classList.remove('on');}
+async function saveVisit(){
+  var clientId=$('vs-client').value;
+  if(!clientId){toast('Select a client');return;}
+  var date=$('vs-date').value;
+  if(!date){toast('Select a date');return;}
+  var cl=clients().find(function(c){return c.id===clientId;});
+  var rec={id:newId('VS'),client_id:clientId,client_name:cl?cl.name:'',
+    scheduled_date:date,scheduled_start:$('vs-start').value,scheduled_end:$('vs-end').value,
+    assigned_employee_id:$('vs-caregiver').value||'',status:'scheduled'};
+  var list=visits();list.push(rec);st('sen_visits',list);
+  closeVisitModal();renderScheduleView();vsRenderKpis();
+  var saved=await senData('write','sen_visits',rec,true);
+  toast(saved?'Visit scheduled':'Saved on this device only -- server sync failed, try again with a connection');
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────
