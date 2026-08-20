@@ -1254,10 +1254,46 @@
 
                 <div style="font-weight:700;font-size:15px;margin:14px 0 8px;">Your control over this data</div>
                 <p style="margin-bottom:10px;">Every record has a delete control, and deletion is enforced server-side (a Compliance Admin session is required). Signing out clears your session from this device.</p>
-                <p style="margin-bottom:10px;"><b>Stated honestly:</b> there is no one-click "delete everything for this practice" function yet, and no automatic retention or expiry — records persist until deleted. Both are known gaps, not implied capabilities.</p>
+                <p style="margin-bottom:10px;"><b>Stated honestly:</b> there is no one-click "delete everything for this practice" function yet. Records persist until someone deletes them — see the retention setting below for what that means.</p>
+            </div>
 
-                <div style="font-weight:700;font-size:15px;margin:14px 0 8px;">Not legal advice</div>
-                <p style="margin-bottom:0;">This page describes how the software behaves. It is not a HIPAA compliance opinion and does not replace your practice's own agreements with SAIRN or with any third party named above.</p>
+            <!-- Data retention setting (2026-08-20, firewall audit layer 26).
+                 DELIBERATELY RECORDS A POLICY AND DELETES NOTHING. Michael's
+                 decision: scope the setting, leave the purge unwired until a
+                 real written retention policy exists on its own track.
+                 The copy below has to be unmissable about that -- a practice
+                 reading "Retention: 10 years" and assuming records ARE being
+                 purged at 10 years would be a false capability claim, which
+                 is the exact failure class this codebase has spent weeks
+                 removing. So the "no deletion happens" statement is the most
+                 prominent thing in the box, not a footnote. -->
+            <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;font-size:13px;line-height:1.65;max-width:900px;margin-top:16px">
+                <div style="font-weight:700;font-size:15px;margin-bottom:8px;">Data retention policy</div>
+
+                <div style="background:#fff;border:1px solid #fbbf24;border-radius:8px;padding:10px 14px;margin-bottom:12px;">
+                    <b>Nothing is automatically deleted today.</b> This setting records your practice's stated retention policy so it is written down and consistent. It does <b>not</b> purge, expire, or delete any record, and no scheduled deletion exists anywhere in SAIRNcode. Records persist until a person deletes them.
+                </div>
+
+                <p style="margin-bottom:10px;">Medical billing records are generally subject to long retention obligations that vary by state, by payer contract, and by record type. SAIRNcode does not attempt to determine yours — set this to match the policy your practice has actually adopted.</p>
+
+                <div class="toolbar" style="margin-bottom:8px;">
+                    <select id="retention-years">
+                        <option value="10">10 years (minimum)</option>
+                        <option value="15">15 years</option>
+                        <option value="20">20 years</option>
+                        <option value="25">25 years</option>
+                        <option value="30">30 years</option>
+                        <option value="indefinite">Indefinite — never purge</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="saveRetentionSetting()" id="retention-save-btn">Save Policy</button>
+                </div>
+                <div id="retention-status" style="font-size:12px;color:#666;"></div>
+                <p style="margin:10px 0 0;font-size:12px;color:#78350f;">The minimum is 10 years and cannot be set lower — enforced on the server, not just here. That floor exists precisely <i>because</i> no purge is built yet: whatever deletion mechanism is eventually built will inherit this value, long after anyone remembers choosing it.</p>
+            </div>
+
+            <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:16px 20px;font-size:13px;line-height:1.65;max-width:900px;margin-top:16px">
+                <div style="font-weight:700;font-size:15px;margin-bottom:8px;">Not legal advice</div>
+                <p style="margin-bottom:0;">This page describes how the software behaves. It is not a HIPAA compliance opinion, and it does not replace your practice's own agreements with SAIRN or with any third party named above.</p>
             </div>
         </div>
 
@@ -1472,7 +1508,13 @@
             color: '#F87171',
             license_prefix: 'SC-',
             demo_key: 'SC-PINNACLE-2026',
-            demo_pin: '1234',
+            // demo_pin removed 2026-08-20 (approved). It was dead config --
+            // defined here and never read anywhere in the file, left over
+            // from the pre-2026-08-18 hardcoded client-side PIN gate that
+            // api/sc-auth.js replaced with real per-employee credentials.
+            // Not exploitable (nothing consumed it), but it advertised a
+            // credential that looked live. Found by the 2026-08-20 firewall
+            // audit as a finding outside the 30 layers.
             demo_company: 'Pinnacle Medical Billing LLC',
             proxy: 'https://sairn.vercel.app/api/claude',
             supabase: 'https://ejrlrrkvhtllxbbypdjb.supabase.co',
@@ -3004,6 +3046,86 @@ How to answer:
         // write failed, surfaced honestly rather than implying a record
         // exists) and `injection_flagged`.
         // ================================================================
+        // ================================================================
+        // DATA RETENTION POLICY SETTING (2026-08-20, firewall audit layer 26)
+        //
+        // THIS DELETES NOTHING, BY DESIGN. It records the practice's stated
+        // retention policy to sc_settings so the number is written down,
+        // shared across devices, and available to a future purge mechanism.
+        // No purge, expiry, or scheduled deletion exists anywhere in
+        // SAIRNcode -- Michael's explicit decision (2026-08-20): scope the
+        // setting, leave the delete unwired until a real written retention
+        // policy exists on its own track.
+        //
+        // The 10-year floor is enforced SERVER-SIDE in api/sd-data.js's
+        // sc_settings write branch. The <select> below only offers valid
+        // values, but that is convenience, not the control -- the server
+        // rejects anything lower regardless of what the client sends.
+        // ================================================================
+        var SC_RETENTION_FLOOR_YEARS = 10;
+        var SC_RETENTION_DEFAULT = '10';
+
+        function getRetentionSetting() {
+            try {
+                var s = localStorage.getItem('sc_settings');
+                if (s) {
+                    var parsed = JSON.parse(s);
+                    var row = Array.isArray(parsed) ? parsed[0] : parsed;
+                    if (row && row.retention_years != null) return String(row.retention_years);
+                }
+            } catch (e) {}
+            return SC_RETENTION_DEFAULT;
+        }
+        function renderRetentionSetting() {
+            var sel = document.getElementById('retention-years');
+            var status = document.getElementById('retention-status');
+            if (!sel) return;
+            var current = getRetentionSetting();
+            // Only select a value the dropdown actually offers -- never
+            // silently coerce a stored value into a different one.
+            var found = false;
+            for (var i = 0; i < sel.options.length; i++) {
+                if (sel.options[i].value === current) { sel.selectedIndex = i; found = true; break; }
+            }
+            if (status) {
+                status.textContent = found
+                    ? ('Current policy: ' + (current === 'indefinite' ? 'never purge' : current + ' years') + '. No records are deleted by this setting.')
+                    : ('Stored policy value "' + current + '" is not one of the options below — it has not been changed.');
+            }
+        }
+        async function saveRetentionSetting() {
+            var sel = document.getElementById('retention-years');
+            var btn = document.getElementById('retention-save-btn');
+            var status = document.getElementById('retention-status');
+            var value = sel.value;
+            // Client-side floor check mirrors the server's, purely so an
+            // obviously-invalid value fails fast with a clear message. The
+            // server is the real gate.
+            if (value !== 'indefinite' && !(Number(value) >= SC_RETENTION_FLOOR_YEARS)) {
+                showToast('Retention cannot be set below ' + SC_RETENTION_FLOOR_YEARS + ' years');
+                return;
+            }
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                var rec = {
+                    id: 'default',
+                    retention_years: value === 'indefinite' ? 'indefinite' : Number(value),
+                    updated_at: new Date().toISOString()
+                };
+                try { localStorage.setItem('sc_settings', JSON.stringify([rec])); } catch (e) {}
+                var synced = await scData('write', 'sc_settings', rec);
+                renderRetentionSetting();
+                if (status && !synced) {
+                    status.textContent = 'Saved on this device only — server sync failed, so other devices will not see this policy yet.';
+                }
+                showToast(synced
+                    ? 'Retention policy saved — note this records the policy only, it does not delete anything'
+                    : 'Saved on this device only — server sync failed');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save Policy';
+            }
+        }
+
         // ── First-use AI consent (firewall audit layer 27) ──
         // Shown once per employee per device, before the first AI request
         // that employee makes. Deliberately a real blocking confirm on the
@@ -3997,6 +4119,7 @@ How to answer:
             renderScrubRules();
             renderDenialEvents();
             renderEligibility();
+            renderRetentionSetting();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -4252,7 +4375,11 @@ How to answer:
             // HISTORY log syncs like any other resource; the live 270/271
             // call itself goes through api/sc-eligibility.js and is never
             // cached here as authoritative.
-            sc_eligibility: 'sc_eligibility'
+            sc_eligibility: 'sc_eligibility',
+            // Added 2026-08-20 (retention policy setting) -- a single
+            // 'default' row per practice. Syncs like any other resource so
+            // the policy is consistent across devices.
+            sc_settings: 'sc_settings'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -4277,7 +4404,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {

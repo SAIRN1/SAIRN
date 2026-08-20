@@ -170,15 +170,31 @@ const RESOURCES = {
   // below, same reasoning as bld_bids/sdn_clients -- subject-based
   // visibility, not assignee-based, so it needed its own read/write logic
   // rather than reusing the bld_bids shape verbatim.
-  bld_tna: true
+  bld_tna: true,
+  // Per-practice SAIRNcode settings (2026-08-20, firewall audit layer 26) --
+  // the 20th SC_RESOURCES entry. Currently holds only the data-retention
+  // POLICY value. It does NOT cause any deletion: no purge or expiry
+  // mechanism exists in SAIRNcode, deliberately -- see
+  // sql/sairncode_settings_schema.sql's header. The retention floor is
+  // enforced in the write branch below precisely BECAUSE this value will one
+  // day drive irreversible deletion. REQUIRES
+  // sql/sairncode_settings_schema.sql to be run in Supabase.
+  sc_settings: true
 };
 
 const SC_RESOURCES = [
   'sc_denial', 'sc_revenue', 'sc_compliance', 'sc_fraud', 'sc_prebill',
   'sc_hcc', 'sc_drg', 'sc_query', 'sc_rac', 'sc_telehealth',
   'sc_anesthesia', 'sc_auth', 'sc_ar', 'sc_providers', 'sc_encoder', 'sc_claims', 'sc_scrubrules',
-  'sc_denial_events', 'sc_eligibility'
+  'sc_denial_events', 'sc_eligibility', 'sc_settings'
 ];
+// Minimum data-retention any SAIRNcode practice may configure, in years.
+// Enforced server-side rather than trusted from the client because a value
+// written today is inherited by whatever purge mechanism is built later -- a
+// tampered or mistaken small number here becomes real, irreversible medical-
+// record loss years from now, long after anyone remembers setting it. The
+// string 'indefinite' is the other valid value and means never purge.
+const SC_RETENTION_FLOOR_YEARS = 10;
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
 // from the caller's own verified token) is allowed for every role and does
@@ -275,7 +291,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, bld_bids, bld_tna' } });
+    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, bld_bids, bld_tna' } });
     return;
   }
 
@@ -2517,6 +2533,27 @@ module.exports = async (req, res) => {
       }
       if (action === 'write') {
         if (!payload || !payload.id) { res.status(400).json({ error: { message: 'payload.id is required' } }); return; }
+        // Retention floor guard (2026-08-20, firewall audit layer 26). Only
+        // applies to sc_settings; every other SC resource is unaffected.
+        // Enforced here rather than in the UI because this value is intended
+        // to drive a purge that does not exist yet -- by the time anything
+        // acts on it, nobody will remember who typed it, so a below-floor
+        // value must never reach storage in the first place.
+        if (resource === 'sc_settings' && Object.prototype.hasOwnProperty.call(payload, 'retention_years')) {
+          const rv = payload.retention_years;
+          const numeric = Number(rv);
+          const validIndefinite = rv === 'indefinite';
+          const validNumber = Number.isFinite(numeric) && numeric >= SC_RETENTION_FLOOR_YEARS;
+          if (!validIndefinite && !validNumber) {
+            res.status(400).json({
+              error: {
+                code: 'RETENTION_BELOW_FLOOR',
+                message: 'retention_years must be at least ' + SC_RETENTION_FLOOR_YEARS + ' years, or the string "indefinite".'
+              }
+            });
+            return;
+          }
+        }
         const r = await fetch(rest(resource + '?on_conflict=license_hash,entry_id'), {
           method: 'POST',
           headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
