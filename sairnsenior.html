@@ -218,7 +218,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128179;</span>Billing &amp; Claims</button>
       <div class="ss">Staff</div>
       <button class="sb" id="sb-caregivers" onclick="nav('caregivers')"><span class="sico">&#128119;</span>Caregivers</button>
+      <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="ss">Company</div>
+      <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
       <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Access</button>
       <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
       <div class="sfoot">SAIRNsenior v0.1 &middot; <span style="color:var(--p);font-weight:700;">Phase 1</span></div>
@@ -235,6 +237,13 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="kpi"><div class="klbl">Certs Expiring Soon</div><div class="kval" id="d-expiring">0</div><div class="kt">Within 30 days</div></div>
   </div>
   <div class="card"><div class="ch"><span class="ct">Needs Attention</span></div><div class="cb" id="d-attention"></div></div>
+  <!-- SAIRN Data Bridge (2026-08-20): reads the employee roster from
+       SAIRNbiz if the agency also subscribes to it -- generic cross-app
+       'employees' resource, same shared endpoint every other app this
+       session reads it through, no new server code. Honest degrade if
+       not licensed: this is NOT stored locally, and a null read means
+       exactly that, not an error to hide. -->
+  <div class="card"><div class="ch"><span class="ct">Crew (from SAIRNbiz)</span></div><div class="cb" id="d-crew"></div></div>
 </div>
 
 <!-- AI ASSISTANT -->
@@ -381,6 +390,39 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="btn bp" onclick="saveCaregiver()">Save Caregiver</button>
     </div>
   </div>
+</div>
+
+<!-- COMPLIANCE -->
+<div class="panel" id="panel-compliance">
+  <div class="ph"><div><div class="ptitle">Compliance</div><div class="psub">Caregiver certification status and EVV completion, computed live from real records</div></div></div>
+  <div class="card" id="cp-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">This view isn't shown to your role.</div></div>
+  <div id="cp-content">
+    <div class="krow" id="cp-kpi-row"></div>
+    <div class="card"><div class="ch"><span class="ct">Caregiver Certification Status</span></div><div class="cb">
+      <div class="tw"><table><thead><tr><th>Caregiver</th><th>CPR Expiry</th><th>Background Check</th><th>Status</th></tr></thead>
+      <tbody id="cp-certstbody"></tbody></table></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">EVV Exceptions</span></div><div class="cb">
+      <div class="note">Visits missing a GPS location on clock-in/out, or clocked-in with no clock-out yet -- these need review, same discipline every real EVV system applies (a missing location is disclosed, never silently treated as verified).</div>
+      <div class="tw"><table><thead><tr><th>Client</th><th>Caregiver</th><th>Date</th><th>Issue</th></tr></thead>
+      <tbody id="cp-evvtbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="panel" id="panel-reports">
+  <div class="ph"><div><div class="ptitle">Reports</div><div class="psub">Export real operational data -- nothing here is a placeholder</div></div></div>
+  <div class="card"><div class="cb">
+    <div class="fr">
+      <button class="btn bo" onclick="exportCsv('clients')">Export Clients CSV</button>
+      <button class="btn bo" onclick="exportCsv('caregivers')">Export Caregivers CSV</button>
+    </div>
+    <div class="fr" style="margin-top:10px">
+      <button class="btn bo" onclick="exportCsv('visits')">Export Visits CSV</button>
+      <button class="btn bo" id="rp-claims-btn" onclick="exportCsv('claims')" style="display:none">Export Claims CSV</button>
+    </div>
+  </div></div>
 </div>
 
 <!-- SECURITY & ACCESS -->
@@ -618,6 +660,8 @@ function nav(id){
   if(id==='caregivers')rCaregivers();
   if(id==='scheduling')vsRender();
   if(id==='billing')blRender();
+  if(id==='compliance')cpRender();
+  if(id==='reports')rpRender();
   if(id==='settings')rSettings();
 }
 
@@ -686,8 +730,29 @@ function rDash(){
   soon.forEach(function(c){att.push({t:H(c.name)+' — CPR expires '+fdate(c.cpr_expiry),b:'Expiring',c:'bw'});});
   cl.filter(function(c){return c.status==='intake';}).forEach(function(c){att.push({t:H(c.name)+' — intake in progress',b:'Intake',c:'bb'});});
   $('d-attention').innerHTML=att.length?att.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
+  rCrew();
 }
 function certDaysUntil(d){if(!d)return null;var diff=(new Date(d+'T00:00:00')-new Date(senLocalToday()+'T00:00:00'))/86400000;return Math.round(diff);}
+// Crew comes from SAIRNbiz's employees roster via /api/sd-data -- it is
+// deliberately NOT seeded locally. Seeding fake crew would fabricate a
+// cross-app sync that has not happened. Until a real SEN- license is
+// provisioned this returns null and the panel says so honestly, same
+// disclosure as SAIRNbuild's identical rCrew().
+function rCrew(){
+  var el=$('d-crew');
+  if(!el)return;
+  el.innerHTML='<div style="color:var(--muted);text-align:center;padding:12px;">Loading crew from SAIRNbiz&hellip;</div>';
+  senData('read','employees',{}).then(function(rows){
+    if(rows===null){
+      el.innerHTML='<div class="note" style="margin:0">Crew is read live from SAIRNbiz and is <strong>not</strong> stored here. No validated license is provisioned for SAIRNsenior yet, so this read fails and the list is genuinely empty &mdash; not hidden, not seeded.</div>';
+      return;
+    }
+    if(!rows.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:12px;">No active crew on the SAIRNbiz roster</div>';return;}
+    el.innerHTML=rows.map(function(e){
+      return '<div class="srow"><span class="slbl">'+H((e.first_name||'')+' '+(e.last_name||''))+'</span><span class="sval" style="font-size:12px;color:var(--muted)">'+H(e.role||'')+'</span></div>';
+    }).join('');
+  });
+}
 
 // ── CLIENTS (HIPAA minimum-necessary privacy gate) ──────────────────────
 function clients(){return ld('sen_clients',[]);}
@@ -1210,6 +1275,83 @@ function confirmClaimAction(){
 }
 function blSubmitClaim(id){blUpdateClaim(id,{status:'submitted',submitted_date:senLocalToday()});}
 function blMarkPaid(id){blUpdateClaim(id,{status:'paid'});}
+
+// ── COMPLIANCE ────────────────────────────────────────────────────────────
+// Broad-read tier only (owner/billing/coordinator/scheduler) -- caregiver
+// certification status and EVV exceptions are operational/employment
+// data a coordinator/scheduler genuinely needs to schedule around, not
+// client PHI, but still not something a caregiver needs to see about
+// their peers. Computed entirely from data already fetched for the
+// Caregivers/Scheduling panels -- no new resource, no new server code.
+function cpRender(){
+  var ok=senIsBroadRead();
+  var denied=$('cp-denied'),content=$('cp-content');
+  if(denied)denied.style.display=ok?'none':'block';
+  if(content)content.style.display=ok?'block':'none';
+  if(!ok)return;
+  var cg=caregivers();
+  var expiring=cg.filter(function(c){var d=certDaysUntil(c.cpr_expiry);return d!==null&&d>=0&&d<=30;});
+  var expired=cg.filter(function(c){var d=certDaysUntil(c.cpr_expiry);return d!==null&&d<0;});
+  var vs=visits();
+  var last30=vs.filter(function(v){var d=certDaysUntil(v.scheduled_date);return d!==null&&d<=0&&d>=-30;});
+  var completed30=last30.filter(function(v){return v.status==='completed';});
+  var evvRate=last30.length?Math.round((completed30.length/last30.length)*100):null;
+  var exceptions=vs.filter(function(v){
+    return (v.clock_in_at&&!v.clock_out_at&&v.status==='in_progress')||
+           (v.clock_in_at&&(!v.clock_in_lat||v.clock_in_lat==null))||
+           (v.clock_out_at&&(!v.clock_out_lat||v.clock_out_lat==null));
+  });
+  $('cp-kpi-row').innerHTML=
+    '<div class="kpi"><div class="klbl">Certs Expiring (30d)</div><div class="kval">'+expiring.length+'</div><div class="kt">Caregivers</div></div>'+
+    '<div class="kpi"><div class="klbl">Certs Expired</div><div class="kval">'+expired.length+'</div><div class="kt d">Needs immediate action</div></div>'+
+    '<div class="kpi"><div class="klbl">EVV Completion (30d)</div><div class="kval">'+(evvRate===null?'--':evvRate+'%')+'</div><div class="kt">'+(last30.length?last30.length+' visits scheduled':'No visits in range')+'</div></div>'+
+    '<div class="kpi"><div class="klbl">EVV Exceptions</div><div class="kval">'+exceptions.length+'</div><div class="kt d">Missing GPS or open clock-in</div></div>';
+  var ctb=$('cp-certstbody');
+  ctb.innerHTML=cg.length?cg.map(function(c){
+    var d=certDaysUntil(c.cpr_expiry);
+    var status=d===null?'--':(d<0?'<span class="badge br">Expired</span>':(d<=30?'<span class="badge bw">Expiring</span>':'<span class="badge bg">Current</span>'));
+    return '<tr><td>'+H(c.name)+'</td><td>'+fdate(c.cpr_expiry)+'</td><td>'+fdate(c.bgcheck_date)+'</td><td>'+status+'</td></tr>';
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No caregivers on file</td></tr>';
+  var etb=$('cp-evvtbody');
+  etb.innerHTML=exceptions.length?exceptions.map(function(v){
+    var issue=(v.clock_in_at&&!v.clock_out_at&&v.status==='in_progress')?'Clocked in, never clocked out'
+      :(v.clock_in_at&&!v.clock_in_lat)?'No GPS on clock-in'
+      :'No GPS on clock-out';
+    return '<tr><td>'+H(v.client_name||'--')+'</td><td>'+H(senEmployeeName(v.assigned_employee_id))+'</td><td>'+fdate(v.scheduled_date)+'</td><td><span class="badge bw">'+H(issue)+'</span></td></tr>';
+  }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No EVV exceptions</td></tr>';
+}
+
+// ── REPORTS ───────────────────────────────────────────────────────────────
+function rpRender(){
+  var btn=$('rp-claims-btn');if(btn)btn.style.display=senIsManagement()?'inline-block':'none';
+}
+// Generic CSV export -- real data only, same "export exactly what's on
+// screen" discipline as every other SAIRN app's csv() helper. No server
+// call: exports whatever this session's already-scoped local cache holds,
+// so a caregiver exporting "visits" only ever gets their own, matching
+// the same privacy boundary the read endpoints already enforce.
+function exportCsv(type){
+  var rows=[],headers=[];
+  if(type==='clients'){headers=['Name','Phone','Address','Payer','Authorized Hours','Status'];rows=clients().map(function(c){return [c.name,c.phone,c.address,c.payer,c.authorized_hours,c.status];});}
+  else if(type==='caregivers'){headers=['Name','Phone','CPR Expiry','Background Check','Status'];rows=caregivers().map(function(c){return [c.name,c.phone,c.cpr_expiry,c.bgcheck_date,c.status];});}
+  else if(type==='visits'){headers=['Client','Caregiver','Date','Start','End','Status'];rows=visits().map(function(v){return [v.client_name,senEmployeeName(v.assigned_employee_id),v.scheduled_date,v.scheduled_start,v.scheduled_end,v.status];});}
+  else if(type==='claims'){
+    if(!senIsManagement()){toast('Only management can export claims');return;}
+    headers=['Client','Service Date','Payer','Hours Billed','Rate','Amount','Status'];
+    rows=claims().map(function(c){return [c.client_name,c.service_date,c.payer,c.hours_billed,c.rate,c.amount,c.status];});
+  }
+  if(!rows.length){toast('No data to export');return;}
+  var csvText=[headers.join(',')].concat(rows.map(function(r){
+    return r.map(function(v){var s=String(v==null?'':v);return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(',');
+  })).join('\n');
+  var blob=new Blob([csvText],{type:'text/csv'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='sairnsenior_'+type+'_'+senLocalToday()+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Exported '+rows.length+' rows');
+}
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────
 function senAgency(){return ld('sen_agency',{agency_name:'SAIRNsenior',demo_company:'Lakeshore Home Care'});}
