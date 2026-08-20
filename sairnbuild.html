@@ -7707,16 +7707,20 @@ function tnaLoad(){
     return _tnaData;
   });
 }
+function tnaRenderKpis(){
+  var isMgmt=bldIsManagement();
+  var mine=tnaMyRows();
+  $('tna-kpi-row').innerHTML=
+    '<div class="kpi"><div class="klbl">My Self-Assessment</div><div class="kval" style="font-size:16px">'+(mine.self?'Complete':'Not started')+'</div><div class="kt">Update anytime</div></div>'+
+    '<div class="kpi"><div class="klbl">Manager Assessment</div><div class="kval" style="font-size:16px">'+(mine.management?'On file':'Not yet')+'</div><div class="kt">From your manager</div></div>'+
+    (isMgmt?'<div class="kpi"><div class="klbl">Team Assessed</div><div class="kval">'+(_tnaData||[]).filter(function(r){return r.perspective==='management';}).length+'</div><div class="kt">Management assessments on file</div></div>':'');
+}
 function tnaRender(){
   var isMgmt=bldIsManagement();
   $('tna-tab-assess').style.display=isMgmt?'inline-block':'none';
   $('tna-tab-team').style.display=isMgmt?'inline-block':'none';
   tnaLoad().then(function(){
-    var mine=tnaMyRows();
-    $('tna-kpi-row').innerHTML=
-      '<div class="kpi"><div class="klbl">My Self-Assessment</div><div class="kval" style="font-size:16px">'+(mine.self?'Complete':'Not started')+'</div><div class="kt">Update anytime</div></div>'+
-      '<div class="kpi"><div class="klbl">Manager Assessment</div><div class="kval" style="font-size:16px">'+(mine.management?'On file':'Not yet')+'</div><div class="kt">From your manager</div></div>'+
-      (isMgmt?'<div class="kpi"><div class="klbl">Team Assessed</div><div class="kval">'+(_tnaData||[]).filter(function(r){return r.perspective==='management';}).length+'</div><div class="kt">Management assessments on file</div></div>':'');
+    tnaRenderKpis();
     tnaShowTab(_tnaTab);
   });
 }
@@ -7787,6 +7791,7 @@ async function saveTnaSelf(){
   if(!saved){if(m){m.style.color='var(--danger)';m.textContent='Could not save -- check your connection and try again.';}return;}
   toast('Self-assessment saved');
   await tnaLoad();
+  tnaRenderKpis();
   renderTnaSelfView();
 }
 function renderTnaResultsHtml(selfRow,mgmtRow){
@@ -7845,6 +7850,7 @@ async function saveTnaManagement(){
   if(!saved){if(m){m.style.color='var(--danger)';m.textContent='Could not save -- check your connection and try again.';}return;}
   toast('Assessment saved for '+bldEmployeeName(_tnaAssessSubject));
   await tnaLoad();
+  tnaRenderKpis();
   renderTnaAssessView();
 }
 
@@ -7927,6 +7933,7 @@ async function saveDisc(){
   if(!saved){var m2=$('disc-msg');if(m2){m2.style.color='var(--danger)';m2.textContent='Could not save -- check your connection and try again.';}return;}
   toast('Communication style saved');
   await tnaLoad();
+  tnaRenderKpis();
   renderTnaSelfView();
 }
 
