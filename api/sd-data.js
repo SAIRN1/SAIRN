@@ -2962,6 +2962,45 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
       return;
     }
+    // SAIRNlaw deadlines (2026-08-21) -- FIXING A REAL PRE-EXISTING BREAK.
+    // sairnlaw.html has called sdnData('write','law_deadlines') since before
+    // this change against a resource with no branch here, so production
+    // answered 400 while law_matters answered 200. It failed honestly (the
+    // client toast says "server sync not yet enabled") but every deadline
+    // lived on one browser and was lost with the profile.
+    //
+    // NOTE FOR THE NEXT PERSON ADDING A RESOURCE: registering the name in
+    // api/_resources/<app>.js is NECESSARY BUT NOT SUFFICIENT. A registered
+    // name with no branch passes the allowlist and then falls through to
+    // "Unsupported action/resource combination" -- which is exactly what
+    // law_deadlines returned until this branch existed. The registry split
+    // removed the shared-map collision; it did not remove the handler.
+    //
+    // Same generic shape as the sc_* family: one row per entry, license_hash
+    // scoped, jsonb data, keyed on entry_id. Deadlines carry no cross-record
+    // invariant that would need a bespoke gate (unlike law_trusttx's balance
+    // check), so the plain shape is correct here rather than under-built.
+    if (resource === 'law_deadlines' && action === 'read') {
+      const r = await fetch(rest('law_deadlines?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'law_deadlines' && action === 'write') {
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'law_deadlines payload.id is required' } }); return; }
+      const r = await fetch(rest('law_deadlines?on_conflict=license_hash,entry_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', entry_id: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw deadline tables are not set up yet \u2014 run sql/sairnlaw_deadline_rules_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
     if (resource === 'law_trusttx' && action === 'read') {
       const r = await fetch(rest('law_trusttx?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
