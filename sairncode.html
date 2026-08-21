@@ -5007,6 +5007,31 @@ How to answer:
             if (start === -1 || end === -1 || end < start) return null;
             try { return JSON.parse(text.slice(start, end + 1)); } catch(e) { return null; }
         }
+        // Cross-checks an AI-suggested code against the same local/free
+        // grounding tiers already proven by runClaimScrub()/
+        // runCodeAwarenessLookup() -- Tier 1 (this practice's own connected
+        // sc_encoder reference) checked first regardless of type, then
+        // Tier 2 (NLM's free public ICD-10-CM database) for ICD-10 only,
+        // since that's the only type with a live free per-code lookup (see
+        // the "Connect Your Licensed Code Data" comment above
+        // findLocalEncoderMatch for why CPT/CDT/HCPCS have none). An
+        // unconnected practice (no CPT/CDT rows at all yet) gets
+        // 'unconnected' rather than 'none' for those types -- there is
+        // nothing real to check against yet, so no "not found" warning is
+        // shown, matching current (pre-grounding) behavior exactly.
+        async function groundSuggestedCode(code, type){
+            if (!code) return { source: 'none' };
+            var local = findLocalEncoderMatch(code);
+            if (local) return { source: 'local' };
+            var t = (type || '').toUpperCase();
+            if (t === 'ICD-10') {
+                var nlm = await findIcd10Match(code);
+                if (nlm && normalizeForMatch(nlm.code) === normalizeForMatch(code)) return { source: 'nlm' };
+                return { source: 'none' };
+            }
+            var hasConnectedRef = getEncoderCodes().some(function(c){ return c.type === 'CPT' || c.type === 'CDT'; });
+            return { source: hasConnectedRef ? 'none' : 'unconnected' };
+        }
         async function suggestCodesFromNote(){
             var noteText = document.getElementById('note-input').value;
             var resultEl = document.getElementById('note-suggest-result');
@@ -5052,14 +5077,29 @@ How to answer:
                 // the DOM afterwards (where escaping/truncation would have
                 // already changed the text).
                 window._scLastSuggestions = suggestions;
-                suggestions.forEach(function(s, idx){
+                // Independent second check -- groundSuggestedCode() verifies
+                // the CODE ITSELF against the practice's connected reference
+                // and/or the free NLM ICD-10-CM database, separate from the
+                // note-quote check above which only verifies the supporting
+                // QUOTE is real. A suggestion can be verified in the note but
+                // still be an unrecognized code, or vice versa -- both facts
+                // are shown, neither is inferred from the other.
+                var groundings = await Promise.all(suggestions.map(function(s){ return groundSuggestedCode(s.code, s.type); }));
+                for (var idx = 0; idx < suggestions.length; idx++) {
+                    var s = suggestions[idx];
                     var verified = quoteFoundInNote(s.quote, noteText);
                     s._verified = verified;
                     var badge = verified
                         ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">✓ Verified in note</span>'
                         : '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">⚠ Citation not found in note text</span>';
+                    var g = groundings[idx];
+                    s._grounding = g;
+                    var groundBadge = '';
+                    if (g && g.source === 'local') groundBadge = ' <span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">✓ Verified against your connected reference</span>';
+                    else if (g && g.source === 'nlm') groundBadge = ' <span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">✓ Found in NLM ICD-10-CM</span>';
+                    else if (g && g.source === 'none') groundBadge = ' <span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">⚠ Code not found — verify manually</span>';
                     html += '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:8px;font-size:13px;">'
-                        + '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+escHtml(s.code||'(no code)')+'</b> <span style="color:#666;font-size:11px;">'+escHtml(s.type||'')+'</span> '+badge+'</div>'
+                        + '<div style="display:flex;justify-content:space-between;align-items:center;"><b>'+escHtml(s.code||'(no code)')+'</b> <span style="color:#666;font-size:11px;">'+escHtml(s.type||'')+'</span> '+badge+groundBadge+'</div>'
                         + '<div style="margin-top:6px;font-style:italic;color:#374151;">"'+escHtml(s.quote||'')+'"</div>'
                         + '<div style="margin-top:6px;color:#111;">'+escHtml(s.reasoning||'')+'</div>'
                         + '<div style="margin-top:8px;display:flex;gap:6px;align-items:center;">'
@@ -5067,7 +5107,7 @@ How to answer:
                         +   '<button class="btn" style="padding:4px 10px;" onclick="captureSuggestion('+idx+')">Capture with citation</button>'
                         + '</div>'
                         + '</div>';
-                });
+                }
                 resultEl.innerHTML = html;
             } catch (e) {
                 resultEl.innerHTML = '<div style="font-size:12px;color:#991b1b">Connection error -- could not analyze this note.</div>';
