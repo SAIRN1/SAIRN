@@ -21,7 +21,7 @@ const { validateLicenseKey } = require('./_lib/license');
 const { tokenFromRequest, verifySessionToken } = require('./_lib/auth');
 const { writeAuditLog } = require('./_lib/audit');
 const { sbClient } = require('./_lib/courtlistener');
-const { computeDeadline, COMPUTATION_STANDARDS } = require('./_lib/deadline-engine');
+const { computeDeadline, COMPUTATION_STANDARDS, SERVICE_EXTENSION_STANDARDS } = require('./_lib/deadline-engine');
 
 const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
 
@@ -33,6 +33,32 @@ function validateRulePayload(p) {
   const need = ['rule_id', 'jurisdiction', 'domain', 'trigger_event', 'count', 'computation', 'effective_from'];
   for (const k of need) {
     if (!p[k]) return 'Missing required field: ' + k;
+  }
+  // trigger_event is either a plain event name, or a multi-trigger spec for a
+  // rule that runs from the later/earlier of several events (FRAP 4(b)(1)(A),
+  // FRCP 12(a)(3)). A malformed spec is rejected rather than stored, because a
+  // multi-trigger rule that silently degrades to one trigger produces a date
+  // that is wrong in the direction that loses a right.
+  if (typeof p.trigger_event !== 'string') {
+    const t = p.trigger_event;
+    if (!t || !Array.isArray(t.events) || t.events.length < 2) {
+      return 'trigger_event must be an event name, or a multi-trigger spec with at least two events.';
+    }
+    if (t.resolve !== 'later_of' && t.resolve !== 'earlier_of') {
+      return 'A multi-trigger spec needs resolve: "later_of" or "earlier_of".';
+    }
+    if (!t.id) return 'A multi-trigger spec needs an id so the rule can be referred to as a whole.';
+  }
+  // A retrigger clause REPLACES the trigger; it does not add days. Validated
+  // separately from service_extension for exactly that reason -- the two are
+  // different mechanisms and conflating them misstates the rule.
+  if (p.retrigger) {
+    const rt = p.retrigger;
+    if (!Array.isArray(rt.on_events) || !rt.on_events.length) {
+      return 'retrigger.on_events must list the events that restart the period.';
+    }
+    if (!rt.substitute_trigger) return 'retrigger.substitute_trigger is required — name the event the period then runs from.';
+    if (rt.add || rt.days) return 'retrigger must not specify days to add. A retrigger replaces the trigger date; use service_extension if days are genuinely added.';
   }
   if (!COMPUTATION_STANDARDS[p.computation]) {
     return 'computation must be one of: ' + Object.keys(COMPUTATION_STANDARDS).join(', ');
@@ -47,6 +73,20 @@ function validateRulePayload(p) {
   if (['forward', 'backward'].indexOf(c.direction) === -1) {
     return 'count.direction must be forward or backward.';
   }
+  // A rule may only name a service-extension standard the engine implements.
+  // Storing an unknown one is allowed to FAIL at compute time (visibly, as
+  // refused_unknown_standard), but rejecting it here stops the bad row from
+  // being written in the first place.
+  if (p.service_extension) {
+    const se = p.service_extension;
+    if (!se.standard) return 'service_extension.standard is required (e.g. frcp_6d, frap_26c).';
+    if (!SERVICE_EXTENSION_STANDARDS[se.standard]) {
+      return 'service_extension.standard must be one of: ' + Object.keys(SERVICE_EXTENSION_STANDARDS).join(', ') +
+        '. FRCP 6(d) and FRAP 26(c) are differently shaped — 6(d) is an enumerated allowlist, 26(c) is a negative condition excluding electronic service — so a standard the engine does not implement cannot be evaluated.';
+    }
+    if (typeof se.add !== 'number') return 'service_extension.add must be a number of days.';
+  }
+
   // The requirement that makes this table trustworthy.
   if (!p.authority || !p.authority.citation || !p.authority.url) {
     return 'authority.citation and authority.url are both required -- a deadline rule with no traceable source must not be stored.';
@@ -194,7 +234,11 @@ module.exports = async (req, res) => {
       }
       const result = computeDeadline({
         trigger_date: body.trigger_date,
+        // Multi-trigger rules take their dates here instead of trigger_date.
+        trigger_dates: body.trigger_dates,
         trigger_event: body.trigger_event,
+        // Qualifying motions that REPLACE the trigger (FRAP 4(a)(4)(A)).
+        retrigger_events: body.retrigger_events,
         jurisdiction: body.jurisdiction,
         domain: body.domain,
         service_method: body.service_method,
@@ -203,14 +247,22 @@ module.exports = async (req, res) => {
       });
       await audit({ action: 'compute', jurisdiction: body.jurisdiction, domain: body.domain,
         trigger_event: body.trigger_event, trigger_date: body.trigger_date,
-        ok: !!result.ok, code: result.code || null, due_date: result.due_date || null });
+        ok: !!result.ok, code: result.code || null, due_date: result.due_date || null,
+        service_extension_state: (result.service_extension && result.service_extension.state) || null,
+        retriggered: !!(result.steps || []).some((st) => st.step === 'trigger_substitution') });
       // A refusal is a 200-level *answer* only when it is a data-coverage
       // statement the user can act on; genuine gaps are 503 so a caller cannot
       // mistake "not loaded" for "no deadline".
       const status = result.ok ? 200
         : (result.code === 'NOT_PROVISIONED' ? 503
-          : ['NO_MATCHING_RULE', 'NO_RULE_IN_FORCE', 'AMBIGUOUS_RULE', 'UNKNOWN_STANDARD', 'UNKNOWN_UNIT'].indexOf(result.code) !== -1 ? 409
-            : 400);
+          : ['NO_MATCHING_RULE', 'NO_RULE_IN_FORCE', 'AMBIGUOUS_RULE', 'UNKNOWN_STANDARD', 'UNKNOWN_UNIT', 'BAD_RULE_TRIGGER'].indexOf(result.code) !== -1 ? 409
+            // INCOMPLETE_TRIGGERS and MOTION_PENDING are 422: the request is
+            // well-formed and the rule is loaded, but the facts needed to run
+            // the clock are not all present yet. That is a different thing
+            // from a bad request and from missing rule data, and a caller
+            // should be able to tell them apart.
+            : ['INCOMPLETE_TRIGGERS', 'MOTION_PENDING'].indexOf(result.code) !== -1 ? 422
+              : 400);
       res.status(status).json(result);
       return;
     }

@@ -124,7 +124,145 @@ var COMPUTATION_STANDARDS = {
   bankr_9006a: { label: 'Fed. R. Bankr. P. 9006(a)', impl: 'frcp_6a' }
 };
 
+// ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
+// PREVIOUSLY A SINGLE GLOBAL ALLOWLIST, which was a latent defect: it held
+// only the FRCP three and gated EVERY rule against them, so a FRAP rule whose
+// own applies_when named a non-electronic method got no extension and reported
+// service_extension_applied:false -- indistinguishable from "no extension was
+// requested". It failed safe (an earlier date) but silently, which is the part
+// that made it a defect rather than a conservative default.
+//
+// The two standards are not the same SHAPE, and that is why one allowlist
+// could never serve both:
+//   FRCP 6(d)  -- an ENUMERATED allowlist: mail, left with the clerk, other
+//                 consented means.
+//   FRAP 26(c) -- a NEGATIVE condition: 3 days are added when a paper is NOT
+//                 served electronically. Electronic service is the exclusion,
+//                 not the inclusion.
+// Encoding the second as a list of "everything except electronic" would be a
+// guess at the membership of that set. Each standard therefore carries its own
+// predicate, and a rule naming a standard this engine does not implement is
+// REFUSED VISIBLY rather than silently not extended.
+var SERVICE_EXTENSION_STANDARDS = {
+  frcp_6d: {
+    label: 'Fed. R. Civ. P. 6(d)',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail' || method === 'left_with_clerk' || method === 'other_consented_means';
+    }
+  },
+  frap_26c: {
+    label: 'Fed. R. App. P. 26(c)',
+    shape: 'negative_condition',
+    qualifies: function (method) {
+      // "3 days are added after the period would otherwise expire" when the
+      // paper is NOT served electronically. Anything explicitly electronic is
+      // excluded; an unstated method cannot be assumed non-electronic.
+      if (!method) return false;
+      return method !== 'electronic' && method !== 'electronic_service';
+    }
+  }
+};
+
+// Retained as a read-only description of the FRCP set for callers and tests.
+// NO LONGER used as a gate -- gating is per-standard above.
 var SERVICE_METHODS_EXTENDING = { mail: true, left_with_clerk: true, other_consented_means: true };
+
+// ── Multi-trigger resolution (Phase 2, Gap 1) ─────────────────────────────
+// Some periods run from "the later of" two events -- FRAP 4(b)(1)(A) (14 days
+// after the later of entry of judgment or the government's notice of appeal)
+// and FRCP 12(a)(3) (60 days after service on the officer or on the US
+// attorney, whichever is later) are the two this unlocks.
+//
+// REFUSES ON PARTIAL INPUT, deliberately. If only one of the named events has
+// a date, the engine does NOT quietly fall back to single-trigger behaviour --
+// that is precisely how such a rule computes a date that is too early roughly
+// half the time, and too early is the direction that loses a right.
+function resolveTrigger(rule, input) {
+  var spec = rule.trigger_event;
+
+  // Single-trigger rules: unchanged behaviour.
+  if (typeof spec === 'string') {
+    if (!toUTC(input.trigger_date)) {
+      return { ok: false, code: 'BAD_TRIGGER_DATE', message: 'A trigger date in YYYY-MM-DD form is required.' };
+    }
+    return { ok: true, date: input.trigger_date, resolution: null };
+  }
+
+  if (!spec || !spec.resolve || !Array.isArray(spec.events) || spec.events.length < 2) {
+    return { ok: false, code: 'BAD_RULE_TRIGGER', message: 'Rule ' + rule.rule_id + ' has a malformed multi-trigger specification.' };
+  }
+  if (spec.resolve !== 'later_of' && spec.resolve !== 'earlier_of') {
+    return { ok: false, code: 'BAD_RULE_TRIGGER', message: 'Rule ' + rule.rule_id + ' uses resolve "' + spec.resolve + '"; only later_of and earlier_of are implemented.' };
+  }
+
+  var supplied = input.trigger_dates || {};
+  var missing = spec.events.filter(function (e) { return !toUTC(supplied[e]); });
+  if (missing.length) {
+    return {
+      ok: false, code: 'INCOMPLETE_TRIGGERS',
+      message: 'This rule runs from the ' + spec.resolve.replace('_', ' ') + ' ' + spec.events.length +
+        ' events, and ' + missing.length + ' of them has no date recorded. No deadline is computed from a partial set — ' +
+        'resolving it from the events supplied would produce a date that is ' +
+        (spec.resolve === 'later_of' ? 'too early' : 'too late') + ' whenever the missing event governs.',
+      required_events: spec.events, missing_events: missing
+    };
+  }
+
+  var dates = spec.events.map(function (e) { return supplied[e]; }).sort();
+  var chosen = spec.resolve === 'later_of' ? dates[dates.length - 1] : dates[0];
+  var governing = spec.events.filter(function (e) { return supplied[e] === chosen; });
+  return {
+    ok: true, date: chosen,
+    resolution: { resolve: spec.resolve, events: spec.events, supplied: supplied, governing_event: governing[0] }
+  };
+}
+
+// ── Trigger substitution (Phase 2, Gap 2) ─────────────────────────────────
+// FRAP 4(a)(4)(A): a qualifying post-judgment motion does NOT extend the
+// appeal period. It REPLACES the trigger -- "the time to file an appeal runs
+// for all parties from the entry of the order disposing of the last such
+// remaining motion."
+//
+// This function returns a NEW TRIGGER DATE and never a number of days, so the
+// distinction is enforced by the type it returns rather than by a comment. A
+// future maintainer cannot accidentally route this through the extension path,
+// because the extension path consumes a day count and this produces a date.
+//
+// REFUSES when a qualifying motion is recorded as pending but undisposed: the
+// period genuinely has not begun, and any date would be invented.
+function applyRetrigger(rule, currentTriggerDate, input) {
+  var spec = rule.retrigger;
+  if (!spec) return { ok: true, date: currentTriggerDate, retriggered: false };
+
+  var events = input.retrigger_events || [];
+  var qualifying = events.filter(function (e) {
+    return (spec.on_events || []).indexOf(e.event) !== -1;
+  });
+  if (!qualifying.length) return { ok: true, date: currentTriggerDate, retriggered: false };
+
+  var undisposed = qualifying.filter(function (e) { return !toUTC(e.disposition_date); });
+  if (undisposed.length) {
+    return {
+      ok: false, code: 'MOTION_PENDING',
+      message: undisposed.length + ' qualifying motion' + (undisposed.length === 1 ? ' is' : 's are') +
+        ' recorded as pending with no disposition date. Under this rule the period runs from the disposition of the last such motion, so it has not started yet — no date is computed rather than one being estimated.',
+      pending: undisposed.map(function (e) { return e.event; }),
+      authority: spec.authority || null
+    };
+  }
+
+  // "the last such remaining motion" -- the latest disposition governs.
+  var dispositions = qualifying.map(function (e) { return e.disposition_date; }).sort();
+  var last = dispositions[dispositions.length - 1];
+  return {
+    ok: true, date: last, retriggered: true,
+    replaced: currentTriggerDate,
+    substitute_trigger: spec.substitute_trigger || 'disposition_of_last_qualifying_motion',
+    motions: qualifying.map(function (e) { return e.event; }),
+    authority: spec.authority || null
+  };
+}
 
 // ── The engine ────────────────────────────────────────────────────────────
 // input: {
@@ -133,13 +271,17 @@ var SERVICE_METHODS_EXTENDING = { mail: true, left_with_clerk: true, other_conse
 // }
 function computeDeadline(input) {
   input = input || {};
-  var triggerDate = input.trigger_date;
-  if (!toUTC(triggerDate)) {
-    return { ok: false, code: 'BAD_TRIGGER_DATE', message: 'A trigger date in YYYY-MM-DD form is required. Nothing is computed from today’s date.' };
-  }
+  // A trigger DATE is validated later, per-rule, because a multi-trigger rule
+  // takes its dates from trigger_dates rather than trigger_date. What is
+  // required unconditionally is knowing WHICH event started the clock -- the
+  // engine never infers that, and never falls back to today.
   if (!input.trigger_event) {
     return { ok: false, code: 'NO_TRIGGER_EVENT', message: 'A trigger event is required. The engine never infers what started the clock.' };
   }
+  if (!toUTC(input.trigger_date) && !input.trigger_dates) {
+    return { ok: false, code: 'BAD_TRIGGER_DATE', message: 'A trigger date in YYYY-MM-DD form is required (or trigger_dates for a multi-trigger rule). Nothing is computed from today’s date.' };
+  }
+  var triggerDate = input.trigger_date;
 
   var all = input.rules || [];
   var inJurisdiction = all.filter(function (r) { return r.jurisdiction === input.jurisdiction; });
@@ -156,11 +298,41 @@ function computeDeadline(input) {
       domains_available: inJurisdiction.map(function (r) { return r.domain; }).filter(function (v, i, a) { return a.indexOf(v) === i; }) };
   }
 
-  var matching = inDomain.filter(function (r) { return r.trigger_event === input.trigger_event; });
+  // A rule's trigger_event is either a string, or a multi-trigger spec whose
+  // events[] the caller names instead. Both are matched here so a caller does
+  // not need to know which shape a rule uses before asking for it.
+  var matching = inDomain.filter(function (r) {
+    if (typeof r.trigger_event === 'string') return r.trigger_event === input.trigger_event;
+    if (r.trigger_event && Array.isArray(r.trigger_event.events)) {
+      return r.trigger_event.events.indexOf(input.trigger_event) !== -1 ||
+        r.trigger_event.id === input.trigger_event;
+    }
+    return false;
+  });
   if (!matching.length) {
     return { ok: false, code: 'NO_MATCHING_RULE',
       message: 'No rule covers the trigger event "' + input.trigger_event + '".',
-      triggers_available: inDomain.map(function (r) { return r.trigger_event; }).filter(function (v, i, a) { return a.indexOf(v) === i; }) };
+      triggers_available: inDomain.reduce(function (acc, r) {
+        if (typeof r.trigger_event === 'string') { if (acc.indexOf(r.trigger_event) === -1) acc.push(r.trigger_event); }
+        else if (r.trigger_event && Array.isArray(r.trigger_event.events)) {
+          r.trigger_event.events.forEach(function (e) { if (acc.indexOf(e) === -1) acc.push(e); });
+        }
+        return acc;
+      }, []) };
+  }
+
+  // Resolve each candidate's trigger date BEFORE the effective-window filter,
+  // because a multi-trigger or retriggered rule may resolve to a different
+  // date than the one supplied, and the window must be tested against the date
+  // the period actually runs from.
+  var resolvedByRule = {};
+  for (var ri = 0; ri < matching.length; ri++) {
+    var rr = matching[ri];
+    var res = resolveTrigger(rr, input);
+    if (!res.ok) return res;
+    var ret = applyRetrigger(rr, res.date, input);
+    if (!ret.ok) return ret;
+    resolvedByRule[rr.rule_id] = { date: ret.date, resolution: res.resolution, retrigger: ret.retriggered ? ret : null };
   }
 
   // Effective-window selection: the rule as it stood at the TRIGGER date, not
@@ -168,22 +340,27 @@ function computeDeadline(input) {
   var inForce = matching.filter(function (r) {
     var from = r.effective_from || '0000-01-01';
     var to = r.effective_to || '9999-12-31';
-    return triggerDate >= from && triggerDate <= to;
+    var d = resolvedByRule[r.rule_id].date;
+    return d >= from && d <= to;
   });
   if (!inForce.length) {
     return { ok: false, code: 'NO_RULE_IN_FORCE',
-      message: 'A rule exists for this trigger but none was in force on ' + triggerDate + '.',
+      message: 'A rule exists for this trigger but none was in force on the date the period runs from.',
       windows: matching.map(function (r) { return { rule_id: r.rule_id, effective_from: r.effective_from, effective_to: r.effective_to }; }) };
   }
   if (inForce.length > 1) {
     // Ambiguity is refused, never resolved by picking one. Overlapping
     // effective windows are a data defect that a human must fix.
     return { ok: false, code: 'AMBIGUOUS_RULE',
-      message: inForce.length + ' rules were in force on ' + triggerDate + ' for this trigger. Overlapping effective windows must be corrected before a date can be computed.',
+      message: inForce.length + ' rules were in force for this trigger on the date the period runs from. Overlapping effective windows must be corrected before a date can be computed.',
       rule_ids: inForce.map(function (r) { return r.rule_id; }) };
   }
 
   var rule = inForce[0];
+  var resolved = resolvedByRule[rule.rule_id];
+  // From here on, triggerDate is the date the period ACTUALLY runs from --
+  // after multi-trigger resolution and after any trigger substitution.
+  triggerDate = resolved.date;
   var std = COMPUTATION_STANDARDS[rule.computation];
   if (!std) {
     return { ok: false, code: 'UNKNOWN_STANDARD',
@@ -194,6 +371,30 @@ function computeDeadline(input) {
   var direction = count.direction === 'backward' ? 'backward' : 'forward';
   var sign = direction === 'backward' ? -1 : 1;
   var steps = [];
+
+  // Both of these are recorded BEFORE the base period, because each changed
+  // what the base period counts from. They are separate step kinds from
+  // 'service_extension' on purpose -- one moves the start, the other adds to
+  // the end, and conflating them in the audit trail would misdescribe the law.
+  if (resolved.resolution) {
+    steps.push({
+      step: 'multi_trigger_resolution',
+      detail: 'This period runs from the ' + resolved.resolution.resolve.replace('_', ' ') + ' ' +
+        resolved.resolution.events.length + ' events. ' + resolved.resolution.governing_event +
+        ' governs, on ' + resolved.date + '.',
+      authority: rule.authority ? rule.authority.citation : null,
+      date: resolved.date
+    });
+  }
+  if (resolved.retrigger) {
+    steps.push({
+      step: 'trigger_substitution',
+      detail: 'A qualifying motion (' + resolved.retrigger.motions.join(', ') + ') replaced the original trigger of ' +
+        resolved.retrigger.replaced + '. The period runs from the disposition of the last such motion, not from the original event, and no days are added.',
+      authority: resolved.retrigger.authority || (rule.authority ? rule.authority.citation : null),
+      date: resolved.date
+    });
+  }
 
   // Rule 6(a)(1)(A): exclude the day of the triggering event.
   // Rule 6(a)(1)(B): count every intermediate day, weekends and holidays
@@ -237,22 +438,58 @@ function computeDeadline(input) {
   // Rule 6(d): +3 days for certain service methods, then roll AGAIN.
   // Order verified against the 2005 Advisory Committee Note (quoted in this
   // file's header), not assumed.
-  var extensionApplied = false;
-  if (input.service_method && rule.service_extension) {
+  // The four outcomes are now DISTINGUISHABLE. Previously all of them except
+  // 'applied' collapsed to service_extension_applied:false, so a rule that
+  // asked for an extension the engine could not evaluate looked identical to
+  // a claim where none was requested. That silence was the defect.
+  var extension = { state: 'not_requested', standard: null, days_added: 0, detail: 'No service method was supplied, so no service extension was considered.' };
+
+  if (rule.service_extension) {
     var ext = rule.service_extension;
-    var qualifies = (ext.applies_when || []).indexOf(input.service_method) !== -1 &&
-      SERVICE_METHODS_EXTENDING[input.service_method] === true;
-    if (qualifies) {
+    var stdKey = ext.standard;
+    var extStd = SERVICE_EXTENSION_STANDARDS[stdKey];
+    var extLabel = extStd ? extStd.label : stdKey;
+
+    if (!input.service_method) {
+      extension = { state: 'not_requested', standard: stdKey, days_added: 0,
+        detail: 'This rule can extend under ' + extLabel + ', but no service method was supplied, so no extension was applied.' };
+    } else if (!extStd) {
+      // REFUSED VISIBLY. The engine does not know this standard's condition,
+      // so it will not guess -- and it says so rather than returning a date
+      // that quietly omits an extension the rule may well require.
+      extension = { state: 'refused_unknown_standard', standard: stdKey, days_added: 0,
+        detail: 'This rule extends under "' + stdKey + '", which this engine does not implement. No extension was applied and the date below may therefore be EARLIER than the true deadline. Verify the extension by hand before relying on it.' };
+      steps.push({ step: 'service_extension_refused',
+        detail: 'Extension under "' + stdKey + '" could not be evaluated: the standard is not implemented. No days were added.',
+        authority: null, date: result });
+    } else if (!extStd.qualifies(input.service_method)) {
+      extension = { state: 'not_qualifying', standard: stdKey, days_added: 0,
+        detail: 'Service by ' + String(input.service_method).replace(/_/g, ' ') + ' does not qualify for an extension under ' + extLabel + ' (' + extStd.shape.replace(/_/g, ' ') + ').' };
+    } else if ((ext.applies_when || []).length && (ext.applies_when || []).indexOf(input.service_method) === -1) {
+      // The standard would extend, but THIS RULE's own applies_when does not
+      // list the method. Reported distinctly from the standard declining it,
+      // because the two mean different things: one is the law, one is this
+      // row's data, and only the second is fixable by editing the rule.
+      extension = { state: 'not_listed_by_rule', standard: stdKey, days_added: 0,
+        detail: extLabel + ' would extend for service by ' + String(input.service_method).replace(/_/g, ' ') + ', but rule ' + rule.rule_id + ' does not list that method in applies_when. No extension was applied.' };
+      steps.push({ step: 'service_extension_refused',
+        detail: 'The standard permits an extension for this service method, but this rule does not list it. No days were added — check whether the rule row is incomplete.',
+        authority: extLabel, date: result });
+    } else {
       var extended = addDays(result, sign * Number(ext.add));
-      steps.push({ step: 'service_extension', detail: ext.add + ' days added because service was by ' + input.service_method.replace(/_/g, ' ') + ', counted after the base period expired and including intermediate weekends and holidays.', authority: ext.standard === 'frcp_6d' ? 'Fed. R. Civ. P. 6(d)' : ext.standard, date: extended });
+      steps.push({ step: 'service_extension', detail: ext.add + ' days added because service was by ' + String(input.service_method).replace(/_/g, ' ') + ', counted after the base period expired and including intermediate weekends and holidays.', authority: extLabel, date: extended });
       var rolled2 = rollOff(extended, input.calendars, input.jurisdiction, direction);
       if (!rolled2.ok) return rolled2;
       if (rolled2.date !== extended) {
-        steps.push({ step: 'rollover_after_extension', detail: 'The third added day fell on a Saturday, Sunday or legal holiday, so the last day to act is the next day that is not.', authority: 'Fed. R. Civ. P. 6(d), 2005 Advisory Committee Note', date: rolled2.date });
+        steps.push({ step: 'rollover_after_extension', detail: 'The added day fell on a Saturday, Sunday or legal holiday, so the last day to act is the next day that is not.', authority: extLabel + (stdKey === 'frcp_6d' ? ', 2005 Advisory Committee Note' : ''), date: rolled2.date });
       }
       result = rolled2.date;
-      extensionApplied = true;
+      extension = { state: 'applied', standard: stdKey, days_added: Number(ext.add),
+        detail: ext.add + ' days added under ' + extLabel + '.' };
     }
+  } else if (input.service_method) {
+    extension = { state: 'not_requested', standard: null, days_added: 0,
+      detail: 'A service method was supplied, but this rule defines no service extension, so none applies.' };
   }
 
   return {
@@ -260,7 +497,10 @@ function computeDeadline(input) {
     due_date: result,
     trigger_date: triggerDate,
     trigger_event: input.trigger_event,
-    service_extension_applied: extensionApplied,
+    // Boolean retained for existing callers; `service_extension` carries the
+    // state they need to distinguish a refusal from an absence.
+    service_extension_applied: extension.state === 'applied',
+    service_extension: extension,
     rule: {
       rule_id: rule.rule_id,
       label: rule.label,
@@ -280,5 +520,6 @@ function computeDeadline(input) {
 module.exports = {
   toUTC, fromUTC, addDays, addMonths, dayOfWeek, isWeekend,
   holidayFor, rollOff, computeDeadline,
-  COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING
+  resolveTrigger, applyRetrigger,
+  COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS
 };
