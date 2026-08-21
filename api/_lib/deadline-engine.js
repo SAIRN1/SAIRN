@@ -154,11 +154,21 @@ function countExcludingWeekendsAndHolidays(triggerDate, sign, n, calendars, juri
 // frcp_6a would silently drop the short-period exclusion and produce a date
 // LATER than the true Ohio deadline on every Ohio period under 7 days --
 // the dangerous direction.
+// base_period_suffix / rollover_suffix_forward / rollover_suffix_backward are
+// per-standard, not hardcoded onto the step-builders below, because the FRCP
+// family's (1)(A)-(B) / (1)(C) / (5) sub-lettering is a real feature of THAT
+// rule's text (FRAP 26(a) and Bankr. R. 9006(a) were both harmonized to the
+// same structure in 2009) and is not universal. Ohio Civ.R. 6(A) is a single
+// unlettered paragraph with no such subsections -- citing "(1)(A)-(B)" on an
+// Ohio audit-trail step would assert a subsection that does not exist in the
+// rule text, which is exactly the kind of small citation inaccuracy this
+// engine's audit trail is supposed to prevent (see this file's own header:
+// "the audit trail is part of the product, not a debug aid").
 var COMPUTATION_STANDARDS = {
-  frcp_6a: { label: 'Fed. R. Civ. P. 6(a)', impl: 'frcp_6a' },
-  frap_26a: { label: 'Fed. R. App. P. 26(a)', impl: 'frcp_6a' },
-  bankr_9006a: { label: 'Fed. R. Bankr. P. 9006(a)', impl: 'frcp_6a' },
-  ohio_civ_r_6a: { label: 'Ohio Civ.R. 6(A)', impl: 'ohio_civ_r_6a', short_period_exclusion_days: 7 }
+  frcp_6a: { label: 'Fed. R. Civ. P. 6(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  frap_26a: { label: 'Fed. R. App. P. 26(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  bankr_9006a: { label: 'Fed. R. Bankr. P. 9006(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  ohio_civ_r_6a: { label: 'Ohio Civ.R. 6(A)', impl: 'ohio_civ_r_6a', short_period_exclusion_days: 7, base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
@@ -449,11 +459,11 @@ function computeDeadline(input) {
       steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' days ' + direction + ', excluding intermediate Saturdays, Sundays and legal holidays because the period is less than ' + std.short_period_exclusion_days + ' days.', authority: std.label, date: base });
     } else {
       base = addDays(triggerDate, sign * Number(count.value));
-      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' calendar days ' + direction + ', including intermediate weekends and holidays.', authority: std.label + '(1)(A)-(B)', date: base });
+      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' calendar days ' + direction + ', including intermediate weekends and holidays.', authority: std.label + (std.base_period_suffix || ''), date: base });
     }
   } else if (count.unit === 'months' || count.unit === 'years') {
     base = addMonths(triggerDate, sign * Number(count.value) * (count.unit === 'years' ? 12 : 1));
-    steps.push({ step: 'base_period', detail: 'Counted ' + count.value + ' ' + count.unit + ' ' + direction + ' by anniversary date, clamped to end of month.', authority: std.label + '(1)(C)', date: base });
+    steps.push({ step: 'base_period', detail: 'Counted ' + count.value + ' ' + count.unit + ' ' + direction + ' by anniversary date, clamped to end of month.', authority: std.label + (std.months_years_suffix || ''), date: base });
   } else if (count.unit === 'business_days') {
     // Supported because other jurisdictions really do count this way. It is
     // NOT how the FRCP counts, and no FRCP rule may use it.
@@ -479,7 +489,7 @@ function computeDeadline(input) {
   var rolled = rollOff(base, input.calendars, input.jurisdiction, direction);
   if (!rolled.ok) return rolled;
   if (rolled.date !== base) {
-    steps.push({ step: 'rollover', detail: 'The last day fell on a Saturday, Sunday or legal holiday, so the period runs to the next day that is not.', authority: std.label + (direction === 'backward' ? '(5)' : '(1)(C)'), date: rolled.date });
+    steps.push({ step: 'rollover', detail: 'The last day fell on a Saturday, Sunday or legal holiday, so the period runs to the next day that is not.', authority: std.label + (direction === 'backward' ? (std.rollover_suffix_backward || '') : (std.rollover_suffix_forward || '')), date: rolled.date });
   }
   var result = rolled.date;
 
