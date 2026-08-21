@@ -115,13 +115,60 @@ function rollOff(iso, calendars, jurisdiction, direction) {
   return { ok: false, code: 'ROLL_RUNAWAY', message: 'Could not find a non-holiday day within 30 days.' };
 }
 
+// Counts n days forward/backward, skipping intermediate weekends and legal
+// holidays entirely (the day skipped does not count toward n). NEW,
+// ADDITIVE -- does not replace or alter the existing business_days loop
+// below, which is already tested; this is a separate call site so neither
+// can regress the other. Used by Ohio's Civ.R. 6(A) short-period exclusion,
+// and shaped identically to the business_days loop because both rules mean
+// the same thing: skip non-business days while counting.
+function countExcludingWeekendsAndHolidays(triggerDate, sign, n, calendars, jurisdiction, direction) {
+  var cur = triggerDate;
+  var remaining = n;
+  var guard = 0;
+  while (remaining > 0 && guard++ < 400) {
+    cur = addDays(cur, sign);
+    var h = holidayFor(calendars, jurisdiction, cur, direction);
+    if (!h.known) {
+      return { ok: false, code: 'NOT_PROVISIONED',
+        message: 'No holiday calendar is loaded for ' + jurisdiction + (h.missingYear ? ' for ' + h.missingYear : '') + ', which this short-period computation requires.',
+        missing: { jurisdiction: jurisdiction, year: h.missingYear || null } };
+    }
+    if (!isWeekend(cur) && !h.hit) remaining--;
+  }
+  return { ok: true, date: cur };
+}
+
 // ── Computation standards ─────────────────────────────────────────────────
 // Named and versioned. FRAP 26(a) mirrors FRCP 6(a), so it maps to the SAME
 // implementation rather than a second copy that could drift.
+//
+// Ohio Civ.R. 6(A) is NOT a copy of FRCP 6(a) and gets its own impl rather
+// than being mapped onto frcp_6a, because one real mechanism differs: Ohio
+// never adopted the federal 2009 amendment that unified day-counting for all
+// period lengths. Civ.R. 6(A), verified directly (not assumed to have
+// followed the federal 2009 change): "When the period of time prescribed or
+// allowed is less than seven days, intermediate Saturdays, Sundays, and legal
+// holidays shall be excluded in the computation." Periods of 7 days or more
+// count every intermediate day exactly like FRCP 6(a) does. Encoding this as
+// frcp_6a would silently drop the short-period exclusion and produce a date
+// LATER than the true Ohio deadline on every Ohio period under 7 days --
+// the dangerous direction.
+// base_period_suffix / rollover_suffix_forward / rollover_suffix_backward are
+// per-standard, not hardcoded onto the step-builders below, because the FRCP
+// family's (1)(A)-(B) / (1)(C) / (5) sub-lettering is a real feature of THAT
+// rule's text (FRAP 26(a) and Bankr. R. 9006(a) were both harmonized to the
+// same structure in 2009) and is not universal. Ohio Civ.R. 6(A) is a single
+// unlettered paragraph with no such subsections -- citing "(1)(A)-(B)" on an
+// Ohio audit-trail step would assert a subsection that does not exist in the
+// rule text, which is exactly the kind of small citation inaccuracy this
+// engine's audit trail is supposed to prevent (see this file's own header:
+// "the audit trail is part of the product, not a debug aid").
 var COMPUTATION_STANDARDS = {
-  frcp_6a: { label: 'Fed. R. Civ. P. 6(a)', impl: 'frcp_6a' },
-  frap_26a: { label: 'Fed. R. App. P. 26(a)', impl: 'frcp_6a' },
-  bankr_9006a: { label: 'Fed. R. Bankr. P. 9006(a)', impl: 'frcp_6a' }
+  frcp_6a: { label: 'Fed. R. Civ. P. 6(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  frap_26a: { label: 'Fed. R. App. P. 26(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  bankr_9006a: { label: 'Fed. R. Bankr. P. 9006(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  ohio_civ_r_6a: { label: 'Ohio Civ.R. 6(A)', impl: 'ohio_civ_r_6a', short_period_exclusion_days: 7, base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
@@ -401,11 +448,22 @@ function computeDeadline(input) {
   // included. So for calendar days this is plain arithmetic from the trigger.
   var base;
   if (count.unit === 'calendar_days') {
-    base = addDays(triggerDate, sign * Number(count.value));
-    steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' calendar days ' + direction + ', including intermediate weekends and holidays.', authority: std.label + '(1)(A)-(B)', date: base });
+    // Ohio Civ.R. 6(A): periods under 7 days exclude intermediate weekends
+    // and legal holidays -- the pre-2009 federal mechanism that Ohio never
+    // repealed. Gated on the STANDARD's impl, not on jurisdiction, so this
+    // never silently fires for an FRCP-family rule.
+    if (std.impl === 'ohio_civ_r_6a' && Number(count.value) < (std.short_period_exclusion_days || Infinity)) {
+      var ohRes = countExcludingWeekendsAndHolidays(triggerDate, sign, Number(count.value), input.calendars, input.jurisdiction, direction);
+      if (!ohRes.ok) return ohRes;
+      base = ohRes.date;
+      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' days ' + direction + ', excluding intermediate Saturdays, Sundays and legal holidays because the period is less than ' + std.short_period_exclusion_days + ' days.', authority: std.label, date: base });
+    } else {
+      base = addDays(triggerDate, sign * Number(count.value));
+      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' calendar days ' + direction + ', including intermediate weekends and holidays.', authority: std.label + (std.base_period_suffix || ''), date: base });
+    }
   } else if (count.unit === 'months' || count.unit === 'years') {
     base = addMonths(triggerDate, sign * Number(count.value) * (count.unit === 'years' ? 12 : 1));
-    steps.push({ step: 'base_period', detail: 'Counted ' + count.value + ' ' + count.unit + ' ' + direction + ' by anniversary date, clamped to end of month.', authority: std.label + '(1)(C)', date: base });
+    steps.push({ step: 'base_period', detail: 'Counted ' + count.value + ' ' + count.unit + ' ' + direction + ' by anniversary date, clamped to end of month.', authority: std.label + (std.months_years_suffix || ''), date: base });
   } else if (count.unit === 'business_days') {
     // Supported because other jurisdictions really do count this way. It is
     // NOT how the FRCP counts, and no FRCP rule may use it.
@@ -431,7 +489,7 @@ function computeDeadline(input) {
   var rolled = rollOff(base, input.calendars, input.jurisdiction, direction);
   if (!rolled.ok) return rolled;
   if (rolled.date !== base) {
-    steps.push({ step: 'rollover', detail: 'The last day fell on a Saturday, Sunday or legal holiday, so the period runs to the next day that is not.', authority: std.label + (direction === 'backward' ? '(5)' : '(1)(C)'), date: rolled.date });
+    steps.push({ step: 'rollover', detail: 'The last day fell on a Saturday, Sunday or legal holiday, so the period runs to the next day that is not.', authority: std.label + (direction === 'backward' ? (std.rollover_suffix_backward || '') : (std.rollover_suffix_forward || '')), date: rolled.date });
   }
   var result = rolled.date;
 
@@ -519,7 +577,7 @@ function computeDeadline(input) {
 
 module.exports = {
   toUTC, fromUTC, addDays, addMonths, dayOfWeek, isWeekend,
-  holidayFor, rollOff, computeDeadline,
+  holidayFor, rollOff, countExcludingWeekendsAndHolidays, computeDeadline,
   resolveTrigger, applyRetrigger,
   COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS
 };
