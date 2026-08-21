@@ -73,6 +73,18 @@ async function checkLimit(table, seconds, max) {
   const { headers, rest } = sbClient();
   const since = new Date(Date.now() - seconds * 1000).toISOString();
   const r = await fetch(rest(table + '?requested_at=gte.' + encodeURIComponent(since) + '&select=id'), { headers });
+  // Missing table (PostgREST 404/400) is reported as NOT_PROVISIONED naming
+  // the migration, not as a generic upstream error -- the latter reads as a
+  // network problem when the real cause is actionable. Still fails CLOSED:
+  // without the ledger the published limit cannot be honoured, and a limit
+  // that exists to be respected must not be skipped because its bookkeeping
+  // is absent.
+  if (r.status === 404 || r.status === 400) {
+    return { limited: true, notProvisioned: true,
+      message: 'The rate ledger (' + table + ') is not set up yet -- run ' +
+        'sql/sairnlaw_wex_intl_schema.sql in Supabase. Lookups are refused ' +
+        'until then rather than proceeding without honouring the source’s published limit.' };
+  }
   if (!r.ok) throw new Error(table + ' limit check failed: HTTP ' + r.status);
   const rows = await r.json();
   if (Array.isArray(rows) && rows.length >= max) return { limited: true, max, seconds };
@@ -118,6 +130,9 @@ function parseFclAtom(xml) {
 // stay a lookup and never become a sweep.
 async function fclSearch(query, perPage) {
   const gate = await checkLimit('fcl_rate_limit_log', FCL_LIMIT.seconds, FCL_LIMIT.max);
+  if (gate.notProvisioned) {
+    return { ok: false, code: 'NOT_PROVISIONED', source: 'find-case-law', message: gate.message };
+  }
   if (gate.limited) {
     return { ok: false, code: 'RATE_LIMITED', source: 'find-case-law',
       message: 'Find Case Law lookups are rate limited to stay well inside the service’s published ceiling. Try again shortly.' };
@@ -168,6 +183,9 @@ async function canliiRequest(path) {
       message: 'No CanLII API key is configured yet, so Canadian results are genuinely unavailable rather than incomplete. CanLII issues free keys on request; scraping is not an alternative, as CanLII prohibits it.' };
   }
   const gate = await checkLimit('canlii_rate_limit_log', CANLII_LIMIT.seconds, CANLII_LIMIT.max);
+  if (gate.notProvisioned) {
+    return { ok: false, code: 'NOT_PROVISIONED', source: 'canlii', message: gate.message };
+  }
   if (gate.limited) {
     return { ok: false, code: 'RATE_LIMITED', source: 'canlii', message: 'CanLII lookups are rate limited by this tool. Try again shortly.' };
   }

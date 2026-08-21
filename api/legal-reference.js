@@ -92,6 +92,7 @@ module.exports = async (req, res) => {
         // honest answer is that Wex has no entry. The client shows that
         // instead of a definition, and must not substitute its own.
         const status = result.code === 'RATE_LIMITED' ? 429
+          : result.code === 'NOT_PROVISIONED' ? 503
           : result.code === 'NOT_FOUND' || result.code === 'EMPTY' || result.code === 'BAD_TERM' ? 200
           : 502;
         res.status(status).json({ ok: false, grounded: false, ...result });
@@ -110,7 +111,7 @@ module.exports = async (req, res) => {
       }
       const result = await fclSearch(q, body.per_page);
       await audit({ action: 'intl_search', jurisdiction: 'uk-ew', query: String(q).slice(0, 200), results: result.ok ? result.results.length : 0 });
-      res.status(result.ok ? 200 : (result.code === 'RATE_LIMITED' ? 429 : 502)).json(result);
+      res.status(result.ok ? 200 : (result.code === 'NOT_PROVISIONED' ? 503 : result.code === 'RATE_LIMITED' ? 429 : 502)).json(result);
       return;
     }
 

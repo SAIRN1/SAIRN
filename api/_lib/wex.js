@@ -61,6 +61,21 @@ async function checkWexCrawlDelay() {
     rest('wex_rate_limit_log?requested_at=gte.' + encodeURIComponent(since) + '&select=id'),
     { headers }
   );
+  // A missing table (PostgREST answers 404/400) must NOT be reported as a
+  // generic upstream failure -- that reads as "the network is flaky" when the
+  // real answer is "a migration has not been run", which is actionable. It
+  // still fails CLOSED: without the ledger the crawl-delay cannot be
+  // enforced, and a limit that exists to be respected must not be skipped
+  // just because its bookkeeping is missing.
+  if (r.status === 404 || r.status === 400) {
+    return {
+      delayed: true, notProvisioned: true,
+      message: 'The Wex crawl-delay ledger is not set up yet — run ' +
+        'sql/sairnlaw_wex_intl_schema.sql in Supabase. Lookups are refused ' +
+        'until then rather than proceeding without honouring Cornell LII’s ' +
+        'published Crawl-delay.'
+    };
+  }
   if (!r.ok) throw new Error('wex crawl-delay check failed: HTTP ' + r.status);
   const rows = await r.json();
   if (Array.isArray(rows) && rows.length > 0) {
@@ -134,6 +149,9 @@ async function wexLookup(term) {
   if (!slug) return { ok: false, code: 'BAD_TERM', message: 'Enter a legal term to look up.' };
 
   const gate = await checkWexCrawlDelay();
+  if (gate.notProvisioned) {
+    return { ok: false, code: 'NOT_PROVISIONED', message: gate.message };
+  }
   if (gate.delayed) {
     return {
       ok: false,
