@@ -297,6 +297,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-reference" onclick="nav('reference')"><span class="sico">&#128218;</span>Legal Reference</button>
       <button class="sb" id="sb-mocktrial" onclick="nav('mocktrial')"><span class="sico">&#9878;&#65039;</span>Mock Trial</button>
       <button class="sb" id="sb-jury" onclick="nav('jury')"><span class="sico">&#128101;</span>Jury Assistance</button>
+      <button class="sb" id="sb-deadlinerules" onclick="nav('deadlinerules')"><span class="sico">&#128197;</span>Deadline Rules</button>
       <button class="sb" id="sb-aicoc" onclick="nav('aicoc')"><span class="sico">&#128737;&#65039;</span>AI Chain of Custody</button>
       <div class="ss">Administration</div>
       <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Audit</button>
@@ -985,6 +986,40 @@ label.chk input{width:auto;}
   </div></div>
 </div>
 
+<!-- DEADLINE RULES ENGINE -->
+<div class="panel" id="panel-deadlinerules">
+  <div class="ph"><div><div class="ptitle">Deadline Rules</div><div class="psub">Statutory deadline computation from a trigger event, showing the authority behind every date</div></div></div>
+
+  <div class="note"><b>No date is ever estimated.</b> A deadline is computed only when the governing rule and the holiday calendar for every year the count crosses are both loaded. If either is missing, you get told exactly what is missing rather than an approximate date &mdash; a wrong deadline here is malpractice exposure, not an inconvenience. Every result shows the rule it came from and the steps it took to get there.</div>
+
+  <div class="card"><div class="ch"><span class="ct">Loaded coverage</span></div><div class="cb">
+    <div id="dr-status">Loading&hellip;</div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Compute a deadline</span></div><div class="cb">
+    <div class="fr">
+      <div class="fg"><label>Jurisdiction</label><input id="dr-jur" value="us-federal"></div>
+      <div class="fg"><label>Domain</label><input id="dr-domain" value="civil-litigation"></div>
+    </div>
+    <div class="fr">
+      <div class="fg" style="flex:2"><label>Trigger event</label><select id="dr-trigger"></select></div>
+      <div class="fg"><label>Trigger date</label><input id="dr-date" type="date"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Service method</label>
+        <select id="dr-service">
+          <option value="">Not applicable / personal service</option>
+          <option value="mail">Mail</option>
+          <option value="left_with_clerk">Left with the clerk</option>
+          <option value="other_consented_means">Other consented means</option>
+        </select>
+      </div>
+      <div class="fg" style="align-self:flex-end"><button class="btn bp" onclick="drCompute()">Compute</button></div>
+    </div>
+    <div id="dr-result" style="margin-top:12px"></div>
+  </div></div>
+</div>
+
 <!-- SECURITY & AUDIT -->
 <div class="panel" id="panel-security">
   <div class="ph"><div><div class="ptitle">Security &amp; Audit</div><div class="psub">Account protection, session model, and the firm's server-side audit trail</div></div></div>
@@ -1417,6 +1452,7 @@ function nav(id){
   if(id==='reference')refRenderCoverage();
   if(id==='mocktrial')mtRenderMatterOptions();
   if(id==='jury')juryRenderAll();
+  if(id==='deadlinerules')drRenderStatus();
   if(id==='ai'){}
   if(id==='intake')rIntake();
   if(id==='matters')rMattersPanel();
@@ -4026,6 +4062,101 @@ function mtRenderMatterOptions() {
   sel.innerHTML = '<option value="">No specific matter</option>' + list.map(function (m) {
     return '<option value="' + H(m.matter_number) + '">' + H(m.matter_number + ' — ' + m.matter_name) + '</option>';
   }).join('');
+}
+
+// ══ DEADLINE RULES ENGINE (2026-08-21) ════════════════════════════════════
+// Computation happens server-side in api/_lib/deadline-engine.js. This client
+// never computes a date itself -- it renders what the engine returned, or the
+// engine's refusal. That split is deliberate: a date arrived at in two places
+// can disagree, and in this domain a disagreement is a missed filing.
+var DEADLINES_API = 'https://sairn.vercel.app/api/legal-deadlines';
+
+function deadlinesFetch(action, payload) {
+  var lic = lawLicenseKey();
+  if (!lic) return Promise.resolve({ error: { message: 'No license key' } });
+  return fetch(DEADLINES_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + lic },
+    body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+  }).then(function (r) { return r.json().then(function (d) { d._httpStatus = r.status; return d; }); })
+    .catch(function (e) { return { error: { message: 'Network error: ' + e.message } }; });
+}
+
+function drRenderStatus() {
+  var el = $('dr-status');
+  if (!el) return;
+  el.textContent = 'Loading\u2026';
+  deadlinesFetch('rules_status', {}).then(function (d) {
+    var sel = $('dr-trigger');
+    if (d.error || !d.ok) {
+      el.innerHTML = '<div class="note" style="margin:0"><b>Nothing loaded.</b> ' +
+        H((d.error && d.error.message) || d.message || 'Rules unavailable.') + '</div>';
+      if (sel) sel.innerHTML = '<option value="">No rules loaded</option>';
+      return;
+    }
+    if (!d.jurisdictions.length) {
+      el.innerHTML = '<div class="note" style="margin:0">No jurisdictions are loaded yet. Deadlines cannot be computed until a rule set and its holiday calendars are added.</div>';
+      if (sel) sel.innerHTML = '<option value="">No rules loaded</option>';
+      return;
+    }
+    el.innerHTML = d.jurisdictions.map(function (j) {
+      var doms = Object.keys(j.domains).map(function (k) { return H(k) + ' (' + j.domains[k] + ')'; }).join(', ');
+      return '<div class="srow"><span class="slbl"><b>' + H(j.jurisdiction) + '</b>' +
+        '<div style="font-size:11px;color:var(--muted)">' + (doms || 'no domains') +
+        ' &middot; holiday years: ' + (j.holiday_years.length ? H(j.holiday_years.join(', ')) : '<b>none</b>') + '</div></span>' +
+        '<span class="sval"><span class="badge ' + (j.holiday_years.length ? 'bg' : 'bx') + '">' +
+        j.rule_count + ' rule' + (j.rule_count === 1 ? '' : 's') + '</span></span></div>';
+    }).join('') + '<div style="font-size:11px;color:var(--muted);margin-top:8px">' + H(d.note) + '</div>';
+  });
+}
+
+function drCompute() {
+  var el = $('dr-result');
+  var date = $('dr-date').value;
+  if (!date) { toast('A trigger date is required'); return; }
+  var trig = $('dr-trigger').value;
+  if (!trig) { toast('A trigger event is required'); return; }
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px">Computing&hellip;</div>';
+  deadlinesFetch('compute', {
+    jurisdiction: ($('dr-jur').value || '').trim(),
+    domain: ($('dr-domain').value || '').trim(),
+    trigger_event: trig,
+    trigger_date: date,
+    service_method: $('dr-service').value || undefined
+  }).then(function (d) {
+    if (d.error) { el.innerHTML = '<div class="note" style="margin:0">' + H(d.error.message) + '</div>'; return; }
+    if (!d.ok) {
+      // The refusal is the product here, not an error state. It names what is
+      // missing so the user can load it, and it never offers a fallback date.
+      var extra = '';
+      if (d.triggers_available) extra = '<div style="font-size:12px;margin-top:6px">Triggers that ARE covered: ' + d.triggers_available.map(H).join(', ') + '</div>';
+      if (d.domains_available) extra = '<div style="font-size:12px;margin-top:6px">Domains that ARE loaded: ' + d.domains_available.map(H).join(', ') + '</div>';
+      if (d.missing && d.missing.year) extra = '<div style="font-size:12px;margin-top:6px">Missing: the <b>' + H(d.missing.year) + '</b> holiday calendar for ' + H(d.missing.jurisdiction) + '. The count crosses into that year, so it is required.</div>';
+      if (d.rule_ids) extra = '<div style="font-size:12px;margin-top:6px">Overlapping rules: ' + d.rule_ids.map(H).join(', ') + '</div>';
+      el.innerHTML = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;color:#92400e;font-size:13px">' +
+        '<b>No date computed.</b> ' + H(d.message || 'The rule set does not cover this.') + extra +
+        '<div style="font-size:11px;margin-top:8px;opacity:.85">Nothing is estimated. Load the missing rule or calendar and run this again.</div></div>';
+      return;
+    }
+    el.innerHTML = '<div class="card" style="margin:0"><div class="cb">' +
+      '<div style="font-size:12px;color:var(--muted)">Due date</div>' +
+      '<div style="font-size:24px;font-weight:700;margin-bottom:2px">' + H(fdate(d.due_date)) + '</div>' +
+      '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">' + H(d.rule.label || d.rule.rule_id) +
+      (d.service_extension_applied ? ' &middot; includes the service extension' : '') + '</div>' +
+      '<div style="font-size:12px;font-weight:700;margin-bottom:4px">How this date was reached</div>' +
+      d.steps.map(function (s, i) {
+        return '<div class="srow"><span class="slbl">' + (i + 1) + '. ' + H(s.detail) +
+          (s.authority ? '<div style="font-size:11px;color:var(--muted)">' + H(s.authority) + '</div>' : '') +
+          '</span><span class="sval">' + H(fdate(s.date)) + '</span></div>';
+      }).join('') +
+      '<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:10px;padding-top:8px">' +
+      'Rule: ' + H(d.rule.rule_id) + ' &middot; ' + H(d.rule.computation_label) +
+      (d.rule.authority && d.rule.authority.url
+        ? ' &middot; <a href="' + H(d.rule.authority.url) + '" target="_blank" rel="noopener">' + H(d.rule.authority.citation) + '</a>'
+        : '') +
+      ' &middot; in force from ' + H(d.rule.effective_from) + (d.rule.effective_to ? ' to ' + H(d.rule.effective_to) : '') +
+      '</div></div></div>';
+  });
 }
 
 function juryDifficultyState() {

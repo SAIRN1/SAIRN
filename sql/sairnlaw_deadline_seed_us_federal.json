@@ -1,0 +1,210 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine seed -- US Federal civil litigation (FRCP).",
+    "",
+    "This is NOT run as a migration. It is loaded through api/legal-deadlines.js's",
+    "add_rule / add_holidays actions, which reject any rule lacking an authority",
+    "URL and stamp verified_by from the real session. That way every row was put",
+    "there by someone who read the rule, and the row records who and when --",
+    "the same discipline as sc_scrubrules and sc_credential_scope in SAIRNcode.",
+    "",
+    "Every day count below was read from the primary source on 2026-08-21 and is",
+    "quoted in each rule's authority.quote field. None came from memory.",
+    "",
+    "TWO RULES ARE DELIBERATELY ABSENT, and the reason matters more than the",
+    "absence:",
+    "",
+    "1. Fed. R. Civ. P. 12(a)(3) -- 'within 60 days after service on the officer",
+    "   or employee or service on the United States attorney, WHICHEVER IS LATER'.",
+    "   That is a two-trigger rule. The engine models one trigger event per rule,",
+    "   so encoding it would silently compute from whichever trigger happened to",
+    "   be supplied rather than the later of the two -- producing a date that is",
+    "   too early roughly half the time. Too early is the dangerous direction.",
+    "   It is omitted until the engine supports multi-trigger 'later of' rules.",
+    "",
+    "2. The 90-day variant of 12(a)(1)(A)(ii) (waiver request sent to a defendant",
+    "   outside any judicial district) is present but flagged: it shares a trigger",
+    "   event with the 60-day variant and is distinguished only by a fact about",
+    "   the defendant's location that the engine has no field for. Both are",
+    "   included with DISTINCT trigger_event names so the user must state which",
+    "   situation applies -- the engine will never guess between them, and",
+    "   overlapping windows on one trigger would correctly raise AMBIGUOUS_RULE.",
+    "",
+    "SERVICE EXTENSION, applied only where it genuinely applies: Rule 6(d) adds 3",
+    "days when a party 'may or must act within a specified time AFTER BEING",
+    "SERVED'. The waiver deadlines run from when the request was SENT, not from",
+    "service, so 6(d) is not attached to them. That is a deliberate omission, not",
+    "an oversight -- attaching it would extend a deadline that the rule does not",
+    "extend."
+  ],
+
+  "rules": [
+    {
+      "rule_id": "frcp-12a1Ai-answer-after-service",
+      "jurisdiction": "us-federal",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint after service of summons and complaint",
+      "trigger_event": "service_of_summons_and_complaint",
+      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "computation": "frcp_6a",
+      "service_extension": {
+        "standard": "frcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Fed. R. Civ. P. 12(a)(1)(A)(i)",
+        "url": "https://www.law.cornell.edu/rules/frcp/rule_12",
+        "quote": "within 21 days after being served with the summons and complaint",
+        "retrieved_at": "2026-08-21"
+      },
+      "effective_from": "2009-12-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "frcp-12a1Aii-waiver-domestic",
+      "jurisdiction": "us-federal",
+      "domain": "civil-litigation",
+      "label": "Answer after a waiver request sent to a defendant within a judicial district",
+      "trigger_event": "waiver_request_sent_domestic",
+      "count": { "value": 60, "unit": "calendar_days", "direction": "forward" },
+      "computation": "frcp_6a",
+      "authority": {
+        "citation": "Fed. R. Civ. P. 12(a)(1)(A)(ii)",
+        "url": "https://www.law.cornell.edu/rules/frcp/rule_12",
+        "quote": "within 60 days after the request for a waiver was sent",
+        "note": "Runs from when the request was SENT, not from service, so Rule 6(d)'s 3-day service extension is not attached.",
+        "retrieved_at": "2026-08-21"
+      },
+      "effective_from": "2009-12-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "frcp-12a1Aii-waiver-foreign",
+      "jurisdiction": "us-federal",
+      "domain": "civil-litigation",
+      "label": "Answer after a waiver request sent to a defendant outside any judicial district",
+      "trigger_event": "waiver_request_sent_outside_judicial_district",
+      "count": { "value": 90, "unit": "calendar_days", "direction": "forward" },
+      "computation": "frcp_6a",
+      "authority": {
+        "citation": "Fed. R. Civ. P. 12(a)(1)(A)(ii)",
+        "url": "https://www.law.cornell.edu/rules/frcp/rule_12",
+        "quote": "or within 90 days after it was sent to the defendant outside any judicial district",
+        "note": "Distinct trigger_event from the 60-day variant on purpose: the engine must never guess which situation applies.",
+        "retrieved_at": "2026-08-21"
+      },
+      "effective_from": "2009-12-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "frcp-12a1B-counterclaim-crossclaim",
+      "jurisdiction": "us-federal",
+      "domain": "civil-litigation",
+      "label": "Answer to a counterclaim or crossclaim",
+      "trigger_event": "service_of_pleading_stating_counterclaim_or_crossclaim",
+      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "computation": "frcp_6a",
+      "service_extension": {
+        "standard": "frcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Fed. R. Civ. P. 12(a)(1)(B)",
+        "url": "https://www.law.cornell.edu/rules/frcp/rule_12",
+        "quote": "A party must serve an answer to a counterclaim or crossclaim within 21 days after being served with the pleading that states the counterclaim or crossclaim",
+        "retrieved_at": "2026-08-21"
+      },
+      "effective_from": "2009-12-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "frcp-12a2-united-states-official-capacity",
+      "jurisdiction": "us-federal",
+      "domain": "civil-litigation",
+      "label": "Answer by the United States, an agency, or an officer sued in an official capacity",
+      "trigger_event": "service_on_united_states_attorney",
+      "count": { "value": 60, "unit": "calendar_days", "direction": "forward" },
+      "computation": "frcp_6a",
+      "service_extension": {
+        "standard": "frcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Fed. R. Civ. P. 12(a)(2)",
+        "url": "https://www.law.cornell.edu/rules/frcp/rule_12",
+        "quote": "must serve an answer to a complaint, counterclaim, or crossclaim within 60 days after service on the United States attorney",
+        "retrieved_at": "2026-08-21"
+      },
+      "effective_from": "2009-12-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ],
+
+  "holiday_calendars": [
+    {
+      "jurisdiction": "us-federal",
+      "year": 2026,
+      "authority": {
+        "citation": "5 U.S.C. §6103 (federal legal public holidays)",
+        "url": "https://www.law.cornell.edu/uscode/text/5/6103",
+        "note": "Observed dates. Where a holiday falls on a Saturday the preceding Friday is observed; where it falls on a Sunday the following Monday is observed.",
+        "retrieved_at": "2026-08-21"
+      },
+      "dates": [
+        { "date": "2026-01-01", "name": "New Year's Day", "kind": "federal" },
+        { "date": "2026-01-19", "name": "Birthday of Martin Luther King, Jr.", "kind": "federal" },
+        { "date": "2026-02-16", "name": "Washington's Birthday", "kind": "federal" },
+        { "date": "2026-05-25", "name": "Memorial Day", "kind": "federal" },
+        { "date": "2026-06-19", "name": "Juneteenth National Independence Day", "kind": "federal" },
+        { "date": "2026-07-03", "name": "Independence Day (observed)", "kind": "federal" },
+        { "date": "2026-09-07", "name": "Labor Day", "kind": "federal" },
+        { "date": "2026-10-12", "name": "Columbus Day", "kind": "federal" },
+        { "date": "2026-11-11", "name": "Veterans Day", "kind": "federal" },
+        { "date": "2026-11-26", "name": "Thanksgiving Day", "kind": "federal" },
+        { "date": "2026-12-25", "name": "Christmas Day", "kind": "federal" }
+      ]
+    },
+    {
+      "jurisdiction": "us-federal",
+      "year": 2027,
+      "authority": {
+        "citation": "5 U.S.C. §6103 (federal legal public holidays)",
+        "url": "https://www.law.cornell.edu/uscode/text/5/6103",
+        "note": "Loaded alongside 2026 because a period triggered late in 2026 crosses into 2027, and the engine refuses on the year it actually needs rather than the year of the trigger.",
+        "retrieved_at": "2026-08-21"
+      },
+      "dates": [
+        { "date": "2027-01-01", "name": "New Year's Day", "kind": "federal" },
+        { "date": "2027-01-18", "name": "Birthday of Martin Luther King, Jr.", "kind": "federal" },
+        { "date": "2027-02-15", "name": "Washington's Birthday", "kind": "federal" },
+        { "date": "2027-05-31", "name": "Memorial Day", "kind": "federal" },
+        { "date": "2027-06-18", "name": "Juneteenth National Independence Day (observed)", "kind": "federal" },
+        { "date": "2027-07-05", "name": "Independence Day (observed)", "kind": "federal" },
+        { "date": "2027-09-06", "name": "Labor Day", "kind": "federal" },
+        { "date": "2027-10-11", "name": "Columbus Day", "kind": "federal" },
+        { "date": "2027-11-11", "name": "Veterans Day", "kind": "federal" },
+        { "date": "2027-11-25", "name": "Thanksgiving Day", "kind": "federal" },
+        { "date": "2027-12-24", "name": "Christmas Day (observed)", "kind": "federal" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,261 @@
+// api/legal-deadlines.js
+// ---------------------------------------------------------------------------
+// SAIRNlaw deadline rules engine endpoint.
+//
+// Computation itself lives in api/_lib/deadline-engine.js and is PURE -- this
+// file only loads rules and calendars and hands them over. That split exists
+// so the date arithmetic can be tested against worked examples from the rule
+// text without a database, which is what a legal-deadline computation needs.
+//
+// FAIL CLOSED, ALWAYS. Every refusal names the missing thing. There is no code
+// path here that returns an approximate, estimated or best-guess date, and no
+// path that falls back to "today" when a trigger is absent. A wrong deadline
+// in a legal product is malpractice exposure, not a bug.
+//
+// Auth mirrors api/legal-citator.js and api/legal-reference.js: bearer license
+// key scoped to sairnlaw, with an OPTIONAL session token used to attribute the
+// audit entry and to record WHO verified a rule.
+// ---------------------------------------------------------------------------
+
+const { validateLicenseKey } = require('./_lib/license');
+const { tokenFromRequest, verifySessionToken } = require('./_lib/auth');
+const { writeAuditLog } = require('./_lib/audit');
+const { sbClient } = require('./_lib/courtlistener');
+const { computeDeadline, COMPUTATION_STANDARDS } = require('./_lib/deadline-engine');
+
+const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
+
+// A rule with no traceable authority cannot be saved. Same discipline as
+// sc_scrubrules and sc_credential_scope: this table only ever holds rules a
+// human actually read and sourced.
+function validateRulePayload(p) {
+  if (!p || typeof p !== 'object') return 'A rule object is required.';
+  const need = ['rule_id', 'jurisdiction', 'domain', 'trigger_event', 'count', 'computation', 'effective_from'];
+  for (const k of need) {
+    if (!p[k]) return 'Missing required field: ' + k;
+  }
+  if (!COMPUTATION_STANDARDS[p.computation]) {
+    return 'computation must be one of: ' + Object.keys(COMPUTATION_STANDARDS).join(', ');
+  }
+  const c = p.count;
+  if (!c || typeof c.value !== 'number' || !c.unit || !c.direction) {
+    return 'count requires { value (number), unit, direction }.';
+  }
+  if (['calendar_days', 'business_days', 'months', 'years'].indexOf(c.unit) === -1) {
+    return 'count.unit must be calendar_days, business_days, months or years.';
+  }
+  if (['forward', 'backward'].indexOf(c.direction) === -1) {
+    return 'count.direction must be forward or backward.';
+  }
+  // The requirement that makes this table trustworthy.
+  if (!p.authority || !p.authority.citation || !p.authority.url) {
+    return 'authority.citation and authority.url are both required -- a deadline rule with no traceable source must not be stored.';
+  }
+  if (!/^https?:\/\//i.test(p.authority.url)) {
+    return 'authority.url must be a real resolvable URL.';
+  }
+  // FRCP counts calendar days. A rule citing an FRCP-family standard while
+  // asking for business days is a data error that would produce dates later
+  // than reality -- refused rather than stored.
+  if (COMPUTATION_STANDARDS[p.computation].impl === 'frcp_6a' && c.unit === 'business_days') {
+    return 'The FRCP 6(a) family counts calendar days, including intermediate weekends and holidays. A rule using this standard cannot specify business_days.';
+  }
+  return null;
+}
+
+function validateHolidayPayload(p) {
+  if (!p || !p.jurisdiction || !p.year) return 'jurisdiction and year are required.';
+  if (!Array.isArray(p.dates)) return 'dates must be an array.';
+  for (const d of p.dates) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d.date || '')) return 'Each date must be YYYY-MM-DD.';
+    if (String(d.date).slice(0, 4) !== String(p.year)) return 'Date ' + d.date + ' does not fall in year ' + p.year + '.';
+    if (['federal', 'declared', 'state'].indexOf(d.kind) === -1) {
+      return 'Each date needs kind: federal, declared or state. The kind is load-bearing -- FRCP 6(a)(6) counts state holidays only for forward-counted periods.';
+    }
+  }
+  if (!p.authority || !p.authority.citation) return 'authority.citation is required for a holiday calendar.';
+  return null;
+}
+
+async function readAll(sb, table, licHash) {
+  const r = await fetch(sb.rest(table + '?license_hash=eq.' + encodeURIComponent(licHash) + '&select=entry_id,data'), { headers: sb.headers });
+  if (r.status === 404 || r.status === 400) return { provisioned: false, rows: [] };
+  if (!r.ok) throw new Error(table + ' read failed: HTTP ' + r.status);
+  const rows = await r.json();
+  return { provisioned: true, rows: (rows || []).map((x) => x.data) };
+}
+
+async function upsert(sb, table, licHash, entryId, data) {
+  const r = await fetch(sb.rest(table + '?on_conflict=license_hash,entry_id'), {
+    method: 'POST',
+    headers: Object.assign({}, sb.headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+    body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', entry_id: String(entryId), data, updated_at: new Date().toISOString() })
+  });
+  if (r.status === 404 || r.status === 400) return { provisioned: false };
+  if (!r.ok) throw new Error(table + ' write failed: HTTP ' + r.status);
+  return { provisioned: true };
+}
+
+// Shapes the flat holiday rows into the { jurisdiction: { year: [...] } } map
+// the pure engine expects.
+function buildCalendars(rows) {
+  const out = {};
+  for (const row of rows) {
+    if (!row || !row.jurisdiction || !row.year) continue;
+    out[row.jurisdiction] = out[row.jurisdiction] || {};
+    out[row.jurisdiction][String(row.year)] = row.dates || [];
+  }
+  return out;
+}
+
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
+    return;
+  }
+
+  const authz = req.headers['authorization'] || '';
+  const licenseKey = authz.startsWith('Bearer ') ? authz.slice(7).trim() : null;
+  if (!licenseKey) { res.status(401).json({ error: { code: 'NO_LICENSE', message: 'Missing bearer license key' } }); return; }
+
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) { res.status(400).json({ error: { message: 'Invalid JSON body' } }); return; }
+  }
+  const action = body && body.action;
+  if (ACTIONS.indexOf(action) === -1) {
+    res.status(400).json({ error: { message: 'action must be one of: ' + ACTIONS.join(', ') } });
+    return;
+  }
+
+  let lic;
+  try { lic = await validateLicenseKey(licenseKey); }
+  catch (err) {
+    if (err.code === 'CONFIG') { console.error('legal-deadlines config error:', err.message); res.status(500).json({ error: { message: 'Server configuration error — contact support' } }); return; }
+    console.error('legal-deadlines license validation error:', err);
+    res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
+    return;
+  }
+  if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
+  if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
+  if (lic.app_id && lic.app_id !== 'sairnlaw') { res.status(403).json({ error: { code: 'WRONG_APP', message: 'This license is not issued for sairnlaw' } }); return; }
+
+  const caller = verifySessionToken(tokenFromRequest(req), lic.license_hash, 'sairnlaw');
+  const audit = (detail) => writeAuditLog(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    license_hash: lic.license_hash,
+    employee_id: caller ? caller.employee_id : null,
+    role: caller ? caller.role : null,
+    event_type: 'deadline_engine',
+    detail
+  }).catch((e) => { console.error('legal-deadlines audit write failed:', e && e.message); });
+
+  let sb;
+  try { sb = sbClient(); }
+  catch (err) { console.error('legal-deadlines supabase config error:', err.message); res.status(500).json({ error: { message: 'Server configuration error — contact support' } }); return; }
+
+  try {
+    // ── RULES_STATUS: what is actually loaded. Its own action so the UI can
+    // state coverage honestly without first running a computation and
+    // inferring the gaps from a refusal. ──
+    if (action === 'rules_status') {
+      const rules = await readAll(sb, 'law_deadline_rules', lic.license_hash);
+      const hols = await readAll(sb, 'law_holidays', lic.license_hash);
+      if (!rules.provisioned || !hols.provisioned) {
+        res.status(503).json({ ok: false, code: 'NOT_PROVISIONED',
+          message: 'The deadline-engine tables are not set up yet — run sql/sairnlaw_deadline_rules_schema.sql in Supabase. Nothing is computed until then.' });
+        return;
+      }
+      const byJur = {};
+      for (const r of rules.rows) {
+        if (!r || !r.jurisdiction) continue;
+        byJur[r.jurisdiction] = byJur[r.jurisdiction] || { jurisdiction: r.jurisdiction, domains: {}, rule_count: 0, holiday_years: [] };
+        byJur[r.jurisdiction].domains[r.domain] = (byJur[r.jurisdiction].domains[r.domain] || 0) + 1;
+        byJur[r.jurisdiction].rule_count++;
+      }
+      for (const h of hols.rows) {
+        if (!h || !h.jurisdiction) continue;
+        byJur[h.jurisdiction] = byJur[h.jurisdiction] || { jurisdiction: h.jurisdiction, domains: {}, rule_count: 0, holiday_years: [] };
+        byJur[h.jurisdiction].holiday_years.push(String(h.year));
+      }
+      Object.values(byJur).forEach((j) => j.holiday_years.sort());
+      res.status(200).json({ ok: true, jurisdictions: Object.values(byJur),
+        note: 'A jurisdiction with rules but no holiday calendar for a year a computation crosses will still refuse — the engine checks the year it actually needs, not the year of the trigger.' });
+      return;
+    }
+
+    // ── COMPUTE ──
+    if (action === 'compute') {
+      const rules = await readAll(sb, 'law_deadline_rules', lic.license_hash);
+      const hols = await readAll(sb, 'law_holidays', lic.license_hash);
+      if (!rules.provisioned || !hols.provisioned) {
+        res.status(503).json({ ok: false, code: 'NOT_PROVISIONED',
+          message: 'The deadline-engine tables are not set up yet — run sql/sairnlaw_deadline_rules_schema.sql in Supabase. No date is produced.' });
+        return;
+      }
+      const result = computeDeadline({
+        trigger_date: body.trigger_date,
+        trigger_event: body.trigger_event,
+        jurisdiction: body.jurisdiction,
+        domain: body.domain,
+        service_method: body.service_method,
+        rules: rules.rows,
+        calendars: buildCalendars(hols.rows)
+      });
+      await audit({ action: 'compute', jurisdiction: body.jurisdiction, domain: body.domain,
+        trigger_event: body.trigger_event, trigger_date: body.trigger_date,
+        ok: !!result.ok, code: result.code || null, due_date: result.due_date || null });
+      // A refusal is a 200-level *answer* only when it is a data-coverage
+      // statement the user can act on; genuine gaps are 503 so a caller cannot
+      // mistake "not loaded" for "no deadline".
+      const status = result.ok ? 200
+        : (result.code === 'NOT_PROVISIONED' ? 503
+          : ['NO_MATCHING_RULE', 'NO_RULE_IN_FORCE', 'AMBIGUOUS_RULE', 'UNKNOWN_STANDARD', 'UNKNOWN_UNIT'].indexOf(result.code) !== -1 ? 409
+            : 400);
+      res.status(status).json(result);
+      return;
+    }
+
+    // ── ADD_RULE ──
+    if (action === 'add_rule') {
+      const err = validateRulePayload(body.rule);
+      if (err) { res.status(400).json({ ok: false, code: 'INVALID_RULE', message: err }); return; }
+      const rule = Object.assign({}, body.rule, {
+        version: body.rule.version || 1,
+        authority: Object.assign({}, body.rule.authority, {
+          retrieved_at: body.rule.authority.retrieved_at || new Date().toISOString().slice(0, 10),
+          // Server-derived, never client-supplied: who actually verified this.
+          verified_by: caller ? caller.employee_id : null
+        })
+      });
+      const w = await upsert(sb, 'law_deadline_rules', lic.license_hash, rule.rule_id, rule);
+      if (!w.provisioned) { res.status(503).json({ ok: false, code: 'NOT_PROVISIONED', message: 'Run sql/sairnlaw_deadline_rules_schema.sql in Supabase first.' }); return; }
+      await audit({ action: 'add_rule', rule_id: rule.rule_id, jurisdiction: rule.jurisdiction, domain: rule.domain });
+      res.status(200).json({ ok: true, rule_id: rule.rule_id, stored: rule });
+      return;
+    }
+
+    // ── ADD_HOLIDAYS ──
+    if (action === 'add_holidays') {
+      const err = validateHolidayPayload(body.calendar);
+      if (err) { res.status(400).json({ ok: false, code: 'INVALID_CALENDAR', message: err }); return; }
+      const cal = body.calendar;
+      const entryId = cal.jurisdiction + ':' + cal.year;
+      const stored = Object.assign({}, cal, {
+        authority: Object.assign({}, cal.authority, {
+          retrieved_at: (cal.authority && cal.authority.retrieved_at) || new Date().toISOString().slice(0, 10),
+          verified_by: caller ? caller.employee_id : null
+        })
+      });
+      const w = await upsert(sb, 'law_holidays', lic.license_hash, entryId, stored);
+      if (!w.provisioned) { res.status(503).json({ ok: false, code: 'NOT_PROVISIONED', message: 'Run sql/sairnlaw_deadline_rules_schema.sql in Supabase first.' }); return; }
+      await audit({ action: 'add_holidays', jurisdiction: cal.jurisdiction, year: cal.year, count: cal.dates.length });
+      res.status(200).json({ ok: true, entry_id: entryId, count: cal.dates.length });
+      return;
+    }
+
+    res.status(400).json({ error: { message: 'Unsupported action' } });
+  } catch (err) {
+    console.error('api/legal-deadlines error:', err);
+    res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
+  }
+};
