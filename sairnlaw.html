@@ -294,6 +294,9 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-pi" onclick="nav('pi')"><span class="sico">&#129704;</span>Personal Injury</button>
       <div class="ss">Legal Research</div>
       <button class="sb" id="sb-citator" onclick="nav('citator')"><span class="sico">&#128220;</span>Citator (Phase A)</button>
+      <button class="sb" id="sb-reference" onclick="nav('reference')"><span class="sico">&#128218;</span>Legal Reference</button>
+      <button class="sb" id="sb-mocktrial" onclick="nav('mocktrial')"><span class="sico">&#9878;&#65039;</span>Mock Trial</button>
+      <button class="sb" id="sb-jury" onclick="nav('jury')"><span class="sico">&#128101;</span>Jury Assistance</button>
       <button class="sb" id="sb-aicoc" onclick="nav('aicoc')"><span class="sico">&#128737;&#65039;</span>AI Chain of Custody</button>
       <div class="ss">Administration</div>
       <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Audit</button>
@@ -896,6 +899,92 @@ label.chk input{width:auto;}
   </div>
 </div>
 
+<!-- LEGAL REFERENCE (Phases A + B) -->
+<div class="panel" id="panel-reference">
+  <div class="ph"><div><div class="ptitle">Legal Reference</div><div class="psub">Grounded term definitions and international case law &mdash; every answer carries the source it came from</div></div></div>
+
+  <div class="note">Nothing on this screen is answered from the model's memory. A definition appears only when it was actually retrieved from Cornell LII's Wex, and a case appears only when it came back from a real court-data service. If a source cannot be reached, you get told that instead of a plausible-sounding answer.</div>
+
+  <div class="card"><div class="ch"><span class="ct">Legal term</span></div><div class="cb">
+    <div class="fr">
+      <div class="fg" style="flex:2"><label>Term</label><input id="ref-term" placeholder="e.g. promissory estoppel"></div>
+      <div class="fg" style="align-self:flex-end"><button class="btn bp" onclick="refDefine()">Look up</button></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:-4px;margin-bottom:8px">
+      Source: Cornell LII's Wex. Chosen over Black's Law Dictionary (commercial, no free API) and Bouvier's (published 1856, unreliable for modern and statutory terms).
+    </div>
+    <div id="ref-def-result"></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Case law by jurisdiction</span></div><div class="cb">
+    <div id="ref-coverage" style="margin-bottom:12px"></div>
+    <div class="fr">
+      <div class="fg" style="flex:2"><label>Search UK (England &amp; Wales) judgments</label><input id="ref-uk-q" placeholder="e.g. clinical negligence causation"></div>
+      <div class="fg" style="align-self:flex-end"><button class="btn bp" onclick="refUkSearch()">Search</button></div>
+    </div>
+    <div id="ref-uk-result"></div>
+  </div></div>
+</div>
+
+<!-- MOCK TRIAL (Phase C) -->
+<div class="panel" id="panel-mocktrial">
+  <div class="ph"><div><div class="ptitle">Mock Trial</div><div class="psub">Adversarial stress-testing &mdash; an AI judge or opposing counsel attacking your position</div></div></div>
+
+  <div class="note"><b>This tool does not predict outcomes.</b> It will never tell you your chances of winning, and any response containing a probability, percentage or odds is refused before you see it. There is no labelled corpus of case outcomes behind such a number, so it would be a fabricated figure dressed as analysis &mdash; and here it would be advising legal strategy. What this does instead is attack your position so you find the weak points before an actual adversary does.</div>
+
+  <div class="card"><div class="ch"><span class="ct">Run a stress test</span></div><div class="cb">
+    <div class="fr">
+      <div class="fg"><label>Adversary</label>
+        <select id="mt-role"><option value="judge">Judge &mdash; sceptical bench</option><option value="opposing">Opposing counsel</option></select>
+      </div>
+      <div class="fg"><label>Matter (optional)</label><select id="mt-matter"></select></div>
+    </div>
+    <div class="fg"><label>Your position or argument</label>
+      <textarea id="mt-position" rows="5" placeholder="State the argument you want attacked. The more specific, the more useful the objections."></textarea>
+    </div>
+    <button class="btn bp" onclick="mtRun()" id="mt-run-btn">Stress-test this position</button>
+    <div id="mt-result" style="margin-top:12px"></div>
+  </div></div>
+</div>
+
+<!-- JURY ASSISTANCE (Phase D) -->
+<div class="panel" id="panel-jury">
+  <div class="ph"><div><div class="ptitle">Jury Assistance</div><div class="psub">Attitude-and-experience profiling, voir dire follow-ups, and Batson-defensible strike records</div></div></div>
+
+  <div class="note"><b>Race and gender are never a basis for a strike or a selection recommendation here.</b> That is enforced in the tool, not just discouraged &mdash; a strike reason resting on either is refused, with the controlling authority shown. This also reflects what the jury-consulting field's own research finds: demographics are poor predictors of how someone votes, while attitudes, beliefs and lived experience predict considerably better. Demographics are recorded here as context only, never as the reason for anything.</div>
+
+  <div class="card"><div class="ch"><span class="ct">Practice-juror difficulty</span></div><div class="cb">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Training settings for the mock juror in a stress test. These describe how hard a practice audience should be &mdash; they are not a claim about any real panel.</div>
+    <div id="jury-sliders"></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Voir dire follow-ups</span></div><div class="cb">
+    <div class="fr">
+      <div class="fg"><label>Attitude area</label><select id="jury-dim"></select></div>
+      <div class="fg" style="flex:2"><label>What the juror just said (optional)</label><input id="jury-said" placeholder="Their own words, if you have them"></div>
+      <div class="fg" style="align-self:flex-end"><button class="btn bp" onclick="juryPrompts()">Suggest follow-ups</button></div>
+    </div>
+    <div id="jury-prompt-result"></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Strike record (Batson / J.E.B.)</span></div><div class="cb">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Records the real, case-relevant reason for a strike, tied to what the juror actually said. That anchor is what a Batson challenge turns on at step three.</div>
+    <div class="fr">
+      <div class="fg"><label>Juror</label><input id="jstrike-id" placeholder="Juror no."></div>
+      <div class="fg" style="flex:2"><label>Reason for the strike</label><input id="jstrike-reason" placeholder="What about this juror bears on this case"></div>
+    </div>
+    <div class="fg"><label>What the juror said or did (required)</label><textarea id="jstrike-quote" rows="2" placeholder="Their own words, or the conduct on the record"></textarea></div>
+    <div class="fg"><label>Why that matters to this case</label><input id="jstrike-rel" placeholder="Connection to an issue actually in the case"></div>
+    <button class="btn bp" onclick="juryRecordStrike()">Check and record</button>
+    <div id="jstrike-result" style="margin-top:10px"></div>
+    <div id="jstrike-log" style="margin-top:14px"></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Controlling authority</span></div><div class="cb">
+    <div id="jury-authorities"></div>
+  </div></div>
+</div>
+
 <!-- SECURITY & AUDIT -->
 <div class="panel" id="panel-security">
   <div class="ph"><div><div class="ptitle">Security &amp; Audit</div><div class="psub">Account protection, session model, and the firm's server-side audit trail</div></div></div>
@@ -1323,6 +1412,11 @@ function nav(id){
   var p=$('panel-'+id),b=$('sb-'+id);
   if(p)p.classList.add('on');if(b)b.classList.add('on');
   if(id==='dashboard')rDash();
+  // Phases A-D (2026-08-21). Rendered on nav rather than at boot so the
+  // coverage statement is fetched only when someone actually opens the panel.
+  if(id==='reference')refRenderCoverage();
+  if(id==='mocktrial')mtRenderMatterOptions();
+  if(id==='jury')juryRenderAll();
   if(id==='ai'){}
   if(id==='intake')rIntake();
   if(id==='matters')rMattersPanel();
@@ -3514,6 +3608,526 @@ document.addEventListener('DOMContentLoaded',function(){
     if(r.ok&&r.data&&r.data.sso_available){var b=$('l-sso');if(b)b.style.display='block';}
   });
 });
+// ══════════════════════════════════════════════════════════════════════════
+// PHASE C — MOCK TRIAL / ADVERSARIAL STRESS TEST (2026-08-21)
+//
+// WHAT THIS IS: an AI judge / opposing counsel that attacks your position.
+// WHAT IT IS DELIBERATELY NOT: a win-probability estimator. Several real
+// competitors sell exactly that ("68% chance of success"), and it is the same
+// fabricated-confidence problem already stripped out of SAIRNcode's Fraud
+// panel -- with materially worse consequences here, because this advises
+// legal strategy. There is no labelled outcome corpus behind such a number,
+// nothing to calibrate it against, and a percentage reads as a measured
+// likelihood to whoever sees it next. mtAssertNoProbability() below is a real
+// mechanical check on the model's own output, not a instruction we hope it
+// follows.
+//
+// GROUNDING: every case the AI cites is mechanically checked against the real
+// citator before it is shown as authority. An unverified citation is labelled
+// unverified -- it is never quietly presented as if it were real. Same
+// discipline as the citator itself and as SAIRNcode's quote verification.
+// ══════════════════════════════════════════════════════════════════════════
+
+var MOCKTRIAL_ROLES = {
+  judge: {
+    label: 'Judge',
+    stance: 'You are a sceptical trial judge pressure-testing counsel\'s position. Raise the objections and doctrinal problems a real judge would raise from the bench.'
+  },
+  opposing: {
+    label: 'Opposing counsel',
+    stance: 'You are experienced opposing counsel. Attack the weakest points of this position the way an adversary actually would.'
+  }
+};
+
+// Real US reporter-style citation shapes. Deliberately conservative: it is
+// better to miss an exotic citation format (which then simply is not claimed
+// as verified) than to match loosely and mark something verified that is not.
+var MT_CITE_PATTERNS = [
+  /\b\d{1,3}\s+U\.?\s?S\.?\s+\d{1,4}\b/g,            // 476 U.S. 79
+  /\b\d{1,3}\s+S\.\s?Ct\.\s+\d{1,4}\b/g,             // 106 S. Ct. 1712
+  /\b\d{1,4}\s+F\.\s?(?:2d|3d|4th|Supp\.?(?:\s?2d|\s?3d)?)\s+\d{1,4}\b/g,
+  /\b\d{1,4}\s+[A-Z][a-z]?\.(?:\s?(?:2d|3d))?\s+\d{1,4}\b/g
+];
+
+function mtExtractCitations(text) {
+  var found = [];
+  var s = String(text || '');
+  MT_CITE_PATTERNS.forEach(function (re) {
+    var m;
+    re.lastIndex = 0;
+    while ((m = re.exec(s)) !== null) {
+      var c = m[0].replace(/\s+/g, ' ').trim();
+      if (c && found.indexOf(c) === -1) found.push(c);
+    }
+  });
+  return found;
+}
+
+// THE HARD CHECK on Phase C's own output. If the model produces a percentage,
+// odds, or a likelihood claim about the outcome, that content is refused
+// rather than displayed. Written as a real detector because "we told it not
+// to" is not a control.
+var MT_PROBABILITY_PATTERNS = [
+  /\b\d{1,3}\s?%/,
+  /\b\d{1,3}\s?percent\b/i,
+  /\b(?:odds|probability|likelihood)\s+of\s+(?:success|winning|prevailing|a\s+favou?rable)/i,
+  /\b(?:chance|chances)\s+of\s+(?:success|winning|prevailing)/i,
+  /\b\d\s*(?:in|out\s+of)\s*\d+\s+chance/i,
+  /\byou (?:will|would) (?:likely )?(?:win|lose)\b/i
+];
+
+function mtAssertNoProbability(text) {
+  var s = String(text || '');
+  for (var i = 0; i < MT_PROBABILITY_PATTERNS.length; i++) {
+    var m = s.match(MT_PROBABILITY_PATTERNS[i]);
+    if (m) return { clean: false, matched: m[0] };
+  }
+  return { clean: true };
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// PHASE D — JURY ASSISTANCE (2026-08-21)
+//
+// TWO DISTINCT PIECES, kept distinct on purpose:
+//   1. Difficulty sliders  -- TRAINING settings for the mock juror in the
+//      stress test above. These describe how hard a practice audience should
+//      be, and are not a claim about any real jury pool.
+//   2. Juror profile       -- attitudes, beliefs and life experience as the
+//      primary signal, with demographics recorded as CONTEXT ONLY.
+//
+// WHY THAT SPLIT, verified rather than assumed: the professional jury-
+// consulting field's own research finds demographics are poor predictors of
+// verdict leanings, and that attitudes, beliefs, personal experiences and
+// personality traits predict far better -- demographics being "at best an
+// initial guide" and "inadequate for predicting juror behavior". So this is
+// built as an attitude-and-experience instrument that demographics inform,
+// not a "this demographic votes this way" shortcut of the kind several
+// competitors market.
+//
+// HARD GUARDRAIL, enforced mechanically and not by prompt: race and gender
+// are NEVER a stated basis for a strike or selection recommendation. This is
+// both an ethics floor and settled constitutional law -- see JURY_AUTHORITIES
+// below, every citation of which was verified against a primary source before
+// being written here.
+// ══════════════════════════════════════════════════════════════════════════
+
+var JURY_AUTHORITIES = [
+  { cite: 'Batson v. Kentucky, 476 U.S. 79 (1986)',
+    holding: 'Peremptory strikes may not be exercised on the basis of race. Establishes the three-step framework: a prima facie showing, then the striking party must offer a neutral explanation, then the court decides whether purposeful discrimination occurred.',
+    source_url: 'https://www.law.cornell.edu/supremecourt/text/476/79' },
+  { cite: 'Edmonson v. Leesville Concrete Co., 500 U.S. 614 (1991)',
+    holding: 'Extends Batson to CIVIL cases: a private litigant may not use peremptory challenges to exclude jurors on account of race.',
+    source_url: 'https://www.law.cornell.edu/supremecourt/text/500/614' },
+  { cite: 'Georgia v. McCollum, 505 U.S. 42 (1992)',
+    holding: 'Extends Batson to criminal defendants exercising peremptory challenges.',
+    source_url: 'https://www.law.cornell.edu/supremecourt/text/505/42' },
+  { cite: 'J.E.B. v. Alabama ex rel. T.B., 511 U.S. 127 (1994)',
+    holding: 'Extends Batson to gender. Gender is an unconstitutional proxy for juror competence and impartiality.',
+    source_url: 'https://www.law.cornell.edu/supremecourt/text/511/127' }
+];
+
+// Training-difficulty settings. Named and described so they cannot be
+// mistaken for a forecast about a real panel.
+var JURY_DIFFICULTY_DIMENSIONS = [
+  { key: 'skepticism', label: 'Skepticism', low: 'Takes counsel at their word', high: 'Questions every assertion',
+    note: 'How much the practice juror pushes back on unsupported claims.' },
+  { key: 'disposition', label: 'Disposition toward this case type', low: 'Sympathetic', high: 'Hostile',
+    note: 'Leaning toward or against this kind of claim, as a training condition.' },
+  { key: 'sophistication', label: 'Legal sophistication', low: 'No legal background', high: 'Highly sophisticated',
+    note: 'How much legal vocabulary and procedure the practice juror already understands.' }
+];
+
+// Attitude/experience dimensions -- the things the research actually supports
+// as predictive. Demographics are captured separately and explicitly as
+// context.
+var JURY_ATTITUDE_DIMENSIONS = [
+  { key: 'authority_trust', label: 'Trust in institutions and authority' },
+  { key: 'personal_responsibility', label: 'Emphasis on personal responsibility vs systemic cause' },
+  { key: 'damages_attitude', label: 'Attitude toward money damages' },
+  { key: 'corporate_trust', label: 'Trust in corporations / large organisations' },
+  { key: 'science_deference', label: 'Deference to expert and scientific testimony' },
+  { key: 'prior_experience', label: 'Relevant life or professional experience' }
+];
+
+// ── THE GUARDRAIL ─────────────────────────────────────────────────────────
+// Terms that, used as the BASIS of a strike, are constitutionally prohibited
+// or are protected characteristics this tool refuses to reason from. This is
+// a blocklist for the stated REASON, not a content filter on the whole app --
+// a juror's own statement may of course mention any of these.
+var JURY_PROTECTED_BASES = [
+  { key: 'race', terms: ['race', 'racial', 'ethnicity', 'ethnic', 'black', 'white', 'african american', 'african-american', 'hispanic', 'latino', 'latina', 'asian', 'native american', 'indigenous', 'arab', 'jewish', 'skin colour', 'skin color', 'people of colour', 'people of color', 'minority'],
+    authority: 'Batson v. Kentucky, 476 U.S. 79 (1986); Edmonson v. Leesville Concrete Co., 500 U.S. 614 (1991); Georgia v. McCollum, 505 U.S. 42 (1992)' },
+  { key: 'gender', terms: ['gender', 'sex', 'male', 'female', 'man', 'men', 'woman', 'women', 'transgender', 'nonbinary', 'non-binary'],
+    authority: 'J.E.B. v. Alabama ex rel. T.B., 511 U.S. 127 (1994)' }
+];
+
+// Pure and fully testable. Returns whether a proposed strike reason is
+// permissible, and if not, exactly which protected basis it rests on and the
+// authority that forbids it.
+//
+// Deliberately word-boundary matched: "management" must not trip "man", and
+// "whitewater" must not trip "white". Getting that wrong would make the
+// guardrail nag on legitimate reasons and train users to ignore it, which is
+// worse than not having it.
+function juryCheckStrikeReason(reason) {
+  var raw = String(reason || '');
+  var text = raw.toLowerCase();
+  var hits = [];
+  JURY_PROTECTED_BASES.forEach(function (basis) {
+    basis.terms.forEach(function (term) {
+      var escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      var re = new RegExp('(^|[^a-z])' + escaped + '([^a-z]|$)', 'i');
+      if (re.test(text) && hits.indexOf(basis.key) === -1) hits.push(basis.key);
+    });
+  });
+
+  if (!raw.trim()) {
+    return { ok: false, code: 'EMPTY', message: 'Record the actual, case-relevant reason for this strike. A blank reason is not a record.' };
+  }
+  if (hits.length) {
+    var authorities = JURY_PROTECTED_BASES
+      .filter(function (b) { return hits.indexOf(b.key) !== -1; })
+      .map(function (b) { return b.authority; });
+    return {
+      ok: false, code: 'PROTECTED_BASIS', bases: hits, authorities: authorities,
+      message: 'This reason rests on ' + hits.join(' and ') +
+        ', which cannot lawfully be the basis of a peremptory strike. Record what the juror actually said or did that bears on this case instead.'
+    };
+  }
+  return { ok: true };
+}
+
+// A Batson-defensible record is more than a permissible reason: it has to be
+// tied to something the juror actually said or did. A reason with no anchor
+// in the voir dire record is exactly what fails at Batson step three.
+function juryBuildStrikeRecord(input) {
+  input = input || {};
+  var reasonCheck = juryCheckStrikeReason(input.reason);
+  if (!reasonCheck.ok) return { ok: false, ...reasonCheck };
+
+  var quote = String(input.juror_statement || '').trim();
+  if (!quote) {
+    return {
+      ok: false, code: 'NO_ANCHOR',
+      message: 'Tie this strike to what the juror actually said or did on the record. An untethered reason is the kind that fails at Batson step three.'
+    };
+  }
+  return {
+    ok: true,
+    record: {
+      juror_id: String(input.juror_id || '').trim(),
+      reason: String(input.reason).trim(),
+      juror_statement: quote,
+      case_relevance: String(input.case_relevance || '').trim(),
+      recorded_by: input.recorded_by || '',
+      recorded_at: new Date().toISOString(),
+      authorities: JURY_AUTHORITIES.map(function (a) { return a.cite; })
+    }
+  };
+}
+
+// Voir dire follow-ups are generated from the ATTITUDE dimensions, never from
+// demographics -- so the tool cannot suggest probing someone because of who
+// they are rather than what they have said.
+function juryFollowUpPrompts(dimensionKey, jurorStatement) {
+  var stem = String(jurorStatement || '').trim();
+  var byDim = {
+    authority_trust: [
+      'What experiences shaped how much you trust institutions like this one?',
+      'Has an organisation ever handled something badly for you? What happened?'
+    ],
+    personal_responsibility: [
+      'When something goes wrong, how do you usually think about who bears responsibility?',
+      'Can you describe a time you felt someone was blamed unfairly, or not blamed enough?'
+    ],
+    damages_attitude: [
+      'How do you feel about money being used to compensate for harm that is not financial?',
+      'Is there an amount you would consider simply too much, regardless of the evidence?'
+    ],
+    corporate_trust: [
+      'What has shaped your view of how large organisations treat people?',
+      'Have you worked for or against a company in a dispute before?'
+    ],
+    science_deference: [
+      'When two experts disagree, how do you decide which to credit?',
+      'How comfortable are you setting aside your own judgement for an expert\'s?'
+    ],
+    prior_experience: [
+      'Have you or someone close to you been through anything like what this case involves?',
+      'Would that experience make it harder to weigh this case only on its evidence?'
+    ]
+  };
+  var qs = byDim[dimensionKey] || [];
+  if (stem) {
+    qs = ['You said: "' + stem.slice(0, 160) + '" — can you tell me more about what led you to that?'].concat(qs);
+  }
+  return qs;
+}
+
+
+// ══ PHASE A/B CLIENT ══════════════════════════════════════════════════════
+var REFERENCE_API = 'https://sairn.vercel.app/api/legal-reference';
+function referenceFetch(action, payload) {
+  var lic = lawLicenseKey();
+  if (!lic) return Promise.resolve({ error: { message: 'No license key' } });
+  return fetch(REFERENCE_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + lic },
+    body: JSON.stringify(Object.assign({ action: action }, payload || {}))
+  }).then(function (r) { return r.json().then(function (d) { d._httpStatus = r.status; return d; }); })
+    .catch(function (e) { return { error: { message: 'Network error: ' + e.message } }; });
+}
+
+function refDefine() {
+  var term = ($('ref-term').value || '').trim();
+  var el = $('ref-def-result');
+  if (!term) { toast('Enter a term'); return; }
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px">Looking up&hellip;</div>';
+  referenceFetch('define', { term: term }).then(function (d) {
+    if (d.error) { el.innerHTML = '<div class="note" style="margin:0">' + H(d.error.message) + '</div>'; return; }
+    if (!d.ok) {
+      // Honest miss. The app shows what happened and offers the source -- it
+      // never fills the gap with a definition of its own.
+      el.innerHTML = '<div class="note" style="margin:0"><b>No definition shown.</b> ' + H(d.message || 'Lookup failed.') +
+        (d.source_url ? ' <a href="' + H(d.source_url) + '" target="_blank" rel="noopener">Open the source</a>' : '') + '</div>';
+      return;
+    }
+    el.innerHTML =
+      '<div class="card" style="margin:0"><div class="cb">' +
+      '<div style="font-weight:700;font-size:15px;margin-bottom:6px">' + H(d.term) + '</div>' +
+      d.paragraphs.slice(0, 4).map(function (p) { return '<p style="margin:0 0 8px;font-size:13px;line-height:1.6">' + H(p) + '</p>'; }).join('') +
+      (d.crossReferences.length ? '<div style="font-size:12px;color:var(--muted);margin-top:6px">Related: ' +
+        d.crossReferences.map(function (c) { return '<a href="' + H(c.url) + '" target="_blank" rel="noopener">' + H(c.term) + '</a>'; }).join(', ') + '</div>' : '') +
+      '<div style="font-size:11px;color:var(--muted);border-top:1px solid var(--border);margin-top:10px;padding-top:8px">' +
+      'Source: <a href="' + H(d.source_url) + '" target="_blank" rel="noopener">' + H(d.source_name) + '</a> &middot; retrieved ' + H(String(d.retrieved_at).slice(0, 10)) +
+      '</div></div></div>';
+  });
+}
+
+function refRenderCoverage() {
+  var el = $('ref-coverage');
+  if (!el) return;
+  referenceFetch('coverage', {}).then(function (d) {
+    if (!d || !d.coverage) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div style="font-size:12px">' + d.coverage.map(function (c) {
+      return '<div style="display:flex;gap:8px;padding:3px 0;align-items:flex-start">' +
+        '<span class="badge ' + (c.covered ? 'bg' : 'bx') + '" style="flex:none">' + (c.covered ? 'Covered' : 'Not covered') + '</span>' +
+        '<span><b>' + H(c.label) + '</b>' + (c.source ? ' &mdash; ' + H(c.source) : '') +
+        '<div style="color:var(--muted)">' + H(c.note) + '</div></span></div>';
+    }).join('') + '</div>';
+  });
+}
+
+function refUkSearch() {
+  var q = ($('ref-uk-q').value || '').trim();
+  var el = $('ref-uk-result');
+  if (!q) { toast('Enter a search'); return; }
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px">Searching&hellip;</div>';
+  referenceFetch('intl_search', { query: q, per_page: 8 }).then(function (d) {
+    if (d.error) { el.innerHTML = '<div class="note" style="margin:0">' + H(d.error.message) + '</div>'; return; }
+    if (!d.ok) { el.innerHTML = '<div class="note" style="margin:0">' + H(d.message || 'Search unavailable.') + '</div>'; return; }
+    if (!d.results.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 0">No judgments matched.</div>'; return; }
+    el.innerHTML = d.results.map(function (r) {
+      return '<div class="srow"><span class="slbl"><a href="' + H(r.url) + '" target="_blank" rel="noopener">' + H(r.title) + '</a>' +
+        '<div style="font-size:11px;color:var(--muted)">' + H(r.date) + ' &middot; ' + H(r.source_name) + '</div></span></div>';
+    }).join('') + '<div style="font-size:11px;color:var(--muted);margin-top:8px">Licence: ' + H(d.licence) + '</div>';
+  });
+}
+
+// ══ PHASE C WIRING ════════════════════════════════════════════════════════
+// Grounding: every citation the model produces is checked against the real
+// citator before it is shown as authority. Unverified citations are labelled
+// as such rather than quietly presented as real.
+function mtVerifyCitations(cites) {
+  if (!cites.length) return Promise.resolve([]);
+  return Promise.all(cites.slice(0, 6).map(function (c) {
+    return citatorFetch('lookup', { text: c }).then(function (d) {
+      var verified = !!(d && !d.error && d.ok !== false && d._httpStatus === 200 &&
+        (d.matched || d.clusters || d.results || d.citations));
+      return { citation: c, verified: verified, detail: d && d.error ? d.error.message : null };
+    }).catch(function () { return { citation: c, verified: false, detail: 'Verification unavailable' }; });
+  }));
+}
+
+function mtRun() {
+  var pos = ($('mt-position').value || '').trim();
+  var el = $('mt-result');
+  var btn = $('mt-run-btn');
+  if (!pos) { toast('Enter the position you want attacked'); return; }
+  var roleKey = $('mt-role').value || 'judge';
+  var role = MOCKTRIAL_ROLES[roleKey];
+  btn.disabled = true; btn.textContent = 'Running\u2026';
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px">Stress-testing&hellip;</div>';
+
+  var diff = juryDifficultyState();
+  var sys = role.stance +
+    '\n\nHARD RULES:\n' +
+    '1. Never state or imply a probability, percentage, odds, or likelihood of winning or losing. Not even loosely. If asked, say plainly that you do not predict outcomes.\n' +
+    '2. Raise concrete objections tied to the actual argument. Name the doctrine or rule each objection rests on.\n' +
+    '3. If you cite a case, give its real reporter citation. Do not invent citations. If you are not confident a citation is real, describe the principle without a citation instead.\n' +
+    '4. Be specific and adversarial. Vague encouragement is useless here.\n' +
+    '\nPractice-juror difficulty for context (training settings, not a real panel): ' +
+    'skepticism ' + diff.skepticism + '/10, disposition ' + diff.disposition + '/10 toward hostile, legal sophistication ' + diff.sophistication + '/10.';
+
+  fetch(PROXY, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ app_id: 'sairnlaw', is_demo: true, max_tokens: 1200, system: sys,
+      messages: [{ role: 'user', content: 'Position to attack:\n\n' + pos }] })
+  }).then(function (r) { return r.json(); }).then(function (data) {
+    if (data && data.error) { el.innerHTML = '<div class="note" style="margin:0">AI request failed.</div>'; return; }
+    var text = (data.content && data.content[0] && data.content[0].text) || '';
+    if (!text.trim()) { el.innerHTML = '<div class="note" style="margin:0">No response returned.</div>'; return; }
+
+    // THE REFUSAL. A probability slipping through is not displayed at all --
+    // it is withheld and reported, because the failure mode this guards
+    // against is exactly a confident-sounding number being trusted.
+    var probe = mtAssertNoProbability(text);
+    if (!probe.clean) {
+      el.innerHTML = '<div class="note" style="margin:0"><b>Response withheld.</b> The adversary produced an outcome prediction ' +
+        '(&ldquo;' + H(probe.matched) + '&rdquo;), which this tool does not show. There is no measured basis for such a figure ' +
+        'and it would read as one. Re-run to get a properly grounded critique.</div>';
+      return;
+    }
+
+    var cites = mtExtractCitations(text);
+    el.innerHTML = '<div class="card" style="margin:0"><div class="cb">' +
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">' + H(role.label) + ' &middot; adversarial critique, not a prediction</div>' +
+      '<div style="white-space:pre-wrap;font-size:13px;line-height:1.6">' + H(text) + '</div>' +
+      (cites.length ? '<div id="mt-cites" style="margin-top:12px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:12px;color:var(--muted)">Checking ' + cites.length + ' citation' + (cites.length === 1 ? '' : 's') + ' against the citator&hellip;</div></div>' : '') +
+      '</div></div>';
+
+    if (cites.length) {
+      mtVerifyCitations(cites).then(function (checked) {
+        var box = $('mt-cites');
+        if (!box) return;
+        box.innerHTML = '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Citation check</div>' +
+          checked.map(function (c) {
+            return '<div class="srow"><span class="slbl">' + H(c.citation) + '</span><span class="sval">' +
+              (c.verified
+                ? '<span class="badge bg">Found in citator</span>'
+                : '<span class="badge br">Not verified &mdash; do not rely on this</span>') +
+              '</span></div>';
+          }).join('') +
+          '<div style="font-size:11px;color:var(--muted);margin-top:6px">A citation the citator cannot find has not been confirmed to exist. Check it yourself before using it.</div>';
+      });
+    }
+  }).catch(function () {
+    el.innerHTML = '<div class="note" style="margin:0">Network error.</div>';
+  }).then(function () {
+    btn.disabled = false; btn.textContent = 'Stress-test this position';
+  });
+}
+
+// ══ PHASE D WIRING ════════════════════════════════════════════════════════
+function mtRenderMatterOptions() {
+  var sel = $('mt-matter');
+  if (!sel) return;
+  var list = (typeof matters === 'function') ? matters() : [];
+  sel.innerHTML = '<option value="">No specific matter</option>' + list.map(function (m) {
+    return '<option value="' + H(m.matter_number) + '">' + H(m.matter_number + ' — ' + m.matter_name) + '</option>';
+  }).join('');
+}
+
+function juryDifficultyState() {
+  var out = {};
+  JURY_DIFFICULTY_DIMENSIONS.forEach(function (d) {
+    var el = $('jslider-' + d.key);
+    out[d.key] = el ? Number(el.value) : 5;
+  });
+  return out;
+}
+
+function juryRenderSliders() {
+  var el = $('jury-sliders');
+  if (!el) return;
+  el.innerHTML = JURY_DIFFICULTY_DIMENSIONS.map(function (d) {
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:13px"><b>' + H(d.label) + '</b>' +
+      '<span id="jslider-val-' + d.key + '" style="color:var(--muted)">5</span></div>' +
+      '<input type="range" min="1" max="10" value="5" id="jslider-' + d.key + '" style="width:100%" ' +
+      'oninput="document.getElementById(\'jslider-val-' + d.key + '\').textContent=this.value">' +
+      '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)">' +
+      '<span>' + H(d.low) + '</span><span>' + H(d.high) + '</span></div>' +
+      '<div style="font-size:11px;color:var(--muted)">' + H(d.note) + '</div></div>';
+  }).join('');
+}
+
+function juryRenderDims() {
+  var sel = $('jury-dim');
+  if (!sel) return;
+  sel.innerHTML = JURY_ATTITUDE_DIMENSIONS.map(function (d) {
+    return '<option value="' + H(d.key) + '">' + H(d.label) + '</option>';
+  }).join('');
+}
+
+function juryPrompts() {
+  var dim = $('jury-dim').value;
+  var said = ($('jury-said').value || '').trim();
+  var qs = juryFollowUpPrompts(dim, said);
+  var el = $('jury-prompt-result');
+  el.innerHTML = qs.length
+    ? '<div style="margin-top:8px">' + qs.map(function (q) { return '<div class="srow"><span class="slbl">' + H(q) + '</span></div>'; }).join('') +
+      '<div style="font-size:11px;color:var(--muted);margin-top:6px">These follow the attitude area you chose. Nothing here is generated from a juror\'s demographics.</div></div>'
+    : '<div style="color:var(--muted);font-size:13px">No prompts for that area.</div>';
+}
+
+function juryStrikeLog() { try { var s = localStorage.getItem('law_strike_log'); if (s) return JSON.parse(s); } catch (e) {} return []; }
+function juryStrikeSave(l) { try { localStorage.setItem('law_strike_log', JSON.stringify(l)); return true; } catch (e) { return false; } }
+
+function juryRecordStrike() {
+  var el = $('jstrike-result');
+  var built = juryBuildStrikeRecord({
+    juror_id: $('jstrike-id').value,
+    reason: $('jstrike-reason').value,
+    juror_statement: $('jstrike-quote').value,
+    case_relevance: $('jstrike-rel').value,
+    recorded_by: (localStorage.getItem('law_employee_id') || '')
+  });
+  if (!built.ok) {
+    var extra = built.authorities
+      ? '<div style="font-size:11px;margin-top:6px">Controlling authority: ' + built.authorities.map(H).join('; ') + '</div>'
+      : '';
+    el.innerHTML = '<div style="background:#fee2e2;border:1px solid #fecaca;border-radius:6px;padding:10px 14px;color:#991b1b;font-size:13px">' +
+      '<b>Not recorded.</b> ' + H(built.message) + extra + '</div>';
+    return;
+  }
+  var log = juryStrikeLog();
+  log.push(built.record);
+  juryStrikeSave(log);
+  el.innerHTML = '<div style="background:#dcfce7;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;color:#166534;font-size:13px">' +
+    'Strike recorded with its anchor in the voir dire record.</div>';
+  $('jstrike-reason').value = ''; $('jstrike-quote').value = ''; $('jstrike-rel').value = ''; $('jstrike-id').value = '';
+  juryRenderStrikeLog();
+}
+
+function juryRenderStrikeLog() {
+  var el = $('jstrike-log');
+  if (!el) return;
+  var log = juryStrikeLog();
+  if (!log.length) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No strikes recorded yet.</div>'; return; }
+  el.innerHTML = '<div style="font-size:12px;font-weight:700;margin-bottom:6px">Recorded strikes (' + log.length + ')</div>' +
+    log.slice().reverse().map(function (r) {
+      return '<div class="card" style="margin:0 0 8px"><div class="cb" style="font-size:12px">' +
+        '<div><b>Juror ' + H(r.juror_id || '—') + '</b> &middot; ' + H(String(r.recorded_at).slice(0, 16).replace('T', ' ')) + '</div>' +
+        '<div style="margin-top:4px"><b>Reason:</b> ' + H(r.reason) + '</div>' +
+        '<div style="margin-top:2px;font-style:italic;color:var(--muted)">&ldquo;' + H(r.juror_statement) + '&rdquo;</div>' +
+        (r.case_relevance ? '<div style="margin-top:2px"><b>Relevance:</b> ' + H(r.case_relevance) + '</div>' : '') +
+        '</div></div>';
+    }).join('');
+}
+
+function juryRenderAuthorities() {
+  var el = $('jury-authorities');
+  if (!el) return;
+  el.innerHTML = JURY_AUTHORITIES.map(function (a) {
+    return '<div style="margin-bottom:10px;font-size:13px">' +
+      '<a href="' + H(a.source_url) + '" target="_blank" rel="noopener"><b>' + H(a.cite) + '</b></a>' +
+      '<div style="color:var(--muted);font-size:12px">' + H(a.holding) + '</div></div>';
+  }).join('');
+}
+
+function juryRenderAll() { juryRenderSliders(); juryRenderDims(); juryRenderStrikeLog(); juryRenderAuthorities(); }
+
 </script>
 </body>
 </html>
