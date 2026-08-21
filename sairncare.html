@@ -662,6 +662,9 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="mtitle">Edit Facility Profile</div>
     <div class="fg"><label>Facility Name</label><input id="fc-name" placeholder="Lakeshore Assisted Living"></div>
     <div class="fg"><label>Demo Company (shown on Dashboard)</label><input id="fc-company" placeholder="Lakeshore Assisted Living"></div>
+    <div class="fr"><div class="fg"><label>Licensing State</label><input id="fc-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
+      <div class="fg"><label>State License Number</label><input id="fc-licnum" placeholder="ALF-OH-11923"></div></div>
+    <div class="note">The licensing state is the jurisdiction this facility is actually licensed in. It is validated server-side against the real two-letter US state list and is stored per facility, not per account -- a campus that also holds a separately licensed skilled-nursing entity will record that one on its own. Nothing enforces state rules yet; this field exists so the compliance-rules engine has a real jurisdiction to work from when it is built, instead of guessing. This is separate from the Medicaid HCBS waiver state under Billing and is deliberately not derived from it.</div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeFacilityModal()">Cancel</button>
       <button class="btn bp" onclick="saveFacility()">Save</button>
@@ -820,6 +823,10 @@ function alfEnterApp(d){
   alfHydrateBilling().then(function(merged){if(merged)rBilling();});
   alfHydrateIncidents().then(function(merged){if(merged)rIncidentLog();});
   alfHydrateActivities().then(function(merged){if(merged)rActivities();});
+  // Facility profile drives three separate panels (Settings profile, the
+  // Compliance deadline field, the Billing rate card), so all three re-render
+  // when the real server copy lands over whatever this device had cached.
+  alfHydrateFacility().then(function(merged){if(merged){rSettings();rCompliancePanel();rBillingPanel();}});
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -1736,9 +1743,11 @@ function rIncidentLog(){
       '<td><button class="btn bo bs" onclick="openIncidentUpdateModal(\''+i.id+'\')">Update</button></td></tr>';
   }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No incidents on file</td></tr>';
 }
-function saveIncidentDeadline(){
+async function saveIncidentDeadline(){
+  if(!alfIsManagement()){toast('Only management can change facility settings');return;}
   var f=Object.assign({},facility(),{incident_deadline:$('cp-deadline').value.trim()});
-  st('alf_facility',f);toast('Reporting deadline saved (facility setting, not enforced by the app)');
+  var syncResult=await alfSaveFacility(f);
+  toast(syncResult?'Reporting deadline saved (facility setting, not enforced by the app)':'Saved on this device only -- server sync failed, try again with a connection');
 }
 function openIncidentModal(){
   $('inc-category').value='fall';$('inc-date').value=new Date().toISOString().slice(0,10);
@@ -1886,13 +1895,62 @@ function aiAsk(){
 }
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────
-function facility(){return ld('alf_facility',{name:'',company:'',cs_policy:'shift_change_count',
+// ── FACILITY PROFILE (server-backed as of 2026-08-21) ────────────────────
+// This record used to live ONLY in localStorage. That was fine for a device
+// preference and wrong for what it actually holds -- a facility's licensing
+// state is a legal fact about a licensed entity, identical on every device,
+// and the compliance-rules engine coming later cannot trust a value each
+// browser keeps its own private copy of. It is now synced through
+// api/sd-data.js's alf_facility branch; localStorage stays as the offline
+// cache, same read-local/write-both shape as every other resource here.
+//
+// FACILITY_ID: the server table is keyed by (license_hash, facility_id)
+// because a CCRC campus routinely holds more than one license (an SNF is
+// separately licensed from the AL units it shares a campus with in most
+// states). v1 ships ONE facility and no switcher UI -- but the key is
+// already right, so the second licensed entity is a new row later rather
+// than a migration of every existing one.
+var FACILITY_ID='FAC-DEFAULT';
+function facility(){return ld('alf_facility',{name:'',company:'',licensing_state:'',license_number:'',
+  cs_policy:'shift_change_count',
   roomboard_rate:0,al1_rate:0,al2_rate:0,al3_rate:0,hcbs_enabled:false,hcbs_state:''});}
+// Server read is REDACTED for non-management (the rate card is stripped
+// server-side, see api/sd-data.js). That is why this overwrites the local
+// cache wholesale rather than merging field-by-field: a caregiver's cache
+// SHOULD lose any rates it was holding. It is safe against wiping a
+// management user's rates because their read is never redacted, and safe
+// against wiping anything when the table is empty because a missing row
+// leaves the local cache untouched instead of writing a blank record.
+function alfHydrateFacility(){
+  if(!alfLicenseKey())return Promise.resolve(false);
+  return alfData('read','alf_facility',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows)||!serverRows.length)return false;
+    var row=serverRows.find(function(f){return f&&f.id===FACILITY_ID;});
+    if(!row)return false;
+    var merged=Object.assign({},row);
+    delete merged.id;
+    st('alf_facility',merged);
+    return true;
+  });
+}
+// Single write path for every facility-profile saver below, so none of them
+// can drift into a local-only write again. Returns the server result so the
+// caller can tell the user the truth about whether it actually synced.
+function alfSaveFacility(f){
+  st('alf_facility',f);
+  return alfData('write','alf_facility',Object.assign({id:FACILITY_ID},f),true);
+}
 function rSettings(){
   var f=facility();
   $('set-facility').innerHTML='<div class="srow"><span class="slbl">Facility Name</span><span class="sval">'+H(f.name||'Not set')+'</span></div>'+
-    '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(f.company||'Not set')+'</span></div>';
-  var csSel=$('set-cs-policy');if(csSel)csSel.value=f.cs_policy||'shift_change_count';
+    '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(f.company||'Not set')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Licensing State</span><span class="sval">'+(f.licensing_state?H(f.licensing_state):'<span style="color:var(--muted)">Not set</span>')+'</span></div>'+
+    '<div class="srow"><span class="slbl">State License Number</span><span class="sval">'+H(f.license_number||'Not set')+'</span></div>';
+  // Facility settings are management-write server-side. Disable rather than
+  // leave a control that silently refuses -- a dead input is worse than an
+  // obviously-unavailable one.
+  var csSel=$('set-cs-policy');
+  if(csSel){csSel.value=f.cs_policy||'shift_change_count';csSel.disabled=!alfIsManagement();}
   var rbEl=$('rc-roomboard');if(rbEl)rbEl.value=f.roomboard_rate||'';
   var a1=$('rc-al1');if(a1)a1.value=f.al1_rate||'';
   var a2=$('rc-al2');if(a2)a2.value=f.al2_rate||'';
@@ -1902,28 +1960,49 @@ function rSettings(){
   rcToggleHcbsState();
 }
 function rcToggleHcbsState(){var el=$('rc-hcbs-state-row');if(el)el.style.display=($('rc-hcbs-enabled').value==='1')?'block':'none';}
-function saveRateCard(){
+async function saveRateCard(){
+  if(!alfIsManagement()){toast('Only management can change the rate card');return;}
   var f=Object.assign({},facility(),{
     roomboard_rate:Number($('rc-roomboard').value)||0,al1_rate:Number($('rc-al1').value)||0,
     al2_rate:Number($('rc-al2').value)||0,al3_rate:Number($('rc-al3').value)||0,
     hcbs_enabled:$('rc-hcbs-enabled').value==='1',hcbs_state:$('rc-hcbs-state').value.trim().toUpperCase()
   });
-  st('alf_facility',f);toast('Billing rate card saved');
+  var syncResult=await alfSaveFacility(f);
+  toast(syncResult?'Billing rate card saved':'Saved on this device only -- server sync failed, try again with a connection');
 }
 function careRateFor(careLevel){
   var f=facility();
   var m={al1:f.al1_rate,al2:f.al2_rate,al3:f.al3_rate};
   return Number(m[careLevel])||0;
 }
-function openFacilityModal(){var f=facility();$('fc-name').value=f.name||'';$('fc-company').value=f.company||'';$('facilitymodal').classList.add('on');}
-function closeFacilityModal(){$('facilitymodal').classList.remove('on');}
-function saveFacility(){
-  var f=Object.assign({},facility(),{name:$('fc-name').value.trim(),company:$('fc-company').value.trim()});
-  st('alf_facility',f);closeFacilityModal();rSettings();toast('Facility profile saved');
+function openFacilityModal(){
+  if(!alfIsManagement()){toast('Only management can change the facility profile');return;}
+  var f=facility();
+  $('fc-name').value=f.name||'';$('fc-company').value=f.company||'';
+  $('fc-state').value=f.licensing_state||'';$('fc-licnum').value=f.license_number||'';
+  $('facilitymodal').classList.add('on');
 }
-function saveCsPolicy(){
+function closeFacilityModal(){$('facilitymodal').classList.remove('on');}
+// Client-side format check only -- the real validation is the USPS list in
+// api/sd-data.js's alf_facility branch, which refuses a bad code outright.
+// This exists so the user gets told before the round-trip, not instead of it.
+function alfStateLooksValid(s){return s===''||/^[A-Z]{2}$/.test(s);}
+async function saveFacility(){
+  var stateVal=($('fc-state').value||'').trim().toUpperCase();
+  if(!alfStateLooksValid(stateVal)){toast('Licensing state must be a two-letter code (e.g. OH) or left blank');return;}
+  var f=Object.assign({},facility(),{
+    name:$('fc-name').value.trim(),company:$('fc-company').value.trim(),
+    licensing_state:stateVal,license_number:$('fc-licnum').value.trim()
+  });
+  var syncResult=await alfSaveFacility(f);
+  closeFacilityModal();rSettings();
+  toast(syncResult?'Facility profile saved':'Saved on this device only -- server sync failed, try again with a connection');
+}
+async function saveCsPolicy(){
+  if(!alfIsManagement()){toast('Only management can change facility settings');return;}
   var f=Object.assign({},facility(),{cs_policy:$('set-cs-policy').value});
-  st('alf_facility',f);toast('Controlled-substance count policy saved');
+  var syncResult=await alfSaveFacility(f);
+  toast(syncResult?'Controlled-substance count policy saved':'Saved on this device only -- server sync failed, try again with a connection');
 }
 function csPolicyLabel(v){
   var m={shift_change_count:'Joint shift-change count',wi_daily_count:'Wisconsin: Daily Schedule II count',

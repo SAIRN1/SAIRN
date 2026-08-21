@@ -50,5 +50,12 @@ module.exports = {
   // sql/sairncare_activities_schema.sql's own header for the broad-read/
   // narrow-write reasoning.
     'alf_activities',
+  // SAIRNcare facility profile + licensing jurisdiction (2026-08-21) -- see
+  // sql/sairncare_facility_schema.sql's own header. This replaces a
+  // localStorage-only 'alf_facility' key; licensing_state is the field that
+  // forced it server-side, since a licensed entity's state is a legal fact
+  // that must be identical on every device before any compliance-rules
+  // engine can trust it. Keyed by facility_id, not license_hash alone.
+    'alf_facility',
   ],
 };
