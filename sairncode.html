@@ -681,6 +681,7 @@
             <div class="nav-group-row">
                 <button class="nav-btn" onclick="showPanel('telehealth')" data-tip="Coding and billing rules for telehealth visits">Telehealth</button>
                 <button class="nav-btn" onclick="showPanel('anesthesia')" data-tip="Anesthesia-specific coding and time-unit calculations">Anesthesia</button>
+                <button class="nav-btn" onclick="showPanel('drugadmin')" data-tip="Drug administration -- J-code unit math, JW/JZ waste modifiers, infusion hierarchy, NDC format">Drug Administration</button>
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
@@ -1511,6 +1512,110 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                     <tbody id="abu-tbody"></tbody>
                 </table></div>
             </div>
+        </div>
+
+        <!-- Drug Administration Panel (2026-08-21, gap-closure pass 2 item 2).
+             Deterministic checkers only -- every rule below is a mechanical
+             consequence of a CMS-published requirement, none is a model
+             judgment, and none of it persists (nothing here is a record of
+             care, it is arithmetic and a modifier gate). No new server
+             resource and no migration for the same reason. -->
+        <div id="panel-drugadmin" class="panel">
+            <h1 class="panel-title">Drug Administration &amp; J-Code Billing</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:16px;">Four things must line up on a drug claim or it is denied: the ICD-10 supporting medical necessity, the J-code (drug and quantity), the CPT administration code (how it was given), and the NDC. The tools below cover the three that are pure arithmetic or a mechanical rule; medical necessity is a documentation judgment and is deliberately not automated here.</div>
+
+            <!-- 1. Billing-unit math -->
+            <div style="font-weight:700;font-size:16px;margin:8px 0;">1. Billing Unit Calculator</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Units are counted by the <b>code descriptor's</b> billing unit, never per vial and never per order. Enter the billing unit from the descriptor itself (e.g. J1745 &quot;Injection, infliximab, excludes biosimilar, <b>10 mg</b>&quot; &rarr; 10). For a single-dose container the billable amount is the <b>labeled vial amount</b>, not the dose, and the difference is billed as waste.</div>
+            <div class="toolbar">
+                <input type="number" step="any" id="du-unit-amount" placeholder="Billing unit per descriptor (e.g. 10)" class="search-input">
+                <input type="number" step="any" id="du-dose" placeholder="Dose administered (same units)" class="search-input">
+                <select id="du-container">
+                    <option value="">Container type...</option>
+                    <option value="single">Single-dose container / single-use package</option>
+                    <option value="multi">Multiple-dose container</option>
+                </select>
+            </div>
+            <div class="toolbar">
+                <input type="number" step="any" id="du-vial-size" placeholder="Labeled amount per vial (single-dose only)" class="search-input">
+                <input type="number" step="1" id="du-vial-count" placeholder="Vials opened (single-dose only)" class="search-input">
+                <button class="btn btn-primary" onclick="runDrugUnitCalc()" id="du-calc-btn">Calculate Units</button>
+            </div>
+            <div id="du-calc-result" style="margin-top:8px;"></div>
+
+            <!-- 2. JW/JZ gate -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2. JW / JZ Waste Modifier Gate</div>
+            <div id="du-jwjz-explainer" style="font-size:12px;color:#666;margin-bottom:8px;"></div>
+            <div class="toolbar">
+                <select id="du-jw-container">
+                    <option value="">Container type...</option>
+                    <option value="single">Single-dose container / single-use package</option>
+                    <option value="multi">Multiple-dose container</option>
+                </select>
+                <select id="du-jw-payable">
+                    <option value="">Separately payable under Part B?</option>
+                    <option value="yes">Yes — separately payable</option>
+                    <option value="no">No — packaged (OPPS/ASC) or bundled</option>
+                    <option value="unknown">Not sure</option>
+                </select>
+                <select id="du-jw-setting">
+                    <option value="office">Physician office</option>
+                    <option value="opps">Hospital outpatient / ASC</option>
+                    <option value="fqhc">FQHC / RHC</option>
+                    <option value="esrd">ESRD facility</option>
+                </select>
+            </div>
+            <div class="toolbar">
+                <select id="du-jw-vaccine">
+                    <option value="no">Not a §1861(s)(10) vaccine</option>
+                    <option value="yes">Influenza / pneumococcal / COVID-19 vaccine</option>
+                </select>
+                <select id="du-jw-waste">
+                    <option value="">Was any labeled drug discarded?</option>
+                    <option value="yes">Yes — some was discarded</option>
+                    <option value="no">No — nothing discarded</option>
+                </select>
+                <button class="btn btn-primary" onclick="runJwJzGate()" id="du-jw-btn">Check Modifier</button>
+            </div>
+            <div id="du-jwjz-result" style="margin-top:8px;"></div>
+
+            <!-- 3. Infusion hierarchy -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">3. Infusion Hierarchy &mdash; Which Code Is &quot;Initial&quot;</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Only one initial service code may be reported per encounter. The hierarchy is chemotherapy &gt; therapeutic/prophylactic/diagnostic &gt; hydration, regardless of the order the services were actually given. Everything else on the encounter is a sequential, concurrent, or add-on code.</div>
+            <div class="toolbar" id="du-infusion-checks" style="flex-wrap:wrap;gap:14px;"></div>
+            <div class="toolbar">
+                <input type="text" id="du-start-time" placeholder="Infusion start time (e.g. 09:15)" class="search-input">
+                <input type="text" id="du-stop-time" placeholder="Infusion stop time (e.g. 10:40)" class="search-input">
+                <button class="btn btn-primary" onclick="runInfusionHierarchy()" id="du-inf-btn">Determine Initial Code</button>
+            </div>
+            <div id="du-infusion-result" style="margin-top:8px;"></div>
+
+            <!-- 4. NDC format -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">4. NDC Format Check</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Claims need the 11-digit billing format in 5-4-2 configuration with <b>no</b> hyphens or spaces, preceded by the N4 qualifier, plus a unit-of-measure qualifier and quantity. Package labels often carry a 10-digit NDC in 4-4-2, 5-3-2, or 5-4-1 &mdash; a leading zero goes into the short segment to reach 5-4-2.</div>
+            <div class="toolbar">
+                <input type="text" id="du-ndc" placeholder="NDC as printed on the package (hyphens OK)" class="search-input" style="flex:1">
+                <select id="du-ndc-uom">
+                    <option value="">Unit of measure...</option>
+                    <option value="UN">UN — vial/tablet/kit/device</option>
+                    <option value="ML">ML — liquid, solution, suspension</option>
+                    <option value="GR">GR — ointment, cream, bulk powder</option>
+                    <option value="F2">F2 — international units</option>
+                </select>
+                <input type="number" step="any" id="du-ndc-qty" placeholder="Quantity" class="search-input">
+                <button class="btn btn-primary" onclick="runNdcCheck()" id="du-ndc-btn">Check NDC</button>
+            </div>
+            <div id="du-ndc-result" style="margin-top:8px;"></div>
+
+            <!-- 5. Biosimilar / NOC reference -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">5. Biosimilar &amp; NOC Code Traps</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Two named denial triggers. Enter a HCPCS code to check it against both.</div>
+            <div class="toolbar">
+                <input type="text" id="du-trap-code" placeholder="HCPCS code (e.g. J9035, J3490)" class="search-input" style="flex:1">
+                <button class="btn btn-primary" onclick="runDrugCodeTrapCheck()" id="du-trap-btn">Check Code</button>
+            </div>
+            <div id="du-trap-result" style="margin-top:8px;"></div>
+            <div id="du-biosimilar-reference" style="margin-top:12px;"></div>
         </div>
 
         <!-- Compliance Panel -->
@@ -7168,6 +7273,377 @@ How to answer:
             }
         }
 
+        // ================================================================
+        // DRUG ADMINISTRATION / J-CODE LAYER (2026-08-21, gap-closure pass 2
+        // item 2). Every rule here is deterministic and traceable to a CMS
+        // document quoted in DU_SOURCES -- no model judgment anywhere in this
+        // section, deliberately, because unit math and modifier eligibility
+        // are exactly the kind of mechanical rules an LLM should not be
+        // guessing at when a wrong answer is a returned claim.
+        // ================================================================
+        var DU_SOURCES = {
+            jwjz: 'CMS, "Drugs and Biologicals — JW Modifier and JZ Modifier Policy Frequently Asked Questions" (cms.gov). JW required since 1 Jan 2017 for discarded amounts from single-dose containers separately payable under Part B; JZ required no later than 1 Jul 2023 when there are no discarded amounts; from 1 Oct 2023 claims not using the modifiers as appropriate "may be returned as un-processable until claims are properly resubmitted."',
+            jwjz_exempt: 'Same FAQ, Q7 and Q6: "The use of these modifiers is not appropriate for drugs that are from multiple-dose containers." "The JW and JZ modifier policy does not apply for drugs that are not separately payable, such as packaged OPPS or ASC drugs, or drugs administered in the FQHC or RHC setting. The JW and JZ modifiers are not required for vaccines described under section 1861(s)(10) of the Act that are furnished from single-dose containers." In the ESRD setting the modifiers apply to separately payable non-dialysis drugs and are reported with the AY modifier.',
+            waste_basis: 'Same FAQ, Q3: "the discarded amount is the labeled amount on the single-dose container (or containers if more than one is required) minus the dose." Q10: "The JW modifier must not be used to report discarded amounts of overfill" — billing overfill has been prohibited since 1 Jan 2011 (75 FR 73466-70).',
+            fractional: 'Same FAQ, Q11: "CMS does not use fractional billing units. Therefore, the JW modifier should not be used when the dose of the drug administered is less than the billing unit. In this situation, the billing provider or supplier would report administering the full billing unit along with the JZ modifier."',
+            hierarchy: 'CPT drug-administration guidelines and CMS/MAC guidance (Noridian, "Chemotherapy and Nonchemotherapy"): the reporting hierarchy is chemotherapy > therapeutic/prophylactic/diagnostic > hydration, and only one "initial" service code (96360, 96365, 96374, 96409, 96413) may be reported per encounter.',
+            ndc: 'NDC billing format: 11 digits in 5-4-2 configuration, no spaces or hyphens, preceded by the N4 qualifier, with a unit-of-measure qualifier (UN, ML, GR, F2) and quantity. A package NDC shorter than 11 digits takes a leading zero in the short segment.',
+            noc: 'CMS Medicare Coverage Database article A54880 and MAC guidance (FCSO, Palmetto GBA, Noridian): claims for not-otherwise-classified drug codes must report the drug name, dosage and NDC (Item 19 of the CMS-1500 or the electronic equivalent). An NOC code is not appropriate where a specific HCPCS code already describes the product.',
+            biosimilar: 'CMS Medicare Coverage Database article A52370, "Billing and Coding: Bevacizumab and biosimilars"; HCPCS descriptors for J1745 ("Injection, infliximab, excludes biosimilar, 10 mg") and J9035 ("Injection, bevacizumab, 10 mg").'
+        };
+
+        // Verified biosimilar families. Deliberately SMALL: only the two
+        // families actually checked against CMS during this build are here,
+        // each with the source above. This is not a drug database and must
+        // not grow into one by guesswork -- an unverified addition here is
+        // exactly the fabrication class Guardian Check 0b exists to catch.
+        var DU_BIOSIMILAR_FAMILIES = [
+            {
+                drug: 'Bevacizumab',
+                reference: { code: 'J9035', label: 'Injection, bevacizumab, 10 mg (reference product)' },
+                biosimilars: [
+                    { code: 'Q5107', label: 'bevacizumab-awwb (MVASI), 10 mg' },
+                    { code: 'Q5118', label: 'bevacizumab-bvzr (ZIRABEV), 10 mg' },
+                    { code: 'Q5126', label: 'bevacizumab-maly (ALYMSYS), 10 mg — effective 1 Jan 2023' },
+                    { code: 'Q5129', label: 'bevacizumab-adcd (VEGZELMA), 10 mg — effective 1 Apr 2023' },
+                    { code: 'Q5160', label: 'bevacizumab-nwgd (JOBEVNE), 10 mg — effective 1 Jan 2026' }
+                ]
+            },
+            {
+                drug: 'Infliximab',
+                reference: { code: 'J1745', label: 'Injection, infliximab, excludes biosimilar, 10 mg' },
+                biosimilars: [
+                    { code: 'Q5103', label: 'infliximab-dyyb (INFLECTRA), 10 mg' },
+                    { code: 'Q5104', label: 'infliximab-abda (RENFLEXIS), 10 mg' },
+                    { code: 'Q5121', label: 'infliximab-axxq (AVSOLA), 10 mg' }
+                ]
+            }
+        ];
+
+        var DU_NOC_CODES = {
+            J3490: 'Unclassified drugs',
+            J3590: 'Unclassified biologics',
+            J9999: 'Not otherwise classified, antineoplastic drugs'
+        };
+
+        // Initial-service codes, in hierarchy order. One and only one of
+        // these may be the encounter's initial code.
+        var DU_INFUSION_SERVICES = [
+            { key: 'chemo_inf',  rank: 1, label: 'Chemotherapy / complex biologic infusion', initial: '96413', timeBased: true },
+            { key: 'chemo_push', rank: 2, label: 'Chemotherapy IV push',                     initial: '96409', timeBased: false },
+            { key: 'ther_inf',   rank: 3, label: 'Therapeutic / prophylactic / diagnostic infusion', initial: '96365', timeBased: true },
+            { key: 'ther_push',  rank: 4, label: 'Therapeutic injection / IV push',           initial: '96374', timeBased: false },
+            { key: 'hydration',  rank: 5, label: 'Hydration infusion',                        initial: '96360', timeBased: true }
+        ];
+
+        // ── 1. Billing unit math ──
+        // Returns a structured result; the caller renders it. Never rounds
+        // silently: a dose that is not a whole multiple of the billing unit
+        // is REPORTED as such, because how it resolves depends on the
+        // container (waste is billable on a single-dose vial, not on an MDV)
+        // and getting that wrong in either direction is a real claim error.
+        function calcDrugBillingUnits(unitAmount, dose, container, vialSize, vialCount) {
+            if (!(unitAmount > 0)) return { ok: false, reason: 'Billing unit must be greater than zero.' };
+            if (!(dose > 0)) return { ok: false, reason: 'Dose administered must be greater than zero.' };
+            if (container !== 'single' && container !== 'multi') return { ok: false, reason: 'Select the container type — the waste rules differ and this cannot be answered without it.' };
+
+            var out = { ok: true, container: container, notes: [] };
+            var doseUnits = dose / unitAmount;
+
+            // CMS FAQ Q11: no fractional billing units. A dose below one
+            // billing unit bills as one full unit with JZ.
+            if (dose < unitAmount) {
+                out.subUnitDose = true;
+                out.billedUnits = 1;
+                out.administeredUnits = 1;
+                out.wasteUnits = 0;
+                out.notes.push('Dose is less than one billing unit. CMS does not use fractional billing units — report one full billing unit with JZ, not JW.');
+                return out;
+            }
+
+            if (container === 'multi') {
+                // Waste is not billable from a multiple-dose container, so
+                // only what was administered is billed.
+                out.administeredUnits = doseUnits;
+                out.billedUnits = doseUnits;
+                out.wasteUnits = 0;
+                out.notes.push('Multiple-dose container: only the administered amount is billable. Discarded drug from an MDV is not billable and JW/JZ do not apply.');
+                if (doseUnits !== Math.floor(doseUnits)) {
+                    out.notes.push('This dose is not a whole multiple of the billing unit — CMS does not use fractional billing units, so confirm the payer’s rounding rule before submitting.');
+                }
+                return out;
+            }
+
+            // Single-dose container: billable amount is the LABELED amount,
+            // and the difference is waste.
+            if (!(vialSize > 0) || !(vialCount > 0)) {
+                out.ok = false;
+                out.reason = 'Single-dose container: enter the labeled amount per vial and how many vials were opened. The billable amount is the labeled amount, not the dose — it cannot be derived from the dose alone.';
+                return out;
+            }
+            var labeledTotal = vialSize * vialCount;
+            if (labeledTotal < dose) {
+                out.ok = false;
+                out.reason = 'The labeled total (' + labeledTotal + ') is less than the dose administered (' + dose + '). Overfill is never billable, so the vial count or labeled amount needs correcting.';
+                return out;
+            }
+            var wasteAmount = labeledTotal - dose;
+            out.administeredUnits = doseUnits;
+            out.wasteUnits = wasteAmount / unitAmount;
+            out.billedUnits = labeledTotal / unitAmount;
+            out.labeledTotal = labeledTotal;
+            out.wasteAmount = wasteAmount;
+            out.notes.push('Single-dose container: billable amount is the labeled vial amount (' + labeledTotal + '), not the dose (' + dose + ').');
+            out.notes.push(wasteAmount > 0
+                ? 'Discarded ' + wasteAmount + ' → report the waste with JW.'
+                : 'Nothing discarded → report JZ.');
+            if (out.billedUnits !== Math.floor(out.billedUnits)) {
+                out.notes.push('Billed units are not a whole number — CMS does not use fractional billing units, so this needs resolving before submission rather than rounding here.');
+            }
+            return out;
+        }
+
+        // ── 2. JW/JZ gate ──
+        // FAILS CLOSED: an unknown separately-payable status returns
+        // 'undetermined', never a default "no modifier needed" — a missing
+        // required modifier is what gets the claim returned unprocessable.
+        function evaluateJwJz(container, payable, setting, isVaccine, hadWaste) {
+            if (!container) return { status: 'undetermined', message: 'Container type is required — JW/JZ apply to single-dose containers and single-use packages only.' };
+            if (container === 'multi') {
+                return { status: 'exempt', message: 'Not applicable. CMS: "The use of these modifiers is not appropriate for drugs that are from multiple-dose containers." Discarded drug from an MDV is not billable waste.' };
+            }
+            if (isVaccine === 'yes') {
+                return { status: 'exempt', message: 'Not required. CMS exempts vaccines described under §1861(s)(10) (influenza, pneumococcal, COVID-19) furnished from single-dose containers.' };
+            }
+            if (setting === 'fqhc') {
+                return { status: 'exempt', message: 'Not applicable. The JW/JZ policy does not apply to drugs administered in the FQHC or RHC setting.' };
+            }
+            if (payable === 'no') {
+                return { status: 'exempt', message: 'Not applicable. The policy does not apply to drugs that are not separately payable, such as packaged OPPS or ASC drugs.' };
+            }
+            if (payable !== 'yes') {
+                return { status: 'undetermined', message: 'Cannot determine. Whether the drug is separately payable under Part B decides whether a modifier is required at all, and this app will not assume it — in the hospital outpatient and ASC settings only separately payable drugs are subject to the requirement.' };
+            }
+            if (hadWaste !== 'yes' && hadWaste !== 'no') {
+                return { status: 'undetermined', message: 'A modifier IS required for this claim, but which one depends on whether any labeled drug was discarded. Answer that to get JW or JZ.' };
+            }
+            var esrdNote = setting === 'esrd' ? ' In the ESRD setting this is reported in conjunction with the AY modifier for separately payable non-dialysis drugs.' : '';
+            if (hadWaste === 'yes') {
+                return { status: 'required', modifier: 'JW', message: 'JW is required — report the discarded amount as a separate line. Do not report overfill as waste; billing overfill has been prohibited since 1 Jan 2011.' + esrdNote };
+            }
+            return { status: 'required', modifier: 'JZ', message: 'JZ is required to attest that nothing was discarded.' + esrdNote };
+        }
+
+        // ── 3. Infusion hierarchy ──
+        function determineInitialInfusionCode(selectedKeys, startTime, stopTime) {
+            var chosen = DU_INFUSION_SERVICES
+                .filter(function(s){ return selectedKeys.indexOf(s.key) !== -1; })
+                .sort(function(a,b){ return a.rank - b.rank; });
+            if (!chosen.length) return { ok: false, reason: 'Select at least one service performed during the encounter.' };
+            var initial = chosen[0];
+            var secondary = chosen.slice(1);
+            var needsTime = chosen.some(function(s){ return s.timeBased; });
+            var haveTime = !!(startTime && String(startTime).trim() && stopTime && String(stopTime).trim());
+            return {
+                ok: true,
+                initial: initial,
+                secondary: secondary,
+                needsTime: needsTime,
+                haveTime: haveTime,
+                timeWarning: needsTime && !haveTime
+                    ? 'A time-based infusion code is in this encounter. Start and stop times are required documentation — an assumed or default duration is not acceptable and cannot support the units billed.'
+                    : null
+            };
+        }
+
+        // ── 4. NDC format ──
+        // Handles the real 10-digit package formats (4-4-2, 5-3-2, 5-4-1) by
+        // inserting the leading zero into the short segment. An unhyphenated
+        // 10-digit string is deliberately NOT auto-converted: which segment
+        // is short is unknowable without the hyphens, and guessing produces a
+        // valid-looking but wrong NDC.
+        function normalizeNdc(raw) {
+            var s = String(raw == null ? '' : raw).trim();
+            if (!s) return { ok: false, reason: 'Enter the NDC from the package.' };
+            if (s.indexOf('-') !== -1) {
+                var seg = s.split('-');
+                if (seg.length !== 3) return { ok: false, reason: 'A hyphenated NDC must have exactly three segments.' };
+                if (!/^\d+$/.test(seg.join(''))) return { ok: false, reason: 'NDC segments must be digits only.' };
+                var lens = seg[0].length + '-' + seg[1].length + '-' + seg[2].length;
+                var map = { '5-4-2': null, '4-4-2': 0, '5-3-2': 1, '5-4-1': 2 };
+                if (!(lens in map)) return { ok: false, reason: 'Unrecognized NDC segment pattern ' + lens + '. Package NDCs are 5-4-2, 4-4-2, 5-3-2, or 5-4-1.' };
+                var padIndex = map[lens];
+                if (padIndex !== null) seg[padIndex] = '0' + seg[padIndex];
+                return { ok: true, ndc11: seg.join(''), converted: padIndex !== null, from: lens, segments: seg.join('-') };
+            }
+            if (!/^\d+$/.test(s)) return { ok: false, reason: 'NDC must contain digits only (no spaces or special characters on the claim).' };
+            if (s.length === 11) return { ok: true, ndc11: s, converted: false, from: '5-4-2', segments: s.slice(0,5)+'-'+s.slice(5,9)+'-'+s.slice(9) };
+            if (s.length === 10) return { ok: false, reason: 'This is a 10-digit NDC with no hyphens. Which segment needs the leading zero cannot be determined without them — re-enter it hyphenated as it appears on the package (4-4-2, 5-3-2, or 5-4-1).' };
+            return { ok: false, reason: 'NDC must be 11 digits in billing format. Got ' + s.length + '.' };
+        }
+
+        // ── 5. Biosimilar / NOC traps ──
+        function checkDrugCodeTraps(code) {
+            var c = String(code == null ? '' : code).trim().toUpperCase();
+            if (!c) return { type: 'none', message: 'Enter a HCPCS code.' };
+            if (DU_NOC_CODES[c]) {
+                return {
+                    type: 'noc',
+                    code: c,
+                    label: DU_NOC_CODES[c],
+                    message: 'This is a not-otherwise-classified code. The claim must carry the drug name, dosage and NDC (Item 19 of the CMS-1500 or the electronic equivalent); many clearinghouses also require the route in the narrative field. Two separate denial causes here: submitting an NOC code without that documentation, and using an NOC code at all when a specific HCPCS code already describes the product.'
+                };
+            }
+            for (var i = 0; i < DU_BIOSIMILAR_FAMILIES.length; i++) {
+                var fam = DU_BIOSIMILAR_FAMILIES[i];
+                if (fam.reference.code === c) {
+                    return { type: 'reference', family: fam, message: 'This is the REFERENCE product code for ' + fam.drug + '. If a biosimilar was actually administered, this code is wrong — each biosimilar has its own code and using the reference code instead is a named denial trigger.' };
+                }
+                for (var j = 0; j < fam.biosimilars.length; j++) {
+                    if (fam.biosimilars[j].code === c) {
+                        return { type: 'biosimilar', family: fam, match: fam.biosimilars[j], message: 'This is a biosimilar-specific code for ' + fam.drug + '. Confirm the product actually administered matches this exact biosimilar — they are not interchangeable on a claim.' };
+                    }
+                }
+            }
+            return { type: 'unknown', code: c, message: 'Not in this app’s verified reference. That is not a finding either way — this reference deliberately holds only the drug families verified against CMS during its build, not a full drug database. Check the code against your current HCPCS file.' };
+        }
+
+        // ── Drug Administration panel: rendering + handlers ──
+        function duBox(style, body, source) {
+            return '<div style="border-radius:8px;padding:12px 16px;font-size:13px;'+style+'">'+body
+                + (source ? ('<div style="margin-top:8px;font-size:11px;opacity:0.85;">Source: '+escHtml(source)+'</div>') : '')
+                + '</div>';
+        }
+        var DU_STYLE_OK   = 'background:#dcfce7;border:1px solid #86efac;color:#166534;';
+        var DU_STYLE_WARN = 'background:#fef3c7;border:1px solid #fde68a;color:#92400e;';
+        var DU_STYLE_STOP = 'background:#fee2e2;border:1px solid #fecaca;color:#991b1b;';
+        var DU_STYLE_INFO = 'background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;';
+
+        function renderDrugAdminControls() {
+            var ex = document.getElementById('du-jwjz-explainer');
+            if (ex) ex.textContent = 'JW (waste) and JZ (zero waste) are mandatory and mutually exclusive on single-dose container claims for drugs separately payable under Part B. Since 1 Oct 2023 a claim carrying neither where one is required may be returned as unprocessable. Multiple-dose containers, packaged OPPS/ASC drugs, FQHC/RHC drugs and §1861(s)(10) vaccines are outside the policy.';
+            var wrap = document.getElementById('du-infusion-checks');
+            if (wrap && !wrap.innerHTML) {
+                var html = '';
+                DU_INFUSION_SERVICES.forEach(function(s){
+                    html += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;">'
+                         +  '<input type="checkbox" id="du-svc-'+escHtml(s.key)+'" value="'+escHtml(s.key)+'"> '
+                         +  escHtml(s.label) + ' <span style="color:#666;font-size:11px;">('+escHtml(s.initial)+')</span></label>';
+                });
+                wrap.innerHTML = html;
+            }
+            var ref = document.getElementById('du-biosimilar-reference');
+            if (ref && !ref.innerHTML) {
+                var r = '<div style="font-size:12px;color:#666;margin-bottom:6px;">Verified reference (only the families checked against CMS during this build — not a full drug database):</div>';
+                DU_BIOSIMILAR_FAMILIES.forEach(function(f){
+                    r += '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:12px;">'
+                      +  '<b>'+escHtml(f.drug)+'</b><div style="margin-top:4px;">Reference: <b>'+escHtml(f.reference.code)+'</b> — '+escHtml(f.reference.label)+'</div>'
+                      +  '<div style="margin-top:4px;">Biosimilars: '+f.biosimilars.map(function(b){ return '<b>'+escHtml(b.code)+'</b> ('+escHtml(b.label)+')'; }).join('; ')+'</div>'
+                      +  '</div>';
+                });
+                r += '<div style="font-size:11px;color:#666;">Source: '+escHtml(DU_SOURCES.biosimilar)+'</div>';
+                ref.innerHTML = r;
+            }
+        }
+
+        function runDrugUnitCalc() {
+            var out = document.getElementById('du-calc-result');
+            if (!out) return;
+            var r = calcDrugBillingUnits(
+                parseFloat(document.getElementById('du-unit-amount').value),
+                parseFloat(document.getElementById('du-dose').value),
+                document.getElementById('du-container').value,
+                parseFloat(document.getElementById('du-vial-size').value),
+                parseFloat(document.getElementById('du-vial-count').value)
+            );
+            if (!r.ok) { out.innerHTML = duBox(DU_STYLE_STOP, '<b>Cannot calculate.</b><div style="margin-top:6px;">'+escHtml(r.reason)+'</div>'); return; }
+            var body = '<b>Billable units: '+r.billedUnits+'</b>';
+            if (r.wasteUnits) body += ' &nbsp;(administered '+r.administeredUnits+' + waste '+r.wasteUnits+')';
+            body += '<ul style="margin:8px 0 0 18px;padding:0;">';
+            r.notes.forEach(function(n){ body += '<li style="margin-bottom:4px;">'+escHtml(n)+'</li>'; });
+            body += '</ul>';
+            var style = (r.billedUnits !== Math.floor(r.billedUnits)) ? DU_STYLE_WARN : DU_STYLE_OK;
+            out.innerHTML = duBox(style, body, r.container === 'single' ? DU_SOURCES.waste_basis : DU_SOURCES.fractional);
+        }
+
+        function runJwJzGate() {
+            var out = document.getElementById('du-jwjz-result');
+            if (!out) return;
+            var r = evaluateJwJz(
+                document.getElementById('du-jw-container').value,
+                document.getElementById('du-jw-payable').value,
+                document.getElementById('du-jw-setting').value,
+                document.getElementById('du-jw-vaccine').value,
+                document.getElementById('du-jw-waste').value
+            );
+            var style = r.status === 'required' ? DU_STYLE_OK : (r.status === 'exempt' ? DU_STYLE_INFO : DU_STYLE_STOP);
+            var head = r.status === 'required'
+                ? ('<b>Required modifier: ' + escHtml(r.modifier) + '</b>')
+                : (r.status === 'exempt' ? '<b>No JW/JZ modifier applies.</b>' : '<b>Cannot determine — do not submit without resolving this.</b>');
+            out.innerHTML = duBox(style, head + '<div style="margin-top:6px;">'+escHtml(r.message)+'</div>',
+                r.status === 'exempt' ? DU_SOURCES.jwjz_exempt : DU_SOURCES.jwjz);
+        }
+
+        function runInfusionHierarchy() {
+            var out = document.getElementById('du-infusion-result');
+            if (!out) return;
+            var selected = DU_INFUSION_SERVICES
+                .filter(function(s){ var el = document.getElementById('du-svc-'+s.key); return el && el.checked; })
+                .map(function(s){ return s.key; });
+            var r = determineInitialInfusionCode(selected,
+                document.getElementById('du-start-time').value,
+                document.getElementById('du-stop-time').value);
+            if (!r.ok) { out.innerHTML = duBox(DU_STYLE_STOP, '<b>Nothing to evaluate.</b><div style="margin-top:6px;">'+escHtml(r.reason)+'</div>'); return; }
+            var body = '<b>Initial service code: '+escHtml(r.initial.initial)+'</b> — '+escHtml(r.initial.label);
+            if (r.secondary.length) {
+                body += '<div style="margin-top:6px;">Everything else on this encounter is sequential, concurrent, or add-on — not a second initial code:</div><ul style="margin:6px 0 0 18px;padding:0;">';
+                r.secondary.forEach(function(s){ body += '<li style="margin-bottom:4px;">'+escHtml(s.label)+' (would be '+escHtml(s.initial)+' if billed as initial — do not)</li>'; });
+                body += '</ul>';
+            } else {
+                body += '<div style="margin-top:6px;">Only one service selected — it is the initial code.</div>';
+            }
+            if (r.timeWarning) body += '<div style="margin-top:8px;padding:8px 10px;background:rgba(0,0,0,0.05);border-radius:6px;"><b>Start/stop times missing.</b> '+escHtml(r.timeWarning)+'</div>';
+            out.innerHTML = duBox(r.timeWarning ? DU_STYLE_WARN : DU_STYLE_OK, body, DU_SOURCES.hierarchy);
+        }
+
+        function runNdcCheck() {
+            var out = document.getElementById('du-ndc-result');
+            if (!out) return;
+            var r = normalizeNdc(document.getElementById('du-ndc').value);
+            if (!r.ok) { out.innerHTML = duBox(DU_STYLE_STOP, '<b>Not a valid billing-format NDC.</b><div style="margin-top:6px;">'+escHtml(r.reason)+'</div>', DU_SOURCES.ndc); return; }
+            var uom = document.getElementById('du-ndc-uom').value;
+            var qty = document.getElementById('du-ndc-qty').value;
+            var body = '<b>Billing format: N4'+escHtml(r.ndc11)+'</b>'
+                     + '<div style="margin-top:6px;">11-digit 5-4-2: '+escHtml(r.segments)+(r.converted ? (' &nbsp;(converted from '+escHtml(r.from)+' by adding a leading zero)') : '')+'</div>';
+            var missing = [];
+            if (!uom) missing.push('unit of measure (UN, ML, GR or F2)');
+            if (!qty || !(parseFloat(qty) > 0)) missing.push('quantity');
+            if (missing.length) {
+                body += '<div style="margin-top:8px;"><b>Incomplete:</b> the claim also needs '+escHtml(missing.join(' and '))+'. The NDC alone is not sufficient.</div>';
+            } else {
+                body += '<div style="margin-top:8px;">Full claim string: <b>N4'+escHtml(r.ndc11)+' '+escHtml(uom)+escHtml(qty)+'</b></div>';
+            }
+            out.innerHTML = duBox(missing.length ? DU_STYLE_WARN : DU_STYLE_OK, body, DU_SOURCES.ndc);
+        }
+
+        function runDrugCodeTrapCheck() {
+            var out = document.getElementById('du-trap-result');
+            if (!out) return;
+            var r = checkDrugCodeTraps(document.getElementById('du-trap-code').value);
+            var style = (r.type === 'noc' || r.type === 'reference') ? DU_STYLE_WARN
+                      : (r.type === 'biosimilar' ? DU_STYLE_INFO : DU_STYLE_STOP);
+            var head = r.type === 'noc' ? '<b>NOC code — extra documentation required</b>'
+                     : r.type === 'reference' ? '<b>Reference product code</b>'
+                     : r.type === 'biosimilar' ? '<b>Biosimilar-specific code</b>'
+                     : '<b>Not in verified reference</b>';
+            var body = head + '<div style="margin-top:6px;">'+escHtml(r.message)+'</div>';
+            if (r.family) {
+                body += '<div style="margin-top:8px;font-size:12px;">'+escHtml(r.family.drug)+' — reference '+escHtml(r.family.reference.code)
+                     +  ', biosimilars '+escHtml(r.family.biosimilars.map(function(b){return b.code;}).join(', '))+'.</div>';
+            }
+            out.innerHTML = duBox(style, body, r.type === 'noc' ? DU_SOURCES.noc : DU_SOURCES.biosimilar);
+        }
+
         // ── CY2026 efficiency adjustment: disclosure, not arithmetic ──
         // See SC_EFFICIENCY_ADJUSTMENT_2026's header for why this never
         // returns an adjusted dollar figure. The 'unknown' branch is the
@@ -7315,6 +7791,7 @@ How to answer:
             renderQuery();
             renderEncoder();
             renderEfficiencyAdjustmentControls();
+            renderDrugAdminControls();
             renderRac();
             renderTelehealth();
             renderAnesthesia();
