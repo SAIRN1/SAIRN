@@ -31,269 +31,23 @@ const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 
-const RESOURCES = {
-  profile: true, memory: true, employees: true, slabs: true, render_usage: true, shared_knowledge: true,
-  // StoneDesk CRM/Lead Pipeline (2026-08-19) -- see sql/sd_crm_schema.sql. First real server
-  // sync this resource has ever had (was pure localStorage) -- also carries the per-lead
-  // assignment privacy gate, see the read/write branches below.
-  sd_crm: true,
-  // SAIRNgrounds (2026-08-05) -- see sql/sairngrounds_data_schema.sql. Read branches degrade to
-  // an empty-but-ok response (provisioned:false) if that migration hasn't run yet, same pattern
-  // as render_usage/shared_knowledge above, rather than hard-failing the whole panel.
-  properties: true, jobs: true, quotes: true, golf_zones: true,
-  // SAIRNscape (2026-08-06) -- see sql/sairnscape_data_schema.sql. Same graceful-degrade pattern.
-  // Named 'scp_jobs'/'scp_quotes' rather than plain 'jobs'/'quotes' specifically to avoid
-  // colliding with SAIRNgrounds' existing 'jobs'/'quotes' resource strings above -- two identical
-  // resource names would each need an `if (resource==='jobs' && action==='read')` branch, and
-  // only the first one in file order would ever match, silently routing SAIRNscape calls into
-  // SAIRNgrounds' grd_jobs table. Caught before writing any branch, not after.
-  customers: true, scp_jobs: true, scp_quotes: true, schedule: true, invoices: true,
-  // StoneDesk Employee Profiles (2026-08-06) -- see sql/sd_employee_profiles_schema.sql.
-  employee_profile: true,
-  // SAIRNgrounds schedule + progress-photo QC (2026-08-06, related-bug + item-3 cross-device fix)
-  // -- see the block comments below for why these are prefixed rather than reusing 'schedule'/
-  // 'progress_photos' bare.
-  grd_schedule: true, grd_progress_photos: true,
-  // SAIRNgrounds invoices + DreamClose (2026-08-06, sweep fix) -- 'invoices' bare was already
-  // claimed by SAIRNscape below (customer_id-scoped); 'dreamclose' never had a route at all.
-  grd_invoices: true, grd_dreamclose: true,
-  // SAIRNscape progress-photo QC (2026-08-06) -- same fix, same prefixing reason.
-  scp_progress_photos: true,
-  // Full resource-name sweep, phase 2 (2026-08-06) -- see
-  // sql/sairngrounds_data_schema_phase2.sql and
-  // sql/sairnscape_data_schema_phase2.sql for the complete rationale.
-  grd_invasive_sightings: true, grd_ecosystem_reports: true, grd_designs: true, grd_irr_controllers: true, grd_irr_zones: true, grd_irr_schedules: true, grd_water_features: true, grd_training_courses: true, grd_training_completions: true, grd_boq_rates: true, grd_vendors: true, msb_products: true, msb_sales: true, msb_licenses: true, msb_inventory_log: true, msb_bottle_scans: true, msb_food_scans: true, msb_food_waste: true, msb_food_cost_log: true, msb_sale_hours: true,
-  scp_designs: true, scp_irr_controllers: true, scp_irr_zones: true, scp_irr_schedules: true, scp_water_features: true, scp_vendors: true,
-  // SAIRNdesign (2026-08-07) -- see sql/sairndesign_data_schema.sql. sdn_ prefix on every one of
-  // these, not just 'sdn_schedule'/'sdn_invoices' which would otherwise collide with the bare
-  // 'schedule'/'invoices' names already claimed above -- consistency across all 18, not a mixed
-  // scheme. Closes the whole-app sync gap described in that SQL file's header.
-  sdn_clients: true, sdn_projects: true, sdn_specitems: true, sdn_proposals: true, sdn_vendors: true,
-  sdn_samplerequests: true, sdn_team: true, sdn_moodboards: true, sdn_colorcodes: true, sdn_pos: true,
-  sdn_invoices: true, sdn_timeentries: true, sdn_schedule: true, sdn_samples: true, sdn_contracts: true,
-  sdn_referrals: true, sdn_discounts: true, sdn_roomdims: true,
-  // SAIRNlegacy (2026-08-07) -- see sql/sairnlegacy_data_schema.sql. All 36 prefixed leg_.
-  leg_aftercare: true, leg_bookings: true, leg_cases: true, leg_catererorders: true, leg_caterers: true,
-  leg_certs: true, leg_clergy: true, leg_clergybookings: true, leg_cremations: true, leg_custodylog: true,
-  leg_deathrecords: true, leg_dispatches: true, leg_documents: true, leg_facilities: true, leg_floristorders: true,
-  leg_florists: true, leg_gplservices: true, leg_guestbook: true, leg_insurance: true, leg_invoices: true,
-  leg_keepsakeorders: true, leg_keepsakes: true, leg_liverybookings: true, leg_liveryvendors: true,
-  leg_maintenance: true, leg_memorials: true, leg_merch_catalog: true, leg_merch_units: true, leg_monuments: true,
-  leg_obituaries: true, leg_petcases: true, leg_plots: true, leg_preneed: true, leg_processions: true,
-  leg_tributes: true, leg_vehicles: true,
-  // SAIRNdental (2026-08-10) -- see sql/sairndental_data_schema.sql. All 12 prefixed dnt_.
-  dnt_patients: true, dnt_providers: true, dnt_operatories: true, dnt_provider_hours: true,
-  dnt_procedure_types: true, dnt_coverage_rules: true, dnt_appointments: true, dnt_charges: true,
-  dnt_payments: true, dnt_denial: true, dnt_ar: true, dnt_revenue: true,
-  // SAIRNdental availability + booking (2026-08-10) -- see
-  // sql/sairndental_availability_booking_schema.sql. dnt_appointments was
-  // already added above but gets its OWN dedicated read/write handler
-  // below (not the generic DNT_RESOURCES block) because it now has real
-  // promoted columns the EXCLUDE constraints check against -- still
-  // listed here since this map only gates "is this a known resource
-  // string," not which code path handles it.
-  dnt_settings: true, dnt_referrals: true, dnt_complaints: true,
-  // SAIRNlaw trust disbursement server-sync, step 1 (2026-08-16) -- see
-  // sql/sairnlaw_data_schema.sql and
-  // docs/superpowers/specs/2026-08-14-sairnlaw-trust-data-schema-design.md.
-  // No role gating on these three -- all LAW_ROLES (owner/attorney/
-  // paralegal) may write, matching sairnlaw.html's current unrestricted
-  // client-side behavior. Auth is Bearer license key only, same as
-  // grd_jobs -- sdnData() never sends a session token to this endpoint.
-  law_clients: true, law_matters: true, law_trusttx: true,
-  // SAIRNcode real data layer + per-employee auth (2026-08-18) -- see
-  // sql/sairncode_data_schema.sql and
-  // docs/superpowers/specs/2026-08-18-sairncode-real-data-layer-design.md.
-  // All 15 share one generic handler (SC_RESOURCES below) since they're
-  // identical in shape (one row per entry, license_hash-scoped, a jsonb
-  // data column) -- the only resource family on this endpoint with a
-  // real 'delete' action, admin-role-gated server-side (see SC_RESOURCES
-  // handler), because SAIRNcode's client already has real remove buttons
-  // for each of these (removeDenialEntry() etc.) that previously only
-  // filtered a local array -- this endpoint had never supported an
-  // actual delete verb for any resource before now (a platform-wide gap
-  // already logged in SAIRN-PLATFORM-SESSION3-HANDOFF.md item 4).
-  sc_denial: true, sc_revenue: true, sc_compliance: true, sc_fraud: true, sc_prebill: true,
-  sc_hcc: true, sc_drg: true, sc_query: true, sc_rac: true, sc_telehealth: true,
-  sc_anesthesia: true, sc_auth: true, sc_ar: true, sc_providers: true, sc_encoder: true,
-  // Claims Management (2026-08-19) -- the 16th SC_RESOURCES entry, added
-  // when a full audit found Claims was the one SAIRNcode panel still
-  // static/hardcoded (8 fake patient rows, fabricated KPIs) after the
-  // 2026-08-18 fabrication audit fixed every sibling panel. Same generic
-  // shape/handler as the other 15. REQUIRES sql/sairncode_claims_schema.sql
-  // to be run in Supabase before this resource's read/write/delete will
-  // work -- not run yet as of this commit (no DB execution access from
-  // this session, same real blocker every other new-table addition this
-  // session has hit).
-  sc_claims: true,
-  // Scrub Rules Reference (2026-08-19, rule-based scrubbing expansion) --
-  // the 17th SC_RESOURCES entry. Deliberately empty by default, never
-  // seeded -- a coder/admin adds real, verified NCCI/CCI PTP,
-  // Excludes1/Excludes2, and modifier rules they've confirmed themselves.
-  // See docs/superpowers/specs/2026-08-19-sairncode-scrub-explainability-design.md
-  // for why this table starts empty rather than pre-loaded with rules this
-  // session can't independently verify are current/correct. Same generic
-  // shape/handler as every other sc_* resource. REQUIRES
-  // sql/sairncode_scrubrules_schema.sql to be run in Supabase.
-  sc_scrubrules: true,
-  // Denial Pattern Log (2026-08-20, denial pattern tracking expansion) --
-  // the 18th SC_RESOURCES entry. Event-level rows (code + payer + reason +
-  // amount + date), separate from the aggregate sc_denial resource above
-  // which has no payer field and can't support real per-payer/per-reason
-  // pattern analysis. Same generic shape/handler as every other sc_*
-  // resource. REQUIRES sql/sairncode_denial_events_schema.sql to be run
-  // in Supabase.
-  sc_denial_events: true,
-  // Eligibility check history (2026-08-20, BYO-credential expansion) -- the
-  // 19th SC_RESOURCES entry. A LOG of real 270/271 checks the practice has
-  // run, not the live call: the actual check goes out through
-  // api/sc-eligibility.js against the practice's own Stedi account, and is
-  // never cached here as authoritative. The raw 271 is deliberately not
-  // stored -- see sql/sairncode_eligibility_schema.sql's header. Same
-  // generic shape/handler as every other sc_* resource. REQUIRES
-  // sql/sairncode_eligibility_schema.sql to be run in Supabase.
-  sc_eligibility: true,
-  // SAIRNbuild Bids & Proposals real server sync (2026-08-20) -- see
-  // sql/sairnbuild_bids_schema.sql. Task 3 of the platform sales-lead-
-  // privacy rule (StoneDesk's sd_crm was item 1, SAIRNdesign's sdn_clients
-  // was item 2). Had ZERO server sync before this -- confirmed by grep, no
-  // bld_bids reference anywhere in this file, saveBid() was pure
-  // localStorage. Handled by its own bespoke read/write branch below (like
-  // sdn_clients), not the generic-loop pattern, because of the privacy
-  // gate -- this map only gates "is this a known resource string."
-  bld_bids: true,
-  // SAIRNbuild Training Needs Assessment (2026-08-20) -- see
-  // sql/sairnbuild_tna_schema.sql. Hennessy-Hicks-style importance/
-  // performance-gap instrument (structure verified via live web research
-  // before building, item wording adapted for construction -- see that
-  // SQL file's header for the full provenance disclosure). Bespoke branch
-  // below, same reasoning as bld_bids/sdn_clients -- subject-based
-  // visibility, not assignee-based, so it needed its own read/write logic
-  // rather than reusing the bld_bids shape verbatim.
-  bld_tna: true,
-  // Per-practice SAIRNcode settings (2026-08-20, firewall audit layer 26) --
-  // the 20th SC_RESOURCES entry. Currently holds only the data-retention
-  // POLICY value. It does NOT cause any deletion: no purge or expiry
-  // mechanism exists in SAIRNcode, deliberately -- see
-  // sql/sairncode_settings_schema.sql's header. The retention floor is
-  // enforced in the write branch below precisely BECAUSE this value will one
-  // day drive irreversible deletion. REQUIRES
-  // sql/sairncode_settings_schema.sql to be run in Supabase.
-  sc_settings: true,
-  // Prior-auth REQUEST lifecycle (2026-08-20, Phase 2a/2b) -- the 21st
-  // SC_RESOURCES entry. A different object than sc_auth (an authorization
-  // already held): this is the submitted->pending->approved/denied
-  // lifecycle with a payer, a submission method, and a real regulatory
-  // clock. sc_auth is untouched -- see sql/sairncode_auth_requests_schema
-  // .sql's header for the full reasoning. Write carries one extra
-  // server-side gate below: signing off a request (moving it toward
-  // submission-ready) requires a real Compliance Admin session, same
-  // weight as the delete gate every other sc_* resource already has.
-  // REQUIRES sql/sairncode_auth_requests_schema.sql to be run in Supabase.
-  sc_auth_requests: true,
-  // SAIRNsenior client (home-care recipient) data (2026-08-20) -- see
-  // sql/sairnsenior_clients_schema.sql. Ground-up app, built with a real
-  // HIPAA minimum-necessary privacy gate from day one -- a caregiver only
-  // ever sees clients assigned to them; owner/billing (management) see
-  // every client. Bespoke branch below, same shape as bld_bids/sdn_clients/
-  // sd_crm -- assignee-based visibility, not the generic resource loop.
-  sen_clients: true,
-  // Specialty spot-check harness (2026-08-20, pre-SAIRNcare gap pass) --
-  // real coder-submitted specialty questions with the coder's OWN pass/
-  // fail/needs-review verdict, never a verdict this app computes. See
-  // sql/sairncode_specialty_checks_schema.sql's header for why this exists
-  // instead of a claimed coverage percentage. REQUIRES
-  // sql/sairncode_specialty_checks_schema.sql to be run in Supabase.
-  sc_specialty_checks: true,
-  // Specialty documentation checklists (2026-08-20) -- deliberately empty
-  // by default, Source field required, same discipline as sc_scrubrules.
-  // REQUIRES sql/sairncode_specialty_checklists_schema.sql to be run in
-  // Supabase.
-  sc_specialty_checklists: true,
-  // ASA Base Units Reference (2026-08-20) -- deliberately empty by default,
-  // Source field required, same discipline as sc_scrubrules. See
-  // sql/sairncode_anesthesia_base_units_schema.sql for why. REQUIRES that
-  // migration to be run in Supabase.
-  sc_anesthesia_base_units: true,
-  // Per-coded-item citation + review record (2026-08-20, Phase 1) -- the
-  // 25th SC_RESOURCES entry. suggestCodesFromNote() already produced a
-  // real, independently-verified citation per suggested code and then
-  // discarded it (render-only, confirmed by grep before building); this
-  // makes it a stored record so "why was this code assigned" survives past
-  // the screen. Also carries the honest needs-human-review escalation
-  // flag. Confidence on these rows is a DERIVED label ('high'/'low') from
-  // mechanically-checkable signals, never a model-emitted percentage --
-  // see sql/sairncode_coded_items_schema.sql's header for why that
-  // distinction is load-bearing (this file's own Fraud panel had a
-  // fabricated 82%/71% confidence score removed in the 2026-08-18
-  // fabrication audit). REQUIRES sql/sairncode_coded_items_schema.sql to
-  // be run in Supabase.
-  sc_coded_items: true,
-  // Provider credential scope (2026-08-20, Phase 4 item 7) -- the 26th
-  // SC_RESOURCES entry. Backs the reusable credential-gating layer every
-  // Phase 5 specialty module depends on. sc_providers could NOT express
-  // this: its `cred` field is a Yes/No dropdown (credentialed-at-all,
-  // not per-code) and its `specialty` is free text, so nothing could
-  // reliably match a code against it. Deliberately empty by default and
-  // never seeded -- which specialties may bill which codes varies by
-  // payer policy and state scope-of-practice law and was not verified
-  // against a primary source here, so the practice enters scopes THEY
-  // verified, with a required source field, same discipline as
-  // sc_scrubrules. The gate FAILS CLOSED on missing data (routes to
-  // human review, never an auto-pass) -- see the schema file header.
-  // REQUIRES sql/sairncode_credential_scope_schema.sql to be run.
-  sc_credential_scope: true,
-  // SAIRNsenior caregiver/staff roster (2026-08-20, closing the Phase 1
-  // disclosed gap) -- see sql/sairnsenior_caregivers_schema.sql. Lighter
-  // gate than sen_clients: readable by any authenticated employee (a
-  // scheduler/coordinator genuinely needs the whole roster to staff a
-  // visit), writable only by management (owner/billing). Bespoke branch
-  // below, not the generic loop, for that read-broad/write-narrow shape.
-  sen_caregivers: true,
-  // SAIRNsenior scheduled visits + EVV (2026-08-20) -- see
-  // sql/sairnsenior_visits_schema.sql. Combines scheduling and Electronic
-  // Visit Verification in one resource (EVV verifies a scheduled visit,
-  // it isn't a separate concept). Assignee-based privacy gate like
-  // sen_clients, but with a field-level write split the client gate
-  // doesn't need: scheduling fields are writable by management/
-  // coordinator/scheduler, EVV clock-in/out fields are writable ONLY by
-  // the assigned caregiver. Bespoke branch below.
-  sen_visits: true,
-  // SAIRNsenior billing claims (2026-08-20) -- see
-  // sql/sairnsenior_claims_schema.sql. Financial/billing data, not
-  // clinical assignment data -- management (owner/billing) only, both
-  // read and write, no assignee-based visibility at all. A claim
-  // references a completed EVV-verified visit, matching the app's own
-  // real SOP User Guide's Ready-to-Bill workflow. Bespoke branch below.
-  sen_claims: true,
-  // SAIRNcare (assisted living) residents (2026-08-20) -- see
-  // sql/sairncare_clients_schema.sql. Ground-up app, real resident
-  // privacy gate from day one, same shape as sen_clients but with a
-  // real FOUR-tier gate instead of three -- Activities Coordinator gets
-  // read-only broad roster access with zero clinical/billing write
-  // authority, a genuinely different tier than nursing's broad-read-AND-
-  // edit. Bespoke branch below.
-  alf_clients: true,
-  // SAIRNcare (2026-08-20) -- staff roster, closing the SAIRNsenior Phase 1
-  // gap (Caregivers/Staff shipped local-only there) proactively from the
-  // start instead of leaving it for a later batch. See
-  // sql/sairncare_staff_schema.sql's own header for the gate reasoning.
-  alf_staff: true,
-  // SAIRNcare MAR (2026-08-20) -- see sql/sairncare_mar_schema.sql's own
-  // header for the full research-grounded reasoning and entry_type shapes.
-  alf_mar: true,
-  // SAIRNcare Billing (2026-08-20) -- see sql/sairncare_billing_schema.sql's
-  // own header for the private-pay vs Medicaid HCBS separation reasoning.
-  alf_billing: true,
-  // SAIRNcare Compliance/Incident Reporting (2026-08-20) -- see
-  // sql/sairncare_incidents_schema.sql's own header for the asymmetric
-  // read/write reasoning and the real research this is grounded in.
-  alf_incidents: true,
-  // SAIRNcare Activities calendar (2026-08-20) -- see
-  // sql/sairncare_activities_schema.sql's own header for the broad-read/
-  // narrow-write reasoning.
-  alf_activities: true
-};
+// Resource registry (2026-08-21). Previously one shared object literal in
+// this file that every SAIRN app appended to, alongside a separately
+// hand-maintained error string listing the same names. Both were shared
+// single lines, which is where every api/sd-data.js merge conflict actually
+// happened -- verified against real history, not assumed: the handler
+// branches below changed by 100+ lines in those same commits and merged
+// cleanly every time, because each app appends in its own region.
+//
+// Each app now owns api/_resources/<app>.js. The map and the error text are
+// both derived from that merge, so they can no longer drift apart -- they
+// already had, with employee_profile valid in the map but missing from the
+// hand-written list. See api/_resources/index.js for the full rationale.
+//
+// The request-handling branches were deliberately NOT moved: they close over
+// ~15 handler-local bindings and serve 11 live apps, and they were never the
+// source of the collisions.
+const { RESOURCES, RESOURCE_LIST_TEXT } = require('./_resources');
 
 const SC_RESOURCES = [
   'sc_denial', 'sc_revenue', 'sc_compliance', 'sc_fraud', 'sc_prebill',
@@ -406,7 +160,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: profile, memory, employees, slabs, render_usage, shared_knowledge, sd_crm, properties, jobs, quotes, golf_zones, customers, scp_jobs, scp_quotes, schedule, invoices, grd_schedule, grd_progress_photos, scp_progress_photos, grd_invoices, grd_dreamclose, grd_invasive_sightings, grd_ecosystem_reports, grd_designs, grd_irr_controllers, grd_irr_zones, grd_irr_schedules, grd_water_features, grd_training_courses, grd_training_completions, grd_boq_rates, grd_vendors, msb_products, msb_sales, msb_licenses, msb_inventory_log, msb_bottle_scans, msb_food_scans, msb_food_waste, msb_food_cost_log, msb_sale_hours, scp_designs, scp_irr_controllers, scp_irr_zones, scp_irr_schedules, scp_water_features, scp_vendors, sdn_clients, sdn_projects, sdn_specitems, sdn_proposals, sdn_vendors, sdn_samplerequests, sdn_team, sdn_moodboards, sdn_colorcodes, sdn_pos, sdn_invoices, sdn_timeentries, sdn_schedule, sdn_samples, sdn_contracts, sdn_referrals, sdn_discounts, sdn_roomdims, leg_aftercare, leg_bookings, leg_cases, leg_catererorders, leg_caterers, leg_certs, leg_clergy, leg_clergybookings, leg_cremations, leg_custodylog, leg_deathrecords, leg_dispatches, leg_documents, leg_facilities, leg_floristorders, leg_florists, leg_gplservices, leg_guestbook, leg_insurance, leg_invoices, leg_keepsakeorders, leg_keepsakes, leg_liverybookings, leg_liveryvendors, leg_maintenance, leg_memorials, leg_merch_catalog, leg_merch_units, leg_monuments, leg_obituaries, leg_petcases, leg_plots, leg_preneed, leg_processions, leg_tributes, leg_vehicles, dnt_patients, dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types, dnt_coverage_rules, dnt_appointments, dnt_charges, dnt_payments, dnt_denial, dnt_ar, dnt_revenue, dnt_settings, dnt_referrals, dnt_complaints, law_clients, law_matters, law_trusttx, sc_denial, sc_revenue, sc_compliance, sc_fraud, sc_prebill, sc_hcc, sc_drg, sc_query, sc_rac, sc_telehealth, sc_anesthesia, sc_auth, sc_ar, sc_providers, sc_encoder, sc_claims, sc_scrubrules, sc_denial_events, sc_eligibility, sc_settings, sc_auth_requests, sc_specialty_checks, sc_specialty_checklists, sc_anesthesia_base_units, sc_coded_items, sc_credential_scope, bld_bids, bld_tna, sen_clients, sen_caregivers, sen_visits, sen_claims, alf_clients, alf_staff, alf_mar, alf_billing, alf_incidents, alf_activities' } });
+    res.status(400).json({ error: { message: 'resource must be one of: ' + RESOURCE_LIST_TEXT } });
     return;
   }
 
