@@ -683,6 +683,7 @@
                 <button class="nav-btn" onclick="showPanel('anesthesia')" data-tip="Anesthesia-specific coding and time-unit calculations">Anesthesia</button>
                 <button class="nav-btn" onclick="showPanel('drugadmin')" data-tip="Drug administration -- J-code unit math, JW/JZ waste modifiers, infusion hierarchy, NDC format">Drug Administration</button>
                 <button class="nav-btn" onclick="showPanel('pctc')" data-tip="PC/TC split billing -- global vs -26 vs -TC, keyed to the CMS PC/TC indicator">PC/TC Split</button>
+                <button class="nav-btn" onclick="showPanel('modrouting')" data-tip="Payer-family modifier routing -- PT vs 33, KX thresholds, SC scope">Modifier Routing</button>
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
@@ -1617,6 +1618,62 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             </div>
             <div id="du-trap-result" style="margin-top:8px;"></div>
             <div id="du-biosimilar-reference" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- Modifier Routing Panel (2026-08-21, gap-closure pass 2 item 4).
+             Shared, not specialty-scoped: PT/33 routing applies to any
+             preventive service that can convert mid-procedure, and KX is used
+             well outside therapy. Nothing here persists -- verified rather
+             than assumed: none of these four modifiers needs per-code CMS
+             reference data the way the PC/TC indicator does. -->
+        <div id="panel-modrouting" class="panel">
+            <h1 class="panel-title">Payer-Family Modifier Routing</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:16px;">Four modifiers that get confused with each other because they look like pairs and are not. <b>PT</b> and <b>33</b> are the same idea for two different payer families and must never be stacked. <b>KX</b> and <b>SC</b> both sound like medical-necessity attestations, but only one of them has a national rule behind it.</div>
+
+            <div style="font-weight:700;font-size:16px;margin:8px 0;">1. PT vs 33 &mdash; Preventive Service Conversion</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Driven by what actually happened during the procedure, not by what was scheduled. A screening colonoscopy that stayed a screening and one where a polyp came out bill differently even though the appointment was booked the same way.</div>
+            <div class="toolbar">
+                <select id="mr-payer">
+                    <option value="">Payer family...</option>
+                    <option value="medicare">Medicare</option>
+                    <option value="commercial">Commercial / ACA-compliant plan</option>
+                </select>
+                <select id="mr-scheduled">
+                    <option value="">Scheduled as...</option>
+                    <option value="screening">Screening</option>
+                    <option value="diagnostic">Diagnostic</option>
+                </select>
+                <select id="mr-converted">
+                    <option value="">Did it convert during the encounter?</option>
+                    <option value="yes">Yes — tissue removed or diagnosis established</option>
+                    <option value="no">No — remained a screening</option>
+                </select>
+                <input type="number" id="mr-dos-year" placeholder="Date-of-service year" class="search-input" style="max-width:170px;">
+                <button class="btn btn-primary" onclick="runPreventiveModifierCheck()" id="mr-prev-btn">Route Modifier</button>
+            </div>
+            <div id="mr-prev-result" style="margin-top:8px;"></div>
+            <div id="mr-screening-codes" style="margin-top:10px;font-size:12px;color:#666;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2. KX &mdash; Threshold Attestation</div>
+            <div id="mr-kx-explainer" style="font-size:12px;color:#666;margin-bottom:8px;"></div>
+            <div class="toolbar">
+                <select id="mr-kx-discipline">
+                    <option value="">Discipline...</option>
+                    <option value="pt_slp">PT and SLP (combined threshold)</option>
+                    <option value="ot">OT (separate threshold)</option>
+                </select>
+                <input type="number" step="any" id="mr-kx-ytd" placeholder="Beneficiary year-to-date $" class="search-input">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="mr-kx-applied"> KX applied</label>
+                <input type="text" id="mr-kx-just" placeholder="KX justification (real, not boilerplate)" class="search-input" style="min-width:240px;">
+                <button class="btn btn-primary" onclick="runKxCheck()" id="mr-kx-btn">Check KX</button>
+            </div>
+            <div id="mr-kx-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">3. SC &mdash; Scope</div>
+            <div class="toolbar">
+                <button class="btn btn-primary" onclick="runScCheck()" id="mr-sc-btn">What does SC actually require?</button>
+            </div>
+            <div id="mr-sc-result" style="margin-top:8px;"></div>
         </div>
 
         <!-- PC/TC Split Panel (2026-08-21, gap-closure pass 2 item 3).
@@ -6555,10 +6612,14 @@ How to answer:
             var ytd = input.ytd_pt_slp_dollars;
             if (ytd !== null && ytd !== undefined && ytd !== '') {
                 var y = Number(ytd);
-                if (y > 2480) {
+                // Threshold constants come from the shared modifier-routing
+                // layer (KX_THRESHOLD_2026 / KX_MR_THRESHOLD_2026) rather
+                // than being repeated here -- these are updated annually by
+                // the MEI and a second copy is a drift waiting to happen.
+                if (y > KX_THRESHOLD_2026.pt_slp) {
                     if (!input.kx_applied) {
                         findings.push(scPtFinding('block', 'KX modifier required above the threshold',
-                            'PT and SLP combined year-to-date is $' + y.toLocaleString() + ', above the CY2026 KX threshold of $2,480. Claims above it without KX are denied.', 'kx'));
+                            'PT and SLP combined year-to-date is $' + y.toLocaleString() + ', above the CY2026 KX threshold of $' + KX_THRESHOLD_2026.pt_slp.toLocaleString() + '. Claims above it without KX are denied.', 'kx'));
                     } else if (!input.kx_justification || !String(input.kx_justification).trim()) {
                         // The KX modifier is an attestation, so boilerplate
                         // defeats its purpose -- it must point at real
@@ -6566,9 +6627,9 @@ How to answer:
                         findings.push(scPtFinding('block', 'KX applied without a documented justification',
                             'KX attests that continued services are medically necessary as justified in the record. No justification is recorded here.', 'kx'));
                     }
-                    if (y > 3000) {
+                    if (y > KX_MR_THRESHOLD_2026) {
                         findings.push(scPtFinding('warn', 'Above the targeted medical review threshold',
-                            'Year-to-date $' + y.toLocaleString() + ' exceeds the $3,000 targeted medical review threshold.', 'kx'));
+                            'Year-to-date $' + y.toLocaleString() + ' exceeds the $' + KX_MR_THRESHOLD_2026.toLocaleString() + ' targeted medical review threshold.', 'kx'));
                     }
                 }
             }
@@ -7572,6 +7633,144 @@ How to answer:
         }
 
         // ================================================================
+        // SHARED MODIFIER ROUTING (2026-08-21, gap-closure pass 2 item 4)
+        //
+        // Payer-family routing for four modifiers that are routinely confused
+        // with each other. Shared on purpose: PT/33 is a colonoscopy question
+        // today but the same routing applies to any preventive service that
+        // can convert mid-procedure, and KX is used well outside therapy.
+        // Nothing here is specialty-scoped and nothing persists -- verified,
+        // not assumed: none of these four needs per-code CMS reference data.
+        // The PT/33 answer comes from payer family plus what actually
+        // happened during the procedure; the KX answer comes from a running
+        // beneficiary total the caller supplies; SC has no national rule to
+        // store at all (see below).
+        // ================================================================
+        var MOD_SOURCES = {
+            pt: 'CMS Transmittal R13248CP (Medicare Claims Processing Manual Ch.18 §60): where the PT modifier is appended to at least one code on the claim to show a screening colorectal procedure (HCPCS G0104, G0105 or G0121) became diagnostic or therapeutic, contractors "shall continue to waive deductible and shall apply a reduced coinsurance" on a statutory phase-down — 15% for CY2023–CY2026, 10% for CY2027–CY2029, fully waived for dates of service on or after 1 January 2030.',
+            pt_scope: 'Same transmittal: the reduced coinsurance applies to all procedure codes meeting the requirements performed on that date of service and billed on the same claim — PT goes on at least one line, and the benefit is claim-wide, not line-only. Screening-to-diagnostic payment crosswalk: G0104→45330, G0105 and G0121→45378.',
+            m33: 'AMA CPT modifier 33 (Preventive Services) identifies a service that meets a USPSTF grade A or B recommendation so an ACA-compliant plan applies first-dollar coverage. CMS has issued no instruction adopting modifier 33 for Medicare colorectal screening conversion — PT is the Medicare mechanism — so 33 is a commercial/ACA-plan modifier here.',
+            kx: 'CMS Transmittal R13437CP (CR 14252, effective 1 January 2026), 2026 Annual Update of Per-Beneficiary Threshold Amounts: CY2026 KX modifier thresholds are $2,480 for PT and SLP combined and $2,480 for OT separately. "Claims from suppliers or providers for therapy services above these amounts without the KX modifier are denied." Amounts are updated annually by the Medicare Economic Index under §1833(g).',
+            kx_mr: 'Same transmittal: BBA 2018 §50202 added §1833(g)(7)(B), keeping the targeted medical review process at a lower $3,000 Medical Record threshold — one for PT and SLP combined, one for OT. Exceeding it exposes the claim to documentation review; it is not a denial and it does not call for a different modifier.',
+            sc: 'HCPCS Level II modifier SC is defined only as "Medically necessary service or supply." Unlike KX it carries no national CMS threshold, no dollar figure and no single national instruction — its use is payer-specific (state Medicaid programs and certain DMEPOS categories are the common cases). This app therefore refuses to assert an SC rule.'
+        };
+
+        // CY2026 values. Kept in one place so the annual MEI update is a
+        // single edit -- the Physical Therapy panel's own threshold check
+        // reads these rather than carrying its own copy, which is exactly the
+        // per-specialty duplication this shared layer exists to prevent.
+        var KX_THRESHOLD_2026 = { pt_slp: 2480, ot: 2480 };
+        var KX_MR_THRESHOLD_2026 = 3000;
+
+        // Statutory phase-down. Encoded as ranges rather than a single
+        // "current" number because a claim is priced on its DATE OF SERVICE,
+        // not on today -- a 2026 practice still reworks 2025 claims, and a
+        // hardcoded 15% would silently misstate cost-sharing the moment the
+        // calendar rolls into 2027.
+        var PT_COINSURANCE_SCHEDULE = [
+            { from: 2023, to: 2026, coinsurance: 15 },
+            { from: 2027, to: 2029, coinsurance: 10 },
+            { from: 2030, to: null, coinsurance: 0 }
+        ];
+        var PT_SCREENING_CODES = { G0104: '45330', G0105: '45378', G0121: '45378' };
+
+        function ptCoinsuranceForYear(year) {
+            var y = Number(year);
+            if (!y || !isFinite(y)) return null;
+            for (var i = 0; i < PT_COINSURANCE_SCHEDULE.length; i++) {
+                var b = PT_COINSURANCE_SCHEDULE[i];
+                if (y >= b.from && (b.to === null || y <= b.to)) return b.coinsurance;
+            }
+            return null; // before CY2023 -- outside the phase-down, not assumed
+        }
+
+        // ── PT vs 33 ──
+        // DRIVEN BY WHAT HAPPENED, NOT WHAT WAS SCHEDULED. The whole point of
+        // this pair is that a procedure booked as a screening and a procedure
+        // that stayed a screening bill differently, and the deciding fact is
+        // whether tissue was removed or a diagnosis established during the
+        // same encounter -- never the appointment type.
+        function routePreventiveModifier(payerFamily, scheduledAs, becameDiagnostic, dosYear) {
+            if (!payerFamily) return { status: 'undetermined', reason: 'Payer family is required. PT is the Medicare mechanism and 33 is the commercial/ACA one — they are mutually exclusive and never stacked, so this cannot be answered without knowing which applies.' };
+            if (scheduledAs !== 'screening' && scheduledAs !== 'diagnostic') {
+                return { status: 'undetermined', reason: 'Say whether the procedure was scheduled as a screening or as a diagnostic procedure.' };
+            }
+            if (becameDiagnostic !== 'yes' && becameDiagnostic !== 'no') {
+                return { status: 'undetermined', reason: 'Say whether a polyp/tissue was removed or a diagnosis was established during this encounter. That fact, not the booking, decides the modifier.' };
+            }
+
+            // A procedure booked as diagnostic was never a screening; neither
+            // modifier's conversion logic applies to it.
+            if (scheduledAs === 'diagnostic') {
+                return { status: 'none', reason: 'This was scheduled and performed as a diagnostic procedure, not a screening that converted. Neither PT nor 33 applies — bill the diagnostic code with ordinary cost-sharing.' };
+            }
+
+            if (payerFamily === 'medicare') {
+                if (becameDiagnostic === 'no') {
+                    return { status: 'none', modifier: null, reason: 'A screening that stayed a screening is billed with the screening HCPCS (G0104, G0105 or G0121) and no conversion modifier. PT is only for a screening that became diagnostic or therapeutic.' };
+                }
+                var coins = ptCoinsuranceForYear(dosYear);
+                if (coins === null) {
+                    return { status: 'undetermined', modifier: 'PT', reason: 'PT applies, but the date-of-service year is missing or falls outside the statutory phase-down that began in CY2023, so the beneficiary coinsurance cannot be stated. Do not assume the current year\'s rate for an older claim.' };
+                }
+                return {
+                    status: 'apply', modifier: 'PT', deductible: 'waived', coinsurance: coins,
+                    reason: 'The screening converted to a diagnostic or therapeutic service. Append PT to at least one code on the claim. Deductible is waived and coinsurance is reduced to ' + coins + '% for date of service ' + dosYear + '; that reduction applies to every qualifying code performed that day and billed on the same claim, not only the line carrying PT.'
+                };
+            }
+            if (payerFamily === 'commercial') {
+                if (becameDiagnostic === 'no') {
+                    return { status: 'apply', modifier: '33', reason: 'A screening that stayed a screening on an ACA-compliant plan takes modifier 33 so the plan applies first-dollar preventive coverage.' };
+                }
+                return {
+                    status: 'payer_specific', modifier: '33',
+                    reason: 'The screening converted. Modifier 33 still identifies the encounter as preventive in origin, but whether the plan holds the patient harmless for the diagnostic portion is set by that plan\'s own policy — there is no single national rule here the way there is for Medicare. Confirm with the payer rather than assuming either outcome.'
+                };
+            }
+            return { status: 'undetermined', reason: 'Unrecognised payer family "' + payerFamily + '".' };
+        }
+
+        // ── KX ──
+        // Generic across contexts: the caller passes the accumulated
+        // per-beneficiary total for the discipline. Fails closed when the
+        // running total is unknown, because "no total supplied" is not the
+        // same as "under the threshold" and treating it as such is how a
+        // claim goes out above the threshold with no KX and gets denied.
+        function evaluateKx(discipline, ytdDollars, kxApplied, justification) {
+            var key = discipline === 'ot' ? 'ot' : (discipline === 'pt_slp' ? 'pt_slp' : null);
+            if (!key) return { status: 'undetermined', reason: 'Discipline is required: PT and SLP share one threshold, OT has its own separate one.' };
+            if (ytdDollars === null || ytdDollars === undefined || ytdDollars === '' || !isFinite(Number(ytdDollars))) {
+                return { status: 'undetermined', reason: 'Year-to-date incurred expenses for this beneficiary are required. An unknown total is not the same as being under the threshold, and this app will not treat it as such.' };
+            }
+            var ytd = Number(ytdDollars);
+            var threshold = KX_THRESHOLD_2026[key];
+            if (ytd <= threshold) {
+                return { status: 'not_required', threshold: threshold, ytd: ytd, reason: 'Year-to-date $' + ytd.toLocaleString() + ' is at or below the CY2026 threshold of $' + threshold.toLocaleString() + '. KX is not required yet.' };
+            }
+            var overMr = ytd > KX_MR_THRESHOLD_2026;
+            if (!kxApplied) {
+                return { status: 'required_missing', threshold: threshold, ytd: ytd, overMr: overMr, reason: 'Year-to-date $' + ytd.toLocaleString() + ' is above the CY2026 threshold of $' + threshold.toLocaleString() + '. Claims above it without KX are denied.' };
+            }
+            if (!justification || !String(justification).trim()) {
+                return { status: 'required_unjustified', threshold: threshold, ytd: ytd, overMr: overMr, reason: 'KX is an attestation that continued services are medically necessary as justified in the record. No justification is recorded, so the attestation has nothing behind it.' };
+            }
+            return { status: 'satisfied', threshold: threshold, ytd: ytd, overMr: overMr, reason: 'KX applied with a recorded justification.' + (overMr ? ' Note this beneficiary is also above the $' + KX_MR_THRESHOLD_2026.toLocaleString() + ' targeted medical review threshold — the claim may be pulled for documentation review, which is not a denial and does not call for a different modifier.' : '') };
+        }
+
+        // ── SC ──
+        // Deliberately refuses to give an answer. SC has no national CMS
+        // threshold or instruction, so any rule this app stated would be
+        // invented. Returning "payer-specific, go check" is the honest
+        // output, and it is a real answer -- it tells a coder the thing they
+        // most need to know, which is that KX's logic does NOT transfer here.
+        function evaluateSc() {
+            return {
+                status: 'payer_specific',
+                reason: 'SC is defined only as "Medically necessary service or supply" and carries no national CMS threshold, dollar figure or single national instruction. It is not KX\'s sibling and KX\'s threshold logic does not transfer to it. Whether SC is required, optional or ignored is set by the individual payer — commonly state Medicaid programs and certain DMEPOS categories. Check that payer\'s own policy; this app will not assert a rule it cannot source.'
+            };
+        }
+
+        // ================================================================
         // PC/TC COMPONENT SPLIT (2026-08-21, gap-closure pass 2 item 3)
         //
         // THE CORRECTION THAT SHAPES THIS WHOLE SECTION: only indicator 1
@@ -7689,6 +7888,82 @@ How to answer:
                     ? 'Bill the technical component only. In a leased hospital department, where the beneficiary is neither an inpatient nor a registered outpatient of any hospital, both components are payable under the fee schedule — the building does not make the patient a hospital patient.'
                     : 'Bill the technical component only. The TC is payable for beneficiaries who are not patients of any hospital and receive the service in a physician office, freestanding imaging or radiation oncology centre, or other non-hospital setting.'
             };
+        }
+
+        // ── Modifier Routing panel: handlers ──
+        function renderModifierRoutingControls() {
+            var ex = document.getElementById('mr-kx-explainer');
+            if (ex) {
+                ex.textContent = 'CY2026 thresholds: $' + KX_THRESHOLD_2026.pt_slp.toLocaleString()
+                    + ' for PT and SLP combined, and a separate $' + KX_THRESHOLD_2026.ot.toLocaleString()
+                    + ' for OT. Claims above a threshold without KX are denied. A further $'
+                    + KX_MR_THRESHOLD_2026.toLocaleString()
+                    + ' targeted medical review threshold exposes the claim to documentation review — that is not a denial and does not call for a different modifier.';
+            }
+            var codes = document.getElementById('mr-screening-codes');
+            if (codes && !codes.innerHTML) {
+                var rows = Object.keys(PT_SCREENING_CODES).map(function(g){
+                    return '<b>' + escHtml(g) + '</b> &rarr; ' + escHtml(PT_SCREENING_CODES[g]);
+                }).join(' &nbsp;&middot;&nbsp; ');
+                codes.innerHTML = 'Medicare screening-to-diagnostic payment crosswalk: ' + rows
+                    + '<div style="margin-top:4px;">Statutory coinsurance phase-down: '
+                    + PT_COINSURANCE_SCHEDULE.map(function(b){
+                        return (b.to === null ? ('CY' + b.from + '+') : ('CY' + b.from + '–CY' + b.to)) + ' = ' + b.coinsurance + '%';
+                      }).join(' &nbsp;&middot;&nbsp; ') + '</div>';
+            }
+        }
+        function runPreventiveModifierCheck() {
+            var out = document.getElementById('mr-prev-result');
+            if (!out) return;
+            var r = routePreventiveModifier(
+                document.getElementById('mr-payer').value,
+                document.getElementById('mr-scheduled').value,
+                document.getElementById('mr-converted').value,
+                document.getElementById('mr-dos-year').value
+            );
+            var style, head;
+            if (r.status === 'apply') {
+                style = DU_STYLE_OK;
+                head = '<b>Append modifier ' + escHtml(r.modifier) + '</b>';
+                if (r.coinsurance !== undefined) {
+                    head += '<div style="margin-top:4px;">Deductible <b>waived</b> &middot; coinsurance <b>' + escHtml(String(r.coinsurance)) + '%</b></div>';
+                }
+            } else if (r.status === 'none') {
+                style = DU_STYLE_INFO; head = '<b>No conversion modifier applies</b>';
+            } else if (r.status === 'payer_specific') {
+                style = DU_STYLE_WARN; head = '<b>Modifier ' + escHtml(r.modifier) + ' — but cost-sharing is payer-specific</b>';
+            } else {
+                style = DU_STYLE_STOP; head = '<b>Cannot determine — do not submit without resolving this</b>';
+            }
+            out.innerHTML = duBox(style, head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>'
+                + '<div style="margin-top:8px;font-size:12px;">PT and 33 are mutually exclusive — never stack them on the same claim.</div>',
+                r.modifier === '33' ? MOD_SOURCES.m33 : (r.status === 'apply' ? MOD_SOURCES.pt_scope : MOD_SOURCES.pt));
+        }
+        function runKxCheck() {
+            var out = document.getElementById('mr-kx-result');
+            if (!out) return;
+            var r = evaluateKx(
+                document.getElementById('mr-kx-discipline').value,
+                document.getElementById('mr-kx-ytd').value,
+                document.getElementById('mr-kx-applied').checked,
+                document.getElementById('mr-kx-just').value
+            );
+            var style = (r.status === 'satisfied' || r.status === 'not_required') ? DU_STYLE_OK
+                      : (r.status === 'undetermined' ? DU_STYLE_STOP : DU_STYLE_WARN);
+            var head = r.status === 'satisfied' ? '<b>KX satisfied</b>'
+                     : r.status === 'not_required' ? '<b>KX not required</b>'
+                     : r.status === 'required_missing' ? '<b>KX required and missing — this claim would be denied</b>'
+                     : r.status === 'required_unjustified' ? '<b>KX applied but unjustified</b>'
+                     : '<b>Cannot determine</b>';
+            out.innerHTML = duBox(style, head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>',
+                r.overMr ? MOD_SOURCES.kx_mr : MOD_SOURCES.kx);
+        }
+        function runScCheck() {
+            var out = document.getElementById('mr-sc-result');
+            if (!out) return;
+            var r = evaluateSc();
+            out.innerHTML = duBox(DU_STYLE_WARN, '<b>No national rule to apply</b><div style="margin-top:6px;">'
+                + escHtml(r.reason) + '</div>', MOD_SOURCES.sc);
         }
 
         // ── PC/TC panel: reference CRUD + handlers ──
@@ -8092,6 +8367,7 @@ How to answer:
             renderEncoder();
             renderEfficiencyAdjustmentControls();
             renderDrugAdminControls();
+            renderModifierRoutingControls();
             renderRac();
             renderTelehealth();
             renderAnesthesia();
