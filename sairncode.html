@@ -1080,6 +1080,20 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <button class="btn btn-primary" onclick="runCodeAwarenessLookup()" id="code-lookup-btn">Look Up</button>
             </div>
             <div id="code-lookup-result" style="margin-top:8px;"></div>
+
+            <!-- CY2026 efficiency adjustment disclosure (2026-08-21).
+                 Deliberately NOT a calculator: CMS already applied the -2.5%
+                 when it built the CY2026 work RVUs, so a published 2026 RVU
+                 has it baked in. A tool here that multiplied by 0.975 would
+                 apply the cut a second time and understate the practice's own
+                 payment -- so this answers "subject or exempt", nothing more. -->
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">CY2026 Efficiency Adjustment (&minus;2.5%)</div>
+            <div id="eff-adj-explainer" style="font-size:12px;color:#666;margin-bottom:8px;"></div>
+            <div class="toolbar">
+                <select id="eff-adj-category" style="flex:1"></select>
+                <button class="btn btn-primary" onclick="runEfficiencyAdjustmentCheck()" id="eff-adj-btn">Check</button>
+            </div>
+            <div id="eff-adj-result" style="margin-top:8px;"></div>
         </div>
 
         <!-- RAC Audit Panel -->
@@ -1459,10 +1473,24 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             <div class="toolbar">
                 <select id="an-add-status" title="ASA Physical Status"><option value="">Physical Status (optional)</option><option>P1</option><option>P2</option><option>P3</option><option>P4</option><option>P5</option><option>P6</option></select>
                 <input type="text" id="an-add-qc" placeholder="QC modifier (optional)" class="search-input">
-                <input type="number" step="0.01" id="an-add-cf" placeholder="Conversion factor $/unit (optional)" class="search-input">
+                <select id="an-add-qp" title="Which CY2026 anesthesia conversion factor applies"><option value="">QP status unknown</option><option value="qp">Qualifying APM Participant</option><option value="nonqp">Not a QP</option><option value="manual">Other payer — enter factor</option></select>
+                <input type="number" step="0.01" id="an-add-cf" placeholder="Factor $/unit (only if 'Other payer')" class="search-input">
                 <button class="btn btn-primary" onclick="addAnesthesiaEntry()">Add</button>
             </div>
             <div id="an-base-lookup-note" style="font-size:11px;color:#666;margin-top:4px;"></div>
+
+            <!-- CY2026 dual conversion factor disclosure (2026-08-21). The
+                 free-typed "conversion factor" field this replaces predated
+                 the two-factor split and quietly allowed one number to stand
+                 for a rate that now has two real values. Medicare cases now
+                 resolve from QP status against the verified CY2026 anesthesia
+                 factors; a genuinely non-Medicare payer keeps a manual entry
+                 path, because those factors are contractual and this app has
+                 no basis to know them. -->
+            <div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:14px 18px;margin-top:16px;">
+                <div style="font-weight:700;font-size:14px;margin-bottom:6px;">CY2026 Medicare anesthesia conversion factors</div>
+                <div id="an-cf-reference" style="font-size:12px;color:#444;"></div>
+            </div>
 
             <!-- ASA Base Units Reference (2026-08-20) -- same empty-by-
                  default, Source-required discipline as the Scrub Rules
@@ -1953,6 +1981,7 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                             <th>Specialty</th>
                             <th>License</th>
                             <th>Credentialed</th>
+                            <th>QP Status</th>
                             <th>Performance</th>
                             <th></th>
                         </tr>
@@ -1965,9 +1994,11 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <input type="text" id="prov-add-specialty" placeholder="Specialty" class="search-input">
                 <input type="text" id="prov-add-license" placeholder="License #" class="search-input">
                 <select id="prov-add-cred"><option>Yes</option><option>No</option></select>
+                <select id="prov-add-qp" title="Qualifying APM Participant status — drives which CY2026 conversion factor applies"><option value="">QP status unknown</option><option value="qp">Qualifying APM Participant</option><option value="nonqp">Not a QP</option></select>
                 <input type="number" step="0.1" id="prov-add-perf" placeholder="Performance %" class="search-input">
                 <button class="btn btn-primary" onclick="addProviderEntry()">Add</button>
             </div>
+            <div style="font-size:12px;color:#666;margin-top:6px;">QP status is not cosmetic: from CY2026 Medicare pays two different conversion factors for the same code depending on it. Left unknown, this app will not state a payment amount for that provider rather than guessing which of the two real rates applies.</div>
 
             <!-- Credential scope (Phase 4 item 7). Empty by default and never
                  seeded: which specialties may bill which codes varies by payer
@@ -2420,7 +2451,100 @@ How to answer:
 - When multiple codes could plausibly apply, say so and explain the distinguishing factor — don't silently pick one and present it as the only answer.
 - Be precise and calibrated, not just confident. Code sets update annually and coding guidance can be payer-specific. When a question depends on a very specific current-year code number, a recent guideline change, or payer-specific policy, say so explicitly and recommend the coder verify against their current code book or payer guidance — rather than stating a specific code with unwarranted certainty.
 - You do not have a live, authoritative CPT/ICD-10/HCPCS database loaded — your knowledge comes from training, which may not reflect the very latest code updates. Be upfront about this limitation when it's relevant to the question, rather than implying otherwise.
+- CY2026 PAYMENT AMOUNTS: there is no single "2026 Medicare rate" for any code. Beginning CY2026, statute (SSA 1848(d)(20)) sets TWO physician fee schedule conversion factors: $33.5675 for Qualifying APM Participants (QPs) and $33.4009 for non-QPs. Anesthesia has its own separate pair — $20.5998 (QP) and $20.4976 (non-QP) — used INSTEAD OF the RBRVS factor, never in addition to it. Never state a 2026 payment amount without first establishing whether the billing clinician is a QP; if that is not known, say the amount cannot be determined without it and state both possibilities rather than picking one.
+- CY2026 EFFICIENCY ADJUSTMENT: CMS applied a -2.5% adjustment to work RVUs and the intraservice portion of physician time for non-time-based services. It is exempt for time-based codes, including E/M, care management, behavioral health, services on the Medicare telehealth list, and maternity codes with a global period of MMM. Critically: this adjustment is ALREADY BUILT INTO the published CY2026 work RVUs. Never tell a coder to multiply a 2026 RVU or payment by 0.975 — that would apply the cut twice. It is context for why a 2026 value differs from 2025, not a calculation to perform.
 - Keep answers focused and professional. Lead with the direct answer or code, then the reasoning — don't bury the answer in preamble.`;
+
+        // ================================================================
+        // CY2026 DUAL CONVERSION FACTOR + EFFICIENCY ADJUSTMENT REFERENCE
+        // (2026-08-21, gap-closure pass 2 item 1)
+        //
+        // CY2026 is the first year Medicare runs TWO PFS conversion factors
+        // at once. The same code, same locality, pays differently depending
+        // on whether the billing clinician is a Qualifying APM Participant
+        // (QP). This is statutory, not a pilot -- SSA sec. 1848(d)(20), added
+        // by MACRA: beginning 2026 there is a "qualifying APM conversion
+        // factor" and a "nonqualifying APM conversion factor", updated
+        // annually at +0.75% and +0.25% respectively, so the gap widens
+        // every year rather than converging.
+        //
+        // EVERY value below is from a primary or named source, quoted in
+        // SC_CF_SOURCES and rendered next to the number in the UI. No figure
+        // here was answered from model memory.
+        //
+        // ANESTHESIA IS A SEPARATE PAIR, NOT A MODIFIER ON THE RBRVS PAIR --
+        // a correction to the research brief this was built from, which said
+        // anesthesia carries its own factor "on top of" the main one.
+        // It does not: anesthesia payment is (base units + time units) x the
+        // ANESTHESIA conversion factor, used INSTEAD OF the RBRVS factor,
+        // never both. Encoding it as an additional multiplier would have
+        // silently inflated every anesthesia dollar figure in the app.
+        var SC_CONVERSION_FACTORS_2026 = {
+            rbrvs:      { qp: 33.5675, nonqp: 33.4009 },
+            anesthesia: { qp: 20.5998, nonqp: 20.4976 }
+        };
+        var SC_CF_SOURCES = {
+            rbrvs: 'CMS CY2026 PFS Final Rule (CMS-1832-F) fact sheet: "the final CY 2026 qualifying APM conversion factor of $33.57 ... the final CY 2026 nonqualifying APM conversion factor of $33.40." Unrounded values $33.5675 / $33.4009 per ASA CY2026 final-rule summary table.',
+            anesthesia: 'American Society of Anesthesiologists, CY2026 PFS final rule summary (31 Oct 2025): anesthesia CF $20.5998 (Qualifying APM Participants) and $20.4976 (all other items and services), vs $20.3178 in 2025.',
+            statute: 'SSA sec. 1848(d)(20) (MACRA): beginning 2026, separate qualifying and nonqualifying APM conversion factors, updated +0.75% and +0.25% respectively for 2026 and each subsequent year.',
+            obbba: 'CMS CY2026 PFS fact sheet: CY2026 factors also include "a one-year increase of +2.50 percent for CY 2026 stipulated by statute" (One Big Beautiful Bill Act, H.R.1) and an estimated +0.49% budget-neutrality adjustment. The +2.50% is one year only and does not repeat in CY2027.'
+        };
+        // Statutory annual updates. Kept separate from the dollar figures so
+        // the widening gap is a stated fact with a source, not a projection
+        // this app invents -- these do NOT roll the numbers above forward,
+        // because a future year's factor also depends on budget neutrality
+        // and any new legislation, neither of which is knowable here.
+        var SC_CF_ANNUAL_UPDATE = { qp: 0.75, nonqp: 0.25 };
+
+        // Returns the real conversion factor, or null when QP status is not
+        // known. FAILS CLOSED BY DESIGN: there is no default branch and no
+        // fallback to either factor. A caller that gets null must disclose
+        // that the amount cannot be determined -- same posture as the
+        // credential-scope gate, and for the same reason: quietly picking
+        // one of two real rates produces a confident wrong dollar figure,
+        // which is worse here than producing none.
+        function scConversionFactor(qpStatus, kind) {
+            var table = SC_CONVERSION_FACTORS_2026[kind === 'anesthesia' ? 'anesthesia' : 'rbrvs'];
+            if (qpStatus === 'qp') return table.qp;
+            if (qpStatus === 'nonqp') return table.nonqp;
+            return null;
+        }
+        function scQpStatusLabel(qpStatus) {
+            if (qpStatus === 'qp') return 'Qualifying APM Participant';
+            if (qpStatus === 'nonqp') return 'Not a QP';
+            return 'QP status unknown';
+        }
+
+        // ── -2.5% efficiency adjustment (CY2026) ──
+        // DELIBERATELY NOT ARITHMETIC. CMS applied this adjustment when it
+        // built the CY2026 work RVUs; the published 2026 RVU already has it
+        // in. A practice that multiplied a 2026 RVU by 0.975 in this app
+        // would be applying the cut a second time and understating its own
+        // payment. So this is a DISCLOSURE layer -- it answers "is this code
+        // subject to the adjustment or exempt", never "here is your adjusted
+        // dollar amount".
+        //
+        // CMS's exemption wording is a CATEGORY rule with examples, not a
+        // closed code list: the adjustment applies "to all codes except
+        // time-based codes, such as evaluation and management (E/M)
+        // services, care management services, behavioral health services,
+        // services on the Medicare telehealth list, and maternity codes with
+        // a global period of MMM." CMS separately finalized an explicit
+        // HCPCS-level exemption list that is not reproduced here because it
+        // was not verified line by line against the rule -- so this function
+        // returns an honest 'unknown' rather than a false negative for
+        // anything it cannot place in a named category.
+        var SC_EFFICIENCY_ADJUSTMENT_2026 = -2.5;
+        var SC_EFFICIENCY_SOURCE = 'CMS CY2026 PFS Final Rule (CMS-1832-F) fact sheet: efficiency adjustment applied "to the work RVUs and corresponding intraservice portion of physician time for non-time-based services ... all codes except time-based codes, such as evaluation and management (E/M) services, care management services, behavioral health services, services on the Medicare telehealth list, and maternity codes with a global period of MMM"; MEI productivity adjustment, 5-year look-back, -2.5% for CY2026.';
+        var SC_EFFICIENCY_EXEMPT_CATEGORIES = [
+            { key: 'em',         label: 'Evaluation and management (E/M)' },
+            { key: 'care_mgmt',  label: 'Care management services' },
+            { key: 'behavioral', label: 'Behavioral health services' },
+            { key: 'telehealth', label: 'On the Medicare telehealth list' },
+            { key: 'maternity',  label: 'Maternity codes with a global period of MMM' },
+            { key: 'time_based', label: 'Other time-based service' },
+            { key: 'new_2026',   label: 'New code effective 1 Jan 2026' }
+        ];
 
         function escHtml(unsafe) {
             if (!unsafe) return '';
@@ -3524,12 +3648,26 @@ How to answer:
                 totalTime += timeUnits;
                 totalUnitsAll += totalUnits;
                 if (a.qc && a.qc.trim() !== '') qcCount++;
-                var dollarAmount = (a.conversionFactor != null && a.conversionFactor !== '') ? (totalUnits * a.conversionFactor) : null;
+                // CY2026: the factor comes from QP status for Medicare cases,
+                // or from a real contracted rate the user entered for a
+                // non-Medicare payer. Legacy rows saved before this change
+                // carry a bare conversionFactor with no qpStatus -- those are
+                // honored as 'manual' rather than silently reassigned to one
+                // of the two Medicare factors, which would change a number
+                // the practice already recorded.
+                var resolvedCf = (a.qpStatus === 'qp' || a.qpStatus === 'nonqp')
+                    ? scConversionFactor(a.qpStatus, 'anesthesia')
+                    : ((a.conversionFactor != null && a.conversionFactor !== '') ? a.conversionFactor : null);
+                var dollarAmount = resolvedCf != null ? (totalUnits * resolvedCf) : null;
                 if (dollarAmount != null) { totalDollars += dollarAmount; dollarCases++; }
+                var amountCell = dollarAmount != null
+                    ? ('$'+dollarAmount.toFixed(2)+'<div style="font-size:10px;color:#666;">@ $'+resolvedCf.toFixed(4)+'/unit &middot; '+escHtml(a.qpStatus === 'manual' || !a.qpStatus ? 'entered factor' : scQpStatusLabel(a.qpStatus))+'</div>')
+                    : '<span style="color:#92400e;font-weight:700;">Not determinable</span><div style="font-size:10px;color:#92400e;">QP status unset — CY2026 has two Medicare factors and this app will not pick one</div>';
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(a.caseRef)+'</td><td>'+escHtml(a.cpt||'—')+'</td><td>'+a.base+'</td><td>'+a.minutes+'</td><td>'+timeUnits.toFixed(2)+'</td><td>'+escHtml(a.physicalStatus||'—')+'</td><td>'+escHtml(a.qc||'—')+'</td><td>'+totalUnits.toFixed(2)+'</td><td>'+(dollarAmount!=null?('$'+dollarAmount.toFixed(2)):'—')+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAnesthesiaEntry(\''+a.id+'\')">×</button></td>';
+                tr.innerHTML = '<td>'+escHtml(a.caseRef)+'</td><td>'+escHtml(a.cpt||'—')+'</td><td>'+a.base+'</td><td>'+a.minutes+'</td><td>'+timeUnits.toFixed(2)+'</td><td>'+escHtml(a.physicalStatus||'—')+'</td><td>'+escHtml(a.qc||'—')+'</td><td>'+totalUnits.toFixed(2)+'</td><td>'+amountCell+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeAnesthesiaEntry(\''+a.id+'\')">×</button></td>';
                 tbody.appendChild(tr);
             });
+            var undeterminable = list.length - dollarCases;
             var avgBase = list.length ? (totalBase/list.length).toFixed(1) : '—';
             var avgTime = list.length ? (totalTime/list.length).toFixed(1) : '—';
             var kpis = document.getElementById('anesthesia-kpis');
@@ -3540,8 +3678,28 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Time Units Avg</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-detail">Per 15 minutes</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">QC Modifiers</div><div class="kpi-value">'+qcCount+'</div><div class="kpi-detail">Quality codes logged</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Total Units Billed</div><div class="kpi-value">'+totalUnitsAll.toFixed(2)+'</div><div class="kpi-detail">Sum, all logged cases</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Billed Amount</div><div class="kpi-value">'+(dollarCases?('$'+totalDollars.toFixed(2)):'—')+'</div><div class="kpi-detail">'+(dollarCases?(dollarCases+' case(s) with a conversion factor'):'No cases have a conversion factor yet')+'</div></div>';
+                    '<div class="kpi-card"><div class="kpi-label">Billed Amount</div><div class="kpi-value">'+(dollarCases?('$'+totalDollars.toFixed(2)):'—')+'</div><div class="kpi-detail">'+(dollarCases?(dollarCases+' of '+list.length+' case(s) — excludes '+undeterminable+' with no determinable factor'):'No case has a determinable conversion factor yet')+'</div></div>';
             }
+            renderAnesthesiaCfReference();
+        }
+
+        // Renders the two real CY2026 anesthesia factors side by side with
+        // their source. Deliberately shows BOTH rather than "the 2026 rate" --
+        // there is no single 2026 rate any more, and a UI that implies one is
+        // the thing this whole change exists to remove.
+        function renderAnesthesiaCfReference(){
+            var el = document.getElementById('an-cf-reference');
+            if (!el) return;
+            var a = SC_CONVERSION_FACTORS_2026.anesthesia;
+            el.innerHTML =
+                '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">'
+                + '<div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:8px 14px;"><b>$'+a.qp.toFixed(4)+'</b> / unit<div style="font-size:11px;color:#1e40af;">Qualifying APM Participant</div></div>'
+                + '<div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:8px 14px;"><b>$'+a.nonqp.toFixed(4)+'</b> / unit<div style="font-size:11px;color:#374151;">Not a QP</div></div>'
+                + '</div>'
+                + '<div style="margin-bottom:6px;">Anesthesia uses its own conversion factor <b>instead of</b> the RBRVS factor ($'+SC_CONVERSION_FACTORS_2026.rbrvs.qp.toFixed(4)+' QP / $'+SC_CONVERSION_FACTORS_2026.rbrvs.nonqp.toFixed(4)+' non-QP), never in addition to it. Payment = (base units + time units) &times; the anesthesia factor above.</div>'
+                + '<div style="font-size:11px;color:#666;">Source: '+escHtml(SC_CF_SOURCES.anesthesia)+'</div>'
+                + '<div style="font-size:11px;color:#666;margin-top:4px;">Statutory basis: '+escHtml(SC_CF_SOURCES.statute)+' The two factors diverge by '+(SC_CF_ANNUAL_UPDATE.qp - SC_CF_ANNUAL_UPDATE.nonqp).toFixed(2)+' percentage points of update per year, so this gap widens annually.</div>'
+                + '<div style="font-size:11px;color:#666;margin-top:4px;">'+escHtml(SC_CF_SOURCES.obbba)+'</div>';
         }
         async function removeAnesthesiaEntry(id){
             if (!requireAdminForDelete()) return;
@@ -3623,11 +3781,19 @@ How to answer:
             var minutes = parseFloat(document.getElementById('an-add-minutes').value);
             var physicalStatus = document.getElementById('an-add-status').value;
             var qc = document.getElementById('an-add-qc').value.trim();
+            var qpStatus = document.getElementById('an-add-qp').value;
             var cfRaw = document.getElementById('an-add-cf').value;
             var conversionFactor = cfRaw !== '' ? parseFloat(cfRaw) : null;
             if (!caseRef || isNaN(base) || isNaN(minutes)) { showToast('Case ref, base units, and minutes required'); return; }
+            // 'Other payer' is the only path that accepts a typed factor, and
+            // it requires one -- otherwise the row would save looking like a
+            // deliberate manual rate while actually carrying nothing.
+            if (qpStatus === 'manual' && (conversionFactor == null || isNaN(conversionFactor))) {
+                showToast('Enter the contracted factor $/unit, or pick a QP status instead');
+                return;
+            }
             var list = getAnesthesiaEntries();
-            list.push({id:'an'+Date.now(), caseRef:caseRef, cpt:cpt, base:base, minutes:minutes, physicalStatus:physicalStatus, qc:qc, conversionFactor:conversionFactor});
+            list.push({id:'an'+Date.now(), caseRef:caseRef, cpt:cpt, base:base, minutes:minutes, physicalStatus:physicalStatus, qc:qc, qpStatus:qpStatus||'', conversionFactor:qpStatus === 'manual' ? conversionFactor : null});
             var saved = saveAnesthesiaEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
             var synced = saved ? await scData('write', 'sc_anesthesia', list[list.length - 1]) : null;
@@ -3638,6 +3804,7 @@ How to answer:
             document.getElementById('an-add-minutes').value = '';
             document.getElementById('an-add-status').value = '';
             document.getElementById('an-add-qc').value = '';
+            document.getElementById('an-add-qp').value = '';
             document.getElementById('an-add-cf').value = '';
             document.getElementById('an-base-lookup-note').textContent = '';
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Anesthesia case added' : 'Anesthesia case added on this device only -- server sync failed, will not appear on other devices until resolved'));
@@ -4713,9 +4880,13 @@ How to answer:
             tbody.innerHTML = '';
             list.forEach(function(p){
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.specialty)+'</td><td>'+escHtml(p.license)+'</td><td>'+escHtml(p.cred)+'</td><td>'+p.perf+'%</td><td><button class="btn" style="padding:2px 8px;" onclick="removeProviderEntry(\''+p.id+'\')">×</button></td>';
+                var qpCell = p.qpStatus
+                    ? escHtml(scQpStatusLabel(p.qpStatus))
+                    : '<span style="color:#92400e;font-weight:700;">Unknown — payment cannot be stated</span>';
+                tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.specialty)+'</td><td>'+escHtml(p.license)+'</td><td>'+escHtml(p.cred)+'</td><td>'+qpCell+'</td><td>'+p.perf+'%</td><td><button class="btn" style="padding:2px 8px;" onclick="removeProviderEntry(\''+p.id+'\')">×</button></td>';
                 tbody.appendChild(tr);
             });
+            var qpUnknown = list.filter(function(p){ return !p.qpStatus; }).length;
             var credentialed = list.filter(function(p){return p.cred==='Yes';});
             var credPct = list.length ? (credentialed.length/list.length*100).toFixed(1)+'%' : '—';
             var avgPerf = list.length ? (list.reduce(function(s,p){return s+p.perf;},0)/list.length).toFixed(1)+'%' : '—';
@@ -4728,7 +4899,8 @@ How to answer:
                     '<div class="kpi-card"><div class="kpi-label">Credentialed</div><div class="kpi-value">'+credPct+'</div><div class="kpi-detail">Of logged providers</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Avg Performance</div><div class="kpi-value">'+avgPerf+'</div><div class="kpi-detail">Logged providers</div></div>'+
                     '<div class="kpi-card"><div class="kpi-label">Specialties Represented</div><div class="kpi-value">'+Object.keys(specialties).length+'</div><div class="kpi-detail">Distinct</div></div>'+
-                    '<div class="kpi-card"><div class="kpi-label">Non-Credentialed</div><div class="kpi-value">'+(list.length-credentialed.length)+'</div><div class="kpi-detail">Needs review</div></div>';
+                    '<div class="kpi-card"><div class="kpi-label">Non-Credentialed</div><div class="kpi-value">'+(list.length-credentialed.length)+'</div><div class="kpi-detail">Needs review</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">QP Status Unset</div><div class="kpi-value">'+qpUnknown+'</div><div class="kpi-detail">'+(qpUnknown?'No CY2026 payment amount can be stated for these':'All providers have QP status recorded')+'</div></div>';
             }
         }
         async function removeProviderEntry(id){
@@ -4744,10 +4916,11 @@ How to answer:
             var specialty = document.getElementById('prov-add-specialty').value.trim();
             var license = document.getElementById('prov-add-license').value.trim();
             var cred = document.getElementById('prov-add-cred').value;
+            var qpStatus = document.getElementById('prov-add-qp').value;
             var perf = parseFloat(document.getElementById('prov-add-perf').value);
             if (!name || !specialty) { showToast('Name and specialty required'); return; }
             var list = getProviderEntries();
-            list.push({id:'pv'+Date.now(), name:name, specialty:specialty, license:license||'—', cred:cred, perf:isNaN(perf)?0:perf});
+            list.push({id:'pv'+Date.now(), name:name, specialty:specialty, license:license||'—', cred:cred, qpStatus:qpStatus||'', perf:isNaN(perf)?0:perf});
             var saved = saveProviderEntries(list);
             // Fixed (2026-08-19 audit, code-scrubber Check 4) -- see addRevenueEntry's comment for why.
             var synced = saved ? await scData('write', 'sc_providers', list[list.length - 1]) : null;
@@ -4756,6 +4929,7 @@ How to answer:
             document.getElementById('prov-add-name').value = '';
             document.getElementById('prov-add-specialty').value = '';
             document.getElementById('prov-add-license').value = '';
+            document.getElementById('prov-add-qp').value = '';
             document.getElementById('prov-add-perf').value = '';
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Provider added' : 'Provider added on this device only -- server sync failed, will not appear on other devices until resolved'));
         }
@@ -6994,6 +7168,51 @@ How to answer:
             }
         }
 
+        // ── CY2026 efficiency adjustment: disclosure, not arithmetic ──
+        // See SC_EFFICIENCY_ADJUSTMENT_2026's header for why this never
+        // returns an adjusted dollar figure. The 'unknown' branch is the
+        // fail-closed one and is deliberately the DEFAULT selection: CMS's
+        // exemption rule is a category rule with examples plus a separately
+        // finalized HCPCS list that was not verified line by line here, so a
+        // code this app cannot place in a named category gets an honest
+        // "cannot determine", never a default "subject to it".
+        function renderEfficiencyAdjustmentControls(){
+            var sel = document.getElementById('eff-adj-category');
+            var explainer = document.getElementById('eff-adj-explainer');
+            if (explainer) {
+                explainer.textContent = 'CMS applied a ' + SC_EFFICIENCY_ADJUSTMENT_2026 + '% adjustment to work RVUs and the intraservice portion of physician time for non-time-based services in CY2026. This is already reflected in the published CY2026 RVUs -- do not apply it yourself to a 2026 value. This check tells you only whether a service falls in an exempt category.';
+            }
+            if (!sel || sel.options.length) return;
+            var opts = '<option value="">Select the service category...</option>';
+            SC_EFFICIENCY_EXEMPT_CATEGORIES.forEach(function(c){
+                opts += '<option value="'+escHtml(c.key)+'">'+escHtml(c.label)+' (exempt)</option>';
+            });
+            opts += '<option value="subject">Other non-time-based service (subject to the adjustment)</option>';
+            opts += '<option value="unknown">Not sure which category applies</option>';
+            sel.innerHTML = opts;
+        }
+        function runEfficiencyAdjustmentCheck(){
+            var sel = document.getElementById('eff-adj-category');
+            var out = document.getElementById('eff-adj-result');
+            if (!sel || !out) return;
+            var v = sel.value;
+            if (!v) { showToast('Pick a service category first'); return; }
+            var box, body;
+            if (v === 'subject') {
+                box = 'background:#fef3c7;border:1px solid #fde68a;color:#92400e;';
+                body = '<b>Subject to the ' + SC_EFFICIENCY_ADJUSTMENT_2026 + '% efficiency adjustment.</b><div style="margin-top:6px;">The reduction is already contained in this code\'s published CY2026 work RVU and intraservice time. Use the 2026 RVU as published -- do not reduce it again.</div>';
+            } else if (v === 'unknown') {
+                box = 'background:#fee2e2;border:1px solid #fecaca;color:#991b1b;';
+                body = '<b>Cannot determine from the information given.</b><div style="margin-top:6px;">CMS defined the exemption as a category rule with examples, and separately finalized an explicit HCPCS-level exemption list that this app has not reproduced. Check the code against the exemption list in the CY2026 final rule rather than assuming either answer.</div>';
+            } else {
+                var cat = SC_EFFICIENCY_EXEMPT_CATEGORIES.filter(function(c){ return c.key === v; })[0];
+                box = 'background:#dcfce7;border:1px solid #86efac;color:#166534;';
+                body = '<b>Exempt from the efficiency adjustment.</b><div style="margin-top:6px;">' + escHtml(cat ? cat.label : '') + ' is named by CMS as outside the adjustment, so its CY2026 work RVU was not reduced by it.</div>';
+            }
+            out.innerHTML = '<div style="border-radius:8px;padding:12px 16px;font-size:13px;'+box+'">'+body
+                + '<div style="margin-top:8px;font-size:11px;opacity:0.85;">Source: '+escHtml(SC_EFFICIENCY_SOURCE)+'</div></div>';
+        }
+
         async function runCodeAwarenessLookup(){
             var desc = document.getElementById('code-lookup-desc').value.trim();
             var resultEl = document.getElementById('code-lookup-result');
@@ -7095,6 +7314,7 @@ How to answer:
             renderDrg();
             renderQuery();
             renderEncoder();
+            renderEfficiencyAdjustmentControls();
             renderRac();
             renderTelehealth();
             renderAnesthesia();
