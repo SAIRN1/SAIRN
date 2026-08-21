@@ -686,6 +686,9 @@
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
                 <button class="nav-btn" onclick="showPanel('pt')" data-tip="Physical Therapy -- 8-minute rule, KX threshold, CQ modifier, MPPR, 2026 RTM codes">Physical Therapy</button>
                 <button class="nav-btn" onclick="showPanel('mh')" data-tip="Mental Health -- license-gated codes, split time, telehealth POS, psychotherapy-notes tier">Mental Health</button>
+                <button class="nav-btn" onclick="showPanel('uc')" data-tip="Urgent Care -- payer branching S9083/S9088 vs E/M, POS 20, ED-code block">Urgent Care</button>
+                <button class="nav-btn" onclick="showPanel('eye')" data-tip="Optometry/Ophthalmology -- routine vs medical, refraction split, co-management modifiers">Optometry / Ophth</button>
+                <button class="nav-btn" onclick="showPanel('cos')" data-tip="Cosmetic/Reconstructive -- direct-pay vs insurance routing, evidence, mixed-session modifiers">Cosmetic / Recon</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1362,6 +1365,76 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <button class="btn btn-primary" onclick="runMhCheck()">Check Encounter</button>
             </div>
             <div id="mh-result"></div>
+        </div>
+
+        <!-- Urgent Care (Phase 5 item 13). Verified with NO corrections --
+             every briefed claim checked out. The ED-code block is mechanical
+             rather than a judgement call because CMS defines POS 20 as
+             "distinct from a hospital emergency room." -->
+        <div id="panel-uc" class="panel">
+            <h1 class="panel-title">Urgent Care</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                The same visit is coded differently by payer &mdash; S9083/S9088 for plans that require the
+                global code, standard E/M for Medicare, which does not recognise S-codes.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="uc-codes" placeholder="Codes e.g. S9083 or 99213" class="search-input" style="min-width:220px;">
+                <select id="uc-payer"><option value="">Payer type</option><option value="medicare">Medicare</option><option value="commercial">Commercial</option><option value="medicaid">Medicaid</option></select>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="uc-global"> Payer requires the global code</label>
+                <select id="uc-ed"><option value="">Hospital-based ED status (not recorded)</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <input type="text" id="uc-pos" placeholder="POS" class="search-input" style="max-width:90px;">
+                <button class="btn btn-primary" onclick="runUcCheck()">Check Visit</button>
+            </div>
+            <div id="uc-result"></div>
+        </div>
+
+        <!-- Optometry / Ophthalmology (Phase 5 item 12). Verified with NO
+             corrections. One rule the brief did not mention is included
+             because it was confirmed and is genuinely useful: a refraction is
+             never part of a global surgical package. -->
+        <div id="panel-eye" class="panel">
+            <h1 class="panel-title">Optometry &amp; Ophthalmology</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                The routine-versus-medical call comes first &mdash; it drives both the payer and the code
+                family (92xxx eye visit vs 99xxx E/M). Refraction and materials stay off the medical claim.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="eye-codes" placeholder="Codes e.g. 92015, 66984" class="search-input" style="min-width:220px;">
+                <select id="eye-nature"><option value="">Routine or medical?</option><option value="routine">Routine</option><option value="medical">Medical</option></select>
+                <select id="eye-refto"><option value="">Refraction billed to&hellip;</option><option value="vision">Vision plan / patient</option><option value="medical">Medical plan</option></select>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="eye-materials"> Materials on the medical claim</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="eye-comanage"> Co-managed</label>
+                <select id="eye-mod"><option value="">Co-management modifier</option><option value="54">-54 surgical care only</option><option value="55">-55 postoperative only</option></select>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="eye-transfer"> Transfer of care documented</label>
+                <input type="text" id="eye-range" placeholder="Post-op date range" class="search-input">
+                <button class="btn btn-primary" onclick="runEyeCheck()">Check Encounter</button>
+            </div>
+            <div id="eye-result"></div>
+        </div>
+
+        <!-- Cosmetic / Reconstructive (Phase 5 item 10). One correction baked
+             in: modifier 76 is "repeat procedure by the same physician" and
+             does NOT belong in the mixed-session modifier list the brief gave
+             (59/51/76). Appending it to a mixed cosmetic/reconstructive
+             session would be real misbilling, so it is blocked rather than
+             offered. -->
+        <div id="panel-cos" class="panel">
+            <h1 class="panel-title">Cosmetic &amp; Reconstructive</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                The same CPT code is cosmetic or reconstructive based only on <b>documented medical
+                necessity</b>. Cosmetic cases go to the direct-pay workflow, never the insurance A/R pipeline.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <select id="cos-intent"><option value="">Cosmetic or reconstructive?</option><option value="cosmetic">Cosmetic</option><option value="reconstructive">Reconstructive</option></select>
+                <select id="cos-route"><option value="">Payment route</option><option value="self_pay">Direct pay (deposit / plan)</option><option value="insurance">Insurance claim</option></select>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="cos-necessity"> Medical necessity documented</label>
+                <input type="text" id="cos-evidence" placeholder="Evidence e.g. visual field, photos, BMI" class="search-input" style="min-width:240px;">
+                <input type="text" id="cos-prior" placeholder="Prior related procedure" class="search-input">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="cos-mixed"> Mixed same-session case</label>
+                <input type="text" id="cos-mods" placeholder="Modifiers e.g. 59, 51" class="search-input">
+                <button class="btn btn-primary" onclick="runCosCheck()">Check Case</button>
+            </div>
+            <div id="cos-result"></div>
         </div>
 
         <div id="panel-anesthesia" class="panel">
@@ -5684,6 +5757,48 @@ How to answer:
         function scParseList(raw){
             return String(raw || '').split(',').map(function(c){ return c.trim().toUpperCase(); }).filter(Boolean);
         }
+        function scRenderCheckResult(elId, res){
+            document.getElementById(elId).innerHTML =
+                '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:12px 16px;font-size:13px;">'
+                + '<div style="font-weight:700;margin-bottom:8px;">'
+                + (res.blocking ? res.blocking + ' issue' + (res.blocking===1?'':'s') + ' to resolve before submitting'
+                                : 'No blocking issues found by the checks that ran')
+                + '</div>' + scRenderRuleFindings(res.findings) + '</div>';
+        }
+        function runUcCheck(){
+            var ed = document.getElementById('uc-ed').value;
+            scRenderCheckResult('uc-result', scValidateUrgentCare({
+                codes: scParseList(document.getElementById('uc-codes').value),
+                payer_type: document.getElementById('uc-payer').value,
+                payer_requires_global: document.getElementById('uc-global').checked,
+                hospital_based_ed: ed === 'yes' ? true : (ed === 'no' ? false : null),
+                pos: document.getElementById('uc-pos').value
+            }));
+        }
+        function runEyeCheck(){
+            scRenderCheckResult('eye-result', scValidateEyeEncounter({
+                codes: scParseList(document.getElementById('eye-codes').value),
+                visit_nature: document.getElementById('eye-nature').value,
+                refraction_billed_to: document.getElementById('eye-refto').value,
+                materials_on_medical_claim: document.getElementById('eye-materials').checked,
+                comanagement: document.getElementById('eye-comanage').checked,
+                modifier: document.getElementById('eye-mod').value,
+                transfer_documented: document.getElementById('eye-transfer').checked,
+                postop_date_range: document.getElementById('eye-range').value
+            }));
+        }
+        function runCosCheck(){
+            scRenderCheckResult('cos-result', scValidateCosmeticCase({
+                intent: document.getElementById('cos-intent').value,
+                routed_to: document.getElementById('cos-route').value,
+                medical_necessity_documented: document.getElementById('cos-necessity').checked,
+                evidence: scParseList(document.getElementById('cos-evidence').value),
+                prior_related_procedure: document.getElementById('cos-prior').value,
+                mixed_session: document.getElementById('cos-mixed').checked,
+                modifiers: scParseList(document.getElementById('cos-mods').value)
+            }));
+        }
+
         function runMhCheck(){
             var el = document.getElementById('mh-result');
             var codes = scParseList(document.getElementById('mh-codes').value);
@@ -6266,6 +6381,240 @@ How to answer:
                 blocking: findings.filter(function(f){ return f.severity === 'block'; }).length,
                 license: lic, is_counselor: isCounselor
             };
+        }
+
+        // ================================================================
+        // URGENT CARE MODULE (2026-08-20, Phase 5 item 13).
+        // Verified with NO corrections needed -- every claim checked out.
+        // ================================================================
+        var SC_UC_SOURCES = {
+            pos20:    'CMS Place of Service Code Set — POS 20 (Urgent Care Facility) is "a location, DISTINCT FROM A HOSPITAL EMERGENCY ROOM, an office, or a clinic, whose purpose is to diagnose and treat illness or injury for unscheduled, ambulatory patients"; POS 23 is Emergency Room-Hospital',
+            scodes:   'CMS HCPCS — S9083 is "urgent care center global" and S9088 is "services provided in an urgent care center"; both appear on CMS Outpatient CPT/HCPCS EXCLUDED Services lists, consistent with Medicare not paying S-codes. They are used by commercial and Medicaid plans that require them',
+            medicare: 'CMS — Medicare does not recognize the S-code family, so a Medicare urgent care visit is reported with standard office/outpatient E/M 99202-99215',
+            ed_codes: 'CMS Place of Service Code Set — 99281-99285 describe emergency department services; POS 20 is defined as distinct from a hospital emergency room, so a facility without hospital-based ED status cannot report them'
+        };
+        var SC_UC_GLOBAL_CODES = { S9083: 'Urgent care center global', S9088: 'Services provided in an urgent care center' };
+        var SC_UC_EM_CODES = ['99202','99203','99204','99205','99211','99212','99213','99214','99215'];
+        var SC_ED_ONLY_CODES = ['99281','99282','99283','99284','99285'];
+
+        function scUcFinding(sev, rule, detail, k){ return { severity: sev, rule: rule, detail: detail, source: SC_UC_SOURCES[k] || '' }; }
+
+        // input: { codes:[], payer_type:'medicare'|'commercial'|'medicaid'|'',
+        //          payer_requires_global:bool, hospital_based_ed:bool, pos:'' }
+        function scValidateUrgentCare(input){
+            input = input || {};
+            var codes = (input.codes || []).map(function(c){ return String(c||'').trim().toUpperCase(); }).filter(Boolean);
+            var findings = [];
+            var sCodes  = codes.filter(function(c){ return SC_UC_GLOBAL_CODES[c]; });
+            var emCodes = codes.filter(function(c){ return SC_UC_EM_CODES.indexOf(c) !== -1; });
+            var edCodes = codes.filter(function(c){ return SC_ED_ONLY_CODES.indexOf(c) !== -1; });
+            var payer = String(input.payer_type || '').toLowerCase();
+
+            // --- The hard block: ED codes need real hospital-based ED status ---
+            if (edCodes.length) {
+                if (input.hospital_based_ed === true) {
+                    findings.push(scUcFinding('info', 'ED codes permitted by facility status',
+                        edCodes.join(', ') + ' reported and this facility is recorded as hospital-based ED.', 'ed_codes'));
+                } else {
+                    findings.push(scUcFinding('block', 'ED codes require hospital-based ED status',
+                        edCodes.join(', ') + ' are emergency department codes. An urgent care facility (POS 20) is defined as distinct from a hospital emergency room and cannot report them'
+                        + (input.hospital_based_ed === false ? '.' : ', and hospital-based ED status is not recorded here.'), 'ed_codes'));
+                }
+            }
+
+            // --- Payer branching: the same visit is coded differently ---
+            if (payer === 'medicare' && sCodes.length) {
+                findings.push(scUcFinding('block', 'S-codes are not payable by Medicare',
+                    sCodes.join(', ') + ' will not be paid by Medicare. Report standard office/outpatient E/M 99202-99215 instead.', 'medicare'));
+            }
+            if ((payer === 'commercial' || payer === 'medicaid') && input.payer_requires_global === true && !sCodes.length && emCodes.length) {
+                findings.push(scUcFinding('warn', 'This payer requires the urgent care global code',
+                    'The payer is recorded as requiring S9083/S9088, but only E/M ' + emCodes.join(', ') + ' is reported.', 'scodes'));
+            }
+            if (!payer && (sCodes.length || emCodes.length)) {
+                findings.push(scUcFinding('block', 'Payer type not recorded',
+                    'The same urgent care visit is coded differently by payer — S9083/S9088 for plans that require it, standard E/M for Medicare — so payer type must be known.', 'scodes'));
+            }
+
+            // --- POS ---
+            var pos = String(input.pos || '').trim();
+            if (codes.length && !pos) {
+                findings.push(scUcFinding('warn', 'Place of service not recorded',
+                    'An urgent care facility is POS 20.', 'pos20'));
+            } else if (pos && pos !== '20' && !edCodes.length) {
+                findings.push(scUcFinding('warn', 'Unexpected place of service',
+                    'POS ' + pos + ' recorded for an urgent care encounter; POS 20 is the urgent care facility code.', 'pos20'));
+            }
+
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity==='block'; }).length };
+        }
+
+        // ================================================================
+        // OPTOMETRY / OPHTHALMOLOGY MODULE (2026-08-20, Phase 5 item 12).
+        // Verified with NO corrections needed. One real rule the brief did
+        // NOT mention is included because it is genuinely useful and was
+        // confirmed: a refraction is NEVER part of a global surgical
+        // package, so it stays separately billable even inside the 90-day
+        // cataract global.
+        // ================================================================
+        var SC_EYE_SOURCES = {
+            refraction: 'AAO "Back to the Basics — Coding for Refractions Using CPT Code 92015" — 92015 (determination of refractive state) is separately billable in addition to any level of E/M (99xxx) or Eye visit code (92xxx), and a refraction is NEVER part of a global surgical package',
+            comanage:   'AAO "Cataract Comanagement Compliance" — the operating surgeon reports the procedure with modifier -54 (surgical care only); the comanaging provider reports the same procedure with -55 (postoperative management only) and the DATE RANGE of postoperative care, with -RT/-LT as applicable',
+            global90:   'CMS Billing and Coding: Cataract Extraction — standard cataract surgery is 66984 and carries a 90-day global period covering pre- and post-operative care',
+            families:   'AAO / AMA CPT — an eye encounter is reported with either the Eye visit codes (92xxx) or office/outpatient E/M (99xxx); the routine-versus-medical determination drives which payer and which family applies'
+        };
+        var SC_EYE_CATARACT_GLOBAL_DAYS = 90;
+
+        function scEyeFinding(sev, rule, detail, k){ return { severity: sev, rule: rule, detail: detail, source: SC_EYE_SOURCES[k] || '' }; }
+
+        // input: { codes:[], visit_nature:'routine'|'medical'|'',
+        //          billed_to:'vision'|'medical'|'', refraction_billed_to:'vision'|'medical'|'',
+        //          comanagement:bool, modifier:'54'|'55'|'', transfer_documented:bool,
+        //          postop_date_range:'', materials_on_medical_claim:bool }
+        function scValidateEyeEncounter(input){
+            input = input || {};
+            var codes = (input.codes || []).map(function(c){ return String(c||'').trim().toUpperCase(); }).filter(Boolean);
+            var findings = [];
+
+            // --- Routine vs medical drives everything downstream ---
+            if (codes.length && !input.visit_nature) {
+                findings.push(scEyeFinding('block', 'Routine or medical not determined',
+                    'This determination drives both the payer and the code family (92xxx eye visit vs 99xxx E/M) and has to be made before coding.', 'families'));
+            }
+
+            // --- Refraction: separately billable, and NOT bundled into a global ---
+            if (codes.indexOf('92015') !== -1) {
+                if (input.refraction_billed_to === 'medical') {
+                    findings.push(scEyeFinding('warn', 'Refraction billed to the medical plan',
+                        '92015 is typically a vision-plan or patient responsibility. It is separately billable from the exam, but medical plans commonly do not cover it.', 'refraction'));
+                } else if (!input.refraction_billed_to) {
+                    findings.push(scEyeFinding('warn', 'Refraction destination not recorded',
+                        '92015 is separately billable from the medical exam and normally goes to the vision plan.', 'refraction'));
+                }
+                findings.push(scEyeFinding('info', 'Refraction is never bundled into a global package',
+                    '92015 remains separately billable even during a 90-day postoperative global period.', 'refraction'));
+            }
+
+            // --- Materials stay off the medical claim ---
+            if (input.materials_on_medical_claim === true) {
+                findings.push(scEyeFinding('block', 'Materials on the medical claim',
+                    'Spectacle and contact lens materials belong on the vision claim, separate from the medical encounter.', 'families'));
+            }
+
+            // --- Co-management: -54 / -55 with real transfer documentation ---
+            if (input.comanagement === true) {
+                var mod = String(input.modifier || '').trim();
+                if (mod !== '54' && mod !== '55') {
+                    findings.push(scEyeFinding('block', 'Co-management modifier missing',
+                        'Split care requires -54 (surgical care only) from the operating surgeon or -55 (postoperative management only) from the comanaging provider.', 'comanage'));
+                }
+                if (!input.transfer_documented) {
+                    findings.push(scEyeFinding('block', 'Transfer of care not documented',
+                        'Co-managed care requires documentation of the transfer between the operating surgeon and the comanaging provider.', 'comanage'));
+                }
+                if (mod === '55' && !String(input.postop_date_range || '').trim()) {
+                    findings.push(scEyeFinding('block', 'Postoperative date range missing',
+                        'The provider reporting -55 must also report the date range of postoperative care.', 'comanage'));
+                }
+            }
+
+            // --- Cataract global ---
+            if (codes.indexOf('66984') !== -1) {
+                findings.push(scEyeFinding('info', 'Cataract surgery carries a 90-day global period',
+                    '66984 includes pre- and post-operative care for ' + SC_EYE_CATARACT_GLOBAL_DAYS + ' days.', 'global90'));
+            }
+
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity==='block'; }).length };
+        }
+
+        // ================================================================
+        // COSMETIC / RECONSTRUCTIVE MODULE (2026-08-20, Phase 5 item 10).
+        //
+        // ONE CORRECTION: the brief listed modifiers "59/51/76" together for
+        // MIXED same-session cases. Modifier 76 is "repeat procedure by the
+        // same physician" -- the SAME procedure repeated, not a way to
+        // distinguish a cosmetic component from a reconstructive one. 59 is
+        // for a DIFFERENT procedure and 51 for multiple procedures in one
+        // session; 76 does not belong in that list and appending it to a
+        // mixed session would be real misbilling. It is flagged here rather
+        // than offered.
+        // ================================================================
+        var SC_COS_SOURCES = {
+            split:      'The same CPT code is cosmetic (patient responsibility) or reconstructive (potentially covered) based solely on documented medical necessity — the code does not decide it, the documentation does',
+            mod_mixed:  'AMA CPT / CMS — modifier 59 is Distinct Procedural Service (a DIFFERENT procedure); modifier 51 is Multiple Procedures (more than one surgical service in the same session). Modifier 76 is Repeat Procedure by the Same Physician — the SAME procedure repeated — and does not apply to distinguishing a cosmetic from a reconstructive component',
+            mod_x:      'CMS MLN "Proper Use of Modifiers 59, XE, XP, XS & XU" — the X{EPSU} modifiers are more specific alternatives to 59 and CMS prefers them where one applies',
+            evidence:   'Reconstructive claims are substantiated by objective evidence attached to the claim — for example visual field testing, standardized multi-angle photographs, BMI, and documentation of failed conservative treatment',
+            history:    'A prior related procedure in the patient’s own claims history (for example a mastectomy preceding breast reconstruction) is real supporting evidence for a reconstructive claim'
+        };
+        var SC_COS_VALID_MIXED_MODIFIERS = { '59': 'Distinct procedural service', '51': 'Multiple procedures',
+            'XE': 'Separate encounter', 'XP': 'Separate practitioner', 'XS': 'Separate structure', 'XU': 'Unusual non-overlapping service' };
+
+        function scCosFinding(sev, rule, detail, k){ return { severity: sev, rule: rule, detail: detail, source: SC_COS_SOURCES[k] || '' }; }
+
+        // input: { intent:'cosmetic'|'reconstructive'|'', medical_necessity_documented:bool,
+        //          evidence:[], routed_to:'self_pay'|'insurance'|'',
+        //          mixed_session:bool, modifiers:[], prior_related_procedure:'' }
+        function scValidateCosmeticCase(input){
+            input = input || {};
+            var findings = [];
+            var intent = String(input.intent || '').toLowerCase();
+            var routed = String(input.routed_to || '').toLowerCase();
+
+            if (!intent) {
+                findings.push(scCosFinding('block', 'Cosmetic or reconstructive not determined',
+                    'The same code can be either. Nothing downstream — payer, workflow, evidence — can be decided until this is.', 'split'));
+            }
+
+            // --- Routing: cosmetic must NOT enter the insurance AR pipeline ---
+            if (intent === 'cosmetic') {
+                if (routed === 'insurance') {
+                    findings.push(scCosFinding('block', 'Cosmetic case routed to insurance',
+                        'A cosmetic case is patient responsibility and belongs in the direct-pay workflow (deposit and payment plan), not the insurance claims and A/R pipeline.', 'split'));
+                } else if (!routed) {
+                    findings.push(scCosFinding('warn', 'Payment route not recorded',
+                        'A cosmetic case should be routed to the direct-pay workflow.', 'split'));
+                }
+            }
+
+            // --- Reconstructive requires real documented necessity + evidence ---
+            if (intent === 'reconstructive') {
+                if (input.medical_necessity_documented !== true) {
+                    findings.push(scCosFinding('block', 'Reconstructive claim without documented medical necessity',
+                        'Medical necessity is the only thing separating this from a cosmetic case, and it is not documented.', 'split'));
+                }
+                var ev = (input.evidence || []).filter(Boolean);
+                if (!ev.length) {
+                    findings.push(scCosFinding('block', 'No supporting evidence attached',
+                        'Reconstructive claims are substantiated by objective evidence — visual field testing, standardized photographs, BMI, documented failed conservative treatment.', 'evidence'));
+                }
+                if (String(input.prior_related_procedure || '').trim()) {
+                    findings.push(scCosFinding('info', 'Prior related procedure supports this claim',
+                        'Claims history shows ' + input.prior_related_procedure + ', which is real supporting evidence for a reconstructive claim.', 'history'));
+                } else {
+                    findings.push(scCosFinding('warn', 'Claims history not cross-checked',
+                        'A prior related procedure in the patient’s own history can substantiate a reconstructive claim. None is recorded.', 'history'));
+                }
+            }
+
+            // --- Mixed-session modifiers, with the 76 correction enforced ---
+            if (input.mixed_session === true) {
+                var mods = (input.modifiers || []).map(function(m){ return String(m||'').trim().toUpperCase(); }).filter(Boolean);
+                if (mods.indexOf('76') !== -1) {
+                    findings.push(scCosFinding('block', 'Modifier 76 does not apply to a mixed session',
+                        'Modifier 76 is Repeat Procedure by the Same Physician — the SAME procedure repeated. It does not distinguish a cosmetic component from a reconstructive one. Use 59 (distinct procedural service) or 51 (multiple procedures), or an X{EPSU} modifier where one fits.', 'mod_mixed'));
+                }
+                var valid = mods.filter(function(m){ return SC_COS_VALID_MIXED_MODIFIERS[m]; });
+                if (!valid.length) {
+                    findings.push(scCosFinding('warn', 'No distinguishing modifier on a mixed session',
+                        'A session mixing cosmetic and reconstructive work normally needs 59 or 51, or a more specific X{EPSU} modifier.', 'mod_mixed'));
+                }
+                if (mods.indexOf('59') !== -1) {
+                    findings.push(scCosFinding('info', 'A more specific modifier may be preferred',
+                        'CMS prefers the X{EPSU} modifiers over 59 where one of them applies.', 'mod_x'));
+                }
+            }
+
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity==='block'; }).length };
         }
 
         // ================================================================
