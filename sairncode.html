@@ -682,6 +682,7 @@
                 <button class="nav-btn" onclick="showPanel('telehealth')" data-tip="Coding and billing rules for telehealth visits">Telehealth</button>
                 <button class="nav-btn" onclick="showPanel('anesthesia')" data-tip="Anesthesia-specific coding and time-unit calculations">Anesthesia</button>
                 <button class="nav-btn" onclick="showPanel('drugadmin')" data-tip="Drug administration -- J-code unit math, JW/JZ waste modifiers, infusion hierarchy, NDC format">Drug Administration</button>
+                <button class="nav-btn" onclick="showPanel('pctc')" data-tip="PC/TC split billing -- global vs -26 vs -TC, keyed to the CMS PC/TC indicator">PC/TC Split</button>
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
@@ -1616,6 +1617,68 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             </div>
             <div id="du-trap-result" style="margin-top:8px;"></div>
             <div id="du-biosimilar-reference" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- PC/TC Split Panel (2026-08-21, gap-closure pass 2 item 3).
+             One rule set covering radiology, pathology, cardiology
+             diagnostics, PFT and neurology studies. The eligibility half is
+             keyed to the practice's own copy of the CMS PC/TC indicator
+             (sc_pctc) rather than inferred from specialty; the path half is
+             a fail-closed ownership gate. -->
+        <div id="panel-pctc" class="panel">
+            <h1 class="panel-title">PC / TC Component Split</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:16px;">The same diagnostic code can be billed three ways: <b>globally</b> (equipment and interpretation together, no modifier), <b>PC only</b> (&minus;26, the interpreting physician), or <b>TC only</b> (&minus;TC, the equipment owner). Which path is legal depends on the code's CMS PC/TC indicator, on who did what, and on whether the patient was a hospital patient &mdash; not on the code alone and not on specialty.</div>
+
+            <div style="font-weight:700;font-size:16px;margin:8px 0;">1. Path Check</div>
+            <div class="toolbar">
+                <input type="text" id="pt-code" placeholder="CPT/HCPCS code" class="search-input">
+                <select id="pt-biller">
+                    <option value="">Who is billing?</option>
+                    <option value="physician">Physician / physician group</option>
+                    <option value="facility">Facility / equipment owner</option>
+                </select>
+                <select id="pt-interp">
+                    <option value="">Did the biller perform the interpretation?</option>
+                    <option value="yes">Yes — interpretation with written report</option>
+                    <option value="no">No</option>
+                </select>
+            </div>
+            <div class="toolbar">
+                <select id="pt-equipment">
+                    <option value="">Does the biller own/lease the equipment?</option>
+                    <option value="yes">Yes — biller owns or leases it</option>
+                    <option value="no">No</option>
+                </select>
+                <select id="pt-patient">
+                    <option value="">Patient's hospital status?</option>
+                    <option value="none">Not a hospital patient (office, freestanding centre)</option>
+                    <option value="inpatient">Hospital inpatient</option>
+                    <option value="outpatient">Registered hospital outpatient</option>
+                    <option value="leased">In a leased hospital department, NOT registered as a hospital patient</option>
+                </select>
+                <button class="btn btn-primary" onclick="runPcTcPathCheck()" id="pt-check-btn">Determine Path</button>
+            </div>
+            <div id="pt-check-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2. CMS PC/TC Indicator Reference</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Empty by default and never seeded. The authoritative indicator sits in position 139 of the CMS National Physician Fee Schedule Relative Value File and is reissued annually &mdash; so this holds what your practice has entered from the real file for the year you're billing, with a required source. A code that isn't here returns &quot;not in your reference&quot; and the path check fails closed rather than guessing either way.</div>
+            <div class="toolbar">
+                <input type="text" id="pt-add-code" placeholder="Code" class="search-input">
+                <select id="pt-add-indicator"></select>
+                <input type="text" id="pt-add-desc" placeholder="Description (optional)" class="search-input">
+                <input type="text" id="pt-add-source" placeholder="Source (required)" class="search-input">
+                <button class="btn btn-primary" onclick="addPcTcEntry()">Add</button>
+            </div>
+            <div class="kpi-grid" id="pctc-kpis"></div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>Code</th><th>Indicator</th><th>Split allowed?</th><th>Description</th><th>Source</th><th></th></tr></thead>
+                    <tbody id="pctc-tbody"></tbody>
+                </table></div>
+            </div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">3. What the Indicators Mean</div>
+            <div id="pctc-indicator-legend" style="font-size:12px;"></div>
         </div>
 
         <!-- Compliance Panel -->
@@ -7508,6 +7571,243 @@ How to answer:
             return { type: 'unknown', code: c, message: 'Not in this app’s verified reference. That is not a finding either way — this reference deliberately holds only the drug families verified against CMS during its build, not a full drug database. Check the code against your current HCPCS file.' };
         }
 
+        // ================================================================
+        // PC/TC COMPONENT SPLIT (2026-08-21, gap-closure pass 2 item 3)
+        //
+        // THE CORRECTION THAT SHAPES THIS WHOLE SECTION: only indicator 1
+        // permits modifiers 26 and TC. Indicators 2, 3 and 4 are exactly the
+        // codes that look most splittable -- they ARE the professional-only,
+        // technical-only and global-only halves of a split -- but CMS states
+        // for each of them that "Modifiers 26 and TC cannot be used with
+        // these codes," because the split is already expressed as three
+        // separate standalone codes (93010 / 93005 / 93000). A build that
+        // offered -26 on a 93010 because "it's a cardiology diagnostic"
+        // would generate real denials.
+        //
+        // Verbatim from Attachment A of CMS's National Physician Fee
+        // Schedule Relative Value File documentation (PC/TC indicator is
+        // field position 139 of that file).
+        // ================================================================
+        var PCTC_SOURCES = {
+            indicators: 'CMS, National Physician Fee Schedule Relative Value File documentation, Attachment A — PC/TC INDICATOR definitions (indicator is field position 139 of the RVU file).',
+            pc: 'Medicare Claims Processing Manual, Chapter 13 §20.1: "A/B MACs (B) must pay for the PC of radiology services furnished by a physician to an individual patient in all settings under the fee schedule for physician services regardless of the specialty of the physician who performs the service." For hospital patients the service must be identifiable, direct and discrete to an individual patient, and the interpretation includes a written report.',
+            tc_hospital: 'Medicare Claims Processing Manual, Chapter 13 §20.2.1: "A/B MACs (B) may not pay for the technical component (TC) of radiology services furnished to hospital patients." Inpatient TC is included in the hospital PPS payment (CAHs are paid 101% of reasonable cost instead); hospital outpatient radiology is paid to the hospital under OPPS. CWF reject edits recoup supplier-billed TC that falls inside an inpatient stay.',
+            tc_nonhospital: 'Medicare Claims Processing Manual, Chapter 13 §20.2.2: MACs "must pay under the fee schedule for the TC of radiology services furnished to beneficiaries who are not patients of any hospital, and who receive services in a physician\'s office, a freestanding imaging or radiation oncology center, or other setting that is not part of a hospital."',
+            leased: 'Medicare Claims Processing Manual, Chapter 13 §20.2.3: for procedures furnished in a leased hospital radiology department to a beneficiary who is neither an inpatient nor an outpatient of any hospital, "both the PC and the TC of the services are payable under the fee schedule by the A/B MAC (B)."'
+        };
+
+        // Verbatim CMS definitions, condensed to the operative rule. `split`
+        // is the only field the gate branches on and it is taken straight
+        // from CMS's own "Modifiers 26 and TC can/cannot be used" sentence.
+        var PCTC_INDICATORS = {
+            '0': { label: 'Physician Service Codes', split: 'none',
+                   note: 'Physician services (visits, consultations, surgery). The PC/TC concept does not apply — these cannot be split. Modifiers 26 and TC cannot be used.' },
+            '1': { label: 'Diagnostic Tests / Radiology Services', split: 'both',
+                   note: 'Has both a professional and a technical component. Modifiers 26 and TC can be used. This is the only indicator on which the three-path global/-26/-TC choice actually exists.' },
+            '2': { label: 'Professional Component Only Codes', split: 'none',
+                   note: 'A stand-alone code that already IS the professional component (e.g. 93010, ECG interpretation and report). Modifiers 26 and TC cannot be used — the code carries no technical component to strip.' },
+            '3': { label: 'Technical Component Only Codes', split: 'none',
+                   note: 'A stand-alone code that already IS the technical component (e.g. 93005, ECG tracing only). Modifiers 26 and TC cannot be used.' },
+            '4': { label: 'Global Test Only Codes', split: 'none',
+                   note: 'A stand-alone global code with separate PC-only and TC-only codes existing alongside it. Modifiers 26 and TC cannot be used — bill the separate PC-only or TC-only code instead of modifying this one.' },
+            '5': { label: 'Incident To Codes', split: 'none',
+                   note: 'Services incident to a physician\'s service by auxiliary personnel under direct personal supervision. Modifiers 26 and TC cannot be used. Not payable by MACs when furnished to hospital inpatients or hospital outpatient department patients.' },
+            '6': { label: 'Laboratory Physician Interpretation Codes', split: 'pc_only',
+                   note: 'Clinical laboratory codes for which separate payment for a laboratory physician\'s interpretation may be made. Modifier TC cannot be used; the test itself is paid under the clinical laboratory fee schedule.' },
+            '7': { label: 'Physical Therapy Service (payment may not be made)', split: 'none',
+                   note: 'Payment may not be made if furnished to a hospital outpatient or hospital inpatient by an independently practicing physical or occupational therapist.' },
+            '8': { label: 'Physician Interpretation Codes', split: 'pc_only',
+                   note: 'The professional component of clinical laboratory codes, payable only where the physician interprets an abnormal smear for a hospital inpatient (CPT 88141, 85060, HCPCS P3001-26). No TC billing is recognised, and nothing is payable for hospital outpatients or non-hospital patients.' },
+            '9': { label: 'Not Applicable', split: 'none',
+                   note: 'The concept of a professional/technical component does not apply to this code.' }
+        };
+
+        function pctcSplitAllowed(indicator) {
+            var rec = PCTC_INDICATORS[String(indicator)];
+            return !!rec && rec.split === 'both';
+        }
+
+        // The three-path gate. FAILS CLOSED in three distinct ways, all of
+        // them deliberate: an unknown code, an unanswered ownership question,
+        // and a scenario CMS does not permit each return a reason rather than
+        // a path. Guessing here produces a claim that is either denied or
+        // (worse) paid for a component the biller was not entitled to.
+        function determinePcTcPath(indicator, biller, didInterpretation, ownsEquipment, patientStatus) {
+            if (indicator === null || indicator === undefined || indicator === '') {
+                return { status: 'undetermined', reason: 'This code is not in your PC/TC reference. Whether it can be split at all is a per-code CMS value and is not inferable from the code number or the specialty — add it from the CMS Relative Value File before billing.' };
+            }
+            var rec = PCTC_INDICATORS[String(indicator)];
+            if (!rec) return { status: 'undetermined', reason: 'Unrecognised PC/TC indicator "' + indicator + '". Valid values are 0 through 9.' };
+
+            if (rec.split === 'none') {
+                return { status: 'no_split', indicator: rec, reason: rec.note };
+            }
+            if (!biller || !didInterpretation || !ownsEquipment || !patientStatus) {
+                return { status: 'undetermined', indicator: rec, reason: 'Answer who is billing, whether they performed the interpretation, whether they own the equipment, and the patient\'s hospital status. The path is decided by who did what — the modifier alone does not establish entitlement.' };
+            }
+
+            var wantsPc = didInterpretation === 'yes';
+            var wantsTc = ownsEquipment === 'yes';
+
+            // Indicator 6 / 8: PC side only, TC never recognised.
+            if (rec.split === 'pc_only') {
+                if (!wantsPc) return { status: 'not_billable', indicator: rec, reason: 'This indicator recognises only the physician interpretation. With no interpretation performed there is nothing billable here — modifier TC cannot be used with these codes.' };
+                if (String(indicator) === '8' && patientStatus !== 'inpatient') {
+                    return { status: 'not_billable', indicator: rec, reason: 'Indicator 8 is payable only where the physician interprets an abnormal smear for a hospital inpatient. Nothing is payable for hospital outpatients or non-hospital patients.' };
+                }
+                return { status: 'pc', modifier: '26', indicator: rec, reason: 'Bill the professional component only. ' + rec.note };
+            }
+
+            // Indicator 1: the real three-path case.
+            var hospitalPatient = (patientStatus === 'inpatient' || patientStatus === 'outpatient');
+
+            if (!wantsPc && !wantsTc) {
+                return { status: 'not_billable', indicator: rec, reason: 'The biller neither performed the interpretation nor owns the equipment, so neither component belongs to them. Neither a global claim nor a modified one is supportable.' };
+            }
+            if (wantsPc && wantsTc) {
+                if (hospitalPatient) {
+                    return {
+                        status: 'pc', modifier: '26', indicator: rec, downgraded: true,
+                        reason: 'Global billing is not available for a hospital patient: MACs may not pay the TC of services furnished to hospital patients — that component is paid to the hospital through PPS (inpatient) or OPPS (outpatient). Bill the professional component only.'
+                    };
+                }
+                return { status: 'global', modifier: null, indicator: rec, reason: 'The biller performed the interpretation and owns the equipment, and the patient is not a hospital patient. Bill globally with no modifier — do not also append -26 or -TC.' };
+            }
+            if (wantsPc) {
+                return { status: 'pc', modifier: '26', indicator: rec, reason: 'Bill the professional component only. The PC is payable in all settings regardless of the interpreting physician\'s specialty.' };
+            }
+            // TC only.
+            if (hospitalPatient) {
+                return {
+                    status: 'not_billable', indicator: rec,
+                    reason: 'The TC is not payable here. MACs may not pay the technical component of services furnished to hospital patients; for an inpatient it is inside the hospital\'s PPS payment (a CAH is paid 101% of reasonable cost instead) and for a registered outpatient it is paid to the hospital under OPPS. A supplier-billed TC falling inside an inpatient stay is detected and recouped.'
+                };
+            }
+            return {
+                status: 'tc', modifier: 'TC', indicator: rec,
+                reason: patientStatus === 'leased'
+                    ? 'Bill the technical component only. In a leased hospital department, where the beneficiary is neither an inpatient nor a registered outpatient of any hospital, both components are payable under the fee schedule — the building does not make the patient a hospital patient.'
+                    : 'Bill the technical component only. The TC is payable for beneficiaries who are not patients of any hospital and receive the service in a physician office, freestanding imaging or radiation oncology centre, or other non-hospital setting.'
+            };
+        }
+
+        // ── PC/TC panel: reference CRUD + handlers ──
+        function getPcTcEntries(){
+            try { var s = localStorage.getItem('sc_pctc'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function savePcTcEntries(list){ try { localStorage.setItem('sc_pctc', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        function findPcTcIndicator(code){
+            var c = String(code == null ? '' : code).trim().toUpperCase();
+            if (!c) return null;
+            var list = getPcTcEntries();
+            for (var i = 0; i < list.length; i++) {
+                if (String(list[i].code).trim().toUpperCase() === c) return list[i].indicator;
+            }
+            return null;
+        }
+        function renderPcTc(){
+            var sel = document.getElementById('pt-add-indicator');
+            if (sel && !sel.options.length) {
+                var opts = '<option value="">PC/TC indicator...</option>';
+                Object.keys(PCTC_INDICATORS).forEach(function(k){
+                    opts += '<option value="'+escHtml(k)+'">'+escHtml(k)+' — '+escHtml(PCTC_INDICATORS[k].label)+'</option>';
+                });
+                sel.innerHTML = opts;
+            }
+            var legend = document.getElementById('pctc-indicator-legend');
+            if (legend && !legend.innerHTML) {
+                var l = '';
+                Object.keys(PCTC_INDICATORS).forEach(function(k){
+                    var rec = PCTC_INDICATORS[k];
+                    var tag = rec.split === 'both' ? '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">−26 and −TC allowed</span>'
+                            : rec.split === 'pc_only' ? '<span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">−26 only, no −TC</span>'
+                            : '<span style="background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">no modifiers</span>';
+                    l += '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:8px;padding:10px 14px;margin-bottom:6px;">'
+                      +  '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;"><b>'+escHtml(k)+' — '+escHtml(rec.label)+'</b> '+tag+'</div>'
+                      +  '<div style="margin-top:4px;color:#444;">'+escHtml(rec.note)+'</div></div>';
+                });
+                l += '<div style="font-size:11px;color:#666;margin-top:4px;">Source: '+escHtml(PCTC_SOURCES.indicators)+'</div>';
+                legend.innerHTML = l;
+            }
+            var tbody = document.getElementById('pctc-tbody');
+            if (!tbody) return;
+            var list = getPcTcEntries();
+            tbody.innerHTML = '';
+            list.forEach(function(e){
+                var rec = PCTC_INDICATORS[String(e.indicator)];
+                var allowed = pctcSplitAllowed(e.indicator)
+                    ? '<span style="color:#166534;font-weight:700;">Yes — −26 / −TC</span>'
+                    : (rec && rec.split === 'pc_only' ? '<span style="color:#1e40af;font-weight:700;">−26 only</span>' : '<span style="color:#92400e;font-weight:700;">No</span>');
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(e.code)+'</td><td>'+escHtml(String(e.indicator))+'</td><td>'+allowed+'</td><td>'+escHtml(e.desc||'—')+'</td><td>'+escHtml(e.source)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removePcTcEntry(\''+e.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var splittable = list.filter(function(e){ return pctcSplitAllowed(e.indicator); }).length;
+            var kpis = document.getElementById('pctc-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Codes In Reference</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Entered by your practice</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Splittable (indicator 1)</div><div class="kpi-value">'+splittable+'</div><div class="kpi-detail">Can carry −26 / −TC</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Not Splittable</div><div class="kpi-value">'+(list.length-splittable)+'</div><div class="kpi-detail">Modifiers would be denied</div></div>';
+            }
+        }
+        async function removePcTcEntry(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_pctc', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            savePcTcEntries(getPcTcEntries().filter(function(e){return e.id!==id;}));
+            renderPcTc();
+        }
+        async function addPcTcEntry(){
+            var code = document.getElementById('pt-add-code').value.trim();
+            var indicator = document.getElementById('pt-add-indicator').value;
+            var desc = document.getElementById('pt-add-desc').value.trim();
+            var source = document.getElementById('pt-add-source').value.trim();
+            // Source is required for the same reason it is on Scrub Rules and
+            // ASA Base Units: an indicator with no traceable origin is
+            // indistinguishable from a guess once the person who typed it has
+            // moved on, and this one decides whether a modifier is legal.
+            if (!code || !indicator || !source) { showToast('Code, indicator, and source are all required -- this reference only holds values someone has verified'); return; }
+            var list = getPcTcEntries();
+            list.push({id:'pt'+Date.now(), code:code, indicator:indicator, desc:desc, source:source});
+            var saved = savePcTcEntries(list);
+            var synced = saved ? await scData('write', 'sc_pctc', list[list.length - 1]) : null;
+            renderPcTc();
+            document.getElementById('pt-add-code').value = '';
+            document.getElementById('pt-add-indicator').value = '';
+            document.getElementById('pt-add-desc').value = '';
+            document.getElementById('pt-add-source').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'PC/TC entry added' : 'PC/TC entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+        function runPcTcPathCheck(){
+            var out = document.getElementById('pt-check-result');
+            if (!out) return;
+            var code = document.getElementById('pt-code').value.trim();
+            if (!code) { showToast('Enter a code first'); return; }
+            var indicator = findPcTcIndicator(code);
+            var r = determinePcTcPath(
+                indicator,
+                document.getElementById('pt-biller').value,
+                document.getElementById('pt-interp').value,
+                document.getElementById('pt-equipment').value,
+                document.getElementById('pt-patient').value
+            );
+            var style, head;
+            if (r.status === 'global')      { style = DU_STYLE_OK;   head = '<b>Bill globally — no modifier</b>'; }
+            else if (r.status === 'pc')     { style = r.downgraded ? DU_STYLE_WARN : DU_STYLE_OK; head = '<b>Bill PC only — append −26</b>'; }
+            else if (r.status === 'tc')     { style = DU_STYLE_OK;   head = '<b>Bill TC only — append −TC</b>'; }
+            else if (r.status === 'no_split'){ style = DU_STYLE_WARN; head = '<b>This code cannot be split — do not append −26 or −TC</b>'; }
+            else if (r.status === 'not_billable') { style = DU_STYLE_STOP; head = '<b>Not billable by this biller</b>'; }
+            else                            { style = DU_STYLE_STOP; head = '<b>Cannot determine — do not submit without resolving this</b>'; }
+            var body = head + '<div style="margin-top:6px;">'+escHtml(r.reason)+'</div>';
+            if (r.indicator) body += '<div style="margin-top:8px;font-size:12px;">Code '+escHtml(code.toUpperCase())+' — PC/TC indicator '+escHtml(String(indicator))+' ('+escHtml(r.indicator.label)+').</div>';
+            var src = (r.status === 'tc' || r.status === 'not_billable')
+                ? (document.getElementById('pt-patient').value === 'leased' ? PCTC_SOURCES.leased : (r.status === 'tc' ? PCTC_SOURCES.tc_nonhospital : PCTC_SOURCES.tc_hospital))
+                : (r.status === 'pc' ? (r.downgraded ? PCTC_SOURCES.tc_hospital : PCTC_SOURCES.pc) : PCTC_SOURCES.indicators);
+            out.innerHTML = duBox(style, body, src);
+        }
+
         // ── Drug Administration panel: rendering + handlers ──
         function duBox(style, body, source) {
             return '<div style="border-radius:8px;padding:12px 16px;font-size:13px;'+style+'">'+body
@@ -7808,6 +8108,7 @@ How to answer:
             renderSpecialtyChecklists();
             renderCodedItems();
             renderCredentialScopes();
+            renderPcTc();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
@@ -8084,7 +8385,12 @@ How to answer:
             // on every device.
             sc_coded_items: 'sc_coded_items',
             // Added 2026-08-20 (Phase 4 item 7) -- provider credential scope.
-            sc_credential_scope: 'sc_credential_scope'
+            sc_credential_scope: 'sc_credential_scope',
+            // Added 2026-08-21 (gap-closure pass 2 item 3) -- per-code CMS
+            // PC/TC indicator reference. Syncs like any other reference
+            // resource so one coder's verified entry is available to the
+            // whole practice rather than living on one device.
+            sc_pctc: 'sc_pctc'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -8109,7 +8415,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderCodedItems(); renderCredentialScopes(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderCodedItems(); renderCredentialScopes(); renderPcTc(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {

@@ -152,5 +152,14 @@ module.exports = {
   // human review, never an auto-pass) -- see the schema file header.
   // REQUIRES sql/sairncode_credential_scope_schema.sql to be run.
     'sc_credential_scope',
+  // PC/TC Indicator Reference (2026-08-21, gap-closure pass 2 item 3) -- the
+  // 27th SC_RESOURCES entry. Holds the per-code CMS PC/TC indicator that
+  // decides whether a code can carry -26/-TC at all. Deliberately empty by
+  // default and never seeded: the authoritative list is ~10k codes reissued
+  // annually with the NPFS Relative Value File, so a copy embedded here
+  // would be unverifiable and would go stale silently. Source field required
+  // on the Add form, same discipline as sc_scrubrules. REQUIRES
+  // sql/sairncode_pctc_schema.sql to be run in Supabase.
+    'sc_pctc',
   ],
 };

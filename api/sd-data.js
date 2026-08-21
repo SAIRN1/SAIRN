@@ -55,7 +55,7 @@ const SC_RESOURCES = [
   'sc_anesthesia', 'sc_auth', 'sc_ar', 'sc_providers', 'sc_encoder', 'sc_claims', 'sc_scrubrules',
   'sc_denial_events', 'sc_eligibility', 'sc_settings', 'sc_auth_requests',
   'sc_specialty_checks', 'sc_specialty_checklists', 'sc_anesthesia_base_units',
-  'sc_coded_items', 'sc_credential_scope'
+  'sc_coded_items', 'sc_credential_scope', 'sc_pctc'
 ];
 // Minimum data-retention any SAIRNcode practice may configure, in years.
 // Enforced server-side rather than trusted from the client because a value
@@ -2592,6 +2592,93 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, activityData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_facility FACILITY PROFILE + LICENSING JURISDICTION (2026-08-21) ───────
+    // See sql/sairncare_facility_schema.sql for why this moved off localStorage at all, and why
+    // it is keyed by facility_id rather than license_hash alone (a CCRC campus holds more than
+    // one license -- an SNF is separately licensed from the AL units it shares a campus with in
+    // most states, under different statutes with different reporting rules).
+    //
+    // TWO-TIER GATE, with a REDACTION on read rather than a flat refusal:
+    //   - WRITE: management only (owner, billing). A licensing state and a rate card are
+    //     facility business facts, not clinical ones -- nursing holds facility-wide clinical
+    //     edit authority and still has no business changing what the facility bills.
+    //   - READ: any authenticated employee, BUT the rate card is stripped server-side for
+    //     anyone outside management. Everyone genuinely needs the non-financial half (which
+    //     licensing state this is, what the controlled-substance count policy is, what the
+    //     incident-reporting deadline is -- a Med Aide running a narcotic count needs exactly
+    //     that); nobody outside management needs the room-and-board rate. Same
+    //     minimum-necessary reasoning that keeps alf_billing management-only, applied at field
+    //     level instead of resource level because the non-financial half IS needed facility-wide.
+    //
+    // WHY THE REDACTION IS SAFE AGAINST A ROUND-TRIP WIPE: this client reads a record and writes
+    // the whole object back, so a redacted read followed by a write would erase the rate card --
+    // the exact silent-data-loss shape worth checking for here. It cannot happen, because write
+    // is management-only and management's read is never redacted, so no caller can ever hold a
+    // stripped copy AND be allowed to save it. If write is ever widened, this stops being true.
+    const ALF_FACILITY_RATE_FIELDS = ['roomboard_rate', 'il_rate', 'al1_rate', 'al2_rate', 'al3_rate', 'mc_rate', 'snf_rate'];
+    // Real USPS list, 50 states + DC, validated server-side so licensing_state can actually be
+    // trusted by the compliance-rules engine later -- unlike this app's two pre-existing
+    // free-text state-ish fields (the incident-deadline string and the HCBS waiver box), which
+    // cannot be. Deliberately the FULL list, not just the four states the rules engine seeds on:
+    // restricting input to OH/IN/MI/PA would encode a limit that does not exist in reality. An
+    // unseeded state gets an honest "no rules loaded" from the engine, never silent coverage.
+    const ALF_US_STATES = { AL:1,AK:1,AZ:1,AR:1,CA:1,CO:1,CT:1,DE:1,DC:1,FL:1,GA:1,HI:1,ID:1,IL:1,IN:1,IA:1,KS:1,KY:1,LA:1,ME:1,MD:1,MA:1,MI:1,MN:1,MS:1,MO:1,MT:1,NE:1,NV:1,NH:1,NJ:1,NM:1,NY:1,NC:1,ND:1,OH:1,OK:1,OR:1,PA:1,RI:1,SC:1,SD:1,TN:1,TX:1,UT:1,VT:1,VA:1,WA:1,WV:1,WI:1,WY:1 };
+    if (resource === 'alf_facility' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('alf_facility?license_hash=eq.' + enc(licHash) + '&select=facility_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const canSeeRates = !!ALF_MANAGEMENT_ROLES[session.role];
+      const data = (rows || []).map((row) => {
+        const out = Object.assign({ id: row.facility_id }, row.data);
+        if (!canSeeRates) ALF_FACILITY_RATE_FIELDS.forEach((f) => { delete out[f]; });
+        return out;
+      });
+      res.status(200).json({ ok: true, data, provisioned: true, rates_visible: canSeeRates });
+      return;
+    }
+    if (resource === 'alf_facility' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change the facility profile' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_facility payload.id is required' } }); return; }
+      const facilityData = Object.assign({}, payload);
+      delete facilityData.id;
+      // An EMPTY licensing_state is allowed on purpose -- a facility that has not filled it in
+      // yet is a real state of the world, and refusing the whole save would block unrelated
+      // profile edits. A NON-EMPTY one that is not a real USPS code is refused outright rather
+      // than stored, because a stored-but-wrong state is precisely what a rules engine would go
+      // on to trust.
+      if (facilityData.licensing_state !== undefined) {
+        const wantState = String(facilityData.licensing_state || '').trim().toUpperCase();
+        if (wantState && !ALF_US_STATES[wantState]) {
+          res.status(400).json({ error: { code: 'BAD_STATE', message: 'licensing_state must be a two-letter US state or DC code' } });
+          return;
+        }
+        facilityData.licensing_state = wantState;
+      }
+      const r = await fetch(rest('alf_facility?on_conflict=license_hash,facility_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', facility_id: String(payload.id), data: facilityData, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The facility profile is not set up yet — run sql/sairncare_facility_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, facilityData) });
       return;
     }
 
