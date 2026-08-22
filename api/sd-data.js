@@ -33,6 +33,7 @@ const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
 const careCharges = require('./_lib/care-charges');
+const opAudit = require('./_lib/op-audit');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -3374,6 +3375,138 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, staff_id: payload.staff_id, record_type: payload.record_type, recorded_by: session.employee_id }, credData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_op_audits -- operational-audit layer (2026-08-22, Phase 3 item 5) ────
+    // Food safety, sanitation, emergency-preparedness drills. See
+    // sql/sairncare_op_audit_schema.sql for why this is deliberately NOT part of the
+    // clinical eMAR. Evaluation logic (temperature thresholds, cooling stages, drill
+    // intervals) is PURE and lives in api/_lib/op-audit.js.
+    //
+    // GATE, and it is intentionally the INVERSE of alf_mar's shape:
+    //   WRITE  -- any authenticated employee. The people who actually take a cooler
+    //             temperature or run an evacuation drill are dietary, housekeeping and
+    //             maintenance staff. They have no business in the MAR, and locking them
+    //             out of their own compliance log to keep them out of the MAR would make
+    //             the log useless. Recording an observation is not a clinical act.
+    //   READ   -- any authenticated employee. Operational compliance is not resident PHI.
+    //   REVIEW -- management only. Sign-off is the privileged act, deliberately separate
+    //             from recording, so the person who took the reading is not the person
+    //             who attests the log was reviewed.
+    const ALF_OPA_TYPES = { food_temp: true, sanitation: true, emergency_drill: true };
+    if (resource === 'alf_op_audits' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('alf_op_audits?license_hash=eq.' + enc(licHash) + '&select=entry_id,record_type,observed_on,passed,data,recorded_by,reviewed_by,reviewed_at,created_at'), { headers });
+      if (r.status === 404 || r.status === 400) {
+        res.status(200).json({ ok: true, data: [], provisioned: false, summary: opAudit.summarise([]) });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      // The authoritative columns are applied AFTER the jsonb blob, never before. Spreading
+      // data last would let a client-supplied `passed` inside the blob override the value the
+      // server actually computed -- the write path already refuses to trust it, and this is
+      // the matching half of that guarantee on the way back out. Caught by a test that
+      // recorded an out-of-tolerance temperature with passed:true and read it back.
+      const data = (rows || []).map((x) => Object.assign({}, x.data, {
+        id: x.entry_id, record_type: x.record_type, observed_on: x.observed_on, passed: x.passed,
+        recorded_by: x.recorded_by || '', reviewed_by: x.reviewed_by || '', reviewed_at: x.reviewed_at || null,
+        created_at: x.created_at
+      }));
+      res.status(200).json({ ok: true, data, provisioned: true, summary: opAudit.summarise(data) });
+      return;
+    }
+    if (resource === 'alf_op_audits' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!payload || !payload.id || !payload.record_type) {
+        res.status(400).json({ error: { message: 'alf_op_audits requires id and record_type' } });
+        return;
+      }
+      if (!ALF_OPA_TYPES[payload.record_type]) {
+        res.status(400).json({ error: { message: 'record_type must be one of: ' + Object.keys(ALF_OPA_TYPES).join(', ') } });
+        return;
+      }
+      // A review/sign-off is management-only, and is the ONLY part of this resource that is.
+      const isReview = payload.reviewed !== undefined;
+      if (isReview && !ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can sign off an operational audit record' } });
+        return;
+      }
+      // Append-only for new observations. A sign-off is the one permitted update, so a
+      // reused id is only accepted when it is genuinely a review of an existing record.
+      const existingR = await fetch(rest('alf_op_audits?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=entry_id,record_type,observed_on,passed,data,recorded_by'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The operational audit log is not set up yet — run sql/sairncare_op_audit_schema.sql in Supabase first.' } });
+        return;
+      }
+      const existingRows = existingR.ok ? await existingR.json() : [];
+      const existing = Array.isArray(existingRows) && existingRows[0];
+      if (existing && !isReview) {
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This observation has already been recorded and cannot be overwritten. Record a new entry instead.' } });
+        return;
+      }
+      if (isReview && !existing) {
+        res.status(404).json({ error: { code: 'NO_SUCH_RECORD', message: 'There is no operational audit record with that id to sign off.' } });
+        return;
+      }
+
+      let body;
+      if (isReview) {
+        // A sign-off must not be able to quietly rewrite the observation it signs.
+        // Only the review stamp changes; the observed values are carried forward
+        // from what is already stored, not from the client's payload.
+        body = {
+          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id),
+          record_type: existing.record_type, observed_on: existing.observed_on,
+          passed: existing.passed, data: existing.data, recorded_by: existing.recorded_by,
+          reviewed_by: session.employee_id, reviewed_at: nowISO()
+        };
+      } else {
+        const opData = Object.assign({}, payload);
+        delete opData.id; delete opData.record_type; delete opData.reviewed;
+        // `passed` lives in its own column and is server-determined for anything with a real
+        // measurement. Stripping it from the blob too means there is no second copy that
+        // could ever disagree with the column -- defence in depth alongside the read-path fix.
+        delete opData.passed;
+        // Where the record carries a real measurement, evaluate it here rather than
+        // trusting a client-supplied pass/fail -- the threshold is the point of the record.
+        let passed = null;
+        if (payload.record_type === 'food_temp' && payload.holding_kind && payload.temperature_f !== undefined) {
+          const facR = await fetch(rest('alf_facility?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+          const facRows = facR.ok ? await facR.json().catch(() => []) : [];
+          const fac = (Array.isArray(facRows) && facRows[0] && facRows[0].data) || {};
+          const evalRes = opAudit.evaluateFoodTemp({
+            holding_kind: payload.holding_kind, temperature_f: payload.temperature_f,
+            thresholds: fac.food_thresholds || {}
+          });
+          if (!evalRes.ok) { res.status(400).json({ error: evalRes.error }); return; }
+          passed = evalRes.passed;
+          opData.evaluation = evalRes;
+        } else if (payload.passed !== undefined) {
+          passed = !!payload.passed;
+        }
+        body = {
+          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id),
+          record_type: payload.record_type,
+          observed_on: payload.observed_on || nowISO().slice(0, 10),
+          passed: passed, data: opData, recorded_by: session.employee_id
+        };
+      }
+      const w = await fetch(rest('alf_op_audits?on_conflict=license_hash,entry_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(body)
+      });
+      if (w.status === 404 || w.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The operational audit log is not set up yet — run sql/sairncare_op_audit_schema.sql in Supabase first.' } });
+        return;
+      }
+      const wrows = await w.json();
+      if (!w.ok) return upstream(res, wrows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, record_type: body.record_type, passed: body.passed, recorded_by: body.recorded_by, reviewed_by: body.reviewed_by || '' }, body.data) });
       return;
     }
 

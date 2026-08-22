@@ -1,0 +1,60 @@
+-- sql/sairncare_test_license_seed.sql
+-- Provisions the SAIRNcare verification license (ALF-TEST-2026).
+--
+-- WHY: api/_lib/license.js validates against public.license_keys by raw `key`.
+-- There is no self-service key generation in this codebase yet, so demo/test
+-- keys are provisioned by hand in the Supabase SQL editor (service-role only --
+-- anon cannot read or insert license_keys by design). No ALF- key has ever
+-- existed, which is why every SAIRNcare batch since 2026-08-20 has shipped
+-- without a real click-through test -- flagged in SAIRNCARE-SESSION1-HANDOFF.md
+-- section 4 item 2 and never resolved until now.
+--
+-- COLUMN LIST IS NOT GUESSED. It matches the shape already proven against this
+-- live table by four prior provisionings -- SB-PINNACLE-2026 / GRD-DEMO-2026 /
+-- SCP-DEMO-2026 (sql/demo_license_keys_seed.sql), DNT-PINNACLE-2026,
+-- SV-PINNACLE-2026 and LAW-TEST-2026 (2026-08-13, confirmed working live in
+-- SAIRN-ACTIVE-WORK.md). That seed file also records a real correction worth
+-- respecting here: an earlier attempt included `trial_ends_at`, copied from
+-- license.js's own output shape, and failed with 42703 because the column does
+-- not exist on the table. The columns below are the confirmed-real set:
+--   key, status, customer_email, app_id, plan, stripe_subscription_id
+-- (id / created_at / updated_at are defaulted by the table.)
+--
+-- app_id MUST be exactly 'sairncare'. This is load-bearing, not cosmetic:
+-- api/alf-pharmacy.js enforces `lic.app_id !== 'sairncare'` -> 403 WRONG_APP,
+-- matching the pattern the legal endpoints use. That endpoint has no employee
+-- session to scope against, so the license's own app_id is the only thing
+-- stopping a license issued for another SAIRN app from writing medication
+-- orders into this one. A row with a different app_id will authenticate for
+-- most of the app and then fail confusingly at the pharmacy intake only.
+--
+-- ALF- is already an accepted client-side prefix -- no code change needed:
+--   sairncare.html:1005  VALID=['ALF-','DEMO-','SAIRN-']
+--
+-- Uses WHERE NOT EXISTS rather than ON CONFLICT for the same reason the
+-- original demo seed did: this repo has no tracked CREATE TABLE for
+-- license_keys, so a UNIQUE constraint on `key` cannot be confirmed from the
+-- repo, and ON CONFLICT against a column with no matching constraint fails
+-- with 42P10. NOT EXISTS has no such requirement and is safe to re-run.
+
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+select 'ALF-TEST-2026', 'active', 'test@sairncare-verification.example', 'sairncare', 'demo', null
+where not exists (select 1 from public.license_keys where key = 'ALF-TEST-2026');
+
+-- VERIFY AFTER RUNNING, before trusting it (same discipline every prior
+-- license provisioning on this platform used -- check the deployed endpoint,
+-- never assume the insert alone means it works):
+--
+--   curl -s -X POST https://sairn.vercel.app/api/alf-auth \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer ALF-TEST-2026' \
+--     -d '{"action":"check_license"}'
+--
+--   401 INVALID_LICENSE  -> the row is still absent
+--   403 LICENSE_INACTIVE -> status is not 'active'
+--   200 {"ok":true,"active":true,"app_id":"sairncare"} -> provisioned correctly
+--
+-- NOTE: the license alone is not sufficient to log in. The employee-credential
+-- table must also exist -- run sql/sairncare_employee_auth_schema.sql if it has
+-- not been run yet, or api/alf-auth.js's bootstrap/login will fail against a
+-- missing table.
