@@ -566,7 +566,17 @@ function computeDeadline(input) {
   var rolled = rollOff(base, input.calendars, input.jurisdiction, direction);
   if (!rolled.ok) return rolled;
   if (rolled.date !== base) {
-    steps.push({ step: 'rollover', detail: 'The last day fell on a Saturday, Sunday or legal holiday, so the period runs to the next day that is not.', authority: std.label + (direction === 'backward' ? (std.rollover_suffix_backward || '') : (std.rollover_suffix_forward || '')), date: rolled.date });
+    // Direction-aware wording. A backward period rolls to the PRECEDING
+    // business day, and describing that as "the next day" in the audit trail
+    // an attorney reads would state the opposite of what the engine did --
+    // the same class of small inaccuracy as the citation-suffix defect fixed
+    // in Phase 3, and more misleading here because the reader's instinct for
+    // "next day" is forward.
+    steps.push({ step: 'rollover',
+      detail: direction === 'backward'
+        ? 'The last day fell on a Saturday, Sunday or legal holiday, so the period runs BACK to the preceding day that is not — counting backward, because this period is measured before an event.'
+        : 'The last day fell on a Saturday, Sunday or legal holiday, so the period runs to the next day that is not.',
+      authority: std.label + (direction === 'backward' ? (std.rollover_suffix_backward || '') : (std.rollover_suffix_forward || '')), date: rolled.date });
   }
   var result = rolled.date;
 
