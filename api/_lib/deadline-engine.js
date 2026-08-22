@@ -192,7 +192,24 @@ var COMPUTATION_STANDARDS = {
   // BLANK on purpose -- MCR 1.108 does not address backward-counted periods,
   // and citing (1) for behaviour the rule never describes would repeat the
   // citation defect already fixed once in this file.
-  michigan_mcr_1108: { label: 'Mich. Ct. R. 1.108', impl: 'frcp_6a', base_period_suffix: '(1)', months_years_suffix: '(3)', rollover_suffix_forward: '(1)', rollover_suffix_backward: '' }
+  michigan_mcr_1108: { label: 'Mich. Ct. R. 1.108', impl: 'frcp_6a', base_period_suffix: '(1)', months_years_suffix: '(3)', rollover_suffix_forward: '(1)', rollover_suffix_backward: '' },
+  // Pennsylvania Pa.R.J.A. 107 (201 Pa. Code Sec. 107). Like Michigan and
+  // unlike Ohio and Indiana, it has NO short-period exclusion -- verified by
+  // reading all four subdivisions, not inferred from the two states that do.
+  //
+  // THIS STANDARD REPLACED A RESCINDED ONE. Pa.R.C.P. 106 (231 Pa. Code
+  // Sec. 106) was RESCINDED effective 2024-01-01 and its computation rules
+  // were consolidated into Pa.R.J.A. 107, added 2023-11-03 effective
+  // 2024-01-01. Rules citing this standard therefore carry an effective_from
+  // of 2024-01-01, and a Pennsylvania matter triggered before that date is
+  // REFUSED rather than computed -- the pre-2024 text was never read
+  // verbatim here, so encoding it would be exactly the guess this engine
+  // exists to refuse. That refusal is the intended behaviour, not a gap.
+  //
+  // Subdivision lettering is real and citable: (a) days, (b) the last-day
+  // omission, (d) months. Backward left blank -- Rule 107 does not address
+  // backward-counted periods.
+  pa_rja_107: { label: 'Pa.R.J.A. 107', impl: 'frcp_6a', base_period_suffix: '(a)', months_years_suffix: '(d)', rollover_suffix_forward: '(b)', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
