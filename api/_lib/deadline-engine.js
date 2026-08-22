@@ -168,7 +168,16 @@ var COMPUTATION_STANDARDS = {
   frcp_6a: { label: 'Fed. R. Civ. P. 6(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
   frap_26a: { label: 'Fed. R. App. P. 26(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
   bankr_9006a: { label: 'Fed. R. Bankr. P. 9006(a)', impl: 'frcp_6a', base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)', rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
-  ohio_civ_r_6a: { label: 'Ohio Civ.R. 6(A)', impl: 'ohio_civ_r_6a', short_period_exclusion_days: 7, base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' }
+  ohio_civ_r_6a: { label: 'Ohio Civ.R. 6(A)', impl: 'ohio_civ_r_6a', short_period_exclusion_days: 7, base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // Indiana T.R. 6(A). Verified independently against the rule text rather
+  // than inherited from Ohio because the two only LOOK alike: both use a
+  // seven-day threshold, but Indiana's exclusion set is strictly WIDER --
+  // "intermediate Saturdays, Sundays, legal holidays, and days on which the
+  // office is closed must be excluded". The office-closed limb has no Ohio
+  // or federal analog and is NOT modelled by this engine, which has no field
+  // for a given clerk's office closures. See ohio_civ_r_6a's own entry for
+  // why a shared threshold is not evidence of a shared rule.
+  indiana_tr_6a: { label: 'Ind. T.R. 6(A)', impl: 'indiana_tr_6a', short_period_exclusion_days: 7, base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
@@ -448,14 +457,18 @@ function computeDeadline(input) {
   // included. So for calendar days this is plain arithmetic from the trigger.
   var base;
   if (count.unit === 'calendar_days') {
-    // Ohio Civ.R. 6(A): periods under 7 days exclude intermediate weekends
-    // and legal holidays -- the pre-2009 federal mechanism that Ohio never
-    // repealed. Gated on the STANDARD's impl, not on jurisdiction, so this
-    // never silently fires for an FRCP-family rule.
-    if (std.impl === 'ohio_civ_r_6a' && Number(count.value) < (std.short_period_exclusion_days || Infinity)) {
-      var ohRes = countExcludingWeekendsAndHolidays(triggerDate, sign, Number(count.value), input.calendars, input.jurisdiction, direction);
-      if (!ohRes.ok) return ohRes;
-      base = ohRes.date;
+    // Short-period weekend/holiday exclusion: gated on the STANDARD
+    // declaring short_period_exclusion_days, not on a specific impl string or
+    // jurisdiction, because more than one state's rule uses this exact
+    // mechanism (Ohio Civ.R. 6(A) and Indiana T.R. 6(A) both read "less than
+    // seven days... excluded" -- verified independently for each, not
+    // assumed from one to the other) with a shared authority label per
+    // standard so the audit trail still cites the RIGHT state's rule. Never
+    // fires for an FRCP-family rule, which declares no such property.
+    if (std.short_period_exclusion_days && Number(count.value) < std.short_period_exclusion_days) {
+      var shortRes = countExcludingWeekendsAndHolidays(triggerDate, sign, Number(count.value), input.calendars, input.jurisdiction, direction);
+      if (!shortRes.ok) return shortRes;
+      base = shortRes.date;
       steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' days ' + direction + ', excluding intermediate Saturdays, Sundays and legal holidays because the period is less than ' + std.short_period_exclusion_days + ' days.', authority: std.label, date: base });
     } else {
       base = addDays(triggerDate, sign * Number(count.value));
