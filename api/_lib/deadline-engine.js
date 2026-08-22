@@ -79,6 +79,38 @@ function addMonths(iso, n) {
 // calendars: { 'us-federal': { 2026: [{date,name,kind}, ...] } }
 // `kind` is 'federal' | 'declared' | 'state'. Per FRCP 6(a)(6), the 'state'
 // kind counts only when counting FORWARD.
+//
+// ── WHAT BELONGS IN A CALENDAR: THE STATUTORY TEST, NOT THE CLOSURE
+//    SCHEDULE. Read this before "completing" any calendar. ──────────────────
+// A calendar here holds days a rule MAKES a legal holiday. It does NOT hold
+// days a courthouse merely happens to be closed. Those are different sets and
+// the difference is load-bearing.
+//
+// Established while seeding Pennsylvania (Phase 3), where the two diverge
+// most: the AOPC publishes a per-county matrix in which individual counties
+// elect to stay OPEN on particular holidays and add closures of their own.
+// Pa.R.J.A. 107(b) omits a last day falling on a day "made a legal holiday by
+// the laws of this Commonwealth or of the United States" -- a statutory test,
+// not an attendance record. So the PA calendars deliberately EXCLUDE the day
+// after Thanksgiving, Christmas Eve, primary election days and county-specific
+// closures, even though Pennsylvania courts commonly close on them.
+//
+// WHY THIS IS NOT A GAP TO BE HELPFULLY FILLED IN LATER: everywhere else in
+// this system an omitted holiday makes the computed date EARLIER than the
+// truth, which is the safe direction -- you file early. Adding a day that no
+// statute makes a holiday inverts that. The engine then rolls a deadline it
+// should not have rolled and reports a date LATER than the real one, and a
+// date that is late is how a filing is missed. A calendar padded with observed
+// closures is therefore more dangerous than one that is honestly incomplete.
+//
+// If a future jurisdiction has the same shape -- a published closure schedule
+// that is broader than, or varies locally from, the statutory holiday list --
+// encode the statute and disclose the divergence in the seed's authority note.
+// Do not reconcile the two by adding the closure days.
+//
+// (Michigan has the same shape in weaker form: MCR 8.110(D)(2)(c) expressly
+// authorises local administrative orders modifying the schedule, so its
+// calendars are the MCR default rather than a guarantee for any given court.)
 function holidayFor(calendars, jurisdiction, iso, direction) {
   var byYear = calendars && calendars[jurisdiction];
   if (!byYear) return { known: false };
