@@ -322,7 +322,7 @@ function resolveTrigger(rule, input) {
     return {
       ok: false, code: 'INCOMPLETE_TRIGGERS',
       message: 'This rule runs from the ' + spec.resolve.replace('_', ' ') + ' ' + spec.events.length +
-        ' events, and ' + missing.length + ' of them has no date recorded. No deadline is computed from a partial set — ' +
+        ' events, and ' + missing.length + (missing.length === 1 ? ' of them has' : ' of them have') + ' no date recorded. No deadline is computed from a partial set — ' +
         'resolving it from the events supplied would produce a date that is ' +
         (spec.resolve === 'later_of' ? 'too early' : 'too late') + ' whenever the missing event governs.',
       required_events: spec.events, missing_events: missing
@@ -421,14 +421,43 @@ function computeDeadline(input) {
   // A rule's trigger_event is either a string, or a multi-trigger spec whose
   // events[] the caller names instead. Both are matched here so a caller does
   // not need to know which shape a rule uses before asking for it.
-  var matching = inDomain.filter(function (r) {
-    if (typeof r.trigger_event === 'string') return r.trigger_event === input.trigger_event;
-    if (r.trigger_event && Array.isArray(r.trigger_event.events)) {
-      return r.trigger_event.events.indexOf(input.trigger_event) !== -1 ||
-        r.trigger_event.id === input.trigger_event;
-    }
-    return false;
+  //
+  // AN EXACT SINGLE-TRIGGER MATCH WINS OVER MEMBERSHIP IN A MULTI-TRIGGER
+  // SPEC. Without this, one event name that is BOTH a rule's own trigger and
+  // one limb of another rule's "later of" spec pulls in both rules, and the
+  // multi-trigger one then aborts the whole computation with
+  // INCOMPLETE_TRIGGERS naming events the caller never asked about.
+  //
+  // That was not hypothetical. 'service_on_united_states_attorney' is the
+  // trigger for FRCP 12(a)(2) AND one limb of 12(a)(3)'s spec, so asking for
+  // the plain 60-day 12(a)(2) deadline could never return a date -- it always
+  // refused, describing a different rule. Found in Phase 4 while sweeping
+  // every seeded rule for provenance, after the UI had already started
+  // offering that option: a dropdown entry that can never produce a date is
+  // exactly the class of defect making the panel reachable was meant to end.
+  //
+  // Membership matching is KEPT for names that no single-trigger rule claims,
+  // because there INCOMPLETE_TRIGGERS is the genuinely useful answer -- it
+  // names the other dates needed. The rule is only that an exact match wins,
+  // never that membership stops working.
+  var exact = inDomain.filter(function (r) {
+    return typeof r.trigger_event === 'string' && r.trigger_event === input.trigger_event;
   });
+  var byId = inDomain.filter(function (r) {
+    return r.trigger_event && typeof r.trigger_event !== 'string' && r.trigger_event.id === input.trigger_event;
+  });
+  var byMember = inDomain.filter(function (r) {
+    return r.trigger_event && typeof r.trigger_event !== 'string' &&
+      Array.isArray(r.trigger_event.events) &&
+      r.trigger_event.id !== input.trigger_event &&
+      r.trigger_event.events.indexOf(input.trigger_event) !== -1;
+  });
+  // A caller who supplied trigger_dates is explicitly asking for a
+  // multi-trigger rule, so membership still counts for them even when a
+  // single-trigger rule shares the name.
+  var matching = (exact.length || byId.length)
+    ? exact.concat(byId).concat(input.trigger_dates ? byMember : [])
+    : byMember;
   if (!matching.length) {
     return { ok: false, code: 'NO_MATCHING_RULE',
       message: 'No rule covers the trigger event "' + input.trigger_event + '".',
