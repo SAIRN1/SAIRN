@@ -1,0 +1,191 @@
+{
+  "_readme": [
+    "SAIRNcare Phase 1 payer-rule seed. Load via the alf_payer_rules 'seed' action.",
+    "",
+    "SCOPE IS DELIBERATELY NARROW AND STATED: Ohio and Indiana only, plus one",
+    "federal hospice rule. Michigan and Pennsylvania are NOT here because no",
+    "primary-source codes or modifiers could be located for either during this",
+    "build. The engine returns an explicit NO_RULE_FOR_STATE naming the state",
+    "rather than falling back to another state's rules.",
+    "",
+    "NO DOLLAR RATES APPEAR ANYWHERE IN THIS FILE, on purpose. Rates live on the",
+    "facility rate card where the facility enters its own. Ohio's rates are in",
+    "appendix A to OAC 5160-1-06.5, which could not be retrieved from a primary",
+    "source during this build; its community transition service is a negotiated",
+    "per-job bid rate with no single correct value. Seeding unverified numbers",
+    "into billing software is the exact failure sairn-guardian-v2 Check 0b exists",
+    "to catch.",
+    "",
+    "Every rule carries a real authority citation with a resolvable URL, read on",
+    "2026-08-22. Day counts and thresholds are quoted from the source in",
+    "authority.quote rather than paraphrased."
+  ],
+
+  "rules": [
+    {
+      "rule_id": "IN-HCBS-AL-2026-PAUSED",
+      "state": "IN",
+      "program": "medicaid_hcbs",
+      "effective_from": "2025-12-31",
+      "effective_to": null,
+      "data": {
+        "label": "Indiana HCBS Assisted Living (current policy — mandate paused)",
+        "code": "T2031",
+        "claim_form": "CMS-1500 / 837P",
+        "tier_assigned_by": "The waiver service authorization (NOA / Service Authorization form)",
+        "tier_modifiers": { "tier1": "U1", "tier2": "U2", "tier3": "U3" },
+        "monthly": {
+          "code": "T2031",
+          "modifiers": ["U7", "UA", "<TIER>"],
+          "unit": "1 month",
+          "min_days_present": 15,
+          "submit_after_days_present": 15
+        },
+        "daily": {
+          "code": "T2031",
+          "modifiers": ["U7", "<TIER>"],
+          "unit": "1 day",
+          "max_days": 29
+        },
+        "constraints": [
+          "Room and board is not covered under either the per-diem or the monthly rate.",
+          "Claims may be submitted only after the HCBS waiver services are rendered; daily claims submitted for future dates of service are denied.",
+          "Documentation is required for each day the member is present in the facility, under either billing method.",
+          "Separate payment is not allowed for Adult Day Services, Adult Family Care, Attendant Care, Home Modifications, Home-Delivered Meals, Home and Community Assistance, Personal Emergency Response System, Pest Control, Respite Care, Structured Family, or Transportation — all are integral to the Assisted Living service.",
+          "This policy is explicitly interim: FSSA stated it will implement a new billing policy later in 2026."
+        ],
+        "authority": {
+          "citation": "IHCP Bulletin BT2025190 (December 31, 2025)",
+          "url": "https://www.in.gov/medicaid/providers/files/bulletins/BT2025190.pdf",
+          "quote": "the FSSA is pausing the implementation of monthly billing requirements and daily per diem requirements outlined in BT2025173. Until further notice, assisted living providers can continue to bill for Assisted Living waiver services using either the monthly or daily billing method. ... Assisted living providers can bill monthly or daily for services up to 29 days. Monthly billing can still be done even when a resident is out of the facility, as long as the resident is present in the facility for a minimum of 15 days per month. ... Claims for monthly billing can be submitted after the member has been present in the facility for a minimum of 15 days of the month.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+
+    {
+      "rule_id": "IN-HCBS-AL-2026-MANDATE-SUPERSEDED",
+      "state": "IN",
+      "program": "medicaid_hcbs",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "status": "never_in_force",
+      "_note": [
+        "RETAINED BUT NOT IN FORCE, via status rather than an inverted date range:",
+        "this rule was published, then paused one day before it took effect, and",
+        "never governed a single claim. ruleInForce() refuses any non-active status.",
+        "It is kept because FSSA said a new policy is coming later in 2026 and this",
+        "is the shape it was heading toward; keeping it makes the history legible",
+        "rather than silently dropping a real published rule. Do not activate it",
+        "without re-reading the then-current bulletin."
+      ],
+      "data": {
+        "label": "Indiana HCBS Assisted Living (BT2025173 mandate — never took effect, paused by BT2025190)",
+        "code": "T2031",
+        "claim_form": "CMS-1500 / 837P",
+        "tier_assigned_by": "The waiver service authorization (NOA / Service Authorization form)",
+        "tier_modifiers": { "tier1": "U1", "tier2": "U2", "tier3": "U3" },
+        "monthly": {
+          "code": "T2031",
+          "modifiers": ["U7", "UA", "<TIER>"],
+          "unit": "1 month",
+          "required_at_days": 28
+        },
+        "daily": {
+          "code": "T2031",
+          "modifiers": ["U7", "<TIER>"],
+          "unit": "1 day",
+          "max_days": 27
+        },
+        "constraints": [
+          "Under this (paused) policy, billing daily for a resident present 28+ days is denied, and billing monthly for a resident present under 28 days is denied."
+        ],
+        "authority": {
+          "citation": "IHCP Bulletin BT2025173 (December 4, 2025) — superseded by BT2025190 before taking effect",
+          "url": "https://www.in.gov/medicaid/providers/files/bulletins/BT2025173.pdf",
+          "quote": "Beginning for DOS on or after Jan. 1, 2026, assisted living providers are required to bill for HCBS waiver services using the monthly billing code T2031 U7 UA and either U1, U2 or U3 modifier, when a resident is present in the facility 28 days or more per month. ... If an assisted living provider submits a claim using the daily rate billing code for a member who was present in the facility for more than 27 days, the managed care entity (MCE) or state's fee-for-service (FFS) contractor will deny the claim.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+
+    {
+      "rule_id": "OH-HCBS-AL-2024",
+      "state": "OH",
+      "program": "medicaid_hcbs",
+      "effective_from": "2024-07-01",
+      "effective_to": null,
+      "data": {
+        "label": "Ohio Assisted Living HCBS Waiver",
+        "code": "T2031",
+        "claim_form": "CMS-1500",
+        "tier_assigned_by": "The Ohio Department of Aging's designee, via an assessment of the individual's service needs in four areas: cognitive impairments, medication administration, nursing services, and functional impairments",
+        "tier_modifiers": { "tier1": "U1", "tier2": "U2", "tier3": "U3" },
+        "daily": {
+          "code": "T2031",
+          "modifiers": ["<TIER>"],
+          "unit": "1 day"
+        },
+        "additional_services": [
+          {
+            "name": "Community transition service",
+            "code": "T2038",
+            "modifiers": ["U4"],
+            "unit": "1 completed job order",
+            "rate_basis": "Per-job bid rate negotiated and approved by ODA's designee and accepted by the individual — there is no flat rate. A cumulative maximum is published in appendix A to OAC 5160-1-06.5.",
+            "cumulative_max": null
+          }
+        ],
+        "constraints": [
+          "Room and board is not covered by the waiver.",
+          "Bed hold days are not billable for assisted living waiver members.",
+          "Assisted living payment constitutes payment in full: the provider may not bill the individual for any difference between the Medicaid payment and the provider's charge, or request a co-payment or similar charge.",
+          "Only services authorized by ODA's designee and reflected on the individual's person-centered service plan are payable.",
+          "The tier is a per-RESIDENT acuity determination made by ODA's designee. It is NOT the facility's certification track (basic service vs memory care) and NOT the critical-access rate qualification — those are separate provider-level attributes that do not determine this modifier."
+        ],
+        "unverified": [
+          "Tier display names. The three tiers are referred to only as Tier 1 / Tier 2 / Tier 3 in the sources reachable for this build; no primary source mapping U1/U2/U3 to specific names was located. Appendix A to OAC 5160-1-06.5 lists rates for 'the basic service', 'memory care', and 'critical access rates' (per OAC 173-39-02.16(E)(1)), but critical access is a qualification available to BOTH basic and memory care providers, so it is not a third parallel tier and that list does not map cleanly onto U1/U2/U3.",
+          "All dollar rates. Appendix A could not be retrieved from a primary source."
+        ],
+        "authority": {
+          "citation": "OAC 5160-33-07 (eff. July 1, 2019); OAC 5160-1-06.5 (eff. July 1, 2024); OAC 173-39-02.16 (eff. July 1, 2024); Molina Healthcare of Ohio Nursing Facility and Assisted Living Provider Guide (code/modifier table)",
+          "url": "https://codes.ohio.gov/ohio-administrative-code/rule-5160-33-07",
+          "quote": "A unit rate shall be based on a three-tiered model, and shall not exceed the amounts in appendix A to rule 5160-1-06.5 of the Administrative Code. ... The rate for assisted living services for each individual shall be determined by the ODA's designee through an assessment of the individual's service needs in four areas: (a) Cognitive impairments, (b) Medication administration, (c) Nursing services, and (d) Functional impairments.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+
+    {
+      "rule_id": "US-HOSPICE-MA-CARVEOUT-2025",
+      "state": "US",
+      "program": "hospice_ma",
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "data": {
+        "label": "Hospice / Medicare Advantage relatedness routing (carve-out model)",
+        "modifiers": {
+          "professional_related": "GV",
+          "professional_unrelated": "GW",
+          "institutional_unrelated": "Condition Code 07"
+        },
+        "constraints": [
+          "When an MA enrollee elects hospice, the hospice benefit is paid by FFS Medicare while the MA plan continues to cover Part A/B/D care unrelated to the terminal diagnosis. This is a per-claim relatedness determination, not a one-time enrollment switch.",
+          "The VBID hospice benefit component ended 2024-12-31 and was not revived; the VBID model as a whole terminated beginning CY2026. The carve-out is the standing model.",
+          "GV applies only when the billing provider is the patient's designated attending physician and is not employed by or under arrangement with the hospice.",
+          "Effective 2026-04-01 (implementation 2026-04-06), CMS CR 14219 automatically denies hospital inpatient and outpatient claims where a hospice claim exists for the same beneficiary in the same covered period with condition code 07 or modifier GW and an EXACT primary-diagnosis match.",
+          "Relatedness is a clinical determination. This engine requires it to be stated and will not infer it."
+        ],
+        "authority": {
+          "citation": "CMS MLN Matters MM14219 / CR 14219, 'Editing for Outpatient Services Provided to Hospice Enrollees' (effective April 1, 2026; implementation April 6, 2026)",
+          "url": "https://www.cms.gov/files/document/mm14219-outpatient-services-hospice-patients-new-edit.pdf",
+          "quote": "We created a new edit to automatically compare the outpatient claim's primary diagnosis codes with the hospice claim's primary diagnosis codes by doing an exact diagnosis match. This edit will deny hospital inpatient and outpatient claims when there's a hospice claim for the same Medicare patient within the same covered period with condition code 07 or modifier GW with the same primary diagnosis.",
+          "read_on": "2026-08-22"
+        }
+      }
+    }
+  ],
+
+  "claimed_hcbs_states": ["OH", "IN"],
+  "uncovered_states_disclosed": ["MI", "PA"]
+}
