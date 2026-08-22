@@ -6417,13 +6417,16 @@ function sdInvExport(){
   </div>
 </div>
 
-<!-- BULK SLAB UPLOAD (2026-08-04) -- feeds "Visualize on Your Kitchen" with REAL photographed
-     slabs, not this panel's own demo-seeded Slab Tracker list below (module 1, 'sd_slab_tracker'
-     -- a separate, self-contained system, see the SLAB RESERVATION/CONSUMPTION ENGINE comment
-     further down for the full history). Saves into sdSlabs (module 2, 'sd_slabs' + Supabase
-     'slabs' resource) -- the reservation/consumption-tracked list Quote Builder, POS, and
-     Visualize on Your Kitchen already read from. Deliberately in THIS panel (what staff actually
-     call "the Slabs panel") even though it writes to the other module's data -- reconciling the
+<!-- BULK SLAB UPLOAD (2026-08-04; comment corrected 2026-08-22 by Phase 1a) -- feeds
+     "Visualize on Your Kitchen" with REAL photographed slabs. Saves into sdSlabs
+     ('sd_slabs' + Supabase 'slabs' resource) -- the reservation/consumption-tracked list
+     Quote Builder, POS, and Visualize on Your Kitchen read from.
+     PHASE 1a NOTE: this comment used to say the list rendered below was a separate
+     "demo-seeded Slab Tracker" module on its own 'sd_slab_tracker' key. That is no longer
+     true and was the bug -- uploads landed in sdSlabs while the panel below rendered a SEED
+     constant, so real uploaded slabs were invisible and the KPIs were fabricated. The panel
+     below now reads sdSlabs too; there is one slab list, not two. Kept in THIS panel (what staff
+     actually call "the Slabs panel") -- and now it writes to the same data the panel shows. The
      two into one system is still the same real, separate product decision flagged in
      STONEDESK-SESSION72-HANDOFF.md, not resolved here; this only adds a second, correctly-routed
      entry point into the module that was already the real one. -->
@@ -6628,7 +6631,7 @@ function sdInvExport(){
   <div class="kpi"><div class="kpi-val" id="slabs-kpi1">0</div><div class="kpi-label">Total Slabs</div></div>
   <div class="kpi"><div class="kpi-val" id="slabs-kpi2">0</div><div class="kpi-label">Available</div></div>
   <div class="kpi"><div class="kpi-val" id="slabs-kpi3">0</div><div class="kpi-label">Allocated</div></div>
-  <div class="kpi"><div class="kpi-val" id="slabs-kpi4">$0</div><div class="kpi-label">Inventory Value</div></div>
+  <div class="kpi"><div class="kpi-val" id="slabs-kpi4">—</div><div class="kpi-label">Inventory Value</div><div id="slabs-kpi4-note" style="font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3"></div></div>
 </div>
 <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
   <input id="slabs-search" placeholder="Search stone, vendor, job..." style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;min-width:180px" oninput="sdSlabsRender()">
@@ -6645,64 +6648,159 @@ function sdInvExport(){
 </div>
 <script>
 (function(){
-  var SEED=[
-    {id:'SL-001',stone:'Calacatta Gold',vendor:'Italian Stone Imports',size:'120x60',thickness:'3cm',finish:'Polished',status:'Available',location:'Bay A-1',cost:680,job:'',notes:'Book-matched pair'},
-    {id:'SL-002',stone:'Calacatta Gold',vendor:'Italian Stone Imports',size:'120x60',thickness:'3cm',finish:'Polished',status:'Available',location:'Bay A-1',cost:680,job:'',notes:'Book-matched pair'},
-    {id:'SL-003',stone:'Quartzite Taj Mahal',vendor:'Granite Masters',size:'118x56',thickness:'3cm',finish:'Leathered',status:'Allocated',location:'Bay B-3',cost:520,job:'J-2024-089',notes:'Hartwell kitchen'},
-    {id:'SL-004',stone:'White Macaubas',vendor:'Global Stone Co',size:'115x58',thickness:'2cm',finish:'Polished',status:'Available',location:'Bay C-2',cost:490,job:'',notes:''},
-    {id:'SL-005',stone:'Statuario Extra',vendor:'Italian Stone Imports',size:'122x62',thickness:'3cm',finish:'Polished',status:'Allocated',location:'Bay A-4',cost:920,job:'J-2024-091',notes:'Master bath'},
-    {id:'SL-006',stone:'Black Galaxy',vendor:'Granite Masters',size:'110x55',thickness:'3cm',finish:'Polished',status:'Cut',location:'Bay D-1',cost:310,job:'J-2024-085',notes:'Remnant saved'},
-    {id:'SL-007',stone:'Porcelain Dekton Sirius',vendor:'Cosentino',size:'126x63',thickness:'1.2cm',finish:'Matte',status:'Available',location:'Bay E-1',cost:440,job:'',notes:'Sintered surface'},
-    {id:'SL-008',stone:'Emerald Pearl',vendor:'Nordic Stone',size:'108x54',thickness:'3cm',finish:'Polished',status:'Available',location:'Bay B-5',cost:380,job:'',notes:''}
-  ];
-  // Moved off the shared 'sd_slabs' key (interim collision fix -- see the
-  // SLAB RESERVATION/CONSUMPTION ENGINE comment further down for full
-  // history). This panel and that engine are two real, live, differently-
-  // shaped systems that used to overwrite the same key; whichever wrote
-  // last silently clobbered the other. No merge, no behavior change to
-  // either system -- just a distinct key so they stop colliding. Whether
-  // they should become one unified data model is a separate, real product
-  // decision, logged in STONEDESK-SESSION72-HANDOFF.md, not resolved here.
-  function load(){
-    try{
-      var mig=localStorage.getItem('sd_slab_tracker');
-      if(mig)return JSON.parse(mig)||(sdDemoCleared()?[]:SEED);
-      // One-time carry-forward: if 'sd_slabs' last held this panel's shape
-      // (has .stone, not the engine's .colorName) rather than the engine's,
-      // don't silently drop it -- copy it to the new key once. Also clear
-      // it back out of 'sd_slabs' afterward: stone-shaped records were
-      // never valid data for the reservation/consumption engine anyway
-      // (it reads .colorName/.status:in-stock, neither of which exist on
-      // these objects), so leaving them there only risks the engine
-      // reading stale, wrongly-shaped leftovers instead of correctly
-      // starting from its own empty default.
-      var old=JSON.parse(localStorage.getItem('sd_slabs')||'null');
-      if(Array.isArray(old)&&old.length&&old[0]&&typeof old[0].stone!=='undefined'){
-        st('sd_slab_tracker',old);
-        try{localStorage.removeItem('sd_slabs');}catch(e2){}
-        return old;
-      }
-    }catch(e){}
-    return sdDemoCleared()?[]:SEED;
+  // ============================================================
+  // SLABS PANEL -- Phase 1a (2026-08-22). REPOINTED AT THE REAL DATA.
+  //
+  // WHAT THIS REPLACED AND WHY, because the old shape looked harmless:
+  // this panel used to read its own 'sd_slab_tracker' key and, when that
+  // key was absent, fall through to an in-file SEED constant of 8 invented
+  // slabs. Verified in a real browser 2026-08-22: the key WAS absent, so
+  // the panel rendered fabricated inventory and computed all four KPIs
+  // from it -- Total 8 / Available 5 / Allocated 2 / Value $4,420 -- while
+  // a genuinely real slab written through Bulk Slab Upload (sdSlabs ->
+  // 'sd_slabs' -> Supabase) was invisible and excluded from every count.
+  // That is a Check 0b fabricated-KPI defect, not a display quirk: the
+  // panel did not show stale data, it invented data when its real store
+  // was empty.
+  //
+  // SEED IS DELETED OUTRIGHT, not put behind a flag. A flag would leave
+  // the same landmine one boolean away. A panel with no slabs now says so.
+  //
+  // Single source of truth is sdSlabs ('sd_slabs' + the Supabase 'slabs'
+  // resource) -- the list Quote Builder, POS, the visualizer and the
+  // low-stock alert already read. See
+  // docs/superpowers/specs/2026-08-22-stonedesk-phase1-slab-unification-design.md
+  // ============================================================
+
+  // sdSlabs is declared in a LATER script block, so it may not exist when
+  // this module first runs. Every read goes through here, and loadSlabs()
+  // re-renders once the engine is populated.
+  function eng(){ return (typeof sdSlabs!=='undefined' && Array.isArray(sdSlabs)) ? sdSlabs : []; }
+
+  // Status is normalised on READ ONLY -- nothing is rewritten on disk, which
+  // is what keeps this change revertible: every record still carries exactly
+  // the value the engine wrote.
+  function dispStatus(s){
+    if(s.status==='consumed') return 'Cut';
+    if(s.reservedFor) return 'Allocated';
+    if(s.status==='in-stock') return 'Available';
+    return s.status||'Unknown';
   }
-  function save(d){return st('sd_slab_tracker',d);}
-  var data=load();
+  // Remnant is a FLAG, not a status -- a remnant can also be reserved, and
+  // collapsing the two would lose that. Shown as its own chip.
+  function isRem(s){ return s.isRemnant===true; }
+
+  function dispSize(s){
+    if(s.lengthIn>0 && s.widthIn>0) return s.lengthIn+'x'+s.widthIn;
+    if(s.usableSqft>0) return s.usableSqft+' sqft';
+    return '';
+  }
+  // Cost is DERIVED and may genuinely be unknown -- bulk-uploaded slabs carry
+  // no costPerSqft. Returns null rather than 0 so "no cost recorded" can never
+  // be silently counted as "$0 of value".
+  function slabCost(s){
+    if(typeof s.cost==='number' && s.cost>0) return s.cost;
+    var sq = (s.usableSqft>0?s.usableSqft:(s.totalSqft>0?s.totalSqft:0));
+    if(s.costPerSqft>0 && sq>0) return s.costPerSqft*sq;
+    return null;
+  }
+  function fmtMoney(n){ return '$'+Math.round(n).toLocaleString(); }
+
   var STATUS_COLOR={Available:'var(--brand2)',Allocated:'#f59e0b',Cut:'#6366f1',Remnant:'#94a3b8'};
+
+  // One-time legacy import. A browser that still holds tracker-shaped rows
+  // under 'sd_slab_tracker' from before Phase 1a gets them OFFERED, never
+  // auto-promoted: they were never real synced stock, and silently pushing
+  // half-entered or demo-derived rows into the list Quote Builder prices from
+  // would be a worse outcome than asking. Declining is remembered.
+  function legacyRows(){
+    try{
+      if(localStorage.getItem('sd_slab_legacy_dismissed')==='1') return [];
+      var raw=localStorage.getItem('sd_slab_tracker');
+      if(!raw) return [];
+      var arr=JSON.parse(raw);
+      return (Array.isArray(arr)&&arr.length&&arr[0]&&typeof arr[0].stone!=='undefined')?arr:[];
+    }catch(e){ return []; }
+  }
+  window.sdSlabsDismissLegacy=function(){
+    try{ localStorage.setItem('sd_slab_legacy_dismissed','1'); }catch(e){}
+    sdSlabsRender();
+  };
+  window.sdSlabsImportLegacy=async function(){
+    var rows=legacyRows(); if(!rows.length) return;
+    var n=0;
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i];
+      var dims=String(r.size||'').split(/[xX]/);
+      var slab={
+        id:'SLAB'+Date.now()+'-L'+i,
+        material:'other', colorName:r.stone||'', supplier:r.vendor||'',
+        thickness:r.thickness||'', finish:r.finish||'',
+        lengthIn:parseFloat(dims[0])||0, widthIn:parseFloat(dims[1])||0,
+        yardLocation:r.location||'', notes:r.notes||'',
+        cost:(typeof r.cost==='number'?r.cost:null),
+        reservedFor:r.job||'', status:'in-stock',
+        importedFrom:'sd_slab_tracker', addedAt:new Date().toISOString()
+      };
+      if(typeof sdSlabs!=='undefined') sdSlabs.push(slab);
+      n++;
+      if(typeof slabSyncOne==='function'){ try{ await slabSyncOne(slab); }catch(e){} }
+    }
+    if(typeof saveSlabs==='function') saveSlabs();
+    try{ localStorage.setItem('sd_slab_legacy_dismissed','1'); }catch(e){}
+    sdSlabsRender();
+    if(typeof showToast==='function') showToast(n+' legacy slab(s) imported into real inventory.');
+  };
+
   window.sdSlabsRender=function(){
+    var data=eng();
     var q=(document.getElementById('slabs-search')||{value:''}).value.toLowerCase();
     var sf=(document.getElementById('slabs-status-filter')||{value:''}).value;
     var rows=data.filter(function(s){
-      var match=(s.stone+s.vendor+s.location+(s.job||'')).toLowerCase().includes(q);
-      var st=!sf||s.status===sf;
+      var hay=((s.colorName||'')+(s.supplier||s.vendor||'')+(s.yardLocation||'')+(s.reservedFor||'')).toLowerCase();
+      var match=hay.includes(q);
+      var st=!sf||(sf==='Remnant'?isRem(s):dispStatus(s)===sf);
       return match&&st;
     });
-    var avail=data.filter(function(s){return s.status==='Available';}).length;
-    var alloc=data.filter(function(s){return s.status==='Allocated';}).length;
-    var val=data.reduce(function(a,s){return a+s.cost;},0);
-    document.getElementById('slabs-kpi1').textContent=data.length;
-    document.getElementById('slabs-kpi2').textContent=avail;
-    document.getElementById('slabs-kpi3').textContent=alloc;
-    document.getElementById('slabs-kpi4').textContent='$'+val.toLocaleString();
+
+    // KPIs from REAL data only. Inventory value sums only slabs that actually
+    // have a cost -- slabs without one are counted and disclosed, never
+    // silently treated as $0.
+    var avail=data.filter(function(s){return dispStatus(s)==='Available';}).length;
+    var alloc=data.filter(function(s){return dispStatus(s)==='Allocated';}).length;
+    var val=0, priced=0, unpriced=0;
+    data.forEach(function(s){ var c=slabCost(s); if(c===null){unpriced++;} else {val+=c;priced++;} });
+    var k1=document.getElementById('slabs-kpi1'); if(k1) k1.textContent=data.length;
+    var k2=document.getElementById('slabs-kpi2'); if(k2) k2.textContent=avail;
+    var k3=document.getElementById('slabs-kpi3'); if(k3) k3.textContent=alloc;
+    var k4=document.getElementById('slabs-kpi4'); if(k4) k4.textContent=priced?fmtMoney(val):'—';
+    var note=document.getElementById('slabs-kpi4-note');
+    if(note) note.textContent = !data.length ? '' : (unpriced? (unpriced+' slab(s) have no cost recorded and are not in this total') : 'All '+priced+' slab(s) priced');
+
+    var host=document.getElementById('slabs-list'); if(!host) return;
+
+    var banner='';
+    var leg=legacyRows();
+    if(leg.length){
+      banner='<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:12px;font-size:13px;color:#92400e">'
+        +'<b>'+leg.length+' slab record(s) found from the old Slab Tracker.</b>'
+        +'<div style="margin-top:4px">These were never synced and were never part of real inventory. Import them only if they are genuine stock &mdash; they will become real slabs that Quote Builder and POS can price against.</div>'
+        +'<div style="margin-top:10px;display:flex;gap:8px"><button class="q-btn primary" onclick="sdSlabsImportLegacy()">Import as real slabs</button>'
+        +'<button class="q-btn" onclick="sdSlabsDismissLegacy()">Discard</button></div></div>';
+    }
+
+    if(!data.length){
+      // Honest empty state. The whole point of Phase 1a: no inventory shows
+      // as no inventory, never as invented stock.
+      host.innerHTML=banner
+        +'<div style="border:1px dashed var(--border);border-radius:10px;padding:32px 20px;text-align:center;color:var(--muted);font-size:13px">'
+        +'<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">No slabs in inventory yet</div>'
+        +'<div>Add one with <b>+ Add Slab</b>, or photograph a batch with <b>Bulk Slab Upload</b> above.</div>'
+        +'<div style="margin-top:8px;font-size:12px">This is your real inventory &mdash; it stays empty until you add stock.</div>'
+        +'</div>';
+      return;
+    }
+
     var html='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc">'
       +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">ID</th>'
       +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Stone</th>'
@@ -6715,63 +6813,90 @@ function sdInvExport(){
       +'</tr></thead><tbody>';
     rows.forEach(function(s,i){
       var bg=i%2===0?'#fff':'#f8fafc';
+      var ds=dispStatus(s);
+      var c=slabCost(s);
+      var sz=dispSize(s);
       html+='<tr style="background:'+bg+'">'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--a)">'+s.id+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+s.stone+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+s.vendor+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+s.size+' / '+s.finish+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+s.location+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+(STATUS_COLOR[s.status]||'#6b7280')+'20;color:'+(STATUS_COLOR[s.status]||'#6b7280')+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+s.status+'</span></td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right">$'+s.cost.toLocaleString()+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+((s.job)||'—')+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-weight:600;color:var(--a)">'+escHtml(s.id)+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+escHtml(s.colorName||(typeof slabMaterialLabel==='function'?slabMaterialLabel(s.material):s.material)||'—')
+        +(isRem(s)?' <span style="background:#94a3b820;color:#94a3b8;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:700">Remnant</span>':'')+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+escHtml(s.supplier||s.vendor||'—')+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+escHtml(sz||'—')+(s.finish?(' / '+escHtml(s.finish)):'')+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+escHtml(s.yardLocation||'—')+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+(STATUS_COLOR[ds]||'#6b7280')+'20;color:'+(STATUS_COLOR[ds]||'#6b7280')+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+escHtml(ds)+'</span></td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right">'+(c===null?'<span style="color:var(--muted)">—</span>':fmtMoney(c))+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+escHtml(s.reservedFor||'—')+'</td>'
         +'</tr>';
     });
     html+='</tbody></table>';
-    document.getElementById('slabs-list').innerHTML='<div class="tw">'+html+'</div>';
+    host.innerHTML=banner+'<div class="tw">'+html+'</div>';
   };
+
   window.sdSlabsAdd=function(){
-    var id='SL-'+String(data.length+1).padStart(3,'0');
-    var stone=prompt('Stone name:');
-    if(!stone)return;
-    var vendor=prompt('Vendor:','Granite Masters');
-    var size=prompt('Size (e.g. 120x60):','120x60');
-    var location=prompt('Bay/location:','Bay A-1');
-    var cost=parseFloat(prompt('Slab cost ($):','500')||'500');
-    data.push({id:id,stone:stone,vendor:vendor||'',size:size||'120x60',thickness:'3cm',finish:'Polished',status:'Available',location:location||'',cost:cost,job:'',notes:''});
-    save(data);
+    var name=prompt('Stone / colour name:');
+    if(!name)return;
+    var vendor=prompt('Supplier:','')||'';
+    var size=prompt('Size (e.g. 120x60):','120x60')||'';
+    var location=prompt('Bay/location:','')||'';
+    var costRaw=prompt('Slab cost ($, leave blank if unknown):','');
+    var dims=String(size).split(/[xX]/);
+    var L=parseFloat(dims[0])||0, W=parseFloat(dims[1])||0;
+    var cost=(costRaw===''||costRaw===null)?null:(parseFloat(costRaw));
+    var slab={
+      id:'SLAB'+Date.now(), material:'other', colorName:name, supplier:vendor,
+      thickness:'', finish:'', lengthIn:L, widthIn:W,
+      totalSqft:(typeof slabSqft==='function'?slabSqft(L,W):0),
+      usableSqft:(typeof slabSqft==='function'?slabSqft(L,W):0),
+      cost:(cost!==null&&!isNaN(cost))?cost:null,
+      yardLocation:location, notes:'', reservedFor:'',
+      status:'in-stock', addedAt:new Date().toISOString()
+    };
+    if(typeof sdSlabs!=='undefined') sdSlabs.push(slab);
+    if(typeof saveSlabs==='function') saveSlabs();
+    if(typeof slabSyncOne==='function'){ try{ slabSyncOne(slab); }catch(e){} }
     sdSlabsRender();
   };
+
   window.sdSlabsAI=function(){
+    var data=eng();
     var out=document.getElementById('slabs-ai-out');
-    out.style.display='block';out.textContent='Analyzing slab inventory...';
-    var avail=data.filter(function(s){return s.status==='Available';});
-    var alloc=data.filter(function(s){return s.status==='Allocated';});
+    out.style.display='block';
+    if(!data.length){ out.textContent='No slabs in inventory yet — nothing to analyse. Add stock first.'; return; }
+    out.textContent='Analyzing slab inventory...';
+    var avail=data.filter(function(s){return dispStatus(s)==='Available';});
+    var alloc=data.filter(function(s){return dispStatus(s)==='Allocated';});
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a stone industry advisor for Pinnacle Stone & Design. Slab inventory: '+data.length+' slabs, '+avail.length+' available, '+alloc.length+' allocated. Stones: '+data.map(function(s){return s.stone+'('+s.status+')'}).join(', ')+'. Provide: 1) Inventory health assessment, 2) Reorder recommendations, 3) Slow-moving slab alerts, 4) Suggested promotions for available inventory.'}]})
+      body:JSON.stringify({app_id:'stonedesk',messages:[{role:'user',content:'You are a stone industry advisor. Slab inventory: '+data.length+' slabs, '+avail.length+' available, '+alloc.length+' allocated. Stones: '+data.map(function(s){return (s.colorName||s.material||'unknown')+'('+dispStatus(s)+')';}).join(', ')+'. Provide: 1) Inventory health assessment, 2) Reorder recommendations, 3) Slow-moving slab alerts, 4) Suggested promotions for available inventory.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
     }).catch(function(){out.textContent='AI unavailable. Review slab turnover rates and flag stones >90 days with no allocation.';});
   };
+
   window.sdSlabsPrint=function(){
+    var data=eng();
     var w=window.open('','_blank');
-    var avail=data.filter(function(s){return s.status==='Available';}).length;
-    var val=data.reduce(function(a,s){return a+s.cost;},0);
-    w.document.write('<html><head><title>Slab Inventory - Pinnacle Stone</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:'+sdThemeColor('--brand2','#16c762')+';color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}.kpis{display:flex;gap:20px;margin-bottom:20px}.kpi{background:#f8fafc;padding:12px 18px;border-radius:8px;text-align:center}.kv{font-size:22px;font-weight:800;color:'+sdThemeColor('--brand2','#16c762')+'}.kl{font-size:11px;color:#64748b}@media print{button{display:none}}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    w.document.write('<h2 style="color:'+sdThemeColor('--brand2','#16c762')+';margin-bottom:4px">Slab Inventory Report</h2><p style="color:#64748b;margin-top:0">Pinnacle Stone & Design — '+new Date().toLocaleDateString()+'</p>');
-    w.document.write('<div class="kpis"><div class="kpi"><div class="kv">'+data.length+'</div><div class="kl">Total</div></div><div class="kpi"><div class="kv">'+avail+'</div><div class="kl">Available</div></div><div class="kpi"><div class="kv">$'+val.toLocaleString()+'</div><div class="kl">Value</div></div></div>');
+    var avail=data.filter(function(s){return dispStatus(s)==='Available';}).length;
+    var val=0,unpriced=0;
+    data.forEach(function(s){var c=slabCost(s); if(c===null){unpriced++;}else{val+=c;}});
+    w.document.write('<html><head><title>Slab Inventory</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#1e293b}table{width:100%;border-collapse:collapse;font-size:12px}th{background:'+sdThemeColor('--brand2','#16c762')+';color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #e2e8f0}.kpis{display:flex;gap:20px;margin-bottom:20px}.kpi{background:#f8fafc;padding:12px 18px;border-radius:8px;text-align:center}.kv{font-size:22px;font-weight:800;color:'+sdThemeColor('--brand2','#16c762')+'}.kl{font-size:11px;color:#64748b}@media print{button{display:none}}</style><scr'+'ipt></scr'+'ipt></head><body>');
+    w.document.write('<h2 style="color:'+sdThemeColor('--brand2','#16c762')+';margin-bottom:4px">Slab Inventory Report</h2><p style="color:#64748b;margin-top:0">'+new Date().toLocaleDateString()+'</p>');
+    w.document.write('<div class="kpis"><div class="kpi"><div class="kv">'+data.length+'</div><div class="kl">Total</div></div><div class="kpi"><div class="kv">'+avail+'</div><div class="kl">Available</div></div><div class="kpi"><div class="kv">'+(data.length-unpriced?fmtMoney(val):'—')+'</div><div class="kl">Value</div></div></div>');
+    if(unpriced) w.document.write('<p style="color:#92400e;font-size:12px">'+unpriced+' slab(s) have no cost recorded and are excluded from the value total.</p>');
     w.document.write('<table><tr><th>ID</th><th>Stone</th><th>Vendor</th><th>Size</th><th>Location</th><th>Status</th><th>Cost</th><th>Job</th></tr>');
-    data.forEach(function(s){w.document.write('<tr><td>'+escHtml(s.id)+'</td><td>'+escHtml(s.stone)+'</td><td>'+escHtml(s.vendor)+'</td><td>'+escHtml(s.size)+'</td><td>'+escHtml(s.location)+'</td><td>'+escHtml(s.status)+'</td><td>$'+s.cost.toLocaleString()+'</td><td>'+escHtml(s.job||'—')+'</td></tr>');});
+    data.forEach(function(s){var c=slabCost(s);w.document.write('<tr><td>'+escHtml(s.id)+'</td><td>'+escHtml(s.colorName||'')+'</td><td>'+escHtml(s.supplier||s.vendor||'')+'</td><td>'+escHtml(dispSize(s))+'</td><td>'+escHtml(s.yardLocation||'')+'</td><td>'+escHtml(dispStatus(s))+'</td><td>'+(c===null?'—':fmtMoney(c))+'</td><td>'+escHtml(s.reservedFor||'—')+'</td></tr>');});
     w.document.write('</table></body></html>');
     w.document.close();w.print();
   };
+
   window.sdSlabsExport=function(){
-    var d=load();
-    var rows=[['ID','Stone','Vendor','Size','Thickness','Finish','Status','Location','Cost','Job','Notes']];
-    d.forEach(function(s){rows.push([s.id,s.stone,s.vendor,s.size,s.thickness,s.finish,s.status,s.location,('$'+s.cost),(s.job||''),s.notes||'']);});
+    var d=eng();
+    var rows=[['ID','Stone','Vendor','Size','Thickness','Finish','Status','Remnant','Location','Cost','Job','Notes']];
+    d.forEach(function(s){var c=slabCost(s);rows.push([s.id,s.colorName||'',s.supplier||s.vendor||'',dispSize(s),s.thickness||'',s.finish||'',dispStatus(s),(isRem(s)?'yes':'no'),s.yardLocation||'',(c===null?'':('$'+Math.round(c))),(s.reservedFor||''),s.notes||'']);});
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='slabs-pinnacle-'+sdLocalToday()+'.csv';a.click();
+    a.download='slabs-'+sdLocalToday()+'.csv';a.click();
   };
+
   sdSlabsRender();
 })();
 </script>
