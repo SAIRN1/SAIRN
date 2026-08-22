@@ -291,9 +291,17 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="fr"><div class="fg"><label>Resident Name</label><input id="res-name" placeholder="Eleanor Whitfield"></div><div class="fg"><label>Room Number</label><input id="res-room" placeholder="214"></div></div>
     <div class="fg"><label>Diagnosis</label><input id="res-diagnosis" placeholder="e.g. Parkinson's, mild cognitive impairment"></div>
     <div class="fg"><label>Medications (summary)</label><textarea id="res-medications" rows="2" placeholder="e.g. Levodopa 100mg 3x/day, Metformin 500mg 2x/day"></textarea></div>
-    <div class="fr"><div class="fg"><label>Care Level</label><select id="res-carelevel"><option value="al1">AL1 - Minimal Assistance</option><option value="al2">AL2 - Moderate Assistance</option><option value="al3">AL3 - Extensive Assistance</option></select></div>
+    <!-- Level of care is management-only to change (direct billing consequence -- see
+         generateInvoice()), so it is never an inline dropdown in this general-edit modal.
+         Current level shows read-only here; changing it opens the dedicated Change Level of
+         Care modal, which appends to care_level_history rather than overwriting in place. -->
+    <div class="fr"><div class="fg"><label>Level of Care</label>
+        <div class="sval" id="res-carelevel-display" style="padding:9px 0">--</div>
+        <button type="button" class="btn bo bs" id="res-changelevel-btn" style="display:none;margin-top:4px" onclick="openChangeLevelModal()">Change Level of Care</button>
+      </div>
       <div class="fg"><label>Payer</label><select id="res-payer"><option value="private">Private Pay</option><option value="medicaid_hcbs">Medicaid HCBS Waiver</option><option value="va">VA</option><option value="self_pay">Self-Pay</option></select></div></div>
-    <div class="fg"><label>Status</label><select id="res-status"><option value="active">Active</option><option value="intake">Intake</option><option value="on_hold">On Hold</option><option value="discharged">Discharged</option></select></div>
+    <div class="fr"><div class="fg"><label>Status</label><select id="res-status"><option value="active">Active</option><option value="intake">Intake</option><option value="on_hold">On Hold</option><option value="discharged">Discharged</option></select></div>
+      <div class="fg"><label>CCRC Contract Type</label><select id="res-ccrc"><option value="not_ccrc">Not a CCRC Resident</option><option value="lifecare">Life Care</option><option value="fee_for_service">Fee-for-Service</option><option value="modified">Modified</option><option value="equity">Equity</option></select></div></div>
     <div class="fg"><label>General Notes</label><textarea id="res-notes" rows="2"></textarea></div>
     <!-- Management-only control; server-side is the real gate (nursing
          may edit details but never touches assignment -- shown read-only
@@ -304,6 +312,35 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeResidentModal()">Cancel</button>
       <button class="btn bp" onclick="saveResident()">Save Resident</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE LEVEL OF CARE (Phase 0 item 1 + invoice retroactivity fix) -- management-only,
+     separate from the general Edit Resident modal on purpose: this appends a new dated entry
+     to care_level_history rather than overwriting the flat care_level field in place, which is
+     exactly what generateInvoice() now prorates a resident's monthly care charge against. -->
+<div class="modal" id="changelevelmodal">
+  <div class="mbox">
+    <div class="mtitle">Change Level of Care</div>
+    <div class="fg"><label>Resident</label><div class="sval" id="cl-resident-name" style="padding:9px 0">--</div></div>
+    <div class="fg"><label>Current Level</label><div class="sval" id="cl-current-display" style="padding:9px 0">--</div></div>
+    <div class="fg"><label>New Level</label><select id="cl-level" onchange="clToggleSubTier()">
+        <option value="independent_living">Independent Living</option>
+        <option value="assisted_living">Assisted Living</option>
+        <option value="memory_care">Memory Care</option>
+        <option value="skilled_nursing">Skilled Nursing</option>
+      </select></div>
+    <div class="fg" id="cl-subtier-row"><label>Assisted Living Tier</label><select id="cl-subtier">
+        <option value="al1">AL1 - Minimal Assistance</option>
+        <option value="al2">AL2 - Moderate Assistance</option>
+        <option value="al3">AL3 - Extensive Assistance</option>
+      </select></div>
+    <div class="fg"><label>Effective Date</label><input type="date" id="cl-effective-date"></div>
+    <div style="font-size:12px;color:var(--muted)">This does not change any past invoice. Charges for this month are prorated by the number of days each level was actually in effect.</div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeChangeLevelModal()">Cancel</button>
+      <button class="btn bp" onclick="saveLevelChange()">Save New Level</button>
     </div>
   </div>
 </div>
@@ -497,6 +534,20 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- INVOICE DETAILS -- the visible half of the retroactivity fix: care_level_breakdown shows
+     exactly which days were billed at which level/rate, and revision_history shows every prior
+     figure a regenerate ever superseded, so "no trace of the prior figure" is actually fixed,
+     not just fixed in storage nobody can see. -->
+<div class="modal" id="invoicedetailsmodal">
+  <div class="mbox">
+    <div class="mtitle">Invoice Details</div>
+    <div id="invdet-body" style="font-size:13px"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeInvoiceDetailsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- COMPLIANCE & INCIDENT REPORTING -->
 <!-- Real research pass run before building (2026-08-20, see
      SAIRN-ACTIVE-WORK.md for full sourcing) -- no single federal or
@@ -649,9 +700,12 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="card"><div class="ch"><span class="ct">Billing Rate Card</span></div><div class="cb">
     <div class="note">Room &amp; board is always private-pay -- Medicaid HCBS waivers never cover it. The care-level rate is billed privately unless this facility accepts Medicaid HCBS AND the resident's payer is set to Medicaid HCBS Waiver.</div>
     <div class="fg"><label>Monthly Room &amp; Board Rate ($)</label><input id="rc-roomboard" type="number"></div>
+    <div class="fg"><label>Independent Living Care Rate ($/mo)</label><input id="rc-il" type="number"></div>
     <div class="fr"><div class="fg"><label>AL1 Care Rate ($/mo)</label><input id="rc-al1" type="number"></div>
       <div class="fg"><label>AL2 Care Rate ($/mo)</label><input id="rc-al2" type="number"></div></div>
     <div class="fg"><label>AL3 Care Rate ($/mo)</label><input id="rc-al3" type="number"></div>
+    <div class="fr"><div class="fg"><label>Memory Care Rate ($/mo)</label><input id="rc-mc" type="number"></div>
+      <div class="fg"><label>Skilled Nursing Rate ($/mo)</label><input id="rc-snf" type="number"></div></div>
     <div class="fg"><label>Accept Medicaid HCBS Waiver?</label><select id="rc-hcbs-enabled" onchange="rcToggleHcbsState()"><option value="0">No -- private-pay only</option><option value="1">Yes</option></select></div>
     <div class="fg" id="rc-hcbs-state-row" style="display:none"><label>HCBS Waiver State</label><input id="rc-hcbs-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
     <button class="btn bp bs" onclick="saveRateCard()">Save Rate Card</button>
@@ -966,7 +1020,11 @@ function openResidentModal(){
   reid=null;
   $('res-modal-title').textContent='Add Resident';
   ['res-name','res-room','res-diagnosis','res-medications','res-notes'].forEach(function(f){$(f).value='';});
-  $('res-carelevel').value='al1';$('res-payer').value='private';$('res-status').value='intake';
+  $('res-payer').value='private';$('res-status').value='intake';$('res-ccrc').value='not_ccrc';
+  // Level of care is set via the dedicated Change Level of Care action, not at creation --
+  // a brand-new resident genuinely has no level yet until management records the first entry.
+  $('res-carelevel-display').textContent='Not yet set';
+  $('res-changelevel-btn').style.display='none';
   $('res-photo-preview').style.display='none';$('res-photo-status').textContent='';$('res-photo-input').value='';
   var assignRow=$('res-assignee-row'),roRow=$('res-assignee-readonly-row');
   if(alfIsManagement()){
@@ -992,8 +1050,12 @@ function editResident(id){
   reid=id;
   $('res-modal-title').textContent='Edit Resident';
   $('res-name').value=r.name||'';$('res-room').value=r.room||'';$('res-diagnosis').value=r.diagnosis||'';
-  $('res-medications').value=r.medications||'';$('res-carelevel').value=r.care_level||'al1';
+  $('res-medications').value=r.medications||'';
+  var curLevel=currentCareLevelOf(r);
+  $('res-carelevel-display').textContent=curLevel?careLevelLabel(curLevel):'Not yet set';
+  $('res-changelevel-btn').style.display=alfIsManagement()?'inline-block':'none';
   $('res-payer').value=r.payer||'private';$('res-status').value=r.status||'intake';$('res-notes').value=r.notes||'';
+  $('res-ccrc').value=r.ccrc_contract_type||'not_ccrc';
   $('res-photo-preview').style.display='none';$('res-photo-status').textContent='';$('res-photo-input').value='';
   var assignRow=$('res-assignee-row'),roRow=$('res-assignee-readonly-row');
   if(alfIsManagement()){
@@ -1024,10 +1086,15 @@ async function saveResident(){
     :(alfIsBroadEdit()
       ?((existing&&existing.assigned_employee_id)||'')
       :((existing&&existing.assigned_employee_id)||(alfSession&&alfSession.employee_id)||''));
+  // care_level_history is deliberately NOT included here -- this is the general edit path,
+  // reachable by nursing and the narrow tier too, and level-of-care changes are management-only
+  // given the direct billing consequence (see the Change Level of Care modal instead). Omitting
+  // the field lets the server carry the existing history forward untouched, rather than this
+  // client needing to remember to always echo it back verbatim on every unrelated save.
   var rec={
     id:reid||newId('RES'),name:name,room:$('res-room').value.trim(),diagnosis:$('res-diagnosis').value.trim(),
-    medications:$('res-medications').value.trim(),care_level:$('res-carelevel').value,payer:$('res-payer').value,
-    status:$('res-status').value,notes:$('res-notes').value.trim(),
+    medications:$('res-medications').value.trim(),payer:$('res-payer').value,
+    status:$('res-status').value,notes:$('res-notes').value.trim(),ccrc_contract_type:$('res-ccrc').value,
     assigned_employee_id:assignedTo
   };
   var list=residents();
@@ -1035,7 +1102,61 @@ async function saveResident(){
   st('alf_clients',list);
   closeResidentModal();rResidents();rDash();
   var syncResult=await alfData('write','alf_clients',rec,true);
+  if(syncResult){
+    // The server may carry forward or derive fields this client never sent (care_level_history,
+    // the derived care_level, a defaulted ccrc_contract_type) -- reconcile the local cache with
+    // the authoritative response so it doesn't silently lose them until some future full
+    // resync, since alfHydrateResidents() only ADDS missing residents, it never patches
+    // existing ones. Without this, an edit that omits care_level_history (every edit from this
+    // general modal does, on purpose) would wipe it from the local view and from the
+    // client-side invoice math that reads residents() directly.
+    list=residents().map(function(x){return x.id===syncResult.id?Object.assign({},x,syncResult):x;});
+    st('alf_clients',list);
+    rResidents();rDash();
+  }
   toast(syncResult?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
+}
+function openChangeLevelModal(){
+  if(!alfIsManagement()){toast('Only management can change a resident’s level of care');return;}
+  if(!reid){toast('Save the resident first, then change their level of care');return;}
+  var r=residents().find(function(x){return x.id===reid;});
+  if(!r)return;
+  $('cl-resident-name').textContent=r.name||'';
+  var cur=currentCareLevelOf(r);
+  $('cl-current-display').textContent=cur?careLevelLabel(cur):'Not yet set';
+  $('cl-level').value='assisted_living';$('cl-subtier').value='al1';
+  clToggleSubTier();
+  $('cl-effective-date').value=new Date().toISOString().slice(0,10);
+  $('changelevelmodal').classList.add('on');
+}
+function closeChangeLevelModal(){$('changelevelmodal').classList.remove('on');}
+function clToggleSubTier(){var el=$('cl-subtier-row');if(el)el.style.display=($('cl-level').value==='assisted_living')?'block':'none';}
+async function saveLevelChange(){
+  if(!alfIsManagement()){toast('Only management can change a resident’s level of care');return;}
+  var r=residents().find(function(x){return x.id===reid;});
+  if(!r){toast('Resident not found');return;}
+  var effDate=$('cl-effective-date').value;
+  if(!effDate){toast('Effective date is required');return;}
+  var level=$('cl-level').value;
+  var newEntry={level:level,sub_tier:level==='assisted_living'?$('cl-subtier').value:null,effective_date:effDate};
+  // Only echo back a REAL stored history (never the migrated single-entry stand-in
+  // careHistoryOf() synthesizes for a legacy resident) -- that stand-in has no server-side
+  // counterpart, so sending it back as the "existing prefix" would be rejected as a rewrite by
+  // the append-only check. A legacy resident's first real change simply starts a fresh array.
+  var realHistory=(Array.isArray(r.care_level_history)&&r.care_level_history.length)?r.care_level_history:[];
+  var payload={id:r.id,care_level_history:realHistory.concat([newEntry])};
+  // Deliberately server-first, no optimistic local write, unlike saveResident() above -- this
+  // is a management-only, append-only, directly billing-consequential change, and an optimistic
+  // local append that the server then rejects would leave the local array permanently diverged
+  // from the server's with no clean way back. Fail closed instead: nothing changes locally
+  // unless the server actually accepted it.
+  var syncResult=await alfData('write','alf_clients',payload,true);
+  if(!syncResult){toast('Server sync failed -- level of care was NOT changed. Try again with a connection.');return;}
+  var list=residents().map(function(x){return x.id===r.id?Object.assign({},x,syncResult):x;});
+  st('alf_clients',list);
+  closeChangeLevelModal();
+  rResidents();rDash();
+  toast('Level of care updated for '+r.name);
 }
 async function alfReassignResident(id,newEmployeeId){
   if(!alfIsManagement()){toast('Only management can reassign a resident');return;}
@@ -1047,7 +1168,7 @@ async function alfReassignResident(id,newEmployeeId){
   var syncResult=await alfData('write','alf_clients',r,true);
   toast(syncResult?(r.name+' reassigned to '+alfEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection');
 }
-var carelevelBadge={al1:'bg',al2:'bw',al3:'br'};
+var carelevelBadge={al1:'bg',al2:'bw',al3:'br',independent_living:'bg',memory_care:'br',skilled_nursing:'br'};
 function rResidents(){
   var rs=residents();
   var isMgmt=alfIsManagement();
@@ -1067,7 +1188,7 @@ function rResidents(){
         +'</select>'
       : H(alfEmployeeName(r.assigned_employee_id));
     return '<tr><td>'+H(r.name)+'</td><td>'+H(r.room||'--')+'</td>'+
-      '<td><span class="badge '+(carelevelBadge[r.care_level]||'bx')+'">'+H((r.care_level||'').toUpperCase())+'</span></td>'+
+      '<td><span class="badge '+(carelevelBadge[r.care_level]||'bx')+'">'+H(careLevelLabel(currentCareLevelOf(r)))+'</span></td>'+
       '<td><span class="badge bx">'+H((r.payer||'').replace('_',' '))+'</span></td><td>'+assignedCell+'</td>'+
       '<td>'+(alfIsReadOnlyBroad()?'--':'<button class="btn bo bs" onclick="editResident(\''+r.id+'\')">Edit</button>')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No residents found</td></tr>';
@@ -1609,26 +1730,95 @@ function rBilling(){
       '<td>'+(inv?fmt2(inv.private_total):'--')+'</td>'+
       '<td>'+(inv?'<button class="btn '+(inv.private_status==='paid'?'bo':'bp')+' bs" onclick="togglePrivateStatus(\''+r.id+'\')">'+(inv.private_status==='paid'?'Paid':'Unpaid')+'</button>':'--')+'</td>'+
       '<td>'+(isHcbs&&inv&&inv.hcbs_claim_amount>0?'<button class="btn bo bs" onclick="openHcbsStatusModal(\''+r.id+'\')">'+H(inv.hcbs_status||'not_submitted')+'</button>':(isHcbs?'--':'<span style="color:var(--muted);font-size:12px">n/a</span>'))+'</td>'+
-      '<td><button class="btn bo bs" onclick="generateInvoice(\''+r.id+'\')">Generate '+currentMonth()+'</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="generateInvoice(\''+r.id+'\')">Generate '+currentMonth()+'</button>'+
+      (inv?' <button class="btn bo bs" onclick="openInvoiceDetailsModal(\''+r.id+'\')">Details</button>':'')+'</td></tr>';
   }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No residents found</td></tr>';
+}
+function daysInMonth(monthStr){
+  var parts=monthStr.split('-');var y=Number(parts[0]),m=Number(parts[1]);
+  return new Date(Date.UTC(y,m,0)).getUTCDate();
+}
+// THE INVOICE RETROACTIVITY FIX. Before this, generateInvoice() read the resident's CURRENT
+// care_level for the whole month, so a mid-month level change silently re-billed every day of
+// the month at the new rate. This instead walks every day of the target month and asks which
+// care_level_history entry was actually in effect that day, grouping consecutive days under the
+// same level into a segment and prorating each segment's share of that level's monthly rate --
+// so a resident on AL1 for 14 days then AL2 for the rest of a 30-day month is billed
+// (14/30)*al1_rate + (16/30)*al2_rate for the care portion, not 30 days at whichever level
+// happens to be current when Generate is clicked. Room & board stays flat regardless (unchanged
+// from before -- it was never level-dependent). A migrated legacy entry (see careHistoryOf(),
+// no real effective_date) is treated as in effect for the WHOLE month if it is the only entry,
+// since there is no better information to prorate against -- honest, not fabricated.
+function careLevelSegmentsForMonth(r,monthStr){
+  var history=careHistoryOf(r);
+  if(!history.length)return [];
+  var totalDays=daysInMonth(monthStr);
+  var sorted=history.slice().sort(function(a,b){
+    if(!a.effective_date&&!b.effective_date)return 0;
+    if(!a.effective_date)return -1;
+    if(!b.effective_date)return 1;
+    return a.effective_date<b.effective_date?-1:(a.effective_date>b.effective_date?1:0);
+  });
+  var segments=[];
+  for(var day=1;day<=totalDays;day++){
+    var dayStr=monthStr+'-'+(day<10?'0':'')+day;
+    var active=null;
+    for(var i=0;i<sorted.length;i++){
+      var e=sorted[i];
+      if(!e.effective_date||e.effective_date<=dayStr)active=e;
+    }
+    if(!active)continue; // this level starts later in the month than this day -- no charge yet
+    var last=segments.length?segments[segments.length-1]:null;
+    if(last&&last.level===active.level&&last.sub_tier===(active.sub_tier||null)){last.days++;}
+    else{segments.push({level:active.level,sub_tier:active.sub_tier||null,days:1});}
+  }
+  segments.forEach(function(seg){
+    seg.rate=careRateFor(seg.level,seg.sub_tier);
+    seg.amount=Math.round((seg.rate/totalDays)*seg.days*100)/100;
+  });
+  return segments;
 }
 async function generateInvoice(residentId){
   var r=residents().find(function(x){return x.id===residentId;});
   if(!r){toast('Resident not found');return;}
   var f=facility();
   var roomBoard=Number(f.roomboard_rate)||0;
-  var care=careRateFor(r.care_level);
+  var month=currentMonth();
+  var breakdown=careLevelSegmentsForMonth(r,month);
+  var care=Math.round(breakdown.reduce(function(sum,seg){return sum+seg.amount;},0)*100)/100;
   var isHcbs=r.payer==='medicaid_hcbs'&&f.hcbs_enabled;
   // Structural separation, never summed: room & board is ALWAYS private,
   // regardless of payer. The care-level rate goes to Medicaid HCBS only
   // when the resident is enrolled AND this facility actually accepts it --
   // otherwise it falls back to private-pay, matching the real research
   // finding that many facilities don't accept Medicaid HCBS at all.
-  var month=currentMonth();
+  var invId='INV-'+residentId+'-'+month;
+  var existing=billingEntries().find(function(x){return x.id===invId;});
+  // "No trace of the prior figure" was the bug: regenerating an existing invoice used to
+  // silently overwrite its amounts in place with nothing kept of what it replaced. Fixed by
+  // keeping a real revision history on the record itself (not a separate versioned-invoice
+  // table -- this is the minimal change that actually closes the gap) -- the OLD snapshot is
+  // appended before the new figures overwrite it, and only when they actually differ, so
+  // clicking Generate twice with nothing changed doesn't pad the record with a no-op entry.
+  // NOTE, deliberately NOT changed here (out of scope for this fix, flagging rather than
+  // silently folding it in): regenerating an invoice still always resets private_status to
+  // 'unpaid' and hcbs_status to its default, exactly like before -- if a paid invoice's amount
+  // legitimately needs correcting, that reset is a separate pre-existing behavior worth a look,
+  // not something this retroactivity fix touches.
+  var revisionHistory=(existing&&Array.isArray(existing.revision_history))?existing.revision_history:[];
+  if(existing&&(Number(existing.room_board_amount)!==roomBoard||Number(existing.care_amount)!==care)){
+    revisionHistory=revisionHistory.concat([{
+      room_board_amount:existing.room_board_amount,care_amount:existing.care_amount,
+      private_total:existing.private_total,hcbs_claim_amount:existing.hcbs_claim_amount,
+      hcbs_status:existing.hcbs_status,care_level_breakdown:existing.care_level_breakdown||null,
+      superseded_at:new Date().toISOString(),superseded_by:(alfSession&&alfSession.employee_id)||''
+    }]);
+  }
   var rec={
-    id:'INV-'+residentId+'-'+month,month:month,room_board_amount:roomBoard,care_amount:care,
+    id:invId,month:month,room_board_amount:roomBoard,care_amount:care,
     private_total:roomBoard+(isHcbs?0:care),private_status:'unpaid',
     hcbs_claim_amount:isHcbs?care:0,hcbs_status:isHcbs?'not_submitted':'n/a',
+    care_level_breakdown:breakdown,revision_history:revisionHistory,
     generated_by:(alfSession&&alfSession.employee_id)||''
   };
   var list=billingEntries();
@@ -1651,6 +1841,39 @@ async function togglePrivateStatus(residentId){
   var syncResult=await alfData('write','alf_billing',Object.assign({},inv),true);
   toast(syncResult?'Private status updated':'Saved on this device only -- server sync failed');
 }
+function openInvoiceDetailsModal(residentId){
+  var r=residents().find(function(x){return x.id===residentId;});
+  var inv=latestInvoiceFor(residentId);
+  if(!inv){toast('No invoice to show details for');return;}
+  var breakdown=Array.isArray(inv.care_level_breakdown)?inv.care_level_breakdown:[];
+  var revisions=Array.isArray(inv.revision_history)?inv.revision_history:[];
+  var html='<div class="fg"><b>'+H(r?r.name:residentId)+'</b> -- '+H(inv.month)+'</div>'+
+    '<div class="fg">Room &amp; Board: '+fmt2(inv.room_board_amount)+' (flat, level-independent)</div>';
+  if(breakdown.length){
+    html+='<div class="fg"><label>Care Charge Breakdown</label>'+
+      '<table style="width:100%;font-size:12px"><tr><th style="text-align:left">Level</th><th style="text-align:right">Days</th><th style="text-align:right">Monthly Rate</th><th style="text-align:right">Amount</th></tr>'+
+      breakdown.map(function(seg){
+        return '<tr><td>'+H(careLevelLabel(seg))+'</td><td style="text-align:right">'+seg.days+'</td><td style="text-align:right">'+fmt2(seg.rate)+'</td><td style="text-align:right">'+fmt2(seg.amount)+'</td></tr>';
+      }).join('')+
+      '</table></div>';
+  }else{
+    html+='<div class="fg" style="color:var(--muted)">No per-day breakdown recorded for this invoice (generated before the proration fix, or resident has no level-of-care history yet).</div>';
+  }
+  html+='<div class="fg">Care Total: '+fmt2(inv.care_amount)+' &nbsp; Private Total: '+fmt2(inv.private_total)+'</div>';
+  if(revisions.length){
+    html+='<div class="fg"><label>Revision History (superseded figures, oldest first)</label>'+
+      revisions.map(function(rev){
+        return '<div style="border-top:1px solid var(--border);padding:4px 0;color:var(--muted)">'+
+          H(new Date(rev.superseded_at).toLocaleString())+' by '+H(rev.superseded_by||'unknown')+
+          ' -- was room/board '+fmt2(rev.room_board_amount)+', care '+fmt2(rev.care_amount)+', private total '+fmt2(rev.private_total)+'</div>';
+      }).join('')+'</div>';
+  }else{
+    html+='<div class="fg" style="color:var(--muted)">No revisions -- this invoice has never been regenerated with different figures.</div>';
+  }
+  $('invdet-body').innerHTML=html;
+  $('invoicedetailsmodal').classList.add('on');
+}
+function closeInvoiceDetailsModal(){$('invoicedetailsmodal').classList.remove('on');}
 var hcbsStatusResidentId=null;
 function openHcbsStatusModal(residentId){
   var inv=latestInvoiceFor(residentId);
@@ -1877,7 +2100,7 @@ function aiAsk(){
   hist.innerHTML+='<div class="srow"><span class="slbl" style="font-weight:700">You</span></div><div style="margin-bottom:10px">'+H(q)+'</div>';
   input.value='';
   var rs=residents();
-  var ctx=rs.map(function(r){return r.name+': '+(r.diagnosis||'no diagnosis on file')+', care level '+(r.care_level||'--');}).join('\n');
+  var ctx=rs.map(function(r){return r.name+': '+(r.diagnosis||'no diagnosis on file')+', care level '+careLevelLabel(currentCareLevelOf(r));}).join('\n');
   var msgs=[{role:'user',content:'You are the SAIRNcare AI assistant. Here is the real resident data currently visible to this user (role: '+prole+'), already scoped server-side to what they are allowed to see -- never mention or infer residents beyond this list:\n'+(ctx||'(no residents visible)')+'\n\nQuestion: '+q}];
   hist.innerHTML+='<div class="srow"><span class="slbl" style="font-weight:700">SAIRNcare AI</span></div><div id="ai-pending" style="margin-bottom:10px;color:var(--muted)">Thinking…</div>';
   hist.scrollTop=hist.scrollHeight;
@@ -1952,9 +2175,12 @@ function rSettings(){
   var csSel=$('set-cs-policy');
   if(csSel){csSel.value=f.cs_policy||'shift_change_count';csSel.disabled=!alfIsManagement();}
   var rbEl=$('rc-roomboard');if(rbEl)rbEl.value=f.roomboard_rate||'';
+  var ilEl=$('rc-il');if(ilEl)ilEl.value=f.il_rate||'';
   var a1=$('rc-al1');if(a1)a1.value=f.al1_rate||'';
   var a2=$('rc-al2');if(a2)a2.value=f.al2_rate||'';
   var a3=$('rc-al3');if(a3)a3.value=f.al3_rate||'';
+  var mcEl=$('rc-mc');if(mcEl)mcEl.value=f.mc_rate||'';
+  var snfEl=$('rc-snf');if(snfEl)snfEl.value=f.snf_rate||'';
   var hcbsSel=$('rc-hcbs-enabled');if(hcbsSel)hcbsSel.value=f.hcbs_enabled?'1':'0';
   var hcbsState=$('rc-hcbs-state');if(hcbsState)hcbsState.value=f.hcbs_state||'';
   rcToggleHcbsState();
@@ -1963,17 +2189,40 @@ function rcToggleHcbsState(){var el=$('rc-hcbs-state-row');if(el)el.style.displa
 async function saveRateCard(){
   if(!alfIsManagement()){toast('Only management can change the rate card');return;}
   var f=Object.assign({},facility(),{
-    roomboard_rate:Number($('rc-roomboard').value)||0,al1_rate:Number($('rc-al1').value)||0,
-    al2_rate:Number($('rc-al2').value)||0,al3_rate:Number($('rc-al3').value)||0,
+    roomboard_rate:Number($('rc-roomboard').value)||0,il_rate:Number($('rc-il').value)||0,
+    al1_rate:Number($('rc-al1').value)||0,al2_rate:Number($('rc-al2').value)||0,al3_rate:Number($('rc-al3').value)||0,
+    mc_rate:Number($('rc-mc').value)||0,snf_rate:Number($('rc-snf').value)||0,
     hcbs_enabled:$('rc-hcbs-enabled').value==='1',hcbs_state:$('rc-hcbs-state').value.trim().toUpperCase()
   });
   var syncResult=await alfSaveFacility(f);
   toast(syncResult?'Billing rate card saved':'Saved on this device only -- server sync failed, try again with a connection');
 }
-function careRateFor(careLevel){
+var ALF_LEVEL_LABEL={independent_living:'Independent Living',assisted_living:'Assisted Living',memory_care:'Memory Care',skilled_nursing:'Skilled Nursing'};
+var ALF_SUBTIER_LABEL={al1:'AL1 - Minimal Assistance',al2:'AL2 - Moderate Assistance',al3:'AL3 - Extensive Assistance'};
+// Lossless migration for residents saved before care_level_history existed (Phase 0 item 1):
+// a legacy flat al1/al2/al3 value becomes a single history entry with an HONESTLY UNKNOWN
+// effective_date -- there is no record of when it actually started, and inventing one would be
+// exactly the fabricated-data pattern Guardian exists to catch. Read-only: never written back.
+function careHistoryOf(r){
+  if(r&&Array.isArray(r.care_level_history)&&r.care_level_history.length)return r.care_level_history;
+  if(r&&r.care_level){
+    return [{level:'assisted_living',sub_tier:r.care_level,effective_date:null,changed_by:null,changed_at:null,migrated:true}];
+  }
+  return [];
+}
+function currentCareLevelOf(r){
+  var h=careHistoryOf(r);
+  return h.length?h[h.length-1]:null;
+}
+function careLevelLabel(entry){
+  if(!entry)return '--';
+  if(entry.level==='assisted_living')return ALF_SUBTIER_LABEL[entry.sub_tier]||('Assisted Living ('+(entry.sub_tier||'?')+')');
+  return ALF_LEVEL_LABEL[entry.level]||entry.level;
+}
+function careRateFor(level,subTier){
   var f=facility();
-  var m={al1:f.al1_rate,al2:f.al2_rate,al3:f.al3_rate};
-  return Number(m[careLevel])||0;
+  var m={independent_living:f.il_rate,assisted_living:{al1:f.al1_rate,al2:f.al2_rate,al3:f.al3_rate}[subTier],memory_care:f.mc_rate,skilled_nursing:f.snf_rate};
+  return Number(m[level])||0;
 }
 function openFacilityModal(){
   if(!alfIsManagement()){toast('Only management can change the facility profile');return;}

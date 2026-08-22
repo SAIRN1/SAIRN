@@ -57,5 +57,11 @@ module.exports = {
   // that must be identical on every device before any compliance-rules
   // engine can trust it. Keyed by facility_id, not license_hash alone.
     'alf_facility',
+  // SAIRNcare passive-monitoring signal log (2026-08-21, Phase 0 item 3) --
+  // see sql/sairncare_signals_schema.sql's own header. Append-only, no
+  // risk_score column -- reads return a {have, need} coverage contract for
+  // a future derived view, never a fabricated number, since no monitoring
+  // device is actually wired up yet.
+    'alf_signals',
   ],
 };

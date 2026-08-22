@@ -2199,6 +2199,19 @@ module.exports = async (req, res) => {
     const ALF_EDIT_ROLES = { owner: true, billing: true, nursing: true };
     const ALF_READ_ONLY_BROAD_ROLES = { activities: true };
     const ALF_BROAD_READ_ROLES = { owner: true, billing: true, nursing: true, activities: true };
+    // Level-of-care history (2026-08-21, Phase 0 item 1) -- management-only write given the
+    // direct billing consequence (generateInvoice() prorates a resident's monthly care charge
+    // off this exact history), enforced below even for nursing, which can otherwise edit every
+    // other resident field. care_level_history is APPEND-ONLY: the server checks the existing
+    // array is an unmodified prefix of any incoming array, so past entries can never be
+    // rewritten, only added to. sub_tier is meaningful only when level is assisted_living --
+    // al1/al2/al3 migrate losslessly into it as {level:'assisted_living', sub_tier:'al1'|'al2'|'al3'}.
+    const ALF_CARE_LEVELS = { independent_living: true, assisted_living: true, memory_care: true, skilled_nursing: true };
+    const ALF_SUB_TIERS = { al1: true, al2: true, al3: true };
+    // ccrc_contract_type (Phase 0 item 2) -- no dedicated write gate requested or added; it
+    // follows the same tier as every other resident-record field (management + nursing
+    // broad-edit + narrow tier on their own assigned resident), unlike care_level_history above.
+    const ALF_CCRC_TYPES = { not_ccrc: true, lifecare: true, fee_for_service: true, modified: true, equity: true };
     if (resource === 'alf_clients' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -2224,7 +2237,7 @@ module.exports = async (req, res) => {
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_clients payload.id is required' } }); return; }
       const isManagement = !!ALF_MANAGEMENT_ROLES[session.role];
       const isBroadEdit = !!ALF_EDIT_ROLES[session.role];
-      const existingR = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
+      const existingR = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Resident tracking is not set up yet — run sql/sairncare_clients_schema.sql in Supabase first.' } });
         return;
@@ -2232,6 +2245,67 @@ module.exports = async (req, res) => {
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
       const existingRow = Array.isArray(existingRows) && existingRows[0];
+      const existingClientData = existingRow ? (existingRow.data || {}) : null;
+      const existingHistory = (existingClientData && Array.isArray(existingClientData.care_level_history)) ? existingClientData.care_level_history : [];
+      // Resolve care_level_history BEFORE the role checks below so a rejected level-of-care
+      // change never falls through and gets silently accepted as a same-tier field edit.
+      let careLevelHistory = existingHistory;
+      if (payload.care_level_history !== undefined) {
+        if (!isManagement) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change a resident’s level of care' } });
+          return;
+        }
+        const incoming = payload.care_level_history;
+        if (!Array.isArray(incoming) || incoming.length < existingHistory.length) {
+          res.status(400).json({ error: { message: 'care_level_history can only be appended to, never edited or shortened' } });
+          return;
+        }
+        for (let i = 0; i < existingHistory.length; i++) {
+          if (JSON.stringify(incoming[i]) !== JSON.stringify(existingHistory[i])) {
+            res.status(400).json({ error: { message: 'care_level_history entries cannot be modified once recorded' } });
+            return;
+          }
+        }
+        const newEntries = incoming.slice(existingHistory.length);
+        for (let i = 0; i < newEntries.length; i++) {
+          const entry = newEntries[i];
+          if (!entry || !ALF_CARE_LEVELS[entry.level]) {
+            res.status(400).json({ error: { message: 'Each care_level_history entry needs a valid level (independent_living, assisted_living, memory_care, or skilled_nursing)' } });
+            return;
+          }
+          if (entry.level === 'assisted_living') {
+            if (!ALF_SUB_TIERS[entry.sub_tier]) {
+              res.status(400).json({ error: { message: 'assisted_living entries need a sub_tier of al1, al2, or al3' } });
+              return;
+            }
+          } else if (entry.sub_tier) {
+            res.status(400).json({ error: { message: 'sub_tier is only meaningful when level is assisted_living' } });
+            return;
+          }
+          if (!entry.effective_date || !/^\d{4}-\d{2}-\d{2}$/.test(entry.effective_date)) {
+            res.status(400).json({ error: { message: 'Each care_level_history entry needs a real effective_date (YYYY-MM-DD)' } });
+            return;
+          }
+        }
+        // changed_by/changed_at are ALWAYS server-stamped from the real session, never trusted
+        // from the client -- same discipline as SAIRNlaw's verified_by.
+        const stampedNow = nowISO();
+        careLevelHistory = existingHistory.concat(newEntries.map((entry) => ({
+          level: entry.level,
+          sub_tier: entry.level === 'assisted_living' ? entry.sub_tier : null,
+          effective_date: entry.effective_date,
+          changed_by: session.employee_id,
+          changed_at: stampedNow
+        })));
+      }
+      let ccrcContractType = (existingClientData && existingClientData.ccrc_contract_type !== undefined) ? existingClientData.ccrc_contract_type : 'not_ccrc';
+      if (payload.ccrc_contract_type !== undefined) {
+        if (!ALF_CCRC_TYPES[payload.ccrc_contract_type]) {
+          res.status(400).json({ error: { message: 'ccrc_contract_type must be one of: ' + Object.keys(ALF_CCRC_TYPES).join(', ') } });
+          return;
+        }
+        ccrcContractType = payload.ccrc_contract_type;
+      }
       const requestedAssignee = payload.assigned_employee_id !== undefined
         ? (payload.assigned_employee_id || null)
         : (existingRow ? existingRow.assigned_employee_id : null);
@@ -2259,6 +2333,16 @@ module.exports = async (req, res) => {
       const clientData = Object.assign({}, payload);
       delete clientData.id;
       delete clientData.assigned_employee_id;
+      clientData.care_level_history = careLevelHistory;
+      clientData.ccrc_contract_type = ccrcContractType;
+      // care_level stays a derived flat field for backward-compatible display (badges, careRateFor
+      // callers, the AI-context summary) whenever real history exists -- computed here, not trusted
+      // from the client, so the two can never drift apart. Pre-migration residents with no history
+      // yet keep whatever flat value they already had.
+      if (careLevelHistory.length > 0) {
+        const lastLevel = careLevelHistory[careLevelHistory.length - 1];
+        clientData.care_level = lastLevel.level === 'assisted_living' ? lastLevel.sub_tier : lastLevel.level;
+      }
       const r = await fetch(rest('alf_clients?on_conflict=license_hash,client_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -2679,6 +2763,81 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, facilityData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_signals -- passive-monitoring signal log (2026-08-21, Phase 0 item 3) ─
+    // See sql/sairncare_signals_schema.sql for the full reasoning. Append-only, same integrity
+    // rule as alf_mar's event-log entry types (409 on a reused id, never a silent overwrite).
+    // NO risk_score, NO derived indicator of any kind -- read returns the raw rows plus a
+    // {have, need} COVERAGE contract only: have = how many of ALF_SIGNAL_TYPES actually have at
+    // least one real row for this facility, need = ALF_SIGNAL_TYPES.length. Both computed live
+    // from real rows every time, never hardcoded, never a stand-in for an actual risk score.
+    // WRITE is management-only for now -- no real monitoring device or integration exists
+    // anywhere in this app yet, so there is no real caller to grant broader access to; this is
+    // a narrower default than alf_mar's, a judgment call logged here rather than left silent,
+    // and should be revisited the day a real device/integration is actually wired up.
+    // READ is facility-wide for any authenticated employee, matching alf_activities' precedent
+    // for non-clinical-decision, broadly-relevant data.
+    const ALF_SIGNAL_TYPES = ['fall_detection', 'bed_exit', 'wandering_alert', 'activity_baseline'];
+    if (resource === 'alf_signals' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('alf_signals?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,signal_type,data,recorded_at'), { headers });
+      if (r.status === 404 || r.status === 400) {
+        res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { have: 0, need: ALF_SIGNAL_TYPES.length } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const rowList = rows || [];
+      const data = rowList.map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, signal_type: r.signal_type, recorded_at: r.recorded_at }, r.data));
+      const typesPresent = {};
+      rowList.forEach((r) => { typesPresent[r.signal_type] = true; });
+      const have = ALF_SIGNAL_TYPES.filter((t) => typesPresent[t]).length;
+      res.status(200).json({ ok: true, data, provisioned: true, coverage: { have: have, need: ALF_SIGNAL_TYPES.length } });
+      return;
+    }
+    if (resource === 'alf_signals' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a monitoring signal' } });
+        return;
+      }
+      if (!payload || !payload.id || !payload.resident_id || !payload.signal_type) {
+        res.status(400).json({ error: { message: 'alf_signals payload.id, payload.resident_id, and payload.signal_type are required' } });
+        return;
+      }
+      if (ALF_SIGNAL_TYPES.indexOf(payload.signal_type) === -1) {
+        res.status(400).json({ error: { message: 'signal_type must be one of: ' + ALF_SIGNAL_TYPES.join(', ') } });
+        return;
+      }
+      const existingR = await fetch(rest('alf_signals?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
+      const existingRows = existingR.ok ? await existingR.json() : [];
+      if (Array.isArray(existingRows) && existingRows.length > 0) {
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This signal has already been recorded and cannot be overwritten' } });
+        return;
+      }
+      const signalData = Object.assign({}, payload);
+      delete signalData.id; delete signalData.resident_id; delete signalData.signal_type;
+      const recordedAt = payload.recorded_at || nowISO();
+      delete signalData.recorded_at;
+      const r = await fetch(rest('alf_signals'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: String(payload.resident_id),
+          signal_type: payload.signal_type, data: signalData, recorded_at: recordedAt
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Signal tracking is not set up yet — run sql/sairncare_signals_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, resident_id: payload.resident_id, signal_type: payload.signal_type, recorded_at: recordedAt }, signalData) });
       return;
     }
 
