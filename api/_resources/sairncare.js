@@ -70,5 +70,11 @@ module.exports = {
   // is the append-only log of routing decisions actually made.
     'alf_payer_rules',
     'alf_claim_routes',
+  // SAIRNcare compliance-rules engine + staff credentialing (2026-08-22, Phase 2)
+  // -- see sql/sairncare_compliance_schema.sql. Same versioned-rules-as-data
+  // shape as alf_payer_rules; alf_staff_credentials is the append-only training/
+  // certification record that the training-hour checks read from.
+    'alf_compliance_rules',
+    'alf_staff_credentials',
   ],
 };
