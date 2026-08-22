@@ -94,17 +94,22 @@ function validateRulePayload(p) {
   if (!/^https?:\/\//i.test(p.authority.url)) {
     return 'authority.url must be a real resolvable URL.';
   }
-  // FRCP counts calendar days. A rule citing an FRCP-family standard while
-  // asking for business days is a data error that would produce dates later
-  // than reality -- refused rather than stored. Ohio Civ.R. 6(A) is the same
-  // shape for this purpose: its own short-period weekend/holiday exclusion is
-  // built into the ohio_civ_r_6a impl and fires automatically under 7 days,
-  // so an Ohio rule declaring business_days would double up a mechanism the
-  // engine already applies internally, on top of misdeclaring the unit Civ.R.
-  // 6(A) actually uses (days, not business days).
-  var impl = COMPUTATION_STANDARDS[p.computation].impl;
-  if ((impl === 'frcp_6a' || impl === 'ohio_civ_r_6a') && c.unit === 'business_days') {
-    return 'The ' + COMPUTATION_STANDARDS[p.computation].label + ' family counts calendar days (with its own weekend/holiday handling built into the engine). A rule using this standard cannot specify business_days.';
+  // None of the standards implemented so far counts in business days. FRCP
+  // and its family count calendar days and roll only the last day; Ohio's and
+  // Indiana's short-period weekend/holiday exclusion is applied by the engine
+  // itself, so a rule declaring business_days would double up a mechanism
+  // already applied internally on top of misdeclaring the unit the rule text
+  // actually uses.
+  //
+  // DENY BY DEFAULT, opt in per standard. This was previously an allowlist of
+  // impl strings, which silently went stale the moment Indiana was added with
+  // a new impl -- an Indiana rule declaring business_days would have passed a
+  // guard written before that impl existed. A standard must now explicitly
+  // declare allows_business_days to use the unit, so a state added later
+  // fails closed instead of slipping through a list nobody remembered to
+  // extend.
+  if (c.unit === 'business_days' && !COMPUTATION_STANDARDS[p.computation].allows_business_days) {
+    return COMPUTATION_STANDARDS[p.computation].label + ' counts calendar days (with its own weekend/holiday handling built into the engine), so a rule using this standard cannot specify business_days. No implemented standard currently counts in business days; if a jurisdiction genuinely does, its standard must declare that explicitly rather than relying on the unit alone.';
   }
   return null;
 }

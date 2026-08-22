@@ -177,7 +177,22 @@ var COMPUTATION_STANDARDS = {
   // or federal analog and is NOT modelled by this engine, which has no field
   // for a given clerk's office closures. See ohio_civ_r_6a's own entry for
   // why a shared threshold is not evidence of a shared rule.
-  indiana_tr_6a: { label: 'Ind. T.R. 6(A)', impl: 'indiana_tr_6a', short_period_exclusion_days: 7, base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' }
+  indiana_tr_6a: { label: 'Ind. T.R. 6(A)', impl: 'indiana_tr_6a', short_period_exclusion_days: 7, base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // Michigan MCR 1.108. Maps to the frcp_6a IMPLEMENTATION -- straight
+  // calendar counting, roll only the last day -- because Michigan genuinely
+  // works that way, NOT because two states before it happened to share a
+  // mechanism. Verified explicitly: MCR 1.108 contains NO short-period
+  // exclusion of any kind. Ohio's and Indiana's seven-day rule does not
+  // generalise, and declaring short_period_exclusion_days here would have
+  // pushed every short Michigan deadline LATER than the true date.
+  //
+  // Its subrule numbering is real and citable, unlike Ohio's and Indiana's
+  // unlettered paragraphs: (1) carries both the day-exclusion and the
+  // last-day rollover, (3) carries months/years. Backward counting is left
+  // BLANK on purpose -- MCR 1.108 does not address backward-counted periods,
+  // and citing (1) for behaviour the rule never describes would repeat the
+  // citation defect already fixed once in this file.
+  michigan_mcr_1108: { label: 'Mich. Ct. R. 1.108', impl: 'frcp_6a', base_period_suffix: '(1)', months_years_suffix: '(3)', rollover_suffix_forward: '(1)', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
