@@ -71,6 +71,10 @@
     {
       "path": "/api/sairndental/send-reminder",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/alf-alerts",
+      "schedule": "0 * * * *"
     }
   ]
 }

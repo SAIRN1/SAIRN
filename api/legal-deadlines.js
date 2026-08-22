@@ -25,6 +25,41 @@ const { computeDeadline, COMPUTATION_STANDARDS, SERVICE_EXTENSION_STANDARDS } = 
 
 const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
 
+// ── Display labels (Phase 4) ──────────────────────────────────────────────
+// Presentation only. A jurisdiction is stored and matched by its CODE -- these
+// never participate in rule selection, and an unknown code FALLS BACK TO
+// ITSELF rather than being hidden or guessed at, so seeding a new jurisdiction
+// without adding a label here degrades to showing the raw code, never to
+// showing nothing or showing the wrong name.
+const JURISDICTION_LABELS = {
+  'us-federal': 'United States (Federal)',
+  oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania'
+};
+const DOMAIN_LABELS = {
+  'civil-litigation': 'Civil litigation',
+  appellate: 'Appellate'
+};
+function jurLabel(code) { return JURISDICTION_LABELS[code] || code; }
+function domLabel(code) { return DOMAIN_LABELS[code] || code; }
+
+// Turns a stored rule into the trigger option a caller can actually select.
+// A multi-trigger rule is reported with the events it REQUIRES, because a
+// caller supplying one date for it gets INCOMPLETE_TRIGGERS -- the UI needs to
+// know to ask for all of them up front rather than discovering that by
+// refusal. Single-trigger rules report requires_dates: null.
+function triggerOption(r) {
+  const t = r.trigger_event;
+  if (typeof t === 'string') {
+    return { event: t, label: r.label || t, rule_id: r.rule_id, citation: (r.authority && r.authority.citation) || null, requires_dates: null };
+  }
+  if (t && Array.isArray(t.events)) {
+    return { event: t.id || t.events[0], label: r.label || t.id, rule_id: r.rule_id,
+      citation: (r.authority && r.authority.citation) || null,
+      requires_dates: t.events.slice(), resolve: t.resolve || null };
+  }
+  return null;
+}
+
 // A rule with no traceable authority cannot be saved. Same discipline as
 // sc_scrubrules and sc_credential_scope: this table only ever holds rules a
 // human actually read and sourced.
@@ -216,19 +251,39 @@ module.exports = async (req, res) => {
           message: 'The deadline-engine tables are not set up yet — run sql/sairnlaw_deadline_rules_schema.sql in Supabase. Nothing is computed until then.' });
         return;
       }
+      // Phase 4: this response now also carries the TRIGGERS and the display
+      // labels the UI needs. Before, rules_status reported only counts, so the
+      // client had no source for its trigger list and shipped an empty
+      // <select> -- the engine was reachable by API and unreachable by a
+      // person. Serving triggers from the same query that counts them means
+      // the list cannot drift from what is actually loaded.
+      const blank = (code) => ({
+        jurisdiction: code, jurisdiction_label: jurLabel(code),
+        domains: {}, domain_labels: {}, triggers: {}, rule_count: 0, holiday_years: []
+      });
       const byJur = {};
       for (const r of rules.rows) {
         if (!r || !r.jurisdiction) continue;
-        byJur[r.jurisdiction] = byJur[r.jurisdiction] || { jurisdiction: r.jurisdiction, domains: {}, rule_count: 0, holiday_years: [] };
-        byJur[r.jurisdiction].domains[r.domain] = (byJur[r.jurisdiction].domains[r.domain] || 0) + 1;
-        byJur[r.jurisdiction].rule_count++;
+        byJur[r.jurisdiction] = byJur[r.jurisdiction] || blank(r.jurisdiction);
+        const j = byJur[r.jurisdiction];
+        j.domains[r.domain] = (j.domains[r.domain] || 0) + 1;
+        j.domain_labels[r.domain] = domLabel(r.domain);
+        j.rule_count++;
+        const opt = triggerOption(r);
+        if (opt) {
+          j.triggers[r.domain] = j.triggers[r.domain] || [];
+          if (!j.triggers[r.domain].some((x) => x.event === opt.event)) j.triggers[r.domain].push(opt);
+        }
       }
       for (const h of hols.rows) {
         if (!h || !h.jurisdiction) continue;
-        byJur[h.jurisdiction] = byJur[h.jurisdiction] || { jurisdiction: h.jurisdiction, domains: {}, rule_count: 0, holiday_years: [] };
+        byJur[h.jurisdiction] = byJur[h.jurisdiction] || blank(h.jurisdiction);
         byJur[h.jurisdiction].holiday_years.push(String(h.year));
       }
-      Object.values(byJur).forEach((j) => j.holiday_years.sort());
+      Object.values(byJur).forEach((j) => {
+        j.holiday_years.sort();
+        Object.keys(j.triggers).forEach((d) => j.triggers[d].sort((a, b) => a.label.localeCompare(b.label)));
+      });
       res.status(200).json({ ok: true, jurisdictions: Object.values(byJur),
         note: 'A jurisdiction with rules but no holiday calendar for a year a computation crosses will still refuse — the engine checks the year it actually needs, not the year of the trigger.' });
       return;
