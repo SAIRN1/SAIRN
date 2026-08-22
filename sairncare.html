@@ -394,6 +394,28 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="ph"><div><div class="ptitle">Medications (MAR)</div><div class="psub">Medication Administration Record -- Owner, Nursing, and Med Aide only</div></div></div>
   <div class="card" id="mar-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Medication records are not available to your role -- this is a scope-of-practice restriction (Owner/Nursing/Med Aide only), not a general visibility setting.</div></div>
   <div id="mar-content">
+    <!-- LATE / MISSED CARE (Phase 3 item 4). Computed server-side from real recorded
+         administrations against real scheduled times. Nothing here is projected. -->
+    <div class="card"><div class="cb">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><b>Late &amp; Upcoming Doses</b><div style="font-size:12px;color:var(--muted)">Exception report for right now, from what has actually been recorded.</div></div>
+        <button class="btn bo bs" onclick="alertsCheck()">Check Now</button>
+      </div>
+      <div id="mar-alerts" style="margin-top:10px;font-size:12px"><span style="color:var(--muted)">Click Check Now to run the exception report.</span></div>
+    </div></div>
+
+    <!-- PHARMACY INTAKE QUEUE (Phase 3 item 1). Orders arriving from the dispensing
+         pharmacy land here as pending_review and are NOT active on the MAR until a
+         clinician accepts them. Removing transcription is the safety win; removing
+         review would not be. -->
+    <div class="card" id="mar-pharmacy-card"><div class="cb">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><b>Pharmacy Orders Awaiting Review</b><div style="font-size:12px;color:var(--muted)">Received directly from the pharmacy -- no manual transcription. Not active until accepted.</div></div>
+        <button class="btn bo bs" onclick="rPharmacyQueue()">Refresh</button>
+      </div>
+      <div id="mar-pharmacy-queue" style="margin-top:10px;font-size:12px"></div>
+    </div></div>
+
     <div class="card"><div class="cb">
       <div class="fg"><label>Resident</label><select id="mar-resident-select" onchange="rMar()"></select></div>
     </div></div>
@@ -406,7 +428,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="note">Owner/Nursing only. Med Aide can view this list to know what to administer, but does not create or change the order itself.</div>
     <div class="fr"><div class="fg"><label>Medication Name</label><input id="mo-name"></div><div class="fg"><label>Dose</label><input id="mo-dose" placeholder="500mg"></div></div>
     <div class="fr"><div class="fg"><label>Route</label><select id="mo-route"><option value="oral">Oral</option><option value="topical">Topical</option><option value="injection">Injection</option><option value="inhaled">Inhaled</option><option value="other">Other</option></select></div>
-      <div class="fg"><label>Schedule</label><input id="mo-schedule" placeholder="e.g. 08:00, 14:00, 20:00 or twice daily"></div></div>
+      <div class="fg"><label>Schedule Times (24h, comma separated)</label><input id="mo-schedule" placeholder="08:00, 14:00, 20:00"><div style="font-size:11px;color:var(--muted);margin-top:3px" id="mo-schedule-hint">Explicit clock times enable late-dose tracking. Prose like "twice daily" is stored but cannot be tracked -- this app will not guess which hours were meant.</div></div></div>
     <div class="fr"><div class="fg"><label>PRN (as-needed)?</label><select id="mo-prn" onchange="moTogglePrnRow()"><option value="0">No -- scheduled</option><option value="1">Yes -- PRN</option></select></div>
       <div class="fg"><label>Controlled Substance?</label><select id="mo-controlled"><option value="0">No</option><option value="1">Yes</option></select></div></div>
     <div class="fg" id="mo-prn-instructions-row" style="display:none"><label>Standing PRN Instructions</label><input id="mo-prn-instructions" placeholder="e.g. for pain 4+/10, may repeat after 4 hours"></div>
@@ -652,6 +674,32 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
      exactly which days were billed at which level/rate, and revision_history shows every prior
      figure a regenerate ever superseded, so "no trace of the prior figure" is actually fixed,
      not just fixed in storage nobody can see. -->
+<!-- DERIVED CHARGES (Phase 3 item 2). Every line traces to the exact document behind it;
+     a documented service with no configured rate appears under "not billed" rather than
+     being billed at zero or silently dropped -- dropping it is the revenue leak. -->
+<div class="modal" id="chargesmodal">
+  <div class="mbox">
+    <div class="mtitle">Charges From Documentation</div>
+    <div id="ch-body" style="font-size:13px"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeChargesModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI CARE PLAN (Phase 3 item 3). Built ONLY from real recorded assessment answers.
+     With no assessment on file it refuses rather than producing a plausible plan. -->
+<div class="modal" id="careplanaimodal">
+  <div class="mbox">
+    <div class="mtitle">Draft Care Plan From Assessments</div>
+    <div id="cpa-body" style="font-size:13px"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCarePlanAiModal()">Close</button>
+      <button class="btn bp" id="cpa-generate-btn" onclick="runCarePlanAi()">Generate Draft</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="invoicedetailsmodal">
   <div class="mbox">
     <div class="mtitle">Invoice Details</div>
@@ -837,6 +885,17 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <option value="mn_documented_disposal">Minnesota: Documented loss/disposal (Minn. Stat. 144G.71)</option>
     </select></div>
     <button class="btn bp bs" onclick="saveCsPolicy()">Save Policy</button>
+  </div></div>
+  <!-- MISSED/LATE-CARE ALERTING (Phase 3 item 4). The administration window is the
+       FACILITY'S policy and has no default: no ALF regulation surveyed sets a universal
+       window, so a number invented here would generate false "late" findings against real
+       nurses. With no window set, the alert engine refuses to run rather than guessing. -->
+  <div class="card"><div class="ch"><span class="ct">Missed / Late Care Alerting</span></div><div class="cb">
+    <div class="note">A dose counts as late once it passes its scheduled time plus the window below. There is no default -- this app will not assume a window, because a guessed one would flag on-time nurses as late.</div>
+    <div class="fr"><div class="fg"><label>Administration Window (minutes past the scheduled time)</label><input id="set-med-window" type="number" min="0" placeholder="e.g. 60"></div>
+      <div class="fg"><label>Alert Email (the scheduled sweep sends here)</label><input id="set-alert-email" type="email" placeholder="don@facility.example"></div></div>
+    <div class="note" id="set-sms-note">Text-message alerts are <b>not available</b> on this deployment -- no SMS provider is configured for this platform. Alerts are delivered in-app and by email only. This is stated rather than offered-and-silently-dropped.</div>
+    <button class="btn bp bs" onclick="saveAlertPolicy()">Save Alert Policy</button>
   </div></div>
   <!-- Billing rate card (2026-08-20). Real research finding (see the
        original SAIRNcare v1 scope doc): assisted-living billing is
@@ -1479,7 +1538,8 @@ function rCareplans(){
     var canAssess=!alfIsReadOnlyBroad();
     return '<tr><td>'+H(r.name)+'</td><td>'+(last?fdate(last.date):'Never assessed')+'</td>'+
       '<td>'+(last?H(alfEmployeeName(last.assessed_by)):'--')+'</td>'+
-      '<td>'+(canAssess?'<button class="btn bo bs" onclick="openAdlModal(\''+r.id+'\')">Assess</button>':'--')+'</td></tr>';
+      '<td>'+(canAssess?('<button class="btn bo bs" onclick="openAdlModal(\''+r.id+'\')">Assess</button> '+
+        '<button class="btn bo bs" onclick="openCarePlanAiModal(\''+r.id+'\')">Draft Plan</button>'):'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px;">No residents found</td></tr>';
 }
 function openAdlModal(residentId){
@@ -1566,6 +1626,7 @@ function rMarPanel(){
   var rs=residents();
   sel.innerHTML=rs.length?rs.map(function(r){return '<option value="'+H(r.id)+'">'+H(r.name)+'</option>';}).join(''):'<option value="">No residents visible</option>';
   if(cur&&rs.some(function(r){return r.id===cur;}))sel.value=cur;
+  rPharmacyQueue();
   rMar();
 }
 function sortByDateDesc(a,b){return (a.date||'')<(b.date||'')?1:-1;}
@@ -1652,16 +1713,257 @@ function openMedOrderModal(id){
 }
 function moTogglePrnRow(){$('mo-prn-instructions-row').style.display=($('mo-prn').value==='1')?'block':'none';}
 function closeMedOrderModal(){$('medordermodal').classList.remove('on');moEditId=null;}
+// Client-side mirror of api/_lib/med-schedule.js's parseScheduleText. Deliberately
+// the SAME rule -- captures explicit clock times, refuses to invent times for prose
+// like "twice daily" -- so what the nurse is told here matches what the alert engine
+// will actually do. The server remains the authority; this only avoids showing the
+// user one answer and computing another.
+function alfParseScheduleTimes(text){
+  var raw=String(text||'').trim();
+  if(!raw)return [];
+  var out=[],re=/\b([01]?\d|2[0-3]):([0-5]\d)\s*(am|pm)?/gi,m;
+  while((m=re.exec(raw))!==null){
+    var h=Number(m[1]),mer=(m[3]||'').toLowerCase();
+    if(mer==='pm'&&h<12)h+=12;
+    if(mer==='am'&&h===12)h=0;
+    var t=(h<10?'0':'')+h+':'+m[2];
+    if(out.indexOf(t)===-1)out.push(t);
+  }
+  return out.sort();
+}
+
+// ── PHARMACY INTAKE QUEUE (Phase 3 item 1) ───────────────────────────────
+// Orders that arrived from the dispensing pharmacy sit here until a clinician
+// accepts them. The accept/reject write goes through the normal alf_mar path;
+// the server stamps reviewed_by from the real session and refuses the transition
+// for any role that is not owner/nursing.
+function pharmacyPending(){
+  return marEntries().filter(function(e){
+    return e.entry_type!=='administration'&&e.source==='pharmacy'&&(e.pharmacy_status||'pending_review')==='pending_review';
+  });
+}
+function rPharmacyQueue(){
+  var box=$('mar-pharmacy-queue');if(!box)return;
+  var card=$('mar-pharmacy-card');
+  var canReview=alfIsMarOrderRole();
+  var pending=pharmacyPending();
+  if(card)card.style.display=(pending.length||canReview)?'block':'none';
+  if(!pending.length){box.innerHTML='<span style="color:var(--muted)">No pharmacy orders are awaiting review.</span>';return;}
+  box.innerHTML='<div class="tw"><table><thead><tr><th>Medication</th><th>Resident</th><th>Schedule</th><th>Pharmacy</th><th>Received</th><th>Actions</th></tr></thead><tbody>'+
+    pending.map(function(m){
+      var times=(Array.isArray(m.schedule_times)&&m.schedule_times.length)?m.schedule_times.join(', '):'';
+      return '<tr><td>'+H(m.name||'')+' '+H(m.dose||'')+(m.high_priority?' <span class="badge br">high priority</span>':'')+'</td>'+
+        '<td>'+H(alfResidentName(m.resident_id))+'</td>'+
+        '<td>'+(times?H(times):'<span class="badge bx">no clock times — not trackable</span>')+'</td>'+
+        '<td>'+H(m.pharmacy_name||'--')+'</td>'+
+        '<td>'+H((m.received_at||'').slice(0,16).replace('T',' '))+'</td>'+
+        '<td>'+(canReview
+          ?('<button class="btn bp bs" onclick="reviewPharmacyOrder(\''+m.id+'\',\'accepted\')">Accept</button> '+
+            '<button class="btn bo bs" onclick="reviewPharmacyOrder(\''+m.id+'\',\'rejected\')">Reject</button>')
+          :'<span style="color:var(--muted)">nursing/management only</span>')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function alfResidentName(rid){
+  var r=residents().find(function(x){return x.id===rid;});
+  return r?(r.name||rid):(rid||'--');
+}
+async function reviewPharmacyOrder(id,status){
+  if(!alfIsMarOrderRole()){toast('Only management or nursing can review a pharmacy order');return;}
+  var list=marEntries();
+  var m=list.find(function(x){return x.id===id;});
+  if(!m){toast('Order not found');return;}
+  // Server-first, no optimistic write: accepting an order makes it live on a real
+  // MAR, and a local "accepted" that the server rejected would show staff a
+  // medication they are not actually cleared to give.
+  var payload=Object.assign({},m,{pharmacy_status:status,resident_id:m.resident_id,entry_type:'medication_order'});
+  var saved=await alfData('write','alf_mar',payload,true);
+  if(!saved){toast('Server sync failed -- the order was NOT '+status+'. Try again with a connection.');return;}
+  var idx=list.findIndex(function(x){return x.id===id;});
+  if(idx!==-1)list[idx]=Object.assign({},list[idx],saved);
+  st('alf_mar',list);
+  rPharmacyQueue();rMar();
+  toast('Order '+status+': '+(m.name||''));
+}
+
+// ── LATE / MISSED CARE (Phase 3 item 4) ──────────────────────────────────
+var ALERTS_API='https://sairn.vercel.app/api/alf-alerts';
+async function alertsCheck(){
+  var box=$('mar-alerts');if(!box)return;
+  box.innerHTML='<span style="color:var(--muted)">Checking...</span>';
+  var lic=alfLicenseKey();
+  if(!lic){box.innerHTML='<span style="color:var(--muted)">Not signed in.</span>';return;}
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(alfSession&&alfSession.token)h['X-SD-Auth']=alfSession.token;
+  var res;
+  try{
+    var r=await fetch(ALERTS_API,{method:'POST',headers:h,body:JSON.stringify({action:'check'})});
+    res=await r.json();
+  }catch(e){box.innerHTML='<span style="color:var(--muted)">Network error -- nothing was checked.</span>';return;}
+  if(!res||res.error){
+    var e=(res&&res.error)||{};
+    box.innerHTML='<div style="color:var(--danger,#dc2626)"><b>'+H(e.code||'Not available')+'</b><div>'+H(e.message||'')+'</div></div>';
+    return;
+  }
+  var html='';
+  if(!res.late.length){
+    html+='<div><span class="badge bg">Nothing late</span> as of '+H((res.checked_at||'').slice(11,16))+' UTC, using a '+H(String(res.window_minutes))+'-minute window.</div>';
+  }else{
+    html+='<div class="tw"><table><thead><tr><th>Medication</th><th>Resident</th><th>Scheduled</th><th>Minutes Late</th></tr></thead><tbody>'+
+      res.late.map(function(f){
+        return '<tr><td>'+H(f.medication)+(f.high_priority?' <span class="badge br">high priority</span>':'')+'</td>'+
+          '<td>'+H(alfResidentName(f.resident_id))+'</td><td>'+H(f.scheduled_time)+'</td>'+
+          '<td><b>'+H(String(f.minutes_late))+'</b></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  html+='<div style="margin-top:6px;color:var(--muted)">Due now: '+H(String(res.due_now.length))+
+    ' &middot; Upcoming today: '+H(String(res.upcoming.length))+' &middot; Given: '+H(String(res.given.length))+'</div>';
+  if(res.unschedulable&&res.unschedulable.length){
+    html+='<div style="margin-top:6px;color:var(--warn,#b45309)"><b>'+H(String(res.unschedulable.length))+' order(s) could not be checked</b> -- no explicit clock times, so lateness cannot be computed. These are not "on time", they are untracked: '+
+      H(res.unschedulable.map(function(u){return u.medication;}).join(', '))+'</div>';
+  }
+  if(res.channels){
+    html+='<div style="margin-top:6px;color:var(--muted);font-size:11px">Channels -- in-app: yes &middot; email: '+H(res.channels.email)+' &middot; SMS: '+H(res.channels.sms)+'</div>';
+  }
+  box.innerHTML=html;
+}
+async function saveAlertPolicy(){
+  if(!alfIsManagement()){toast('Only management can change the alert policy');return;}
+  var w=$('set-med-window').value;
+  var f=Object.assign({},facility(),{
+    med_window_minutes:w===''?'':Number(w),
+    alert_email:$('set-alert-email').value.trim()
+  });
+  var ok=await alfSaveFacility(f);
+  toast(ok?'Alert policy saved':'Saved on this device only -- server sync failed');
+}
+
+// ── CHARGES FROM DOCUMENTATION (Phase 3 item 2) ──────────────────────────
+async function deriveCharges(residentId){
+  if(!alfIsManagement()){toast('Billing is not available to your role');return;}
+  var box=$('ch-body');
+  box.innerHTML='<span style="color:var(--muted)">Reading documentation...</span>';
+  $('chargesmodal').classList.add('on');
+  var res=await alfPostRaw({action:'derive_charges',resource:'alf_billing',app_id:APP_ID,
+    payload:{resident_id:residentId,month:currentMonth()}});
+  if(!res||res.ok===false||res.error){
+    var e=(res&&res.error)||{};
+    box.innerHTML='<div style="color:var(--danger,#dc2626)"><b>'+H(e.code||'Not available')+'</b><div>'+H(e.message||'')+'</div></div>';
+    return;
+  }
+  var rc=res.reconciliation||{};
+  var html='<div><b>'+H(alfResidentName(residentId))+'</b> — '+H(res.month)+'</div>'+
+    '<div style="margin-top:6px">Documented chargeable services: <b>'+H(String(rc.documented_chargeable_events))+
+    '</b> &middot; Billed: <b>'+H(String(rc.billed_events))+'</b> &middot; Not billed: <b>'+H(String(rc.unbilled_events))+'</b> '+
+    (rc.fully_reconciled?'<span class="badge bg">fully reconciled</span>':'<span class="badge br">gap</span>')+'</div>';
+  if(res.lines.length){
+    html+='<div class="tw" style="margin-top:8px"><table><thead><tr><th>Date</th><th>Service</th><th>Qty</th><th>Rate</th><th>Amount</th><th>Source Document</th></tr></thead><tbody>'+
+      res.lines.map(function(l){
+        return '<tr><td>'+H(l.date)+'</td><td>'+H(l.label)+(l.description?(' <span style="color:var(--muted)">'+H(l.description)+'</span>'):'')+'</td>'+
+          '<td>'+H(String(l.quantity))+'</td><td>'+fmt2(l.unit_rate)+'</td><td>'+fmt2(l.amount)+'</td>'+
+          '<td style="color:var(--muted)">'+H(l.event_id)+'</td></tr>';
+      }).join('')+'</tbody></table></div>'+
+      '<div style="margin-top:6px">Total from documentation: <b>'+fmt2(res.total)+'</b></div>';
+  }else{
+    html+='<div style="margin-top:8px;color:var(--muted)">No billable documented services for this month.</div>';
+  }
+  if(res.unpriced.length){
+    html+='<div style="margin-top:10px"><b style="color:var(--warn,#b45309)">Documented but NOT billed ('+H(String(res.unpriced.length))+')</b>'+
+      '<div style="font-size:12px;color:var(--muted)">These services were really delivered and recorded. They are shown rather than dropped -- silently dropping them is the revenue leak this view exists to close.</div>'+
+      '<ul style="margin:6px 0 0 18px;font-size:12px">'+res.unpriced.map(function(u){
+        return '<li>'+H(u.date||'')+' — '+H(u.label)+': '+H(u.reason)+'</li>';
+      }).join('')+'</ul></div>';
+  }
+  var rv=res.reconciliation_vs_invoice;
+  if(res.invoice_exists&&rv){
+    html+='<div style="margin-top:10px"><b>Versus the invoice already on file</b>'+
+      '<div style="font-size:12px;color:var(--muted)">Added '+H(String(rv.added.length))+' &middot; Removed '+H(String(rv.removed.length))+
+      ' &middot; Changed '+H(String(rv.changed.length))+' &middot; Unchanged '+H(String(rv.unchanged_count))+
+      ' &middot; Net change '+fmt2(rv.net_change)+'</div></div>';
+  }
+  box.innerHTML=html;
+}
+function closeChargesModal(){$('chargesmodal').classList.remove('on');}
+
+// ── AI CARE PLAN FROM REAL ASSESSMENTS (Phase 3 item 3) ──────────────────
+// Rides the same audited proxy every other AI feature on this platform uses.
+// Builds ONLY from recorded Katz ADL answers. With no assessment on file it
+// refuses -- a care plan generated from nothing would read exactly as
+// authoritative as one generated from real data, which is the danger.
+var cpaResidentId=null;
+function openCarePlanAiModal(residentId){
+  cpaResidentId=residentId;
+  var r=residents().find(function(x){return x.id===residentId;});
+  var box=$('cpa-body'),btn=$('cpa-generate-btn');
+  var hist=(r&&r.adl_assessments)||[];
+  if(!hist.length){
+    btn.style.display='none';
+    box.innerHTML='<div style="color:var(--danger,#dc2626)"><b>No assessment on file</b></div>'+
+      '<div style="margin-top:6px">'+H(r?(r.name||''):'')+' has no recorded Katz ADL assessment. A care plan cannot be drafted from an empty record, and this app will not generate a plausible-looking one from nothing. Record an ADL assessment first.</div>';
+  }else{
+    btn.style.display='inline-block';
+    var latest=hist[hist.length-1];
+    box.innerHTML='<div>Drafting from the most recent recorded assessment for <b>'+H(r.name||'')+'</b> ('+H(latest.date||'')+
+      '), assessed by '+H(latest.assessed_by||'unrecorded')+'.</div>'+
+      '<div style="margin-top:6px;font-size:12px;color:var(--muted)">'+
+      ADL_DOMAINS.map(function(d){return H(d[1])+': '+H(latest[d[0]]||'not recorded');}).join(' &middot; ')+'</div>'+
+      '<div style="margin-top:8px;font-size:12px;color:var(--muted)">The draft is a starting point for a clinician, not a finished plan, and is not saved anywhere until you copy it into the record.</div>';
+  }
+  $('careplanaimodal').classList.add('on');
+}
+function closeCarePlanAiModal(){$('careplanaimodal').classList.remove('on');cpaResidentId=null;}
+async function runCarePlanAi(){
+  var r=residents().find(function(x){return x.id===cpaResidentId;});
+  if(!r)return;
+  var hist=r.adl_assessments||[];
+  if(!hist.length){toast('No assessment on file');return;}
+  var latest=hist[hist.length-1];
+  var box=$('cpa-body');
+  var prior=box.innerHTML;
+  box.innerHTML=prior+'<div style="margin-top:8px;color:var(--muted)">Drafting...</div>';
+  var facts=ADL_DOMAINS.map(function(d){return d[1]+': '+(latest[d[0]]||'not recorded');}).join('\n');
+  var msgs=[{role:'user',content:[{type:'text',text:
+    'You are helping a nurse draft a care plan for an assisted-living resident. Use ONLY the assessment findings below. '+
+    'Do not invent diagnoses, medications, history, or any finding that is not listed. If a domain says "not recorded", say that its needs could not be determined rather than guessing.\n\n'+
+    'Katz ADL assessment recorded '+(latest.date||'')+':\n'+facts+
+    (latest.notes?('\nAssessor notes: '+latest.notes):'')+
+    (r.diagnosis?('\nDiagnosis on file: '+r.diagnosis):'')+
+    '\n\nProduce a plain-text draft with these sections exactly: GOALS, INTERVENTIONS, MONITORING. '+
+    'For each intervention, name which assessed domain it responds to. Keep it under 300 words.'
+  }]}];
+  try{
+    var res=await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:APP_ID,is_demo:true,messages:msgs})});
+    var data=await res.json();
+    if(!data||data.error){box.innerHTML=prior+'<div style="margin-top:8px;color:var(--danger,#dc2626)">The drafting service did not respond. Nothing was generated.</div>';return;}
+    var text=(data.content&&data.content[0]&&data.content[0].text)||'';
+    if(!text){box.innerHTML=prior+'<div style="margin-top:8px;color:var(--danger,#dc2626)">No draft was returned.</div>';return;}
+    box.innerHTML=prior+
+      '<div style="margin-top:10px;padding:8px;border:1px solid var(--border);border-radius:6px;white-space:pre-wrap">'+H(text)+'</div>'+
+      '<div style="margin-top:6px;font-size:11px;color:var(--muted)">Draft only. Review every line before entering any of it into the resident record.</div>';
+  }catch(e){
+    box.innerHTML=prior+'<div style="margin-top:8px;color:var(--danger,#dc2626)">Network error -- nothing was generated.</div>';
+  }
+}
+
 async function saveMedOrder(){
   var name=$('mo-name').value.trim();
   if(!name){toast('Medication name required');return;}
+  var scheduleText=$('mo-schedule').value.trim();
+  // Structured times are derived from what was typed, using the SAME parsing rule the
+  // server-side engine uses: explicit clock times are captured, prose is deliberately
+  // not guessed at. The free text is kept verbatim either way so nothing is lost.
+  var parsedTimes=alfParseScheduleTimes(scheduleText);
   var rec={
     id:moEditId||newId('MED'),name:name,dose:$('mo-dose').value.trim(),route:$('mo-route').value,
-    schedule:$('mo-schedule').value.trim(),prn:$('mo-prn').value==='1',controlled_substance:$('mo-controlled').value==='1',
+    schedule:scheduleText,schedule_times:parsedTimes,
+    prn:$('mo-prn').value==='1',controlled_substance:$('mo-controlled').value==='1',
     prn_instructions:$('mo-prn-instructions').value.trim(),high_priority:$('mo-highpriority').value==='1',
     prescriber:$('mo-prescriber').value.trim(),start_date:$('mo-startdate').value,notes:$('mo-notes').value.trim(),
     discontinued:false
   };
+  if(!parsedTimes.length&&scheduleText&&$('mo-prn').value!=='1'){
+    toast('Saved, but "'+scheduleText+'" has no clock times -- this order cannot be tracked for late doses until times are entered.',5000);
+  }
   if(moEditId){
     var existing=residentAllMeds(marSelectedResidentId()).find(function(x){return x.id===moEditId;});
     if(existing)rec.discontinued=!!existing.discontinued;
@@ -2070,6 +2372,7 @@ function rBilling(){
       '<td>'+(inv?'<button class="btn '+(inv.private_status==='paid'?'bo':'bp')+' bs" onclick="togglePrivateStatus(\''+r.id+'\')">'+(inv.private_status==='paid'?'Paid':'Unpaid')+'</button>':'--')+'</td>'+
       '<td>'+(isHcbs&&inv&&inv.hcbs_claim_amount>0?'<button class="btn bo bs" onclick="openHcbsStatusModal(\''+r.id+'\')">'+H(inv.hcbs_status||'not_submitted')+'</button>':(isHcbs?'--':'<span style="color:var(--muted);font-size:12px">n/a</span>'))+'</td>'+
       '<td><button class="btn bo bs" onclick="generateInvoice(\''+r.id+'\')">Generate '+currentMonth()+'</button>'+
+      ' <button class="btn bo bs" onclick="deriveCharges(\''+r.id+'\')">Charges</button>'+
       (inv?' <button class="btn bo bs" onclick="openInvoiceDetailsModal(\''+r.id+'\')">Details</button>':'')+'</td></tr>';
   }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No residents found</td></tr>';
 }
@@ -2766,6 +3069,13 @@ function rSettings(){
   // obviously-unavailable one.
   var csSel=$('set-cs-policy');
   if(csSel){csSel.value=f.cs_policy||'shift_change_count';csSel.disabled=!alfIsManagement();}
+  // Deliberately NOT defaulted: an empty window means "no policy set", and the alert
+  // engine refuses to run rather than assuming one. Pre-filling a number here would
+  // quietly create the policy this app is careful not to invent.
+  var mw=$('set-med-window');
+  if(mw){mw.value=(f.med_window_minutes===undefined||f.med_window_minutes===null)?'':f.med_window_minutes;mw.disabled=!alfIsManagement();}
+  var ae=$('set-alert-email');
+  if(ae){ae.value=f.alert_email||'';ae.disabled=!alfIsManagement();}
   var rbEl=$('rc-roomboard');if(rbEl)rbEl.value=f.roomboard_rate||'';
   var ilEl=$('rc-il');if(ilEl)ilEl.value=f.il_rate||'';
   var a1=$('rc-al1');if(a1)a1.value=f.al1_rate||'';
