@@ -55,7 +55,7 @@ const SC_RESOURCES = [
   'sc_anesthesia', 'sc_auth', 'sc_ar', 'sc_providers', 'sc_encoder', 'sc_claims', 'sc_scrubrules',
   'sc_denial_events', 'sc_eligibility', 'sc_settings', 'sc_auth_requests',
   'sc_specialty_checks', 'sc_specialty_checklists', 'sc_anesthesia_base_units',
-  'sc_coded_items', 'sc_credential_scope', 'sc_pctc'
+  'sc_coded_items', 'sc_credential_scope', 'sc_pctc', 'sc_dme'
 ];
 // Minimum data-retention any SAIRNcode practice may configure, in years.
 // Enforced server-side rather than trusted from the client because a value

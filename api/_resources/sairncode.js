@@ -161,5 +161,13 @@ module.exports = {
   // on the Add form, same discipline as sc_scrubrules. REQUIRES
   // sql/sairncode_pctc_schema.sql to be run in Supabase.
     'sc_pctc',
+  // DME/DMEPOS records (2026-08-22, gap-closure pass 2 item 6) -- the 28th
+  // SC_RESOURCES entry. Stores delivered-equipment history (the same-or-
+  // similar duplicate-payment gate cannot work without it) and per-supplier
+  // prior-authorization exemption status under CMS-1828-F, which is per
+  // annual cycle and expires. Deliberately does NOT store the Required PA
+  // List itself -- see sql/sairncode_dme_schema.sql's header. REQUIRES
+  // sql/sairncode_dme_schema.sql to be run in Supabase.
+    'sc_dme',
   ],
 };
