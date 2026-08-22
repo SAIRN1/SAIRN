@@ -9175,8 +9175,18 @@ How to answer:
                 document.getElementById('mr-kx-applied').checked,
                 document.getElementById('mr-kx-just').value
             );
+            // required_missing is STOP, not WARN (2026-08-22 visual review).
+            // It says the claim would be denied, which is the same verdict the
+            // DME prior-auth gate and the podiatry statutory-exclusion gate
+            // both render in red -- rendering it amber made the weakest signal
+            // sit on one of the three hardest outcomes, so a coder scanning for
+            // red would skim past it. required_unjustified stays amber on
+            // purpose: an attestation with nothing behind it is a real problem
+            // but is not the same as a denied claim, and collapsing the two
+            // would throw away a distinction that matters.
             var style = (r.status === 'satisfied' || r.status === 'not_required') ? DU_STYLE_OK
-                      : (r.status === 'undetermined' ? DU_STYLE_STOP : DU_STYLE_WARN);
+                      : (r.status === 'undetermined' || r.status === 'required_missing') ? DU_STYLE_STOP
+                      : DU_STYLE_WARN;
             var head = r.status === 'satisfied' ? '<b>KX satisfied</b>'
                      : r.status === 'not_required' ? '<b>KX not required</b>'
                      : r.status === 'required_missing' ? '<b>KX required and missing — this claim would be denied</b>'
