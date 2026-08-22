@@ -148,13 +148,25 @@ async function computeForFacility(licHash, nowDate) {
 }
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') { bad(res, 405, 'METHOD', 'POST only'); return; }
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     bad(res, 503, 'NOT_CONFIGURED', 'Server storage is not configured.'); return;
   }
 
   const auth = req.headers.authorization || '';
   const isCron = !!process.env.CRON_SECRET && auth === 'Bearer ' + process.env.CRON_SECRET;
+
+  // METHOD GATE, and the reason it is not a blanket POST-only check:
+  // VERCEL CRONS ISSUE A **GET**, not a POST. An earlier version of this file
+  // rejected everything but POST, so the scheduled sweep returned 405 on every
+  // firing and this whole feature silently never delivered a single alert --
+  // found only by reading the real production cron log, since no unit test
+  // exercises the HTTP method Vercel actually uses. The sibling cron
+  // (api/sairndental/send-reminder.js) has no method check at all for exactly
+  // this reason. The interactive path stays POST-only.
+  if (!isCron && req.method !== 'POST') {
+    bad(res, 405, 'METHOD', 'POST only for the interactive check');
+    return;
+  }
 
   // ── CRON SWEEP ─────────────────────────────────────────────────────────
   if (isCron) {

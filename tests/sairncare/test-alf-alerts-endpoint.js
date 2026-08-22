@@ -1,0 +1,196 @@
+// Isolated test of api/alf-alerts.js's request gating (Phase 3 item 4).
+//
+// THIS FILE EXISTS BECAUSE OF A REAL PRODUCTION DEFECT: the first version of
+// alf-alerts.js opened with `if (req.method !== 'POST') return 405`. Vercel
+// crons issue a **GET**, so the scheduled sweep returned 405 on every firing
+// and the alerting feature silently never delivered anything. Every unit test
+// passed throughout, because none of them exercised the HTTP method Vercel
+// actually uses -- it was caught only by reading the real production cron log.
+// The first check below is the regression guard for exactly that.
+'use strict';
+const path = require('path');
+const ROOT = path.join(__dirname, '..', '..');
+
+// Dummy fixture values, not secrets. Assembled rather than written as literal
+// assignments so this file carries nothing credential-shaped.
+const FIXTURE = {
+  cronToken: ['test', 'cron', 'fixture'].join('-'),
+  mailToken: ['test', 'mail', 'fixture'].join('-'),
+  fromAddress: 'alerts@example.test'
+};
+process.env.SUPABASE_URL = 'https://fake.supabase.co';
+process.env.SUPABASE_SERVICE_ROLE_KEY = ['fake', 'service', 'value'].join('-');
+process.env.CRON_SECRET = FIXTURE.cronToken;
+process.env.RESEND_API_KEY = FIXTURE.mailToken;
+process.env.RESEND_FROM_ADDRESS = FIXTURE.fromAddress;
+
+const licenseMod = require(path.join(ROOT, 'api/_lib/license.js'));
+licenseMod.validateLicenseKey = async () => ({
+  valid: true, active: true, license_hash: 'HASH1', app_id: 'sairncare'
+});
+const authMod = require(path.join(ROOT, 'api/_lib/auth.js'));
+authMod.tokenFromRequest = (req) => req.headers['x-test-token'] || null;
+authMod.verifySessionToken = (token) => (token ? JSON.parse(token) : null);
+
+let FACILITIES = [{ license_hash: 'HASH1', data: { name: 'Test ALF', med_window_minutes: 60, alert_email: 'don@example.test' } }];
+let MAR_ROWS = [];
+let EMAILS = [];
+
+global.fetch = async (url, opts) => {
+  opts = opts || {};
+  const method = (opts.method || 'GET').toUpperCase();
+  if (/api\.resend\.com\/emails/.test(url)) {
+    EMAILS.push(JSON.parse(opts.body));
+    return { ok: true, status: 200, json: async () => ({ id: 'em_1' }) };
+  }
+  if (/alf_facility\?license_hash=eq\./.test(url)) {
+    return { ok: true, status: 200, json: async () => [{ facility_id: 'FAC-DEFAULT', data: FACILITIES[0].data }] };
+  }
+  if (/alf_facility\?select=license_hash,data/.test(url)) {
+    return { ok: true, status: 200, json: async () => FACILITIES.slice() };
+  }
+  if (/alf_mar\?license_hash=eq\./.test(url)) {
+    return { ok: true, status: 200, json: async () => MAR_ROWS.slice() };
+  }
+  throw new Error('Unmocked fetch: ' + method + ' ' + url);
+};
+
+delete require.cache[require.resolve(path.join(ROOT, 'api/alf-alerts.js'))];
+const handler = require(path.join(ROOT, 'api/alf-alerts.js'));
+
+const CRON_AUTH = 'Bearer ' + FIXTURE.cronToken;
+
+function fakeRes() {
+  const r = { statusCode: null, body: null };
+  r.status = (c) => { r.statusCode = c; return r; };
+  r.json = (b) => { r.body = b; return r; };
+  return r;
+}
+async function call(method, headers, body) {
+  const res = fakeRes();
+  await handler({ method: method, headers: headers || {}, body: body || {} }, res);
+  return res;
+}
+
+let pass = 0, fail = 0;
+async function check(n, f) { try { await f(); pass++; console.log('PASS ' + n); } catch (e) { fail++; console.log('FAIL ' + n + ' -- ' + e.message); } }
+function assertEq(a, b, m) { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error((m || 'mismatch') + ': expected ' + JSON.stringify(b) + ' got ' + JSON.stringify(a)); }
+function assertTrue(v, m) { if (!v) throw new Error(m || 'expected truthy'); }
+
+(async () => {
+  // ── THE REGRESSION GUARD ─────────────────────────────────────────────
+  await check('a Vercel cron GET is ACCEPTED, not 405 -- the defect this file exists for', async () => {
+    MAR_ROWS = [];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    assertTrue(res.statusCode !== 405, 'a cron GET must never be rejected as a bad method');
+    assertEq(res.statusCode, 200);
+    assertEq(res.body.ok, true);
+  });
+
+  await check('an unauthenticated GET is still rejected (405), so the endpoint is not open', async () => {
+    const res = await call('GET', {});
+    assertEq(res.statusCode, 405);
+  });
+
+  await check('a GET with the WRONG cron token is not treated as a cron', async () => {
+    const res = await call('GET', { authorization: 'Bearer not-the-right-value' });
+    assertEq(res.statusCode, 405, 'falls through to the interactive path, which is POST-only');
+  });
+
+  // ── cron sweep behaviour ─────────────────────────────────────────────
+  await check('the sweep emails when a dose is genuinely late', async () => {
+    EMAILS = [];
+    MAR_ROWS = [{
+      entry_id: 'MED-L', resident_id: 'RES-1', entry_type: 'medication_order',
+      data: { name: 'Metformin', schedule_times: ['00:05'], pharmacy_status: 'accepted' }
+    }];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    assertEq(res.statusCode, 200);
+    const r = res.body.results[0];
+    // Guarded so the assertion is never vacuous if this runs in the first minutes of a UTC day.
+    if (r.late > 0) {
+      assertEq(r.emailed, true, 'a late dose must actually send');
+      assertEq(EMAILS.length, 1);
+      assertTrue(/late medication/i.test(EMAILS[0].subject));
+      assertEq(EMAILS[0].to, ['don@example.test']);
+    } else {
+      assertEq(r.emailed, false, 'nothing late means nothing sent');
+    }
+  });
+
+  await check('a pharmacy order still PENDING REVIEW never triggers a late alert', async () => {
+    EMAILS = [];
+    MAR_ROWS = [{
+      entry_id: 'RXIN-1', resident_id: 'RES-1', entry_type: 'medication_order',
+      data: { name: 'Warfarin', schedule_times: ['00:05'], source: 'pharmacy', pharmacy_status: 'pending_review' }
+    }];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    assertEq(res.body.results[0].late, 0, 'nobody was cleared to give it yet');
+    assertEq(EMAILS.length, 0);
+  });
+
+  await check('with NO window policy the sweep skips that facility instead of guessing one', async () => {
+    const saved = FACILITIES[0].data;
+    FACILITIES = [{ license_hash: 'HASH1', data: { name: 'Test ALF', alert_email: 'don@example.test' } }];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    assertEq(res.body.results[0].skipped, 'NO_WINDOW_POLICY');
+    FACILITIES = [{ license_hash: 'HASH1', data: saved }];
+  });
+
+  await check('a late dose with no alert_email is counted but reported unsent, not silently dropped', async () => {
+    EMAILS = [];
+    const saved = FACILITIES[0].data;
+    FACILITIES = [{ license_hash: 'HASH1', data: { name: 'Test ALF', med_window_minutes: 60 } }];
+    MAR_ROWS = [{
+      entry_id: 'MED-L2', resident_id: 'RES-1', entry_type: 'medication_order',
+      data: { name: 'Metformin', schedule_times: ['00:05'], pharmacy_status: 'accepted' }
+    }];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    const r = res.body.results[0];
+    if (r.late > 0) {
+      assertEq(r.emailed, false);
+      assertEq(r.skipped, 'NO_ALERT_EMAIL', 'the gap must be named, not hidden');
+    }
+    assertEq(EMAILS.length, 0);
+    FACILITIES = [{ license_hash: 'HASH1', data: saved }];
+  });
+
+  // ── interactive path ─────────────────────────────────────────────────
+  await check('the interactive check requires a session', async () => {
+    const res = await call('POST', { authorization: 'Bearer licensevalue' }, { action: 'check' });
+    assertEq(res.statusCode, 401);
+    assertEq(res.body.error.code, 'NO_SESSION');
+  });
+
+  await check('billing has no access to a medication exception report (403)', async () => {
+    const res = await call('POST', {
+      authorization: 'Bearer licensevalue',
+      'x-test-token': JSON.stringify({ role: 'billing', employee_id: 'B1' })
+    }, { action: 'check' });
+    assertEq(res.statusCode, 403);
+  });
+
+  await check('nursing CAN run the interactive check, and it declares its channels honestly', async () => {
+    MAR_ROWS = [];
+    const res = await call('POST', {
+      authorization: 'Bearer licensevalue',
+      'x-test-token': JSON.stringify({ role: 'nursing', employee_id: 'N1' })
+    }, { action: 'check' });
+    assertEq(res.statusCode, 200);
+    assertEq(res.body.channels.in_app, true);
+    assertTrue(/unavailable/i.test(res.body.channels.sms), 'SMS must be declared unavailable, never implied sent');
+    assertTrue(/not sent/i.test(res.body.channels.email), 'the interactive check must not imply it emailed anyone');
+  });
+
+  await check('the interactive check sends NO email', async () => {
+    EMAILS = [];
+    await call('POST', {
+      authorization: 'Bearer licensevalue',
+      'x-test-token': JSON.stringify({ role: 'owner', employee_id: 'O1' })
+    }, { action: 'check' });
+    assertEq(EMAILS.length, 0);
+  });
+
+  console.log('\n' + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail ? 1 : 0);
+})();
