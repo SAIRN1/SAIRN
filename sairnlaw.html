@@ -1003,8 +1003,13 @@ label.chk input{width:auto;}
     </div>
     <div class="fr">
       <div class="fg" style="flex:2"><label>Trigger event</label><select id="dr-trigger" onchange="drOnTrigger()"></select></div>
-      <div class="fg" id="dr-date-wrap"><label>Trigger date</label><input id="dr-date" type="date"></div>
+      <div class="fg" id="dr-date-wrap"><label>Trigger date</label><input id="dr-date" type="date" onchange="drCheckCoverage()"></div>
     </div>
+    <!-- Coverage warning, shown BEFORE Compute is pressed. The engine already
+         refuses honestly when a period crosses a year with no calendar, but a
+         refusal arrives after the user has committed to the question. This
+         says so while the date is still being chosen. -->
+    <div id="dr-coverage" style="display:none"></div>
     <!-- Multi-trigger rules (FRCP 12(a)(3), FRAP 4(b)(1)(A)) run from the
          later of several events and need one date PER event. Rendered here
          only when such a rule is selected; the single Trigger date above is
@@ -4221,6 +4226,45 @@ function drOnTrigger() {
     mw.innerHTML = '';
     dw.style.display = '';
   }
+  drCheckCoverage();
+}
+
+// ── Coverage warning, BEFORE the refusal (Phase 4 item 2) ─────────────────
+// The engine refuses honestly when a computation needs a holiday calendar it
+// does not have, but that refusal arrives only after Compute is pressed. This
+// says the same thing while the date is still being chosen.
+//
+// It deliberately does NOT try to predict the exact landing year -- that would
+// mean reimplementing the count client-side, and a second implementation of
+// the arithmetic is exactly what this app's architecture avoids (see the
+// header comment on this section: a date arrived at in two places can
+// disagree, and here a disagreement is a missed filing). It warns on the only
+// thing it can know for certain from the trigger date alone: whether the
+// trigger year itself is uncovered, or whether it is the LAST covered year,
+// in which case any period long enough to cross the boundary will refuse.
+function drCheckCoverage() {
+  var el = $('dr-coverage');
+  if (!el) return;
+  var j = drJurisdiction();
+  var date = ($('dr-date') && $('dr-date').value) || '';
+  if (!j || !date || !j.holiday_years || !j.holiday_years.length) { el.style.display = 'none'; return; }
+  var years = j.holiday_years.map(Number).sort(function (a, b) { return a - b; });
+  var yr = Number(date.slice(0, 4));
+  var maxY = years[years.length - 1], minY = years[0];
+  var name = H(j.jurisdiction_label || j.jurisdiction);
+  var msg = '';
+  if (yr < minY || yr > maxY || years.indexOf(yr) === -1) {
+    msg = '<b>No holiday calendar for ' + H(String(yr)) + '.</b> ' + name +
+      ' has calendars for ' + H(years.join(', ')) + '. This will refuse rather than compute — nothing is estimated.';
+  } else if (yr === maxY) {
+    msg = '<b>' + H(String(yr)) + ' is the last covered year for ' + name + '.</b> ' +
+      'A period long enough to cross into ' + H(String(maxY + 1)) +
+      ' will refuse, because the engine checks the year it actually needs, not the year of the trigger.';
+  }
+  if (!msg) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  el.innerHTML = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;' +
+    'padding:10px 14px;color:#92400e;font-size:12px;margin-bottom:4px">' + msg + '</div>';
 }
 
 function drCompute() {
