@@ -32,6 +32,7 @@ const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
+const careCharges = require('./_lib/care-charges');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -170,7 +171,11 @@ module.exports = async (req, res) => {
   // 'evaluate' is likewise carved out for exactly one resource: alf_compliance_rules
   // (SAIRNcare Phase 2). It computes a compliance finding and writes nothing.
   const isEvaluateAction = action === 'evaluate' && resource === 'alf_compliance_rules';
-  if (action !== 'read' && action !== 'write' && !(action === 'delete' && isScResource) && !isRouteAction && !isEvaluateAction) {
+  // 'derive_charges' is carved out for alf_billing only (SAIRNcare Phase 3 item 2).
+  // It reads real documentation and returns the charge lines it implies; it writes
+  // nothing, so previewing what would be billed cannot itself bill anything.
+  const isDeriveAction = action === 'derive_charges' && resource === 'alf_billing';
+  if (action !== 'read' && action !== 'write' && !(action === 'delete' && isScResource) && !isRouteAction && !isEvaluateAction && !isDeriveAction) {
     res.status(400).json({ error: { message: "action must be 'read' or 'write'" + (isScResource ? " or 'delete'" : '') } });
     return;
   }
@@ -2511,6 +2516,31 @@ module.exports = async (req, res) => {
       }
       const marData = Object.assign({}, payload);
       delete marData.id; delete marData.resident_id; delete marData.entry_type; delete marData.assigned_employee_id;
+      // ── PHARMACY-ORDER REVIEW GATE (2026-08-22, Phase 3 item 1) ────────────────────────
+      // A pharmacy-sourced order arrives via api/alf-pharmacy.js as pending_review and is
+      // NOT active on the MAR until a clinician accepts it. Removing manual transcription
+      // is the safety win; removing clinical review would not be, so acceptance is a real
+      // gated action rather than an automatic consequence of delivery.
+      if (payload.entry_type === 'medication_order' && payload.pharmacy_status !== undefined) {
+        // med_aide can read the MAR and administer, but must never be the one who clears a
+        // pharmacy order into active use -- that is a clinical-decision act, same boundary
+        // that already keeps medication_order creation to owner/nursing.
+        if (!ALF_MAR_ORDER_ROLES[session.role]) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management or nursing can review a pharmacy order' } });
+          return;
+        }
+        const allowedStatuses = { pending_review: true, accepted: true, rejected: true };
+        if (!allowedStatuses[payload.pharmacy_status]) {
+          res.status(400).json({ error: { message: 'pharmacy_status must be one of: ' + Object.keys(allowedStatuses).join(', ') } });
+          return;
+        }
+        // Stamped from the real session, never trusted from the client -- same discipline as
+        // care_level_history.changed_by and the payer/compliance rules' verified_by.
+        if (payload.pharmacy_status === 'accepted' || payload.pharmacy_status === 'rejected') {
+          marData.reviewed_by = session.employee_id;
+          marData.reviewed_at = nowISO();
+        }
+      }
       const r = await fetch(rest('alf_mar?on_conflict=license_hash,entry_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -2551,6 +2581,92 @@ module.exports = async (req, res) => {
       if (!r.ok) return upstream(res, rows);
       const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id }, r.data));
       res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    // ── SAIRNCARE: documentation -> charges (2026-08-22, Phase 3 item 2) ───────────────────
+    // Reads the resident's REAL recorded documentation for the month (MAR administrations,
+    // ADL assessments, activity attendance) and returns the charge lines it implies, each
+    // carrying the id of the exact document behind it. Derivation logic is PURE and lives in
+    // api/_lib/care-charges.js.
+    //
+    // WRITES NOTHING. The month's invoice is still created by the existing alf_billing write
+    // path; this only removes the manual re-keying step between what was documented and what
+    // gets billed, which is where revenue leaks. A documented service with no configured rate
+    // comes back in `unpriced` rather than being billed at zero or silently dropped.
+    if (resource === 'alf_billing' && action === 'derive_charges') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Billing is not available to your role' } });
+        return;
+      }
+      if (!payload || !payload.resident_id || !payload.month) {
+        res.status(400).json({ error: { message: 'derive_charges requires resident_id and month' } });
+        return;
+      }
+      const events = [];
+      // MAR administrations -- one documented dose given is one documented service.
+      const marR = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&resident_id=eq.' + enc(String(payload.resident_id)) + '&select=entry_id,entry_type,data'), { headers });
+      if (marR.ok) {
+        const marRows = await marR.json().catch(() => []);
+        (marRows || []).forEach((row) => {
+          if (row.entry_type !== 'administration') return;
+          const d = row.data || {};
+          // Only a dose actually GIVEN is billable. A refusal or a hold is real
+          // documentation but is not a delivered service, and billing it would be
+          // billing for care that did not happen.
+          if (d.status && d.status !== 'given') return;
+          const at = String(d.administered_at || d.recorded_at || '');
+          events.push({
+            id: row.entry_id, type: 'medication_administration',
+            resident_id: String(payload.resident_id), date: at.slice(0, 10),
+            description: d.medication_name || d.name || ''
+          });
+        });
+      }
+      // ADL assessments live inside the resident's own alf_clients record.
+      const cliR = await fetch(rest('alf_clients?license_hash=eq.' + enc(licHash) + '&client_id=eq.' + enc(String(payload.resident_id)) + '&select=data'), { headers });
+      if (cliR.ok) {
+        const cliRows = await cliR.json().catch(() => []);
+        const cd = (Array.isArray(cliRows) && cliRows[0] && cliRows[0].data) || {};
+        (cd.adl_assessments || []).forEach((a) => {
+          events.push({
+            id: a.id, type: 'adl_assessment',
+            resident_id: String(payload.resident_id), date: a.date, description: 'Katz ADL assessment'
+          });
+        });
+      }
+      // Activity attendance.
+      const actR = await fetch(rest('alf_activities?license_hash=eq.' + enc(licHash) + '&select=entry_id,data'), { headers });
+      if (actR.ok) {
+        const actRows = await actR.json().catch(() => []);
+        (actRows || []).forEach((row) => {
+          const d = row.data || {};
+          const attendees = d.attendees || d.attendee_ids || [];
+          if (Array.isArray(attendees) && attendees.indexOf(String(payload.resident_id)) !== -1) {
+            events.push({
+              id: row.entry_id, type: 'activity_attendance',
+              resident_id: String(payload.resident_id), date: d.date || '', description: d.name || d.title || ''
+            });
+          }
+        });
+      }
+      const facR = await fetch(rest('alf_facility?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      const facRows = facR.ok ? await facR.json().catch(() => []) : [];
+      const rateCard = (Array.isArray(facRows) && facRows[0] && facRows[0].data) || {};
+      const derived = careCharges.deriveCharges({
+        month: payload.month, resident_id: String(payload.resident_id), rate_card: rateCard, events: events
+      });
+      if (!derived.ok) { res.status(200).json(derived); return; }
+      // If the month's invoice already exists, show exactly what a regenerate would
+      // change -- the audit trail that replaces the manual reconciliation.
+      const invId = 'INV-' + payload.resident_id + '-' + payload.month;
+      const invR = await fetch(rest('alf_billing?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(invId) + '&select=data'), { headers });
+      const invRows = invR.ok ? await invR.json().catch(() => []) : [];
+      const priorLines = (Array.isArray(invRows) && invRows[0] && invRows[0].data && invRows[0].data.charge_lines) || [];
+      derived.reconciliation_vs_invoice = careCharges.reconcileAgainstInvoice(derived, priorLines);
+      derived.invoice_exists = !!(Array.isArray(invRows) && invRows.length);
+      res.status(200).json(derived);
       return;
     }
     if (resource === 'alf_billing' && action === 'write') {

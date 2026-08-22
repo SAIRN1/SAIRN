@@ -686,6 +686,7 @@
                 <button class="nav-btn" onclick="showPanel('modrouting')" data-tip="Payer-family modifier routing -- PT vs 33, KX thresholds, SC scope">Modifier Routing</button>
                 <button class="nav-btn" onclick="showPanel('maternity')" data-tip="OB/GYN maternity -- four-phase router across the 2027 code restructure, routed by date of service">OB/GYN Maternity</button>
                 <button class="nav-btn" onclick="showPanel('dme')" data-tip="DME/DMEPOS -- SWO gate, rental vs purchase, prior auth, same/similar, 2026 SC modifier rule">DME / DMEPOS</button>
+                <button class="nav-btn" onclick="showPanel('dermwound')" data-tip="Derm / wound care / podiatry / ABA -- shared 2026 skin substitute logic, Mohs, foot care gate, ABA tiers">Derm / Wound / Pod / ABA</button>
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
@@ -1620,6 +1621,95 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             </div>
             <div id="du-trap-result" style="margin-top:8px;"></div>
             <div id="du-biosimilar-reference" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- Derm / Wound / Podiatry / ABA Panel (2026-08-22, item 7).
+             The skin substitute section is ONE implementation shared by the
+             three specialties CMS's CY2026 overhaul hits at once. ABA is
+             structurally different and is treated that way. -->
+        <div id="panel-dermwound" class="panel">
+            <h1 class="panel-title">Dermatology / Wound Care / Podiatry / ABA</h1>
+            <div id="skin-banner" style="margin-bottom:14px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:8px 0;">1. Skin Substitute &mdash; shared by derm, wound care and podiatry</div>
+            <div class="toolbar">
+                <input type="number" id="skin-year" placeholder="Date-of-service year" class="search-input" style="max-width:200px;">
+                <select id="skin-fda">
+                    <option value="">FDA regulatory category...</option>
+                    <option value="hctp361">361 HCT/P</option>
+                    <option value="pma">PMA (Pre-Market Approval)</option>
+                    <option value="k510">510(k)</option>
+                    <option value="bla">BLA (biologics license application)</option>
+                </select>
+                <input type="number" step="any" id="skin-applied" placeholder="Applied cm²" class="search-input" style="max-width:170px;">
+                <input type="number" step="any" id="skin-wasted" placeholder="Discarded cm² (optional)" class="search-input" style="max-width:220px;">
+                <button class="btn btn-primary" onclick="runSkinSubstitute()" id="skin-btn">Compute</button>
+            </div>
+            <div id="skin-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2. Dermatology &mdash; Mohs Global Period</div>
+            <div class="toolbar">
+                <select id="mohs-service">
+                    <option value="">Same-day service in question...</option>
+                    <option value="repair">Wound repair / closure</option>
+                    <option value="woundcheck">Post-op wound check</option>
+                    <option value="suture">Suture removal</option>
+                </select>
+                <button class="btn btn-primary" onclick="runMohs()" id="mohs-btn">Check</button>
+            </div>
+            <div id="mohs-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">3. Wound Care</div>
+            <div class="toolbar">
+                <select id="wound-mac">
+                    <option value="">MAC jurisdiction...</option>
+                    <option value="noridian">Noridian</option>
+                    <option value="cgs">CGS</option>
+                    <option value="palmetto">Palmetto / First Coast</option>
+                    <option value="novitas">Novitas</option>
+                </select>
+                <button class="btn btn-primary" onclick="runWoundJurisdiction()" id="wound-j-btn">Jurisdiction</button>
+            </div>
+            <div id="wound-j-result" style="margin-top:8px;"></div>
+            <div class="toolbar" style="margin-top:10px;">
+                <select id="wound-deb"><option value="">Debridement on claim?</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <select id="wound-strap"><option value="">Strapping on claim?</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <input type="text" id="wound-mod" placeholder="Modifier on strapping line" class="search-input" style="max-width:230px;">
+                <button class="btn btn-primary" onclick="runWoundBundling()" id="wound-b-btn">Check Bundling</button>
+            </div>
+            <div id="wound-b-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">4. Podiatry &mdash; Routine Foot Care Gate</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">All three elements or the line denies as a statutory exclusion. Two out of three does not pay.</div>
+            <div class="toolbar">
+                <select id="pod-dx"><option value="">Covered systemic ICD-10 dx?</option><option value="yes">Documented</option><option value="no">Not documented</option></select>
+                <select id="pod-class"><option value="">Class finding documented?</option><option value="yes">Documented</option><option value="no">Not documented</option></select>
+                <input type="text" id="pod-q" placeholder="Q modifier (Q7/Q8/Q9, or NONE)" class="search-input" style="max-width:260px;">
+                <button class="btn btn-primary" onclick="runPodiatry()" id="pod-btn">Check Payability</button>
+            </div>
+            <div id="pod-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">5. ABA</div>
+            <div id="aba-banner" style="font-size:12px;color:#666;margin-bottom:8px;"></div>
+            <div class="toolbar">
+                <select id="aba-edu">
+                    <option value="">Rendering provider education level...</option>
+                    <option value="less_than_bachelors">Less than bachelor's (behavior technician)</option>
+                    <option value="bachelors">Bachelor's (RBT or BCaBA)</option>
+                    <option value="masters">Master's (BCBA)</option>
+                    <option value="doctoral">Doctoral (BCBA-D)</option>
+                </select>
+                <select id="aba-payer">
+                    <option value="">Payer...</option>
+                    <option value="tricare">TRICARE (Autism Care Demonstration)</option>
+                    <option value="generic_commercial">Commercial payer using provider-level modifiers</option>
+                    <option value="other">Other / unknown payer</option>
+                </select>
+                <select id="aba-rbt"><option value="">Rendered by RBT/technician?</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <button class="btn btn-primary" onclick="runAba()" id="aba-btn">Route ABA Claim</button>
+            </div>
+            <div id="aba-result" style="margin-top:8px;"></div>
+            <div id="aba-future" style="margin-top:10px;"></div>
         </div>
 
         <!-- DME/DMEPOS Panel (2026-08-22, gap-closure pass 2 item 6).
@@ -7841,6 +7931,205 @@ How to answer:
         }
 
         // ================================================================
+        // DERMATOLOGY / WOUND CARE / PODIATRY / ABA
+        // (2026-08-22, gap-closure pass 2 item 7)
+        //
+        // THE SHARED PIECE, BUILT ONCE: CMS's CY2026 overhaul of skin
+        // substitute payment hits dermatology, wound care and podiatry at the
+        // same time, so scSkinSubstitute() is the single implementation all
+        // three call.
+        //
+        // AND THE CORRECTION THAT INVERTS THE BRIEF: the brief said to reuse
+        // item 2's JW/JZ gate for skin substitute waste. CMS says the exact
+        // opposite. From the JW/JZ FAQ, Q9: "The JW and JZ modifiers are not
+        // appropriate for billing for incident-to supplies, even if such
+        // incident-to supplies are separately payable. In addition, discarded
+        // amounts of incident-to supplies are not payable by Medicare," and
+        // "If a provider or supplier administers an entire non-BLA skin
+        // substitute from the package or container (and no units are
+        // discarded), the JZ modifier is not appropriate when billing
+        // Medicare." Reusing item 2's gate would have appended a modifier CMS
+        // states is inappropriate. So this is its own rule: applied portion
+        // only, and NEITHER waste modifier.
+        // ================================================================
+        var DERM_SOURCES = {
+            skin_rate: 'CY2026 PFS final rule as CORRECTED. The Federal Register correction (FR Doc 2025-21458, 90 FR 54589-54590, filed 26 November 2025) amends the final rule text so that "$127.28/cm2" is corrected to read "$127.14/cm2" in both places it appeared (page 49507 second column, and page 49509 third column), and a separate passage reading "$127.19/cm2" is likewise corrected to "$127.14/cm2".',
+            skin_single: 'CMS CY2026 PFS final rule fact sheet: "CMS is finalizing the use of a single payment rate reflecting the highest average for these three categories of skin substitute products" and is "finalizing these policy changes in both the hospital outpatient department and physician office settings to remain consistent across different settings of care." The rate does not vary by setting.',
+            skin_incident: 'CMS CY2026 PFS final rule: skin substitutes are paid "as incident-to supplies when they are used as part of a covered application procedure paid under the PFS in the non-facility setting or under the OPPS in the hospital outpatient department setting," with categorisation aligned to FDA regulatory status (361 HCT/P, PMA, 510(k)).',
+            skin_waste: 'CMS "Drugs and Biologicals — JW Modifier and JZ Modifier Policy FAQs", Q9: "The JW and JZ modifiers are not appropriate for billing for incident-to supplies, even if such incident-to supplies are separately payable. In addition, discarded amounts of incident-to supplies are not payable by Medicare." Non-BLA skin substitutes "are no longer payable under Medicare Part B as a drug or biological as of January 1, 2026, and only the administered portion is payable."',
+            skin_bla: 'Same FAQ footnote and the CY2026 final rule: products marketed under a biologics license application (BLA) under section 351 of the Public Health Service Act are EXCEPTED and continue to be paid as biologicals under ASP+6% — for those, the ordinary JW/JZ drug rules still apply.',
+            mohs: 'Mohs micrographic surgery codes 17311-17315 carry a 000 (zero-day) global period. Per the CMS RVU file indicator definitions, 000 means "Endoscopic or minor procedure with related preoperative and postoperative relative values on the day of the procedure only included in the fee schedule payment amount." Repair codes may be reported with Mohs on the same date, with modifier 59 where a distinct procedural service must be shown.',
+            podiatry: 'Routine foot care is statutorily excluded under section 1862(a)(13) of the Social Security Act unless the beneficiary has a systemic condition that makes self-care or non-professional care hazardous. Three things must be present for the at-risk-foot pathway to pay: a covered systemic ICD-10 diagnosis, documentation of a qualifying class finding, and the corresponding Q modifier. Q7 = one class A finding; Q8 = two class B findings; Q9 = one class B and two class C findings. Applies to routine foot care codes including 11055-11057 and 11719-11721.',
+            aba: 'ABA credential-level modifiers are tied to EDUCATION LEVEL rather than to a specific certification: HM = less than bachelor\'s (behavior technician), HN = bachelor\'s level (RBT or BCaBA), HO = master\'s level (BCBA), HP = doctoral level (BCBA-D). Payer conventions differ — some payers infer the credential from the code and reject a provider-level modifier as redundant, while others deny the claim without it.',
+            aba_scope: 'ABA has no uniform national CMS standard. Medicare does not cover it for most beneficiaries; coverage runs through state mandates, so each commercial payer and state Medicaid program sets its own rules. The ABA Coding Coalition announced revisions effective 1 January 2027 (new codes, revised codes, both Category III T-codes deleted) but final code numbers are not published — expected with the 2027 CPT Professional Edition.'
+        };
+
+        var SKIN_SUBSTITUTE_RATE_2026 = 127.14;
+        var SKIN_SUBSTITUTE_EFFECTIVE_YEAR = 2026;
+        var SKIN_FDA_CATEGORIES = { hctp361: '361 HCT/P', pma: 'PMA (Pre-Market Approval)', k510: '510(k)', bla: 'BLA (biologics license application)' };
+
+        // The one implementation. Dermatology, wound care and podiatry all
+        // call this -- there is no second copy of the rate or the waste rule.
+        function scSkinSubstitute(dosYear, fdaCategory, appliedSqCm, wastedSqCm) {
+            var y = Number(dosYear);
+            if (!y || !isFinite(y)) return { status: 'undetermined', reason: 'A date-of-service year is required. The incident-to supply policy and the flat rate begin with dates of service on or after 1 January 2026; before that these products were paid as biologicals under ASP+6%.' };
+            if (!fdaCategory || !SKIN_FDA_CATEGORIES[fdaCategory]) {
+                return { status: 'undetermined', reason: 'The product\'s FDA regulatory category is required. A BLA product is excepted from this policy entirely and is still paid as a biological, so assuming the category would produce the wrong payment basis and the wrong waste rule.' };
+            }
+            if (y < SKIN_SUBSTITUTE_EFFECTIVE_YEAR) {
+                return { status: 'pre_policy', era: 'pre2026', category: SKIN_FDA_CATEGORIES[fdaCategory], reason: 'For a date of service before 1 January 2026 this product was paid as a biological under ASP+6% with its own product-specific code, not at the flat incident-to rate.' };
+            }
+            if (fdaCategory === 'bla') {
+                return {
+                    status: 'bla_excepted', category: SKIN_FDA_CATEGORIES[fdaCategory],
+                    reason: 'This product is marketed under a biologics license application and is EXCEPTED from the incident-to supply policy. It continues to be paid as a biological under ASP+6%, and because it is still a drug/biological the ordinary JW/JZ discarded-drug rules DO apply to it — use the Drug Administration panel\'s JW/JZ gate for this one, not the flat rate below.'
+                };
+            }
+            var applied = Number(appliedSqCm);
+            if (!isFinite(applied) || applied <= 0) {
+                return { status: 'undetermined', reason: 'The applied area in square centimetres is required — only the administered portion is payable, so there is nothing to compute without it.' };
+            }
+            var wasted = Number(wastedSqCm);
+            var hasWaste = isFinite(wasted) && wasted > 0;
+            return {
+                status: 'apply',
+                category: SKIN_FDA_CATEGORIES[fdaCategory],
+                rate: SKIN_SUBSTITUTE_RATE_2026,
+                billableSqCm: applied,
+                amount: +(applied * SKIN_SUBSTITUTE_RATE_2026).toFixed(2),
+                discardedSqCm: hasWaste ? wasted : 0,
+                jwjz: 'not_applicable',
+                reason: 'Bill the applied ' + applied + ' cm2 at the flat rate of $' + SKIN_SUBSTITUTE_RATE_2026.toFixed(2) + '/cm2 as an incident-to supply.'
+                    + (hasWaste ? (' The ' + wasted + ' cm2 discarded is NOT billable and is not added to the units.') : '')
+                    + ' Do NOT append JW or JZ: CMS states those modifiers are not appropriate for incident-to supplies, and discarded amounts of incident-to supplies are not payable at all — including the case where nothing was discarded, where JZ is still inappropriate.'
+            };
+        }
+
+        // ── Dermatology: Mohs ──
+        function dermMohsGlobal(sameDayService) {
+            if (!sameDayService) return { status: 'undetermined', reason: 'Say which same-day service is in question.' };
+            return {
+                status: 'separately_reportable', global: '000',
+                reason: 'Mohs codes 17311-17315 carry a 000 (zero-day) global period, so there is no built-in follow-up window and same-day services are not swept into the surgical package the way a 010 or 090 global would sweep them. Repair codes are separately reportable on the same date; append modifier 59 where a distinct procedural service must be shown. Document the separate service on its own terms rather than relying on the modifier alone.'
+            };
+        }
+
+        // ── Wound care ──
+        // MAC JURISDICTION: verified as real and genuinely jurisdiction-
+        // specific, but this app ships NO ICD-10 coverage lists. Four MACs
+        // publish four different lists and none was verified line by line
+        // here, so the gate records which jurisdiction applies and tells the
+        // coder to check that MAC's own article. Shipping four unverified
+        // lists would be the fabrication class this whole arc exists to avoid.
+        var WOUND_MAC_ARTICLES = {
+            noridian: { label: 'Noridian', article: 'A58565' },
+            cgs:      { label: 'CGS', article: 'A55909' },
+            palmetto: { label: 'Palmetto / First Coast', article: 'A55818' },
+            novitas:  { label: 'Novitas', article: 'A53001' }
+        };
+        function woundJurisdictionCheck(mac) {
+            var m = WOUND_MAC_ARTICLES[mac];
+            if (!m) return { status: 'undetermined', reason: 'Select the MAC jurisdiction. Wound care coverage is jurisdiction-specific — each MAC publishes its own billing and coding article with its own supporting ICD-10 list, so a national answer does not exist.' };
+            return {
+                status: 'jurisdiction', mac: m.label, article: m.article,
+                reason: 'This claim falls under ' + m.label + '. Check that MAC\'s billing and coding article ' + m.article + ' for the ICD-10 codes that support medical necessity in this jurisdiction. This app deliberately ships no coverage list of its own — four MACs publish four different lists and none was verified here, so an embedded copy would be worse than no copy.'
+            };
+        }
+        function woundBundlingCheck(debridementBilled, strappingBilled, modifier) {
+            if (debridementBilled !== 'yes' && debridementBilled !== 'no') return { status: 'undetermined', reason: 'Say whether a debridement code is on this claim.' };
+            if (strappingBilled !== 'yes' && strappingBilled !== 'no') return { status: 'undetermined', reason: 'Say whether a strapping code is on this claim.' };
+            if (debridementBilled !== 'yes' || strappingBilled !== 'yes') {
+                return { status: 'clear', reason: 'Debridement and strapping are not both on this claim, so the bundling edit between them does not arise.' };
+            }
+            if (String(modifier || '').trim().toUpperCase() === 'XS') {
+                return { status: 'ok', modifier: 'XS', reason: 'Strapping is bundled into debridement under the NCCI edits. XS (separate structure) is present, which is the modifier that supports unbundling when the strapping was genuinely performed on a different anatomic site. Confirm the record actually documents a separate structure — the modifier does not create the fact.' };
+            }
+            return { status: 'bundled', reason: 'Strapping is bundled into debridement under the NCCI procedure-to-procedure edits. Without XS (separate structure) documenting a different anatomic site, the strapping line will not pay separately. Do not append XS unless the record supports it.' };
+        }
+
+        // ── Podiatry: three-part routine foot care gate ──
+        var PODIATRY_Q_MODIFIERS = {
+            Q7: 'One class A finding',
+            Q8: 'Two class B findings',
+            Q9: 'One class B and two class C findings'
+        };
+        function podiatryRoutineFootCare(systemicDx, classFinding, qModifier) {
+            var q = String(qModifier || '').trim().toUpperCase();
+            var missing = [];
+            if (systemicDx !== 'yes' && systemicDx !== 'no') return { status: 'undetermined', reason: 'Say whether a covered systemic ICD-10 diagnosis is documented. Routine foot care is statutorily excluded without one.' };
+            if (classFinding !== 'yes' && classFinding !== 'no') return { status: 'undetermined', reason: 'Say whether a qualifying class finding is documented.' };
+            if (!q) return { status: 'undetermined', reason: 'Enter the Q modifier on the claim (Q7, Q8 or Q9), or state that none is present.' };
+            if (systemicDx !== 'yes') missing.push('a covered systemic ICD-10 diagnosis');
+            if (classFinding !== 'yes') missing.push('a documented qualifying class finding');
+            if (!PODIATRY_Q_MODIFIERS[q]) missing.push('a valid Q modifier (Q7, Q8 or Q9)' + (q === 'NONE' ? '' : ' — "' + q + '" is not one'));
+            if (missing.length) {
+                return {
+                    status: 'denied_statutory', missing: missing,
+                    reason: 'This line will deny as a statutory exclusion. Routine foot care is excluded under section 1862(a)(13) of the Social Security Act unless all three elements are present, and this claim is missing: ' + missing.join('; ') + '. All three are required — two out of three does not pay.'
+                };
+            }
+            return {
+                status: 'payable', qModifier: q, finding: PODIATRY_Q_MODIFIERS[q],
+                reason: 'All three elements are present: a covered systemic diagnosis, a documented class finding, and ' + q + ' (' + PODIATRY_Q_MODIFIERS[q] + '). Confirm the class finding documented actually matches what ' + q + ' asserts — the modifier is an attestation about the findings, not a substitute for them.'
+            };
+        }
+
+        // ── ABA ──
+        // Modifier tiers are keyed to EDUCATION LEVEL, not to a certification
+        // name. That is a correction to the brief, which paired the four
+        // modifiers with BCBA/BCaBA/RBT -- HN in particular covers a
+        // bachelor's-level RBT *or* a BCaBA depending on the payer, so
+        // hardcoding "RBT = HM" is wrong for some payers.
+        var ABA_MODIFIER_TIERS = {
+            HM: { label: "Less than bachelor's level (behavior technician)" },
+            HN: { label: "Bachelor's level (RBT or BCaBA)" },
+            HO: { label: "Master's level (BCBA)" },
+            HP: { label: 'Doctoral level (BCBA-D)' }
+        };
+        // Payer conventions that were actually verified. Anything else fails
+        // closed rather than assuming one convention generalises.
+        var ABA_PAYER_CONVENTIONS = {
+            tricare:   { label: 'TRICARE (Autism Care Demonstration)', rbtSeparate: true },
+            generic_commercial: { label: 'Commercial payer using provider-level modifiers', rbtSeparate: false }
+        };
+        function abaCredentialModifier(educationLevel) {
+            var map = { less_than_bachelors: 'HM', bachelors: 'HN', masters: 'HO', doctoral: 'HP' };
+            var mod = map[educationLevel];
+            if (!mod) return { status: 'undetermined', reason: 'Select the rendering provider\'s education level. The ABA modifiers are keyed to education level rather than to a certification name — a bachelor\'s-level RBT and a BCaBA both fall under HN, so mapping straight from "RBT" would be wrong for some payers.' };
+            return { status: 'modifier', modifier: mod, tier: ABA_MODIFIER_TIERS[mod].label, reason: 'Rendering provider maps to ' + mod + ' (' + ABA_MODIFIER_TIERS[mod].label + ').' };
+        }
+        function abaRenderingRule(payerKey, renderedByRbt) {
+            if (renderedByRbt !== 'yes' && renderedByRbt !== 'no') {
+                return { status: 'undetermined', reason: 'Say whether the service was rendered by an RBT or behavior technician.' };
+            }
+            var p = ABA_PAYER_CONVENTIONS[payerKey];
+            if (!p) {
+                return {
+                    status: 'undetermined',
+                    reason: 'The payer is not one this app has a verified convention for. ABA has no uniform national CMS standard — Medicare does not cover it for most beneficiaries and coverage runs through state mandates, so each commercial payer and state Medicaid program sets its own rules. Confirm this payer\'s own policy on whether an RBT bills under the supervising BCBA\'s NPI or separately, and whether a provider-level modifier is wanted at all: some payers infer the credential from the code and reject the modifier as redundant, while others deny without it.'
+                };
+            }
+            if (renderedByRbt !== 'yes') {
+                return { status: 'direct', payer: p.label, reason: 'Service was not rendered by an RBT, so the supervising-NPI question does not arise. Bill under the rendering provider with the modifier matching their education level.' };
+            }
+            if (p.rbtSeparate) {
+                return { status: 'rbt_separate', payer: p.label, reason: p.label + ' requires the RBT to be billed separately rather than under the supervising BCBA\'s NPI. Do not apply the general supervising-NPI pattern here — this is a named exception, not the default.' };
+            }
+            return { status: 'rbt_under_supervisor', payer: p.label, reason: 'Under ' + p.label + '\'s convention the RBT\'s service is billed under the supervising BCBA\'s NPI, with HM for the technician alongside the supervisor\'s own tier modifier. Confirm against the current provider manual — this convention is payer-specific and changes.' };
+        }
+        // The 2027 change is flagged and nothing more. Item 5's concurrent
+        // date-routing is deliberately NOT reused here: that worked for OB/GYN
+        // because real final code numbers existed to verify against. Here they
+        // do not exist yet, and a placeholder code in a billing tool is worse
+        // than an honest "not published".
+        function abaFutureCodeNotice() {
+            return {
+                status: 'future_unverifiable',
+                reason: 'The ABA Coding Coalition announced revisions effective 1 January 2027 — new codes, revised existing codes, and deletion of both Category III T-codes — but the final code numbers are not published yet and are expected with the 2027 CPT Professional Edition. This app builds against the current 2026 set only. No placeholder codes are provided, deliberately: an invented code number in a billing tool is worse than a stated gap.'
+            };
+        }
+
+        // ================================================================
         // DME / DMEPOS (2026-08-22, gap-closure pass 2 item 6)
         //
         // A structurally different channel from everything else in this arc:
@@ -8506,6 +8795,97 @@ How to answer:
                     ? 'Bill the technical component only. In a leased hospital department, where the beneficiary is neither an inpatient nor a registered outpatient of any hospital, both components are payable under the fee schedule — the building does not make the patient a hospital patient.'
                     : 'Bill the technical component only. The TC is payable for beneficiaries who are not patients of any hospital and receive the service in a physician office, freestanding imaging or radiation oncology centre, or other non-hospital setting.'
             };
+        }
+
+        // ── Derm / Wound / Podiatry / ABA panel: handlers ──
+        function renderDermWoundControls(){
+            var b = document.getElementById('skin-banner');
+            if (b && !b.innerHTML) {
+                b.innerHTML = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:12px 16px;font-size:12px;color:#444;">'
+                    + '<b>CY2026 skin substitute overhaul.</b> Non-BLA skin substitutes moved from product-specific ASP+6% to a single flat rate of <b>$' + SKIN_SUBSTITUTE_RATE_2026.toFixed(2) + '/cm&sup2;</b>, reclassified as incident-to supplies, with only the applied portion payable.'
+                    + '<div style="margin-top:6px;"><b>Do not append JW or JZ.</b> CMS states those modifiers are not appropriate for incident-to supplies, and discarded amounts of incident-to supplies are not payable — including the no-waste case, where JZ is still inappropriate. BLA products are excepted and keep the ordinary drug rules.</div>'
+                    + '<div style="margin-top:6px;font-size:11px;color:#666;">Rate source: ' + escHtml(DERM_SOURCES.skin_rate) + '</div></div>';
+            }
+            var ab = document.getElementById('aba-banner');
+            if (ab) ab.textContent = 'ABA has no uniform national CMS standard — coverage runs through state mandates and each payer sets its own rules. This app answers only for payers whose convention was verified, and fails closed otherwise rather than generalising one payer to all.';
+            var af = document.getElementById('aba-future');
+            if (af && !af.innerHTML) {
+                var f = abaFutureCodeNotice();
+                af.innerHTML = duBox(DU_STYLE_INFO, '<b>2027 ABA code revisions — known future item</b><div style="margin-top:6px;">' + escHtml(f.reason) + '</div>', DERM_SOURCES.aba_scope);
+            }
+        }
+        function runSkinSubstitute(){
+            var r = scSkinSubstitute(
+                document.getElementById('skin-year').value,
+                document.getElementById('skin-fda').value,
+                document.getElementById('skin-applied').value,
+                document.getElementById('skin-wasted').value);
+            var style = r.status === 'apply' ? DU_STYLE_OK
+                      : r.status === 'undetermined' ? DU_STYLE_STOP
+                      : DU_STYLE_INFO;
+            var head = r.status === 'apply' ? ('<b>$' + r.amount.toFixed(2) + '</b> — ' + r.billableSqCm + ' cm&sup2; at $' + r.rate.toFixed(2) + '/cm&sup2;')
+                     : r.status === 'bla_excepted' ? '<b>BLA product — excepted from this policy</b>'
+                     : r.status === 'pre_policy' ? '<b>Pre-2026 date of service</b>'
+                     : '<b>Cannot determine — do not submit without resolving this</b>';
+            var body = head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>';
+            if (r.category) body += '<div style="margin-top:8px;font-size:12px;">FDA category: ' + escHtml(r.category) + '</div>';
+            document.getElementById('skin-result').innerHTML = duBox(style, body,
+                r.status === 'bla_excepted' ? DERM_SOURCES.skin_bla : (r.status === 'apply' ? DERM_SOURCES.skin_waste : DERM_SOURCES.skin_incident));
+        }
+        function runMohs(){
+            var r = dermMohsGlobal(document.getElementById('mohs-service').value);
+            var style = r.status === 'undetermined' ? DU_STYLE_STOP : DU_STYLE_OK;
+            var head = r.status === 'undetermined' ? '<b>Select a service</b>' : '<b>Separately reportable — 000 global</b>';
+            document.getElementById('mohs-result').innerHTML = duBox(style, head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>', DERM_SOURCES.mohs);
+        }
+        function runWoundJurisdiction(){
+            var r = woundJurisdictionCheck(document.getElementById('wound-mac').value);
+            var style = r.status === 'undetermined' ? DU_STYLE_STOP : DU_STYLE_INFO;
+            var head = r.status === 'undetermined' ? '<b>Jurisdiction required</b>' : ('<b>' + escHtml(r.mac) + ' — article ' + escHtml(r.article) + '</b>');
+            document.getElementById('wound-j-result').innerHTML = duBox(style, head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>');
+        }
+        function runWoundBundling(){
+            var r = woundBundlingCheck(
+                document.getElementById('wound-deb').value,
+                document.getElementById('wound-strap').value,
+                document.getElementById('wound-mod').value);
+            var style = r.status === 'bundled' ? DU_STYLE_STOP
+                      : r.status === 'undetermined' ? DU_STYLE_STOP
+                      : DU_STYLE_OK;
+            var head = r.status === 'bundled' ? '<b>Bundled — will not pay separately</b>'
+                     : r.status === 'ok' ? '<b>XS present</b>'
+                     : r.status === 'clear' ? '<b>Edit does not arise</b>'
+                     : '<b>Cannot determine</b>';
+            document.getElementById('wound-b-result').innerHTML = duBox(style, head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>');
+        }
+        function runPodiatry(){
+            var r = podiatryRoutineFootCare(
+                document.getElementById('pod-dx').value,
+                document.getElementById('pod-class').value,
+                document.getElementById('pod-q').value);
+            var style = r.status === 'payable' ? DU_STYLE_OK : DU_STYLE_STOP;
+            var head = r.status === 'payable' ? ('<b>Payable — ' + escHtml(r.qModifier) + '</b>')
+                     : r.status === 'denied_statutory' ? '<b>Denies as a statutory exclusion</b>'
+                     : '<b>Cannot determine</b>';
+            var body = head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>';
+            if (r.missing && r.missing.length) {
+                body += '<ul style="margin:8px 0 0 18px;padding:0;">';
+                r.missing.forEach(function(m){ body += '<li style="margin-bottom:3px;">' + escHtml(m) + '</li>'; });
+                body += '</ul>';
+            }
+            document.getElementById('pod-result').innerHTML = duBox(style, body, DERM_SOURCES.podiatry);
+        }
+        function runAba(){
+            var mod = abaCredentialModifier(document.getElementById('aba-edu').value);
+            var payer = document.getElementById('aba-payer').value;
+            var rule = abaRenderingRule(payer === 'other' ? null : payer, document.getElementById('aba-rbt').value);
+            var style = (mod.status === 'undetermined' || rule.status === 'undetermined') ? DU_STYLE_STOP : DU_STYLE_OK;
+            var body = mod.status === 'modifier'
+                ? ('<b>Modifier ' + escHtml(mod.modifier) + '</b> — ' + escHtml(mod.tier))
+                : '<b>Cannot determine the credential modifier</b>';
+            body += '<div style="margin-top:6px;">' + escHtml(mod.reason) + '</div>';
+            body += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.1);">' + escHtml(rule.reason) + '</div>';
+            document.getElementById('aba-result').innerHTML = duBox(style, body, DERM_SOURCES.aba);
         }
 
         // ── DME/DMEPOS panel: CRUD + handlers ──
@@ -9233,6 +9613,8 @@ How to answer:
             renderCodedItems();
             renderCredentialScopes();
             renderPcTc();
+            renderDme();
+            renderDermWoundControls();
 
             document.getElementById('chatInput')?.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendChatMessage();
