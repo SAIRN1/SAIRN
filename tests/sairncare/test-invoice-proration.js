@@ -1,6 +1,6 @@
 // Isolated test of the invoice-retroactivity fix's core logic in sairncare.html:
 // daysInMonth / careHistoryOf / currentCareLevelOf / careLevelLabel / careRateFor /
-// careLevelSegmentsForMonth. Extracted VERBATIM by line range from the real file
+// careLevelSegmentsForMonth. Extracted VERBATIM by name from the real file
 // (not retyped) and eval'd with a stubbed facility() rate card, same methodology
 // used elsewhere in this project for pure client-side logic with no I/O.
 'use strict';
@@ -8,27 +8,45 @@ const fs = require('fs');
 const path = require('path');
 const FILE = path.join(__dirname, '..', '..', 'sairncare.html');
 
-const lines = fs.readFileSync(FILE, 'utf8').split('\n');
-// Line numbers are 1-indexed in the editor; array is 0-indexed.
-function extract(startLine, endLine) {
-  return lines.slice(startLine - 1, endLine).join('\n');
+const fileText = fs.readFileSync(FILE, 'utf8');
+
+// Extracted BY NAME, not by line range. The previous version of this file pinned
+// hard-coded line numbers; its drift guard correctly caught the very next edit to
+// sairncare.html rather than silently testing stale code -- but needing a manual
+// re-pin after every unrelated edit is its own failure mode. Brace-matching from a
+// named declaration survives the file moving around, and still fails loudly if a
+// function is renamed or deleted.
+function extractFn(name) {
+  const start = fileText.indexOf('function ' + name + '(');
+  if (start === -1) throw new Error('function ' + name + ' not found in sairncare.html -- renamed or removed?');
+  const open = fileText.indexOf('{', start);
+  if (open === -1) throw new Error('malformed declaration for ' + name);
+  let depth = 0;
+  for (let i = open; i < fileText.length; i++) {
+    if (fileText[i] === '{') depth++;
+    else if (fileText[i] === '}') {
+      depth--;
+      if (depth === 0) return fileText.slice(start, i + 1);
+    }
+  }
+  throw new Error('unbalanced braces extracting ' + name);
+}
+function extractVar(name) {
+  const m = new RegExp('^var ' + name + '=.*$', 'm').exec(fileText);
+  if (!m) throw new Error('var ' + name + ' not found in sairncare.html');
+  return m[0];
 }
 
-// Verify the anchors are still what we expect before trusting the extraction -- if either
-// function has moved or been renamed, fail loudly instead of silently testing stale/wrong code.
-// CRLF-preserved file (project convention) -- strip a trailing \r before matching.
-function noCr(s) { return (s || '').replace(/\r$/, ''); }
-if (!/^function daysInMonth\(monthStr\)\{$/.test(noCr(lines[1736]))) {
-  throw new Error('daysInMonth anchor moved -- re-check the line range in this test file');
-}
-if (!/^var ALF_LEVEL_LABEL=/.test(noCr(lines[2199]))) {
-  throw new Error('ALF_LEVEL_LABEL anchor moved -- re-check the line range in this test file');
-}
-if (noCr(lines[2225]).trim() !== '}') {
-  throw new Error('careRateFor end-of-block anchor moved -- re-check the line range in this test file');
-}
-
-const src = extract(1737, 1780) + '\n' + extract(2200, 2226);
+const src = [
+  extractVar('ALF_LEVEL_LABEL'),
+  extractVar('ALF_SUBTIER_LABEL'),
+  extractFn('daysInMonth'),
+  extractFn('careHistoryOf'),
+  extractFn('currentCareLevelOf'),
+  extractFn('careLevelLabel'),
+  extractFn('careRateFor'),
+  extractFn('careLevelSegmentsForMonth')
+].join('\n');
 
 let RATE_CARD = { il_rate: 3000, al1_rate: 3600, al2_rate: 4200, al3_rate: 4800, mc_rate: 6000, snf_rate: 7500 };
 function facility() { return RATE_CARD; }

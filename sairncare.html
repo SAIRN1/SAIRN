@@ -521,6 +521,74 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="tw"><table><thead><tr><th>Resident</th><th>Payer</th><th>Latest Invoice</th><th>Room &amp; Board</th><th>Care Amount</th><th>Private Total</th><th>Private Status</th><th>HCBS Status</th><th>Actions</th></tr></thead>
       <tbody id="bltbody"></tbody></table></div>
     </div></div>
+
+    <!-- PAYER ROUTING (Phase 1). Coverage is stated up front and honestly: an uncovered
+         state must never look like "nothing to bill". Rules are versioned data loaded from
+         sql/sairncare_payer_rules_seed.json, not hardcoded -- Indiana published a billing
+         mandate and paused it one day before it took effect. -->
+    <div class="card"><div class="cb">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div><b>Payer / Billing Routing</b><div style="font-size:12px;color:var(--muted)">Medicaid HCBS waiver billing and hospice / Medicare Advantage relatedness</div></div>
+        <div id="pr-coverage" style="font-size:12px;color:var(--muted)">Coverage: --</div>
+      </div>
+      <div id="pr-rules" style="margin-top:10px;font-size:12px"></div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn bo bs" onclick="prRefresh()">Refresh Rules</button>
+        <button class="btn bo bs" id="pr-hcbs-btn" onclick="openHcbsRouteModal()">Route an HCBS Claim</button>
+        <button class="btn bo bs" id="pr-hospice-btn" onclick="openHospiceRouteModal()">Route a Hospice / MA Claim</button>
+      </div>
+      <div id="pr-result" style="margin-top:12px"></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ROUTE AN HCBS CLAIM. The acuity tier is an explicit input with no default, because the
+     state's designee assigns it -- the app must never derive it from the care level on file. -->
+<div class="modal" id="hcbsroutemodal">
+  <div class="mbox">
+    <div class="mtitle">Route a Medicaid HCBS Claim</div>
+    <div class="fg"><label>Resident</label><select id="hr-resident"></select></div>
+    <div class="fr"><div class="fg"><label>State</label><select id="hr-state"></select></div>
+      <div class="fg"><label>Service Month</label><input type="month" id="hr-month"></div></div>
+    <div class="fr"><div class="fg"><label>Days Present in Facility</label><input type="number" id="hr-days" min="0" max="31"></div>
+      <div class="fg"><label>Assigned Acuity Tier</label><select id="hr-tier">
+        <option value="">-- assigned by the state, not derived --</option>
+        <option value="tier1">Tier 1</option><option value="tier2">Tier 2</option><option value="tier3">Tier 3</option>
+      </select></div></div>
+    <div class="fg"><label>Preferred Method (only where the state permits a choice)</label><select id="hr-method">
+      <option value="">No preference — show me the options</option>
+      <option value="monthly">Monthly</option><option value="daily">Daily</option>
+    </select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeHcbsRouteModal()">Cancel</button>
+      <button class="btn bp" onclick="runHcbsRoute()">Route Claim</button>
+    </div>
+  </div>
+</div>
+
+<!-- ROUTE A HOSPICE / MA CLAIM. Relatedness is a clinician's determination and is required
+     input -- the engine refuses to infer it, then independently checks the stated answer
+     against the diagnosis comparison CMS actually runs under CR 14219. -->
+<div class="modal" id="hospiceroutemodal">
+  <div class="mbox">
+    <div class="mtitle">Route a Hospice / Medicare Advantage Claim</div>
+    <div class="fg"><label>Resident</label><select id="hp-resident"></select></div>
+    <div class="fr"><div class="fg"><label>Service Month</label><input type="month" id="hp-month"></div>
+      <div class="fg"><label>Claim Type</label><select id="hp-claimtype">
+        <option value="professional">Professional (CMS-1500)</option>
+        <option value="institutional">Institutional (UB-04)</option>
+      </select></div></div>
+    <div class="fr"><div class="fg"><label>Hospice Principal Diagnosis</label><input id="hp-hospicedx" placeholder="e.g. C34.90"></div>
+      <div class="fg"><label>This Claim's Principal Diagnosis</label><input id="hp-claimdx" placeholder="e.g. S72.001A"></div></div>
+    <div class="fg"><label>Clinician's Relatedness Determination</label><select id="hp-relatedness">
+      <option value="">-- required, never inferred --</option>
+      <option value="related">Related to the terminal diagnosis</option>
+      <option value="unrelated">Unrelated to the terminal diagnosis</option>
+    </select></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeHospiceRouteModal()">Cancel</button>
+      <button class="btn bp" onclick="runHospiceRoute()">Route Claim</button>
+    </div>
   </div>
 </div>
 <div class="modal" id="hcbsstatusmodal">
@@ -772,6 +840,32 @@ function alfData(action,resource,payload,withSession){
       return d.data;
     });
   }).catch(function(e){console.warn('alfData network error:',e.message);return null;});
+}
+
+// Routing needs its OWN transport, deliberately not alfData(): alfData collapses
+// any non-ok response to null, which is right for a save (the caller only needs
+// "did it persist") but destroys the entire value of this engine, whose refusals
+// (NO_RULE_FOR_STATE, MISSING_TIER, DX_MATCH_WOULD_DENY) carry the reason a claim
+// must not be billed. A swallowed refusal would render as a blank result and read
+// like a network glitch. This returns the full body, success or refusal.
+function alfRoute(payload){
+  var lic=alfLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(alfSession&&alfSession.token)h['X-SD-Auth']=alfSession.token;
+  return fetch(DATA_API,{
+    method:'POST',headers:h,
+    body:JSON.stringify({action:'route',resource:'alf_payer_rules',app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!d)return null;
+      // A transport/auth failure (401/403/503) arrives with an error but no routing
+      // decision -- surface it in the same shape the engine's own refusals use so the
+      // renderer has exactly one contract to handle.
+      if(!r.ok&&!d.error)return {ok:false,error:{code:'HTTP_'+r.status,message:'The server refused this request.'}};
+      return d;
+    }).catch(function(){return {ok:false,error:{code:'BAD_RESPONSE',message:'The server returned an unreadable response — nothing was routed.'}};});
+  }).catch(function(e){return {ok:false,error:{code:'NETWORK',message:'Network error — nothing was routed. '+e.message}};});
 }
 
 // ── AUTH CLIENT ──────────────────────────────────────────────────────────
@@ -1705,6 +1799,143 @@ function rBillingPanel(){
   if(!alfIsManagement()){denied.style.display='block';content.style.display='none';return;}
   denied.style.display='none';content.style.display='block';
   rBilling();
+  rPayerRouting();
+}
+
+// ── PAYER / BILLING ROUTING (Phase 1) ────────────────────────────────────
+// The rules themselves live server-side and are versioned; this client never
+// decides a billing rule, it only asks the engine and renders what it says.
+var _prRules=null,_prCoverage=null;
+// The states this app CLAIMS to support. Kept explicit so coverage can report
+// an honest {have, need} -- MI and PA are deliberately in this list despite
+// having no rules, because omitting them would turn a real gap into a silent
+// 2-of-2 "fully covered" that is not true.
+var ALF_CLAIMED_HCBS_STATES=['OH','IN','MI','PA'];
+function prRefresh(){
+  return alfData('read','alf_payer_rules',{claimed_states:ALF_CLAIMED_HCBS_STATES},true).then(function(rows){
+    _prRules=Array.isArray(rows)?rows:[];
+    rPayerRouting();
+    return _prRules;
+  });
+}
+function rPayerRouting(){
+  var box=$('pr-rules'),cov=$('pr-coverage');
+  if(!box||!cov)return;
+  if(_prRules===null){
+    cov.textContent='Coverage: not loaded';
+    box.innerHTML='<span style="color:var(--muted)">Click Refresh Rules to load the billing rules from the server.</span>';
+    return;
+  }
+  var hcbs=_prRules.filter(function(r){return r.program==='medicaid_hcbs'&&(r.status||'active')==='active';});
+  var covered={};hcbs.forEach(function(r){covered[r.state]=true;});
+  var have=ALF_CLAIMED_HCBS_STATES.filter(function(s){return covered[s];});
+  var missing=ALF_CLAIMED_HCBS_STATES.filter(function(s){return !covered[s];});
+  cov.textContent='HCBS coverage: '+have.length+' of '+ALF_CLAIMED_HCBS_STATES.length+' states';
+  var html='';
+  if(!_prRules.length){
+    html+='<div style="color:var(--muted)">No billing rules are loaded yet. Until they are, this app cannot route a claim — run sql/sairncare_payer_rules_schema.sql and load sql/sairncare_payer_rules_seed.json.</div>';
+  }else{
+    html+='<div class="tw"><table><thead><tr><th>Rule</th><th>State</th><th>Program</th><th>In force from</th><th>Status</th><th>Authority</th></tr></thead><tbody>'+
+      _prRules.map(function(r){
+        var a=(r.data&&r.data.authority)||{};
+        return '<tr><td>'+H(r.rule_id)+'</td><td>'+H(r.state)+'</td><td>'+H(r.program)+'</td>'+
+          '<td>'+H(r.effective_from||'--')+(r.effective_to?(' to '+H(r.effective_to)):'')+'</td>'+
+          '<td>'+((r.status||'active')==='active'?'<span class="badge bg">active</span>':'<span class="badge bx">'+H(r.status)+'</span>')+'</td>'+
+          '<td>'+(a.url?('<a href="'+H(a.url)+'" target="_blank" rel="noopener noreferrer">'+H(a.citation||'source')+'</a>'):H(a.citation||'--'))+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  if(missing.length){
+    html+='<div style="margin-top:8px;color:var(--warn,#b45309)"><b>Not covered: '+H(missing.join(', '))+'.</b> '+
+      'No primary-source billing codes or modifiers have been verified for these states. This app will refuse to route a claim for them rather than guess — bill them through your existing process.</div>';
+  }
+  box.innerHTML=html;
+}
+function prPopulateResidents(selId){
+  var sel=$(selId);if(!sel)return;
+  sel.innerHTML=residents().map(function(r){return '<option value="'+H(r.id)+'">'+H(r.name)+'</option>';}).join('');
+}
+function prRenderResult(res){
+  var box=$('pr-result');if(!box)return;
+  if(!res){box.innerHTML='<div style="color:var(--muted)">No response from the server — nothing was routed.</div>';return;}
+  if(res.ok===false||res.error){
+    var e=res.error||{};
+    box.innerHTML='<div class="card" style="border-left:3px solid var(--danger,#dc2626)"><div class="cb">'+
+      '<b>Not routed — '+H(e.code||'refused')+'</b>'+
+      '<div style="margin-top:6px">'+H(e.message||'')+'</div>'+
+      (res.assigned_by?('<div style="margin-top:6px;color:var(--muted);font-size:12px">Assigned by: '+H(res.assigned_by)+'</div>'):'')+
+      '</div></div>';
+    return;
+  }
+  if(res.decision==='provider_choice'){
+    box.innerHTML='<div class="card"><div class="cb"><b>Both methods are permitted — the provider chooses</b>'+
+      '<div style="margin-top:6px;color:var(--muted);font-size:12px">'+H(res.note||'')+'</div>'+
+      '<div class="tw" style="margin-top:8px"><table><thead><tr><th>Method</th><th>Billing</th><th>Units</th><th>Earliest submission</th></tr></thead><tbody>'+
+      (res.options||[]).filter(Boolean).map(function(o){
+        return '<tr><td>'+H(o.method)+'</td><td><code>'+H(o.billing_string)+'</code></td><td>'+H(String(o.units))+'</td>'+
+          '<td>'+H((o.earliest_submission&&o.earliest_submission.note)||'--')+'</td></tr>';
+      }).join('')+'</tbody></table></div></div></div>';
+    return;
+  }
+  if(res.payer){
+    box.innerHTML='<div class="card"><div class="cb"><b>Routed to: '+H(res.payer==='ffs_medicare_hospice'?'FFS Medicare (hospice benefit)':'Medicare Advantage plan')+'</b>'+
+      '<div style="margin-top:6px">'+H(res.why||'')+'</div>'+
+      (res.modifier?('<div style="margin-top:6px">Modifier / code: <code>'+H(res.modifier)+'</code></div>'):'')+
+      (res.modifier_note?('<div style="margin-top:4px;color:var(--muted);font-size:12px">'+H(res.modifier_note)+'</div>'):'')+
+      '</div></div>';
+    return;
+  }
+  var line=res.line||{};
+  box.innerHTML='<div class="card"><div class="cb"><b>Routed — '+H(res.method||'')+' billing</b>'+
+    '<div style="margin-top:6px">'+H(res.why||'')+'</div>'+
+    '<div style="margin-top:6px">Billing: <code>'+H(line.billing_string||'')+'</code> &nbsp; Units: '+H(String(line.units||''))+' ('+H(line.unit||'')+')</div>'+
+    '<div style="margin-top:4px;color:var(--muted);font-size:12px">Dates '+H(line.from_date||'')+' to '+H(line.to_date||'')+'. '+
+      H((line.earliest_submission&&line.earliest_submission.note)||'')+'</div>'+
+    ((res.constraints&&res.constraints.length)?('<div style="margin-top:8px"><b style="font-size:12px">Constraints</b><ul style="margin:4px 0 0 18px;font-size:12px;color:var(--muted)">'+
+      res.constraints.map(function(c){return '<li>'+H(c)+'</li>';}).join('')+'</ul></div>'):'')+
+    '</div></div>';
+}
+function openHcbsRouteModal(){
+  if(!alfIsManagement()){toast('Only management can route a claim');return;}
+  prPopulateResidents('hr-resident');
+  var sel=$('hr-state');
+  sel.innerHTML=ALF_CLAIMED_HCBS_STATES.map(function(s){return '<option value="'+H(s)+'">'+H(s)+'</option>';}).join('');
+  var f=facility();
+  if(f.licensing_state&&ALF_CLAIMED_HCBS_STATES.indexOf(f.licensing_state)!==-1)sel.value=f.licensing_state;
+  $('hr-month').value=currentMonth();
+  $('hr-days').value='';$('hr-tier').value='';$('hr-method').value='';
+  $('hcbsroutemodal').classList.add('on');
+}
+function closeHcbsRouteModal(){$('hcbsroutemodal').classList.remove('on');}
+async function runHcbsRoute(){
+  var days=$('hr-days').value;
+  if(days===''){toast('Days present is required');return;}
+  var res=await alfRoute({
+    program:'medicaid_hcbs',state:$('hr-state').value,service_month:$('hr-month').value,
+    days_present:Number(days),tier:$('hr-tier').value||undefined,
+    preferred_method:$('hr-method').value||undefined
+  });
+  closeHcbsRouteModal();
+  prRenderResult(res);
+}
+function openHospiceRouteModal(){
+  if(!alfIsManagement()){toast('Only management can route a claim');return;}
+  prPopulateResidents('hp-resident');
+  $('hp-month').value=currentMonth();
+  $('hp-claimtype').value='professional';
+  $('hp-hospicedx').value='';$('hp-claimdx').value='';$('hp-relatedness').value='';
+  $('hospiceroutemodal').classList.add('on');
+}
+function closeHospiceRouteModal(){$('hospiceroutemodal').classList.remove('on');}
+async function runHospiceRoute(){
+  var res=await alfRoute({
+    program:'hospice_ma',state:'US',service_month:$('hp-month').value,
+    hospice_election:true,claim_type:$('hp-claimtype').value,
+    hospice_principal_diagnosis:$('hp-hospicedx').value.trim(),
+    claim_principal_diagnosis:$('hp-claimdx').value.trim(),
+    relatedness:$('hp-relatedness').value||undefined
+  });
+  closeHospiceRouteModal();
+  prRenderResult(res);
 }
 function rBilling(){
   var rs=residents();

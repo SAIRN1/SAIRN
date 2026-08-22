@@ -63,5 +63,12 @@ module.exports = {
   // a future derived view, never a fabricated number, since no monitoring
   // device is actually wired up yet.
     'alf_signals',
+  // SAIRNcare payer/billing-routing engine (2026-08-22, Phase 1) -- see
+  // sql/sairncare_payer_rules_schema.sql. alf_payer_rules holds VERSIONED
+  // state billing rules as data (Indiana's mandate was published and paused
+  // within one month, which is why they are not hardcoded); alf_claim_routes
+  // is the append-only log of routing decisions actually made.
+    'alf_payer_rules',
+    'alf_claim_routes',
   ],
 };

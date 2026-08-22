@@ -1,0 +1,341 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine seed -- Michigan civil litigation (Michigan Court",
+    "Rules). Phase 3, state jurisdiction #3 of 4 (OH/IN/MI/PA). Michigan only in",
+    "this file -- one state at a time, verified before the next.",
+    "",
+    "Every value below was read from the official current rule text at",
+    "courts.michigan.gov on 2026-08-22 and is quoted in the row. Nothing was",
+    "carried over from the Ohio or Indiana seeds. That mattered here more than",
+    "anywhere so far -- see finding 1.",
+    "",
+    "FINDING 1 -- THE SEVEN-DAY SHORT-PERIOD RULE DOES NOT GENERALISE, AND",
+    "ASSUMING IT DID WOULD HAVE BEEN THE WORST ERROR IN THIS PHASE. Ohio and",
+    "Indiana both exclude intermediate Saturdays, Sundays and holidays for",
+    "periods under seven days. MICHIGAN HAS NO SUCH PROVISION AT ALL. MCR 1.108",
+    "was read in full and contains only three subrules: (1) day-of-event",
+    "excluded and last-day rollover, (2) periods measured in weeks, (3) periods",
+    "measured in months or years. There is no short-period exclusion anywhere in",
+    "it. Michigan therefore counts straight calendar days and rolls only the",
+    "last day -- the same mechanism as modern FRCP, which is why",
+    "michigan_mcr_1108 maps to the frcp_6a IMPLEMENTATION. Two states in a row",
+    "sharing a mechanism was not evidence of a pattern; the third broke it.",
+    "Had Ohio's rule been generalised to Michigan, every Michigan deadline under",
+    "seven days would have been computed LATER than the true date -- the",
+    "direction that loses a right.",
+    "",
+    "FINDING 2 -- MICHIGAN'S ANSWER PERIOD IS TWO DIFFERENT PERIODS, KEYED ON",
+    "HOW AND WHERE SERVICE HAPPENED. MCR 2.108(A) is not a single figure like",
+    "Ohio's 28 or Indiana's 20:",
+    "    (A)(1) 21 days -- served WITHIN Michigan under MCR 2.105(A)(1)",
+    "    (A)(2) 28 days -- served OUTSIDE Michigan, or where the manner of",
+    "           service required registered mail to the defendant",
+    "    (A)(4) 21 days -- answer to a cross-claim or counterclaim",
+    "These are seeded as DISTINCT trigger_events, never as one rule with an",
+    "extension, because which one applies is a fact about the case that the",
+    "engine has no field for and must never guess. Same treatment the federal",
+    "seed already gives FRCP 12(a)(1)(A)(ii)'s domestic vs. outside-any-judicial-",
+    "district split, and FRAP 4(a)(1)(A) vs. 4(a)(1)(B).",
+    "",
+    "IMPORTANT CONSEQUENCE: the 28-day period in (A)(2) is NOT a mail extension.",
+    "It is a different period that already accounts for the manner of service.",
+    "Modelling it as 21 + a 7-day service extension would produce the same",
+    "number today and be wrong the moment either figure is amended",
+    "independently, and would misdescribe the rule in the audit trail an",
+    "attorney reads.",
+    "",
+    "FINDING 3 -- MCR 2.108(A)(3) IS DELIBERATELY NOT SEEDED. Where service is",
+    "by publication or posting under MCR 2.106, the rule says the court 'shall",
+    "allow a reasonable time... but may not prescribe a time less than 28 days",
+    "after publication or posting is completed.' That is a FLOOR on judicial",
+    "discretion, not a deadline. Encoding 28 days there would state the minimum",
+    "the court may allow as though it were the date the answer is due, which",
+    "would be wrong in every case where the court allowed more -- and it would",
+    "be wrong in the dangerous direction, since the computed date would be",
+    "earlier than the real one and then relied on as if it were the deadline.",
+    "Refused rather than approximated, same discipline as the engine's own",
+    "refusal codes.",
+    "",
+    "FINDING 4 -- MICHIGAN'S COURT-HOLIDAY LIST IS UNLIKE EITHER STATE ALREADY",
+    "LOADED, AND ITS WEEKEND-SHIFT RULE IS THE MOST COMPLEX OF THE THREE. MCR",
+    "8.110(D)(2)(a) was read verbatim. Real differences, none assumed:",
+    "  * FRIDAY AFTER THANKSGIVING, CHRISTMAS EVE (Dec 24) and NEW YEAR'S EVE",
+    "    (Dec 31) are all court holidays. No federal, Ohio or Indiana analog.",
+    "  * NO COLUMBUS DAY. Both Ohio and Indiana have it; Michigan's list does",
+    "    not include it. Omitted here rather than carried over.",
+    "  * JUNETEENTH IS PRESENT (unlike Indiana, which omits it, and like Ohio,",
+    "    which has it) -- each state checked on its own text, not inferred.",
+    "  * PRESIDENTS' DAY, third Monday in February, rather than Ohio's",
+    "    'Washington-Lincoln Day' or Indiana's separate Lincoln (Feb 12) and",
+    "    Washington (third Monday) holidays.",
+    "  * THE SHIFT RULE IS TWO RULES, per MCR 8.110(D)(2)(b), quoted verbatim:",
+    "    'When New Year's Day, Juneteenth, Independence Day, Veterans' Day, or",
+    "    Christmas Day falls on Saturday, the preceding Friday shall be a",
+    "    holiday. When [those same days fall] on Sunday, the following Monday",
+    "    shall be a holiday. When Christmas Eve or New Year's Eve falls on",
+    "    Friday, the preceding Thursday shall be a holiday. When Christmas Eve",
+    "    or New Year's Eve falls on Saturday or Sunday, the preceding Friday",
+    "    shall be a holiday.' The Christmas-Eve/New-Year's-Eve-on-FRIDAY shifting",
+    "    BACKWARD to Thursday has no analog in any other calendar loaded here and",
+    "    would never have been produced by pattern-matching. It genuinely fires",
+    "    in 2027 -- see that year's note.",
+    "",
+    "FINDING 5 -- TWO REAL LIMITATIONS, BOTH DISCLOSED RATHER THAN PAPERED OVER.",
+    "  (a) LOCAL VARIANCE IS EXPRESSLY AUTHORISED. MCR 8.110(D)(2)(c): 'Courts",
+    "      are encouraged to promulgate a modifying administrative order if",
+    "      appropriate to accommodate or achieve uniformity with the holiday",
+    "      practices of local governmental units.' Michigan's court holidays are",
+    "      therefore NOT uniform statewide, and this calendar is the MCR default,",
+    "      not a guarantee for any particular court. Real local administrative",
+    "      orders varying it exist and were seen while verifying this.",
+    "  (b) MCR 1.108(1) also rolls off a 'day on which the court is closed",
+    "      pursuant to court order'. Not modelled -- no field exists for a",
+    "      specific court's closure orders, and inventing one would be guessing",
+    "      at facts about a particular courthouse. Same class as Indiana's",
+    "      office-closed limb.",
+    "  Both limitations cause the engine to UNDER-roll, producing a date EARLIER",
+    "  than the true deadline -- the safe direction -- but a Michigan date landing",
+    "  near a local holiday or a known closure should be checked by hand.",
+    "",
+    "ALSO OBSERVED, NOT ENCODED: MCR 1.108(2) computes periods measured in",
+    "WEEKS ('the last day of the period is the same day of the week as the day",
+    "on which the period began'). This engine has no 'weeks' unit and no seeded",
+    "Michigan rule needs one, so it was not built -- speculative capability with",
+    "nothing to exercise it is how untested code ships. MCR 1.108(3)'s",
+    "months/years anniversary-with-end-of-month-clamping matches the engine's",
+    "existing addMonths behaviour exactly, verified by reading both.",
+    "",
+    "STILL OPEN, NOT IN THIS FILE: Pennsylvania -- the Pa.R.C.P. 106 vs. 201 Pa.",
+    "Code Sec. 107 conflict remains unresolved and is the last of the four."
+  ],
+  "rules": [
+    {
+      "rule_id": "mi-mcr-2108a1-answer-served-in-michigan",
+      "jurisdiction": "mi",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint, defendant served within Michigan (Michigan)",
+      "trigger_event": "service_of_summons_and_complaint_in_michigan",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "michigan_mcr_1108",
+      "authority": {
+        "citation": "Mich. Ct. R. 2.108(A)(1)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/michigan-court-rules-responsive-html5.zip/Michigan_Court_Rules/Court_Rules_Chapter_2/Court_Rules_Chapter_2.htm",
+        "quote": "A defendant must serve and file an answer or take other action permitted by law or these rules within 21 days after being served with the summons and a copy of the complaint in Michigan in the manner provided in MCR 2.105(A)(1).",
+        "note": "Distinct trigger_event from the 28-day out-of-state variant on purpose -- whether service happened inside Michigan is a case fact the engine has no field for and must never guess between two overlapping rules. No service_extension: MCR 1.108 has no short-period exclusion and Michigan handles manner-of-service by giving a DIFFERENT PERIOD (see 2.108(A)(2)), not by adding days. The court-closed limb of MCR 1.108(1) is not modelled -- see _readme finding 5(b). effective_from is the Michigan Court Rules of 1985 general effective date, confirmed verbatim: 'These rules take effect on March 1, 1985, and govern all proceedings in actions brought on or after that date.' The individual day-count's own amendment history since 1985 was NOT independently traced -- MCR 2.108 has been amended since and the official rule book is republished continuously (the copy read here was the current one as of 2026-08-22). Safe for a matter triggered in the modern era; a matter triggered in an earlier era should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-08-22"
+      },
+      "effective_from": "1985-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "mi-mcr-2108a2-answer-served-outside-michigan-or-registered-mail",
+      "jurisdiction": "mi",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint, defendant served outside Michigan or by registered mail (Michigan)",
+      "trigger_event": "service_of_summons_and_complaint_outside_michigan_or_registered_mail",
+      "count": {
+        "value": 28,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "michigan_mcr_1108",
+      "authority": {
+        "citation": "Mich. Ct. R. 2.108(A)(2)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/michigan-court-rules-responsive-html5.zip/Michigan_Court_Rules/Court_Rules_Chapter_2/Court_Rules_Chapter_2.htm",
+        "quote": "If service of the summons and a copy of the complaint is made outside Michigan, or if the manner of service used requires the summons and a copy of the complaint to be sent by registered mail addressed to the defendant, the defendant must serve and file an answer or take other action permitted by law or these rules within 28 days after service.",
+        "note": "This is a SEPARATE PERIOD, not the 21-day period plus a service extension -- see _readme finding 2. Modelling it as 21+7 would coincide today and diverge silently the moment either figure is amended, and would misdescribe the rule in the audit trail. effective_from is the Michigan Court Rules of 1985 general effective date, confirmed verbatim: 'These rules take effect on March 1, 1985, and govern all proceedings in actions brought on or after that date.' The individual day-count's own amendment history since 1985 was NOT independently traced -- MCR 2.108 has been amended since and the official rule book is republished continuously (the copy read here was the current one as of 2026-08-22). Safe for a matter triggered in the modern era; a matter triggered in an earlier era should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-08-22"
+      },
+      "effective_from": "1985-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "mi-mcr-2108a4-answer-to-crossclaim-or-counterclaim",
+      "jurisdiction": "mi",
+      "domain": "civil-litigation",
+      "label": "Answer to a cross-claim or counterclaim (Michigan)",
+      "trigger_event": "service_of_pleading_stating_counterclaim_or_crossclaim",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "michigan_mcr_1108",
+      "authority": {
+        "citation": "Mich. Ct. R. 2.108(A)(4)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/michigan-court-rules-responsive-html5.zip/Michigan_Court_Rules/Court_Rules_Chapter_2/Court_Rules_Chapter_2.htm",
+        "quote": "A party served with a pleading stating a cross-claim or counterclaim against that party must serve and file an answer or take other action permitted by law or these rules within 21 days after service.",
+        "note": "Shares a trigger_event NAME with the federal seed's FRCP 12(a)(1)(B) rule, which is safe and intended: rules are selected by jurisdiction first, so 'mi' and 'us-federal' never compete for the same trigger. Verified against the engine's own matching order before reusing the name. effective_from is the Michigan Court Rules of 1985 general effective date, confirmed verbatim: 'These rules take effect on March 1, 1985, and govern all proceedings in actions brought on or after that date.' The individual day-count's own amendment history since 1985 was NOT independently traced -- MCR 2.108 has been amended since and the official rule book is republished continuously (the copy read here was the current one as of 2026-08-22). Safe for a matter triggered in the modern era; a matter triggered in an earlier era should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-08-22"
+      },
+      "effective_from": "1985-03-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "mi",
+      "year": 2026,
+      "authority": {
+        "citation": "Mich. Ct. R. 8.110(D)(2) (holidays observed by state courts)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/court-rules-book-ch-8-responsive-html5.zip/Court_Rules_Book_Ch_8/Court_Rules_Chapter_8/Court_Rules_Chapter_8.htm",
+        "note": "MCR default list; individual courts may modify it by local administrative order under MCR 8.110(D)(2)(c) -- see _readme finding 5(a). 2026 shifts, each checked by day-of-week rather than assumed: Independence Day falls on Saturday and shifts BACK to Friday 2026-07-03. Nothing else shifts this year -- Juneteenth (Fri), Veterans' Day (Wed), Christmas Day (Fri), Christmas Eve (Thu), New Year's Eve (Thu) and New Year's Day (Thu) all fall on weekdays that trigger no shift rule. Includes Friday-after-Thanksgiving, Christmas Eve and New Year's Eve, which no other calendar loaded here has; excludes Columbus Day, which Ohio and Indiana both have.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day (observed, July 4 falls on Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-27",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-24",
+          "name": "Christmas Eve",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-31",
+          "name": "New Year's Eve",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "mi",
+      "year": 2027,
+      "authority": {
+        "citation": "Mich. Ct. R. 8.110(D)(2) (holidays observed by state courts)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/court-rules-book-ch-8-responsive-html5.zip/Court_Rules_Book_Ch_8/Court_Rules_Chapter_8/Court_Rules_Chapter_8.htm",
+        "note": "Loaded alongside 2026 so a period triggered late in 2026 does not refuse for a missing year. 2027 is the year Michigan's unusual shift rules actually fire, each checked by day-of-week: Juneteenth falls on Saturday and shifts back to Friday 2027-06-18; Independence Day falls on Sunday and shifts forward to Monday 2027-07-05; Christmas Day falls on Saturday and shifts back to Friday 2027-12-24; and -- the rule with no analog anywhere else in this system -- CHRISTMAS EVE falls on a FRIDAY and shifts BACKWARD to Thursday 2027-12-23, with NEW YEAR'S EVE doing the same to Thursday 2027-12-30. That leaves 2027-12-23 and 2027-12-24 both holidays, which is correct and not a duplicate: they are Christmas Eve observed and Christmas Day observed respectively.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-18",
+          "name": "Juneteenth (observed, June 19 falls on Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (observed, July 4 falls on Sunday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-26",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-23",
+          "name": "Christmas Eve (observed, Dec 24 falls on Friday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas Day (observed, Dec 25 falls on Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-30",
+          "name": "New Year's Eve (observed, Dec 31 falls on Friday)",
+          "kind": "declared"
+        }
+      ]
+    }
+  ]
+}
