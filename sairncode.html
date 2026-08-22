@@ -685,6 +685,7 @@
                 <button class="nav-btn" onclick="showPanel('pctc')" data-tip="PC/TC split billing -- global vs -26 vs -TC, keyed to the CMS PC/TC indicator">PC/TC Split</button>
                 <button class="nav-btn" onclick="showPanel('modrouting')" data-tip="Payer-family modifier routing -- PT vs 33, KX thresholds, SC scope">Modifier Routing</button>
                 <button class="nav-btn" onclick="showPanel('maternity')" data-tip="OB/GYN maternity -- four-phase router across the 2027 code restructure, routed by date of service">OB/GYN Maternity</button>
+                <button class="nav-btn" onclick="showPanel('dme')" data-tip="DME/DMEPOS -- SWO gate, rental vs purchase, prior auth, same/similar, 2026 SC modifier rule">DME / DMEPOS</button>
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
@@ -1619,6 +1620,125 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             </div>
             <div id="du-trap-result" style="margin-top:8px;"></div>
             <div id="du-biosimilar-reference" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- DME/DMEPOS Panel (2026-08-22, gap-closure pass 2 item 6).
+             HCPCS Level II channel: paperwork and equipment-history gates
+             rather than code selection. Persistence is real here (see
+             sql/sairncode_dme_schema.sql) because same-or-similar and the
+             PA exemption cycle both need history. -->
+        <div id="panel-dme" class="panel">
+            <h1 class="panel-title">DME / DMEPOS</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:16px;">A structurally separate channel: HCPCS Level II only, no CPT E/M component. What gets a DME claim denied is usually paperwork or equipment history rather than code choice, so these are the gates.</div>
+
+            <div style="font-weight:700;font-size:16px;margin:8px 0;">1. Standard Written Order (SWO)</div>
+            <div id="dme-swo-note" style="font-size:12px;color:#666;margin-bottom:8px;"></div>
+            <div class="toolbar" id="dme-swo-elements" style="flex-wrap:wrap;gap:14px;"></div>
+            <div class="toolbar">
+                <select id="dme-swo-required">
+                    <option value="">On the Required F2F/WOPD List?</option>
+                    <option value="yes">Yes — on the Required List</option>
+                    <option value="no">No</option>
+                </select>
+                <select id="dme-swo-f2f">
+                    <option value="">Face-to-face within prior 6 months?</option>
+                    <option value="yes">Yes — documented</option>
+                    <option value="no">No</option>
+                </select>
+                <select id="dme-swo-stamp">
+                    <option value="no">Signature is not a stamp</option>
+                    <option value="yes">Signature is a signature/date stamp</option>
+                </select>
+                <button class="btn btn-primary" onclick="runDmeSwo()" id="dme-swo-btn">Validate SWO</button>
+            </div>
+            <div id="dme-swo-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2. Rental vs Purchase</div>
+            <div class="toolbar">
+                <select id="dme-rp-mode">
+                    <option value="">Rental or purchase?</option>
+                    <option value="rental">Rental</option>
+                    <option value="purchase">Purchase</option>
+                </select>
+                <select id="dme-rp-capped">
+                    <option value="">Capped rental category?</option>
+                    <option value="yes">Yes — capped rental</option>
+                    <option value="no">No</option>
+                </select>
+                <input type="number" id="dme-rp-month" placeholder="Rental month (1-13)" class="search-input" style="max-width:190px;">
+                <input type="text" id="dme-rp-mod" placeholder="Month modifier on claim (optional)" class="search-input" style="max-width:250px;">
+                <button class="btn btn-primary" onclick="runDmeRental()" id="dme-rp-btn">Check Modifiers</button>
+            </div>
+            <div id="dme-rp-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">3. SC / GA / GY / GZ &mdash; 2026 DMEPOS Rule</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">A real national rule, narrow in scope. Outside these three categories SC has no national rule and this app says so rather than inventing one.</div>
+            <div class="toolbar">
+                <select id="dme-sc-cat">
+                    <option value="">Product category...</option>
+                    <option value="lymphedema">Lymphedema compression treatment items</option>
+                    <option value="pneumatic">Pneumatic compression devices &amp; supplies</option>
+                    <option value="ventilator">Ventilators &amp; related supplies</option>
+                    <option value="other">Anything else</option>
+                </select>
+                <input type="number" id="dme-sc-year" placeholder="Date-of-service year" class="search-input" style="max-width:200px;">
+                <button class="btn btn-primary" onclick="runDmeSc()" id="dme-sc-btn">Check Modifier Requirement</button>
+            </div>
+            <div id="dme-sc-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">4. Prior Authorization</div>
+            <div id="dme-pa-note" style="font-size:12px;color:#666;margin-bottom:8px;"></div>
+            <div class="toolbar">
+                <input type="text" id="dme-pa-code" placeholder="HCPCS code" class="search-input" style="max-width:200px;">
+                <select id="dme-pa-exempt">
+                    <option value="no">Supplier not exempt</option>
+                    <option value="yes">Supplier holds a PA exemption this cycle</option>
+                </select>
+                <select id="dme-pa-submitted">
+                    <option value="">PA submitted?</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                </select>
+                <button class="btn btn-primary" onclick="runDmePa()" id="dme-pa-btn">Check Prior Auth</button>
+            </div>
+            <div id="dme-pa-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">5. Same or Similar Equipment</div>
+            <div class="toolbar">
+                <input type="text" id="dme-ss-code" placeholder="HCPCS being delivered" class="search-input" style="max-width:220px;">
+                <select id="dme-ss-checked">
+                    <option value="">History checked?</option>
+                    <option value="yes">Yes — checked</option>
+                    <option value="no">Not yet</option>
+                </select>
+                <button class="btn btn-primary" onclick="runDmeSameSimilar()" id="dme-ss-btn">Check History</button>
+            </div>
+            <div id="dme-ss-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">6. Competitive Bidding Flag</div>
+            <div class="toolbar">
+                <input type="text" id="dme-cbp-cat" placeholder="Product category (e.g. ostomy)" class="search-input" style="max-width:280px;">
+                <button class="btn btn-primary" onclick="runDmeCbp()" id="dme-cbp-btn">Check Category</button>
+            </div>
+            <div id="dme-cbp-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Delivered Equipment Records</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">The same-or-similar check reads this. It is your practice's own delivery history, not a Medicare eligibility feed &mdash; it is only as complete as what is entered here.</div>
+            <div class="toolbar">
+                <input type="text" id="dme-add-bene" placeholder="Beneficiary reference" class="search-input">
+                <input type="text" id="dme-add-code" placeholder="HCPCS" class="search-input" style="max-width:160px;">
+                <input type="text" id="dme-add-desc" placeholder="Item description" class="search-input">
+                <input type="text" id="dme-add-dos" placeholder="Date of service" class="search-input" style="max-width:180px;">
+                <select id="dme-add-mode"><option value="rental">Rental</option><option value="purchase">Purchase</option></select>
+                <button class="btn btn-primary" onclick="addDmeRecord()">Add Record</button>
+            </div>
+            <div class="kpi-grid" id="dme-kpis"></div>
+            <div class="table-container">
+                <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                    <thead><tr><th>Beneficiary</th><th>HCPCS</th><th>Item</th><th>Date of Service</th><th>Mode</th><th></th></tr></thead>
+                    <tbody id="dme-tbody"></tbody>
+                </table></div>
+            </div>
         </div>
 
         <!-- OB/GYN Maternity Panel (2026-08-22, gap-closure pass 2 item 5).
@@ -7721,6 +7841,167 @@ How to answer:
         }
 
         // ================================================================
+        // DME / DMEPOS (2026-08-22, gap-closure pass 2 item 6)
+        //
+        // A structurally different channel from everything else in this arc:
+        // HCPCS Level II only, no CPT E/M component, and the gates are about
+        // paperwork and equipment history rather than code selection.
+        // ================================================================
+        var DME_SOURCES = {
+            swo: 'CMS Medicare Coverage Database article A55426, "Standard Documentation Requirements for All Claims Submitted to DME MACs": "A SWO must contain all of the following elements: Beneficiary\'s name or Medicare Beneficiary Identifier (MBI); Order Date; General description of the item; Quantity to be dispensed, if applicable; Treating Practitioner Name or NPI; Treating practitioner\'s signature." Signatures must comply with the Medicare Program Integrity Manual (CMS Pub. 100-08) Ch. 3 §3.3.2.4, and "Signature and date stamps are not allowed."',
+            swo_timing: 'Same article, and Noridian DME MAC Standard Written Order guidance: effective for dates of service on or after 1 January 2020 a SWO must be communicated to the supplier before billing. For items on the Required Face-to-Face Encounter and Written Order Prior to Delivery List the SWO must be completed and communicated BEFORE DELIVERY, and the face-to-face encounter must have occurred within the six months prior to the WOPD date.',
+            sc_dme: 'Joint DME MAC publication, "Lymphedema Compression Treatment Items — Correct Coding and Billing — Revised": the SC and G modifiers derive from CMS Final Rule CMS-1780-F and 42 CFR 410.2, 410.36(a)(4), 414.1680. "The use of these modifiers is mandatory. Claim lines billed without a SC, GA, GY, or GZ modifier will be rejected as missing information." The modifier instructions are effective for dates of service on or after 1 January 2026.',
+            lymph_extra: 'Same publication: a lymphedema diagnosis must be documented by the treating practitioner (MD, DO, NP, PA, CNS) — not by a physical therapist, occupational therapist or lymphedema therapist. Bilateral items on the same date of service are billed on two separate lines with RT and LT and 1 unit each; RTLT on one line with 2 units is rejected as incorrect coding. RA is only for an item lost, stolen or irreparably damaged.',
+            pa: 'CMS Final Rule CMS-1828-F (issued 2 December 2025) establishes a prior authorization exemption process. A supplier that submitted at least 10 initial PA requests between 1 June 2025 and 30 November 2025 and achieved a provisional affirmation rate of 90% or higher may be exempt for one annual standard cycle. DME MACs notify suppliers of exemption status no later than 2 April 2026; the first cycle runs 1 June 2026 through 31 May 2027 and annually thereafter.',
+            pa_list: 'Required Prior Authorization List: 74 HCPCS codes as of 13 April 2026, when seven were added to the existing 67 — E0651 and E0652 (pneumatic compression devices) and L0651, L1844, L1846, L1852, L1932 (orthoses).',
+            rental: 'Noridian DME MAC capped rental guidance: capped rental months carry KH (first month), KI (second and third months) and KJ (months four through thirteen). Reporting RR alone across the rental period is not appropriate — RR is reported in tandem with KH, KI or KJ. After 13 paid rental months the beneficiary owns the item and Medicare then pays only reasonable and necessary maintenance and servicing. A new 13-month period begins only if the interruption exceeds 60 consecutive days plus the days remaining in the 30-day rental month in which use ceased.',
+            purchase: 'DMEPOS purchase claims carry NU for new equipment and UE for used equipment.',
+            cbp: 'CMS CY2026 DMEPOS final rule, published in the Federal Register 28 November 2025, adds ostomy, tracheostomy and urological supplies to the Competitive Bidding Program under section 1847(a)(2)(A) of the Social Security Act. The next round is scheduled to begin no later than 1 January 2028, when contracts and single payment amounts become effective.'
+        };
+
+        var DME_SC_EFFECTIVE_YEAR = 2026;
+        var DME_SC_CATEGORIES = {
+            lymphedema: { label: 'lymphedema compression treatment items' },
+            pneumatic:  { label: 'pneumatic compression devices and related supplies' },
+            ventilator: { label: 'ventilators and related supplies' }
+        };
+
+        // The SIX required SWO elements. THE BRIEF SAID SEVEN AND CMS SAYS
+        // SIX -- the commonly repeated seventh, "start date if applicable,"
+        // is not in CMS's own list in A55426. Building a seven-element gate
+        // would demand a field CMS does not require and would block a
+        // compliant order, so this fails closed only on the real six.
+        var DME_SWO_ELEMENTS = [
+            { key: 'beneficiary', label: "Beneficiary's name or Medicare Beneficiary Identifier (MBI)" },
+            { key: 'order_date',  label: 'Order date' },
+            { key: 'description', label: 'General description of the item' },
+            { key: 'quantity',    label: 'Quantity to be dispensed, if applicable' },
+            { key: 'practitioner',label: 'Treating practitioner name or NPI' },
+            { key: 'signature',   label: "Treating practitioner's signature" }
+        ];
+
+        // Verified partial. NOT the full 74-code Required PA List -- only the
+        // seven additions confirmed against a primary source during this
+        // build. Anything else returns "not in this app's verified list,"
+        // never a clearance, same honest-partial discipline as item 2's
+        // biosimilar reference.
+        var DME_PA_VERIFIED_ADDITIONS = ['E0651','E0652','L0651','L1844','L1846','L1852','L1932'];
+        var DME_PA_LIST_TOTAL = 74;
+
+        function dmeValidateSwo(elements, onRequiredList, f2fWithinSixMonths, signatureIsStamp) {
+            var e = elements || {};
+            var missing = [], unanswered = [];
+            DME_SWO_ELEMENTS.forEach(function(el){
+                var v = e[el.key];
+                if (v === undefined || v === null || v === '') unanswered.push(el.label);
+                else if (v !== true && v !== 'yes') missing.push(el.label);
+            });
+            if (unanswered.length) {
+                return { status: 'undetermined', reason: 'These SWO elements are unanswered: ' + unanswered.join('; ') + '. An unanswered element is not a present one.' };
+            }
+            if (missing.length) {
+                return { status: 'incomplete', missing: missing, reason: 'The SWO is missing required element(s): ' + missing.join('; ') + '. A SWO must contain all six elements before the item is billed.' };
+            }
+            if (signatureIsStamp === 'yes') {
+                return { status: 'incomplete', reason: 'The practitioner signature is a signature or date stamp. CMS does not accept signature or date stamps — the SWO is not compliant.' };
+            }
+            if (onRequiredList !== 'yes' && onRequiredList !== 'no') {
+                return { status: 'undetermined', reason: 'Say whether this item is on the Required Face-to-Face Encounter and Written Order Prior to Delivery List. It decides whether the SWO merely has to precede billing or must precede DELIVERY.' };
+            }
+            if (onRequiredList === 'yes') {
+                if (f2fWithinSixMonths !== 'yes' && f2fWithinSixMonths !== 'no') {
+                    return { status: 'undetermined', reason: 'This item is on the Required F2F/WOPD List, so a face-to-face encounter within the six months prior to the WOPD date is required. Confirm whether that encounter is documented.' };
+                }
+                if (f2fWithinSixMonths === 'no') {
+                    return { status: 'blocked_delivery', reason: 'DO NOT DELIVER. This item is on the Required F2F/WOPD List and there is no documented face-to-face encounter within the six months before the written order. The claim will be denied for a non-compliant WOPD or missing face-to-face note.' };
+                }
+                return { status: 'complete', wopd: true, reason: 'All six SWO elements are present and a qualifying face-to-face encounter is documented within the prior six months. Because this item is on the Required List, the completed SWO must be in the supplier\'s hands BEFORE delivery, not merely before billing.' };
+            }
+            return { status: 'complete', wopd: false, reason: 'All six SWO elements are present. This item is not on the Required F2F/WOPD List, so the SWO must be communicated to the supplier before billing.' };
+        }
+
+        // Rental vs purchase. The real trap is that RR alone is not a
+        // compliant capped-rental claim -- it must be paired with the month
+        // modifier, and a gate that only checked RR-versus-NU would pass a
+        // non-compliant line.
+        function dmeRentalPurchase(mode, rentalMonth, isCapped, monthModifier) {
+            if (mode !== 'rental' && mode !== 'purchase') {
+                return { status: 'undetermined', reason: 'Say whether this is a rental or a purchase.' };
+            }
+            if (mode === 'purchase') {
+                return { status: 'purchase', modifier: 'NU', reason: 'Purchase of new equipment is billed with NU. Used equipment is billed with UE instead — confirm which applies before submitting.' };
+            }
+            if (isCapped !== 'yes' && isCapped !== 'no') {
+                return { status: 'undetermined', reason: 'Say whether this item is in the capped rental payment category. Capped rental requires a month modifier alongside RR; other rentals do not.' };
+            }
+            if (isCapped === 'no') {
+                return { status: 'rental', modifiers: ['RR'], reason: 'Rental billed with RR. This item is not in the capped rental category, so no KH/KI/KJ month modifier applies.' };
+            }
+            var m = Number(rentalMonth);
+            if (!isFinite(m) || m < 1) {
+                return { status: 'undetermined', reason: 'A capped rental needs the rental month number — the required month modifier changes across the 13-month period.' };
+            }
+            if (m > 13) {
+                return { status: 'blocked', reason: 'Rental month ' + m + ' is beyond the 13-month cap. After 13 paid rental months the beneficiary owns the item; Medicare then pays only reasonable and necessary maintenance and servicing. A new 13-month period begins only if use was interrupted for more than 60 consecutive days plus the days remaining in the rental month in which use ceased.' };
+            }
+            var expected = m === 1 ? 'KH' : (m <= 3 ? 'KI' : 'KJ');
+            if (monthModifier && monthModifier !== expected) {
+                return { status: 'blocked', expected: expected, reason: 'Month ' + m + ' of a capped rental requires ' + expected + ', not ' + monthModifier + '. KH is the first month, KI the second and third, KJ months four through thirteen.' };
+            }
+            return { status: 'rental', modifiers: ['RR', expected], month: m, reason: 'Capped rental month ' + m + ' is billed with RR in tandem with ' + expected + '. RR alone across the rental period is not appropriate.' };
+        }
+
+        // Same/similar. Fails closed on an unchecked history, because "we did
+        // not look" and "there is nothing there" produce very different
+        // claims and only one of them is defensible.
+        function dmeSameSimilarCheck(historyChecked, priorItems, hcpcs) {
+            if (historyChecked !== 'yes') {
+                return { status: 'undetermined', reason: 'Same-or-similar equipment history has not been checked. Delivering without checking risks a duplicate-equipment denial, and an unchecked history is not an empty one.' };
+            }
+            var code = String(hcpcs == null ? '' : hcpcs).trim().toUpperCase();
+            if (!code) return { status: 'undetermined', reason: 'Enter the HCPCS code being delivered.' };
+            var list = Array.isArray(priorItems) ? priorItems : [];
+            var hit = list.filter(function(p){ return String(p.hcpcs || '').trim().toUpperCase() === code; });
+            if (hit.length) {
+                return { status: 'conflict', matches: hit, reason: 'This beneficiary already has ' + code + ' on record (' + hit.length + ' prior record(s)). Delivering the same or similar equipment again is a named duplicate-payment denial trigger — resolve before delivery.' };
+            }
+            return { status: 'clear', reason: 'No record of ' + code + ' for this beneficiary in the practice\'s own delivered-equipment history. That is only as complete as the records entered here — it is not a Medicare eligibility check.' };
+        }
+
+        function dmePriorAuthCheck(hcpcs, supplierExempt, paSubmitted) {
+            var code = String(hcpcs == null ? '' : hcpcs).trim().toUpperCase();
+            if (!code) return { status: 'undetermined', reason: 'Enter the HCPCS code.' };
+            var known = DME_PA_VERIFIED_ADDITIONS.indexOf(code) !== -1;
+            if (supplierExempt === 'yes') {
+                return { status: 'exempt', reason: 'This supplier is recorded as holding a prior authorization exemption for the current annual cycle, so prior authorization is not required for this item. Exemption runs one annual cycle at a time and must be re-earned — confirm the cycle covering this date of service.' };
+            }
+            if (known) {
+                if (paSubmitted === 'yes') return { status: 'ok', reason: code + ' is on the Required Prior Authorization List (one of the seven codes added 13 April 2026) and prior authorization has been submitted.' };
+                return { status: 'required_missing', reason: code + ' is on the Required Prior Authorization List — it was one of the seven codes added 13 April 2026, bringing the list to ' + DME_PA_LIST_TOTAL + ' codes. Prior authorization has not been submitted; the claim will be denied.' };
+            }
+            return {
+                status: 'not_in_verified_list',
+                reason: code + ' is not in this app\'s verified partial list. That is NOT a clearance: the Required Prior Authorization List holds ' + DME_PA_LIST_TOTAL + ' codes and only the seven added on 13 April 2026 were confirmed against a primary source here. Check the current list published by CMS and the DME MACs before deciding.'
+            };
+        }
+
+        // Competitive bidding: a FLAG, not a rate engine. Verified and it is
+        // not a close call -- there are no active contracts or single payment
+        // amounts to price against until 1 January 2028 at the earliest, so a
+        // bid-rate engine would model a program with no live rates.
+        var DME_CBP_ADDED_CATEGORIES = ['ostomy', 'tracheostomy', 'urological'];
+        function dmeCompetitiveBiddingFlag(category) {
+            var c = String(category == null ? '' : category).trim().toLowerCase();
+            if (!c) return { status: 'undetermined', reason: 'Enter a product category.' };
+            if (DME_CBP_ADDED_CATEGORIES.indexOf(c) !== -1) {
+                return {
+                    status: 'flagged', reason: c.charAt(0).toUpperCase() + c.slice(1) + ' supplies were added to the Competitive Bidding Program by the CY2026 final rule published 28 November 2025. No contracts or single payment amounts are in effect yet — the next round begins no later than 1 January 2028. Nothing about billing this category changes today, but supplier contracting will.'
+                };
+            }
+            return { status: 'not_flagged', reason: 'This category is not one of the three added by the CY2026 final rule. The program remains between rounds with no contracts or single payment amounts in effect until the next round, which begins no later than 1 January 2028.' };
+        }
+
+        // ================================================================
         // OB/GYN GLOBAL MATERNITY -- FOUR-PHASE ROUTER
         // (2026-08-22, gap-closure pass 2 item 5)
         //
@@ -8077,10 +8358,33 @@ How to answer:
         // invented. Returning "payer-specific, go check" is the honest
         // output, and it is a real answer -- it tells a coder the thing they
         // most need to know, which is that KX's logic does NOT transfer here.
-        function evaluateSc() {
+        // Extended 2026-08-22 (item 6) with a SCOPED EXCEPTION rather than a
+        // second implementation. Item 4's finding stands for the general
+        // case -- SC has no national rule in the PT/33/KX context -- but that
+        // finding does NOT generalize: effective 1 January 2026 CMS created a
+        // real, narrow, national SC requirement for three DMEPOS categories.
+        // Both facts are true at once, so this one function answers both and
+        // the caller says which context it is asking about.
+        function evaluateSc(dmeCategory, dosYear) {
+            var cat = DME_SC_CATEGORIES[dmeCategory];
+            if (cat) {
+                var y = Number(dosYear);
+                if (!y || !isFinite(y)) {
+                    return { status: 'undetermined', scoped: true, reason: 'A date-of-service year is required. The SC/GA/GY/GZ requirement for this category took effect for dates of service on or after 1 January 2026 — before that there was no such rule, so the answer depends on the date.' };
+                }
+                if (y < DME_SC_EFFECTIVE_YEAR) {
+                    return { status: 'not_yet_required', scoped: true, category: cat.label, reason: 'For a date of service before 1 January 2026 the SC/GA/GY/GZ requirement did not yet apply to ' + cat.label + '.' };
+                }
+                return {
+                    status: 'required', scoped: true, category: cat.label,
+                    modifiers: ['SC', 'GA', 'GY', 'GZ'],
+                    reason: 'One of SC, GA, GY or GZ is MANDATORY on every HCPCS line in this category (' + cat.label + '). Append SC when all statutory and reasonable-and-necessary requirements are met; use GA, GY or GZ to describe coverage and liability when they are not. A claim line billed without one of the four is rejected as missing information — this is a real national rule, not a payer preference.'
+                };
+            }
             return {
                 status: 'payer_specific',
-                reason: 'SC is defined only as "Medically necessary service or supply" and carries no national CMS threshold, dollar figure or single national instruction. It is not KX\'s sibling and KX\'s threshold logic does not transfer to it. Whether SC is required, optional or ignored is set by the individual payer — commonly state Medicaid programs and certain DMEPOS categories. Check that payer\'s own policy; this app will not assert a rule it cannot source.'
+                scoped: false,
+                reason: 'Outside the three DMEPOS categories with a national rule, SC is defined only as "Medically necessary service or supply" and carries no national CMS threshold, dollar figure or single national instruction. It is not KX\'s sibling and KX\'s threshold logic does not transfer to it. Whether SC is required, optional or ignored is set by the individual payer — commonly state Medicaid programs and certain DMEPOS categories. Check that payer\'s own policy; this app will not assert a rule it cannot source.'
             };
         }
 
@@ -8202,6 +8506,143 @@ How to answer:
                     ? 'Bill the technical component only. In a leased hospital department, where the beneficiary is neither an inpatient nor a registered outpatient of any hospital, both components are payable under the fee schedule — the building does not make the patient a hospital patient.'
                     : 'Bill the technical component only. The TC is payable for beneficiaries who are not patients of any hospital and receive the service in a physician office, freestanding imaging or radiation oncology centre, or other non-hospital setting.'
             };
+        }
+
+        // ── DME/DMEPOS panel: CRUD + handlers ──
+        function getDmeRecords(){
+            try { var s = localStorage.getItem('sc_dme'); if (s) return JSON.parse(s); } catch(e){}
+            return [];
+        }
+        function saveDmeRecords(list){ try { localStorage.setItem('sc_dme', JSON.stringify(list)); return true; } catch(e){ return false; } }
+        function renderDme(){
+            var note = document.getElementById('dme-swo-note');
+            if (note) note.textContent = 'CMS requires six elements, not seven. The commonly repeated "start date" is not one of them — this gate checks the real six from CMS article A55426, so a compliant order is not blocked for a field CMS never asked for.';
+            var pn = document.getElementById('dme-pa-note');
+            if (pn) pn.textContent = 'Required PA List holds ' + DME_PA_LIST_TOTAL + ' codes as of 13 April 2026. Only the seven added that day were verified against a primary source here, so anything else returns an honest "not in this app\'s verified list" rather than a clearance.';
+            var wrap = document.getElementById('dme-swo-elements');
+            if (wrap && !wrap.innerHTML) {
+                var html = '<div style="font-size:12px;color:#444;width:100%;margin-bottom:4px;">Required SWO elements (all six):</div>';
+                DME_SWO_ELEMENTS.forEach(function(el){
+                    html += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;">'
+                         +  '<select id="dme-swo-' + escHtml(el.key) + '" style="font-size:12px;"><option value="">?</option><option value="yes">Present</option><option value="no">Missing</option></select> '
+                         +  escHtml(el.label) + '</label>';
+                });
+                wrap.innerHTML = html;
+            }
+            var tbody = document.getElementById('dme-tbody');
+            if (!tbody) return;
+            var list = getDmeRecords();
+            tbody.innerHTML = '';
+            list.forEach(function(d){
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td>'+escHtml(d.beneficiary)+'</td><td>'+escHtml(d.hcpcs)+'</td><td>'+escHtml(d.desc||'—')+'</td><td>'+escHtml(d.dos||'—')+'</td><td>'+escHtml(d.mode)+'</td><td><button class="btn" style="padding:2px 8px;" onclick="removeDmeRecord(\''+d.id+'\')">×</button></td>';
+                tbody.appendChild(tr);
+            });
+            var rentals = list.filter(function(d){ return d.mode === 'rental'; }).length;
+            var kpis = document.getElementById('dme-kpis');
+            if (kpis){
+                kpis.innerHTML =
+                    '<div class="kpi-card"><div class="kpi-label">Delivered Records</div><div class="kpi-value">'+list.length+'</div><div class="kpi-detail">Entered by your practice</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Rentals</div><div class="kpi-value">'+rentals+'</div><div class="kpi-detail">Of logged records</div></div>'+
+                    '<div class="kpi-card"><div class="kpi-label">Purchases</div><div class="kpi-value">'+(list.length-rentals)+'</div><div class="kpi-detail">Of logged records</div></div>';
+            }
+        }
+        async function removeDmeRecord(id){
+            if (!requireAdminForDelete()) return;
+            var result = await scData('delete', 'sc_dme', { id: id });
+            if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            saveDmeRecords(getDmeRecords().filter(function(d){return d.id!==id;}));
+            renderDme();
+        }
+        async function addDmeRecord(){
+            var bene = document.getElementById('dme-add-bene').value.trim();
+            var code = document.getElementById('dme-add-code').value.trim();
+            var desc = document.getElementById('dme-add-desc').value.trim();
+            var dos = document.getElementById('dme-add-dos').value.trim();
+            var mode = document.getElementById('dme-add-mode').value;
+            if (!bene || !code) { showToast('Beneficiary reference and HCPCS are both required -- the same/similar check cannot work without them'); return; }
+            var list = getDmeRecords();
+            list.push({id:'dm'+Date.now(), beneficiary:bene, hcpcs:code, desc:desc, dos:dos, mode:mode});
+            var saved = saveDmeRecords(list);
+            var synced = saved ? await scData('write', 'sc_dme', list[list.length - 1]) : null;
+            renderDme();
+            document.getElementById('dme-add-bene').value = '';
+            document.getElementById('dme-add-code').value = '';
+            document.getElementById('dme-add-desc').value = '';
+            document.getElementById('dme-add-dos').value = '';
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'DME record added' : 'DME record added on this device only -- server sync failed, will not appear on other devices until resolved'));
+        }
+        function dmeBox(targetId, r, source){
+            var style = (r.status === 'undetermined') ? DU_STYLE_STOP
+                      : (r.status === 'blocked' || r.status === 'blocked_delivery' || r.status === 'incomplete' || r.status === 'conflict' || r.status === 'required_missing') ? DU_STYLE_STOP
+                      : (r.status === 'not_in_verified_list' || r.status === 'flagged' || r.status === 'payer_specific') ? DU_STYLE_WARN
+                      : (r.status === 'not_flagged' || r.status === 'not_yet_required' || r.status === 'exempt') ? DU_STYLE_INFO
+                      : DU_STYLE_OK;
+            var head = r.modifiers ? ('<b>Modifier(s): ' + escHtml(r.modifiers.join(' + ')) + '</b>')
+                     : r.modifier ? ('<b>Modifier: ' + escHtml(r.modifier) + '</b>')
+                     : (r.status === 'undetermined') ? '<b>Cannot determine — do not submit without resolving this</b>'
+                     : (r.status === 'blocked_delivery') ? '<b>Do not deliver</b>'
+                     : (r.status === 'conflict') ? '<b>Same or similar equipment already on record</b>'
+                     : (r.status === 'complete' || r.status === 'clear' || r.status === 'ok') ? '<b>Clear</b>'
+                     : (r.status === 'required') ? '<b>Modifier required on every line</b>'
+                     : '';
+            // Single open tag rather than one per branch: two branches each
+            // emitting their own opening div tag is correct at runtime but
+            // leaves the static div-balance check reading two opens against
+            // one close, and a checker that cries wolf is worse than none.
+            // (Note the wording avoids a literal tag in this comment -- the
+            // balance check counts comments too, which is how this very fix
+            // tripped the check on its first attempt.)
+            var body = (head || '') + '<div style="' + (head ? 'margin-top:6px;' : '') + '">' + escHtml(r.reason) + '</div>';
+            if (r.missing && r.missing.length) {
+                body += '<ul style="margin:8px 0 0 18px;padding:0;">';
+                r.missing.forEach(function(m){ body += '<li style="margin-bottom:3px;">' + escHtml(m) + '</li>'; });
+                body += '</ul>';
+            }
+            var out = document.getElementById(targetId);
+            if (out) out.innerHTML = duBox(style, body, source);
+        }
+        function runDmeSwo(){
+            var els = {};
+            DME_SWO_ELEMENTS.forEach(function(el){
+                var n = document.getElementById('dme-swo-' + el.key);
+                els[el.key] = n ? n.value : '';
+            });
+            var r = dmeValidateSwo(els,
+                document.getElementById('dme-swo-required').value,
+                document.getElementById('dme-swo-f2f').value,
+                document.getElementById('dme-swo-stamp').value);
+            dmeBox('dme-swo-result', r, r.wopd || r.status === 'blocked_delivery' ? DME_SOURCES.swo_timing : DME_SOURCES.swo);
+        }
+        function runDmeRental(){
+            var r = dmeRentalPurchase(
+                document.getElementById('dme-rp-mode').value,
+                document.getElementById('dme-rp-month').value,
+                document.getElementById('dme-rp-capped').value,
+                document.getElementById('dme-rp-mod').value.trim().toUpperCase());
+            dmeBox('dme-rp-result', r, r.status === 'purchase' ? DME_SOURCES.purchase : DME_SOURCES.rental);
+        }
+        function runDmeSc(){
+            var cat = document.getElementById('dme-sc-cat').value;
+            var r = evaluateSc(cat === 'other' ? null : cat, document.getElementById('dme-sc-year').value);
+            dmeBox('dme-sc-result', r, r.scoped ? DME_SOURCES.sc_dme : MOD_SOURCES.sc);
+        }
+        function runDmePa(){
+            var r = dmePriorAuthCheck(
+                document.getElementById('dme-pa-code').value,
+                document.getElementById('dme-pa-exempt').value,
+                document.getElementById('dme-pa-submitted').value);
+            dmeBox('dme-pa-result', r, r.status === 'exempt' ? DME_SOURCES.pa : DME_SOURCES.pa_list);
+        }
+        function runDmeSameSimilar(){
+            var code = document.getElementById('dme-ss-code').value;
+            var bene = document.getElementById('dme-add-bene').value.trim();
+            var prior = getDmeRecords().filter(function(d){ return !bene || d.beneficiary === bene; });
+            var r = dmeSameSimilarCheck(document.getElementById('dme-ss-checked').value, prior, code);
+            dmeBox('dme-ss-result', r, DME_SOURCES.swo_timing);
+        }
+        function runDmeCbp(){
+            dmeBox('dme-cbp-result', dmeCompetitiveBiddingFlag(document.getElementById('dme-cbp-cat').value), DME_SOURCES.cbp);
         }
 
         // ── OB/GYN Maternity panel: handlers ──
@@ -9073,7 +9514,11 @@ How to answer:
             // PC/TC indicator reference. Syncs like any other reference
             // resource so one coder's verified entry is available to the
             // whole practice rather than living on one device.
-            sc_pctc: 'sc_pctc'
+            sc_pctc: 'sc_pctc',
+            // Added 2026-08-22 (item 6) -- DME delivered-equipment history and
+            // per-supplier PA exemption status. Syncs so the same/similar
+            // check sees the whole practice's deliveries, not one device's.
+            sc_dme: 'sc_dme'
         };
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
@@ -9098,7 +9543,7 @@ How to answer:
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
             renderPrebill(); renderHcc(); renderDrg(); renderQuery(); renderEncoder();
             renderRac(); renderTelehealth(); renderAnesthesia(); renderAuth();
-            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderCodedItems(); renderCredentialScopes(); renderPcTc(); renderDashboard();
+            renderAr(); renderProviders(); renderScrubRules(); renderDenialEvents(); renderEligibility(); renderRetentionSetting(); renderAuthRequests(); renderAsaBaseUnits(); renderSpecialtyChecks(); renderSpecialtyChecklists(); renderCodedItems(); renderCredentialScopes(); renderPcTc(); renderDme(); renderDashboard();
         }
 
         function loadScSharedKnowledge() {
