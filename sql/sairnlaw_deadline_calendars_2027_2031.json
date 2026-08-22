@@ -1,0 +1,1913 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- holiday calendar extension, 2027 (amended) through 2031.",
+    "Phase 4 item 2. Loaded through add_holidays like every other calendar.",
+    "",
+    "WHY THIS EXISTS: every jurisdiction carried 2026-2027 only, which was already",
+    "failing in production, not merely about to. A Pennsylvania matter triggered",
+    "2027-12-15 with a 60-day period crosses into 2028 and refused with",
+    "NOT_PROVISIONED -- verified live before this was built. The refusal was honest",
+    "and correct, but the coverage was going dark on 2028-01-01 regardless.",
+    "",
+    "A REAL DEFECT IN THE PHASE 3 CALENDARS, found by the generator’s own",
+    "self-check rather than by a report: New Year’s Day 2028 falls on a Saturday,",
+    "so every both-way-shift jurisdiction (us-federal, in, mi, pa) observes it on",
+    "FRIDAY 2027-12-31. That date belongs to the 2027 calendar and was absent from",
+    "all four. Ohio is correctly unaffected -- O.R.C. 1.14 shifts Sunday only, so",
+    "its New Year’s Day 2028 stays on 2028-01-01, which is exactly the kind of",
+    "per-state divergence that would have been erased by generating one calendar",
+    "and copying it. The omission erred EARLY (a missing holiday means the engine",
+    "does not roll, producing a date earlier than the truth), which is the safe",
+    "direction, but it was real.",
+    "",
+    "The 2027 rows here are the Phase 3 lists PLUS that one entry. They were not",
+    "regenerated -- those lists carry hand-verified reasoning in their authority",
+    "notes and re-deriving them would have discarded it.",
+    "",
+    "Each jurisdiction’s shift rule is applied separately, never shared. The four",
+    "in this set genuinely differ, and that difference is load-bearing:",
+    "  us-federal  Sat -> preceding Fri, Sun -> following Mon",
+    "  oh          SUNDAY ONLY. No Saturday shift.",
+    "  in          Sat -> preceding Fri, Sun -> following Mon",
+    "  mi          five fixed days both ways; Christmas Eve / New Year’s Eve on a",
+    "              FRIDAY shift BACKWARD to Thursday",
+    "  pa          statutory dates do not shift; federal observed days added alongside",
+    "",
+    "NOT EXTENDED, and deliberately so: Indiana municipal election days (vary by",
+    "locality), Pennsylvania county closure schedules (MCR-equivalent local",
+    "variance -- see that seed’s finding 5), and Michigan local administrative",
+    "orders. All three would require inventing facts about a specific court."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "in",
+      "year": 2027,
+      "authority": {
+        "citation": "Ind. Code Sec. 1-1-9-1 (legal holidays)",
+        "url": "https://codes.findlaw.com/in/title-1-general-provisions/in-code-sect-1-1-9-1.html",
+        "note": "AMENDED 2027. New Year’s Day 2028 falls on a Saturday, so this jurisdiction observes it on FRIDAY 2027-12-31 -- a date that belongs to the 2027 calendar, not 2028. That entry was MISSING from the Phase 3 calendars and is added here. Found by the calendar generator’s own self-check, not by a report: the engine resolves holidays by the year of the date, and the endpoint validator rejects a date whose year does not match its calendar, so the entry would have been silently unreachable if filed under 2028. Every other 2027 entry is the Phase 3 list unchanged. Both-way shift per IC 1-1-9-1(b). Includes Abraham Lincoln’s Birthday and Good Friday; EXCLUDES Juneteenth, which IC 1-1-9-1 does not list. Statewide election days are included in even years only, matching the 2026 encoding; municipal elections vary by locality and remain unenumerable.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King, Jr.'s Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-12",
+          "name": "Abraham Lincoln's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "George Washington's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-03-26",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (observed, July 4 falls on Sunday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas Day (observed, Dec 25 falls on Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-31",
+          "name": "New Year's Day (observed)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "in",
+      "year": 2028,
+      "authority": {
+        "citation": "Ind. Code Sec. 1-1-9-1 (legal holidays)",
+        "url": "https://codes.findlaw.com/in/title-1-general-provisions/in-code-sect-1-1-9-1.html",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Both-way shift per IC 1-1-9-1(b). Includes Abraham Lincoln’s Birthday and Good Friday; EXCLUDES Juneteenth, which IC 1-1-9-1 does not list. Statewide election days are included in even years only, matching the 2026 encoding; municipal elections vary by locality and remain unenumerable.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2028-01-17",
+          "name": "Martin Luther King, Jr.'s Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-11",
+          "name": "Abraham Lincoln's Birthday (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "George Washington's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-04-14",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-02",
+          "name": "Election Day (statewide primary)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-07",
+          "name": "Election Day (statewide general)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-10",
+          "name": "Veterans Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "in",
+      "year": 2029,
+      "authority": {
+        "citation": "Ind. Code Sec. 1-1-9-1 (legal holidays)",
+        "url": "https://codes.findlaw.com/in/title-1-general-provisions/in-code-sect-1-1-9-1.html",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Both-way shift per IC 1-1-9-1(b). Includes Abraham Lincoln’s Birthday and Good Friday; EXCLUDES Juneteenth, which IC 1-1-9-1 does not list. Statewide election days are included in even years only, matching the 2026 encoding; municipal elections vary by locality and remain unenumerable.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Martin Luther King, Jr.'s Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-12",
+          "name": "Abraham Lincoln's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "George Washington's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-03-30",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "in",
+      "year": 2030,
+      "authority": {
+        "citation": "Ind. Code Sec. 1-1-9-1 (legal holidays)",
+        "url": "https://codes.findlaw.com/in/title-1-general-provisions/in-code-sect-1-1-9-1.html",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Both-way shift per IC 1-1-9-1(b). Includes Abraham Lincoln’s Birthday and Good Friday; EXCLUDES Juneteenth, which IC 1-1-9-1 does not list. Statewide election days are included in even years only, matching the 2026 encoding; municipal elections vary by locality and remain unenumerable.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Martin Luther King, Jr.'s Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-12",
+          "name": "Abraham Lincoln's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "George Washington's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-04-19",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-07",
+          "name": "Election Day (statewide primary)",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-05",
+          "name": "Election Day (statewide general)",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "in",
+      "year": 2031,
+      "authority": {
+        "citation": "Ind. Code Sec. 1-1-9-1 (legal holidays)",
+        "url": "https://codes.findlaw.com/in/title-1-general-provisions/in-code-sect-1-1-9-1.html",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Both-way shift per IC 1-1-9-1(b). Includes Abraham Lincoln’s Birthday and Good Friday; EXCLUDES Juneteenth, which IC 1-1-9-1 does not list. Statewide election days are included in even years only, matching the 2026 encoding; municipal elections vary by locality and remain unenumerable.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Martin Luther King, Jr.'s Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-12",
+          "name": "Abraham Lincoln's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "George Washington's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-04-11",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "mi",
+      "year": 2027,
+      "authority": {
+        "citation": "Mich. Ct. R. 8.110(D)(2) (holidays observed by state courts)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/court-rules-book-ch-8-responsive-html5.zip/Court_Rules_Book_Ch_8/Court_Rules_Chapter_8/Court_Rules_Chapter_8.htm",
+        "note": "AMENDED 2027. New Year’s Day 2028 falls on a Saturday, so this jurisdiction observes it on FRIDAY 2027-12-31 -- a date that belongs to the 2027 calendar, not 2028. That entry was MISSING from the Phase 3 calendars and is added here. Found by the calendar generator’s own self-check, not by a report: the engine resolves holidays by the year of the date, and the endpoint validator rejects a date whose year does not match its calendar, so the entry would have been silently unreachable if filed under 2028. Every other 2027 entry is the Phase 3 list unchanged. Per MCR 8.110(D)(2)(b): the five fixed days shift Saturday to Friday and Sunday to Monday, while Christmas Eve and New Year’s Eve shift BACKWARD to Thursday when they fall on a Friday and to Friday when they fall on a weekend. No Columbus Day. This remains the MCR default -- MCR 8.110(D)(2)(c) authorises local administrative orders modifying it.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-18",
+          "name": "Juneteenth (observed, June 19 falls on Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (observed, July 4 falls on Sunday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-26",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-23",
+          "name": "Christmas Eve (observed, Dec 24 falls on Friday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas Day (observed, Dec 25 falls on Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-30",
+          "name": "New Year's Eve (observed, Dec 31 falls on Friday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-31",
+          "name": "New Year's Day (observed)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "mi",
+      "year": 2028,
+      "authority": {
+        "citation": "Mich. Ct. R. 8.110(D)(2) (holidays observed by state courts)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/court-rules-book-ch-8-responsive-html5.zip/Court_Rules_Book_Ch_8/Court_Rules_Chapter_8/Court_Rules_Chapter_8.htm",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Per MCR 8.110(D)(2)(b): the five fixed days shift Saturday to Friday and Sunday to Monday, while Christmas Eve and New Year’s Eve shift BACKWARD to Thursday when they fall on a Friday and to Friday when they fall on a weekend. No Columbus Day. This remains the MCR default -- MCR 8.110(D)(2)(c) authorises local administrative orders modifying it.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2028-01-17",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-10",
+          "name": "Veterans' Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-24",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-22",
+          "name": "Christmas Eve (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-29",
+          "name": "New Year's Eve (observed)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "mi",
+      "year": 2029,
+      "authority": {
+        "citation": "Mich. Ct. R. 8.110(D)(2) (holidays observed by state courts)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/court-rules-book-ch-8-responsive-html5.zip/Court_Rules_Book_Ch_8/Court_Rules_Chapter_8/Court_Rules_Chapter_8.htm",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Per MCR 8.110(D)(2)(b): the five fixed days shift Saturday to Friday and Sunday to Monday, while Christmas Eve and New Year’s Eve shift BACKWARD to Thursday when they fall on a Friday and to Friday when they fall on a weekend. No Columbus Day. This remains the MCR default -- MCR 8.110(D)(2)(c) authorises local administrative orders modifying it.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans' Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-23",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-24",
+          "name": "Christmas Eve",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-31",
+          "name": "New Year's Eve",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "mi",
+      "year": 2030,
+      "authority": {
+        "citation": "Mich. Ct. R. 8.110(D)(2) (holidays observed by state courts)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/court-rules-book-ch-8-responsive-html5.zip/Court_Rules_Book_Ch_8/Court_Rules_Chapter_8/Court_Rules_Chapter_8.htm",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Per MCR 8.110(D)(2)(b): the five fixed days shift Saturday to Friday and Sunday to Monday, while Christmas Eve and New Year’s Eve shift BACKWARD to Thursday when they fall on a Friday and to Friday when they fall on a weekend. No Columbus Day. This remains the MCR default -- MCR 8.110(D)(2)(c) authorises local administrative orders modifying it.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-29",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-24",
+          "name": "Christmas Eve",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-31",
+          "name": "New Year's Eve",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "mi",
+      "year": 2031,
+      "authority": {
+        "citation": "Mich. Ct. R. 8.110(D)(2) (holidays observed by state courts)",
+        "url": "https://www.courts.michigan.gov/siteassets/rules-instructions-administrative-orders/michigan-court-rules/court-rules-book-ch-8-responsive-html5.zip/Court_Rules_Book_Ch_8/Court_Rules_Chapter_8/Court_Rules_Chapter_8.htm",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Per MCR 8.110(D)(2)(b): the five fixed days shift Saturday to Friday and Sunday to Monday, while Christmas Eve and New Year’s Eve shift BACKWARD to Thursday when they fall on a Friday and to Friday when they fall on a weekend. No Columbus Day. This remains the MCR default -- MCR 8.110(D)(2)(c) authorises local administrative orders modifying it.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-28",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-24",
+          "name": "Christmas Eve",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-31",
+          "name": "New Year's Eve",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "oh",
+      "year": 2027,
+      "authority": {
+        "citation": "Ohio Rev. Code Sec. 1.14 (legal holidays)",
+        "url": "https://codes.ohio.gov/ohio-revised-code/section-1.14",
+        "note": "AMENDED 2027. New Year’s Day 2028 falls on a Saturday, so this jurisdiction observes it on FRIDAY 2027-12-31 -- a date that belongs to the 2027 calendar, not 2028. That entry was MISSING from the Phase 3 calendars and is added here. Found by the calendar generator’s own self-check, not by a report: the engine resolves holidays by the year of the date, and the endpoint validator rejects a date whose year does not match its calendar, so the entry would have been silently unreachable if filed under 2028. Every other 2027 entry is the Phase 3 list unchanged. SUNDAY-ONLY shift per O.R.C. 1.14 -- no Saturday shift, unlike the federal calendar. A holiday falling on a Saturday stays on its actual date.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Washington-Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "oh",
+      "year": 2028,
+      "authority": {
+        "citation": "Ohio Rev. Code Sec. 1.14 (legal holidays)",
+        "url": "https://codes.ohio.gov/ohio-revised-code/section-1.14",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. SUNDAY-ONLY shift per O.R.C. 1.14 -- no Saturday shift, unlike the federal calendar. A holiday falling on a Saturday stays on its actual date.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Martin Luther King Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Washington-Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "oh",
+      "year": 2029,
+      "authority": {
+        "citation": "Ohio Rev. Code Sec. 1.14 (legal holidays)",
+        "url": "https://codes.ohio.gov/ohio-revised-code/section-1.14",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. SUNDAY-ONLY shift per O.R.C. 1.14 -- no Saturday shift, unlike the federal calendar. A holiday falling on a Saturday stays on its actual date.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Martin Luther King Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Washington-Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans' Day (observed, falls on Sunday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "oh",
+      "year": 2030,
+      "authority": {
+        "citation": "Ohio Rev. Code Sec. 1.14 (legal holidays)",
+        "url": "https://codes.ohio.gov/ohio-revised-code/section-1.14",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. SUNDAY-ONLY shift per O.R.C. 1.14 -- no Saturday shift, unlike the federal calendar. A holiday falling on a Saturday stays on its actual date.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Martin Luther King Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Washington-Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "oh",
+      "year": 2031,
+      "authority": {
+        "citation": "Ohio Rev. Code Sec. 1.14 (legal holidays)",
+        "url": "https://codes.ohio.gov/ohio-revised-code/section-1.14",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. SUNDAY-ONLY shift per O.R.C. 1.14 -- no Saturday shift, unlike the federal calendar. A holiday falling on a Saturday stays on its actual date.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Martin Luther King Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Washington-Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "pa",
+      "year": 2027,
+      "authority": {
+        "citation": "44 P.S. Sec. 11 (Pennsylvania legal holidays), together with the federal list, per Pa.R.J.A. 107(b)",
+        "url": "https://codes.findlaw.com/pa/title-44-ps-legal-holidays-and-observances/pa-st-sect-44-11/",
+        "note": "AMENDED 2027. New Year’s Day 2028 falls on a Saturday, so this jurisdiction observes it on FRIDAY 2027-12-31 -- a date that belongs to the 2027 calendar, not 2028. That entry was MISSING from the Phase 3 calendars and is added here. Found by the calendar generator’s own self-check, not by a report: the engine resolves holidays by the year of the date, and the endpoint validator rejects a date whose year does not match its calendar, so the entry would have been silently unreachable if filed under 2028. Every other 2027 entry is the Phase 3 list unchanged. Union of 44 P.S. Sec. 11 and the federal list, per Pa.R.J.A. 107(b). PA statutory dates DO NOT shift (the only shift text in 44 P.S. Sec. 11 concerns banking institutions); federal observed days are added alongside. Encodes the STATUTORY test, not the AOPC county closure schedule -- see the Pennsylvania seed’s finding 5.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-03-26",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-14",
+          "name": "Flag Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-18",
+          "name": "Juneteenth (federal observed, June 19 falls on Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Juneteenth (statutory federal date)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (federal observed, July 4 falls on Sunday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-02",
+          "name": "Election Day (general)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas Day (federal observed, Dec 25 falls on Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "Christmas Day (statutory date)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-31",
+          "name": "New Year's Day (federal observed)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "pa",
+      "year": 2028,
+      "authority": {
+        "citation": "44 P.S. Sec. 11 (Pennsylvania legal holidays), together with the federal list, per Pa.R.J.A. 107(b)",
+        "url": "https://codes.findlaw.com/pa/title-44-ps-legal-holidays-and-observances/pa-st-sect-44-11/",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Union of 44 P.S. Sec. 11 and the federal list, per Pa.R.J.A. 107(b). PA statutory dates DO NOT shift (the only shift text in 44 P.S. Sec. 11 concerns banking institutions); federal observed days are added alongside. Encodes the STATUTORY test, not the AOPC county closure schedule -- see the Pennsylvania seed’s finding 5.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-04-14",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-06-14",
+          "name": "Flag Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth (federal limb of Pa.R.J.A. 107(b))",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day (statutory date)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-07",
+          "name": "Election Day (general)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-10",
+          "name": "Veterans' Day (federal observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day (statutory date)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "pa",
+      "year": 2029,
+      "authority": {
+        "citation": "44 P.S. Sec. 11 (Pennsylvania legal holidays), together with the federal list, per Pa.R.J.A. 107(b)",
+        "url": "https://codes.findlaw.com/pa/title-44-ps-legal-holidays-and-observances/pa-st-sect-44-11/",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Union of 44 P.S. Sec. 11 and the federal list, per Pa.R.J.A. 107(b). PA statutory dates DO NOT shift (the only shift text in 44 P.S. Sec. 11 concerns banking institutions); federal observed days are added alongside. Encodes the STATUTORY test, not the AOPC county closure schedule -- see the Pennsylvania seed’s finding 5.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-03-30",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-06-14",
+          "name": "Flag Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth (federal limb of Pa.R.J.A. 107(b))",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day (statutory date)",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-06",
+          "name": "Election Day (general)",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans' Day (federal observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day (statutory date)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "pa",
+      "year": 2030,
+      "authority": {
+        "citation": "44 P.S. Sec. 11 (Pennsylvania legal holidays), together with the federal list, per Pa.R.J.A. 107(b)",
+        "url": "https://codes.findlaw.com/pa/title-44-ps-legal-holidays-and-observances/pa-st-sect-44-11/",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Union of 44 P.S. Sec. 11 and the federal list, per Pa.R.J.A. 107(b). PA statutory dates DO NOT shift (the only shift text in 44 P.S. Sec. 11 concerns banking institutions); federal observed days are added alongside. Encodes the STATUTORY test, not the AOPC county closure schedule -- see the Pennsylvania seed’s finding 5.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-04-19",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-06-14",
+          "name": "Flag Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth (federal limb of Pa.R.J.A. 107(b))",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day (statutory date)",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-05",
+          "name": "Election Day (general)",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day (statutory date)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "pa",
+      "year": 2031,
+      "authority": {
+        "citation": "44 P.S. Sec. 11 (Pennsylvania legal holidays), together with the federal list, per Pa.R.J.A. 107(b)",
+        "url": "https://codes.findlaw.com/pa/title-44-ps-legal-holidays-and-observances/pa-st-sect-44-11/",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Union of 44 P.S. Sec. 11 and the federal list, per Pa.R.J.A. 107(b). PA statutory dates DO NOT shift (the only shift text in 44 P.S. Sec. 11 concerns banking institutions); federal observed days are added alongside. Encodes the STATUTORY test, not the AOPC county closure schedule -- see the Pennsylvania seed’s finding 5.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-04-11",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-06-14",
+          "name": "Flag Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth (federal limb of Pa.R.J.A. 107(b))",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day (statutory date)",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-04",
+          "name": "Election Day (general)",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day (statutory date)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "us-federal",
+      "year": 2027,
+      "authority": {
+        "citation": "5 U.S.C. §6103 (federal legal public holidays)",
+        "url": "https://www.law.cornell.edu/uscode/text/5/6103",
+        "note": "AMENDED 2027. New Year’s Day 2028 falls on a Saturday, so this jurisdiction observes it on FRIDAY 2027-12-31 -- a date that belongs to the 2027 calendar, not 2028. That entry was MISSING from the Phase 3 calendars and is added here. Found by the calendar generator’s own self-check, not by a report: the engine resolves holidays by the year of the date, and the endpoint validator rejects a date whose year does not match its calendar, so the entry would have been silently unreachable if filed under 2028. Every other 2027 entry is the Phase 3 list unchanged. Both-way shift per 5 U.S.C. 6103(b): Saturday to the preceding Friday, Sunday to the following Monday.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Washington's Birthday",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-06-18",
+          "name": "Juneteenth National Independence Day (observed)",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (observed)",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas Day (observed)",
+          "kind": "federal"
+        },
+        {
+          "date": "2027-12-31",
+          "name": "New Year's Day (observed)",
+          "kind": "federal"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "us-federal",
+      "year": 2028,
+      "authority": {
+        "citation": "5 U.S.C. §6103 (federal legal public holidays)",
+        "url": "https://www.law.cornell.edu/uscode/text/5/6103",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Both-way shift per 5 U.S.C. 6103(b): Saturday to the preceding Friday, Sunday to the following Monday.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2028-01-17",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Washington's Birthday",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-11-10",
+          "name": "Veterans Day (observed)",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "federal"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "us-federal",
+      "year": 2029,
+      "authority": {
+        "citation": "5 U.S.C. §6103 (federal legal public holidays)",
+        "url": "https://www.law.cornell.edu/uscode/text/5/6103",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Both-way shift per 5 U.S.C. 6103(b): Saturday to the preceding Friday, Sunday to the following Monday.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Washington's Birthday",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans Day (observed)",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "federal"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "us-federal",
+      "year": 2030,
+      "authority": {
+        "citation": "5 U.S.C. §6103 (federal legal public holidays)",
+        "url": "https://www.law.cornell.edu/uscode/text/5/6103",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Both-way shift per 5 U.S.C. 6103(b): Saturday to the preceding Friday, Sunday to the following Monday.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Washington's Birthday",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "federal"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "us-federal",
+      "year": 2031,
+      "authority": {
+        "citation": "5 U.S.C. §6103 (federal legal public holidays)",
+        "url": "https://www.law.cornell.edu/uscode/text/5/6103",
+        "note": "Generated 2026-08-22 from the statutory formulas verified against primary source in Phase 3, then re-checked by day-of-week -- the formulas are what was verified, so deriving dates from them is more faithful than transcribing a list. Both-way shift per 5 U.S.C. 6103(b): Saturday to the preceding Friday, Sunday to the following Monday.",
+        "retrieved_at": "2026-08-22"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Washington's Birthday",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "federal"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "federal"
+        }
+      ]
+    }
+  ]
+}
