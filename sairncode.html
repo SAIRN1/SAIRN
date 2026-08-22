@@ -684,6 +684,7 @@
                 <button class="nav-btn" onclick="showPanel('drugadmin')" data-tip="Drug administration -- J-code unit math, JW/JZ waste modifiers, infusion hierarchy, NDC format">Drug Administration</button>
                 <button class="nav-btn" onclick="showPanel('pctc')" data-tip="PC/TC split billing -- global vs -26 vs -TC, keyed to the CMS PC/TC indicator">PC/TC Split</button>
                 <button class="nav-btn" onclick="showPanel('modrouting')" data-tip="Payer-family modifier routing -- PT vs 33, KX thresholds, SC scope">Modifier Routing</button>
+                <button class="nav-btn" onclick="showPanel('maternity')" data-tip="OB/GYN maternity -- four-phase router across the 2027 code restructure, routed by date of service">OB/GYN Maternity</button>
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
@@ -1618,6 +1619,93 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             </div>
             <div id="du-trap-result" style="margin-top:8px;"></div>
             <div id="du-biosimilar-reference" style="margin-top:12px;"></div>
+        </div>
+
+        <!-- OB/GYN Maternity Panel (2026-08-22, gap-closure pass 2 item 5).
+             Four-phase router across the CPT 2027 restructure. Every phase
+             selects its rule set from the date of service and fails closed
+             when it is missing -- the two eras coexist on a single pregnancy,
+             so there is no default set to fall back to. -->
+        <div id="panel-maternity" class="panel">
+            <h1 class="panel-title">OB/GYN Maternity &mdash; Four-Phase Router</h1>
+            <div id="ob-era-banner" style="margin-bottom:14px;"></div>
+            <div class="toolbar">
+                <input type="number" id="ob-dos-year" placeholder="Date-of-service year (required)" class="search-input" style="max-width:230px;">
+                <span style="font-size:12px;color:#666;align-self:center;">Every phase below routes off this year. Nothing resolves without it.</span>
+            </div>
+
+            <div style="font-weight:700;font-size:16px;margin:20px 0 8px;">1. Antepartum</div>
+            <div class="toolbar">
+                <input type="number" id="ob-ap-visits" placeholder="Antepartum visits by this practice (pre-2027 only)" class="search-input">
+                <button class="btn btn-primary" onclick="runObAntepartum()" id="ob-ap-btn">Route Antepartum</button>
+            </div>
+            <div id="ob-ap-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2. Labor Management</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Straightforward requires <b>all six</b> criteria. AMA's rule is &quot;if all of the following are not met, refer to complex&quot; &mdash; so an unanswered criterion is not a met one, and the router refuses rather than assuming. Duration of labor does not itself indicate complexity unless prolonged labor is diagnosed.</div>
+            <div class="toolbar">
+                <select id="ob-lm-day">
+                    <option value="">Initial or subsequent day?</option>
+                    <option value="initial">Initial day</option>
+                    <option value="subsequent">Subsequent day</option>
+                </select>
+                <input type="number" id="ob-lm-fetuses" placeholder="Number of fetuses" class="search-input" style="max-width:180px;">
+                <button class="btn btn-primary" onclick="runObLabor()" id="ob-lm-btn">Route Labor Management</button>
+            </div>
+            <div class="toolbar" id="ob-lm-criteria" style="flex-wrap:wrap;gap:14px;"></div>
+            <div id="ob-lm-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">3. Delivery</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Routed by the delivery that <b>actually occurred</b>, not what was planned. An attempted vaginal delivery that ends in a cesarean is reported only with the cesarean code.</div>
+            <div class="toolbar">
+                <select id="ob-dl-route">
+                    <option value="">What actually occurred?</option>
+                    <option value="vaginal">Vaginal delivery</option>
+                    <option value="cesarean">Cesarean delivery</option>
+                    <option value="both">Mixed &mdash; some vaginal, some cesarean</option>
+                </select>
+                <select id="ob-dl-prior">
+                    <option value="">Previous cesarean?</option>
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                </select>
+                <input type="number" id="ob-dl-vag" placeholder="Fetuses delivered vaginally" class="search-input" style="max-width:210px;">
+                <input type="number" id="ob-dl-ces" placeholder="Fetuses delivered by cesarean" class="search-input" style="max-width:220px;">
+            </div>
+            <div class="toolbar">
+                <select id="ob-dl-lac">
+                    <option value="">Laceration / episiotomy repair...</option>
+                    <option value="none">None</option>
+                    <option value="first_second">First- or second-degree</option>
+                    <option value="third">Third-degree</option>
+                    <option value="fourth">Fourth-degree</option>
+                </select>
+                <select id="ob-dl-breech">
+                    <option value="no">Not breech</option>
+                    <option value="yes">Breech vaginal delivery</option>
+                </select>
+                <button class="btn btn-primary" onclick="runObDelivery()" id="ob-dl-btn">Route Delivery</button>
+            </div>
+            <div id="ob-dl-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">4. Postpartum</div>
+            <div class="toolbar">
+                <select id="ob-pp-sameday">
+                    <option value="">Same calendar date as delivery?</option>
+                    <option value="yes">Yes &mdash; same calendar date</option>
+                    <option value="no">No &mdash; a later date</option>
+                </select>
+                <button class="btn btn-primary" onclick="runObPostpartum()" id="ob-pp-btn">Route Postpartum</button>
+            </div>
+            <div id="ob-pp-result" style="margin-top:8px;"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">Code-vs-Date Check</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">Check a code already on a claim against its date of service. The same code can be valid or invalid depending on which side of 1 January 2027 the encounter falls.</div>
+            <div class="toolbar">
+                <input type="text" id="ob-code-check" placeholder="CPT code (e.g. 59400)" class="search-input" style="max-width:220px;">
+                <button class="btn btn-primary" onclick="runObCodeCheck()" id="ob-code-btn">Check Code</button>
+            </div>
+            <div id="ob-code-result" style="margin-top:8px;"></div>
         </div>
 
         <!-- Modifier Routing Panel (2026-08-21, gap-closure pass 2 item 4).
@@ -7633,6 +7721,232 @@ How to answer:
         }
 
         // ================================================================
+        // OB/GYN GLOBAL MATERNITY -- FOUR-PHASE ROUTER
+        // (2026-08-22, gap-closure pass 2 item 5)
+        //
+        // CPT 2027 dismantles global maternity billing: 17 codes deleted, 12
+        // added, 6 revised, effective for dates of service on or after
+        // 1 January 2027. The four phases -- antepartum, labor management,
+        // delivery, postpartum -- become separately reportable.
+        //
+        // BOTH ERAS RUN CONCURRENTLY, WHICH IS THE WHOLE ARCHITECTURE. A
+        // pregnancy under care today delivers under the new set, so a real
+        // practice bills 2026 rules for 2026 encounters and 2027 rules for
+        // 2027 encounters on the SAME pregnancy. AMA's own transition
+        // guidance says exactly that. Building 2027-only would have been as
+        // wrong as building 2026-only, so every phase below selects its rule
+        // set from the date of service and FAILS CLOSED when the date is
+        // missing or falls outside a known era -- there is no default set.
+        // ================================================================
+        var OB_ERA_2027_START = 2027;
+        var OB_SOURCES = {
+            restructure: 'AMA, "CPT 2027 Maternity Care Services code changes": 17 codes deleted (59050, 59400, 59409, 59410, 59425, 59426, 59430, 59510, 59514, 59515, 59525, 59610, 59612, 59614, 59618, 59620, 59622), 12 added (59080, 59081, 59082, 59083, 59431, 59432, 59433, 59434, 59502, 59503, 59504, 59623), 6 revised (59051, 59300, 59412, 59414, 59898, 59899).',
+            transition: 'AMA CPT 2027 Maternity Care FAQs: deleted codes "are invalid for dates of service on or after Jan. 1, 2027," and straddle cases use 2026 rules for 2026 visits and 2027 rules for 2027 encounters. The two eras therefore coexist on a single pregnancy.',
+            antepartum: 'AMA Maternity Care Services guidelines: "Antepartum care is reported with the appropriate evaluation and management (E/M) codes" — office/outpatient 99202-99215, telemedicine 98000-98015, virtual check-in 98016, home or residence 99341-99350, hospital inpatient or observation 99221-99223 / 99231-99233 / 99234-99236, critical care 99291-99292.',
+            labor_structure: 'AMA Maternity Care Services guidelines: labor management codes require a face-to-face encounter, are "reported once per calendar date," multiple same-date visits by the same physician/QHP or group in the same setting are a single service, and a continuous visit spanning two calendar dates is a single service reported on one of the two dates.',
+            labor_initial: 'AMA guidelines: initial day labor management (59080, 59081) "includes the E/M work for admission to the facility" and may be reported only when one of these is met — first calendar date labor management is required or induction begins; the physician/QHP or same group has not previously performed labor management during the same facility admission and stay; the parturient is transferred to a new facility after receiving labor management at the previous facility; or a physician/QHP of a different specialty or subspecialty assumes care for reasons other than covering. "If no criterion above is met, subsequent day labor management (59082, 59083) is reported."',
+            labor_subsequent: 'AMA guidelines: subsequent day labor management "may not be reported on a calendar date when the initial day labor management service begins," and may be reported on the calendar date of delivery provided labor management services are performed.',
+            labor_level: 'AMA guidelines, Levels of Labor Management: straightforward requires ALL of singleton vertex presentation, routine maternal/fetal monitoring, fetal monitoring not requiring physician/QHP intervention, normal progression or routine induction/augmentation, stable medical conditions not requiring additional management during labor, and no previous cesarean delivery. "If all of the following are not met, refer to complex labor management." Report the highest level performed once per calendar date. "The duration of labor does not indicate the complexity of labor management, unless prolonged labor is diagnosed."',
+            delivery_vaginal: 'AMA guidelines: vaginal delivery "includes delivery of the fetus and placenta, and repair of first- or second-degree episiotomy or spontaneous lacerations." 59431 vaginal delivery; 59432 vaginal delivery after previous cesarean (VBAC). A breech vaginal delivery is reported with a vaginal delivery code plus modifier 22.',
+            delivery_cesarean: 'AMA guidelines: 59502 cesarean delivery, primary; 59503 repeat. "If a vaginal delivery is attempted and a cesarean delivery occurs, report only the appropriate cesarean delivery code." If a VBAC attempt is unsuccessful and repeat cesarean is performed, report 59503. 59504 covers subtotal or total hysterectomy performed at the same encounter as a cesarean.',
+            delivery_multiples: 'AMA guidelines: "For vaginal delivery of multiple gestations, report one delivery code per fetus." For a mixed delivery, report the vaginal code per fetus delivered vaginally plus the cesarean code "once regardless of the number of fetuses delivered via cesarean delivery." Labor management remains once per calendar date regardless of fetus count.',
+            laceration: 'AMA guidelines: first- or second-degree episiotomy or laceration repair is included in 59431/59432; third-degree is reported with 59433 and fourth-degree with 59434. A first/second-degree repair by a QHP not performing the delivery may be reported with 59300, but not if a vaginal delivery code is also reported.',
+            postpartum: 'AMA guidelines: "Immediate (same calendar date) postpartum care is considered part of delivery care services and may not be separately reported." Discharge day management (99238, 99239) is not separately reported when discharge is the same calendar date as delivery. "When postpartum care takes place on a calendar date subsequent to the date of reported delivery care services, report the appropriate E/M code."',
+            th: 'HCPCS modifier TH (obstetrical treatment/services, prenatal or postpartum) is RECOMMENDED by AAFP and ACOG for payers to adopt so pregnancy-related E/M can be identified. AMA presents it as guidance. It is not a national CMS requirement, so this app surfaces it informationally and never gates on it.'
+        };
+
+        var OB_CODES_2027 = {
+            labor: { initial_straightforward: '59080', initial_complex: '59081', subsequent_straightforward: '59082', subsequent_complex: '59083' },
+            delivery: { vaginal: '59431', vbac: '59432', cesarean_primary: '59502', cesarean_repeat: '59503' },
+            laceration: { third: '59433', fourth: '59434', by_other_qhp: '59300' },
+            adjunct: { hysterectomy_with_cesarean: '59504', placenta_by_other_qhp: '59414' }
+        };
+        // Retained only so a pre-2027 date of service can be answered
+        // honestly. These are the codes being DELETED -- the router names
+        // them for a 2026 encounter and refuses them for a 2027 one.
+        var OB_CODES_2026_GLOBAL = {
+            vaginal_global: '59400', vaginal_delivery_only: '59409', vaginal_delivery_postpartum: '59410',
+            cesarean_global: '59510', cesarean_delivery_only: '59514', cesarean_delivery_postpartum: '59515',
+            vbac_global: '59610', vbac_delivery_only: '59612', vbac_delivery_postpartum: '59614',
+            antepartum_4_6: '59425', antepartum_7plus: '59426', postpartum_only: '59430'
+        };
+        var OB_DELETED_2027 = ['59050','59400','59409','59410','59425','59426','59430','59510','59514','59515','59525','59610','59612','59614','59618','59620','59622'];
+
+        // Era selection. The single point every phase routes through, so no
+        // phase can drift onto a hardcoded code set.
+        function obEraForDos(dosYear) {
+            var y = Number(dosYear);
+            if (!y || !isFinite(y)) return null;
+            if (y >= OB_ERA_2027_START) return '2027';
+            if (y >= 2000) return 'pre2027';
+            return null;
+        }
+
+        // ── Phase 1: antepartum ──
+        function obRouteAntepartum(dosYear, visitCount) {
+            var era = obEraForDos(dosYear);
+            if (!era) return { status: 'undetermined', reason: 'A date-of-service year is required. The 2026 and 2027 rule sets coexist on a single pregnancy, so this app will not guess which one a visit falls under.' };
+            if (era === '2027') {
+                return {
+                    status: 'em_per_encounter', era: era,
+                    reason: 'Report this antepartum visit with the appropriate E/M code for the setting. All antepartum care codes are deleted for 2027 — there is no antepartum bundle to accumulate visits into, and the ordinary E/M rules apply per encounter.',
+                    note: 'Modifier TH is recommended by AAFP/ACOG so payers can identify the E/M as pregnancy-related, but it is not a national requirement — check the individual payer.'
+                };
+            }
+            var n = Number(visitCount);
+            if (!isFinite(n) || n <= 0) {
+                return { status: 'undetermined', era: era, reason: 'For a pre-2027 date of service the antepartum code depends on how many antepartum visits this practice provided. Supply the count.' };
+            }
+            if (n <= 3) return { status: 'em_per_encounter', era: era, reason: 'Three or fewer antepartum visits are reported individually with E/M codes rather than an antepartum bundle.' };
+            if (n <= 6) return { status: 'bundle', era: era, code: OB_CODES_2026_GLOBAL.antepartum_4_6, reason: 'Four to six antepartum visits — report 59425. Note this code is deleted for dates of service on or after 1 January 2027.' };
+            return { status: 'bundle', era: era, code: OB_CODES_2026_GLOBAL.antepartum_7plus, reason: 'Seven or more antepartum visits — report 59426. Note this code is deleted for dates of service on or after 1 January 2027.' };
+        }
+
+        // ── Phase 2: labor management ──
+        // The straightforward set is an ALL-OF list, so the honest default is
+        // complex: AMA's own wording is "if all of the following are not met,
+        // refer to complex." Unanswered criteria therefore fail closed to
+        // undetermined rather than quietly counting as met.
+        var OB_STRAIGHTFORWARD_CRITERIA = [
+            { key: 'singleton_vertex',   label: 'Singleton vertex presentation' },
+            { key: 'routine_monitoring', label: 'Routine maternal/fetal monitoring' },
+            { key: 'no_intervention',    label: 'Fetal monitoring not requiring physician/QHP intervention' },
+            { key: 'normal_progression', label: 'Normal progression, or routine induction/augmentation' },
+            { key: 'stable_conditions',  label: 'Stable medical conditions not requiring additional management in labor' },
+            { key: 'no_prior_cesarean',  label: 'No previous cesarean delivery' }
+        ];
+        function obLaborLevel(criteria, fetusCount) {
+            var c = criteria || {};
+            var n = Number(fetusCount);
+            // Multiples are named by AMA as an example of complex, and they
+            // also fail the singleton criterion -- decided here explicitly so
+            // it does not depend on the user remembering to untick a box.
+            if (isFinite(n) && n > 1) return { level: 'complex', driver: 'More than one fetus — complex by definition.' };
+            var unanswered = [], failed = [];
+            OB_STRAIGHTFORWARD_CRITERIA.forEach(function(k){
+                var v = c[k.key];
+                if (v === undefined || v === null || v === '') unanswered.push(k.label);
+                else if (v !== true && v !== 'yes') failed.push(k.label);
+            });
+            if (failed.length) return { level: 'complex', driver: 'Not straightforward — ' + failed.join('; ') + '.' };
+            if (unanswered.length) return { level: null, unanswered: unanswered };
+            return { level: 'straightforward', driver: 'All six straightforward criteria are met.' };
+        }
+        function obRouteLabor(dosYear, dayType, criteria, fetusCount) {
+            var era = obEraForDos(dosYear);
+            if (!era) return { status: 'undetermined', reason: 'A date-of-service year is required before a labor management code can be selected.' };
+            if (era !== '2027') {
+                return {
+                    status: 'not_separately_reportable', era: era,
+                    reason: 'For a pre-2027 date of service there is no separate labor management code. Labor management is inside the global or delivery-only code (59409, 59514, 59612, 59620 include labor management from admission through delivery). Separate labor management codes exist only from 1 January 2027.'
+                };
+            }
+            if (dayType !== 'initial' && dayType !== 'subsequent') {
+                return { status: 'undetermined', era: era, reason: 'Say whether this calendar date qualifies as initial day or subsequent day labor management. Initial applies only if it is the first date labor management is required or induction begins, or the physician/group has not previously managed labor in this admission, or the parturient transferred to a new facility, or a different specialty assumed care for reasons other than coverage. If none of those, it is subsequent.' };
+            }
+            var lvl = obLaborLevel(criteria, fetusCount);
+            if (!lvl.level) {
+                return { status: 'undetermined', era: era, reason: 'Complexity cannot be determined. Straightforward requires ALL six criteria; these are unanswered: ' + lvl.unanswered.join('; ') + '. An unanswered criterion is not a met one.' };
+            }
+            var code = OB_CODES_2027.labor[dayType + '_' + lvl.level];
+            return {
+                status: 'apply', era: era, code: code, level: lvl.level, dayType: dayType,
+                reason: 'Report ' + code + ' — ' + dayType + ' day, ' + lvl.level + '. ' + lvl.driver
+                    + ' Report once per calendar date at the highest level performed that date; if labor begins straightforward and becomes complex on the same date, report only complex.'
+                    + (dayType === 'subsequent' ? ' Subsequent day may not be reported on the calendar date the initial day service begins, and may be reported on the delivery date provided labor management was performed.' : ' Initial day includes the E/M work for admission to the facility.')
+            };
+        }
+
+        // ── Phase 3: delivery ──
+        // Routed by the delivery that ACTUALLY occurred. An attempted vaginal
+        // that ends in cesarean is a cesarean claim outright -- AMA: "If a
+        // vaginal delivery is attempted and a cesarean delivery occurs,
+        // report only the appropriate cesarean delivery code."
+        function obRouteDelivery(dosYear, actualRoute, priorCesarean, vaginalFetuses, cesareanFetuses, lacerationDegree, breech) {
+            var era = obEraForDos(dosYear);
+            if (!era) return { status: 'undetermined', reason: 'A date-of-service year is required before a delivery code can be selected.' };
+            if (!actualRoute) return { status: 'undetermined', era: era, reason: 'Say which delivery actually occurred — not what was planned or attempted. An attempted vaginal delivery that ends in a cesarean is reported only with the cesarean code.' };
+            if (priorCesarean !== 'yes' && priorCesarean !== 'no') {
+                return { status: 'undetermined', era: era, reason: 'Say whether there was a previous cesarean delivery. It decides VBAC versus routine vaginal, and primary versus repeat cesarean.' };
+            }
+            if (era !== '2027') {
+                var pre = priorCesarean === 'yes' ? OB_CODES_2026_GLOBAL.vbac_global
+                        : (actualRoute === 'cesarean' ? OB_CODES_2026_GLOBAL.cesarean_global : OB_CODES_2026_GLOBAL.vaginal_global);
+                return {
+                    status: 'apply', era: era, lines: [{ code: pre, qty: 1, what: 'Global maternity package (antepartum + delivery + postpartum)' }],
+                    reason: 'For a pre-2027 date of service this is still a global maternity code. Use the delivery-only or delivery-plus-postpartum variant instead if this practice did not provide all three phases. Every code in this family is deleted for dates of service on or after 1 January 2027.'
+                };
+            }
+
+            var lines = [];
+            if (actualRoute === 'vaginal' || actualRoute === 'both') {
+                var vn = Number(vaginalFetuses);
+                if (!isFinite(vn) || vn < 1) vn = 1;
+                var vcode = priorCesarean === 'yes' ? OB_CODES_2027.delivery.vbac : OB_CODES_2027.delivery.vaginal;
+                lines.push({ code: vcode, qty: vn, what: (priorCesarean === 'yes' ? 'VBAC' : 'Vaginal delivery') + ' — one code PER FETUS delivered vaginally' + (breech === 'yes' ? ', append modifier 22 for breech' : '') });
+            }
+            if (actualRoute === 'cesarean' || actualRoute === 'both') {
+                var ccode = priorCesarean === 'yes' ? OB_CODES_2027.delivery.cesarean_repeat : OB_CODES_2027.delivery.cesarean_primary;
+                lines.push({ code: ccode, qty: 1, what: (priorCesarean === 'yes' ? 'Repeat' : 'Primary') + ' cesarean — reported ONCE regardless of the number of fetuses delivered by cesarean' });
+            }
+            var lacNote;
+            if (lacerationDegree === 'third') { lines.push({ code: OB_CODES_2027.laceration.third, qty: 1, what: 'Third-degree laceration repair — separately reportable' }); }
+            else if (lacerationDegree === 'fourth') { lines.push({ code: OB_CODES_2027.laceration.fourth, qty: 1, what: 'Fourth-degree laceration repair — separately reportable' }); }
+            else if (lacerationDegree === 'first_second') { lacNote = 'First- or second-degree repair is bundled into the vaginal delivery code and is not separately reportable by the delivering provider.'; }
+            return {
+                status: 'apply', era: era, lines: lines,
+                reason: 'Delivery care includes the fetus and placenta and same-calendar-date postpartum care, which may not be separately reported.'
+                    + (lacNote ? ' ' + lacNote : '')
+                    + (actualRoute === 'both' ? ' Mixed delivery: vaginal code per fetus delivered vaginally, cesarean code once.' : '')
+            };
+        }
+
+        // ── Phase 4: postpartum ──
+        function obRoutePostpartum(dosYear, sameCalendarDateAsDelivery) {
+            var era = obEraForDos(dosYear);
+            if (!era) return { status: 'undetermined', reason: 'A date-of-service year is required before postpartum care can be routed.' };
+            if (sameCalendarDateAsDelivery !== 'yes' && sameCalendarDateAsDelivery !== 'no') {
+                return { status: 'undetermined', era: era, reason: 'Say whether this postpartum care happened on the same calendar date as the delivery. Same-date care is inside the delivery code; a later date is its own service.' };
+            }
+            if (sameCalendarDateAsDelivery === 'yes') {
+                return {
+                    status: 'bundled', era: era,
+                    reason: 'Immediate (same calendar date) postpartum care is part of delivery care and may not be separately reported. If the patient is discharged on the same calendar date as delivery, do not separately report discharge day management (99238, 99239) either.'
+                };
+            }
+            if (era === '2027') {
+                return {
+                    status: 'em_per_encounter', era: era,
+                    reason: 'Report this postpartum visit with the appropriate E/M code. All postpartum care codes are deleted for 2027.',
+                    note: 'Modifier TH is recommended by AAFP/ACOG so payers can identify the E/M as pregnancy-related, but it is not a national requirement — check the individual payer.'
+                };
+            }
+            return { status: 'bundle', era: era, code: OB_CODES_2026_GLOBAL.postpartum_only, reason: 'For a pre-2027 date of service, postpartum care alone is 59430 — deleted for dates of service on or after 1 January 2027.' };
+        }
+
+        // Guard for a code typed against the wrong era. Deliberately separate
+        // from the routers so a coder can check a code they already have on a
+        // claim without re-deriving the whole encounter.
+        function obCheckCodeAgainstDos(code, dosYear) {
+            var c = String(code == null ? '' : code).trim();
+            if (!c) return { status: 'undetermined', reason: 'Enter a code.' };
+            var era = obEraForDos(dosYear);
+            if (!era) return { status: 'undetermined', reason: 'A date-of-service year is required — the same code can be valid or invalid depending on it.' };
+            var deleted = OB_DELETED_2027.indexOf(c) !== -1;
+            if (deleted && era === '2027') {
+                return { status: 'invalid', era: era, reason: 'Code ' + c + ' is deleted for dates of service on or after 1 January 2027 and is invalid on this claim. Route the encounter through the four-phase router above for the replacement.' };
+            }
+            if (deleted) {
+                return { status: 'valid_but_sunsetting', era: era, reason: 'Code ' + c + ' is valid for this pre-2027 date of service, but it is deleted from 1 January 2027 — any encounter on or after that date needs the new structure.' };
+            }
+            var isNew2027 = ['59080','59081','59082','59083','59431','59432','59433','59434','59502','59503','59504','59623'].indexOf(c) !== -1;
+            if (isNew2027 && era !== '2027') {
+                return { status: 'invalid', era: era, reason: 'Code ' + c + ' is new for 2027 and does not exist for a pre-2027 date of service.' };
+            }
+            return { status: 'not_flagged', era: era, reason: 'Code ' + c + ' is not in this app\'s maternity restructure list either way. That is not a clearance — it only means the 2027 maternity changes do not touch it.' };
+        }
+
+        // ================================================================
         // SHARED MODIFIER ROUTING (2026-08-21, gap-closure pass 2 item 4)
         //
         // Payer-family routing for four modifiers that are routinely confused
@@ -7888,6 +8202,98 @@ How to answer:
                     ? 'Bill the technical component only. In a leased hospital department, where the beneficiary is neither an inpatient nor a registered outpatient of any hospital, both components are payable under the fee schedule — the building does not make the patient a hospital patient.'
                     : 'Bill the technical component only. The TC is payable for beneficiaries who are not patients of any hospital and receive the service in a physician office, freestanding imaging or radiation oncology centre, or other non-hospital setting.'
             };
+        }
+
+        // ── OB/GYN Maternity panel: handlers ──
+        function obDosYear(){ return document.getElementById('ob-dos-year').value; }
+        function obEraBadge(era){
+            if (era === '2027') return '<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">2027 rule set</span>';
+            if (era === 'pre2027') return '<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">pre-2027 rule set</span>';
+            return '';
+        }
+        function obRender(targetId, r, source){
+            var out = document.getElementById(targetId);
+            if (!out) return;
+            var style = (r.status === 'undetermined') ? DU_STYLE_STOP
+                      : (r.status === 'invalid') ? DU_STYLE_STOP
+                      : (r.status === 'bundled' || r.status === 'not_separately_reportable' || r.status === 'valid_but_sunsetting') ? DU_STYLE_INFO
+                      : (r.status === 'not_flagged') ? DU_STYLE_WARN
+                      : DU_STYLE_OK;
+            var body = '';
+            if (r.lines && r.lines.length) {
+                body += '<b>Report:</b><ul style="margin:6px 0 0 18px;padding:0;">';
+                r.lines.forEach(function(l){
+                    body += '<li style="margin-bottom:4px;"><b>' + escHtml(l.code) + '</b>'
+                         + (l.qty > 1 ? (' &times; ' + l.qty) : '') + ' — ' + escHtml(l.what) + '</li>';
+                });
+                body += '</ul>';
+            } else if (r.code) {
+                body += '<b>Report ' + escHtml(r.code) + '</b>';
+            } else if (r.status === 'em_per_encounter') {
+                body += '<b>Report an E/M code for this encounter</b>';
+            } else if (r.status === 'bundled' || r.status === 'not_separately_reportable') {
+                body += '<b>Not separately reportable</b>';
+            } else if (r.status === 'undetermined') {
+                body += '<b>Cannot determine — do not submit without resolving this</b>';
+            } else if (r.status === 'invalid') {
+                body += '<b>Invalid for this date of service</b>';
+            }
+            body += '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>';
+            if (r.note) body += '<div style="margin-top:8px;padding:8px 10px;background:rgba(0,0,0,0.05);border-radius:6px;font-size:12px;">' + escHtml(r.note) + '</div>';
+            if (r.era) body += '<div style="margin-top:8px;">' + obEraBadge(r.era) + '</div>';
+            out.innerHTML = duBox(style, body, source);
+        }
+        function renderMaternityControls(){
+            var wrap = document.getElementById('ob-lm-criteria');
+            if (wrap && !wrap.innerHTML) {
+                var html = '<div style="font-size:12px;color:#444;width:100%;margin-bottom:4px;">Straightforward criteria (all six required):</div>';
+                OB_STRAIGHTFORWARD_CRITERIA.forEach(function(c){
+                    html += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;">'
+                         +  '<select id="ob-lm-' + escHtml(c.key) + '" style="font-size:12px;"><option value="">?</option><option value="yes">Yes</option><option value="no">No</option></select> '
+                         +  escHtml(c.label) + '</label>';
+                });
+                wrap.innerHTML = html;
+            }
+            var banner = document.getElementById('ob-era-banner');
+            if (banner && !banner.innerHTML) {
+                banner.innerHTML = '<div style="background:#f8f8f8;border:1px solid #ddd;border-radius:10px;padding:12px 16px;font-size:12px;color:#444;">'
+                    + '<b>CPT 2027 restructures maternity billing.</b> 17 codes deleted, 12 added, 6 revised, effective for dates of service on or after 1 January 2027. Global maternity billing ends and the four phases become separately reportable.'
+                    + '<div style="margin-top:6px;">The two eras <b>run concurrently</b>: a pregnancy under care now delivers under the new set, so 2026 encounters bill 2026 rules and 2027 encounters bill 2027 rules on the same pregnancy. Nothing below resolves without a date of service.</div>'
+                    + '<div style="margin-top:6px;font-size:11px;color:#666;">Source: ' + escHtml(OB_SOURCES.transition) + '</div></div>';
+            }
+        }
+        function runObAntepartum(){
+            obRender('ob-ap-result', obRouteAntepartum(obDosYear(), document.getElementById('ob-ap-visits').value), OB_SOURCES.antepartum);
+        }
+        function runObLabor(){
+            var criteria = {};
+            OB_STRAIGHTFORWARD_CRITERIA.forEach(function(c){
+                var el = document.getElementById('ob-lm-' + c.key);
+                criteria[c.key] = el ? el.value : '';
+            });
+            var r = obRouteLabor(obDosYear(), document.getElementById('ob-lm-day').value, criteria, document.getElementById('ob-lm-fetuses').value);
+            obRender('ob-lm-result', r, r.status === 'apply' ? OB_SOURCES.labor_level : (r.era === '2027' ? OB_SOURCES.labor_initial : OB_SOURCES.labor_structure));
+        }
+        function runObDelivery(){
+            var r = obRouteDelivery(
+                obDosYear(),
+                document.getElementById('ob-dl-route').value,
+                document.getElementById('ob-dl-prior').value,
+                document.getElementById('ob-dl-vag').value,
+                document.getElementById('ob-dl-ces').value,
+                document.getElementById('ob-dl-lac').value,
+                document.getElementById('ob-dl-breech').value
+            );
+            var src = document.getElementById('ob-dl-route').value === 'both' ? OB_SOURCES.delivery_multiples
+                    : (document.getElementById('ob-dl-lac').value === 'third' || document.getElementById('ob-dl-lac').value === 'fourth' || document.getElementById('ob-dl-lac').value === 'first_second') ? OB_SOURCES.laceration
+                    : (document.getElementById('ob-dl-route').value === 'cesarean' ? OB_SOURCES.delivery_cesarean : OB_SOURCES.delivery_vaginal);
+            obRender('ob-dl-result', r, src);
+        }
+        function runObPostpartum(){
+            obRender('ob-pp-result', obRoutePostpartum(obDosYear(), document.getElementById('ob-pp-sameday').value), OB_SOURCES.postpartum);
+        }
+        function runObCodeCheck(){
+            obRender('ob-code-result', obCheckCodeAgainstDos(document.getElementById('ob-code-check').value, obDosYear()), OB_SOURCES.restructure);
         }
 
         // ── Modifier Routing panel: handlers ──
@@ -8368,6 +8774,7 @@ How to answer:
             renderEfficiencyAdjustmentControls();
             renderDrugAdminControls();
             renderModifierRoutingControls();
+            renderMaternityControls();
             renderRac();
             renderTelehealth();
             renderAnesthesia();
