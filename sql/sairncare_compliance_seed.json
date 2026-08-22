@@ -1,0 +1,483 @@
+{
+  "_readme": [
+    "SAIRNcare Phase 2 compliance-rule seed. OH, IN, MI, PA.",
+    "",
+    "EVERY FIGURE HERE WAS READ FROM THE ACTUAL ADMINISTRATIVE CODE ON 2026-08-22,",
+    "not from a research summary. That pass corrected the working summary in ALL",
+    "FOUR states; each correction is recorded in the rule's own _corrected field so",
+    "nobody re-introduces the wrong number later from the older notes.",
+    "",
+    "NO DOMINANT PATTERN EXISTS, which is why there is no core-model-plus-exceptions",
+    "shortcut here. The four states use four different staffing METHODS:",
+    "  OH = percentage uplift over a baseline ratio (with a fixed fallback)",
+    "  IN = census-threshold rules, no per-resident ratio at all",
+    "  MI = flat per-resident ratio, differing by licence class AND by shift",
+    "  PA = service-hours per resident per day, not a headcount ratio",
+    "and four different training structures. A shared numeric 'ratio' field would",
+    "be null or wrong for three of the four."
+  ],
+
+  "rules": [
+    {
+      "rule_id": "OH-LICENSURE-MEMCARE-2024",
+      "state": "OH",
+      "requirement_type": "licensure",
+      "facility_class": "rcf_memory_care",
+      "effective_from": "2024-07-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Ohio — memory care is an ODA certification layered on the RCF licence, not a separate licence",
+        "model": "certification_layered_on_license",
+        "base_license": "Residential Care Facility (RCF) licence",
+        "certification_types": ["basic service", "basic service and memory care"],
+        "memory_care_definition": "A service provided to an individual whom a practitioner assessed and then issued a documented diagnosis of any form of dementia.",
+        "notes": [
+          "ODA certifies a provider for either the basic service, or the basic service AND memory care. There is no standalone memory-care licence.",
+          "A documented practitioner diagnosis of dementia is part of the definition of the service itself, not merely an admission formality.",
+          "Separately, the provider must assist an individual who calls through the resident call system, in person, in fewer than ten minutes."
+        ],
+        "authority": {
+          "citation": "OAC 173-39-02.16 (ODA provider certification: assisted living service), eff. July 1, 2024",
+          "url": "https://codes.ohio.gov/ohio-administrative-code/rule-173-39-02.16",
+          "quote": "Certification types: ODA certifies each provider for either of the following: (1) The basic service. (2) The basic service and memory care.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "OH-STAFFING-MEMCARE-2024",
+      "state": "OH",
+      "requirement_type": "staffing",
+      "facility_class": "rcf_memory_care",
+      "effective_from": "2024-07-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Ohio — memory care direct-care staffing",
+        "method": "percentage_uplift_with_fallback",
+        "_corrected": "The working summary gave TWO branches (20% uplift, or 1:10 if memory-care-only). The rule has THREE, and the 1:10 is the last-resort fallback rather than the memory-care-only rule: a memory-care-only provider must use 20% above the MEDICAID-PROGRAM BENCHMARK AVERAGE whenever that average is readily available, and only falls back to 1:10 when it is not. Encoding 1:10 as the memory-care-only rule would under-staff any provider that can obtain the benchmark.",
+        "branches": [
+          {
+            "when": "providing memory care and the basic service at the same time",
+            "rule": "uplift_over_own_basic_ratio",
+            "uplift_percent": 20
+          },
+          {
+            "when": "providing only memory care AND the benchmark average ratio is readily available",
+            "rule": "uplift_over_benchmark_average",
+            "uplift_percent": 20,
+            "benchmark": "average basic-service ratio of a representative sample of providers participating in the medicaid-funded component of the assisted living program"
+          },
+          {
+            "when": "providing only memory care AND the benchmark average is NOT readily available",
+            "rule": "fixed_ratio",
+            "staff": 1,
+            "per_residents": 10,
+            "additional": "at least one direct-care staff member on each floor of the RCF if memory care is provided on multiple floors"
+          }
+        ],
+        "clinical_coverage": "A sufficient number of RNs or LPNs on call OR on site at all times for individuals receiving memory care.",
+        "authority": {
+          "citation": "OAC 173-39-02.16(D)(3), eff. July 1, 2024",
+          "url": "https://codes.ohio.gov/ohio-administrative-code/rule-173-39-02.16",
+          "quote": "(a) The provider has a sufficient number of RNs or LPNs on call or on site at all times for individuals receiving memory care. (b) The provider maintains the appropriate direct-care staff-to-resident ratio below for its memory care: (i) If providing memory care and the basic service at the same time, a ratio for the provider's memory care that is at least twenty per cent higher than the provider's ratio for its basic service. (ii) If providing only memory care and the average ratio for the basic service provided by a representative sample of providers participating in the medicaid-funded component of the assisted living program is readily available to the provider, then a ratio that is at least twenty per cent higher than that average ratio. (iii) If providing only memory care and the average ratio ... is not readily available to the provider, then a ratio of at least one direct-care staff member for every ten individuals receiving memory care with at least one direct-care staff member on each floor of the RCF if the RCF provides memory care on multiple floors.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "OH-TRAINING-2024",
+      "state": "OH",
+      "requirement_type": "training",
+      "facility_class": "rcf",
+      "effective_from": "2024-07-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Ohio — RCF staff training, including cognitive-impairment population hours",
+        "structure": "initial_plus_annual_hours_with_stacking",
+        "_corrected": "The working summary said only 'initial + annual, curriculum specified in rule' with no hours. Real hour figures exist, they live in the Department of Health rule (OAC 3701-16-06) rather than the ODA certification rule, and they STACK in a specific way that matters: the dementia-population hours may be counted toward the general annual requirement rather than being purely additive. That is the opposite of Pennsylvania, where the dementia hours are expressly IN ADDITION to the general hours.",
+        "requirements": [
+          {
+            "who": "staff serving residents with late-stage cognitive impairment, or cognitive impairment with increased emotional needs or presenting behaviors",
+            "initial_hours": 2,
+            "initial_deadline": "within 14 days of the first day of work",
+            "annual_hours": 4,
+            "counts_toward_general_annual": true,
+            "stacking": "counts_toward_general"
+          },
+          {
+            "who": "staff serving BOTH the cognitive-impairment population and residents with serious mental illness",
+            "initial_hours": 4,
+            "initial_deadline": "within 14 days of the first day of work",
+            "annual_hours": 8,
+            "counts_toward_general_annual": true,
+            "stacking": "counts_toward_general",
+            "note": "divided in equal proportions for each population"
+          },
+          {
+            "who": "all staff — general continuing education",
+            "annual_hours": 8
+          },
+          {
+            "who": "administrator",
+            "annual_hours": 9,
+            "note": "in gerontology, health care, business administration, or residential care facility operation"
+          }
+        ],
+        "memory_care_initial_topics": [
+          "Overview of dementia: symptoms, treatment approaches, and progression",
+          "Foundations of effective communication in dementia care",
+          "Common behavior challenges specific to dementia and recommended behavior management techniques",
+          "Current best practices in dementia care",
+          "Missing resident prevention and response"
+        ],
+        "authority": {
+          "citation": "OAC 3701-16-06(E) (residential care facility staff training); topic list from OAC 173-39-02.16(D)(4)",
+          "url": "https://codes.ohio.gov/ohio-administrative-code/rule-3701-16-06",
+          "quote": "(3) ... staff members employed by a residential care facility ... that admits or retains residents with late-stage cognitive impairment ... are obligated to have: (a) Two hours of initial training in the care of such residents within fourteen days of the first day of work; and (b) Four hours of continuing education in the care of such residents annually. The four hours of continuing education may count towards the continuing education obligated by paragraph (E)(7) of this rule. ... (7) Successfully complete at least eight hours of continuing education annually.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+
+    {
+      "rule_id": "IN-LICENSURE-2026",
+      "state": "IN",
+      "requirement_type": "licensure",
+      "facility_class": "rcf",
+      "effective_from": "2011-06-14",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Indiana — Residential Care Facility licence; memory care has no separate licence but requires a filed disclosure",
+        "model": "single_license_plus_disclosure",
+        "base_license": "Residential Care Facility (410 IAC 16.2-5)",
+        "memory_care_license": null,
+        "disclosure_required": true,
+        "disclosure_authority": "IC 12-10-5.5",
+        "director_requirements": {
+          "required_when": "the facility is required under IC 12-10-5.5 to submit an Alzheimer's and dementia special care unit disclosure form",
+          "qualification": "an earned degree from an educational institution in a health care, mental health, or social service profession, OR a licensed health facility administrator",
+          "experience_years": 1,
+          "experience_window_years": 5,
+          "experience_detail": "minimum one year work experience with dementia or Alzheimer's residents, or both, within the past five years",
+          "grandfathered": "Persons serving as a director for an existing Alzheimer's and dementia special care unit at the time of adoption of this rule are exempt from the degree and experience requirements."
+        },
+        "_corrected": "The working summary did not mention the grandfather clause, which is a real exemption from BOTH the degree and the experience requirement for directors already serving when the rule was adopted. Flagging an already-serving director as non-compliant would be a false finding.",
+        "authority": {
+          "citation": "410 IAC 16.2-5-1.3(l); IC 12-10-5.5 (Alzheimer's and dementia special care disclosure)",
+          "url": "https://www.in.gov/health/files/Residential_Care_Facility_Alzheimers_Rules.pdf",
+          "quote": "In facilities that are required under IC 12-10-5.5 to submit an Alzheimer's and dementia special care unit disclosure form, the facility must designate a director for the Alzheimer's and dementia special care unit. The director shall have an earned degree from an educational institution in a health care, mental health, or social service profession or be a licensed health facility administrator. The director shall have a minimum of one (1) year work experience with dementia or Alzheimer's residents, or both, within the past five (5) years. Persons serving as a director for an existing Alzheimer's and dementia special care unit at the time of adoption of this rule are exempt from the degree and experience requirements.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "IN-STAFFING-2026",
+      "state": "IN",
+      "requirement_type": "staffing",
+      "facility_class": "rcf",
+      "effective_from": "2011-06-14",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Indiana — census-threshold staffing requirements",
+        "method": "census_thresholds",
+        "_corrected": "The working summary said Indiana has 'no numeric general staffing ratio'. That is wrong in a way that would have produced a false all-clear: Indiana has no per-RESIDENT ratio, but it does have real, enforceable NUMERIC threshold requirements keyed to census — a minimum awake staff person at all times, a nursing staff person once 50+ residents regularly receive nursing services or medication administration, and an additional nursing staff person for every further 50 residents above 100. Reporting 'no requirement' here would tell a 120-resident facility it had nothing to meet.",
+        "thresholds": [
+          {
+            "applies_when": "at all times",
+            "requirement": "a minimum of one awake staff person on site",
+            "staff_count": 1,
+            "must_be_awake": true,
+            "must_hold": ["current CPR certificate", "current first aid certificate"]
+          },
+          {
+            "applies_when": "50 or more residents regularly receive residential nursing services or administration of medication, or both",
+            "requirement": "at least one nursing staff person on site at all times",
+            "census_threshold": 50,
+            "staff_count": 1
+          },
+          {
+            "applies_when": "over 100 residents regularly receive residential nursing services or administration of medication, or both",
+            "requirement": "at least one additional nursing staff person awake and on duty at all times for every additional 50 residents",
+            "census_threshold": 100,
+            "additional_staff_per_residents": 50,
+            "must_be_awake": true
+          }
+        ],
+        "authority": {
+          "citation": "410 IAC 16.2-5-1.4 (Residential care facilities: personnel)",
+          "url": "https://www.law.cornell.edu/regulations/indiana/410-IAC-16.2-5-1.4",
+          "quote": "A minimum of one (1) awake staff person, with current CPR and first aid certificates, shall be on site at all times. ... If fifty (50) or more residents of the facility regularly receive residential nursing services or administration of medication, or both, at least one (1) nursing staff person shall be on site at all times. ... Residential facilities with over one hundred (100) residents regularly receiving residential nursing services or administration of medication, or both, shall have at least one (1) additional nursing staff person awake and on duty at all times for every additional fifty (50) residents.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "IN-TRAINING-2026",
+      "state": "IN",
+      "requirement_type": "training",
+      "facility_class": "rcf",
+      "effective_from": "2011-06-14",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Indiana — dementia-specific training",
+        "structure": "initial_deadline_plus_annual_hours",
+        "requirements": [
+          {
+            "who": "staff who have contact with residents",
+            "initial_hours": 6,
+            "initial_deadline": "within 6 months",
+            "annual_hours": 3
+          },
+          {
+            "who": "director of the Alzheimer's and dementia special care unit",
+            "initial_hours": 12,
+            "initial_deadline": "within 3 months of initial employment as director",
+            "annual_hours": 6
+          }
+        ],
+        "purpose": "to meet the needs or preferences, or both, of cognitively impaired residents effectively and to gain understanding of the current standards of care for residents with dementia",
+        "unverified": [
+          "A shorter 30-day initial deadline for personnel specifically assigned to an Alzheimer's and dementia special care unit appears in secondary sources but could not be confirmed against the primary rule text in this pass. NOT encoded — the confirmed 6-month deadline is used, and this note exists so the stricter deadline is checked before anyone relies on the looser one for SCU staff."
+        ],
+        "authority": {
+          "citation": "410 IAC 16.2-5-1.4 (staff) and 410 IAC 16.2-5-1.3(l) (SCU director)",
+          "url": "https://www.law.cornell.edu/regulations/indiana/410-IAC-16.2-5-1.4",
+          "quote": "Staff who have contact with residents shall have a minimum of six (6) hours of dementia-specific training within six (6) months and three (3) hours annually thereafter to meet the needs or preferences, or both, of cognitively impaired residents effectively and to gain understanding of the current standards of care for residents with dementia.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+
+    {
+      "rule_id": "MI-LICENSURE-2026",
+      "state": "MI",
+      "requirement_type": "licensure",
+      "facility_class": null,
+      "effective_from": "1994-05-24",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Michigan — no 'assisted living' licence exists; Home for the Aged or Adult Foster Care",
+        "model": "no_assisted_living_license",
+        "license_classes": [
+          { "class": "home_for_the_aged", "capacity": "21 or more unrelated nontransient individuals aged 55+", "note": "supervised personal care; no numeric staffing ratio in rule" },
+          { "class": "afc_small_group", "capacity": "12 or fewer residents" },
+          { "class": "afc_large_group", "capacity": "13 to 20 residents" }
+        ],
+        "memory_care_license": null,
+        "notes": [
+          "There is no separate memory-care licence in Michigan. A facility marketing specialised Alzheimer's or dementia care is subject to disclosure requirements covering its staff training and continuing-education policies, but the state does not set the hours.",
+          "Adult Foster Care small-group licences also cover 1-6 resident homes; the staffing rule cited here is the small-group rule that governs homes of 12 or fewer."
+        ],
+        "authority": {
+          "citation": "MCL 333.20106 (home for the aged definition); Michigan LARA licensing rules for AFC small group homes (R 400.14xxx) and large group homes (R 400.15xxx)",
+          "url": "https://www.legislature.mi.gov/Laws/MCL?objectName=MCL-333-20106",
+          "quote": "A 'home for the aged' is a supervised personal care facility ... that provides room, board, and supervised personal care to 21 or more unrelated, nontransient individuals 55 years of age or older.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "MI-STAFFING-AFC-SMALL-1994",
+      "state": "MI",
+      "requirement_type": "staffing",
+      "facility_class": "afc_small_group",
+      "effective_from": "1994-05-24",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Michigan — Adult Foster Care small group home (12 or fewer) direct-care staffing",
+        "method": "fixed_ratio",
+        "staff": 1,
+        "per_residents": 12,
+        "shift_dependent": false,
+        "exclusion": "Any individual, including a volunteer, is not counted toward the ratio unless the individual meets the qualifications of a direct care staff member.",
+        "authority": {
+          "citation": "R 400.14206 (Licensing rules for adult foster care small group homes, 12 or less), eff. May 24, 1994",
+          "url": "https://www.michigan.gov/-/media/Project/Websites/lara/bchs/Folder3/BCAL_PUB-333_7_15_-_for_web_2.pdf",
+          "quote": "The ratio of direct care staff to residents shall be adequate as determined by the department, to carry out the responsibilities defined in the act and in these rules and shall not be less than 1 direct care staff to 12 residents and children who are under the age of 12 years.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "MI-STAFFING-AFC-LARGE-1994",
+      "state": "MI",
+      "requirement_type": "staffing",
+      "facility_class": "afc_large_group",
+      "effective_from": "1994-05-24",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Michigan — Adult Foster Care large group home (13-20) direct-care staffing",
+        "method": "fixed_ratio_by_shift",
+        "_corrected": "The working summary gave a single statewide AFC floor of 1 direct-care worker per 12 residents. That figure is the SMALL group home rule only. Large group homes are 1:15 during waking hours and 1:20 during normal sleeping hours — a different number AND shift-dependent, which the flat figure hides entirely. Applying 1:12 to a large home would over-state the requirement; applying it without the shift split would mis-state it in both directions.",
+        "shifts": [
+          { "shift": "waking", "staff": 1, "per_residents": 15 },
+          { "shift": "sleeping", "staff": 1, "per_residents": 20, "note": "normal sleeping hours" }
+        ],
+        "exclusion": "Any individual, including a volunteer, is not counted toward the ratio unless the individual meets the qualifications of a direct care staff member.",
+        "authority": {
+          "citation": "R 400.15206 (Licensing rules for adult foster care large group homes, 13-20), eff. May 24, 1994",
+          "url": "https://www.michigan.gov/-/media/Project/Websites/lara/bchs/Folder3/BCAL_PUB-334_7_15_-_for_web.pdf",
+          "quote": "The ratio of direct care staff to residents shall be adequate as determined by the department, to carry out the responsibilities defined in the act and in these rules and shall not be less than 1 direct care staff to 15 residents during waking hours or less than 1 direct care staff member to 20 residents during normal sleeping hours.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "MI-TRAINING-2026",
+      "state": "MI",
+      "requirement_type": "training",
+      "facility_class": null,
+      "effective_from": "1994-05-24",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Michigan — no state-mandated dementia-training hour requirement",
+        "structure": "no_state_mandated_hours",
+        "state_mandated_dementia_hours": null,
+        "notes": [
+          "Michigan sets no dementia-specific training HOUR requirement for AFC homes or homes for the aged. This is a genuine substantive difference from OH, IN and PA, not a gap in this seed.",
+          "Training content and hours are the facility's own responsibility, established through its program statement and staff training policies; a facility that markets specialised dementia care must disclose its training and continuing-education practices.",
+          "Because the state sets no floor, this app reports the requirement as facility-defined and will not invent an hour figure. A facility-defined target may be recorded locally and tracked against, but it is labelled as the facility's own, never as a state mandate."
+        ],
+        "authority": {
+          "citation": "Michigan LARA adult foster care licensing rules — reviewed for any dementia-specific training hour requirement; none present",
+          "url": "https://www.michigan.gov/-/media/Project/Websites/lara/bchs/Folder3/BCAL_PUB-334_7_15_-_for_web.pdf",
+          "quote": "Reviewed the LARA large- and small-group-home licensing rule publications for any dementia-specific or Alzheimer's-specific training hour mandate; the rules set staffing ratios and general training obligations but prescribe no dementia-specific hour requirement.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+
+    {
+      "rule_id": "PA-LICENSURE-2026",
+      "state": "PA",
+      "requirement_type": "licensure",
+      "facility_class": null,
+      "effective_from": "2010-10-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Pennsylvania — two parallel licences under different chapters",
+        "model": "two_parallel_licenses",
+        "license_classes": [
+          { "class": "pch", "name": "Personal Care Home", "chapter": "55 Pa. Code Ch. 2600" },
+          { "class": "alr", "name": "Assisted Living Residence", "chapter": "55 Pa. Code Ch. 2800" }
+        ],
+        "special_care_unit": {
+          "available_under": ["pch", "alr"],
+          "definition": "A residence or portion of a residence providing specialized care and services for residents with Alzheimer's disease or dementia, and/or intense neurobehavioral rehabilitation for residents with severely disruptive and potentially dangerous behaviors as a result of brain injury.",
+          "application_lead_days": 60,
+          "application_required_for": [
+            "opening a special care unit",
+            "adding a special care unit to an existing residence",
+            "increasing the maximum capacity in an existing unit",
+            "changing the locking system, exit doors or floor plan of an existing unit"
+          ],
+          "department_approval": "The Department will inspect and approve the special care unit prior to operation or change."
+        },
+        "authority": {
+          "citation": "55 Pa. Code §§ 2800.231 and 2800.239 (special care units; application to Department)",
+          "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=%2Fsecure%2Fpacode%2Fdata%2F055%2Fchapter2800%2Fchap2800toc.html",
+          "quote": "The legal entity shall submit an application to the Department at least 60 days prior to the following: (1) Opening a special care unit. (2) Adding a special care unit to an existing residence. (3) Increasing the maximum capacity in an existing unit. (4) Changing the locking system, exit doors or floor plan of an existing unit.",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "PA-STAFFING-ALR-2010",
+      "state": "PA",
+      "requirement_type": "staffing",
+      "facility_class": "alr",
+      "effective_from": "2010-10-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Pennsylvania — Assisted Living Residence direct care staffing (service hours, not headcount ratio)",
+        "method": "service_hours_per_resident_per_day",
+        "_corrected": "The working summary said '>=75% of hours from direct-care staff'. The rule says something different and materially so: at least 75% of the required service hours must be available DURING WAKING HOURS. It is a scheduling constraint on when the hours land, not a constraint on who provides them. Encoding it as a staffing-mix rule would check the wrong thing entirely and would pass a residence that concentrated its care hours overnight.",
+        "hours_per_resident_per_day": [
+          { "resident_type": "mobile", "hours": 1 },
+          { "resident_type": "mobility_needs", "hours": 2 }
+        ],
+        "waking_hours_minimum_percent": 75,
+        "always_present": "At all times one or more residents are present in the residence, a direct care staff person who is 21 years of age or older shall be present. The direct care staff person may be the administrator if the administrator provides direct care services.",
+        "awake_requirement": "Direct care staff persons on duty in the residence shall be awake at all times.",
+        "scu_mobility_rule": "Each resident in a special care unit shall be considered to be a resident with mobility needs, and therefore generates the 2-hour rate regardless of actual mobility.",
+        "multiple_buildings": "For a residence with multiple buildings on the same premises, regardless of distance, the direct care staffing requirements apply at all times residents are present.",
+        "authority": {
+          "citation": "55 Pa. Code §§ 2800.57, 2800.58, 2800.59, 2800.238",
+          "url": "https://www.pa.gov/content/dam/copapwp-pagov/en/dhs/documents/providers/clearances-and-licensing/documents/app-hsl/Assisted-Living-Residences-2800-Regulations.pdf",
+          "quote": "(b) Direct care staff persons shall be available to provide at least 1 hour per day of assisted living services to each mobile resident. (c) Direct care staff persons shall be available to provide at least 2 hours per day of assisted living services to each resident who has mobility needs. (d) At least 75% of the assisted living service hours specified in subsections (b) and (c) shall be available during waking hours. ... Each resident in a special care unit shall be considered to be a resident with mobility needs under § 2800.57(c).",
+          "read_on": "2026-08-22"
+        }
+      }
+    },
+    {
+      "rule_id": "PA-TRAINING-ALR-2010",
+      "state": "PA",
+      "requirement_type": "training",
+      "facility_class": "alr",
+      "effective_from": "2010-10-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Pennsylvania — Assisted Living Residence training, including the higher special-care-unit tier",
+        "structure": "pre_unsupervised_hours_plus_additive_annual",
+        "_corrected": "The working summary listed one dementia tier (4 hours initial, 2 hours annually) and missed that a SPECIAL CARE UNIT carries a materially higher, separate requirement: 8 hours initial within 30 days of hire plus 8 hours annually, on top of the 16-hour general annual training. A residence running an SCU on the 4+2 figure would be under-trained against the rule that actually applies to it. The 4+2 tier is real, but it is the baseline for all ALR staff, not the SCU standard. Also corrected: the 4 hours is due within 30 days of HIRE; it is the 18-hour general training that gates unsupervised work.",
+        "requirements": [
+          {
+            "who": "direct care staff — before providing UNSUPERVISED assisted living services",
+            "initial_hours": 18,
+            "gate": "may not provide unsupervised assisted living services until completion",
+            "includes": [
+              "training that includes a demonstration of job duties, followed by supervised practice",
+              "successful completion and passing of the Department-approved direct care training course and competency test"
+            ]
+          },
+          { "who": "direct care staff — general annual", "annual_hours": 16 },
+          { "who": "administrator — general annual", "annual_hours": 24 },
+          {
+            "who": "all staff (administrative, direct care, ancillary, substitute personnel, volunteers) — dementia baseline",
+            "initial_hours": 4,
+            "initial_deadline": "within 30 days of hire",
+            "annual_hours": 2,
+            "additive": true,
+            "stacking": "additive",
+            "note": "in addition to the other training requirements of the chapter"
+          },
+          {
+            "who": "direct care staff working in a special care unit for residents with Alzheimer's disease or dementia",
+            "initial_hours": 8,
+            "initial_deadline": "within the first 30 days of the date of hire",
+            "annual_hours": 8,
+            "additive": true,
+            "stacking": "additive",
+            "note": "in addition to the 16 hours of annual training specified in § 2800.65"
+          }
+        ],
+        "prior_to_first_workday": "Orientation in general fire safety and emergency preparedness, plus first aid and CPR certification before providing direct care.",
+        "authority": {
+          "citation": "55 Pa. Code §§ 2800.65(c), 2800.65(g), 2800.65(h), 2800.69, 2800.236",
+          "url": "https://www.pa.gov/content/dam/copapwp-pagov/en/dhs/documents/providers/clearances-and-licensing/documents/app-hsl/Assisted-Living-Residences-2800-Regulations.pdf",
+          "quote": "(g) Direct care staff persons may not provide unsupervised assisted living services until completion of 18 hours of training ... (h) Direct care staff persons shall have at least 16 hours of annual training relating to their job duties. The training required in § 2800.69 ... shall be in addition to the 16 hour annual training. ... § 2800.69: Administrative staff, direct care staff persons, ancillary staff persons, substitute personnel and volunteers shall receive at least 4 hours of dementia-specific training within 30 days of hire and at least 2 hours of dementia-specific training annually thereafter in addition to the training requirements of this chapter. ... § 2800.236: Each direct care staff person working in a special care unit for residents with Alzheimer's disease or dementia shall have 8 hours of initial training within the first 30 days of the date of hire and a minimum of 8 hours of annual training related to dementia care and services, in addition to the 16 hours of annual training specified in § 2800.65.",
+          "read_on": "2026-08-22"
+        }
+      }
+    }
+  ],
+
+  "claimed_states": ["OH", "IN", "MI", "PA"],
+  "unverified_notes": [
+    "PCH (55 Pa. Code Ch. 2600) figures from the working summary — '1 awake staff for 16+ residents', 'no numeric ratio', '12 hrs/yr general + 6 hrs/yr dementia', 'no RN or dietitian required' — were NOT verified against Chapter 2600 in this pass and are therefore NOT seeded. Only the ALR (Ch. 2800) side is encoded. A PCH facility gets an honest NO_RULE_FOR_CLASS rather than ALR numbers silently applied to it, since the two chapters genuinely differ.",
+    "PA SCU 'max 2 residents per living unit' and the cognitive pre-admission screening window were not confirmed in this pass and are not encoded."
+  ]
+}

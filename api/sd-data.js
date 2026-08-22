@@ -31,6 +31,7 @@ const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const payerRouting = require('./_lib/payer-routing');
+const complianceRules = require('./_lib/compliance-rules');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -166,7 +167,10 @@ module.exports = async (req, res) => {
   // enough, this gate must allow the verb too, or the branch is
   // unreachable and returns a confusing 400 (found exactly that way here).
   const isRouteAction = action === 'route' && resource === 'alf_payer_rules';
-  if (action !== 'read' && action !== 'write' && !(action === 'delete' && isScResource) && !isRouteAction) {
+  // 'evaluate' is likewise carved out for exactly one resource: alf_compliance_rules
+  // (SAIRNcare Phase 2). It computes a compliance finding and writes nothing.
+  const isEvaluateAction = action === 'evaluate' && resource === 'alf_compliance_rules';
+  if (action !== 'read' && action !== 'write' && !(action === 'delete' && isScResource) && !isRouteAction && !isEvaluateAction) {
     res.status(400).json({ error: { message: "action must be 'read' or 'write'" + (isScResource ? " or 'delete'" : '') } });
     return;
   }
@@ -3068,6 +3072,192 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, resident_id: payload.resident_id, service_month: payload.service_month, decided_by: session.employee_id }, routeData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_compliance_rules + alf_staff_credentials (2026-08-22, Phase 2) ───────
+    // Compliance-rules engine (staffing ratios, training hours, licensure model) plus the
+    // staff credentialing store the training checks read from. Evaluation logic is PURE and
+    // lives in api/_lib/compliance-rules.js; this branch is storage + gating only, same split
+    // as Phase 1's payer-routing.
+    //
+    // GATE: rules are readable by any authenticated employee (a caregiver has a real interest
+    // in the training hours their own state requires of them) and writable by management only.
+    // Credential records are readable by management and nursing (nursing holds facility-wide
+    // clinical oversight and is who actually chases an expiring certification), and a staff
+    // member may always read their OWN records. Writes are management-only: a training record
+    // is an assertion about someone's qualifications, and self-certification would defeat it.
+    const ALF_CRED_READ_ROLES = { owner: true, billing: true, nursing: true };
+    const ALF_COMPLIANCE_TYPES = { staffing: true, training: true, licensure: true };
+    const ALF_CRED_RECORD_TYPES = { training_hours: true, credential: true };
+    if (resource === 'alf_compliance_rules' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('alf_compliance_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,facility_class,effective_from,effective_to,status,data,verified_by'), { headers });
+      if (r.status === 404 || r.status === 400) {
+        res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { have: 0, need: 0, detail: [], uncovered_states: [] } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const data = (rows || []).map((x) => ({
+        rule_id: x.rule_id, state: x.state, requirement_type: x.requirement_type,
+        facility_class: x.facility_class, effective_from: x.effective_from, effective_to: x.effective_to,
+        status: x.status || 'active', verified_by: x.verified_by || '', data: x.data || {}
+      }));
+      const claimed = Array.isArray(payload && payload.claimed_states) && payload.claimed_states.length
+        ? payload.claimed_states.map((s) => String(s).toUpperCase())
+        : Array.from(new Set(data.map((x) => x.state)));
+      res.status(200).json({ ok: true, data, provisioned: true, coverage: complianceRules.complianceCoverage(data, claimed) });
+      return;
+    }
+    if (resource === 'alf_compliance_rules' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change compliance rules' } });
+        return;
+      }
+      if (!payload || !payload.rule_id || !payload.state || !payload.requirement_type || !payload.effective_from) {
+        res.status(400).json({ error: { message: 'alf_compliance_rules requires rule_id, state, requirement_type, and effective_from' } });
+        return;
+      }
+      if (!ALF_COMPLIANCE_TYPES[payload.requirement_type]) {
+        res.status(400).json({ error: { message: 'requirement_type must be one of: ' + Object.keys(ALF_COMPLIANCE_TYPES).join(', ') } });
+        return;
+      }
+      const cState = String(payload.state).trim().toUpperCase();
+      if (!ALF_US_STATES[cState]) {
+        res.status(400).json({ error: { code: 'BAD_STATE', message: 'state must be a two-letter US state or DC code' } });
+        return;
+      }
+      const cStatus = payload.status || 'active';
+      if (!ALF_RULE_STATUSES[cStatus]) {
+        res.status(400).json({ error: { message: 'status must be one of: ' + Object.keys(ALF_RULE_STATUSES).join(', ') } });
+        return;
+      }
+      if (payload.effective_to && payload.effective_to < payload.effective_from) {
+        res.status(400).json({ error: { message: 'effective_to cannot precede effective_from — mark a rule that never took effect with status never_in_force instead' } });
+        return;
+      }
+      // Same standard as the payer rules: a requirement nobody can trace to a published
+      // source must never end up telling a facility it is or is not compliant.
+      const cData = payload.data || {};
+      const cAuth = cData.authority || {};
+      if (!cAuth.citation || !/^https?:\/\//.test(String(cAuth.url || ''))) {
+        res.status(400).json({ error: { code: 'NO_AUTHORITY', message: 'Every compliance rule needs an authority citation and a resolvable source URL' } });
+        return;
+      }
+      const r = await fetch(rest('alf_compliance_rules?on_conflict=license_hash,rule_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', rule_id: String(payload.rule_id),
+          state: cState, requirement_type: payload.requirement_type,
+          facility_class: payload.facility_class || null,
+          effective_from: payload.effective_from, effective_to: payload.effective_to || null,
+          status: cStatus, data: cData, verified_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Compliance rules are not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ rule_id: payload.rule_id, state: cState, verified_by: session.employee_id }, cData) });
+      return;
+    }
+    // Compute a compliance finding. Reads rules AND, for training checks, the real recorded
+    // credential hours. Writes nothing.
+    if (resource === 'alf_compliance_rules' && action === 'evaluate') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!payload || !payload.requirement_type || !payload.state) {
+        res.status(400).json({ error: { message: 'evaluate requires state and requirement_type' } });
+        return;
+      }
+      const rr = await fetch(rest('alf_compliance_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,facility_class,effective_from,effective_to,status,data'), { headers });
+      if (rr.status === 404 || rr.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Compliance rules are not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.' } });
+        return;
+      }
+      const ruleRows = await rr.json();
+      if (!rr.ok) return upstream(res, ruleRows);
+      const opts = Object.assign({}, payload, { on_date: payload.on_date || nowISO().slice(0, 10) });
+      let result;
+      if (payload.requirement_type === 'staffing') result = complianceRules.evaluateStaffing(ruleRows || [], opts);
+      else if (payload.requirement_type === 'licensure') result = complianceRules.describeLicensure(ruleRows || [], opts);
+      else result = complianceRules.evaluateTraining(ruleRows || [], opts);
+      res.status(200).json(result);
+      return;
+    }
+    if (resource === 'alf_staff_credentials' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,staff_id,record_type,data,recorded_by,created_at'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      let out = rows || [];
+      // A staff member outside the credentialing roles sees only their own records --
+      // enough to know what training they personally owe, without exposing the roster's
+      // qualifications. Same minimum-necessary reasoning as the resident privacy gate.
+      if (!ALF_CRED_READ_ROLES[session.role]) {
+        out = out.filter((x) => x.staff_id === session.employee_id);
+      }
+      const data = out.map((x) => Object.assign({
+        id: x.entry_id, staff_id: x.staff_id, record_type: x.record_type,
+        recorded_by: x.recorded_by || '', created_at: x.created_at
+      }, x.data));
+      res.status(200).json({ ok: true, data, provisioned: true, scoped_to_self: !ALF_CRED_READ_ROLES[session.role] });
+      return;
+    }
+    if (resource === 'alf_staff_credentials' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a training or credential entry' } });
+        return;
+      }
+      if (!payload || !payload.id || !payload.staff_id || !payload.record_type) {
+        res.status(400).json({ error: { message: 'alf_staff_credentials requires id, staff_id, and record_type' } });
+        return;
+      }
+      if (!ALF_CRED_RECORD_TYPES[payload.record_type]) {
+        res.status(400).json({ error: { message: 'record_type must be one of: ' + Object.keys(ALF_CRED_RECORD_TYPES).join(', ') } });
+        return;
+      }
+      if (payload.record_type === 'training_hours' && !(Number(payload.hours) > 0)) {
+        res.status(400).json({ error: { message: 'A training_hours record needs a positive hours value' } });
+        return;
+      }
+      // Append-only: a completed-training assertion is exactly the class of record that must
+      // not be quietly edited later. A correction is a NEW entry, never an overwrite.
+      const existingR = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
+      const existingRows = existingR.ok ? await existingR.json() : [];
+      if (Array.isArray(existingRows) && existingRows.length > 0) {
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This credential record has already been recorded and cannot be overwritten' } });
+        return;
+      }
+      const credData = Object.assign({}, payload);
+      delete credData.id; delete credData.staff_id; delete credData.record_type;
+      const r = await fetch(rest('alf_staff_credentials'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id),
+          staff_id: String(payload.staff_id), record_type: payload.record_type,
+          data: credData, recorded_by: session.employee_id
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Staff credentialing is not set up yet — run sql/sairncare_compliance_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, staff_id: payload.staff_id, record_type: payload.record_type, recorded_by: session.employee_id }, credData) });
       return;
     }
 

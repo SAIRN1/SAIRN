@@ -485,6 +485,52 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="tw"><table><thead><tr><th>Name</th><th>Position</th><th>Phone</th><th>Cert Expires</th><th>Background Check</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="sttbody"></tbody></table></div>
   </div></div>
+
+  <!-- CREDENTIALING / TRAINING LEDGER (Phase 2, platform product rule 9). Built on the SAME
+       store as the compliance engine's training-hour checks (alf_staff_credentials) rather
+       than a parallel one -- a completed dementia in-service and a current CPR card are both
+       "a dated, expiring thing this staff member holds", and two stores would drift. -->
+  <div class="card"><div class="cb">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div><b>Credentials &amp; Training Ledger</b><div style="font-size:12px;color:var(--muted)">Append-only. A correction is a new entry, never an edit.</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn bo bs" onclick="crRefresh()">Refresh</button>
+        <button class="btn bo bs" id="cr-add-btn" onclick="openCredModal()">+ Record Entry</button>
+      </div>
+    </div>
+    <div id="cr-scope-note" style="display:none;margin-top:8px;font-size:12px;color:var(--muted)"></div>
+    <div id="cr-body" style="margin-top:10px;font-size:12px"></div>
+  </div></div>
+</div>
+
+<!-- RECORD A CREDENTIAL OR TRAINING ENTRY -->
+<div class="modal" id="credmodal">
+  <div class="mbox">
+    <div class="mtitle">Record Credential / Training</div>
+    <div class="fg"><label>Staff Member</label><select id="cr-staff"></select></div>
+    <div class="fg"><label>Entry Type</label><select id="cr-type" onchange="crToggleType()">
+      <option value="training_hours">Training hours completed</option>
+      <option value="credential">Credential / certification with an expiry</option>
+    </select></div>
+    <div id="cr-training-fields">
+      <div class="fr"><div class="fg"><label>Hours</label><input id="cr-hours" type="number" min="0" step="0.25"></div>
+        <div class="fg"><label>Category</label><select id="cr-category">
+          <option value="dementia">Dementia-specific</option>
+          <option value="general">General / job duties</option>
+          <option value="orientation">Initial orientation</option>
+        </select></div></div>
+      <div class="fg"><label>Completed On</label><input id="cr-completed" type="date"></div>
+    </div>
+    <div id="cr-credential-fields" style="display:none">
+      <div class="fr"><div class="fg"><label>Credential</label><input id="cr-credname" placeholder="e.g. CPR, First Aid, LPN licence"></div>
+        <div class="fg"><label>Expires On</label><input id="cr-expires" type="date"></div></div>
+    </div>
+    <div class="fg"><label>Notes</label><input id="cr-notes"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCredModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCredEntry()">Record Entry</button>
+    </div>
+  </div>
 </div>
 <div class="modal" id="staffmodal">
   <div class="mbox">
@@ -641,6 +687,40 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="tw"><table><thead><tr><th>Staff</th><th>Position</th><th>Cert Expiry</th><th>Background Check</th><th>Status</th></tr></thead>
       <tbody id="cp-certstbody"></tbody></table></div>
     </div></div>
+
+    <!-- JURISDICTION REQUIREMENTS (Phase 2). Rules are versioned data with real citations,
+         seeded for OH/IN/MI/PA only. No two of those four share a licensure model, a staffing
+         METHOD, or a training-hour structure, so there is deliberately no "default" shown for
+         an unseeded state -- it fails closed and says so. -->
+    <div class="card"><div class="ch"><span class="ct">Jurisdiction Requirements</span></div><div class="cb">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="font-size:12px;color:var(--muted)">Staffing, dementia training, and licensure requirements for this facility's licensing state.</div>
+        <div id="cq-coverage" style="font-size:12px;color:var(--muted)">Coverage: --</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;align-items:flex-end">
+        <div class="fg" style="margin:0"><label>State</label><select id="cq-state"></select></div>
+        <div class="fg" style="margin:0"><label>Facility Class</label><select id="cq-class"></select></div>
+        <button class="btn bo bs" onclick="cqRefresh()">Load Rules</button>
+        <button class="btn bo bs" onclick="cqShowLicensure()">Licensure</button>
+        <button class="btn bo bs" onclick="cqShowTraining()">Training Hours</button>
+        <button class="btn bo bs" onclick="openStaffingCheckModal()">Check Staffing</button>
+      </div>
+      <div id="cq-result" style="margin-top:12px"></div>
+    </div></div>
+
+    <!-- CHECK STAFFING. Inputs are state-specific on purpose: the four seeded states measure
+         four different things, so one generic "how many staff do you have" form would be
+         meaningless for three of them. -->
+    <div class="modal" id="staffingcheckmodal">
+      <div class="mbox">
+        <div class="mtitle">Check Staffing Requirement</div>
+        <div id="sc-inputs" style="font-size:13px"></div>
+        <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+          <button class="btn bo" onclick="closeStaffingCheckModal()">Cancel</button>
+          <button class="btn bp" onclick="runStaffingCheck()">Check</button>
+        </div>
+      </div>
+    </div>
     <div class="card"><div class="ch"><span class="ct">Incident Log</span></div><div class="cb">
       <div class="note">State reporting deadlines are real but vary by state and were not exhaustively surveyed -- confirmed examples: Virginia 24 hours, Massachusetts 24 hours, California 7 days, Florida 15 days, Washington initial report + 5 business days follow-up. Set this facility's actual deadline below rather than assuming one of these applies.</div>
       <div class="fg" style="max-width:320px"><label>This Facility's State Reporting Deadline</label><input id="cp-deadline" placeholder="e.g. 24 hours, or 7 days" onchange="saveIncidentDeadline()"></div>
@@ -866,6 +946,33 @@ function alfRoute(payload){
       return d;
     }).catch(function(){return {ok:false,error:{code:'BAD_RESPONSE',message:'The server returned an unreadable response — nothing was routed.'}};});
   }).catch(function(e){return {ok:false,error:{code:'NETWORK',message:'Network error — nothing was routed. '+e.message}};});
+}
+
+// Same reasoning as alfRoute above: the compliance engine's REFUSALS carry the
+// message (NO_RULE_FOR_STATE, NO_RULE_FOR_CLASS, missing inputs), and alfData()
+// would collapse every one of them to null. A swallowed "this state is not
+// covered" would render as a blank panel and read as "no requirements," which is
+// the single most dangerous way this feature could fail.
+function alfEvaluate(payload){
+  return alfPostRaw({action:'evaluate',resource:'alf_compliance_rules',app_id:APP_ID,payload:payload||{}});
+}
+// Credential reads need the full envelope too, because scoped_to_self sits
+// alongside data and tells the UI whether it is showing a partial view.
+function alfCredRead(){
+  return alfPostRaw({action:'read',resource:'alf_staff_credentials',app_id:APP_ID,payload:{}});
+}
+function alfPostRaw(body){
+  var lic=alfLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(alfSession&&alfSession.token)h['X-SD-Auth']=alfSession.token;
+  return fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify(body)}).then(function(r){
+    return r.json().then(function(d){
+      if(!d)return null;
+      if(!r.ok&&!d.error)return {ok:false,error:{code:'HTTP_'+r.status,message:'The server refused this request.'}};
+      return d;
+    }).catch(function(){return {ok:false,error:{code:'BAD_RESPONSE',message:'The server returned an unreadable response.'}};});
+  }).catch(function(e){return {ok:false,error:{code:'NETWORK',message:'Network error. '+e.message}};});
 }
 
 // ── AUTH CLIENT ──────────────────────────────────────────────────────────
@@ -1749,6 +1856,7 @@ function certDaysUntil(d){if(!d)return null;var diff=(new Date(d+'T00:00:00')-ne
 function rStaff(){
   var sf=staff();
   var isMgmt=alfIsManagement();
+  rCredentials();
   var newBtn=$('st-new-btn');if(newBtn)newBtn.style.display=isMgmt?'inline-block':'none';
   var sttb=$('sttbody');
   sttb.innerHTML=sf.length?sf.map(function(s){
@@ -2166,6 +2274,259 @@ function rCompliancePanel(){
   var deadlineEl=$('cp-deadline');if(deadlineEl)deadlineEl.value=facility().incident_deadline||'';
   rCertStatus();
   rIncidentLog();
+  rJurisdiction();
+}
+
+// ── JURISDICTION REQUIREMENTS (Phase 2) ──────────────────────────────────
+// The client never decides a requirement. It asks the server engine and renders
+// the answer, including the refusals -- an uncovered state must read as an
+// explicit gap, never as "no requirements."
+var _cqRules=null;
+// The states this app claims to cover. Kept explicit so coverage is honest; adding
+// a state here without seeding real sourced rules would make it show as uncovered,
+// which is the intended failure direction.
+var ALF_COMPLIANCE_STATES=['OH','IN','MI','PA'];
+// Facility classes per state, taken from the seeded rules rather than invented --
+// PA's two chapters and MI's two licence classes carry genuinely different figures.
+var ALF_FACILITY_CLASSES={
+  OH:[['rcf','Residential Care Facility'],['rcf_memory_care','RCF with memory care certification']],
+  IN:[['rcf','Residential Care Facility']],
+  MI:[['afc_small_group','Adult Foster Care — small group (12 or fewer)'],['afc_large_group','Adult Foster Care — large group (13-20)'],['home_for_the_aged','Home for the Aged (21+)']],
+  PA:[['alr','Assisted Living Residence (Ch. 2800)'],['pch','Personal Care Home (Ch. 2600)']]
+};
+function cqPopulateSelectors(){
+  var st=$('cq-state');if(!st)return;
+  if(!st.options.length){
+    st.innerHTML=ALF_COMPLIANCE_STATES.map(function(s){return '<option value="'+H(s)+'">'+H(s)+'</option>';}).join('');
+    var f=facility();
+    if(f.licensing_state&&ALF_COMPLIANCE_STATES.indexOf(f.licensing_state)!==-1)st.value=f.licensing_state;
+    st.onchange=cqPopulateClasses;
+  }
+  cqPopulateClasses();
+}
+function cqPopulateClasses(){
+  var cls=$('cq-class');if(!cls)return;
+  var list=ALF_FACILITY_CLASSES[$('cq-state').value]||[];
+  cls.innerHTML=list.map(function(c){return '<option value="'+H(c[0])+'">'+H(c[1])+'</option>';}).join('');
+}
+function rJurisdiction(){
+  cqPopulateSelectors();
+  var cov=$('cq-coverage');if(!cov)return;
+  if(_cqRules===null){cov.textContent='Coverage: not loaded';return;}
+  var byState={};
+  _cqRules.forEach(function(r){(byState[r.state]=byState[r.state]||{})[r.requirement_type]=true;});
+  var complete=ALF_COMPLIANCE_STATES.filter(function(s){
+    return byState[s]&&byState[s].staffing&&byState[s].training&&byState[s].licensure;
+  });
+  cov.textContent='Coverage: '+complete.length+' of '+ALF_COMPLIANCE_STATES.length+' states fully loaded';
+}
+function cqRefresh(){
+  return alfData('read','alf_compliance_rules',{claimed_states:ALF_COMPLIANCE_STATES},true).then(function(rows){
+    _cqRules=Array.isArray(rows)?rows:[];
+    rJurisdiction();
+    var box=$('cq-result');
+    if(box){
+      box.innerHTML=_cqRules.length
+        ?'<div class="tw"><table><thead><tr><th>Rule</th><th>State</th><th>Type</th><th>Class</th><th>Authority</th></tr></thead><tbody>'+
+          _cqRules.map(function(r){
+            var a=(r.data&&r.data.authority)||{};
+            return '<tr><td>'+H(r.rule_id)+'</td><td>'+H(r.state)+'</td><td>'+H(r.requirement_type)+'</td><td>'+H(r.facility_class||'any')+'</td>'+
+              '<td>'+(a.url?('<a href="'+H(a.url)+'" target="_blank" rel="noopener noreferrer">'+H(a.citation||'source')+'</a>'):H(a.citation||'--'))+'</td></tr>';
+          }).join('')+'</tbody></table></div>'
+        :'<div style="color:var(--muted)">No compliance rules are loaded yet — run sql/sairncare_compliance_schema.sql and load sql/sairncare_compliance_seed.json.</div>';
+    }
+    return _cqRules;
+  });
+}
+function cqRenderResult(res,title){
+  var box=$('cq-result');if(!box)return;
+  if(!res){box.innerHTML='<div style="color:var(--muted)">No response from the server.</div>';return;}
+  if(res.ok===false||res.error){
+    var e=res.error||{};
+    box.innerHTML='<div class="card" style="border-left:3px solid var(--danger,#dc2626)"><div class="cb">'+
+      '<b>'+H(e.code||'Not available')+'</b><div style="margin-top:6px">'+H(e.message||'')+'</div></div></div>';
+    return;
+  }
+  var html='<div class="card"><div class="cb"><b>'+H(title)+'</b>';
+  if(res.label)html+='<div style="margin-top:4px;color:var(--muted);font-size:12px">'+H(res.label)+'</div>';
+  if(res.evaluated===false){
+    html+='<div style="margin-top:8px">This cannot be answered yet — missing: <b>'+H((res.missing||[]).join(', '))+'</b></div>';
+    if(res.note)html+='<div style="margin-top:6px;color:var(--muted);font-size:12px">'+H(res.note)+'</div>';
+    if(res.requirement)html+='<div style="margin-top:6px">Requirement: '+H(res.requirement)+'</div>';
+  }
+  if(res.required_staff!=null){
+    html+='<div style="margin-top:8px">Required direct-care staff: <b>'+H(String(res.required_staff))+'</b>'+
+      (res.actual_staff!=null?(' &nbsp; On duty: '+H(String(res.actual_staff))):'')+
+      (res.meets===true?' <span class="badge bg">meets</span>':(res.meets===false?' <span class="badge br">short</span>':''))+'</div>';
+    if(res.requirement)html+='<div style="font-size:12px;color:var(--muted)">'+H(res.requirement)+'</div>';
+  }
+  if(res.required_service_hours_per_day!=null){
+    html+='<div style="margin-top:8px">Required service hours per day: <b>'+H(String(res.required_service_hours_per_day))+'</b>'+
+      (res.meets===true?' <span class="badge bg">meets</span>':(res.meets===false?' <span class="badge br">short</span>':''))+'</div>'+
+      '<div style="font-size:12px;color:var(--muted)">At least '+H(String(res.waking_hours_minimum_percent))+'% ('+H(String(res.minimum_hours_during_waking))+' hrs) must be available during waking hours.</div>';
+    if(res.scu_counted_as_mobility_needs>0)html+='<div style="font-size:12px;color:var(--muted)">'+H(String(res.scu_counted_as_mobility_needs))+' special-care-unit resident(s) counted as having mobility needs, per rule.</div>';
+  }
+  if(res.thresholds){
+    html+='<div class="tw" style="margin-top:8px"><table><thead><tr><th>Requirement</th><th>Applies</th><th>Additional staff</th></tr></thead><tbody>'+
+      res.thresholds.map(function(t){
+        return '<tr><td>'+H(t.requirement)+'</td><td>'+(t.applies===true?'<span class="badge br">yes</span>':(t.applies===false?'<span class="badge bx">no</span>':'--'))+'</td>'+
+          '<td>'+(t.additional_staff_required!=null?H(String(t.additional_staff_required)):'--')+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  if(res.requirements&&res.requirements.length){
+    html+='<div class="tw" style="margin-top:8px"><table><thead><tr><th>Who</th><th>Initial</th><th>Annual</th><th>Stacking</th></tr></thead><tbody>'+
+      res.requirements.map(function(q){
+        return '<tr><td>'+H(q.who)+'</td>'+
+          '<td>'+(q.initial_hours!=null?H(String(q.initial_hours))+' hrs':'--')+(q.initial_deadline?(' <span style="color:var(--muted)">'+H(q.initial_deadline)+'</span>'):'')+'</td>'+
+          '<td>'+(q.annual_hours!=null?H(String(q.annual_hours))+' hrs':'--')+'</td>'+
+          '<td>'+H(q.stacking==='additive'?'on top of general':(q.stacking==='counts_toward_general'?'counts toward general':'--'))+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  if(res.state_mandated===false){
+    html+='<div style="margin-top:8px"><b>This state sets no dementia-training hour requirement.</b></div>'+
+      '<ul style="margin:6px 0 0 18px;font-size:12px;color:var(--muted)">'+(res.notes||[]).map(function(n){return '<li>'+H(n)+'</li>';}).join('')+'</ul>';
+  }
+  if(res.model){
+    html+='<div style="margin-top:8px">Licensure model: <b>'+H(res.model.replace(/_/g,' '))+'</b></div>';
+    if(res.base_license)html+='<div style="font-size:12px">Base licence: '+H(res.base_license)+'</div>';
+    html+='<div style="font-size:12px">Separate memory-care licence: <b>'+(res.memory_care_license?H(res.memory_care_license):'none')+'</b></div>';
+    if(res.license_classes)html+='<ul style="margin:6px 0 0 18px;font-size:12px">'+res.license_classes.map(function(c){return '<li>'+H(c.name||c.class)+(c.capacity?(' — '+H(c.capacity)):'')+(c.chapter?(' ('+H(c.chapter)+')'):'')+'</li>';}).join('')+'</ul>';
+    if(res.special_care_unit)html+='<div style="margin-top:6px;font-size:12px">Special care unit: application to the Department at least <b>'+H(String(res.special_care_unit.application_lead_days))+' days</b> in advance.</div>';
+    if(res.director_requirements)html+='<div style="margin-top:6px;font-size:12px">SCU director: '+H(res.director_requirements.experience_detail||'')+(res.director_requirements.grandfathered?(' <i>'+H(res.director_requirements.grandfathered)+'</i>'):'')+'</div>';
+    if(res.notes&&res.notes.length)html+='<ul style="margin:6px 0 0 18px;font-size:12px;color:var(--muted)">'+res.notes.map(function(n){return '<li>'+H(n)+'</li>';}).join('')+'</ul>';
+  }
+  if(res.clinical_coverage)html+='<div style="margin-top:6px;font-size:12px">'+H(res.clinical_coverage)+'</div>';
+  if(res.always_present)html+='<div style="margin-top:6px;font-size:12px">'+H(res.always_present)+'</div>';
+  if(res.awake_requirement)html+='<div style="margin-top:4px;font-size:12px">'+H(res.awake_requirement)+'</div>';
+  if(res.additional)html+='<div style="margin-top:4px;font-size:12px">'+H(res.additional)+'</div>';
+  var a=res.authority||{};
+  if(a.citation)html+='<div style="margin-top:8px;font-size:12px;color:var(--muted)">Authority: '+(a.url?('<a href="'+H(a.url)+'" target="_blank" rel="noopener noreferrer">'+H(a.citation)+'</a>'):H(a.citation))+'</div>';
+  html+='</div></div>';
+  box.innerHTML=html;
+}
+async function cqEvaluate(extra,title){
+  var res=await alfEvaluate(Object.assign({state:$('cq-state').value,facility_class:$('cq-class').value},extra));
+  cqRenderResult(res,title);
+}
+function cqShowLicensure(){return cqEvaluate({requirement_type:'licensure'},'Licensure model');}
+function cqShowTraining(){return cqEvaluate({requirement_type:'training'},'Training requirements');}
+function openStaffingCheckModal(){
+  var st=$('cq-state').value;
+  var box=$('sc-inputs');
+  // State-specific inputs: the four states measure four different things, so a single
+  // generic form would ask meaningless questions of three of them.
+  var html='';
+  if(st==='OH'){
+    html='<div class="fg"><label>Does this provider offer memory care ONLY (no basic service)?</label><select id="sc-mconly"><option value="no">No — both</option><option value="yes">Memory care only</option></select></div>'+
+      '<div class="fg"><label>Is the Medicaid-program benchmark average ratio readily available? (memory-care-only providers)</label><select id="sc-bench"><option value="yes">Yes</option><option value="no">No</option></select></div>'+
+      '<div class="fg"><label>Baseline ratio — residents per 1 direct-care staff</label><input id="sc-baseline" type="number" min="1" step="0.1" placeholder="e.g. 15"></div>'+
+      '<div class="fr"><div class="fg"><label>Memory care census</label><input id="sc-census" type="number" min="0"></div>'+
+      '<div class="fg"><label>Direct-care staff on duty</label><input id="sc-staff" type="number" min="0"></div></div>';
+  }else if(st==='IN'){
+    html='<div class="fg"><label>Residents regularly receiving nursing services or medication administration</label><input id="sc-census" type="number" min="0"></div>';
+  }else if(st==='MI'){
+    html='<div class="fg"><label>Shift</label><select id="sc-shift"><option value="waking">Waking hours</option><option value="sleeping">Normal sleeping hours</option></select></div>'+
+      '<div class="fr"><div class="fg"><label>Census</label><input id="sc-census" type="number" min="0"></div>'+
+      '<div class="fg"><label>Direct-care staff on duty</label><input id="sc-staff" type="number" min="0"></div></div>';
+  }else{
+    html='<div class="fr"><div class="fg"><label>Mobile residents</label><input id="sc-mobile" type="number" min="0"></div>'+
+      '<div class="fg"><label>Residents with mobility needs</label><input id="sc-mobility" type="number" min="0"></div></div>'+
+      '<div class="fr"><div class="fg"><label>Special care unit residents</label><input id="sc-scu" type="number" min="0" value="0"></div>'+
+      '<div class="fg"><label>Actual service hours provided per day</label><input id="sc-hours" type="number" min="0" step="0.25"></div></div>';
+  }
+  box.innerHTML=html;
+  $('staffingcheckmodal').classList.add('on');
+}
+function closeStaffingCheckModal(){$('staffingcheckmodal').classList.remove('on');}
+function scNum(id){var el=$(id);if(!el||el.value==='')return undefined;return Number(el.value);}
+async function runStaffingCheck(){
+  var st=$('cq-state').value,extra={requirement_type:'staffing'};
+  if(st==='OH'){
+    extra.memory_care_only=$('sc-mconly').value==='yes';
+    extra.benchmark_ratio_available=$('sc-bench').value==='yes';
+    extra.baseline_ratio_per_staff=scNum('sc-baseline');
+    extra.census=scNum('sc-census');extra.direct_care_staff=scNum('sc-staff');
+  }else if(st==='IN'){
+    extra.nursing_service_census=scNum('sc-census');
+  }else if(st==='MI'){
+    extra.shift=$('sc-shift').value;extra.census=scNum('sc-census');extra.direct_care_staff=scNum('sc-staff');
+  }else{
+    extra.mobile_residents=scNum('sc-mobile');extra.mobility_needs_residents=scNum('sc-mobility');
+    extra.scu_residents=scNum('sc-scu')||0;extra.actual_service_hours=scNum('sc-hours');
+  }
+  closeStaffingCheckModal();
+  await cqEvaluate(extra,'Staffing requirement');
+}
+
+// ── CREDENTIALS & TRAINING LEDGER (Phase 2, product rule 9) ──────────────
+var _crRecords=null,_crScopedToSelf=false;
+function crRefresh(){
+  return alfCredRead().then(function(r){
+    _crRecords=(r&&Array.isArray(r.data))?r.data:[];
+    _crScopedToSelf=!!(r&&r.scoped_to_self);
+    rCredentials();
+    return _crRecords;
+  });
+}
+function rCredentials(){
+  var box=$('cr-body'),note=$('cr-scope-note'),addBtn=$('cr-add-btn');
+  if(!box)return;
+  if(addBtn)addBtn.style.display=alfIsManagement()?'inline-block':'none';
+  if(note){
+    note.style.display=_crScopedToSelf?'block':'none';
+    note.textContent='You are seeing only your own training and credential records.';
+  }
+  if(_crRecords===null){box.innerHTML='<span style="color:var(--muted)">Click Refresh to load the credential ledger.</span>';return;}
+  if(!_crRecords.length){box.innerHTML='<span style="color:var(--muted)">No credential or training entries recorded yet.</span>';return;}
+  var sorted=_crRecords.slice().sort(function(a,b){return (b.created_at||'')<(a.created_at||'')?-1:1;});
+  box.innerHTML='<div class="tw"><table><thead><tr><th>Staff</th><th>Type</th><th>Detail</th><th>Hours</th><th>Date</th><th>Expires</th><th>Recorded By</th></tr></thead><tbody>'+
+    sorted.map(function(c){
+      var expDays=c.expires_on?certDaysUntil(c.expires_on):null;
+      var expCell=c.expires_on?(H(c.expires_on)+(expDays!==null&&expDays<=30?' <span class="badge br">'+(expDays<0?'expired':expDays+'d')+'</span>':'')):'--';
+      return '<tr><td>'+H(alfStaffName(c.staff_id))+'</td><td>'+H(c.record_type==='training_hours'?'Training':'Credential')+'</td>'+
+        '<td>'+H(c.credential||c.category||'--')+(c.notes?(' <span style="color:var(--muted)">'+H(c.notes)+'</span>'):'')+'</td>'+
+        '<td>'+(c.hours!=null?H(String(c.hours)):'--')+'</td>'+
+        '<td>'+H(c.completed_on||(c.created_at||'').slice(0,10)||'--')+'</td>'+
+        '<td>'+expCell+'</td><td>'+H(c.recorded_by||'--')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+function alfStaffName(staffId){
+  var s=staff().find(function(x){return x.id===staffId;});
+  return s?(s.name||staffId):staffId;
+}
+function openCredModal(){
+  if(!alfIsManagement()){toast('Only management can record a credential entry');return;}
+  var sel=$('cr-staff');
+  sel.innerHTML=staff().map(function(s){return '<option value="'+H(s.id)+'">'+H(s.name||s.id)+'</option>';}).join('');
+  $('cr-type').value='training_hours';crToggleType();
+  $('cr-hours').value='';$('cr-completed').value=new Date().toISOString().slice(0,10);
+  $('cr-credname').value='';$('cr-expires').value='';$('cr-notes').value='';
+  $('credmodal').classList.add('on');
+}
+function closeCredModal(){$('credmodal').classList.remove('on');}
+function crToggleType(){
+  var isTraining=$('cr-type').value==='training_hours';
+  $('cr-training-fields').style.display=isTraining?'block':'none';
+  $('cr-credential-fields').style.display=isTraining?'none':'block';
+}
+async function saveCredEntry(){
+  var type=$('cr-type').value;
+  var staffId=$('cr-staff').value;
+  if(!staffId){toast('Select a staff member');return;}
+  var rec={id:newId('CRED'),staff_id:staffId,record_type:type,notes:$('cr-notes').value.trim()};
+  if(type==='training_hours'){
+    var hrs=Number($('cr-hours').value);
+    if(!(hrs>0)){toast('Enter the hours completed');return;}
+    rec.hours=hrs;rec.category=$('cr-category').value;rec.completed_on=$('cr-completed').value;
+  }else{
+    if(!$('cr-credname').value.trim()){toast('Enter the credential name');return;}
+    rec.credential=$('cr-credname').value.trim();rec.expires_on=$('cr-expires').value;
+  }
+  var saved=await alfData('write','alf_staff_credentials',rec,true);
+  if(!saved){toast('Server sync failed -- the entry was NOT recorded. Try again with a connection.');return;}
+  closeCredModal();
+  await crRefresh();
+  toast('Recorded for '+alfStaffName(staffId));
 }
 function rCertStatus(){
   var sf=staff();
