@@ -76,5 +76,11 @@ module.exports = {
   // certification record that the training-hour checks read from.
     'alf_compliance_rules',
     'alf_staff_credentials',
+  // SAIRNcare operational-audit layer (2026-08-22, Phase 3 item 5) -- food
+  // safety, sanitation, emergency drills. DELIBERATELY SEPARATE from the
+  // clinical eMAR: different record class (facility compliance, not PHI),
+  // different reviewers (dietary/housekeeping record it, management signs it
+  // off) and different retention. See sql/sairncare_op_audit_schema.sql.
+    'alf_op_audits',
   ],
 };

@@ -227,6 +227,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Compliance</div>
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance &amp; Incidents</button>
       <button class="sb" id="sb-activities" onclick="nav('activities')"><span class="sico">&#127917;</span>Activities</button>
+      <button class="sb" id="sb-opaudit" onclick="nav('opaudit')"><span class="sico">&#129529;</span>Operational Audit</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Access</button>
       <button class="sb" id="sb-settings" onclick="nav('settings')"><span class="sico">&#9881;&#65039;</span>Settings</button>
@@ -822,6 +823,55 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 <!-- Broad-read (any authenticated employee -- operational, non-clinical
      data), narrow-write (owner + Activities Coordinator only, matching
      their real defined role, see sql/sairncare_activities_schema.sql). -->
+<!-- OPERATIONAL AUDIT (Phase 3 item 5). DELIBERATELY SEPARATE from the clinical eMAR:
+     these are facility-compliance records, not resident PHI. The staff who take a cooler
+     temperature or run an evacuation drill are dietary/housekeeping/maintenance -- they
+     have no business in the MAR, and must not be locked out of their own log to keep them
+     out of it. So anyone signed in can RECORD; only management SIGNS OFF. -->
+<div class="panel" id="panel-opaudit">
+  <div class="ph"><div><div class="ptitle">Operational Audit</div><div class="psub">Food safety, sanitation, and emergency-preparedness drills -- facility compliance, kept separate from clinical records</div></div></div>
+  <div class="pa" style="margin-bottom:16px">
+    <button class="btn bp bs" onclick="openOpAuditModal('food_temp')">+ Food Temperature</button>
+    <button class="btn bp bs" onclick="openOpAuditModal('sanitation')">+ Sanitation Check</button>
+    <button class="btn bp bs" onclick="openOpAuditModal('emergency_drill')">+ Emergency Drill</button>
+    <button class="btn bo bs" onclick="rOpAudit()">Refresh</button>
+  </div>
+  <div class="krow">
+    <div class="kpi"><div class="klbl">Records Logged</div><div class="kval" id="opa-total">0</div><div class="kt">All types</div></div>
+    <div class="kpi"><div class="klbl">Failed Checks</div><div class="kval" id="opa-failed">0</div><div class="kt">Out of tolerance</div></div>
+    <div class="kpi"><div class="klbl">Awaiting Sign-Off</div><div class="kval" id="opa-unreviewed">0</div><div class="kt">Management review</div></div>
+  </div>
+  <div class="card"><div class="cb">
+    <div class="note">Food temperatures are evaluated against the FDA model Food Code (cold at or below 41&deg;F, hot at or above 135&deg;F, roasts 130&deg;F). The Food Code is a <b>model</b> adopted state by state -- confirm your state's adopted edition before treating these as your legal thresholds.</div>
+    <div id="opa-body" style="margin-top:10px;font-size:12px"></div>
+  </div></div>
+</div>
+
+<div class="modal" id="opauditmodal">
+  <div class="mbox">
+    <div class="mtitle" id="opa-modal-title">Record Operational Check</div>
+    <div class="fg"><label>Observed On</label><input type="date" id="opa-date"></div>
+    <div id="opa-food-fields" style="display:none">
+      <div class="fr"><div class="fg"><label>Holding Type</label><select id="opa-holding">
+          <option value="cold">Cold holding (at or below 41&deg;F)</option>
+          <option value="hot">Hot holding (at or above 135&deg;F)</option>
+          <option value="roast_hot">Roast hot holding (at or above 130&deg;F)</option>
+        </select></div>
+        <div class="fg"><label>Temperature (&deg;F)</label><input id="opa-temp" type="number" step="0.1"></div></div>
+      <div class="fg"><label>Location / Unit</label><input id="opa-location" placeholder="e.g. Walk-in cooler 1, steam table"></div>
+    </div>
+    <div id="opa-generic-fields" style="display:none">
+      <div class="fg"><label>What was checked</label><input id="opa-subject" placeholder="e.g. Kitchen deep clean, fire evacuation drill"></div>
+      <div class="fg"><label>Outcome</label><select id="opa-passed"><option value="1">Satisfactory</option><option value="0">Deficiency found</option></select></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="opa-notes" rows="2"></textarea></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeOpAuditModal()">Cancel</button>
+      <button class="btn bp" onclick="saveOpAudit()">Record</button>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="panel-activities">
   <div class="ph"><div><div class="ptitle">Activities</div><div class="psub">Activity calendar and attendance</div></div></div>
   <div class="pa" id="ac-new-row" style="display:none"><button class="btn bp bs" onclick="openActivityModal()">+ New Activity</button></div>
@@ -1190,6 +1240,7 @@ function nav(id){
   if(id==='billing')rBillingPanel();
   if(id==='compliance')rCompliancePanel();
   if(id==='activities')rActivities();
+  if(id==='opaudit')rOpAudit();
   if(id==='settings')rSettings();
 }
 
@@ -2942,6 +2993,80 @@ function alfHydrateActivities(){
     return added;
   });
 }
+// ── OPERATIONAL AUDIT (Phase 3 item 5) ───────────────────────────────────
+var _opaRecords=null,_opaType='food_temp';
+function rOpAudit(){
+  return alfPostRaw({action:'read',resource:'alf_op_audits',app_id:APP_ID,payload:{}}).then(function(r){
+    _opaRecords=(r&&Array.isArray(r.data))?r.data:[];
+    var sum=(r&&r.summary)||{total:0,failed:0,unreviewed:0};
+    $('opa-total').textContent=sum.total;
+    $('opa-failed').textContent=sum.failed;
+    $('opa-unreviewed').textContent=sum.unreviewed;
+    var box=$('opa-body');
+    if(!_opaRecords.length){
+      box.innerHTML='<span style="color:var(--muted)">No operational checks recorded yet. Use the buttons above to log a food temperature, sanitation check, or emergency drill.</span>';
+      return;
+    }
+    var isMgmt=alfIsManagement();
+    var sorted=_opaRecords.slice().sort(function(a,b){return (b.created_at||'')<(a.created_at||'')?-1:1;});
+    box.innerHTML='<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Detail</th><th>Result</th><th>Recorded By</th><th>Sign-Off</th></tr></thead><tbody>'+
+      sorted.map(function(c){
+        var detail=c.record_type==='food_temp'
+          ?(H(c.location||'--')+' &middot; '+H(String(c.temperature_f))+'&deg;F '+H((c.holding_kind||'').replace('_',' ')))
+          :H(c.subject||'--');
+        var result=c.passed===true?'<span class="badge bg">pass</span>'
+          :(c.passed===false?'<span class="badge br">fail</span>':'<span class="badge bx">not evaluated</span>');
+        var signoff=c.reviewed_by
+          ?('<span class="badge bg">'+H(c.reviewed_by)+'</span>')
+          :(isMgmt?('<button class="btn bo bs" onclick="signOffOpAudit(\''+c.id+'\')">Sign Off</button>')
+                  :'<span style="color:var(--muted)">pending</span>');
+        return '<tr><td>'+H(c.observed_on||'--')+'</td><td>'+H((c.record_type||'').replace('_',' '))+'</td>'+
+          '<td>'+detail+(c.notes?(' <span style="color:var(--muted)">'+H(c.notes)+'</span>'):'')+'</td>'+
+          '<td>'+result+'</td><td>'+H(c.recorded_by||'--')+'</td><td>'+signoff+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+function openOpAuditModal(type){
+  _opaType=type;
+  $('opa-modal-title').textContent=type==='food_temp'?'Record Food Temperature'
+    :(type==='sanitation'?'Record Sanitation Check':'Record Emergency Drill');
+  $('opa-food-fields').style.display=(type==='food_temp')?'block':'none';
+  $('opa-generic-fields').style.display=(type==='food_temp')?'none':'block';
+  $('opa-date').value=new Date().toISOString().slice(0,10);
+  $('opa-temp').value='';$('opa-location').value='';$('opa-subject').value='';$('opa-notes').value='';
+  $('opa-holding').value='cold';$('opa-passed').value='1';
+  $('opauditmodal').classList.add('on');
+}
+function closeOpAuditModal(){$('opauditmodal').classList.remove('on');}
+async function saveOpAudit(){
+  var rec={id:newId('OPA'),record_type:_opaType,observed_on:$('opa-date').value,notes:$('opa-notes').value.trim()};
+  if(_opaType==='food_temp'){
+    var t=$('opa-temp').value;
+    if(t===''){toast('A temperature reading is required');return;}
+    rec.holding_kind=$('opa-holding').value;
+    rec.temperature_f=Number(t);
+    rec.location=$('opa-location').value.trim();
+    // pass/fail is deliberately NOT sent -- the server evaluates the reading against the
+    // real threshold, so a client cannot mark an out-of-tolerance temperature as passing.
+  }else{
+    if(!$('opa-subject').value.trim()){toast('Describe what was checked');return;}
+    rec.subject=$('opa-subject').value.trim();
+    rec.passed=$('opa-passed').value==='1';
+  }
+  var saved=await alfData('write','alf_op_audits',rec,true);
+  if(!saved){toast('Server sync failed -- the check was NOT recorded. Try again with a connection.');return;}
+  closeOpAuditModal();
+  await rOpAudit();
+  toast(saved.passed===false?'Recorded -- OUT OF TOLERANCE':'Recorded');
+}
+async function signOffOpAudit(id){
+  if(!alfIsManagement()){toast('Only management can sign off an operational record');return;}
+  var saved=await alfData('write','alf_op_audits',{id:id,record_type:(_opaRecords.find(function(x){return x.id===id;})||{}).record_type,reviewed:true},true);
+  if(!saved){toast('Server sync failed -- not signed off.');return;}
+  await rOpAudit();
+  toast('Signed off');
+}
+
 function rActivities(){
   var newRow=$('ac-new-row');if(newRow)newRow.style.display=alfCanManageActivities()?'block':'none';
   var acts=activities().sort(function(a,b){return (a.date||'')<(b.date||'')?1:-1;});
