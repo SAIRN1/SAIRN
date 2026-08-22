@@ -30,6 +30,7 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
+const payerRouting = require('./_lib/payer-routing');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -155,7 +156,17 @@ module.exports = async (req, res) => {
   // 'delete' is only ever valid for the SC_RESOURCES family (see that
   // block's own header comment for why) -- every other resource on this
   // endpoint keeps its original read/write-only behavior unchanged.
-  if (action !== 'read' && action !== 'write' && !(action === 'delete' && isScResource)) {
+  //
+  // 'route' is likewise valid for exactly one resource: alf_payer_rules
+  // (SAIRNcare Phase 1). It computes a billing-routing decision and writes
+  // nothing. Carved out as narrowly as 'delete' rather than widening the
+  // gate globally -- a new verb available to all 160 resources would be a
+  // real surface change for no benefit. NOTE for whoever adds the next
+  // action: registering a resource and adding a handler branch is NOT
+  // enough, this gate must allow the verb too, or the branch is
+  // unreachable and returns a confusing 400 (found exactly that way here).
+  const isRouteAction = action === 'route' && resource === 'alf_payer_rules';
+  if (action !== 'read' && action !== 'write' && !(action === 'delete' && isScResource) && !isRouteAction) {
     res.status(400).json({ error: { message: "action must be 'read' or 'write'" + (isScResource ? " or 'delete'" : '') } });
     return;
   }
@@ -2838,6 +2849,225 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, resident_id: payload.resident_id, signal_type: payload.signal_type, recorded_at: recordedAt }, signalData) });
+      return;
+    }
+
+    // ── SAIRNCARE: alf_payer_rules + alf_claim_routes (2026-08-22, Phase 1) ─────────────────
+    // Payer/billing-routing engine. The rule-matching and routing logic itself is PURE and
+    // lives in api/_lib/payer-routing.js so it can be tested against the source bulletins'
+    // own worked examples without any infrastructure; this branch is only storage + gating.
+    //
+    // GATE: read is open to any authenticated employee (a Med Aide needs to know a resident's
+    // stay is HCBS-billed and that room and board is excluded); write is MANAGEMENT-ONLY,
+    // same as alf_billing, because these rules determine what gets billed to a government
+    // payer. A 'route' action is read-only in the database sense (it computes a decision) but
+    // is likewise management-gated, because its output is a billing instruction.
+    //
+    // WHY RULES ARE DATA: Indiana published a billing mandate on 2025-12-04 effective
+    // 2026-01-01, then paused it on 2025-12-31 -- one day before it took effect. Hardcoding
+    // would have shipped a rule obsolete before its own effective date.
+    const ALF_PAYER_PROGRAMS = { medicaid_hcbs: true, hospice_ma: true };
+    const ALF_RULE_STATUSES = { active: true, never_in_force: true };
+    if (resource === 'alf_payer_rules' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('alf_payer_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,program,effective_from,effective_to,status,data,verified_by'), { headers });
+      if (r.status === 404 || r.status === 400) {
+        res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { have: 0, need: 0, covered_states: [], uncovered_states: [] } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const data = (rows || []).map((x) => ({
+        rule_id: x.rule_id, state: x.state, program: x.program,
+        effective_from: x.effective_from, effective_to: x.effective_to,
+        status: x.status || 'active', verified_by: x.verified_by || '', data: x.data || {}
+      }));
+      // Coverage is computed against the states the caller says it cares about, so an
+      // uncovered state shows up as a real gap rather than an empty list that reads like
+      // "nothing to bill". Same {have, need} contract as alf_signals.
+      const claimed = Array.isArray(payload && payload.claimed_states) && payload.claimed_states.length
+        ? payload.claimed_states.map((s) => String(s).toUpperCase())
+        : Array.from(new Set(data.filter((x) => x.program === 'medicaid_hcbs').map((x) => x.state)));
+      res.status(200).json({ ok: true, data, provisioned: true, coverage: payerRouting.hcbsCoverage(data, claimed) });
+      return;
+    }
+    if (resource === 'alf_payer_rules' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change billing rules' } });
+        return;
+      }
+      if (!payload || !payload.rule_id || !payload.state || !payload.program || !payload.effective_from) {
+        res.status(400).json({ error: { message: 'alf_payer_rules requires rule_id, state, program, and effective_from' } });
+        return;
+      }
+      if (!ALF_PAYER_PROGRAMS[payload.program]) {
+        res.status(400).json({ error: { message: 'program must be one of: ' + Object.keys(ALF_PAYER_PROGRAMS).join(', ') } });
+        return;
+      }
+      const ruleState = String(payload.state).trim().toUpperCase();
+      // 'US' is allowed alongside the USPS list because the hospice/MA rule is federal, not
+      // state-specific -- rejecting it would force a real federal rule to masquerade as a state one.
+      if (ruleState !== 'US' && !ALF_US_STATES[ruleState]) {
+        res.status(400).json({ error: { code: 'BAD_STATE', message: 'state must be a two-letter US state, DC, or US for a federal rule' } });
+        return;
+      }
+      const ruleStatus = payload.status || 'active';
+      if (!ALF_RULE_STATUSES[ruleStatus]) {
+        res.status(400).json({ error: { message: 'status must be one of: ' + Object.keys(ALF_RULE_STATUSES).join(', ') } });
+        return;
+      }
+      if (payload.effective_to && payload.effective_to < payload.effective_from) {
+        res.status(400).json({ error: { message: 'effective_to cannot precede effective_from — mark a rule that never took effect with status never_in_force instead' } });
+        return;
+      }
+      // A rule with no resolvable authority is refused outright. A billing rule nobody can
+      // trace to a real published source is exactly what should never end up determining a
+      // government-payer claim -- same standard SAIRNlaw's deadline rules already hold.
+      const ruleData = payload.data || {};
+      const auth = ruleData.authority || {};
+      if (!auth.citation || !/^https?:\/\//.test(String(auth.url || ''))) {
+        res.status(400).json({ error: { code: 'NO_AUTHORITY', message: 'Every billing rule needs an authority citation and a resolvable source URL' } });
+        return;
+      }
+      const r = await fetch(rest('alf_payer_rules?on_conflict=license_hash,rule_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', rule_id: String(payload.rule_id),
+          state: ruleState, program: payload.program,
+          effective_from: payload.effective_from, effective_to: payload.effective_to || null,
+          status: ruleStatus, data: ruleData,
+          // Stamped from the real session, never trusted from the client -- same as
+          // care_level_history's changed_by and SAIRNlaw's verified_by.
+          verified_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Billing rules are not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ rule_id: payload.rule_id, state: ruleState, verified_by: session.employee_id }, ruleData) });
+      return;
+    }
+    // Compute a routing decision. Deliberately does NOT write anything -- persisting the
+    // decision is a separate explicit alf_claim_routes write, so previewing a route can
+    // never silently create a billing record.
+    if (resource === 'alf_payer_rules' && action === 'route') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can route a claim' } });
+        return;
+      }
+      if (!payload || !payload.program || !payload.service_month) {
+        res.status(400).json({ error: { message: 'route requires program and service_month' } });
+        return;
+      }
+      const rr = await fetch(rest('alf_payer_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,program,effective_from,effective_to,status,data'), { headers });
+      if (rr.status === 404 || rr.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Billing rules are not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.' } });
+        return;
+      }
+      const ruleRows = await rr.json();
+      if (!rr.ok) return upstream(res, ruleRows);
+      const wantState = String(payload.state || (payload.program === 'hospice_ma' ? 'US' : '')).trim().toUpperCase();
+      const candidates = (ruleRows || []).filter((x) =>
+        x.program === payload.program && x.state === wantState &&
+        payerRouting.ruleInForce({ effective_from: x.effective_from, effective_to: x.effective_to, status: x.status }, payload.service_month)
+      );
+      if (!candidates.length) {
+        // Names the state explicitly rather than returning an empty success -- an uncovered
+        // state must never look like "nothing to bill".
+        res.status(200).json({
+          ok: false,
+          error: {
+            code: 'NO_RULE_FOR_STATE',
+            message: 'No ' + payload.program + ' rule is loaded and in force for ' + (wantState || '(no state given)') +
+                     ' in ' + payload.service_month + '. This state is not covered — do not bill it from this app until a real, sourced rule is loaded.'
+          }
+        });
+        return;
+      }
+      if (candidates.length > 1) {
+        // Refuses rather than picking one, same as SAIRNlaw's AMBIGUOUS_RULE.
+        res.status(200).json({
+          ok: false,
+          error: {
+            code: 'AMBIGUOUS_RULE',
+            message: 'More than one ' + payload.program + ' rule is in force for ' + wantState + ' in ' + payload.service_month +
+                     ': ' + candidates.map((c) => c.rule_id).join(', ') + '. Narrow the effective dates so exactly one applies.'
+          }
+        });
+        return;
+      }
+      const rule = Object.assign({}, candidates[0]);
+      const result = payload.program === 'hospice_ma'
+        ? payerRouting.routeHospiceClaim(Object.assign({}, payload, { rule: rule }))
+        : payerRouting.routeHcbsClaim(Object.assign({}, payload, { rule: rule }));
+      res.status(200).json(result);
+      return;
+    }
+    if (resource === 'alf_claim_routes' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Billing is not available to your role' } });
+        return;
+      }
+      const r = await fetch(rest('alf_claim_routes?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,service_month,data,decided_by,created_at'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const data = (rows || []).map((x) => Object.assign({
+        id: x.entry_id, resident_id: x.resident_id, service_month: x.service_month,
+        decided_by: x.decided_by || '', created_at: x.created_at
+      }, x.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'alf_claim_routes' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Billing is not available to your role' } });
+        return;
+      }
+      if (!payload || !payload.id || !payload.resident_id || !payload.service_month) {
+        res.status(400).json({ error: { message: 'alf_claim_routes requires id, resident_id, and service_month' } });
+        return;
+      }
+      // Append-only: a routing decision records how a real claim was billed. If the
+      // determination changes, that is a NEW decision with its own timestamp, not an edit
+      // erasing what was previously believed and acted upon. Same rule as alf_mar events.
+      const existingR = await fetch(rest('alf_claim_routes?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
+      const existingRows = existingR.ok ? await existingR.json() : [];
+      if (Array.isArray(existingRows) && existingRows.length > 0) {
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This routing decision has already been recorded and cannot be overwritten' } });
+        return;
+      }
+      const routeData = Object.assign({}, payload);
+      delete routeData.id; delete routeData.resident_id; delete routeData.service_month;
+      const r = await fetch(rest('alf_claim_routes'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id),
+          resident_id: String(payload.resident_id), service_month: String(payload.service_month),
+          data: routeData, decided_by: session.employee_id
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claim routing is not set up yet — run sql/sairncare_payer_rules_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, resident_id: payload.resident_id, service_month: payload.service_month, decided_by: session.employee_id }, routeData) });
       return;
     }
 
