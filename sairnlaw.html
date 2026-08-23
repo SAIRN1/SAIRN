@@ -298,6 +298,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-mocktrial" onclick="nav('mocktrial')"><span class="sico">&#9878;&#65039;</span>Mock Trial</button>
       <button class="sb" id="sb-jury" onclick="nav('jury')"><span class="sico">&#128101;</span>Jury Assistance</button>
       <button class="sb" id="sb-deadlinerules" onclick="nav('deadlinerules')"><span class="sico">&#128197;</span>Deadline Rules</button>
+      <button class="sb" id="sb-efile" onclick="nav('efile')"><span class="sico">&#128228;</span>E-Filing Readiness</button>
       <button class="sb" id="sb-aicoc" onclick="nav('aicoc')"><span class="sico">&#128737;&#65039;</span>AI Chain of Custody</button>
       <div class="ss">Administration</div>
       <button class="sb" id="sb-security" onclick="nav('security')"><span class="sico">&#128274;</span>Security &amp; Audit</button>
@@ -1043,6 +1044,43 @@ label.chk input{width:auto;}
   </div></div>
 </div>
 
+<!-- E-FILING READINESS (Ohio-first) -->
+<div class="panel" id="panel-efile">
+  <div class="ph"><div><div class="ptitle">E-Filing Readiness</div><div class="psub">Check a document against the real published rules of the court you are filing in &mdash; before you upload it</div></div></div>
+
+  <div class="note"><b>This does not file anything.</b> It has no connection to any court and cannot submit a document. Ohio has no statewide trial-court e-filing system and no public filing API &mdash; e-filing is adopted county by county under Civ.R. 5(E) and Sup.R. 27, different counties run different vendors, and programmatic filing requires being a certified Electronic Filing Service Provider for that specific court's system. Even the Supreme Court of Ohio, which does have one unified system, publishes a web portal only. So this checks your document against the rules first; you still file it yourself, by hand, through the court's own portal.</div>
+
+  <div class="card"><div class="ch"><span class="ct">Check a filing</span></div><div class="cb">
+    <div class="fr">
+      <div class="fg"><label>Court</label>
+        <select id="ef-court" onchange="efileCourtChange()">
+          <option value="oh-supreme">Supreme Court of Ohio</option>
+          <option value="oh-franklin-cp">Franklin County Common Pleas &mdash; General Division (Civil)</option>
+        </select>
+      </div>
+      <div class="fg"><label>Document type</label><select id="ef-doctype"></select></div>
+    </div>
+    <div class="fg"><label>The document you are about to file</label>
+      <input id="ef-file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
+      The file is read in your browser only. It is not uploaded anywhere, not sent to the AI proxy, and not stored.
+    </div>
+    <button class="btn bp" onclick="efileRun()" id="ef-run-btn">Check this filing</button>
+    <div id="ef-result" style="margin-top:12px"></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Coverage</span></div><div class="cb">
+    <div style="font-size:12px;color:var(--muted)">
+      Two courts are covered, and only two. Ohio has 88 counties, each free to adopt its own e-filing rules by local
+      rule &mdash; a court that is not in the list above is absent rather than approximated, and no rule here is
+      generalised from one court to another. The two courts genuinely differ: the Supreme Court of Ohio permits five
+      typefaces, Franklin County permits two. Full sourcing, including every rule number encoded, is in
+      <code>docs/sairnlaw-ohio-efiling-scope.md</code>.
+    </div>
+  </div></div>
+</div>
+
 <!-- SECURITY & AUDIT -->
 <div class="panel" id="panel-security">
   <div class="ph"><div><div class="ptitle">Security &amp; Audit</div><div class="psub">Account protection, session model, and the firm's server-side audit trail</div></div></div>
@@ -1483,6 +1521,7 @@ function nav(id){
   if(id==='mocktrial')mtRenderMatterOptions();
   if(id==='jury')juryRenderAll();
   if(id==='deadlinerules')drRenderStatus();
+  if(id==='efile')rEfile();
   if(id==='ai'){}
   if(id==='intake')rIntake();
   if(id==='matters')rMattersPanel();
@@ -4199,6 +4238,367 @@ function mtDecompose(position) {
     return { ok: true, points: mtAnchorPoints(parsed, position) };
   }).catch(function () { return { ok: false, reason: 'Network error during decomposition.' }; });
 }
+
+// ══ E-FILING READINESS (Ohio-first) ═══════════════════════════════════════
+// This does NOT file anything. Ohio has no statewide trial-court e-filing
+// system and no public filing API: e-filing is adopted county by county under
+// Civ.R. 5(E) and Sup.R. 27, counties run different vendors (Tyler/Odyssey,
+// Henschen, county-built), and the vendor route requires being a certified
+// EFSP -- a contract, not a key. Even the Supreme Court of Ohio, which does
+// have one unified system, publishes a web portal only.
+//
+// So this checks the PDF a lawyer is ABOUT to file against the real published
+// rules of the court they are filing in, before they upload it by hand. Same
+// discipline as the deadline engine and the citator: the file asserts, the
+// code checks -- and anything the code CANNOT mechanically determine returns
+// CANNOT VERIFY with the governing rule cited, never a pass. Reporting an
+// unverifiable rule as satisfied is the failure this whole module avoids.
+//
+// Full sourcing: docs/sairnlaw-ohio-efiling-scope.md
+var EFILE_COURTS = {
+  'oh-supreme': {
+    label: 'Supreme Court of Ohio',
+    portal: 'e-Filing Portal (attorney registration number as username)',
+    // S.Ct.Prac.R. 3.09(B)(1)(b)
+    typefaces: ['Times New Roman', 'Cambria', 'Calibri', 'Arial', 'Palatino Linotype'],
+    minPt: 12,
+    pageSize: { w: 612, h: 792, label: '8 1/2 x 11 in' },
+    maxBytes: null,
+    signature: 'A scanned original signature, or a signature line of a forward slash, "s", then the name in print -- e.g. /s "John T. Smith"',
+    cutoff: 'Due by 11:59:59 p.m. local observed time in Columbus, Ohio. Anything submitted after 5:00:00 p.m. is not reviewed by the Clerk until the next business day.',
+    cannotEfile: ['Affidavits of disqualification', 'The record of a lower court or agency'],
+    docTypes: [
+      { id: 'mij', label: 'Memorandum in support of jurisdiction', pages: 15,
+        rule: 'S.Ct.Prac.R. 7.01(B)(1)', note: 'Exclusive of the table of contents and the certificate of service. No page limit in a postconviction death-penalty case -- S.Ct.Prac.R. 7.01(B)(2).' },
+      { id: 'mij-appellee', label: 'Appellee / cross-appellant combined memorandum', pages: 30,
+        rule: 'S.Ct.Prac.R. 7.08(C)', note: 'The appellant/cross-appellee memorandum under the same rule is limited to 15 pages.' },
+      { id: 'merit1', label: 'Merit brief (first or second)', pages: 50,
+        rule: 'S.Ct.Prac.R. 16.02 / 16.03', note: 'Except in certain death-penalty appeals of right under S.Ct.Prac.R. 5.01(A)(1), (2), (4) or (6).' },
+      { id: 'merit4', label: 'Fourth brief', pages: 20,
+        rule: 'S.Ct.Prac.R. 16.05', note: 'Exclusive of the table of contents, table of authorities, certificate of service and any appendix.' },
+      { id: 'other', label: 'Other document (no page limit checked)', pages: null,
+        rule: null, note: 'Mechanical requirements are still checked. Confirm any page limit in the rule governing your specific document.' }
+    ],
+    manual: [
+      { rule: 'S.Ct.Prac.R. 3.09(B)(2)(c)', text: 'All margins at least one inch, and the left margin justified.' },
+      { rule: 'S.Ct.Prac.R. 3.09(B)(3)', text: 'Text double-spaced. Footnotes and quotations may be single-spaced but must still be 12-point.' },
+      { rule: 'S.Ct.Prac.R. 3.09(B)(1)(d)', text: 'Italic type used only for case citations and emphasis.' },
+      { rule: 'S.Ct.Prac.R. 3.09(B)(1)(c)', text: 'If a substitute typeface was used, no more than eighty characters to a line of text.' },
+      { rule: 'S.Ct.Prac.R. 3.09(B)(2)(a)', text: 'Paper stock is white, 20 to 22-pound, single-sided (applies to the paper original).' }
+    ]
+  },
+  'oh-franklin-cp': {
+    label: 'Franklin County Common Pleas — General Division (Civil)',
+    portal: "The Court's own e-Filing System",
+    // Ninth Amended Civil eFiling Administrative Order, section on Font Style and Size
+    typefaces: ['Times New Roman', 'Arial'],
+    minPt: 12,
+    pageSize: null,
+    maxBytes: 5 * 1024 * 1024,
+    maxTransmissionBytes: 25 * 1024 * 1024,
+    signature: 'A conformed signature "/s/(name)", followed by the name, Supreme Court ID Number, "Attorney for (party)", firm, address, telephone, e-mail and fax.',
+    cutoff: 'A submission after 11:59 p.m. on a Friday, or after 11:59 p.m. on a business day before a Court holiday, is deemed filed on the following business day. This does not alter Civ.R. 6, under which a deadline falling on a Saturday, Sunday or legal holiday runs to the end of the next day that is none of those.',
+    cannotEfile: [],
+    docTypes: [
+      { id: 'pleading', label: 'Pleading, motion, memorandum or other document', pages: null,
+        rule: null, note: 'Must be PDF.' },
+      { id: 'proposed-order', label: 'Proposed order', pages: null, requireDocx: true,
+        rule: 'Ninth Amended Civil eFiling Administrative Order', note: 'Proposed orders are the ONE exception to the PDF rule -- they must be Microsoft Word 2007 or higher (.docx) and must reference the specific motions to which they apply.' }
+    ],
+    manual: [
+      { rule: 'Ninth Amended Civil eFiling Administrative Order', text: 'Documents double-spaced.' },
+      { rule: 'Ninth Amended Civil eFiling Administrative Order', text: 'The signature block carries the filer’s Supreme Court ID Number.' },
+      { rule: 'Clerk Review', text: 'The Clerk preliminarily reviews every submission and can reject one that looks compliant. Nothing here predicts that outcome.' }
+    ]
+  }
+};
+
+// ── PDF inspection, from raw bytes ────────────────────────────────────────
+// No PDF library is vendored into this file, so what can be read honestly is
+// limited, and the limit is disclosed rather than papered over. Structure
+// markers (/Type /Page, /MediaBox, /BaseFont) sit in the file's object
+// dictionaries and are readable when those are not inside an object stream.
+// Modern producers frequently DO compress them, in which case every one of
+// these probes returns null and the caller reports CANNOT VERIFY. That is the
+// correct outcome, not a degraded one.
+function efileReadBytes(buf) {
+  var b = new Uint8Array(buf), s = '';
+  // latin1, chunked -- String.fromCharCode.apply on a multi-MB array blows
+  // the argument limit and throws RangeError on real filings.
+  for (var i = 0; i < b.length; i += 8192) {
+    s += String.fromCharCode.apply(null, b.subarray(i, Math.min(i + 8192, b.length)));
+  }
+  return s;
+}
+
+function efileInspect(buf, fileName, fileSize) {
+  var raw = efileReadBytes(buf);
+  var out = {
+    name: fileName, bytes: fileSize,
+    isPdf: raw.slice(0, 5) === '%PDF-',
+    isDocx: raw.slice(0, 2) === 'PK' && /word\/document\.xml/.test(raw),
+    version: null, pageCount: null, pageSizes: [], fonts: [], fontSizes: [],
+    compressedStructure: false, textSample: ''
+  };
+  if (out.isPdf) {
+    var v = raw.slice(5, 8).match(/^\d\.\d/);
+    out.version = v ? v[0] : null;
+  }
+  if (!out.isPdf) return out;
+
+  // Page count: two independent probes. They must agree, or we report neither.
+  var typePages = (raw.match(/\/Type\s*\/Page[^s]/g) || []).length;
+  var countM = raw.match(/\/Type\s*\/Pages[\s\S]{0,400}?\/Count\s+(\d+)/);
+  var declared = countM ? parseInt(countM[1], 10) : null;
+  if (declared !== null && typePages > 0 && declared === typePages) out.pageCount = declared;
+  else if (declared !== null && typePages === 0) out.pageCount = declared;
+  else if (declared === null && typePages > 0) out.pageCount = typePages;
+  // Disagreement between the two leaves pageCount null on purpose. A wrong
+  // page count on a rule with a hard page limit is worse than no page count.
+
+  var mb, mbRe = /\/MediaBox\s*\[\s*(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s*\]/g, seen = {};
+  while ((mb = mbRe.exec(raw)) !== null) {
+    var w = Math.round(Math.abs(parseFloat(mb[3]) - parseFloat(mb[1])));
+    var h = Math.round(Math.abs(parseFloat(mb[4]) - parseFloat(mb[2])));
+    var k = w + 'x' + h;
+    if (!seen[k]) { seen[k] = true; out.pageSizes.push({ w: w, h: h }); }
+  }
+
+  var bf, bfRe = /\/BaseFont\s*\/([A-Za-z0-9+#\-,._]+)/g, fseen = {};
+  while ((bf = bfRe.exec(raw)) !== null) {
+    // Subset fonts carry a six-letter tag and a plus sign: ABCDEF+Arial.
+    var name = bf[1].replace(/^[A-Z]{6}\+/, '').replace(/#20/g, ' ');
+    if (!fseen[name]) { fseen[name] = true; out.fonts.push(name); }
+  }
+
+  // Point sizes come from the Tf operator inside content streams, which are
+  // usually FlateDecode-compressed and therefore unreadable here.
+  var tf, tfRe = /\/[A-Za-z0-9]+\s+([\d.]+)\s+Tf/g, sseen = {};
+  while ((tf = tfRe.exec(raw)) !== null) {
+    var pt = parseFloat(tf[1]);
+    if (pt > 0 && pt < 100 && !sseen[pt]) { sseen[pt] = true; out.fontSizes.push(pt); }
+  }
+  out.fontSizes.sort(function (a, b2) { return a - b2; });
+
+  out.compressedStructure = /\/Filter\s*\/FlateDecode/.test(raw) && out.fonts.length === 0;
+
+  // Opportunistic text, uncompressed streams only. Used to look for the
+  // conformed signature; absence proves nothing and is reported as such.
+  var txt = '', tj, tjRe = /\(((?:\\.|[^\\()])*)\)\s*Tj/g, guard = 0;
+  while ((tj = tjRe.exec(raw)) !== null && guard++ < 20000) {
+    txt += tj[1].replace(/\\([()\\])/g, '$1') + ' ';
+  }
+  out.textSample = txt.slice(0, 60000);
+  return out;
+}
+
+// ── The rule checks ───────────────────────────────────────────────────────
+// Every check returns one of PASS / FAIL / CANNOT VERIFY. There is no fourth
+// state and no silent skip.
+function efileRun() {
+  var courtKey = $('ef-court').value;
+  var court = EFILE_COURTS[courtKey];
+  var el = $('ef-result');
+  if (!court) { toast('Select a court'); return; }
+  var input = $('ef-file');
+  if (!input || !input.files || !input.files.length) { toast('Choose the document you are about to file'); return; }
+  var docType = (court.docTypes.filter(function (d) { return d.id === $('ef-doctype').value; })[0]) || court.docTypes[0];
+  var f = input.files[0];
+  var btn = $('ef-run-btn');
+  btn.disabled = true; btn.textContent = 'Checking…';
+  el.innerHTML = '<div style="color:var(--muted);font-size:13px">Reading the file…</div>';
+
+  var reader = new FileReader();
+  reader.onerror = function () {
+    btn.disabled = false; btn.textContent = 'Check this filing';
+    el.innerHTML = '<div class="note" style="margin:0">Could not read that file.</div>';
+  };
+  reader.onload = function (e) {
+    var info;
+    try { info = efileInspect(e.target.result, f.name, f.size); }
+    catch (err) {
+      btn.disabled = false; btn.textContent = 'Check this filing';
+      el.innerHTML = '<div class="note" style="margin:0"><b>Could not inspect that file.</b> ' + H(err.message) +
+        ' Nothing was checked — do not read this as a pass.</div>';
+      return;
+    }
+    efileRender(court, docType, info);
+    btn.disabled = false; btn.textContent = 'Check this filing';
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function efileChecks(court, docType, info) {
+  var R = [];
+  function add(state, label, detail, rule) { R.push({ state: state, label: label, detail: detail, rule: rule || '' }); }
+
+  // Format
+  if (docType.requireDocx) {
+    add(info.isDocx ? 'PASS' : 'FAIL', 'Proposed order is a Word (.docx) document',
+      info.isDocx ? 'Word document detected.' : 'This is not a .docx. Proposed orders are the one exception to the PDF rule and must be Word 2007 or higher.',
+      docType.rule || '');
+  } else {
+    add(info.isPdf ? 'PASS' : 'FAIL', 'Document is a PDF',
+      info.isPdf ? ('PDF' + (info.version ? ' ' + info.version : '') + ' detected.')
+                 : 'The file does not start with a PDF header.', '');
+  }
+
+  // File size
+  if (court.maxBytes) {
+    var mb = (info.bytes / 1048576);
+    add(info.bytes <= court.maxBytes ? 'PASS' : 'FAIL', 'Submission size within the limit',
+      mb.toFixed(2) + ' MB against a ' + (court.maxBytes / 1048576) + ' MB per-submission limit.' +
+      (court.maxTransmissionBytes ? ' No combination of PDFs in one transmission may exceed ' + (court.maxTransmissionBytes / 1048576) + ' MB — that total is across files and is not checked here.' : ''),
+      'Ninth Amended Civil eFiling Administrative Order');
+  }
+
+  // Page limit
+  if (docType.pages) {
+    if (info.pageCount === null) {
+      add('CANNOT VERIFY', 'Page limit (' + docType.pages + ' pages)',
+        'The page count could not be read from this file' +
+        (info.compressedStructure ? ' — its structure is compressed, which is normal and not a defect.' : '.') +
+        ' Count the numbered pages by eye. ' + (docType.note || ''), docType.rule || '');
+    } else {
+      add(info.pageCount <= docType.pages ? 'PASS' : 'FAIL', 'Page limit (' + docType.pages + ' pages)',
+        info.pageCount + ' pages in the file. NOTE: the rule counts numbered pages ' +
+        'exclusive of the parts it names, which cannot be determined mechanically — a file at or ' +
+        'near the limit still needs a human count. ' + (docType.note || ''), docType.rule || '');
+    }
+  } else if (docType.note) {
+    add('CANNOT VERIFY', 'Page limit', docType.note, docType.rule || '');
+  }
+
+  // Page size
+  if (court.pageSize) {
+    if (!info.pageSizes.length) {
+      add('CANNOT VERIFY', 'Page size ' + court.pageSize.label,
+        'No page dimensions could be read from this file.', 'S.Ct.Prac.R. 3.09(B)(2)(a)');
+    } else {
+      var bad = info.pageSizes.filter(function (p) {
+        return Math.abs(p.w - court.pageSize.w) > 3 || Math.abs(p.h - court.pageSize.h) > 3;
+      });
+      add(bad.length ? 'FAIL' : 'PASS', 'Page size ' + court.pageSize.label,
+        info.pageSizes.map(function (p) { return (p.w / 72).toFixed(2) + ' x ' + (p.h / 72).toFixed(2) + ' in'; }).join(', ') +
+        (bad.length ? ' — at least one page is not letter size.' : '.'),
+        'S.Ct.Prac.R. 3.09(B)(2)(a)');
+    }
+  }
+
+  // Typeface
+  var tfRule = courtRule(court, 'typeface');
+  if (!info.fonts.length) {
+    add('CANNOT VERIFY', 'Typeface', 'No embedded font names could be read from this file' +
+      (info.compressedStructure ? ' (compressed structure).' : '.') +
+      ' Permitted: ' + court.typefaces.join(', ') + '.', tfRule);
+  } else {
+    var okFonts = info.fonts.filter(function (n) {
+      return court.typefaces.some(function (t) {
+        return n.toLowerCase().replace(/[^a-z]/g, '').indexOf(t.toLowerCase().replace(/[^a-z]/g, '')) === 0;
+      });
+    });
+    var badFonts = info.fonts.filter(function (n) { return okFonts.indexOf(n) === -1; });
+    add(badFonts.length ? 'FAIL' : 'PASS', 'Typeface',
+      'Embedded: ' + info.fonts.join(', ') + '. Permitted: ' + court.typefaces.join(', ') + '.' +
+      (badFonts.length ? ' Not permitted: ' + badFonts.join(', ') +
+        '. A substantially equivalent substitute is allowed only where none of the listed faces is available.' : ''),
+      tfRule);
+  }
+
+  // Point size
+  if (!info.fontSizes.length) {
+    add('CANNOT VERIFY', 'Minimum ' + court.minPt + '-point type',
+      'Point sizes live in the content stream, which is compressed in most PDFs and could not be read here.', tfRule);
+  } else {
+    var under = info.fontSizes.filter(function (s) { return s < court.minPt; });
+    add(under.length ? 'FAIL' : 'PASS', 'Minimum ' + court.minPt + '-point type',
+      'Sizes found: ' + info.fontSizes.join(', ') + ' pt.' +
+      (under.length ? ' Below the minimum: ' + under.join(', ') + ' pt.' : ''), tfRule);
+  }
+
+  // Signature
+  var sigRe = /\/s\/|\/s\s*["“]/;
+  if (!info.textSample) {
+    add('CANNOT VERIFY', 'Conformed signature present',
+      'No readable text could be extracted, so the signature could not be located. Required: ' + court.signature, 'S.Ct.Prac.R. 3.02');
+  } else if (sigRe.test(info.textSample)) {
+    add('PASS', 'Conformed signature present',
+      'A conformed signature marker was found in the document text. Required form: ' + court.signature, 'S.Ct.Prac.R. 3.02');
+  } else {
+    add('CANNOT VERIFY', 'Conformed signature present',
+      'No conformed signature marker was found in the readable text. That is NOT proof it is missing — only part of a PDF’s text is readable without rendering. Required: ' + court.signature,
+      'S.Ct.Prac.R. 3.02');
+  }
+
+  return R;
+}
+
+function courtRule(court, kind) {
+  if (kind === 'typeface') {
+    return court.label.indexOf('Supreme') !== -1 ? 'S.Ct.Prac.R. 3.09(B)(1)(b)'
+      : 'Ninth Amended Civil eFiling Administrative Order';
+  }
+  return '';
+}
+
+function efileRender(court, docType, info) {
+  var el = $('ef-result');
+  var checks = efileChecks(court, docType, info);
+  var fails = checks.filter(function (c) { return c.state === 'FAIL'; }).length;
+  var unk = checks.filter(function (c) { return c.state === 'CANNOT VERIFY'; }).length;
+
+  var rows = checks.map(function (c) {
+    var cls = c.state === 'PASS' ? 'bg' : (c.state === 'FAIL' ? 'br' : 'bx');
+    return '<div class="srow" style="display:block">' +
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">' +
+      '<span class="slbl"><b>' + H(c.label) + '</b>' +
+      (c.rule ? '<div style="font-size:11px;color:var(--muted)">' + H(c.rule) + '</div>' : '') +
+      '</span><span class="sval"><span class="badge ' + cls + '">' + H(c.state) + '</span></span></div>' +
+      '<div style="font-size:12px;color:var(--muted);padding-left:2px;margin-top:3px">' + H(c.detail) + '</div></div>';
+  }).join('');
+
+  var manual = '<div style="margin-top:12px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;color:#92400e;font-size:12px">' +
+    '<b>Checked by eye, not by this tool.</b> These rules cannot be determined from a PDF’s bytes, so they are named rather than guessed at:' +
+    '<ul style="margin:6px 0 0 18px">' +
+    court.manual.map(function (m) { return '<li>' + H(m.text) + ' <span style="opacity:.75">(' + H(m.rule) + ')</span></li>'; }).join('') +
+    '</ul></div>';
+
+  var timing = '<div style="margin-top:12px;font-size:12px;color:var(--muted)"><b>Timing.</b> ' + H(court.cutoff) + '</div>';
+  var cant = court.cannotEfile.length
+    ? '<div style="margin-top:8px;font-size:12px;color:var(--muted)"><b>Cannot be e-filed at all in this court:</b> ' +
+      H(court.cannotEfile.join('; ')) + '.</div>'
+    : '';
+
+  var summary = fails
+    ? '<span class="badge br">' + fails + ' problem' + (fails === 1 ? '' : 's') + ' found</span>'
+    : '<span class="badge bg">No rule violation detected</span>';
+
+  el.innerHTML = '<div class="card" style="margin:0"><div class="ch"><span class="ct">Readiness report &mdash; ' +
+    H(court.label) + '</span></div><div class="cb">' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">' + H(info.name) + ' &middot; ' +
+    (info.bytes / 1024).toFixed(0) + ' KB &middot; ' + H(docType.label) + '</div>' +
+    '<div style="margin-bottom:10px">' + summary +
+    (unk ? ' <span class="badge bx">' + unk + ' could not be verified</span>' : '') + '</div>' +
+    rows + manual + timing + cant +
+    '<div style="margin-top:12px;background:var(--bg);border-radius:8px;padding:10px 14px;font-size:12px">' +
+    '<b>This tool has not filed anything.</b> It has not contacted ' + H(court.label) +
+    ' and cannot. Upload the document yourself through ' + H(court.portal) +
+    '. A clean report here is not acceptance — only the Clerk’s own review decides that.</div>' +
+    '</div></div>';
+}
+
+function efileCourtChange() {
+  var court = EFILE_COURTS[$('ef-court').value];
+  var sel = $('ef-doctype');
+  if (!court || !sel) return;
+  sel.innerHTML = court.docTypes.map(function (d) {
+    return '<option value="' + d.id + '">' + H(d.label) + '</option>';
+  }).join('');
+  var el = $('ef-result');
+  if (el) el.innerHTML = '';
+}
+
+function rEfile() { efileCourtChange(); }
 
 function mtRenderPoints(points) {
   var el = $('mt-points');
