@@ -4118,16 +4118,85 @@ function drRenderStatus() {
       return;
     }
     DR_STATUS = d;
+    // COVERAGE IS STATED FROM THE LOADED RULES THEMSELVES, never from a
+    // hand-maintained list of what is or is not covered. Phase 4's decision
+    // gate found that the old card was true but invited a wrong inference: it
+    // said what WAS loaded and "no date is ever estimated", which together
+    // read as completeness. The engine refuses correctly for an uncovered
+    // deadline, but a lawyer had no way to see the coverage was a narrow
+    // slice before asking.
+    //
+    // The fix lists the actual rule labels and citations the server returned
+    // -- the same payload that drives the trigger dropdown, so it cannot drift
+    // from what will actually compute -- and then makes ONE generic statement
+    // about everything else. A literal "not covered" list would be a second
+    // copy of a fact already held in the rule set and would go stale the first
+    // time a rule was added; the same reason this panel does not predict the
+    // landing year client-side. Never implement the same fact twice.
+    // COVERAGE IS UNEVEN BY JURISDICTION, and that has to read at a glance.
+    // Phase 5's decision-gate re-run found the failure mode had MOVED rather
+    // than closed: the first gate caught a true statement implying more
+    // BREADTH than existed; listing every rule fixed that. The re-run caught a
+    // true statement implying more PARITY than exists. Federal carries most of
+    // the coverage while two states carry one rule each, and five jurisdictions
+    // rendered with equal visual weight let a reader take in every correct line
+    // and still leave with the wrong impression of what Ohio does.
+    //
+    // The count is therefore given real prominence and a proportional bar, and
+    // a live-derived count of distinct rule FAMILIES sits beside it -- families
+    // are extracted mechanically from the citation strings already in the
+    // payload, not from a hand-maintained map, so a jurisdiction added later
+    // classifies itself. One rule in one family reads visibly differently from
+    // twenty rules across ten.
+    var maxRules = d.jurisdictions.reduce(function (m, j) { return Math.max(m, j.rule_count || 0); }, 0) || 1;
     el.innerHTML = d.jurisdictions.map(function (j) {
       var doms = Object.keys(j.domains).map(function (k) {
         return H((j.domain_labels && j.domain_labels[k]) || k) + ' (' + j.domains[k] + ')';
       }).join(', ');
-      return '<div class="srow"><span class="slbl"><b>' + H(j.jurisdiction_label || j.jurisdiction) + '</b>' +
+      var loaded = [], fams = {};
+      Object.keys(j.triggers || {}).forEach(function (dom) {
+        (j.triggers[dom] || []).forEach(function (t) {
+          if (t.citation) {
+            // Rule-family root, e.g. "Fed. R. Civ. P. 12(a)(1)(A)(i)" -> "12".
+            var m = String(t.citation).match(/([0-9]+(?:\.[0-9]+)?)/);
+            if (m) fams[m[1]] = true;
+          }
+          loaded.push('<div style="font-size:11px;color:var(--muted);padding:1px 0 1px 10px">&bull; ' +
+            H(t.label) + (t.citation ? ' <span style="opacity:.75">&mdash; ' + H(t.citation) + '</span>' : '') + '</div>');
+        });
+      });
+      var famCount = Object.keys(fams).length;
+      var pct = Math.round(((j.rule_count || 0) / maxRules) * 100);
+      var thin = (j.rule_count || 0) <= 1;
+      return '<div class="srow" style="display:block"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
+        '<span class="slbl" style="flex:1"><b>' + H(j.jurisdiction_label || j.jurisdiction) + '</b>' +
         '<div style="font-size:11px;color:var(--muted)">' + (doms || 'no domains') +
-        ' &middot; holiday years: ' + (j.holiday_years.length ? H(j.holiday_years.join(', ')) : '<b>none</b>') + '</div></span>' +
-        '<span class="sval"><span class="badge ' + (j.holiday_years.length ? 'bg' : 'bx') + '">' +
-        j.rule_count + ' rule' + (j.rule_count === 1 ? '' : 's') + '</span></span></div>';
-    }).join('') + '<div style="font-size:11px;color:var(--muted);margin-top:8px">' + H(d.note) + '</div>';
+        ' &middot; holiday years: ' + (j.holiday_years.length ? H(j.holiday_years.join(', ')) : '<b>none</b>') + '</div>' +
+        '<div style="height:4px;border-radius:2px;background:var(--border);margin-top:6px;max-width:340px">' +
+        '<div style="height:4px;border-radius:2px;width:' + pct + '%;background:' + (thin ? 'var(--warn)' : 'var(--p)') + '"></div></div>' +
+        '</span>' +
+        '<span class="sval" style="text-align:right;min-width:104px">' +
+        '<div style="font-size:22px;font-weight:700;line-height:1.1;color:' + (thin ? 'var(--warn)' : 'var(--p)') + '">' +
+        j.rule_count + '</div>' +
+        '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px">' +
+        'rule' + (j.rule_count === 1 ? '' : 's') + ' &middot; ' + famCount + ' famil' + (famCount === 1 ? 'y' : 'ies') + '</div>' +
+        '</span></div>' +
+        (loaded.length ? '<div style="margin-top:6px">' + loaded.join('') + '</div>' : '') +
+        '</div>';
+    }).join('') +
+      '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;' +
+      'color:#92400e;font-size:12px;margin-top:10px">' +
+      '<b>This is the complete list of deadlines this engine can compute, and coverage is uneven by jurisdiction.</b> ' +
+      'Compare the rule counts above before relying on any one jurisdiction. ' +
+      'Deadline families not listed above are not yet loaded — for those the engine will refuse rather than estimate. ' +
+      // The invariant half of the approved external claim. The per-jurisdiction
+      // specifics of that claim are deliberately NOT repeated here: they are
+      // rendered live above, and hardcoding them would recreate exactly the
+      // stale second copy this card was built to avoid.
+      'Every date traces to primary-source rule text with a full audit trail. ' +
+      'It is not a substitute for confirming a deadline against the governing rule.' +
+      '</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:8px">' + H(d.note) + '</div>';
     drPopulateJurisdictions();
   });
 }
