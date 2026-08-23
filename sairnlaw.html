@@ -4097,9 +4097,13 @@ function mtRun() {
               '</span></div>';
           }).join('') +
           '<div style="font-size:11px;color:var(--muted);margin-top:6px">' +
-            (checked.some(function (c) { return c.state === 'unavailable'; })
-              ? 'At least one citation could not be checked, so it has not been confirmed either way. Verify anything not marked Verified before relying on it.'
-              : 'A citation the citator cannot find has not been confirmed to exist. Check it yourself before using it.') +
+            // The footnote must describe the states ACTUALLY present. A run
+            // where everything resolved needs no warning; one carrying an
+            // ambiguous or unchecked citation needs a different warning from
+            // one carrying a citation that was checked and not found.
+            (checked.every(function (c) { return c.state === 'verified'; })
+              ? 'Every citation above resolved to a real case in CourtListener.'
+              : 'Only citations marked Verified have been resolved to a real case. Check any other before relying on it.') +
           '</div>';
       });
     }
