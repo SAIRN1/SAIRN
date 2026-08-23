@@ -4375,21 +4375,21 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       <div style="font-weight:700;margin-bottom:14px;color:var(--text);font-size:13px;text-transform:uppercase;letter-spacing:.5px">Company Profile</div>
       <div style="display:grid;gap:10px">
         <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Company Name</label>
-          <input id="adm-co" value="Pinnacle Stone &amp; Design" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
+          <input id="adm-co" value="" placeholder="Your shop name (used on proposals &amp; invoices)" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
         <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Owner / Contact</label>
-          <input id="adm-owner" value="Jim Hartwell" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
+          <input id="adm-owner" value="" placeholder="Owner / primary contact" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Phone</label>
-            <input id="adm-phone" value="(216) 847-3200" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
+            <input id="adm-phone" value="" placeholder="Shop phone" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
           <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">License #</label>
-            <input id="adm-lic" value="OH-STONE-29441" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
+            <input id="adm-lic" value="" placeholder="Contractor license #" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
         </div>
         <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Address</label>
-          <input id="adm-addr" value="4821 Industrial Pkwy, Cleveland, OH 44135" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
+          <input id="adm-addr" value="" placeholder="Shop address" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
         <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Email</label>
-          <input id="adm-email" value="info@pinnaclesd.com" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
+          <input id="adm-email" value="" placeholder="Shop email" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
         <div><label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Website</label>
-          <input id="adm-web" value="www.pinnaclesd.com" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
+          <input id="adm-web" value="" placeholder="Website" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box"></div>
         <button class="q-btn primary" style="width:100%" onclick="sdAdminSave()">💾 Save Company Profile</button>
       </div>
     </div>
@@ -4480,14 +4480,73 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
 (function(){
   function loadSettings(){try{return JSON.parse(localStorage.getItem('sd_settings')||'{}');}catch(e){return {};}}
   function saveSettings(s){return st('sd_settings',s);}
+  // ── SHOP IDENTITY BRIDGE (2026-08-23) ───────────────────────────────
+  // This card writes sd_settings, a JSON blob the Admin panel owns. But a
+  // DOZEN other places in this file -- estimates, cut sheets, agreements,
+  // e-sign approvals, vendor order text, SOPs, AI quote, welcome copy --
+  // read a SEPARATE raw-string namespace instead: fab_shop_name /
+  // fab_shop_addr / fab_shop_phone / fab_shop_email, each with its own
+  // hardcoded fallback ('Your Stone Shop', 'Stone Fabrication Shop',
+  // 'SAIRN Technologies LLC'...). Nothing ever wrote that namespace. Its
+  // only writer was saveShopSettings(), which was unreachable dead code
+  // (no button, and the four admin-shop-* ids it read never existed) and
+  // was deleted 2026-08-23.
+  //
+  // So the real defect was worse than "no way to set the shop name": the
+  // app LOOKED like it let you set it. A user could type a company name,
+  // hit Save, get a "Company profile saved." toast -- and every proposal,
+  // agreement and invoice they generated still said "Your Stone Shop".
+  // These two functions bridge the two namespaces in both directions.
+  //
+  // Deliberately NOT a third set of fields: rebuilding admin-shop-* would
+  // have created another parallel system alongside the two that already
+  // exist, which is the exact bug class being fixed here.
+  var SD_SHOP_IDENTITY_FIELDS=[
+    {el:'adm-co',    key:'fab_shop_name',  s:'company'},
+    {el:'adm-addr',  key:'fab_shop_addr',  s:'addr'},
+    {el:'adm-phone', key:'fab_shop_phone', s:'phone'},
+    {el:'adm-email', key:'fab_shop_email', s:'email'}
+  ];
+  // Publishes the form's values into the namespace the read sites use.
+  // Same honest-failure contract as every other save in this file: stRaw()
+  // returns false on a real storage failure and that is reported, never
+  // swallowed. CLEARING a field REMOVES the key rather than writing '' --
+  // an empty string would pin every read site to blank, which is a
+  // different thing from "never configured" and would defeat their
+  // fallbacks permanently.
+  function sdAdminPublishShopIdentity(){
+    var allOk=true;
+    for(var i=0;i<SD_SHOP_IDENTITY_FIELDS.length;i++){
+      var f=SD_SHOP_IDENTITY_FIELDS[i];
+      var el=document.getElementById(f.el);
+      if(!el) continue;
+      var v=(el.value||'').trim();
+      if(v){ allOk = stRaw(f.key,v) && allOk; }
+      else { try{ localStorage.removeItem(f.key); }catch(e){ allOk=false; } }
+    }
+    return allOk;
+  }
+  // Populates the form from whatever is really stored. sd_settings wins
+  // because it is what this card writes; fab_shop_* is the fallback so a
+  // value set before this bridge existed still shows up rather than
+  // appearing blank while quietly driving every proposal.
+  window.sdAdminLoadProfile=function(){
+    var st2=loadSettings();
+    for(var i=0;i<SD_SHOP_IDENTITY_FIELDS.length;i++){
+      var f=SD_SHOP_IDENTITY_FIELDS[i];
+      var el=document.getElementById(f.el);
+      if(!el) continue;
+      var v=st2[f.s];
+      if(!v){ try{ v=localStorage.getItem(f.key)||''; }catch(e){ v=''; } }
+      el.value=v||'';
+    }
+    var o=document.getElementById('adm-owner'); if(o) o.value=st2.owner||'';
+    var l=document.getElementById('adm-lic');   if(l) l.value=st2.lic||'';
+    var w=document.getElementById('adm-web');   if(w) w.value=st2.web||'';
+  };
+
   var s=loadSettings();
-  if(s.company)document.getElementById('adm-co').value=s.company;
-  if(s.owner)document.getElementById('adm-owner').value=s.owner;
-  if(s.phone)document.getElementById('adm-phone').value=s.phone;
-  if(s.addr)document.getElementById('adm-addr').value=s.addr;
-  if(s.email)document.getElementById('adm-email').value=s.email;
-  if(s.lic)document.getElementById('adm-lic').value=s.lic;
-  if(s.web)document.getElementById('adm-web').value=s.web;
+  window.sdAdminLoadProfile();
   if(s.margin)document.getElementById('adm-margin').value=s.margin;
   if(s.expiry)document.getElementById('adm-expiry').value=s.expiry;
   if(s.deposit)document.getElementById('adm-deposit').value=s.deposit;
@@ -4503,7 +4562,15 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
       phone:document.getElementById('adm-phone').value,addr:document.getElementById('adm-addr').value,
       email:document.getElementById('adm-email').value,lic:document.getElementById('adm-lic').value,
       web:document.getElementById('adm-web').value};
-    saveSettings(Object.assign(loadSettings(),s));showToast('Company profile saved.');
+    var blobOk=saveSettings(Object.assign(loadSettings(),s));
+    var idOk=sdAdminPublishShopIdentity();
+    // Honest failure, matching the rest of this file: never report a save
+    // that did not happen, and name WHICH half failed -- the two write to
+    // different storage keys and can fail independently.
+    if(blobOk&&idOk) showToast('Company profile saved — name, address, phone and email now used on proposals, agreements and orders.');
+    else if(blobOk) showToast('⚠️ Profile saved, but publishing it to proposals/agreements failed — they will keep using the default shop name.');
+    else if(idOk)   showToast('⚠️ Published to proposals/agreements, but saving the profile itself failed — it will not reload here.');
+    else            showToast('⚠️ Save failed — nothing was stored.');
   };
   window.sdAdminSaveDefaults=function(){
     var s={margin:document.getElementById('adm-margin').value,expiry:document.getElementById('adm-expiry').value,
@@ -16230,6 +16297,22 @@ function saveCodes() {
 // is also currently callerless, but it was not part of the approved change
 // and it is defensively written (it null-checks every element), so it
 // cannot throw the way saveShopSettings() would have.
+//
+// ANSWERED 2026-08-23, when the real Shop Settings save/load was built: it
+// is NOT the load function that work needed, and it is now doubly dead.
+// It targets admin-shop-name/-addr/-phone/-email, four ids that do not
+// exist anywhere in this file (0 occurrences each) -- so every one of its
+// null-checks fails and the whole body is a no-op even if called. The real
+// Company Profile fields are adm-co / adm-addr / adm-phone / adm-email in
+// panel-admin, and the real load is sdAdminLoadProfile() (defined in that
+// panel's own script, wired into sbNav('admin')), which reads the same
+// fab_shop_* keys this does but writes them into the ids that actually
+// exist. Wiring THIS function up instead would silently do nothing.
+//
+// Left in place rather than deleted: a second removal was not approved and
+// is flagged separately rather than bundled into the save/load fix. It is
+// a candidate for deletion on its own merits -- zero callers, zero
+// reachable DOM targets, fully superseded.
 
 function loadShopSettings() {
   const name=localStorage.getItem('fab_shop_name');
@@ -32361,6 +32444,11 @@ function sbNav(id) {
     if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();if(typeof window.sdITRender==='function')window.sdITRender();}
     if(id==='template'&&typeof tmRender==='function'){tmRender();if(typeof tmUpdateKPIs==='function')tmUpdateKPIs();}
     if(id==='business'&&typeof calcBiz==='function')calcBiz();
+    // Shop Settings' Company Profile is re-populated on every open rather
+    // than only at parse time: the fields feed fab_shop_* (used by every
+    // proposal/agreement/order header), and another tab, the SAIRNbiz
+    // sync, or a fresh login can change what is stored between visits.
+    if(id==='admin'&&typeof window.sdAdminLoadProfile==='function')window.sdAdminLoadProfile();
   }, 50);
   // Auto-expand the section containing this panel
   var section = SB_PANEL_SECTION[id];
