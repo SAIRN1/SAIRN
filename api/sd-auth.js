@@ -35,7 +35,15 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const { writeAuditLog } = require('./_lib/audit');
 const { hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest, ROLES } = require('./_lib/auth');
+
+const AUDIT_TABLE = 'stonedesk_audit_log';
+// Roles that can provision or change credentials on StoneDesk. BOTH count
+// toward the last-admin guard -- unlike SAIRNcode, where 'admin' is the only
+// provisioning role. Matches this file's own setup and roster gates exactly,
+// so the three checks cannot drift apart.
+const PROVISIONING_ROLES = ['owner', 'admin'];
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -58,8 +66,8 @@ module.exports = async (req, res) => {
     }
   }
   const action = body && body.action;
-  if (['bootstrap', 'login', 'setup', 'check_license', 'roster'].indexOf(action) === -1) {
-    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', 'setup', 'check_license', or 'roster'" } });
+  if (['bootstrap', 'login', 'setup', 'check_license', 'roster', 'set_active'].indexOf(action) === -1) {
+    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', 'setup', 'check_license', 'roster', or 'set_active'" } });
     return;
   }
 
@@ -265,10 +273,150 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can view the employee roster' } });
         return;
       }
-      const r = await fetch(rest('sd_employee_auth?license_hash=eq.' + enc(licHash) + '&active=eq.true&select=employee_id,display_name,role'), { headers });
+      // Includes INACTIVE rows as of 2026-08-23, where this previously
+      // filtered to active=eq.true. That filter made sense when there was no
+      // way to deactivate anyone; now that set_active exists, an Owner or
+      // Manager has to be able to SEE a deactivated person in order to turn
+      // them back on. Same shape as api/sc-auth.js's roster.
+      const r = await fetch(rest('sd_employee_auth?license_hash=eq.' + enc(licHash) + '&select=employee_id,display_name,role,active&order=employee_id.asc'), { headers });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
+      // A session token carries a role claim and stays valid for its full
+      // life INCLUDING after the credential behind it is deactivated. Found
+      // live on SAIRNcode 2026-08-23 and fixed there; carried here rather
+      // than waiting to rediscover it on StoneDesk.
+      const callerRowR = (rows || []).filter(function (x) { return x.employee_id === caller.employee_id; })[0];
+      if (!callerRowR || callerRowR.active !== true) {
+        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
+        return;
+      }
       res.status(200).json({ ok: true, employees: rows || [] });
+      return;
+    }
+
+    // ── set_active: credential lifecycle (2026-08-23) ──
+    // StoneDesk's half of the same feature built for SAIRNcode in 12c670c.
+    // Identical design, adjusted for this app's provisioning roles: StoneDesk
+    // has owner AND admin (Manager), both of which can run setup, so both
+    // count toward the last-admin guard -- unlike SAIRNcode where 'admin' is
+    // the only one.
+    //
+    // WHY THIS EXISTS AT ALL: three StoneDesk licenses were already lost to
+    // untracked credential state. SD-PINNACLE-2026's PIN is still
+    // undocumented, SD-AUDIT-2026 needed a hand-written DELETE run directly
+    // in Supabase, and SD-PARTNER-2026 was provisioned purely to route around
+    // both. There was no way to disable a credential through the API.
+    //
+    // DEACTIVATION, NOT DELETION. The row stays; only `active` flips. The
+    // login branch above already filters active=eq.true, so the flag is
+    // enforced the moment it is written. Keeping the row preserves
+    // created_at, role history and audit linkage -- deleting is what made
+    // those three cleanups both unrecoverable and unauditable.
+    //
+    // THE LOCKOUT THIS MUST NOT CAUSE: bootstrap refuses once ANY row exists
+    // for the license and does NOT filter on active. So a license with zero
+    // active owner/admins cannot log in, cannot run setup, and cannot
+    // re-bootstrap -- dead through the API, recoverable only by direct
+    // database access. That is exactly how SD-AUDIT-2026 was lost. bootstrap
+    // is deliberately NOT changed to fall back to "no ACTIVE rows": that
+    // would auto-heal a lockout, but would also let anyone holding a license
+    // key deactivate their way to a fresh bootstrap and seize the account.
+    if (action === 'set_active') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!caller || PROVISIONING_ROLES.indexOf(caller.role) === -1) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can activate or deactivate a credential' } });
+        return;
+      }
+      const audit = (event_type, detail) => writeAuditLog(SUPABASE_URL, SERVICE_KEY, {
+        license_hash: licHash, employee_id: caller.employee_id, role: caller.role,
+        event_type: event_type, detail: detail, table: AUDIT_TABLE
+      });
+
+      const target_id = String((body.employee_id || '')).trim();
+      const nextActive = body.active === true;
+      const reason = String((body.reason || '')).trim();
+      if (!target_id) { res.status(400).json({ error: { message: 'employee_id is required' } }); return; }
+      if (typeof body.active !== 'boolean') { res.status(400).json({ error: { message: 'active must be true or false' } }); return; }
+      // Required to switch someone OFF, not to switch them on. Reactivating
+      // is self-explanatory and always safe; a deactivation is the thing
+      // someone will be trying to reconstruct months later.
+      if (!nextActive && !reason) {
+        res.status(400).json({ error: { message: 'reason is required when deactivating a credential' } });
+        return;
+      }
+      if (reason.length > 500) { res.status(400).json({ error: { message: 'reason max 500 characters' } }); return; }
+
+      if (!nextActive && target_id === caller.employee_id) {
+        const selfAudited = await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'SELF_DEACTIVATE' });
+        res.status(409).json({ audited: selfAudited, error: { code: 'SELF_DEACTIVATE', message: 'You cannot deactivate your own credential. Ask another Owner or Manager to do it.' } });
+        return;
+      }
+
+      // Read the real roster ONCE and decide from it -- never from what the
+      // client claimed about the target or about who else exists.
+      const allR = await fetch(rest('sd_employee_auth?license_hash=eq.' + enc(licHash) + '&select=employee_id,role,active'), { headers });
+      const all = await allR.json();
+      if (!allR.ok) return upstream(res, all);
+      const rowsAll = Array.isArray(all) ? all : [];
+
+      const callerRow = rowsAll.filter(function (x) { return x.employee_id === caller.employee_id; })[0];
+      if (!callerRow || callerRow.active !== true) {
+        const inactiveAudited = await audit('credential_change_refused', { target: target_id, requested_active: nextActive, reason_code: 'CREDENTIAL_INACTIVE' });
+        res.status(403).json({ audited: inactiveAudited, error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
+        return;
+      }
+
+      const target = rowsAll.filter(function (x) { return x.employee_id === target_id; })[0];
+      if (!target) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such employee on this license' } });
+        return;
+      }
+
+      const activeAdmins = rowsAll.filter(function (x) {
+        return x.active === true && PROVISIONING_ROLES.indexOf(x.role) !== -1;
+      });
+      // Quarantined guard, same as SAIRNcode's: unreachable by construction
+      // while the caller-still-active check above stands, because an active
+      // caller plus a DIFFERENT active admin target implies at least two.
+      // Kept because reachability is a property of today's rule set -- a new
+      // provisioning role or any path skipping that check makes it live
+      // again, and a lockout is not worth re-discovering in production.
+      if (!nextActive && PROVISIONING_ROLES.indexOf(target.role) !== -1 && target.active === true && activeAdmins.length <= 1) {
+        const lastAdminAudited = await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'LAST_ADMIN', active_admins: activeAdmins.length });
+        res.status(409).json({
+          audited: lastAdminAudited,
+          error: {
+            code: 'LAST_ADMIN',
+            message: 'This is the only active Owner or Manager on this license. Deactivating it would lock everyone out with no way back in through the app — provision another first, then retry.'
+          }
+        });
+        return;
+      }
+
+      if (target.active === nextActive) {
+        res.status(200).json({ ok: true, employee_id: target_id, active: nextActive, unchanged: true, remaining_admins: activeAdmins.length });
+        return;
+      }
+
+      const patchR = await fetch(rest('sd_employee_auth?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(target_id)), {
+        method: 'PATCH',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ active: nextActive, updated_at: new Date().toISOString() })
+      });
+      const patched = await patchR.json();
+      if (!patchR.ok) return upstream(res, patched);
+
+      const remaining = rowsAll.filter(function (x) {
+        var isActive = (x.employee_id === target_id) ? nextActive : x.active === true;
+        return isActive && PROVISIONING_ROLES.indexOf(x.role) !== -1;
+      }).length;
+
+      const audited = await audit(nextActive ? 'credential_reactivated' : 'credential_deactivated', {
+        target: target_id, target_role: target.role, previous_active: target.active,
+        new_active: nextActive, reason: reason || null, remaining_admins: remaining
+      });
+
+      res.status(200).json({ ok: true, employee_id: target_id, active: nextActive, remaining_admins: remaining, audited: audited });
       return;
     }
   } catch (err) {

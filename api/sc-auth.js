@@ -327,8 +327,12 @@ module.exports = async (req, res) => {
       // last-admin case below, and there is no legitimate reason to do it to
       // yourself rather than have another admin do it.
       if (!nextActive && target_id === caller.employee_id) {
-        await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'SELF_DEACTIVATE' });
-        res.status(409).json({ error: { code: 'SELF_DEACTIVATE', message: 'You cannot deactivate your own credential. Ask another Compliance Admin to do it.' } });
+        const selfAudited = await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'SELF_DEACTIVATE' });
+        // `audited` is reported on REFUSALS too (2026-08-23). Without it the
+        // claim "refusals are logged" is unverifiable from outside -- there is
+        // no endpoint that reads the audit table, so the response is the only
+        // place the caller can see whether the record was really written.
+        res.status(409).json({ audited: selfAudited, error: { code: 'SELF_DEACTIVATE', message: 'You cannot deactivate your own credential. Ask another Compliance Admin to do it.' } });
         return;
       }
 
@@ -347,8 +351,8 @@ module.exports = async (req, res) => {
       // against the row read below, so it costs no extra query.
       const callerRow = rowsAll.filter(function (x) { return x.employee_id === caller.employee_id; })[0];
       if (!callerRow || callerRow.active !== true) {
-        await audit('credential_change_refused', { target: target_id, requested_active: nextActive, reason_code: 'CREDENTIAL_INACTIVE' });
-        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
+        const inactiveAudited = await audit('credential_change_refused', { target: target_id, requested_active: nextActive, reason_code: 'CREDENTIAL_INACTIVE' });
+        res.status(403).json({ audited: inactiveAudited, error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
         return;
       }
 
@@ -382,8 +386,9 @@ module.exports = async (req, res) => {
       // active re-check would make it live again, and a lockout is not a
       // failure mode worth re-discovering in production.
       if (!nextActive && PROVISIONING_ROLES.indexOf(target.role) !== -1 && target.active === true && activeAdmins.length <= 1) {
-        await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'LAST_ADMIN', active_admins: activeAdmins.length });
+        const lastAdminAudited = await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'LAST_ADMIN', active_admins: activeAdmins.length });
         res.status(409).json({
+          audited: lastAdminAudited,
           error: {
             code: 'LAST_ADMIN',
             message: 'This is the only active Compliance Admin on this license. Deactivating it would lock everyone out with no way back in through the app — provision another admin first, then retry.'

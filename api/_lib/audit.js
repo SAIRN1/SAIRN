@@ -37,7 +37,7 @@
 // part of a REST URL, and an unvalidated table name from a caller is exactly
 // the kind of thing that turns into an injection vector later even if every
 // caller today passes a constant.
-const AUDIT_TABLES = { sairnlaw_audit_log: true, sairncode_audit_log: true };
+const AUDIT_TABLES = { sairnlaw_audit_log: true, sairncode_audit_log: true, stonedesk_audit_log: true };
 const DEFAULT_AUDIT_TABLE = 'sairnlaw_audit_log';
 
 async function writeAuditLog(supabaseUrl, serviceKey, { license_hash, employee_id, role, event_type, detail, table }) {
