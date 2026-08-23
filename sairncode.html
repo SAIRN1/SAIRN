@@ -2588,9 +2588,10 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                      this app, so those were fabricated numbers on a
                      compliance tool.
                    - "Status: Connected" was never checked against anything,
-                     and the URL shown (APP_CONFIG.proxy) is dead config --
-                     every AI call has gone through api/sc-ai.js since the
-                     2026-08-20 security pass.
+                     and the URL shown came from a since-deleted APP_CONFIG
+                     'proxy' key that was already dead config -- every AI
+                     call has gone through api/sc-ai.js since the 2026-08-20
+                     security pass.
                  Values now render from real config/session/stored data only,
                  via renderSettings(). Empty means empty. -->
             <div class="grid-2col">
@@ -2672,8 +2673,20 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             // Not exploitable (nothing consumed it), but it advertised a
             // credential that looked live. Found by the 2026-08-20 firewall
             // audit as a finding outside the 30 layers.
-            demo_company: 'Pinnacle Medical Billing LLC',
-            proxy: 'https://sairn.vercel.app/api/claude',
+            // demo_company and proxy removed 2026-08-23 (approved), same
+            // dead-config class as demo_pin above and verified the same way
+            // (zero APP_CONFIG.<key> references anywhere in the file):
+            //   - demo_company was 'Pinnacle Medical Billing LLC'. Its only
+            //     ever appearance on screen was a duplicated literal in the
+            //     Settings panel, not a read of this key; that panel now
+            //     renders the practice's real saved name from sc_settings,
+            //     so the key backed nothing and named a practice that does
+            //     not exist.
+            //   - proxy was the api/claude.js URL. Dead since the
+            //     2026-08-20 security pass moved every AI call to
+            //     api/sc-ai.js (which authenticates, screens for injection
+            //     and writes the audit row); SC_AI_ENDPOINT is the real
+            //     value and is what the Settings panel now shows.
             supabase: 'https://ejrlrrkvhtllxbbypdjb.supabase.co',
             is_demo: true
         };
