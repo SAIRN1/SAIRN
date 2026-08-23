@@ -674,6 +674,65 @@ function computeDeadline(input) {
   }
   var result = rolled.date;
 
+  // ── CAP: EARLIER OF A COMPUTED PERIOD AND A DATE SOMEONE ELSE CHOSE ──────
+  // Fed. R. Civ. P. 45(d)(2)(B): objections to a subpoena are due "before the
+  // earlier of the time specified for compliance or 14 days after the subpoena
+  // is served." Ohio Civ.R. 45(C)(3) states the same logic in different words.
+  //
+  // This is NOT designated_period and the difference matters. There the other
+  // party chooses a DAY COUNT and the rule sets a floor under it, so the
+  // engine validates their number and counts from it. Here the other party
+  // chooses a DATE, the rule computes its own period independently, and
+  // whichever falls first governs. One is a floor on an input; this is a
+  // ceiling on an output.
+  //
+  // THE CAP DATE IS NOT ROLLED. The computed period is a period and gets
+  // Rule 6(a) treatment; the compliance date is a fixed date the issuing party
+  // wrote into the subpoena and is not a period being computed. Rolling it
+  // would move the deadline LATER than the subpoena allows, which is the
+  // direction that loses the right -- and it would do so by applying a rule
+  // that does not govern that date.
+  //
+  // REQUIRED, NOT OPTIONAL. Without the compliance date there is no way to
+  // know which limb governs, and defaulting to the computed period would
+  // silently produce the later of the two whenever the subpoena demanded
+  // sooner. Refused instead.
+  var cap = null;
+  if (rule.cap) {
+    var capSpec = rule.cap;
+    var capSupplied = input.cap_date;
+    if (!toUTC(capSupplied)) {
+      return { ok: false, code: 'CAP_DATE_REQUIRED',
+        message: 'This deadline is the EARLIER of two dates: ' + count.value + ' ' +
+          String(count.unit).replace(/_/g, ' ') + ' after the trigger, or ' +
+          (capSpec.label || 'a date fixed by the other party') +
+          '. Supply that date — without it there is no way to tell which one governs, and assuming the computed period would produce the later of the two whenever the other is sooner.',
+        required_cap: { event: capSpec.event || null, label: capSpec.label || null },
+        authority: rule.authority ? rule.authority.citation : null };
+    }
+    if (capSupplied < result) {
+      steps.push({ step: 'cap_applied',
+        detail: (capSpec.label || 'The date fixed by the other party') + ' (' + capSupplied +
+          ') falls BEFORE the computed period, which would have ended ' + result +
+          '. The earlier of the two governs, so it is the deadline. That date is used exactly as given and is not rolled off a weekend or holiday — it is a date fixed in the document, not a period this rule computes.',
+        authority: rule.authority ? rule.authority.citation : null, date: capSupplied });
+      cap = { state: 'applied', cap_date: capSupplied, computed_period_would_have_been: result, governs: 'cap' };
+      result = capSupplied;
+    } else if (capSupplied === result) {
+      steps.push({ step: 'cap_tie',
+        detail: (capSpec.label || 'The date fixed by the other party') + ' falls on exactly the same day the computed period ends (' +
+          result + '). Both limbs give the same deadline.',
+        authority: rule.authority ? rule.authority.citation : null, date: result });
+      cap = { state: 'tie', cap_date: capSupplied, computed_period_would_have_been: result, governs: 'both' };
+    } else {
+      steps.push({ step: 'cap_not_applied',
+        detail: (capSpec.label || 'The date fixed by the other party') + ' (' + capSupplied +
+          ') falls AFTER the computed period, so the computed period is the earlier of the two and governs.',
+        authority: rule.authority ? rule.authority.citation : null, date: result });
+      cap = { state: 'not_applied', cap_date: capSupplied, computed_period_would_have_been: result, governs: 'computed_period' };
+    }
+  }
+
   // Rule 6(d): +3 days for certain service methods, then roll AGAIN.
   // Order verified against the 2005 Advisory Committee Note (quoted in this
   // file's header), not assumed.
@@ -740,6 +799,11 @@ function computeDeadline(input) {
     // state they need to distinguish a refusal from an absence.
     service_extension_applied: extension.state === 'applied',
     service_extension: extension,
+    // Present only for rules that declare a cap. Reports which limb governed
+    // AND what the other one would have been, because "your deadline is
+    // earlier than the rule's own period because of what the subpoena said"
+    // is a materially different thing for an attorney to see than a bare date.
+    cap: cap,
     rule: {
       rule_id: rule.rule_id,
       label: rule.label,

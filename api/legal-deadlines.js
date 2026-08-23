@@ -57,13 +57,17 @@ function triggerOption(r) {
     ? { min: r.designated_period.min, unit: r.designated_period.unit || 'calendar_days',
         designated_by: r.designated_period.designated_by || null }
     : null;
+  // Same reasoning as requires_dates and designated_period: a rule whose
+  // deadline is capped by a date the other party fixed needs that date up
+  // front, not discovered through a refusal.
+  const capSpec = r.cap ? { event: r.cap.event, label: r.cap.label } : null;
   if (typeof t === 'string') {
-    return { event: t, label: r.label || t, rule_id: r.rule_id, citation: (r.authority && r.authority.citation) || null, requires_dates: null, designated_period: dp };
+    return { event: t, label: r.label || t, rule_id: r.rule_id, citation: (r.authority && r.authority.citation) || null, requires_dates: null, designated_period: dp, cap: capSpec };
   }
   if (t && Array.isArray(t.events)) {
     return { event: t.id || t.events[0], label: r.label || t.id, rule_id: r.rule_id,
       citation: (r.authority && r.authority.citation) || null,
-      requires_dates: t.events.slice(), resolve: t.resolve || null, designated_period: dp };
+      requires_dates: t.events.slice(), resolve: t.resolve || null, designated_period: dp, cap: capSpec };
   }
   return null;
 }
@@ -171,6 +175,17 @@ function validateRulePayload(p) {
     }
     if (p.service_extension) {
       return 'A designated-period rule cannot also declare a service_extension: the designated figure already is the period, and adding days to a party-chosen period would extend a deadline the rule does not set.';
+    }
+  }
+  // A cap rule's deadline is the EARLIER of its own computed period and a date
+  // the other party fixed. Distinct from designated_period: that validates a
+  // party-chosen DAY COUNT against a floor, this compares the computed result
+  // against a party-chosen DATE. A rule cannot sensibly be both.
+  if (p.cap) {
+    if (!p.cap.event) return 'cap.event is required — name the event whose date caps this period.';
+    if (!p.cap.label) return 'cap.label is required — it is shown to the user when the cap date is requested and when it governs.';
+    if (p.designated_period) {
+      return 'A rule cannot declare both cap and designated_period. One takes a party-chosen day count validated against a floor; the other compares the computed result against a party-chosen date. A rule needing both has not been understood yet.';
     }
   }
   if (c.unit === 'business_days' && !COMPUTATION_STANDARDS[p.computation].allows_business_days) {
@@ -342,6 +357,10 @@ module.exports = async (req, res) => {
         // set only a floor rather than a deadline (Ohio Civ.R. 33(A)/36(A),
         // Ind. T.R. 33(C)/36(A)).
         designated_period_days: body.designated_period_days,
+        // The date fixed by the other party that caps a computed period
+        // (FRCP 45(d)(2)(B), Ohio Civ.R. 45(C)(3) -- the time specified
+        // for compliance in the subpoena).
+        cap_date: body.cap_date,
         rules: rules.rows,
         calendars: buildCalendars(hols.rows)
       });
@@ -364,7 +383,7 @@ module.exports = async (req, res) => {
             // DESIGNATED_PERIOD_REQUIRED joins them: the rule is loaded and the
             // request is well-formed, but this rule sets no deadline of its own
             // and the caller has not yet said what period was designated.
-            : ['INCOMPLETE_TRIGGERS', 'MOTION_PENDING', 'DESIGNATED_PERIOD_REQUIRED'].indexOf(result.code) !== -1 ? 422
+            : ['INCOMPLETE_TRIGGERS', 'MOTION_PENDING', 'DESIGNATED_PERIOD_REQUIRED', 'CAP_DATE_REQUIRED'].indexOf(result.code) !== -1 ? 422
               // DESIGNATED_PERIOD_BELOW_FLOOR is a genuine 400: the caller did
               // supply a period and it is not one the rule permits. That is a
               // defect in the request being described, not missing information,
