@@ -6889,7 +6889,14 @@ function sdInvExport(){
     var avail=data.filter(function(s){return dispStatus(s)==='Available';});
     var alloc=data.filter(function(s){return dispStatus(s)==='Allocated';});
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',messages:[{role:'user',content:'You are a stone industry advisor. Slab inventory: '+data.length+' slabs, '+avail.length+' available, '+alloc.length+' allocated. Stones: '+data.map(function(s){return (s.colorName||s.material||'unknown')+'('+dispStatus(s)+')';}).join(', ')+'. Provide: 1) Inventory health assessment, 2) Reorder recommendations, 3) Slow-moving slab alerts, 4) Suggested promotions for available inventory.'}]})
+      // is_demo:true RESTORED 2026-08-23. Phase 1a's rewrite dropped it while
+      // re-sourcing this call's fields -- an unrequested behaviour change that
+      // silently exempted this one AI call from the proxy's rate limiting
+      // (api/claude.js gates both the in-memory daily cap and the Supabase
+      // sliding window on is_demo). Harmless today only because that limiter
+      // ships in observe mode; the moment SAIRN_AI_RATE_LIMIT_MODE=enforce is
+      // set, every other app would be limited and this one would not be.
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'You are a stone industry advisor. Slab inventory: '+data.length+' slabs, '+avail.length+' available, '+alloc.length+' allocated. Stones: '+data.map(function(s){return (s.colorName||s.material||'unknown')+'('+dispStatus(s)+')';}).join(', ')+'. Provide: 1) Inventory health assessment, 2) Reorder recommendations, 3) Slow-moving slab alerts, 4) Suggested promotions for available inventory.'}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.textContent=r.content&&r.content[0]?r.content[0].text:'No response';
     }).catch(function(){out.textContent='AI unavailable. Review slab turnover rates and flag stones >90 days with no allocation.';});
