@@ -2321,9 +2321,15 @@ function rBillingPanel(){
 // decides a billing rule, it only asks the engine and renders what it says.
 var _prRules=null,_prCoverage=null;
 // The states this app CLAIMS to support. Kept explicit so coverage can report
-// an honest {have, need} -- MI and PA are deliberately in this list despite
-// having no rules, because omitting them would turn a real gap into a silent
-// 2-of-2 "fully covered" that is not true.
+// an honest {have, need} -- MI and PA are deliberately in this list, because
+// omitting them would turn a real gap into a silent 2-of-2 "fully covered"
+// that is not true.
+// UPDATED 2026-08-23: MI and PA now HAVE real, sourced rules, and the count
+// still says 2 of 4 on purpose. Their programs do not pay assisted living on a
+// days-present basis (MI bills 15-minute CLS units to a waiver agency; PA has
+// no assisted-living code at all), so those rules are marked reference_only and
+// the server refuses to route them. Counting a rule the app will not route as
+// coverage would tell a biller the opposite of what was actually found.
 var ALF_CLAIMED_HCBS_STATES=['OH','IN','MI','PA'];
 function prRefresh(){
   return alfData('read','alf_payer_rules',{claimed_states:ALF_CLAIMED_HCBS_STATES},true).then(function(rows){
@@ -2341,10 +2347,19 @@ function rPayerRouting(){
     return;
   }
   var hcbs=_prRules.filter(function(r){return r.program==='medicaid_hcbs'&&(r.status||'active')==='active';});
-  var covered={};hcbs.forEach(function(r){covered[r.state]=true;});
-  var have=ALF_CLAIMED_HCBS_STATES.filter(function(s){return covered[s];});
-  var missing=ALF_CLAIMED_HCBS_STATES.filter(function(s){return !covered[s];});
-  cov.textContent='HCBS coverage: '+have.length+' of '+ALF_CLAIMED_HCBS_STATES.length+' states';
+  // Mirrors hcbsCoverage() on the server: a rule the app refuses to route is
+  // NOT coverage. Kept as two separate maps rather than one, because the whole
+  // failure this guards against is the two collapsing into each other.
+  var routable={},refOnly={};
+  hcbs.forEach(function(r){
+    if(r.data&&r.data.billing_model==='reference_only')refOnly[r.state]=true;
+    else routable[r.state]=true;
+  });
+  var have=ALF_CLAIMED_HCBS_STATES.filter(function(s){return routable[s];});
+  var reference=ALF_CLAIMED_HCBS_STATES.filter(function(s){return refOnly[s]&&!routable[s];});
+  var missing=ALF_CLAIMED_HCBS_STATES.filter(function(s){return !routable[s]&&!refOnly[s];});
+  cov.textContent='HCBS coverage: '+have.length+' of '+ALF_CLAIMED_HCBS_STATES.length+' states routable'+
+    (reference.length?(' ('+reference.join(', ')+' reference only)'):'');
   var html='';
   if(!_prRules.length){
     html+='<div style="color:var(--muted)">No billing rules are loaded yet. Until they are, this app cannot route a claim — run sql/sairncare_payer_rules_schema.sql and load sql/sairncare_payer_rules_seed.json.</div>';
@@ -2357,6 +2372,11 @@ function rPayerRouting(){
           '<td>'+((r.status||'active')==='active'?'<span class="badge bg">active</span>':'<span class="badge bx">'+H(r.status)+'</span>')+'</td>'+
           '<td>'+(a.url?('<a href="'+H(a.url)+'" target="_blank" rel="noopener noreferrer">'+H(a.citation||'source')+'</a>'):H(a.citation||'--'))+'</td></tr>';
       }).join('')+'</tbody></table></div>';
+  }
+  if(reference.length){
+    html+='<div style="margin-top:8px;color:var(--warn,#b45309)"><b>Reference only: '+H(reference.join(', '))+'.</b> '+
+      'Real, sourced rules are on file for these states and the codes are shown above, but their programs do not pay assisted living on a days-present basis, so this app will not assemble the claim. '+
+      'Open the rule to see the codes, units and constraints, and build the claim from your service log.</div>';
   }
   if(missing.length){
     html+='<div style="margin-top:8px;color:var(--warn,#b45309)"><b>Not covered: '+H(missing.join(', '))+'.</b> '+
@@ -2377,6 +2397,24 @@ function prRenderResult(res){
       '<b>Not routed — '+H(e.code||'refused')+'</b>'+
       '<div style="margin-top:6px">'+H(e.message||'')+'</div>'+
       (res.assigned_by?('<div style="margin-top:6px;color:var(--muted);font-size:12px">Assigned by: '+H(res.assigned_by)+'</div>'):'')+
+      // A NOT_ROUTABLE refusal hands back the state's real codes and constraints
+      // precisely so the biller is not left empty-handed. Dropping them here
+      // would turn "here is what your state actually uses, build it from your
+      // service log" into a bare "no", which is the less useful half.
+      (Array.isArray(res.codes)&&res.codes.length?(
+        '<div style="margin-top:10px;font-size:12px"><b>Codes on file for '+H(res.state||'this state')+' (reference only — not a claim)</b>'+
+        '<div class="tw" style="margin-top:6px"><table><thead><tr><th>Code</th><th>Unit</th><th>Description</th></tr></thead><tbody>'+
+        res.codes.map(function(c){
+          return '<tr><td>'+H(c.code||'')+'</td><td>'+H(c.unit||'--')+'</td><td>'+H(c.description||'')+'</td></tr>';
+        }).join('')+'</tbody></table></div></div>'
+      ):'')+
+      (Array.isArray(res.constraints)&&res.constraints.length?(
+        '<div style="margin-top:8px;font-size:12px"><b>Constraints</b><ul style="margin:4px 0 0 18px">'+
+        res.constraints.map(function(c){return '<li>'+H(c)+'</li>';}).join('')+'</ul></div>'
+      ):'')+
+      (res.authority&&res.authority.url?(
+        '<div style="margin-top:8px;font-size:12px">Source: <a href="'+H(res.authority.url)+'" target="_blank" rel="noopener noreferrer">'+H(res.authority.citation||'source')+'</a></div>'
+      ):'')+
       '</div></div>';
     return;
   }
@@ -2805,6 +2843,14 @@ function cqRenderResult(res,title){
   if(res.clinical_coverage)html+='<div style="margin-top:6px;font-size:12px">'+H(res.clinical_coverage)+'</div>';
   if(res.always_present)html+='<div style="margin-top:6px;font-size:12px">'+H(res.always_present)+'</div>';
   if(res.awake_requirement)html+='<div style="margin-top:4px;font-size:12px">'+H(res.awake_requirement)+'</div>';
+  // A conditional awake rule (PA personal care homes) is reported, not evaluated.
+  // Saying so is the point: an unevaluated requirement rendered silently alongside
+  // evaluated ones reads as one more thing that passed.
+  if(res.awake_rule_is_conditional&&res.awake_rule_note)
+    html+='<div style="margin-top:4px;font-size:12px;color:var(--warn,#b45309)"><b>Not evaluated by this app:</b> '+H(res.awake_rule_note)+'</div>';
+  if(res.multiple_buildings)html+='<div style="margin-top:4px;font-size:12px">'+H(res.multiple_buildings)+'</div>';
+  if(res.first_aid_cpr_coverage)html+='<div style="margin-top:4px;font-size:12px">'+H(res.first_aid_cpr_coverage)+'</div>';
+  if(res.additional_staffing)html+='<div style="margin-top:4px;font-size:12px">'+H(res.additional_staffing)+'</div>';
   if(res.additional)html+='<div style="margin-top:4px;font-size:12px">'+H(res.additional)+'</div>';
   var a=res.authority||{};
   if(a.citation)html+='<div style="margin-top:8px;font-size:12px;color:var(--muted)">Authority: '+(a.url?('<a href="'+H(a.url)+'" target="_blank" rel="noopener noreferrer">'+H(a.citation)+'</a>'):H(a.citation))+'</div>';

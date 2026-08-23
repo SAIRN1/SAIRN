@@ -128,7 +128,7 @@ function assertTrue(v, m) { if (!v) throw new Error(m || 'expected truthy'); }
     assertEq(res.body.error.code, 'BAD_STATE');
   });
 
-  await check('management can load the whole real seed (all 13 rules)', async () => {
+  await check('management can load the whole real seed (every rule in it, whatever the current count)', async () => {
     for (const r of seed.rules) {
       const res = await call('owner', 'EMP-OWN', 'write', 'alf_compliance_rules', seedRow(r.rule_id));
       assertEq(res.statusCode, 200, r.rule_id + ' should have stored');
@@ -167,13 +167,28 @@ function assertTrue(v, m) { if (!v) throw new Error(m || 'expected truthy'); }
     assertTrue(/FL/.test(res.body.error.message));
   });
 
-  await check('evaluating PA for a PCH facility fails closed rather than applying ALR numbers', async () => {
+  await check('a PA PCH facility now gets Chapter 2600 through the handler, not ALR numbers', async () => {
+    // This check previously asserted NO_RULE_FOR_CLASS, because PCH was
+    // deliberately unseeded. PCH was seeded on 2026-08-23, so the check now
+    // asserts the stronger property: it answers, AND the answer comes from the
+    // Chapter 2600 rule. Just deleting the old assertion would have removed the
+    // only handler-level guard against ALR figures reaching a PCH facility.
     const res = await call('owner', 'EMP-OWN', 'evaluate', 'alf_compliance_rules', {
       state: 'PA', facility_class: 'pch', requirement_type: 'staffing',
       mobile_residents: 10, mobility_needs_residents: 2
     });
+    assertEq(res.body.ok, true);
+    assertEq(res.body.rule_id, 'PA-STAFFING-PCH-2600');
+    assertEq(res.body.required_service_hours_per_day, 14);
+  });
+
+  await check('an unseeded facility class still fails closed through the handler', async () => {
+    const res = await call('owner', 'EMP-OWN', 'evaluate', 'alf_compliance_rules', {
+      state: 'MI', facility_class: 'afc_family_home', requirement_type: 'staffing', census: 5
+    });
     assertEq(res.body.ok, false);
     assertEq(res.body.error.code, 'NO_RULE_FOR_CLASS');
+    assertEq(res.body.required_staff, undefined);
   });
 
   await check('a real Michigan large-group evaluation runs through the handler', async () => {

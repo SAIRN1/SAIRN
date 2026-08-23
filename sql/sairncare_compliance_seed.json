@@ -2,10 +2,25 @@
   "_readme": [
     "SAIRNcare Phase 2 compliance-rule seed. OH, IN, MI, PA.",
     "",
-    "EVERY FIGURE HERE WAS READ FROM THE ACTUAL ADMINISTRATIVE CODE ON 2026-08-22,",
-    "not from a research summary. That pass corrected the working summary in ALL",
-    "FOUR states; each correction is recorded in the rule's own _corrected field so",
-    "nobody re-introduces the wrong number later from the older notes.",
+    "EVERY FIGURE HERE WAS READ FROM THE ACTUAL ADMINISTRATIVE CODE, not from a",
+    "research summary. Two verification passes so far, both recorded in",
+    "verification_passes below, and each rule's authority.read_on says which pass",
+    "it came from:",
+    "  2026-08-22 — OH, IN, MI, and the PA ALR (Ch. 2800) side. Corrected the",
+    "               working summary in ALL FOUR states.",
+    "  2026-08-23 — the PA PCH (Ch. 2600) side, read from Chapter 2600 itself.",
+    "               Corrected THREE MORE working-summary figures that the earlier",
+    "               pass had honestly parked as unverified rather than guessed —",
+    "               see unverified_notes for what turned out to be wrong.",
+    "Each correction is recorded in the rule's own _corrected field so nobody",
+    "re-introduces the wrong number later from the older notes.",
+    "",
+    "PA CARRIES TWO FACILITY CLASSES WITH DIFFERENT NUMBERS AND THE SAME METHOD,",
+    "which is the trap. Ch. 2800 (ALR) and Ch. 2600 (PCH) both measure staffing in",
+    "service hours per resident per day, and the hour figures happen to be",
+    "identical — but the awake-staff rule, the training hours, and the",
+    "secured/special-unit rules all differ. Matching figures in one place are not",
+    "evidence that another place matches.",
     "",
     "NO DOMINANT PATTERN EXISTS, which is why there is no core-model-plus-exceptions",
     "shortcut here. The four states use four different staffing METHODS:",
@@ -372,8 +387,11 @@
           { "class": "pch", "name": "Personal Care Home", "chapter": "55 Pa. Code Ch. 2600" },
           { "class": "alr", "name": "Assisted Living Residence", "chapter": "55 Pa. Code Ch. 2800" }
         ],
+        "_corrected": "Corrected 2026-08-23. The special_care_unit block below originally declared available_under: ['pch','alr'] while every figure, phrase and citation in it is Chapter 2800 (ALR). Chapter 2600 does have an analogous unit, but it is a differently-named, differently-scoped, differently-routed thing (see PA-LICENSURE-PCH-2600), so this block is now scoped to ALR only. It was never a wrong FACT — it was a correct fact with too wide a claimed reach, which is the harder kind to spot.",
         "special_care_unit": {
-          "available_under": ["pch", "alr"],
+          "name": "Special care unit",
+          "available_under": ["alr"],
+          "pch_equivalent": "Chapter 2600 homes have a SECURED DEMENTIA CARE UNIT instead — dementia only, requested through the personal care home regional office. Its rules are in PA-LICENSURE-PCH-2600 and are not interchangeable with these.",
           "definition": "A residence or portion of a residence providing specialized care and services for residents with Alzheimer's disease or dementia, and/or intense neurobehavioral rehabilitation for residents with severely disruptive and potentially dangerous behaviors as a result of brain injury.",
           "application_lead_days": 60,
           "application_required_for": [
@@ -472,12 +490,177 @@
           "read_on": "2026-08-22"
         }
       }
+    },
+
+    {
+      "rule_id": "PA-LICENSURE-PCH-2600",
+      "state": "PA",
+      "requirement_type": "licensure",
+      "facility_class": "pch",
+      "effective_from": "2005-10-24",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Pennsylvania — Personal Care Home licence, and the secured dementia care unit that sits inside it",
+        "model": "standalone_license_with_optional_secured_unit",
+        "base_license": "Personal Care Home licence (55 Pa. Code Ch. 2600)",
+        "memory_care_license": false,
+        "_corrected": "Until this rule existed, a PCH facility asking about licensure fell through to the class-agnostic PA-LICENSURE-2026 rule, whose special_care_unit block is quoted verbatim from Chapter 2800 (ALR) while asserting available_under: ['pch','alr']. The two chapters are NOT interchangeable here. Chapter 2800 calls it a SPECIAL CARE UNIT and its definition covers both dementia AND intense neurobehavioral rehabilitation after brain injury; Chapter 2600 calls it a SECURED DEMENTIA CARE UNIT and covers dementia only. The 2800 route is an application to the Department; the 2600 route is a written request to the Department's personal care home REGIONAL OFFICE. Both carry the same 60-day lead time and the same four triggering events, which is precisely what made the substitution look harmless.",
+        "special_care_unit": {
+          "name": "Secured dementia care unit",
+          "available_under": ["pch"],
+          "definition": "A home or portion of a home that provides specialized care and services for residents with Alzheimer's disease or other dementia.",
+          "scope_note": "Dementia only. Unlike the Chapter 2800 special care unit, this does not extend to intense neurobehavioral rehabilitation after brain injury.",
+          "application_lead_days": 60,
+          "application_route": "A written request to the Department's personal care home regional office, not the Chapter 2800 application process.",
+          "application_required_for": [
+            "opening a secured dementia care unit",
+            "adding a secured dementia care unit to an existing home",
+            "increasing the maximum capacity in an existing unit",
+            "changing the locking system, exit doors or floor plan of an existing unit"
+          ],
+          "department_approval": "The Department will inspect and approve the secured dementia care unit prior to operation or change. The requirements of the chapter shall be met prior to operation.",
+          "written_request_document_count": 22,
+          "preadmission": {
+            "medical_evaluation_within_days_prior": 60,
+            "medical_evaluation_by": "physician, physician's assistant or certified registered nurse practitioner, documented on a Department form, including the diagnosis of Alzheimer's disease or other dementia and the need to be served in a secured unit",
+            "cognitive_screening_within_hours_prior": 72,
+            "cognitive_screening_by": "completed in collaboration with a physician or a geriatric assessment team, on the Department's preadmission screening form",
+            "no_objection_documented": "Each resident record must document that the resident and the resident's designated person have not objected to the admission or transfer to the secured unit."
+          },
+          "annual_reassessment": "In addition to the § 2600.225 initial and annual assessment, the resident shall be assessed annually for the CONTINUING need for the secured dementia care unit.",
+          "resident_without_dementia_diagnosis": "May reside in the unit if the resident wishes, but must be able to operate the key pads or other lock-releasing devices to exit."
+        },
+        "notes": [
+          "PCH is a standalone licence class, not a certification layered on another licence (contrast Ohio) and not an absent category (contrast Michigan).",
+          "The secured dementia care unit is a unit WITHIN a personal care home, governed by §§ 2600.231—2600.239 in addition to — never instead of — the rest of Chapter 2600.",
+          "This rule answers the PCH question specifically. The class-agnostic PA-LICENSURE-2026 rule still answers 'which licences does Pennsylvania issue', and remains correct for that; the engine's exact-class preference means a facility that states pch now gets this rule instead of Chapter 2800's numbers."
+        ],
+        "authority": {
+          "citation": "55 Pa. Code §§ 2600.231(a)—(c), 2600.231(e)—(g), 2600.239(a)—(c) (secured dementia care units), adopted eff. October 24, 2005",
+          "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/055/chapter2600/s2600.231.html",
+          "quote": "§ 2600.231(a): This section and §§ 2600.232—2600.239 apply to secured dementia care units. These provisions are in addition to the other provisions of this chapter. A secured dementia care unit is a home or portion of a home that provides specialized care and services for residents with Alzheimer's disease or other dementia. ... (c) A written cognitive preadmission screening completed in collaboration with a physician or a geriatric assessment team and documented on the Department's preadmission screening form shall be completed for each resident within 72 hours prior to admission to a secured dementia care unit. ... § 2600.239(a): The legal entity shall submit a written request to the Department's personal care home regional office at least 60 days prior to the following: (1) Opening a secured care dementia unit. (2) Adding a secured dementia care unit to an existing home. (3) Increasing the maximum capacity in an existing unit. (4) Changing the locking system, exit doors or floor plan of an existing unit.",
+          "read_on": "2026-08-23"
+        }
+      }
+    },
+
+    {
+      "rule_id": "PA-STAFFING-PCH-2600",
+      "state": "PA",
+      "requirement_type": "staffing",
+      "facility_class": "pch",
+      "effective_from": "2005-10-24",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Pennsylvania — Personal Care Home direct care staffing (service hours, not headcount ratio)",
+        "method": "service_hours_per_resident_per_day",
+        "_corrected": "The working summary recorded in unverified_notes said PCH has 'no numeric ratio' and '1 awake staff for 16+ residents'. BOTH ARE WRONG, and in opposite directions. (1) § 2600.57 is not ratio-free: it carries the same service-hours figures as the ALR chapter — 1 hour per day per mobile resident, 2 hours per day per resident with mobility needs, 75% of those hours during waking hours. Treating PCH as having no measurable requirement would have let a home under-staff with the app reporting nothing to check. (2) The awake rule is stricter than '1 awake staff', not looser: at 16 or more residents § 2600.58(a) requires that ALL direct care staff on duty be awake, not one of them. The 'one awake staff person' figure belongs to § 2600.58(b), which applies to a home serving one or more but FEWER THAN 16 residents WITH MOBILITY NEEDS — a different trigger (mobility-needs count, not total census) as well as a different number. Encoding the summary would have produced a confident wrong answer for every home of 16 or more.",
+        "hours_per_resident_per_day": [
+          { "resident_type": "mobile", "hours": 1 },
+          { "resident_type": "mobility_needs", "hours": 2 }
+        ],
+        "waking_hours_minimum_percent": 75,
+        "always_present": "At all times one or more residents are present in the home, a direct care staff person who is 21 years of age or older and who serves as the designee shall be present in the home. The direct care staff person may be the administrator if the administrator provides direct care services.",
+        "awake_requirement": "Conditional, and the condition differs by which test is met. (a) If the home serves 16 or more residents, ALL direct care staff persons on duty shall be awake at all times one or more residents are present. (b) If the home serves one or more but fewer than 16 residents WITH MOBILITY NEEDS, at least one direct care staff person shall be awake at all times residents are present.",
+        "awake_rule_is_conditional": true,
+        "awake_rule_note": "Reported as text rather than evaluated. This engine does not compute which branch applies, because doing so needs both the total census and the mobility-needs count at the moment in question, and a wrong branch here is a real staffing violation either way. Read both branches against the home's actual numbers.",
+        "scu_mobility_rule": "Each resident in a secured dementia care unit shall be considered to be a resident with mobility needs under § 2600.57(c), and therefore generates the 2-hour rate regardless of actual mobility.",
+        "multiple_buildings": "For a home with multiple buildings on the same premises within 300 feet of one another, the § 2600.57 direct care staff person shall be on the premises and available by two-way communication at all times one, two or three MOBILE residents are present. Regardless of distance between buildings, the full § 2600.57 requirements apply at all times four or more mobile residents, or one or more residents with mobility needs, are present.",
+        "first_aid_cpr_coverage": "At least one staff person for every 50 residents, trained in first aid and certified in obstructed airway techniques and CPR, shall be present in the home at all times (§ 2600.63(a)). Licensed, certified and registered medical personnel meet this and are exempt from the training requirement.",
+        "additional_staffing": "§ 2600.60: staffing shall meet the needs identified in each resident's assessment and support plan, and the Department may require additional staffing based on that plan, the design and construction of the home, and its operation and management. There is no formula for this — it is a discretionary overlay on top of the hours above.",
+        "authority": {
+          "citation": "55 Pa. Code §§ 2600.57, 2600.58, 2600.59, 2600.60, 2600.63(a), 2600.238, adopted eff. October 24, 2005",
+          "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/055/chapter2600/s2600.57.html",
+          "quote": "§ 2600.57: (b) Direct care staff persons shall be available to provide at least 1 hour per day of personal care services to each mobile resident. (c) Direct care staff persons shall be available to provide at least 2 hours per day of personal care services to each resident who has mobility needs. (d) At least 75% of the personal care service hours specified in subsections (b) and (c) shall be available during waking hours. ... § 2600.58: (a) If a home serves 16 or more residents, all direct care staff persons on duty in the home shall be awake at all times one or more residents are present in the home. (b) If a home serves one or more but less than 16 residents with mobility needs, at least one direct care staff person shall be awake at all times residents are present in the home. ... § 2600.238: Each resident in a secured dementia care unit shall be considered to be a resident with mobility needs under § 2600.57(c).",
+          "read_on": "2026-08-23"
+        }
+      }
+    },
+
+    {
+      "rule_id": "PA-TRAINING-PCH-2600",
+      "state": "PA",
+      "requirement_type": "training",
+      "facility_class": "pch",
+      "effective_from": "2016-06-18",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Pennsylvania — Personal Care Home training: a course-and-competency gate, not an hour count, plus annual hours",
+        "structure": "course_and_competency_gate_plus_additive_annual",
+        "_corrected": "Two corrections to the working summary. (1) It said '12 hrs/yr general + 6 hrs/yr dementia' as though both applied to every direct care staff person. The 12 is right (§ 2600.65(e)); the 6 is NOT a general requirement — § 2600.236 gives it only to direct care staff WORKING IN A SECURED DEMENTIA CARE UNIT, additive to the 12. A home with no secured unit that trained everyone to 18 hours would be over-reading the rule; a home WITH one that trained its unit staff to 12 would be under it. (2) Chapter 2600 has NO all-staff dementia-training requirement analogous to the ALR chapter's § 2800.69 (4 hours within 30 days of hire plus 2 annually). That absence was checked by reading the whole staffing subchapter §§ 2600.51—2600.68, not inferred; the chapter simply has no § 2600.69. Carrying the ALR 4+2 across would invent a mandate. SEPARATELY: unlike the ALR chapter, PCH sets NO numeric hour figure for the pre-unsupervised gate. § 2800.65(g) says 18 hours; § 2600.65(d) says a Department-approved course plus a passing competency test with no hours attached. An hour number must not be shown here.",
+        "requirements": [
+          {
+            "who": "direct care staff hired after April 24, 2006 — before providing UNSUPERVISED ADL services",
+            "initial_hours": null,
+            "gate": "may not provide unsupervised ADL services until completion",
+            "no_hour_figure_note": "Chapter 2600 attaches no hour count to this gate. The ALR chapter's 18 hours is a Chapter 2800 figure and does not apply here.",
+            "includes": [
+              "training that includes a demonstration of job duties, followed by supervised practice",
+              "successful completion and passing of the Department-approved direct care training course and the competency test",
+              "initial direct care staff person training across the 16 topics listed in § 2600.65(d)(3)"
+            ],
+            "reciprocity": "If the staff person completed the required initial direct care training within the past year at another home and provides written verification, the initial-training requirement does not apply again."
+          },
+          {
+            "who": "direct care staff — general annual",
+            "annual_hours": 12,
+            "counting_rules": [
+              "Staff orientation counts toward the 12 hours in the first year of employment.",
+              "On-the-job training may count for at most 6 of the 12 hours required annually."
+            ]
+          },
+          {
+            "who": "administrator — general annual",
+            "annual_hours": 24,
+            "note": "The Department-approved administrator training course fulfils the annual requirement for the first year."
+          },
+          {
+            "who": "administrator — before initial employment",
+            "initial_hours": 100,
+            "gate": "a Department-approved orientation, a 100-hour standardized Department-approved administrator training course, and a Department-approved competency-based test with a passing score",
+            "exemption": "Does not apply to an administrator hired or promoted prior to October 24, 2005."
+          },
+          {
+            "who": "direct care staff working in a secured dementia care unit",
+            "annual_hours": 6,
+            "additive": true,
+            "stacking": "additive",
+            "note": "in addition to the 12 hours of annual training specified in § 2600.65. § 2600.236 sets no initial-hours figure for the unit — contrast the ALR chapter's 8 initial hours within 30 days of hire."
+          }
+        ],
+        "no_general_dementia_requirement": true,
+        "no_general_dementia_requirement_note": "Chapter 2600 contains no all-staff dementia-training mandate. Dementia care IS a required topic inside the initial direct care training (§ 2600.65(d)(3)(iv)) and inside the annual training topics (§ 2600.65(f)(3)), but with no separate hour allocation. Only secured-unit staff carry separate dementia hours.",
+        "prior_to_first_workday": "Orientation in general fire safety and emergency preparedness (evacuation procedures, duties during drills and evacuation, meeting place, smoking safety, extinguisher location and use, smoke detectors and alarms, telephone use and notification of emergency services) for all direct care, ancillary, substitute personnel and volunteers.",
+        "within_40_scheduled_working_hours": "Orientation covering resident rights, the emergency medical plan, mandatory abuse and neglect reporting under the Older Adult Protective Services Act, and reporting of reportable incidents and conditions.",
+        "annual_all_staff_topics": [
+          "fire safety, delivered by a fire safety expert or by a staff person trained by one",
+          "emergency preparedness procedures and recognition of and response to crises and emergencies",
+          "resident rights",
+          "the Older Adult Protective Services Act",
+          "falls and accident prevention",
+          "new population groups being served that were not previously served"
+        ],
+        "scope_limit": "Only 55 Pa. Code Chapter 2600 was read for this rule. Requirements arising outside Title 55 Chapter 2600 — statutes, Department bulletins or licensing conditions — were not surveyed and are not represented here.",
+        "authority": {
+          "citation": "55 Pa. Code §§ 2600.64(a)—(c), 2600.65(a)—(h), 2600.236; §§ 2600.64 and 2600.65 amended June 17, 2016, effective June 18, 2016, 46 Pa.B. 3177",
+          "url": "https://www.pacodeandbulletin.gov/Display/pacode?file=/secure/pacode/data/055/chapter2600/s2600.65.html",
+          "quote": "§ 2600.65(d): Direct care staff persons hired after April 24, 2006, may not provide unsupervised ADL services until completion of the following: (1) Training that includes a demonstration of job duties, followed by supervised practice. (2) Successful completion and passing the Department-approved direct care training course and passing of the competency test. ... (e) Direct care staff persons shall have at least 12 hours of annual training relating to their job duties. (1) Staff person orientation shall be included in the 12 hours of training for the first year of employment. (2) On the job training for direct care staff persons may count for 6 out of the 12 training hours required annually. ... § 2600.64(c): An administrator shall have at least 24 hours of annual training relating to the job duties. ... § 2600.236: Each direct care staff person working in a secured dementia care unit shall have 6 hours of annual training related to dementia care and services, in addition to the 12 hours of annual training specified in § 2600.65.",
+          "read_on": "2026-08-23"
+        }
+      }
     }
   ],
 
   "claimed_states": ["OH", "IN", "MI", "PA"],
+
+  "verification_passes": ["2026-08-22", "2026-08-23"],
+
   "unverified_notes": [
-    "PCH (55 Pa. Code Ch. 2600) figures from the working summary — '1 awake staff for 16+ residents', 'no numeric ratio', '12 hrs/yr general + 6 hrs/yr dementia', 'no RN or dietitian required' — were NOT verified against Chapter 2600 in this pass and are therefore NOT seeded. Only the ALR (Ch. 2800) side is encoded. A PCH facility gets an honest NO_RULE_FOR_CLASS rather than ALR numbers silently applied to it, since the two chapters genuinely differ.",
-    "PA SCU 'max 2 residents per living unit' and the cognitive pre-admission screening window were not confirmed in this pass and are not encoded."
+    "RESOLVED 2026-08-23 — PCH (55 Pa. Code Ch. 2600) is now seeded across all three requirement types, read directly from the Chapter 2600 text on pacodeandbulletin.gov. Three of the four working-summary figures this note previously listed as unverified turned out to be WRONG, not merely unconfirmed: 'no numeric ratio' (§ 2600.57 carries the same 1-hour/2-hour service-hours figures as the ALR chapter), '1 awake staff for 16+ residents' (§ 2600.58(a) requires ALL on-duty direct care staff awake at 16+ residents; the one-awake-staff figure is § 2600.58(b) and triggers on the MOBILITY-NEEDS count below 16, not total census), and '12 hrs/yr general + 6 hrs/yr dementia' (the 6 is secured-unit staff only, § 2600.236, and Chapter 2600 has no all-staff dementia mandate at all). Each correction is recorded in the relevant rule's _corrected field.",
+    "STILL UNVERIFIED — 'no RN or dietitian required' for PCH. Chapter 2600's staffing subchapter (§§ 2600.51—2600.68) contains no RN or dietitian requirement, but this app does not encode a negative from an absence in one chapter. Asserting 'not required' would be a compliance claim, and the only honest basis for one is a positive source saying so.",
+    "STILL UNVERIFIED — PA ALR (Ch. 2800) special care unit 'max 2 residents per living unit' was not confirmed and is not encoded. The related ALR cognitive pre-admission screening window is also still unconfirmed; the PCH equivalent IS now confirmed and encoded (medical evaluation within 60 days prior, cognitive screening within 72 hours prior, § 2600.231(b)—(c)) — do not carry the PCH windows across to ALR, which is the same substitution error this seed exists to prevent."
   ]
 }

@@ -253,7 +253,20 @@ function evaluateStaffing(rules, opts) {
       meets: opts.actual_service_hours == null ? null : Number(opts.actual_service_hours) >= totalHours,
       always_present: d.always_present || null,
       awake_requirement: d.awake_requirement || null,
-      scu_mobility_rule: d.scu_mobility_rule || null
+      // Added with the PCH rule (2026-08-23). Pennsylvania's two chapters do NOT
+      // share an awake rule: the ALR one is unconditional, the PCH one branches
+      // on total census (16+) versus mobility-needs count (under 16). This
+      // engine reports the PCH branches rather than picking one, because
+      // choosing needs both counts as of the moment in question and a wrong
+      // branch is a real staffing violation in either direction. The flag says
+      // plainly that no evaluation happened, so an unevaluated rule cannot read
+      // as a passed one.
+      awake_rule_is_conditional: !!d.awake_rule_is_conditional,
+      awake_rule_note: d.awake_rule_note || null,
+      scu_mobility_rule: d.scu_mobility_rule || null,
+      multiple_buildings: d.multiple_buildings || null,
+      first_aid_cpr_coverage: d.first_aid_cpr_coverage || null,
+      additional_staffing: d.additional_staffing || null
     });
   }
 
