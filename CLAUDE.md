@@ -14,7 +14,8 @@ Always:
 - Script block count and pass-rate change every session — **do not hardcode
   a number here.** Re-verify against the file directly (HTML-parser-based
   extraction, not `grep -c '<script'` — see sairn-guardian-v2 Check 0a for why)
-  and check the most recent `SAIRN-SESSION-N-HANDOFF.md` for current status
+  and check the most recent StoneDesk handoff for current status (find it
+  by date — see Session Handoffs below, not by a counter)
   before assuming anything about pass rate or known-broken script indices.
   A hardcoded "known issues" list here went stale within hours once already
   (2026-07-26) — this file listing specific broken script numbers is exactly
@@ -27,13 +28,35 @@ and re-verify that independently each session rather than trusting this
 line indefinitely, the same way this line itself corrects an earlier wrong
 claim about which branch was stale.
 
-## Session Handoffs
-Before starting any work, check the repo root for the most recent
-`SAIRN-SESSION-N-HANDOFF.md` (highest N) and read it first — CLAUDE.md
-is static and only reflects what was true when last edited; the
-handoff carries the latest verified state, open items, and corrections.
-See the `sairn-session-handoff` skill for the template and naming
-convention.
+## Session Handoffs — lookup rule CORRECTED 2026-08-23
+Before starting any work, read the most recent handoff first — CLAUDE.md
+is static and only reflects what was true when last edited; the handoff
+carries the latest verified state, open items, and corrections.
+
+**Find it by DATE, not by a counter.** Handoffs are named
+`APP-YYYY-MM-DD-subject-handoff.md` (e.g.
+`SAIRNLAW-2026-08-23-lemaj-handoff.md`). Sort by the date in the filename,
+then **confirm the subject matches the work you were actually sent to
+do** — if the content doesn't match your task, say so immediately rather
+than proceeding on the wrong document.
+
+**Do not take the highest N.** This file previously said to find the
+latest handoff as the highest-numbered `SAIRN-SESSION-N-HANDOFF.md`. That
+rule failed in production on 2026-08-23: two different real
+`SAIRNLAW-SESSION6-HANDOFF.md` files existed at once (trust-disbursement
+2026-08-18, LeMAJ 2026-08-23), and a session sent to continue the second
+read the first and found none of its work. A counter cannot stay unique
+across concurrent sessions in separate clones. Older files keep their
+existing names and are **not** renamed — so both patterns are on disk;
+that is expected, not drift.
+
+Handoffs live only in a real clone (`Documents\SAIRN-hank`,
+`Documents\SAIRN-cc`, `Documents\SAIRN-cody`) and are **not written until
+committed in the same action** — a local-only handoff is invisible to
+every other clone. Never write one to `C:\Users\marsh\` directly.
+
+See the `sairn-session-handoff` skill for the full convention, the
+reasoning, and the template.
 
 ## Known resolved issues (don't rediscover these)
 - `sairn-app-scaffold` was falsely claimed built in an earlier session's
@@ -114,4 +137,4 @@ A status report is a claim, not a fact, until checked against the real current s
 - State the recommendation clearly (e.g. "This looks like a hard-debugging case — worth switching to Opus 4.8") rather than silently staying on whatever model is currently active
 
 ---
-*Last Updated: 2026-08-20*
+*Last Updated: 2026-08-23*
