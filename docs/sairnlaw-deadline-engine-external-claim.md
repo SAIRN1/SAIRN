@@ -1,7 +1,7 @@
 # SAIRNlaw deadline engine — approved external-facing claim
 
-**Updated 2026-08-23, after the Phase 8b `sairn-decision-gate` re-run.**
-Supersedes the Phase 8 version. This is the sentence to use with anyone
+**Updated 2026-08-23, after the Phase 8c `sairn-decision-gate` re-run.**
+Supersedes the Phase 8b version. This is the sentence to use with anyone
 outside the team — proposals, sales conversations, status updates. Do not
 paraphrase it looser.
 
@@ -15,12 +15,38 @@ paraphrase it looser.
 > rather than estimating anything it does not cover — including where a rule
 > sets no deadline at all, as Ohio's and Indiana's discovery rules do, and
 > where a rule sets only a standard rather than a period, as every
-> jurisdiction's general deposition-notice rule does. Where a rule makes a
+> jurisdiction's general deposition-notice rule does. All five also cover
+> appellate deadlines, and the periods differ by state — Michigan allows
+> twenty-one days where its neighbours allow thirty. Where a rule makes a
 > deadline the earlier of its own period and a date the other side fixed —
 > as the federal and Ohio subpoena-objection rules do — both are computed
 > and the earlier one is reported, with the other shown alongside it.
 
-## What changed at this gate (8b)
+## What changed at this gate (8c)
+
+State appellate deadlines shipped: thirteen rules across Ohio, Indiana,
+Michigan and Pennsylvania. 51 → 64 rules. **Appellate stopped being a
+federal-only domain** — before this, selecting any state plus the appellate
+domain produced an honest refusal and nothing else.
+
+Two numbers moved enough to matter. Federal is now **33%** of coverage,
+down from 41%, and **every jurisdiction now carries both domains**.
+
+**No new failure mode, for the second gate running.** Same reason as 8b:
+the previous version described state appellate coverage accurately as
+unread rather than absent, so closing it made the claim incomplete rather
+than wrong. Two consecutive clean gates after four consecutive findings is
+itself evidence the three-way split of "not covered" introduced at Phase 8
+is doing real work.
+
+**The one thing worth adding to the claim** is the state-by-state spread:
+Michigan allows twenty-one days for a civil appeal where Ohio, Indiana and
+Pennsylvania allow thirty, and Pennsylvania drops to ten days in three
+named subject matters. A practitioner carrying a thirty-day habit across a
+state line loses the appeal. That is the most consequential single fact in
+the engine and it did not exist in the product before this phase.
+
+## What changed at the Phase 8b gate
 
 The cap shape shipped: federal FRCP 45(d)(2)(B) and Ohio Civ.R. 45(C)(3)
 subpoena objections now compute, 49 → 51 rules. **No new failure mode.**
@@ -117,13 +143,14 @@ live one. When they disagree, the app is right and this file is stale.**
 | Jurisdiction | Rules | Families | Notes |
 |---|---:|---:|---|
 | United States (Federal) | 21 | 10 | widest family range: answer, discovery, amendment, service, summary judgment, pretrial disclosures, appeal |
-| Michigan | 14 | 7 | largest state set: answer, all three discovery devices, subpoena and deposition timing |
-| Pennsylvania | 6 | 5 | pleading, all three discovery devices, non-party subpoena prior notice |
-| Indiana | 5 | 5 | response to pleading, all three discovery devices (designated-period), organizational-deposition conferral |
-| Ohio | 5 | 5 | answer, all three discovery devices (designated-period) |
+| Michigan | 18 | 9 | largest state set: civil 14 + appellate 4; **21-day appeal period, nine fewer than its neighbours** |
+| Pennsylvania | 11 | 8 | civil 6 + appellate 5; **10-day appeal period in three named subject matters** |
+| Indiana | 7 | 6 | civil 5 + appellate 2; untimely notice of appeal FORFEITS the right to appeal |
+| Ohio | 7 | 6 | civil 5 + appellate 2; late clerk service moves the appeal trigger |
 
-51 rules; federal 41%. Eight backward-counted. Six designated-period. Two
-capped. Holiday calendars 2026–2031 for all five.
+64 rules; federal 33%. All five carry BOTH civil-litigation and appellate
+rules. Eight backward-counted. Six designated-period. Two capped. Holiday
+calendars 2026–2031 for all five.
 
 ## Claims that are NOT approved
 
@@ -137,8 +164,15 @@ capped. Holiday calendars 2026–2031 for all five.
   Implies a roadmap item. The rule sets no computable deadline; refusing is
   final, not interim.
 - ❌ *"litigation deadlines across five jurisdictions"* — still implies overall
-  parity. Federal remains the only jurisdiction with appellate,
-  summary-judgment or pretrial-disclosure rules.
+  parity. Federal remains the only jurisdiction with summary-judgment or
+  pretrial-disclosure rules. (**This bullet changed at Phase 8c**: it used
+  to say federal was the only jurisdiction with appellate rules. That is
+  now false — all five have them. Left visible rather than deleted, because
+  a NOT-approved list that silently rewrites itself is as untrustworthy as
+  a claim that silently goes stale.)
+- ❌ *"a thirty-day appeal deadline"* stated generally — **false in Michigan**,
+  which allows twenty-one, and in three Pennsylvania subject matters, which
+  allow ten. The single most dangerous generalisation in the product.
 - ❌ *"computes Ohio's 28-day interrogatory deadline"* — **Ohio has no such
   deadline.** 28 is a floor on a party-designated period. This one sounds
   competent and is wrong; it would be the most damaging thing on this list to
@@ -164,7 +198,12 @@ Ind. T.R. 45 motions to quash (*"promptly"*); Mich. Ct. R. 2.506 objections
 (*"before the designated time for appearance"*).
 
 **Not yet verified — absence means unread, not absent:**
-state appellate deadlines in all four states.
+Pa.R.A.P. 903(c)(2) and 903(c)(3).
+
+**Not expressible — a limb is a COMPUTED period rather than an event date:**
+Ohio App.R. 4(B)(1) cross-appeal and FRCP 15(a)(3). Both would need a shape
+that can measure to a period the engine itself computed. Named, not
+improvised.
 
 **Deliberately out of scope:** statutes of limitation anywhere. Claim-type-
 specific, often statutory rather than rules-based, and the highest-consequence
