@@ -3970,7 +3970,16 @@ function refRenderCoverage() {
         '<span class="badge ' + (c.covered ? 'bg' : 'bx') + '" style="flex:none">' + (c.covered ? 'Covered' : 'Not covered') + '</span>' +
         '<span><b>' + H(c.label) + '</b>' + (c.source ? ' &mdash; ' + H(c.source) : '') +
         '<div style="color:var(--muted)">' + H(c.note) + '</div></span></div>';
-    }).join('') + '</div>';
+    }).join('') +
+      // The server's top-level note was previously fetched and discarded.
+      // It carries the one fact the per-row reasons do not: that an
+      // uncovered jurisdiction is excluded by its own TERMS and is final
+      // scope, not pending work. Same permanent-vs-temporary distinction
+      // the deadline engine's coverage card draws -- "not covered" reads
+      // as a roadmap item unless it says otherwise.
+      (d.note ? '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;' +
+        'padding:10px 14px;margin-top:10px;color:#92400e;font-size:12px">' + H(d.note) + '</div>' : '') +
+      '</div>';
   });
 }
 

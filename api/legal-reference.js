@@ -73,7 +73,15 @@ module.exports = async (req, res) => {
       res.status(200).json({
         ok: true,
         coverage: COVERAGE,
-        note: 'Jurisdictions marked not covered are excluded because their own terms of use prohibit automated access, not because of a technical limitation.'
+        // FINAL SCOPE, not a placeholder. Corrected 2026-08-23: the original
+        // commitment listed BAILII and AustLII as sources to add. Both were
+        // checked against their own terms before any code was written and
+        // both PROHIBIT this use -- AustLII across its entire collection for
+        // AI-related uses, BAILII naming outcome-prediction AI as its concern.
+        // Neither is a bot-detection problem, so no tooling closes it. These
+        // jurisdictions are excluded permanently unless their terms change or
+        // a licence is negotiated -- they are not pending work.
+        note: 'Jurisdictions marked not covered are excluded because their own terms of use prohibit automated access, not because of a technical limitation. This is final scope, not work in progress: no amount of engineering closes a written prohibition. Adding them would require a licence from the source.'
       });
       return;
     }
