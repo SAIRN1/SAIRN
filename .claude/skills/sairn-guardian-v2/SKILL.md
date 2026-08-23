@@ -41,9 +41,28 @@ Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automa
 20. **sdLoad/sdStore pattern** — localStorage access wrapped in try/catch
 21. **No raw JSON.parse without try/catch** — all JSON parsing protected
 
-### Security (2)
+### Security (2 — one live, one retired)
 22. **No API keys in HTML** — no Anthropic, Stripe, or Supabase keys hardcoded in HTML files
-23. **SAIRN_INTERNAL_KEY** — API files check for internal auth header
+23. ~~**SAIRN_INTERNAL_KEY** — API files check for internal auth header~~
+    **RETIRED 2026-08-23. Do not run this check; do not report it as failing.**
+    A Guardian pass on SAIRNlaw scored 0 for every one of its four API files
+    and went looking for the gap. There is no gap: `grep -rl
+    "SAIRN_INTERNAL_KEY\|INTERNAL_KEY" api/` returns **zero files across the
+    entire platform**. The mechanism this check describes does not exist
+    anywhere and has not for some time.
+    **What actually gates the API surface**, and what to check instead, is
+    Check 28: a license key as `Authorization: Bearer`, plus
+    `verifySessionToken(token, license_hash, expectedApp)` with the third
+    argument present. That is strictly stronger than a single shared internal
+    header — a shared secret proves the caller is inside the platform, while
+    the session token proves *which app and which employee*, which is the
+    property the 2026-08-03 cross-app collision incident actually needed.
+    Retiring rather than deleting, so a future session that finds this number
+    missing does not "restore" a check against a mechanism that was never
+    replaced because it was superseded. Security is therefore **one** live
+    check (22) plus 28; the section header keeps its count for numbering
+    stability, the same disclosure convention as the 16/16 and 27/26
+    collisions already flagged elsewhere in this file.
 
 ### Quality (2)
 24. **No console.log left in production** — no debug logs in final push
@@ -712,11 +731,31 @@ actually looked.
 
 Chat/session context does not persist reliably across long sessions or tool switches
 (this chat interface vs. Claude Code are separate contexts entirely). The fix that's
-worked: **every significant session ends by writing/updating a `SAIRN-SESSION-N-
-HANDOFF.md` file directly in the repo** — not just relying on chat memory or summaries.
-Every new session (in either tool) reads the latest handoff doc FIRST, before touching
-any code, and independently re-verifies its claims against GitHub rather than trusting
-them at face value (branch HEAD, file sizes, "complete" claims — all of it). A handoff
-doc that turns out to be wrong about something (like the master/main branch claim
-above) should be treated as a normal, expected occurrence to re-verify against, not
-a failure — state changes between sessions and the doc can't always keep up.
+worked: **every significant session ends by writing a handoff file directly in the
+repo** — not just relying on chat memory or summaries. Every new session (in either
+tool) reads the latest handoff doc FIRST, before touching any code, and independently
+re-verifies its claims against GitHub rather than trusting them at face value (branch
+HEAD, file sizes, "complete" claims — all of it). A handoff doc that turns out to be
+wrong about something (like the master/main branch claim above) should be treated as a
+normal, expected occurrence to re-verify against, not a failure — state changes between
+sessions and the doc can't always keep up.
+
+**Naming and lookup — CORRECTED 2026-08-23.** This section previously said to write
+`SAIRN-SESSION-N-HANDOFF.md` and, by implication, to find the latest one by its number.
+Both are now wrong:
+
+- **Write `APP-YYYY-MM-DD-subject-handoff.md`** (e.g. `SAIRNLAW-2026-08-23-lemaj-handoff.md`).
+- **Find the latest by DATE, then confirm the subject matches the task you were given** —
+  never by taking the highest `N`.
+- **A handoff is not written until it is committed in the same action**, inside a real
+  clone. A local-only handoff is invisible to every other clone and can block its next pull.
+
+The counter failed in production: two different real `SAIRNLAW-SESSION6-HANDOFF.md` files
+existed simultaneously (trust-disbursement 2026-08-18, LeMAJ 2026-08-23) and a fresh
+session read the wrong one. Neither session was wrong — a counter cannot stay unique
+across concurrent sessions in separate clones. Older files keep their existing names, so
+both patterns are on disk; that is expected, not drift. `sairn-session-handoff` carries
+the full convention and the reasoning; this pointer exists because that skill and this one
+disagreed for several hours after the change, which is the exact same
+claim-in-two-places drift Check 0c and the "Eliminate Duplication at the Source" section
+below already warn about — applied, again, to this file itself.
