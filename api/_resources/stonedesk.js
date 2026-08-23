@@ -27,5 +27,16 @@ module.exports = {
   // sync this resource has ever had (was pure localStorage) -- also carries the per-lead
   // assignment privacy gate, see the read/write branches below.
     'sd_crm',
+  // Slab lineage (2026-08-22, Phase 1b) -- block -> bundle -> slab -> remnant.
+  // See sql/sd_slab_lineage_schema.sql for why these are sibling tables and
+  // not fields on sd_slabs' jsonb blob: that blob is capped at 65536 bytes by
+  // sdslabs_data_size and ~55KB of it is already photo, so unbounded per-slab
+  // history would make a record more likely to fail the longer it is used.
+  // The slab -> block link is a plain string in the slab's data, deliberately
+  // NOT a database foreign key, so dropping these tables can never orphan or
+  // break a slab. REQUIRES sql/sd_slab_lineage_schema.sql to be run.
+    'sd_blocks',
+    'sd_bundles',
+    'sd_slab_history',
   ],
 };

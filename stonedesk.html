@@ -6413,6 +6413,9 @@ function sdInvExport(){
     <button class="q-btn primary" onclick="sdSlabsAdd()">+ Add Slab</button>
     <button class="q-btn" onclick="sdSlabsAI()">🤖 AI Slab Advisor</button>
     <button class="q-btn" onclick="sdSlabsExport()">📊 Export CSV</button>
+    <button class="q-btn" onclick="sdAddBlockPrompt()">🪨 + Block</button>
+    <button class="q-btn" onclick="sdAddBundlePrompt()">📦 + Bundle</button>
+    <button class="q-btn" onclick="sdLineageReport()">🧬 Lineage</button>
     <button class="q-btn" onclick="sdSlabsPrint()">🖨️ Print</button>
   </div>
 </div>
@@ -6708,6 +6711,24 @@ function sdInvExport(){
 
   var STATUS_COLOR={Available:'var(--brand2)',Allocated:'#f59e0b',Cut:'#6366f1',Remnant:'#94a3b8'};
 
+  // Phase 1b lineage cell. Resolves through the remnant chain, so a remnant
+  // still shows the block it ultimately came from -- that survival across
+  // consumption is the entire reason the lineage layer exists.
+  // Degrades honestly: a slab with no block shows a dash, never a placeholder
+  // block, and the whole cell no-ops if the lineage layer has not loaded.
+  function lineageCell(s){
+    if(typeof sdSlabLineage!=='function') return '<span style="color:var(--muted)">—</span>';
+    var L;
+    try{ L=sdSlabLineage(s.id); }catch(e){ return '<span style="color:var(--muted)">—</span>'; }
+    if(!L || (!L.block && !L.bundle)) return '<span style="color:var(--muted)">—</span>';
+    var parts=[];
+    if(L.block) parts.push('<b>'+escHtml(L.block.blockNumber||L.block.id)+'</b>');
+    if(L.bundle) parts.push(escHtml(L.bundle.bundleNumber||L.bundle.id));
+    var txt=parts.join(' / ');
+    if(L.isRemnant) txt+=' <span style="color:var(--muted);font-size:10px">(via '+escHtml(L.rootSlabId)+')</span>';
+    return txt;
+  }
+
   // One-time legacy import. A browser that still holds tracker-shaped rows
   // under 'sd_slab_tracker' from before Phase 1a gets them OFFERED, never
   // auto-promoted: they were never real synced stock, and silently pushing
@@ -6807,6 +6828,7 @@ function sdInvExport(){
       +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Vendor</th>'
       +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Size/Finish</th>'
       +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Location</th>'
+      +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Block / Bundle</th>'
       +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Status</th>'
       +'<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Cost</th>'
       +'<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Job</th>'
@@ -6823,6 +6845,7 @@ function sdInvExport(){
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+escHtml(s.supplier||s.vendor||'—')+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+escHtml(sz||'—')+(s.finish?(' / '+escHtml(s.finish)):'')+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+escHtml(s.yardLocation||'—')+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px">'+lineageCell(s)+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+(STATUS_COLOR[ds]||'#6b7280')+'20;color:'+(STATUS_COLOR[ds]||'#6b7280')+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+escHtml(ds)+'</span></td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right">'+(c===null?'<span style="color:var(--muted)">—</span>':fmtMoney(c))+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+escHtml(s.reservedFor||'—')+'</td>'
@@ -24753,6 +24776,9 @@ document.addEventListener('DOMContentLoaded', function() {
   loadSDMemories();
   // Load slab data on boot so dashboard low-stock alert is live from first screen
   if(typeof loadSlabs==='function'){ loadSlabs(); _slabLoaded=true; }
+  // Phase 1b lineage. Loaded alongside slabs, not lazily, so the Slabs panel's
+  // block/bundle column is populated on first paint rather than after a sync.
+  if(typeof sdLoadLineage==='function'){ sdLoadLineage(); }
   // SAIRN Intelligence Network: fetch cached cross-business patterns.
   // Defined further below in this same script block -- no cross-tag timing risk.
   loadNetworkIntelligence();
@@ -31512,11 +31538,190 @@ function slabOpenConsume(id){
     '</div>';
   document.getElementById('slab-action-modal').style.display='flex';
 }
+
+// ============================================================
+// SLAB LINEAGE -- Phase 1b (2026-08-22). block -> bundle -> slab -> remnant.
+//
+// The existing chain was slab -> remnant only (isRemnant/parentSlabId). This
+// adds the two levels above it, and it is ADDITIVE BY CONSTRUCTION: a slab
+// gains at most two optional short strings (blockId, bundleId, ~60 bytes).
+// Nothing existing is renamed, retyped or removed, and every current reader
+// (Quote Builder picker, POS, visualizer, low-stock, customer detail) ignores
+// unknown keys, so none of them needed touching.
+//
+// Block/bundle records and slab history live in SIBLING TABLES, not in the
+// slab's jsonb blob -- see sql/sd_slab_lineage_schema.sql for the full
+// reasoning. Short version: that blob is capped at 65536 bytes, ~55KB of it
+// is already photo, and unbounded per-slab history would make a record more
+// likely to fail the longer it is used.
+//
+// ROLLBACK: revert this block and the two keys are simply never read again.
+// Nothing needs undoing at the data layer. See the design doc's §4.2.
+// ============================================================
+var sdBlocks = [], sdBundles = [], sdSlabHistory = [];
+
+function sdLoadLineage(){
+  try{ sdBlocks = JSON.parse(localStorage.getItem('sd_blocks')||'[]'); }catch(e){ sdBlocks=[]; }
+  try{ sdBundles = JSON.parse(localStorage.getItem('sd_bundles')||'[]'); }catch(e){ sdBundles=[]; }
+  try{ sdSlabHistory = JSON.parse(localStorage.getItem('sd_slab_history')||'[]'); }catch(e){ sdSlabHistory=[]; }
+  sdLineageSync();
+}
+function sdSaveBlocks(){ return st('sd_blocks', sdBlocks); }
+function sdSaveBundles(){ return st('sd_bundles', sdBundles); }
+function sdSaveSlabHistory(){ return st('sd_slab_history', sdSlabHistory); }
+
+// Server sync mirrors slabSyncFromSupabase() exactly, including its
+// merge-by-id shape, so a device that has been offline does not lose local
+// rows to an older server copy.
+async function sdLineageSync(){
+  if(typeof sdData!=='function') return;
+  if(typeof sdLicenseKey==='function' && !sdLicenseKey()) return;
+  var pairs=[['sd_blocks',function(v){sdBlocks=v;},function(){return sdBlocks;},sdSaveBlocks],
+             ['sd_bundles',function(v){sdBundles=v;},function(){return sdBundles;},sdSaveBundles],
+             ['sd_slab_history',function(v){sdSlabHistory=v;},function(){return sdSlabHistory;},sdSaveSlabHistory]];
+  for(var i=0;i<pairs.length;i++){
+    var res=pairs[i];
+    try{
+      var data=await sdData('read',res[0],{});
+      if(Array.isArray(data) && data.length){
+        var byId={}; res[2]().forEach(function(x){byId[x.id]=x;});
+        data.forEach(function(x){byId[x.id]=x;});
+        res[1](Object.values(byId)); res[3]();
+      }
+    }catch(e){}
+  }
+  if(typeof sdSlabsRender==='function') sdSlabsRender();
+}
+async function sdLineageSyncOne(resource, rec){
+  if(typeof sdData!=='function') return;
+  if(typeof sdLicenseKey==='function' && !sdLicenseKey()) return;
+  try{ await sdData('write', resource, rec); }catch(e){}
+}
+
+// ── History: append-only in practice. Every event names what changed, so a
+// slab's movement through the yard is reconstructable without inferring it
+// from the slab's current state.
+function sdSlabLogEvent(slabId, event, from, to, note){
+  if(!slabId || !event) return null;
+  var rec={ id:'EVT'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
+            slabId:String(slabId), event:String(event),
+            from:(from===undefined||from===null)?'':String(from),
+            to:(to===undefined||to===null)?'':String(to),
+            note:note||'', at:new Date().toISOString() };
+  sdSlabHistory.push(rec);
+  sdSaveSlabHistory();
+  sdLineageSyncOne('sd_slab_history', rec);
+  return rec;
+}
+function sdSlabHistoryFor(slabId){
+  return sdSlabHistory.filter(function(e){return e.slabId===slabId;})
+    .sort(function(a,b){return (a.at<b.at)?-1:((a.at>b.at)?1:0);});
+}
+
+// ── Lineage resolution. THIS is what block/bundle exist for: vein-matching
+// across a job has to survive a slab being consumed, so it walks the remnant
+// chain up to the original slab before answering.
+function sdSlabRootId(slabId){
+  var seen={}, cur=slabId;
+  for(var i=0;i<50;i++){
+    if(!cur || seen[cur]) break;            // cycle guard -- a corrupted
+    seen[cur]=1;                            // parentSlabId must not hang the UI
+    var s=(typeof sdSlabs!=='undefined'?sdSlabs:[]).find(function(x){return x.id===cur;});
+    if(!s || !s.parentSlabId) return cur;
+    cur=s.parentSlabId;
+  }
+  return cur;
+}
+function sdSlabLineage(slabId){
+  var root=sdSlabRootId(slabId);
+  var s=(typeof sdSlabs!=='undefined'?sdSlabs:[]).find(function(x){return x.id===root;});
+  var bundle=s&&s.bundleId?sdBundles.find(function(b){return b.id===s.bundleId;}):null;
+  var blockId=(s&&s.blockId)||(bundle&&bundle.blockId)||null;
+  var block=blockId?sdBlocks.find(function(b){return b.id===blockId;}):null;
+  return { slabId:slabId, rootSlabId:root, isRemnant:slabId!==root, bundle:bundle||null, block:block||null };
+}
+// "Every slab from this block" -- the actual vein-matching query, and the
+// reason block ids are a sibling row rather than buried per-slab jsonb.
+function sdSlabsFromBlock(blockId){
+  if(!blockId) return [];
+  return (typeof sdSlabs!=='undefined'?sdSlabs:[]).filter(function(s){
+    var l=sdSlabLineage(s.id);
+    return l.block && l.block.id===blockId;
+  });
+}
+
+function sdAddBlock(rec){
+  if(!rec||!rec.id) return null;
+  sdBlocks.push(rec); sdSaveBlocks(); sdLineageSyncOne('sd_blocks', rec); return rec;
+}
+function sdAddBundle(rec){
+  if(!rec||!rec.id) return null;
+  sdBundles.push(rec); sdSaveBundles(); sdLineageSyncOne('sd_bundles', rec); return rec;
+}
+
+// ── Reachable UI for the lineage layer ──
+// Added because the first cut of Phase 1b shipped sdAddBlock/sdAddBundle/
+// sdSlabsFromBlock/sdSlabHistoryFor with no caller -- working, tested, and
+// unreachable by an actual person. That is the exact failure this whole
+// session has been finding elsewhere, so it is not shipping that way here.
+function sdAddBlockPrompt(){
+  var num=prompt('Block number (e.g. B-2026-014):'); if(!num) return;
+  var quarry=prompt('Quarry / supplier:','')||'';
+  var origin=prompt('Origin (country/region):','')||'';
+  var mat=prompt('Material:','granite')||'';
+  sdAddBlock({id:'BLK'+Date.now(), blockNumber:num, quarryName:quarry, origin:origin,
+              material:mat, arrivedAt:new Date().toISOString(), notes:''});
+  if(typeof showToast==='function') showToast('Block '+num+' added.');
+  sdSlabsRender();
+}
+function sdAddBundlePrompt(){
+  if(!sdBlocks.length){ alert('Add a block first — a bundle belongs to one.'); return; }
+  var list=sdBlocks.map(function(b,i){return (i+1)+') '+(b.blockNumber||b.id);}).join('\n');
+  var pick=parseInt(prompt('Which block?\n'+list),10);
+  var blk=sdBlocks[pick-1]; if(!blk) return;
+  var num=prompt('Bundle number:'); if(!num) return;
+  var cnt=parseInt(prompt('Slab count in bundle:','')||'',10);
+  sdAddBundle({id:'BND'+Date.now(), blockId:blk.id, bundleNumber:num,
+               slabCount:isNaN(cnt)?null:cnt, thickness:prompt('Thickness:','3cm')||'',
+               finish:prompt('Finish:','Polished')||'', receivedAt:new Date().toISOString()});
+  if(typeof showToast==='function') showToast('Bundle '+num+' added to '+(blk.blockNumber||blk.id)+'.');
+  sdSlabsRender();
+}
+// Vein-matching + provenance, the two things the lineage layer exists to answer.
+function sdLineageReport(){
+  var out=document.getElementById('slabs-ai-out'); if(!out) return;
+  out.style.display='block';
+  if(!sdBlocks.length){
+    out.textContent='No blocks recorded yet. Add a block, then a bundle, then set a slab’s bundle to build lineage. Slabs with no block are still valid slabs — lineage is optional.';
+    return;
+  }
+  var txt='';
+  sdBlocks.forEach(function(b){
+    var slabs=sdSlabsFromBlock(b.id);
+    txt+='■ '+(b.blockNumber||b.id)+(b.quarryName?(' — '+b.quarryName):'')+(b.origin?(' ('+b.origin+')'):'')+'\n';
+    var bundles=sdBundles.filter(function(x){return x.blockId===b.id;});
+    bundles.forEach(function(bn){ txt+='   └ bundle '+(bn.bundleNumber||bn.id)+(bn.slabCount?(' — '+bn.slabCount+' slabs'):'')+'\n'; });
+    txt+='   '+slabs.length+' slab(s) traceable to this block'+(slabs.length?':':'')+'\n';
+    slabs.forEach(function(s){
+      var L=sdSlabLineage(s.id);
+      var hist=sdSlabHistoryFor(s.id);
+      txt+='     • '+s.id+' — '+(s.colorName||s.material||'')+(L.isRemnant?(' [remnant of '+L.rootSlabId+']'):'')
+         +(hist.length?('  · '+hist.length+' event(s): '+hist.map(function(e){return e.event;}).join(' → ')):'  · no events recorded')+'\n';
+    });
+    txt+='\n';
+  });
+  out.textContent=txt.trim();
+}
+
 function slabConfirmConsume(id){
   var s=sdSlabs.find(function(x){return x.id===id;}); if(!s) return;
+  var prevStatus=s.status;
   s.status='consumed'; s.consumedAt=new Date().toISOString();
   var yieldPct=parseFloat(document.getElementById('slab-consume-yield').value);
   if(!isNaN(yieldPct)) s.yieldPercent=yieldPct;
+  // Phase 1b: record the consumption as a real event rather than leaving it
+  // inferable only from the slab's current state.
+  if(typeof sdSlabLogEvent==='function') sdSlabLogEvent(s.id,'consumed',prevStatus,'consumed',s.reservedFor?('for '+s.reservedFor):'');
   var makeRemnant=document.getElementById('slab-consume-remnant-cb').checked;
   if(makeRemnant){
     var rl=parseFloat(document.getElementById('slab-remnant-l').value)||0;
@@ -31530,8 +31735,18 @@ function slabConfirmConsume(id){
         consignment:s.consignment, notes:'Remnant of '+s.id,
         status:'in-stock', isRemnant:true, parentSlabId:s.id, createdAt:new Date().toISOString()
       };
+      // Phase 1b: a remnant inherits its parent's block/bundle at spawn time.
+      // This is precisely what keeps vein-matching possible after the parent
+      // slab is consumed -- without it the remnant's origin dies with the
+      // slab it came from, which is the whole point of the lineage layer.
+      if(s.blockId) remnant.blockId=s.blockId;
+      if(s.bundleId) remnant.bundleId=s.bundleId;
       sdSlabs.unshift(remnant);
       slabSyncOne(remnant);
+      if(typeof sdSlabLogEvent==='function'){
+        sdSlabLogEvent(s.id,'remnant_spawned','',remnant.id,'');
+        sdSlabLogEvent(remnant.id,'received','','in-stock','Remnant of '+s.id);
+      }
     }
   }
   // NOTE: slabRender() was removed here -- its target #slab-grid

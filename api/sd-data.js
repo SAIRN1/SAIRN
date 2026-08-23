@@ -518,6 +518,60 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SLAB LINEAGE: BLOCKS / BUNDLES / HISTORY (2026-08-22, Phase 1b) ─────────────────────
+    // block -> bundle -> slab -> remnant. See sql/sd_slab_lineage_schema.sql for why these are
+    // sibling tables rather than fields on sd_slabs' jsonb blob (that blob is capped at 65536
+    // bytes and ~55KB of it is already photo, so unbounded per-slab history would make a record
+    // more likely to fail the longer it is used).
+    //
+    // All three follow the sd_slabs read/write shape exactly -- payload.id only, no role gate --
+    // rather than sd_crm's session-gated shape, and that is a deliberate decision, not an
+    // oversight: a quarry block, a bundle and a slab movement are yard/inventory facts, the same
+    // class as the slab record they hang off, which has never required a session. Gating lineage
+    // more tightly than the slab it describes would mean a coder could see the slab but not
+    // where it came from. If slabs ever gain a session gate, these three move with them.
+    //
+    // Each returns provisioned:false rather than an error when its table is missing, so an
+    // un-run migration degrades to "no lineage yet" instead of breaking the Slabs panel.
+    const SD_LINEAGE = {
+      sd_blocks:       { idCol: 'block_id',  label: 'blocks' },
+      sd_bundles:      { idCol: 'bundle_id', label: 'bundles' },
+      sd_slab_history: { idCol: 'event_id',  label: 'slab history' }
+    };
+    if (SD_LINEAGE[resource] && (action === 'read' || action === 'write')) {
+      const cfg = SD_LINEAGE[resource];
+      if (action === 'read') {
+        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=' + cfg.idCol + ',data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({
+          ok: true,
+          data: (rows || []).map((x) => Object.assign({ id: x[cfg.idCol] }, x.data)),
+          provisioned: true
+        });
+        return;
+      }
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const row = { license_hash: licHash, app_id: 'stonedesk', data: payload, updated_at: nowISO() };
+      row[cfg.idCol] = String(payload.id);
+      const w = await fetch(rest(resource + '?on_conflict=license_hash,' + cfg.idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(row)
+      });
+      if (w.status === 404 || w.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Slab ' + cfg.label + ' sync is not set up yet — run sql/sd_slab_lineage_schema.sql in Supabase first.' } });
+        return;
+      }
+      const wrows = await w.json();
+      if (!w.ok) return upstream(res, wrows);
+      res.status(200).json({ ok: true, data: (Array.isArray(wrows) && wrows[0]) ? wrows[0].data : payload });
+      return;
+    }
     // ── CRM / LEAD PIPELINE (2026-08-19) ────────────────────────────────────────────────────
     // First real server sync sd_crm has ever had -- was pure localStorage before this (see
     // sql/sd_crm_schema.sql's own header). Read/write both require a real StoneDesk session
