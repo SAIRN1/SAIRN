@@ -255,6 +255,17 @@ module.exports = async (req, res) => {
       const r = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&select=employee_id,display_name,role,active&order=employee_id.asc'), { headers });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
+      // A session token carries a role claim and stays valid for its full
+      // 12h life -- including after the credential behind it is deactivated.
+      // Found live 2026-08-23 while exercising the LAST_ADMIN path: a
+      // deactivated admin could still act. Re-check the caller's CURRENT
+      // active state against the row we just read, so deactivation takes
+      // effect immediately rather than whenever the token happens to expire.
+      const callerRowR = (rows || []).filter(function (x) { return x.employee_id === caller.employee_id; })[0];
+      if (!callerRowR || callerRowR.active !== true) {
+        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
+        return;
+      }
       res.status(200).json({ ok: true, employees: rows || [] });
       return;
     }
@@ -327,6 +338,20 @@ module.exports = async (req, res) => {
       const all = await allR.json();
       if (!allR.ok) return upstream(res, all);
       const rowsAll = Array.isArray(all) ? all : [];
+
+      // The caller must still be ACTIVE, not merely holding a token that says
+      // 'admin'. Found live 2026-08-23: a session survives its own credential's
+      // deactivation for up to 12h, so without this an admin who was just
+      // removed could keep removing other people -- including walking the
+      // license down to the LAST_ADMIN refusal from the wrong side. Checked
+      // against the row read below, so it costs no extra query.
+      const callerRow = rowsAll.filter(function (x) { return x.employee_id === caller.employee_id; })[0];
+      if (!callerRow || callerRow.active !== true) {
+        await audit('credential_change_refused', { target: target_id, requested_active: nextActive, reason_code: 'CREDENTIAL_INACTIVE' });
+        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
+        return;
+      }
+
       const target = rowsAll.filter(function (x) { return x.employee_id === target_id; })[0];
       if (!target) {
         res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such employee on this license' } });
@@ -340,6 +365,22 @@ module.exports = async (req, res) => {
       // one: deactivating a non-admin, or a non-last admin, is unaffected,
       // and reactivation can only ever increase the count so it is never
       // blocked (confirmed decision: reactivation is unconditional).
+      //
+      // CURRENTLY UNREACHABLE BY CONSTRUCTION, and kept deliberately -- this
+      // is a quarantined guard, not dead code, and the distinction is
+      // recorded here so a future reader does not delete it as unused.
+      // Reaching it needs: caller is an ACTIVE admin, target is a different
+      // ACTIVE admin, and exactly one active admin exists. The first two
+      // conditions imply at least two, so the third cannot hold. Before the
+      // caller-still-active re-check above was added, it WAS reachable and
+      // was proven firing live on 2026-08-23 -- a deactivated admin whose
+      // 12h token had not yet expired could deactivate the last remaining
+      // admin. Closing that hole is what made this branch unreachable.
+      // It stays because reachability is a property of the CURRENT rule set:
+      // adding a second provisioning role to PROVISIONING_ROLES, a
+      // service-to-service caller, or any path that does not go through the
+      // active re-check would make it live again, and a lockout is not a
+      // failure mode worth re-discovering in production.
       if (!nextActive && PROVISIONING_ROLES.indexOf(target.role) !== -1 && target.active === true && activeAdmins.length <= 1) {
         await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'LAST_ADMIN', active_admins: activeAdmins.length });
         res.status(409).json({
