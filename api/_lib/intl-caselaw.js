@@ -112,11 +112,36 @@ function parseFclAtom(xml) {
   let m;
   while ((m = re.exec(xml)) !== null) {
     const e = m[1];
+    // The FIRST <link> is the judgment page. Later links in the same entry
+    // point at data.xml, the PDF and the assets base, so an unanchored
+    // match could hand back a PDF URL as though it were the case.
     const link = (e.match(/<link[^>]+href="([^"]+)"/i) || [])[1] || '';
+
+    // The court sits in <author><name>, and the neutral citation in a
+    // <tna:identifier type="ukncn">. BOTH WERE BEING DROPPED, and both
+    // matter more here than ordinary metadata: the neutral citation is how
+    // a lawyer actually cites the judgment, and the court is what tells
+    // them its authority level. A Court of Appeal decision and a
+    // first-instance High Court decision bind very differently, so a
+    // result carrying neither is not merely thin -- it invites the reader
+    // to weigh a case they cannot place. Found 2026-08-23 by diffing the
+    // parsed output against the raw feed rather than assuming null meant
+    // the field was absent upstream.
+    const court = xmlTagText(e, 'name') || null;
+    const ncnRaw = (e.match(/<tna:identifier[^>]*type="ukncn"[^>]*>([\s\S]*?)<\/tna:identifier>/i) || [])[1];
+    const ncn = ncnRaw
+      ? ncnRaw.replace(/<[^>]+>/g, '')
+          .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'")
+          .replace(/\s+/g, ' ').trim()
+      : null;
+
     entries.push({
       title: xmlTagText(e, 'title'),
       url: link,
       date: (xmlTagText(e, 'published') || xmlTagText(e, 'updated')).slice(0, 10),
+      court: court,
+      neutral_citation: ncn || null,
       jurisdiction: 'uk-ew',
       source_name: 'Find Case Law (The National Archives)'
     });

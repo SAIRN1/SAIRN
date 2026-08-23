@@ -105,6 +105,11 @@ function decodeEntities(s) {
     .replace(/&#8211;|&ndash;/g, '–');
 }
 
+// Exact-match page furniture that Cornell renders as bare <p> elements in
+// the taxonomy block after a Wex definition. Deliberately a closed list of
+// exact strings, not a pattern -- see the note at its use below.
+const WEX_PAGE_FURNITURE = new Set(['Keywords', 'Wex', 'Wex Definitions', 'wex', 'Wex Articles']);
+
 // Pulls the definition paragraphs that follow the page title. Deliberately
 // conservative: it takes the <p> run immediately after the <h1>, and if the
 // page shape ever changes it returns nothing rather than returning whatever
@@ -135,7 +140,17 @@ function parseWexPage(html) {
       }
     }
     const text = decodeEntities(raw.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-    if (text) paragraphs.push(text);
+    // Drop page furniture. The <p> run after the title sometimes ends with
+    // the taxonomy block Cornell renders as bare paragraphs -- "Keywords",
+    // then "Wex" and its category names. Those ARE on the page, so this is
+    // not a fabrication question; the problem is that every paragraph this
+    // parser returns is presented to a lawyer as definition text, and a
+    // one-word nav label shown in that position reads as though the source
+    // said it. Matched exactly and case-sensitively against a short closed
+    // list rather than by length or position: a heuristic like "drop short
+    // trailing paragraphs" would eventually eat a genuinely terse
+    // definition, which is the failure that actually costs something.
+    if (text && !WEX_PAGE_FURNITURE.has(text)) paragraphs.push(text);
   }
   return { title, paragraphs, crossReferences };
 }
