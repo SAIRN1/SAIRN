@@ -944,6 +944,7 @@ label.chk input{width:auto;}
       <textarea id="mt-position" rows="5" placeholder="State the argument you want attacked. The more specific, the more useful the objections."></textarea>
     </div>
     <button class="btn bp" onclick="mtRun()" id="mt-run-btn">Stress-test this position</button>
+    <div id="mt-points" style="margin-top:12px"></div>
     <div id="mt-result" style="margin-top:12px"></div>
   </div></div>
 </div>
@@ -4029,6 +4030,129 @@ function mtVerifyCitations(cites) {
   });
 }
 
+// ══ ARGUMENT DECOMPOSITION (LeMAJ-style legal data points) ═══════════════
+// Before anything is attacked, the position is broken into discrete legal data
+// points and each is critiqued on its own. A holistic critique of a paragraph
+// lets the adversary answer the easiest reading of it; forcing the argument
+// apart first means every element gets attacked, including the ones a lawyer
+// glossed over.
+//
+// THE GUARDRAIL THAT MAKES THIS SAFE: every point must carry a VERBATIM SPAN
+// from what the user actually wrote, and that span is checked MECHANICALLY
+// against the original text before the point is used. A decomposition step
+// that paraphrases is one that can quietly invent a claim the lawyer never
+// made and then attack it -- which would read as a real weakness in their
+// case. Same show-your-work discipline as the citator: the model asserts, the
+// code checks.
+var MT_POINT_TYPES = {
+  legal_claim: 'Legal claim',
+  factual_assertion: 'Factual assertion',
+  relief_sought: 'Relief sought',
+  authority_relied_on: 'Authority relied on',
+  weakness_conceded: 'Weakness conceded'
+};
+
+// Normalise for COMPARISON only, never for display. Quote style and whitespace
+// differ between what a model echoes and what was typed, and a span rejected
+// over a curly apostrophe would train users to ignore the badge -- the same
+// failure the Batson guard avoids by matching word boundaries not substrings.
+function mtNormalise(t) {
+  return String(t || '')
+    .replace(/[‘’ʼ]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/[–—]/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim().toLowerCase();
+}
+
+// A point is ANCHORED when its quoted span really appears in the position.
+// Unanchored points are still SHOWN -- hiding them would hide that the model
+// drifted -- but they are labelled and excluded from the critique.
+function mtAnchorPoints(points, position) {
+  var hay = mtNormalise(position);
+  return points.map(function (pt) {
+    var span = String(pt.source_span || '').trim();
+    var anchored = !!span && hay.indexOf(mtNormalise(span)) !== -1;
+    return {
+      type: MT_POINT_TYPES[pt.type] ? pt.type : 'legal_claim',
+      claim: String(pt.claim || '').trim(),
+      source_span: span,
+      anchored: anchored
+    };
+  }).filter(function (pt) { return pt.claim; });
+}
+
+// Strict JSON is required. If the model does not comply the step FAILS rather
+// than degrading to a holistic critique, because a silent fallback would leave
+// the user believing their argument was decomposed when it was not.
+function mtParsePoints(text) {
+  var t = String(text || '').trim();
+  var fence = t.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fence) t = fence[1].trim();
+  var start = t.indexOf('['), end = t.lastIndexOf(']');
+  if (start === -1 || end === -1 || end < start) return null;
+  try {
+    var arr = JSON.parse(t.slice(start, end + 1));
+    return Array.isArray(arr) ? arr : null;
+  } catch (e) { return null; }
+}
+
+function mtDecompose(position) {
+  var sys = 'You decompose a legal position into discrete legal data points so each can be examined separately. ' +
+    'Return ONLY a JSON array. No prose, no code fence. Each element must be ' +
+    '{"type": one of legal_claim|factual_assertion|relief_sought|authority_relied_on|weakness_conceded, ' +
+    '"claim": a one-sentence statement of that single point, ' +
+    '"source_span": a VERBATIM substring copied exactly from the position that this point comes from}.\n\n' +
+    'HARD RULES:\n' +
+    '1. source_span must be copied character-for-character from the position. Do not paraphrase it, do not correct it, and do not stitch together words that are not adjacent in the original.\n' +
+    '2. Do not add points the position does not contain. If the position is thin, return few points.\n' +
+    '3. Never state or imply a probability, percentage, odds or likelihood of winning.\n' +
+    '4. Split a compound sentence into separate points where its parts carry separate legal weight.';
+  return fetch(PROXY, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ app_id: 'sairnlaw', is_demo: true, max_tokens: 1400, system: sys,
+      messages: [{ role: 'user', content: 'Position:\n\n' + position }] })
+  }).then(function (r) { return r.json(); }).then(function (data) {
+    if (data && data.error) return { ok: false, reason: 'The decomposition step failed.' };
+    var text = (data.content && data.content[0] && data.content[0].text) || '';
+    // The probability guard applies here too. A number leaking into the
+    // decomposition would be carried into every downstream critique.
+    var probe = mtAssertNoProbability(text);
+    if (!probe.clean) return { ok: false, reason: 'The decomposition produced an outcome prediction and was discarded.' };
+    var parsed = mtParsePoints(text);
+    if (!parsed) return { ok: false, reason: 'The decomposition did not return usable structure.' };
+    return { ok: true, points: mtAnchorPoints(parsed, position) };
+  }).catch(function () { return { ok: false, reason: 'Network error during decomposition.' }; });
+}
+
+function mtRenderPoints(points) {
+  var el = $('mt-points');
+  if (!el) return;
+  var stray = points.filter(function (p) { return !p.anchored; }).length;
+  var rows = points.map(function (p, i) {
+    var badge = p.anchored
+      ? '<span class="badge bg">Anchored</span>'
+      : '<span class="badge bx">Not in your text</span>';
+    var quote = p.source_span
+      ? '<div style="font-size:11px;color:var(--muted);font-style:italic;padding-left:10px;margin-top:2px">&ldquo;' + H(p.source_span) + '&rdquo;</div>'
+      : '';
+    return '<div class="srow" style="display:block">' +
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">' +
+      '<span class="slbl"><b>' + (i + 1) + '. ' + H(p.claim) + '</b>' +
+      '<div style="font-size:11px;color:var(--muted)">' + H(MT_POINT_TYPES[p.type] || p.type) + '</div></span>' +
+      '<span class="sval">' + badge + '</span></div>' + quote + '</div>';
+  }).join('');
+  var warn = stray
+    ? '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-top:8px;color:#92400e;font-size:12px">' +
+      '<b>' + stray + ' point' + (stray === 1 ? '' : 's') + ' could not be traced to your text</b> and ' +
+      (stray === 1 ? 'was' : 'were') + ' excluded from the critique. Shown so you can see what was inferred rather than read.</div>'
+    : '';
+  el.innerHTML = '<div class="card" style="margin:0"><div class="ch"><span class="ct">Argument decomposition</span></div><div class="cb">' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Your position broken into ' + points.length +
+    ' legal data point' + (points.length === 1 ? '' : 's') + '. Each is attacked separately below. Every point quotes the words it came from, and that quote is checked against what you actually wrote.</div>' +
+    rows + warn + '</div></div>';
+}
+
 function mtRun() {
   var pos = ($('mt-position').value || '').trim();
   var el = $('mt-result');
@@ -4037,7 +4161,9 @@ function mtRun() {
   var roleKey = $('mt-role').value || 'judge';
   var role = MOCKTRIAL_ROLES[roleKey];
   btn.disabled = true; btn.textContent = 'Running\u2026';
-  el.innerHTML = '<div style="color:var(--muted);font-size:13px">Stress-testing&hellip;</div>';
+  var ptsEl = $('mt-points');
+  if (ptsEl) ptsEl.innerHTML = '<div style="color:var(--muted);font-size:13px">Decomposing the argument&hellip;</div>';
+  el.innerHTML = '';
 
   var diff = juryDifficultyState();
   var sys = role.stance +
@@ -4049,11 +4175,35 @@ function mtRun() {
     '\nPractice-juror difficulty for context (training settings, not a real panel): ' +
     'skepticism ' + diff.skepticism + '/10, disposition ' + diff.disposition + '/10 toward hostile, legal sophistication ' + diff.sophistication + '/10.';
 
-  fetch(PROXY, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ app_id: 'sairnlaw', is_demo: true, max_tokens: 1200, system: sys,
-      messages: [{ role: 'user', content: 'Position to attack:\n\n' + pos }] })
-  }).then(function (r) { return r.json(); }).then(function (data) {
+  // DECOMPOSE FIRST, then attack each point. The critique is given the
+  // structured points rather than the raw paragraph, so the adversary has
+  // to answer every element instead of picking the easiest reading.
+  //
+  // Only ANCHORED points are sent. A point whose quoted span could not be
+  // found in what the user wrote is shown to them but never attacked --
+  // critiquing an invented claim would report a weakness in an argument
+  // they never made, which is worse than not decomposing at all.
+  mtDecompose(pos).then(function (dec) {
+    var anchored = dec.ok ? dec.points.filter(function (p) { return p.anchored; }) : [];
+    if (dec.ok) { mtRenderPoints(dec.points); } else if (ptsEl) {
+      ptsEl.innerHTML = '<div class="note" style="margin:0"><b>Not decomposed.</b> ' + H(dec.reason) +
+        ' The critique below addresses the position as a whole instead, and says so rather than implying it was broken down.</div>';
+    }
+
+    var task = anchored.length
+      ? 'The position has been decomposed into these legal data points. Attack EACH ONE separately, in order, under its own heading. Do not skip any.\n\n' +
+        anchored.map(function (p, i) {
+          return (i + 1) + '. [' + (MT_POINT_TYPES[p.type] || p.type) + '] ' + p.claim +
+            '\n   (from the position: "' + p.source_span + '")';
+        }).join('\n\n') +
+        '\n\nOriginal position for context:\n\n' + pos
+      : 'Position to attack:\n\n' + pos;
+
+    return fetch(PROXY, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_id: 'sairnlaw', is_demo: true, max_tokens: 1600, system: sys,
+        messages: [{ role: 'user', content: task }] })
+    }).then(function (r) { return r.json(); }).then(function (data) {
     if (data && data.error) { el.innerHTML = '<div class="note" style="margin:0">AI request failed.</div>'; return; }
     var text = (data.content && data.content[0] && data.content[0].text) || '';
     if (!text.trim()) { el.innerHTML = '<div class="note" style="margin:0">No response returned.</div>'; return; }
@@ -4071,7 +4221,8 @@ function mtRun() {
 
     var cites = mtExtractCitations(text);
     el.innerHTML = '<div class="card" style="margin:0"><div class="cb">' +
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">' + H(role.label) + ' &middot; adversarial critique, not a prediction</div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:8px">' + H(role.label) + ' &middot; adversarial critique, not a prediction' +
+      (anchored.length ? ' &middot; ' + anchored.length + ' data point' + (anchored.length === 1 ? '' : 's') + ' attacked separately' : '') + '</div>' +
       '<div style="white-space:pre-wrap;font-size:13px;line-height:1.6">' + H(text) + '</div>' +
       (cites.length ? '<div id="mt-cites" style="margin-top:12px;border-top:1px solid var(--border);padding-top:8px"><div style="font-size:12px;color:var(--muted)">Checking ' + cites.length + ' citation' + (cites.length === 1 ? '' : 's') + ' against the citator&hellip;</div></div>' : '') +
       '</div></div>';
@@ -4107,6 +4258,7 @@ function mtRun() {
           '</div>';
       });
     }
+    });
   }).catch(function () {
     el.innerHTML = '<div class="note" style="margin:0">Network error.</div>';
   }).then(function () {
