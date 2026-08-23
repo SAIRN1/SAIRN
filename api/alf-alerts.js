@@ -10,7 +10,16 @@
 // OUTBOUND REALITY, verified rather than assumed before building:
 //   EMAIL -- real. api/sairndental/send-reminder.js already sends through Resend
 //            on a real hourly Vercel cron, so this reuses that proven path
-//            (RESEND_API_KEY + RESEND_FROM_ADDRESS) rather than inventing one.
+//            (RESEND_API_KEY + RESEND_FROM_EMAIL) rather than inventing one.
+//            NOTE ON THE VARIABLE NAME, corrected 2026-08-23: this file and the
+//            dental cron both originally read RESEND_FROM_ADDRESS, a name that
+//            has never existed in this Vercel project. The sender address has
+//            been configured as **RESEND_FROM_EMAIL** since 65 days before that
+//            date (alongside RESEND_API_KEY, both Production + Preview), and
+//            nothing in the repo referenced it. So "the proven path" was never
+//            actually proven -- the dental cron had been failing its own
+//            env-completeness guard on every firing since it shipped. Verified
+//            by `vercel env ls production`, not assumed.
 //   SMS   -- DOES NOT EXIST anywhere in this repo. There is no Twilio or other
 //            SMS provider wired up, so this endpoint does not claim to text
 //            anyone. A text-message channel is a real piece of infrastructure
@@ -85,7 +94,7 @@ async function sendResendEmail(to, subject, text) {
   const r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: process.env.RESEND_FROM_ADDRESS, to: [to], subject: subject, text: text })
+    body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL, to: [to], subject: subject, text: text })
   });
   if (!r.ok) {
     const t = await r.text().catch(() => '');
@@ -170,11 +179,18 @@ module.exports = async (req, res) => {
 
   // ── CRON SWEEP ─────────────────────────────────────────────────────────
   if (isCron) {
-    if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_ADDRESS) {
+    if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
       // Reported, not silently skipped: a sweep that computes alerts and cannot
       // deliver them is a broken alerting system, and it should say so loudly.
+      // The message names which of the two is missing, because the original
+      // defect here was a NAME mismatch, not an absent secret, and a message
+      // that lumps both together sent the last session looking for a missing
+      // key that was in fact present the whole time.
       bad(res, 503, 'EMAIL_NOT_CONFIGURED',
-        'Alerting is scheduled but no email sender is configured (RESEND_API_KEY / RESEND_FROM_ADDRESS). No notifications were sent.');
+        'Alerting is scheduled but no email sender is configured (missing: ' +
+        [!process.env.RESEND_API_KEY ? 'RESEND_API_KEY' : null,
+         !process.env.RESEND_FROM_EMAIL ? 'RESEND_FROM_EMAIL' : null].filter(Boolean).join(', ') +
+        '). No notifications were sent.');
       return;
     }
     const fr = await fetch(rest('alf_facility?select=license_hash,data'), { headers: supabaseHeaders() });
