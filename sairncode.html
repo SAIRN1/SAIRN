@@ -2571,53 +2571,88 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
         <!-- Settings Panel -->
         <div id="panel-settings" class="panel">
             <h1 class="panel-title">Settings</h1>
+            <!-- Rebuilt 2026-08-23. Every card below previously showed
+                 hardcoded literals presented as live settings, with three
+                 Save buttons whose only action was a toast. What was wrong,
+                 card by card, so this is not re-introduced:
+                   - "Demo PIN 1234" had NO backing config at all
+                     (APP_CONFIG.demo_pin was deleted 2026-08-20), so it
+                     advertised a live-looking credential that did not exist.
+                     Real PINs are per employee, hashed server-side in
+                     api/sc-auth.js, and never returned to any client.
+                   - "Demo Company"/"App Color" were literals duplicated from
+                     APP_CONFIG rather than read from it, so they could drift
+                     from the real values silently.
+                   - "Aetna 7-14 days"/"Medicare 14-21 days" were invented
+                     outright -- no payer-schedule data exists anywhere in
+                     this app, so those were fabricated numbers on a
+                     compliance tool.
+                   - "Status: Connected" was never checked against anything,
+                     and the URL shown (APP_CONFIG.proxy) is dead config --
+                     every AI call has gone through api/sc-ai.js since the
+                     2026-08-20 security pass.
+                 Values now render from real config/session/stored data only,
+                 via renderSettings(). Empty means empty. -->
             <div class="grid-2col">
+                <!-- Nothing on this card is a savable setting -- it reports
+                     the real current session. It deliberately has NO Save
+                     button rather than a button that does nothing. -->
                 <div class="card">
-                    <h3>PIN Management</h3>
+                    <h3>Session &amp; License</h3>
                     <div class="form-group">
-                        <label>Demo PIN</label>
-                        <input type="password" value="1234" readonly>
+                        <label>Signed in as</label>
+                        <input type="text" id="set-session" readonly>
                     </div>
                     <div class="form-group">
-                        <label>License Prefix</label>
-                        <input type="text" value="SC-" readonly>
+                        <label>License key on this device</label>
+                        <input type="text" id="set-license" readonly>
                     </div>
-                    <button class="btn btn-primary" onclick="showToast('Settings are read-only in this demo build')">Save Changes</button>
+                    <div style="font-size:12px;color:#666;">PINs are per employee, stored only as a server-side hash, and never displayed here or anywhere else. A Compliance Admin adds or changes one through employee setup — there is nothing about a PIN this panel could save.</div>
                 </div>
+
                 <div class="card">
                     <h3>Practice Information</h3>
                     <div class="form-group">
-                        <label>Demo Company</label>
-                        <input type="text" value="Pinnacle Medical Billing LLC" readonly>
+                        <label>Practice name</label>
+                        <input type="text" id="set-practice-name" placeholder="Not set">
                     </div>
                     <div class="form-group">
-                        <label>App Color</label>
-                        <input type="text" value="#F87171" readonly>
+                        <label>App color (build constant, not a setting)</label>
+                        <input type="text" id="set-app-color" readonly>
                     </div>
-                    <button class="btn btn-primary" onclick="showToast('Practice info is read-only in this demo build')">Update</button>
+                    <button class="btn btn-primary" onclick="savePracticeInfo()" id="set-practice-btn">Save Practice Name</button>
+                    <div id="set-practice-status" style="font-size:12px;color:#666;margin-top:8px;"></div>
                 </div>
+
+                <!-- Empty by default, practice-entered only. Same discipline
+                     as Scrub Rules Reference: this app does not ship, infer,
+                     or guess any payer's payment cycle -- a number here is
+                     one this practice recorded from its own contract or
+                     remittance history. -->
                 <div class="card">
                     <h3>Payer Schedules</h3>
-                    <div class="form-group">
-                        <label>Aetna Payment Cycle</label>
-                        <input type="text" value="7-14 days" readonly>
+                    <div style="font-size:12px;color:#666;margin-bottom:8px;">Payment cycles your practice has recorded from its own payer contracts or remittance history. Empty by default — nothing here is pre-loaded or estimated.</div>
+                    <div class="toolbar">
+                        <input type="text" id="set-payer-name" placeholder="Payer name" class="search-input" style="flex:1">
+                        <input type="text" id="set-payer-cycle" placeholder="Payment cycle (e.g. 7-14 days)" class="search-input" style="flex:1">
+                        <button class="btn btn-primary" onclick="savePayerSchedule()" id="set-payer-btn">Add</button>
                     </div>
-                    <div class="form-group">
-                        <label>Medicare Payment Cycle</label>
-                        <input type="text" value="14-21 days" readonly>
+                    <div class="table-container">
+                        <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>
+                            <thead><tr><th>Payer</th><th>Payment cycle</th><th></th></tr></thead>
+                            <tbody id="set-payer-tbody"></tbody>
+                        </table></div>
                     </div>
-                    <button class="btn btn-primary" onclick="showToast('Payer schedules are read-only in this demo build')">Save</button>
+                    <div id="set-payer-status" style="font-size:12px;color:#666;margin-top:8px;"></div>
                 </div>
+
                 <div class="card">
-                    <h3>Proxy Configuration</h3>
+                    <h3>AI Connection</h3>
                     <div class="form-group">
-                        <label>API Proxy URL</label>
-                        <input type="text" value="https://sairn.vercel.app/api/claude" readonly>
+                        <label>Endpoint actually used</label>
+                        <input type="text" id="set-ai-endpoint" readonly>
                     </div>
-                    <div class="form-group">
-                        <label>Status</label>
-                        <input type="text" value="Connected" readonly>
-                    </div>
+                    <div style="font-size:12px;color:#666;">No live status is claimed here, because this panel does not test the connection. Every AI request authenticates, is screened for prompt injection, and is written to the audit log by that endpoint; if one fails, the real reason is surfaced on the feature that made the call rather than as a status light on this page.</div>
                 </div>
             </div>
         </div>
@@ -3127,6 +3162,15 @@ How to answer:
             // false claim about a real capability.
             if (panelName === 'eligibility' && typeof refreshEligibilityConnection === 'function') {
                 refreshEligibilityConnection();
+            }
+
+            // Same reasoning as eligibility above: the Settings panel reports
+            // the real signed-in session and the practice's real stored
+            // settings, both of which can change between visits (a different
+            // employee signs in, another device saves a practice name). It is
+            // re-rendered on every visit rather than once at load.
+            if (panelName === 'settings' && typeof renderSettings === 'function') {
+                renderSettings();
             }
 
             window.scrollTo(0, 0);
@@ -4788,15 +4832,39 @@ How to answer:
         var SC_RETENTION_FLOOR_YEARS = 10;
         var SC_RETENTION_DEFAULT = '10';
 
-        function getRetentionSetting() {
+        // ── sc_settings is ONE row per practice, shared by every setting ──
+        // api/sd-data.js's write branch stores `data: payload` -- it REPLACES
+        // the whole blob rather than merging it. So a writer that sends only
+        // its own field silently erases every other setting on the row. That
+        // was harmless while retention_years was the only field; it stops
+        // being harmless the moment a second one exists. Every write goes
+        // through scSaveSettings(), which merges onto the current record, and
+        // every read goes through scSettingsRecord(). Do not write
+        // 'sc_settings' directly.
+        function scSettingsRecord() {
             try {
                 var s = localStorage.getItem('sc_settings');
                 if (s) {
                     var parsed = JSON.parse(s);
                     var row = Array.isArray(parsed) ? parsed[0] : parsed;
-                    if (row && row.retention_years != null) return String(row.retention_years);
+                    if (row && typeof row === 'object') return row;
                 }
             } catch (e) {}
+            return {};
+        }
+        async function scSaveSettings(fields) {
+            var rec = Object.assign({}, scSettingsRecord(), fields, {
+                id: 'default',
+                updated_at: new Date().toISOString()
+            });
+            try { localStorage.setItem('sc_settings', JSON.stringify([rec])); } catch (e) {}
+            var synced = await scData('write', 'sc_settings', rec);
+            return { record: rec, synced: !!synced };
+        }
+
+        function getRetentionSetting() {
+            var row = scSettingsRecord();
+            if (row && row.retention_years != null) return String(row.retention_years);
             return SC_RETENTION_DEFAULT;
         }
         function renderRetentionSetting() {
@@ -4830,13 +4898,12 @@ How to answer:
             }
             btn.disabled = true; btn.textContent = 'Saving...';
             try {
-                var rec = {
-                    id: 'default',
-                    retention_years: value === 'indefinite' ? 'indefinite' : Number(value),
-                    updated_at: new Date().toISOString()
-                };
-                try { localStorage.setItem('sc_settings', JSON.stringify([rec])); } catch (e) {}
-                var synced = await scData('write', 'sc_settings', rec);
+                // Merge-safe: preserves practice_name / payer_schedules on the
+                // same 'default' row, which a direct write would have erased.
+                var res = await scSaveSettings({
+                    retention_years: value === 'indefinite' ? 'indefinite' : Number(value)
+                });
+                var synced = res.synced;
                 renderRetentionSetting();
                 if (status && !synced) {
                     status.textContent = 'Saved on this device only — server sync failed, so other devices will not see this policy yet.';
@@ -4847,6 +4914,127 @@ How to answer:
             } finally {
                 btn.disabled = false; btn.textContent = 'Save Policy';
             }
+        }
+
+        // ================================================================
+        // SETTINGS PANEL (rebuilt 2026-08-23)
+        // Every value rendered here comes from real config, the real signed-in
+        // session, or data this practice actually entered. Nothing is a
+        // hardcoded literal standing in for a live setting, and no control
+        // reports success for something that was not stored.
+        // ================================================================
+        function renderSettings() {
+            var row = scSettingsRecord();
+
+            // Real session, read live. Empty is shown as empty -- never a
+            // placeholder name or a fabricated role.
+            var who = '', role = '', lic = '';
+            try { who = localStorage.getItem('sc_employee_id') || ''; } catch (e) {}
+            try { role = localStorage.getItem('sc_role') || ''; } catch (e) {}
+            try { lic = localStorage.getItem('sc_license_key') || ''; } catch (e) {}
+            var sessEl = document.getElementById('set-session');
+            if (sessEl) sessEl.value = who ? (who + (role ? ' (' + role + ')' : '')) : 'Not signed in';
+            var licEl = document.getElementById('set-license');
+            if (licEl) licEl.value = lic || 'No license key on this device';
+
+            // Read from APP_CONFIG rather than duplicating the literal, so
+            // this can never drift from the real build value.
+            var colorEl = document.getElementById('set-app-color');
+            if (colorEl) colorEl.value = APP_CONFIG.color;
+            var aiEl = document.getElementById('set-ai-endpoint');
+            if (aiEl) aiEl.value = SC_AI_ENDPOINT;
+
+            var nameEl = document.getElementById('set-practice-name');
+            if (nameEl) nameEl.value = row.practice_name || '';
+            var nameStatus = document.getElementById('set-practice-status');
+            if (nameStatus) {
+                nameStatus.textContent = row.practice_name
+                    ? ('Saved practice name: ' + row.practice_name)
+                    : 'No practice name saved yet.';
+            }
+
+            renderPayerSchedules();
+        }
+
+        function getPayerSchedules() {
+            var row = scSettingsRecord();
+            return Array.isArray(row.payer_schedules) ? row.payer_schedules : [];
+        }
+
+        function renderPayerSchedules() {
+            var tb = document.getElementById('set-payer-tbody');
+            if (!tb) return;
+            var list = getPayerSchedules();
+            if (!list.length) {
+                tb.innerHTML = '<tr><td colspan="3" style="color:#666;font-size:12px;">No payer schedules recorded yet.</td></tr>';
+                return;
+            }
+            tb.innerHTML = list.map(function (p) {
+                return '<tr><td>' + escHtml(p.payer || '') + '</td><td>' + escHtml(p.cycle || '') +
+                    '</td><td><button class="btn" onclick="removePayerSchedule(\'' + escHtml(p.id || '') +
+                    '\')">Remove</button></td></tr>';
+            }).join('');
+        }
+
+        async function savePracticeInfo() {
+            var input = document.getElementById('set-practice-name');
+            var btn = document.getElementById('set-practice-btn');
+            var status = document.getElementById('set-practice-status');
+            var value = (input.value || '').trim();
+            if (!value) { showToast('Enter a practice name first'); return; }
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                var res = await scSaveSettings({ practice_name: value });
+                renderSettings();
+                if (status && !res.synced) {
+                    status.textContent = 'Saved on this device only — server sync failed, so other devices will not see this name yet.';
+                }
+                showToast(res.synced ? 'Practice name saved' : 'Saved on this device only — server sync failed');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save Practice Name';
+            }
+        }
+
+        async function savePayerSchedule() {
+            var nameEl = document.getElementById('set-payer-name');
+            var cycleEl = document.getElementById('set-payer-cycle');
+            var btn = document.getElementById('set-payer-btn');
+            var status = document.getElementById('set-payer-status');
+            var payer = (nameEl.value || '').trim();
+            var cycle = (cycleEl.value || '').trim();
+            // Both required on purpose: a payer row with a blank cycle would
+            // read as "this payer has no payment cycle," which is a claim this
+            // app has no basis for making.
+            if (!payer || !cycle) { showToast('Enter both a payer name and its payment cycle'); return; }
+            btn.disabled = true; btn.textContent = 'Saving...';
+            try {
+                var list = getPayerSchedules().slice();
+                list.push({ id: 'ps-' + Date.now(), payer: payer, cycle: cycle });
+                var res = await scSaveSettings({ payer_schedules: list });
+                nameEl.value = ''; cycleEl.value = '';
+                renderSettings();
+                if (status) {
+                    status.textContent = res.synced
+                        ? ''
+                        : 'Saved on this device only — server sync failed, so other devices will not see this entry yet.';
+                }
+                showToast(res.synced ? 'Payer schedule saved' : 'Saved on this device only — server sync failed');
+            } finally {
+                btn.disabled = false; btn.textContent = 'Add';
+            }
+        }
+
+        async function removePayerSchedule(id) {
+            var status = document.getElementById('set-payer-status');
+            var list = getPayerSchedules().filter(function (p) { return p.id !== id; });
+            var res = await scSaveSettings({ payer_schedules: list });
+            renderSettings();
+            if (status) {
+                status.textContent = res.synced
+                    ? ''
+                    : 'Removed on this device only — server sync failed, so other devices will still see this entry.';
+            }
+            showToast(res.synced ? 'Payer schedule removed' : 'Removed on this device only — server sync failed');
         }
 
         // ── First-use AI consent (firewall audit layer 27) ──
