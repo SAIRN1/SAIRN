@@ -2571,6 +2571,11 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
         <!-- Settings Panel -->
         <div id="panel-settings" class="panel">
             <h1 class="panel-title">Settings</h1>
+            <!-- Shown only to roles that cannot write practice-level settings.
+                 The real gate is server-side (api/sd-data.js, sc_settings write
+                 branch, Compliance Admin only) -- this explains the disabled
+                 controls rather than leaving them mysteriously dead. -->
+            <div id="set-perm-note" style="display:none;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;font-size:12px;color:#92400e;margin-bottom:14px"></div>
             <!-- Rebuilt 2026-08-23. Every card below previously showed
                  hardcoded literals presented as live settings, with three
                  Save buttons whose only action was a toast. What was wrong,
@@ -4865,14 +4870,39 @@ How to answer:
             } catch (e) {}
             return {};
         }
+        // Practice-level settings are Compliance Admin only, enforced
+        // server-side in api/sd-data.js's sc_settings write branch. This
+        // returns `refused` separately from `synced` so a caller never reports
+        // a permissions block as a sync failure.
+        //
+        // A REFUSED write is also rolled back locally. Caching a value the
+        // server rejected would leave this device showing a practice-level
+        // setting that is not the practice's -- and the next login's
+        // scSyncOneResource() pull would silently replace it anyway, so the
+        // user would see their change "stick" and then vanish with no
+        // explanation. Better to never let it appear to take.
         async function scSaveSettings(fields) {
-            var rec = Object.assign({}, scSettingsRecord(), fields, {
+            var prior = scSettingsRecord();
+            var rec = Object.assign({}, prior, fields, {
                 id: 'default',
                 updated_at: new Date().toISOString()
             });
             try { localStorage.setItem('sc_settings', JSON.stringify([rec])); } catch (e) {}
             var synced = await scData('write', 'sc_settings', rec);
-            return { record: rec, synced: !!synced };
+            var err = synced ? null : scLastDataError();
+            var refused = !!(err && (err.code === 'FORBIDDEN' || err.code === 'NO_SESSION'));
+            if (refused) {
+                try { localStorage.setItem('sc_settings', JSON.stringify([prior])); } catch (e) {}
+            }
+            return { record: refused ? prior : rec, synced: !!synced, refused: refused, error: err };
+        }
+        // Shared honest-outcome message for every practice-level settings save.
+        // Three genuinely different outcomes, never collapsed into two:
+        // saved everywhere / refused by the server / stored here but not synced.
+        function scSettingsSaveMessage(res, whatSaved) {
+            if (res.synced) return whatSaved + ' saved.';
+            if (res.refused) return (res.error && res.error.message) || 'Not saved — you do not have permission to change practice settings.';
+            return whatSaved + ' saved on this device only — server sync failed, so other devices will not see it yet.';
         }
 
         function getRetentionSetting() {
@@ -4880,7 +4910,13 @@ How to answer:
             if (row && row.retention_years != null) return String(row.retention_years);
             return SC_RETENTION_DEFAULT;
         }
+        // The retention control lives in the Privacy & Data panel, not
+        // Settings, but it writes the same admin-only sc_settings row -- so it
+        // has to be permission-gated from its own render path too, or a coder
+        // reaching Privacy without ever opening Settings would find a live
+        // Save Policy button that the server will refuse.
         function renderRetentionSetting() {
+            if (typeof scApplySettingsPermissions === 'function') scApplySettingsPermissions();
             var sel = document.getElementById('retention-years');
             var status = document.getElementById('retention-status');
             if (!sel) return;
@@ -4916,14 +4952,12 @@ How to answer:
                 var res = await scSaveSettings({
                     retention_years: value === 'indefinite' ? 'indefinite' : Number(value)
                 });
-                var synced = res.synced;
                 renderRetentionSetting();
-                if (status && !synced) {
-                    status.textContent = 'Saved on this device only — server sync failed, so other devices will not see this policy yet.';
-                }
-                showToast(synced
+                var msg = res.synced
                     ? 'Retention policy saved — note this records the policy only, it does not delete anything'
-                    : 'Saved on this device only — server sync failed');
+                    : scSettingsSaveMessage(res, 'Retention policy');
+                if (status) status.textContent = res.synced ? '' : msg;
+                showToast(msg);
             } finally {
                 btn.disabled = false; btn.textContent = 'Save Policy';
             }
@@ -4936,6 +4970,37 @@ How to answer:
         // hardcoded literal standing in for a live setting, and no control
         // reports success for something that was not stored.
         // ================================================================
+        // Practice-level settings are Compliance Admin only. This mirrors the
+        // real server-side gate in api/sd-data.js's sc_settings write branch --
+        // it does not replace it. Hiding a button is a courtesy so a coder is
+        // never invited into a refusal; the boundary is the server, which
+        // re-verifies the session's own role and would reject the write even
+        // if this UI were edited in devtools.
+        function scCanWriteSettings(){ return currentRole === 'admin'; }
+        // Applied to every practice-level control, so a role that cannot write
+        // sees read-only values plus one plain explanation rather than live
+        // buttons that will fail.
+        function scApplySettingsPermissions(){
+            var canWrite = scCanWriteSettings();
+            var controls = [
+                'set-practice-name','set-practice-btn',
+                'set-payer-name','set-payer-cycle','set-payer-btn',
+                'retention-years','retention-save-btn'
+            ];
+            for (var i = 0; i < controls.length; i++) {
+                var el = document.getElementById(controls[i]);
+                if (!el) continue;
+                el.disabled = !canWrite;
+                el.style.opacity = canWrite ? '' : '0.6';
+                el.style.cursor = canWrite ? '' : 'not-allowed';
+            }
+            var note = document.getElementById('set-perm-note');
+            if (note) {
+                note.style.display = canWrite ? 'none' : '';
+                note.textContent = 'These are practice-wide settings — only a Compliance Admin can change them. You can see the current values; the Save controls are disabled for your role (' + (currentRole || 'not signed in') + ').';
+            }
+        }
+
         function renderSettings() {
             var row = scSettingsRecord();
 
@@ -4967,6 +5032,7 @@ How to answer:
             }
 
             renderPayerSchedules();
+            scApplySettingsPermissions();
         }
 
         function getPayerSchedules() {
@@ -4999,10 +5065,9 @@ How to answer:
             try {
                 var res = await scSaveSettings({ practice_name: value });
                 renderSettings();
-                if (status && !res.synced) {
-                    status.textContent = 'Saved on this device only — server sync failed, so other devices will not see this name yet.';
-                }
-                showToast(res.synced ? 'Practice name saved' : 'Saved on this device only — server sync failed');
+                var msg = scSettingsSaveMessage(res, 'Practice name');
+                if (status) status.textContent = res.synced ? ('Saved practice name: ' + res.record.practice_name) : msg;
+                showToast(msg);
             } finally {
                 btn.disabled = false; btn.textContent = 'Save Practice Name';
             }
@@ -5024,14 +5089,14 @@ How to answer:
                 var list = getPayerSchedules().slice();
                 list.push({ id: 'ps-' + Date.now(), payer: payer, cycle: cycle });
                 var res = await scSaveSettings({ payer_schedules: list });
-                nameEl.value = ''; cycleEl.value = '';
+                // Only clear the inputs on a real save. Wiping what someone
+                // typed after the server refused it would destroy their work
+                // and make the refusal look like a success.
+                if (res.synced) { nameEl.value = ''; cycleEl.value = ''; }
                 renderSettings();
-                if (status) {
-                    status.textContent = res.synced
-                        ? ''
-                        : 'Saved on this device only — server sync failed, so other devices will not see this entry yet.';
-                }
-                showToast(res.synced ? 'Payer schedule saved' : 'Saved on this device only — server sync failed');
+                var msg = scSettingsSaveMessage(res, 'Payer schedule');
+                if (status) status.textContent = res.synced ? '' : msg;
+                showToast(msg);
             } finally {
                 btn.disabled = false; btn.textContent = 'Add';
             }
@@ -5042,12 +5107,9 @@ How to answer:
             var list = getPayerSchedules().filter(function (p) { return p.id !== id; });
             var res = await scSaveSettings({ payer_schedules: list });
             renderSettings();
-            if (status) {
-                status.textContent = res.synced
-                    ? ''
-                    : 'Removed on this device only — server sync failed, so other devices will still see this entry.';
-            }
-            showToast(res.synced ? 'Payer schedule removed' : 'Removed on this device only — server sync failed');
+            var msg = res.synced ? 'Payer schedule removed.' : scSettingsSaveMessage(res, 'Removal');
+            if (status) status.textContent = res.synced ? '' : msg;
+            showToast(msg);
         }
 
         // ── First-use AI consent (firewall audit layer 27) ──
@@ -10029,11 +10091,29 @@ How to answer:
         // bearer-key pattern that function already established.
         // ================================================================
         var _scSharedKnowledge = null;
+        // Last real error from scData(), for callers that must tell a REFUSAL
+        // apart from a FAILURE (2026-08-23). scData() returns null on both, and
+        // ~25 call sites depend on that null contract, so the error is exposed
+        // alongside it rather than by changing the return type.
+        //
+        // Why this matters and is not cosmetic: before this, a server 403
+        // reached the user as "saved on this device only -- server sync
+        // failed". That is a false statement in the most damaging direction --
+        // it tells someone their edit is safe locally and will sync later, when
+        // in fact the server rejected it and never will. On a compliance tool
+        // that is exactly the silent-failure class this codebase has spent the
+        // whole audit arc removing. A refusal must read as a refusal.
+        var _scLastDataError = null;
+        function scLastDataError() { return _scLastDataError; }
         function scData(action, resource, payload) {
+            _scLastDataError = null;
             var lic = null, sessionToken = null;
             try { lic = localStorage.getItem('sc_license_key'); } catch (e) {}
             try { sessionToken = localStorage.getItem('sc_session_token'); } catch (e) {}
-            if (!lic) return Promise.resolve(null);
+            if (!lic) {
+                _scLastDataError = { code: 'NO_LICENSE', message: 'No license key on this device.', status: 0 };
+                return Promise.resolve(null);
+            }
             // X-SD-Auth carries the real per-employee session token (2026-08-18)
             // -- required for any SC_RESOURCES 'delete' call, which
             // api/sd-data.js independently re-verifies server-side before
@@ -10047,10 +10127,24 @@ How to answer:
                 body: JSON.stringify({ action: action, resource: resource, app_id: 'sairncode', payload: payload || {} })
             }).then(function(r) {
                 return r.json().then(function(d) {
-                    if (!r.ok || !d || !d.ok) { console.warn('scData ' + resource + ' failed (' + r.status + '):', (d && d.error && (d.error.code || d.error.message)) || 'unknown'); return null; }
+                    if (!r.ok || !d || !d.ok) {
+                        _scLastDataError = {
+                            code: (d && d.error && d.error.code) || ('HTTP_' + r.status),
+                            message: (d && d.error && d.error.message) || ('Request failed (HTTP ' + r.status + ')'),
+                            status: r.status
+                        };
+                        console.warn('scData ' + resource + ' failed (' + r.status + '):', _scLastDataError.code);
+                        return null;
+                    }
                     return d.data;
                 });
-            }).catch(function(e) { console.warn('scData network error:', e.message); return null; });
+            }).catch(function(e) {
+                // A genuine transport failure -- offline, DNS, CORS. This one
+                // really IS "saved locally, will sync later", unlike a 403.
+                _scLastDataError = { code: 'NETWORK', message: e.message, status: 0 };
+                console.warn('scData network error:', e.message);
+                return null;
+            });
         }
 
         // ── REAL SERVER SYNC for all 15 SAIRNcode business resources

@@ -4097,6 +4097,44 @@ module.exports = async (req, res) => {
       }
       if (action === 'write') {
         if (!payload || !payload.id) { res.status(400).json({ error: { message: 'payload.id is required' } }); return; }
+        // sc_settings ROLE GATE (2026-08-23, policy decided by Michael:
+        // Compliance Admin only). These are PRACTICE-LEVEL settings -- the
+        // practice name printed on output, the payer payment-cycle reference,
+        // and the records-retention policy -- not one coder's preferences, so
+        // a single coder should not be able to change what the whole practice
+        // sees. Read stays open to every authenticated role (coder/biller/
+        // auditor can all see the policy that governs them); only the write
+        // is narrowed.
+        //
+        // Enforced HERE and not only in the UI, for the same reason as the
+        // sc_auth_requests sign-off gate below: a hidden button is a
+        // convenience, never a boundary. The client's own role string is
+        // never trusted -- the role is read from the verified session token,
+        // which carries an app claim so a valid session for a DIFFERENT SAIRN
+        // app cannot satisfy it (Check 28).
+        //
+        // This narrows behaviour that was previously open to any authenticated
+        // session, including retention_years, which has been writable by any
+        // role since 2026-08-20. That is the intended change, not a side
+        // effect. The retention FLOOR guard below is unchanged and still
+        // applies to admins too -- a role check and a value check are
+        // different controls and neither replaces the other.
+        if (resource === 'sc_settings') {
+          const scSetCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode');
+          if (!scSetCaller) {
+            res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } });
+            return;
+          }
+          if (scSetCaller.role !== 'admin') {
+            res.status(403).json({
+              error: {
+                code: 'FORBIDDEN',
+                message: 'Only a Compliance Admin can change practice-level settings. Your changes were not saved.'
+              }
+            });
+            return;
+          }
+        }
         // Retention floor guard (2026-08-20, firewall audit layer 26). Only
         // applies to sc_settings; every other SC resource is unaffected.
         // Enforced here rather than in the UI because this value is intended

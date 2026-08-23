@@ -16293,37 +16293,18 @@ function saveCodes() {
 // The real gap is that StoneDesk has no working way to set its own shop
 // name/address/phone/email at all -- flagged, not fixed in this change.
 //
-// loadShopSettings() below is deliberately NOT touched by this removal: it
-// is also currently callerless, but it was not part of the approved change
-// and it is defensively written (it null-checks every element), so it
-// cannot throw the way saveShopSettings() would have.
+// loadShopSettings() was removed 2026-08-23 (approved), the second half of
+// this same dead pair. It was doubly dead: zero callers, AND it targeted
+// admin-shop-name/-addr/-phone/-email -- four ids with zero occurrences in
+// this file -- so every one of its null-checks failed and the entire body
+// was a no-op even if something had called it. Wiring it up would have
+// silently done nothing.
 //
-// ANSWERED 2026-08-23, when the real Shop Settings save/load was built: it
-// is NOT the load function that work needed, and it is now doubly dead.
-// It targets admin-shop-name/-addr/-phone/-email, four ids that do not
-// exist anywhere in this file (0 occurrences each) -- so every one of its
-// null-checks fails and the whole body is a no-op even if called. The real
-// Company Profile fields are adm-co / adm-addr / adm-phone / adm-email in
-// panel-admin, and the real load is sdAdminLoadProfile() (defined in that
-// panel's own script, wired into sbNav('admin')), which reads the same
-// fab_shop_* keys this does but writes them into the ids that actually
-// exist. Wiring THIS function up instead would silently do nothing.
-//
-// Left in place rather than deleted: a second removal was not approved and
-// is flagged separately rather than bundled into the save/load fix. It is
-// a candidate for deletion on its own merits -- zero callers, zero
-// reachable DOM targets, fully superseded.
-
-function loadShopSettings() {
-  const name=localStorage.getItem('fab_shop_name');
-  const addr=localStorage.getItem('fab_shop_addr');
-  const phone=localStorage.getItem('fab_shop_phone');
-  const email=localStorage.getItem('fab_shop_email');
-  if(name && document.getElementById('admin-shop-name')) document.getElementById('admin-shop-name').value=name;
-  if(addr && document.getElementById('admin-shop-addr')) document.getElementById('admin-shop-addr').value=addr;
-  if(phone && document.getElementById('admin-shop-phone')) document.getElementById('admin-shop-phone').value=phone;
-  if(email && document.getElementById('admin-shop-email')) document.getElementById('admin-shop-email').value=email;
-}
+// The real Company Profile fields are adm-co / adm-addr / adm-phone /
+// adm-email in panel-admin, and the real load is sdAdminLoadProfile(),
+// defined in that panel's own script and wired into sbNav('admin'). It
+// reads the same fab_shop_* keys this function did, but writes them into
+// the ids that actually exist. That is the function to touch, not this one.
 
 // == DRAG/DROP UPLOAD ==========================================
 document.addEventListener('DOMContentLoaded', () => {
@@ -30400,6 +30381,14 @@ function agDelete(id) {
 function agPrint(id) {
   var ag = agAgreements.find(function(x) { return x.id === id; });
   if (!ag) return;
+  // DELIBERATELY UNUSED, do not "fix" this by wiring it into the document
+  // below. This renders the StoneDesk SERVICE AGREEMENT -- the contract
+  // between SAIRN Technologies LLC (the software vendor) and the customer
+  // shop -- so every party/footer/signature name in it is SAIRN's own and
+  // is correctly hardcoded. Substituting the shop's own name would
+  // misstate who the agreement is with. Kept only because removing a
+  // variable is a behaviour-neutral edit nobody has approved; audited and
+  // confirmed correct-by-design 2026-08-23.
   var shopName = localStorage.getItem('fab_shop_name') || 'SAIRN Technologies LLC';
   var win = window.open('', '_blank');
   win.document.write('<!DOCTYPE html><html><head><title>' + ag.num + ' — StoneDesk Service Agreement</title>');
@@ -30649,6 +30638,14 @@ function agEsigExecute() {
 function agViewSigned(id) {
   var ag = agAgreements.find(function(x) { return x.id === id; });
   if (!ag) return;
+  // DELIBERATELY UNUSED, do not "fix" this by wiring it into the document
+  // below. This renders the StoneDesk SERVICE AGREEMENT -- the contract
+  // between SAIRN Technologies LLC (the software vendor) and the customer
+  // shop -- so every party/footer/signature name in it is SAIRN's own and
+  // is correctly hardcoded. Substituting the shop's own name would
+  // misstate who the agreement is with. Kept only because removing a
+  // variable is a behaviour-neutral edit nobody has approved; audited and
+  // confirmed correct-by-design 2026-08-23.
   var shopName = localStorage.getItem('fab_shop_name') || 'SAIRN Technologies LLC';
   var win = window.open('', '_blank');
   win.document.write('<!DOCTYPE html><html><head><title>' + ag.num + ' — Executed Agreement</title>');
@@ -32876,6 +32873,13 @@ function esigApprove(){
       '<div style="text-align:center;padding:8px 0 14px">' +
         '<div style="font-size:28px;margin-bottom:6px">✅</div>' +
         '<div style="font-size:16px;font-weight:800;color:#0A3D1F">Project Approved!</div>' +
+        // shopName was computed above and then never used -- the customer saw a
+        // confirmation that never said WHOSE project they had just approved.
+        // Now published from the real shop identity (fab_shop_name, set in Shop
+        // Settings), falling back to the same 'Your Stone Shop' default only
+        // when it has genuinely never been configured. Same contract as every
+        // other read site.
+        '<div style="font-size:13px;font-weight:700;color:#0A3D1F;margin-top:2px">'+escHtml(shopName)+'</div>' +
         '<div style="font-size:13px;color:#166534;margin-top:4px">Signed by <strong>'+escHtml(name)+'</strong> on '+date+'</div>' +
         '<div style="font-size:11px;color:#6B7280;margin-top:2px">Quote: '+escHtml(quoteNum)+'</div>' +
       '</div>' +
@@ -32919,7 +32923,13 @@ function esigSendDepositEmail(clientName){
     (quoteNum?'Quote Reference: '+quoteNum+'\n':'')+
     '\nPlease remit your deposit to reserve your installation date. '+
     'We accept check, credit card, or bank transfer.\n\n'+
+    // shopEmail was read above and then never used, so a customer receiving
+    // this deposit request had no address to reply to unless a phone happened
+    // to be set. Both contact lines are conditional on purpose: an unset field
+    // must print nothing rather than an empty "Questions? Email us at ." --
+    // same never-fabricate rule the rest of the shop identity follows.
     (shopPhone?'Questions? Call us at '+shopPhone+'\n':'')+
+    (shopEmail?'Or reply to us at '+shopEmail+'\n':'')+
     '\nThank you,\n'+shopName
   );
   window.location.href='mailto:?subject='+subject+'&body='+body;
