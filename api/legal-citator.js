@@ -146,8 +146,8 @@ module.exports = async (req, res) => {
     try { body = JSON.parse(body); } catch (e) { res.status(400).json({ error: { message: 'Invalid JSON body' } }); return; }
   }
   const action = body && body.action;
-  if (['report', 'process', 'feedback'].indexOf(action) === -1) {
-    res.status(400).json({ error: { message: 'action must be one of: report, process, feedback' } });
+  if (['report', 'process', 'feedback', 'verify'].indexOf(action) === -1) {
+    res.status(400).json({ error: { message: 'action must be one of: report, process, feedback, verify' } });
     return;
   }
 
@@ -186,6 +186,132 @@ module.exports = async (req, res) => {
     // ── REPORT (brief items 3 + 5): return whatever is ALREADY cached, plus
     // an honest coverage statement. Never triggers a new CourtListener call
     // — 'process' does that. Works even with no token configured. ──
+    // ── VERIFY: does this citation resolve to a real case? ──────────────
+    // Added 2026-08-23. The mock-trial panel was calling a 'lookup' action
+    // that never existed, so EVERY citation it checked came back unverified
+    // -- including Brady v. Maryland. It failed safe but was a false
+    // negative on 100% of inputs, which makes the badge worthless.
+    //
+    // TWO DESIGN CONSTRAINTS DROVE THE SHAPE, both from the real limits
+    // documented in api/courtlistener.js rather than assumed:
+    //
+    // 1. CACHE FIRST. A citation-to-case resolution is immutable -- Brady is
+    //    always 373 U.S. 83 -- so a cached hit costs no upstream budget at
+    //    all. Reuses cl_case_cache rather than adding a table, deliberately:
+    //    an unrun migration would leave this feature dead on arrival, which
+    //    is the failure mode already blocking Wex and CanLII.
+    //
+    // 2. BATCH THE MISSES INTO ONE UPSTREAM CALL. CourtListener allows 5
+    //    requests/minute, 50/hour, 125/day for ALL SAIRNlaw firms combined
+    //    through one shared token. The mock-trial panel checks up to six
+    //    citations per run, so one-call-per-citation would exhaust the
+    //    per-minute budget on a single run and the daily budget in about
+    //    twenty. /citation-lookup/ extracts every citation from one blob of
+    //    text, which is how it is meant to be used, so six citations cost
+    //    ONE budget unit instead of six.
+    //
+    // Budget exhaustion is reported as UNAVAILABLE, never as 'not found'.
+    // Those are different facts and conflating them is the exact defect this
+    // action exists to fix.
+    if (action === 'verify') {
+      const raw = Array.isArray(body.citations) ? body.citations : (body.citation ? [body.citation] : []);
+      const cites = raw.map((c) => String(c || '').replace(/\s+/g, ' ').trim()).filter(Boolean).slice(0, 12);
+      if (!cites.length) { res.status(400).json({ error: { message: 'verify requires citations (array) or citation (string)' } }); return; }
+
+      const out = {};
+      cites.forEach((c) => { out[c] = { citation: c, state: 'unavailable', reason: 'not checked yet' }; });
+
+      // Cache pass -- costs no upstream budget.
+      try {
+        const q = cites.map((c) => '"' + c.replace(/"/g, '') + '"').join(',');
+        const cr = await fetch(sb.rest('cl_case_cache?citation=in.(' + encodeURIComponent(q) + ')&select=cl_cluster_id,case_name,citation'), { headers: sb.headers });
+        if (cr.ok) {
+          const rows = await cr.json();
+          (Array.isArray(rows) ? rows : []).forEach((row) => {
+            if (row && row.citation && out[row.citation]) {
+              out[row.citation] = { citation: row.citation, state: 'verified', source: 'cache',
+                cluster_id: row.cl_cluster_id, case_name: row.case_name,
+                source_url: 'https://www.courtlistener.com/opinion/' + row.cl_cluster_id + '/' };
+            }
+          });
+        }
+      } catch (e) { /* a cache miss is not a failure; fall through to upstream */ }
+
+      const misses = cites.filter((c) => out[c].state !== 'verified');
+
+      if (misses.length) {
+        if (!process.env.COURTLISTENER_API_TOKEN) {
+          misses.forEach((c) => { out[c] = { citation: c, state: 'unavailable', reason: 'CourtListener API token is not configured, so citations cannot be checked.' }; });
+        } else {
+          let budget = null;
+          try { budget = await cl.remainingBudget(); } catch (e) { budget = null; }
+          if (budget && (budget.minute <= 0 || budget.hour <= 0 || budget.day <= 0)) {
+            misses.forEach((c) => { out[c] = { citation: c, state: 'unavailable', reason: 'CourtListener rate limit reached; try again shortly. This is a limit, not a finding about the citation.' }; });
+          } else {
+            try {
+              const lookup = await cl.clCitationLookup(misses.join('\n'));
+              const results = Array.isArray(lookup) ? lookup : (lookup && lookup.results) || [];
+              results.forEach((r) => {
+                const key = misses.find((m) => m === String(r.citation || '').trim()) ||
+                  misses.find((m) => String(r.citation || '').indexOf(m) !== -1) ||
+                  misses.find((m) => m.indexOf(String(r.citation || '').trim()) !== -1);
+                if (!key) return;
+                const clusters = r.clusters || [];
+                if (Number(r.status) === 200 && clusters.length) {
+                  const c0 = clusters[0];
+                  out[key] = { citation: key, state: 'verified', source: 'courtlistener',
+                    cluster_id: c0.id || null, case_name: c0.case_name || c0.caseName || null,
+                    date_filed: c0.date_filed || null,
+                    source_url: c0.absolute_url ? ('https://www.courtlistener.com' + c0.absolute_url)
+                      : (c0.id ? 'https://www.courtlistener.com/opinion/' + c0.id + '/' : null) };
+                } else if (Number(r.status) === 404) {
+                  out[key] = { citation: key, state: 'not_found',
+                    reason: 'CourtListener has no case at this citation. It may be misquoted, or it may not exist.' };
+                } else if (Number(r.status) === 300) {
+                  out[key] = { citation: key, state: 'ambiguous', matches: clusters.length,
+                    reason: 'This citation matches more than one case, so it was not resolved to one. Check it by hand.' };
+                } else {
+                  out[key] = { citation: key, state: 'unavailable',
+                    reason: 'CourtListener returned status ' + r.status + ' for this citation.' };
+                }
+              });
+              // Anything the upstream never mentioned was not checked.
+              misses.forEach((c) => {
+                if (out[c].state === 'unavailable' && out[c].reason === 'not checked yet') {
+                  out[c] = { citation: c, state: 'not_found',
+                    reason: 'CourtListener did not recognise this as a citation at all.' };
+                }
+              });
+              // Write verified resolutions back so the next check is free.
+              const fresh = misses.map((c) => out[c]).filter((v) => v.state === 'verified' && v.cluster_id);
+              for (const v of fresh) {
+                try {
+                  await fetch(sb.rest('cl_case_cache?on_conflict=cl_cluster_id'), { method: 'POST',
+                    headers: Object.assign({}, sb.headers, { Prefer: 'resolution=merge-duplicates,return=minimal' }),
+                    body: JSON.stringify({ cl_cluster_id: v.cluster_id, case_name: v.case_name || v.citation, citation: v.citation }) });
+                } catch (e) { /* caching is an optimisation, never a correctness requirement */ }
+              }
+            } catch (e) {
+              console.error('citation-lookup failed:', e && e.message);
+              misses.forEach((c) => {
+                if (out[c].state === 'unavailable') {
+                  out[c] = { citation: c, state: 'unavailable', reason: 'Citation checking is temporarily unavailable.' };
+                }
+              });
+            }
+          }
+        }
+      }
+
+      const results = cites.map((c) => out[c]);
+      await auditLookup({ action: 'verify', checked: cites.length,
+        verified: results.filter((r) => r.state === 'verified').length,
+        upstream_calls: misses.length ? 1 : 0 });
+      res.status(200).json({ ok: true, results: results,
+        note: 'A citation is only reported verified when CourtListener resolves it to a real case. Anything else is reported as what it is -- not found, ambiguous, or unchecked -- never as a silent pass.' });
+      return;
+    }
+
     if (action === 'report') {
       const citedClusterId = body.cited_cluster_id;
       if (!citedClusterId) { res.status(400).json({ error: { message: 'report requires cited_cluster_id' } }); return; }

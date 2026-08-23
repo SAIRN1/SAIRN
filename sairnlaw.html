@@ -4005,23 +4005,28 @@ function refUkSearch() {
 // as such rather than quietly presented as real.
 function mtVerifyCitations(cites) {
   if (!cites.length) return Promise.resolve([]);
-  return Promise.all(cites.slice(0, 6).map(function (c) {
-    return citatorFetch('lookup', { text: c }).then(function (d) {
-      var verified = !!(d && !d.error && d.ok !== false && d._httpStatus === 200 &&
-        (d.matched || d.clusters || d.results || d.citations));
-      // A FAILED CHECK AND A CHECK THAT NEVER RAN ARE DIFFERENT FACTS and
-      // must not share a label. Today every call errors -- the citator has
-      // no citation-existence action -- so the honest report is that
-      // verification is unavailable, NOT that the citation failed one.
-      // Saying 'not verified, do not rely on this' about Brady v. Maryland
-      // asserts a check that did not happen, and a badge that is wrong on
-      // real authority trains people to ignore it -- the same reason the
-      // Batson guard is word-boundary matched rather than substring matched.
-      var unavailable = !!(d && d.error);
-      return { citation: c, verified: verified, unavailable: unavailable,
-        detail: d && d.error ? d.error.message : null };
-    }).catch(function () { return { citation: c, verified: false, unavailable: true, detail: 'Verification unavailable' }; });
-  }));
+  // ONE batched call, not one per citation. CourtListener allows 5
+  // requests/minute across every SAIRNlaw firm through a single shared
+  // token, so six citations checked individually would spend a whole
+  // minute of budget on a single mock-trial run. The verify action takes
+  // the whole set and resolves them together for one budget unit.
+  var batch = cites.slice(0, 6);
+  return citatorFetch('verify', { citations: batch }).then(function (d) {
+    if (!d || d.error || !d.results) {
+      // The check could not run. Report THAT, never "not found" -- they are
+      // different facts and the badge must not conflate them. This is the
+      // defect that made every citation, Brady included, read as unverified.
+      return batch.map(function (c) {
+        return { citation: c, state: 'unavailable',
+          reason: (d && d.error && d.error.message) || 'Citation checking is unavailable.' };
+      });
+    }
+    return d.results;
+  }).catch(function () {
+    return batch.map(function (c) {
+      return { citation: c, state: 'unavailable', reason: 'Citation checking is unavailable.' };
+    });
+  });
 }
 
 function mtRun() {
@@ -4078,16 +4083,22 @@ function mtRun() {
         box.innerHTML = '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Citation check</div>' +
           checked.map(function (c) {
             return '<div class="srow"><span class="slbl">' + H(c.citation) + '</span><span class="sval">' +
-              (c.verified
-                ? '<span class="badge bg">Found in citator</span>'
-                : c.unavailable
-                  ? '<span class="badge bx">Verification unavailable</span>'
-                  : '<span class="badge br">Not found in citator</span>') +
+              (c.state === 'verified'
+                ? '<span class="badge bg">Verified</span>'
+                : c.state === 'not_found'
+                  ? '<span class="badge br">Not found &mdash; do not rely on this</span>'
+                  : c.state === 'ambiguous'
+                    ? '<span class="badge bx">Ambiguous &mdash; check by hand</span>'
+                    : '<span class="badge bx">Verification unavailable</span>') +
+              (c.state === 'verified' && c.case_name
+                ? '<div style="font-size:11px;color:var(--muted)">' + H(c.case_name) +
+                  (c.source_url ? ' &middot; <a href="' + H(c.source_url) + '" target="_blank" rel="noopener">CourtListener</a>' : '') + '</div>'
+                : (c.reason ? '<div style="font-size:11px;color:var(--muted)">' + H(c.reason) + '</div>' : '')) +
               '</span></div>';
           }).join('') +
           '<div style="font-size:11px;color:var(--muted);margin-top:6px">' +
-            (checked.some(function (c) { return c.unavailable; })
-              ? 'Citation checking is currently unavailable, so none of these has been checked either way. Verify every citation yourself before relying on it.'
+            (checked.some(function (c) { return c.state === 'unavailable'; })
+              ? 'At least one citation could not be checked, so it has not been confirmed either way. Verify anything not marked Verified before relying on it.'
               : 'A citation the citator cannot find has not been confirmed to exist. Check it yourself before using it.') +
           '</div>';
       });
