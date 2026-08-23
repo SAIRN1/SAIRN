@@ -53,10 +53,28 @@
 const { sbClient } = require('./courtlistener');
 
 // ── Jurisdiction coverage, stated as data so the UI can render it honestly ──
+//
+// SCOPE, decided 2026-08-23: SAIRNlaw's international footprint is the United
+// States (CourtListener) and the United Kingdom, England & Wales only (Find
+// Case Law). That is the whole list. Everything else is out of scope.
+//
+// CANADA WAS REMOVED, deliberately, and should not be re-added without a new
+// decision. A Guardian pass the same day found this table asserting
+// { code: 'ca', covered: true } while every canlii_browse call returned 503
+// NOT_CONFIGURED -- the panel whose entire job is honest disclosure was the
+// one making a false claim. The fix considered first was to derive Canada's
+// status from whether CANLII_API_KEY was set; that was rejected in favour of
+// dropping Canada outright, because a row reading "not yet configured" is an
+// aspirational placeholder, and a placeholder in a coverage table reads to a
+// lawyer as a roadmap promise. Not pursuing CanLII is a scope decision, not a
+// blocked task, so the honest representation of it is absence.
+//
+// Scotland / NI / Ireland and Australia stay listed as NOT covered, because
+// their exclusion is a fact a user needs (their own terms prohibit this use --
+// no engineering closes it), not a gap anyone should try to fill.
 const COVERAGE = [
   { code: 'us', label: 'United States', covered: true, source: 'CourtListener', note: 'Federal and state opinions.' },
   { code: 'uk-ew', label: 'United Kingdom (England & Wales)', covered: true, source: 'Find Case Law (The National Archives)', note: 'Judgments and tribunal decisions from 2001 onwards, under the Open Justice Licence.' },
-  { code: 'ca', label: 'Canada', covered: true, source: 'CanLII API', note: 'Official keyed API. Metadata and citator relationships; CanLII does not serve full decision text through the API.' },
   { code: 'uk-scot-ni-ie', label: 'Scotland, Northern Ireland, Ireland', covered: false, source: null, note: 'Not covered. The main free source (BAILII) prohibits automated access in its user agreement, and Find Case Law covers England & Wales only.' },
   { code: 'au', label: 'Australia', covered: false, source: null, note: 'Not covered. AustLII’s usage policy prohibits automated access and blocks AI-related uses across its entire collection.' }
 ];

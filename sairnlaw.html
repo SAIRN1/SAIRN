@@ -308,6 +308,7 @@ label.chk input{width:auto;}
 <!-- DASHBOARD -->
 <div class="panel on" id="panel-dashboard">
   <div class="ph"><div><div class="ptitle">Dashboard</div><div class="psub">Real-time overview &middot; Pinnacle Legal Group</div></div></div>
+  <div id="d-demo-notice" style="display:none"></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Open Matters</div><div class="kval" id="k-openmatters">0</div><div class="kt">Active</div></div>
     <div class="kpi"><div class="klbl">Deadlines This Week</div><div class="kval" id="k-deadlines">0</div><div class="kt">Not yet complete</div></div>
@@ -477,6 +478,7 @@ label.chk input{width:auto;}
 <div class="panel" id="panel-trust">
   <div class="ph"><div><div class="ptitle">Trust Accounting (IOLTA)</div><div class="psub">Client funds, tracked completely separate from firm operating funds &mdash; append-only, fully audited</div></div>
   <div class="pa"><button class="btn bo bs" onclick="openBankStatementModal()">Enter Bank Statement</button><button class="btn bp bs" onclick="openTrustModal()">+ New Transaction</button></div></div>
+  <div id="tr-demo-notice" style="display:none"></div>
   <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
     No transaction is ever edited or deleted -- entries are append-only. A mistaken entry is corrected by voiding it
     with a mandatory reason (the void stays visible in the record, it never disappears), never by silent edit or
@@ -1261,7 +1263,14 @@ function gateGo(){
   var k=($('gkey').value||'').trim().toUpperCase();
   var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
   if(!ok){$('gerr').textContent='Invalid key format. Try LAW-PINNACLE-2026';return;}
-  localStorage.setItem('law_license_key',k);
+  // Guarded like every other setItem in this file (Guardian Check 20). An
+  // unguarded write here throws in private browsing or at quota, and the
+  // throw would abort gateGo() before the check_license call below ever
+  // ran -- the key would look "wrong" when the real problem was storage.
+  try{localStorage.setItem('law_license_key',k);}catch(e){
+    $('gerr').textContent='This browser is blocking local storage (private mode?). SAIRNlaw needs it to keep you signed in.';
+    return;
+  }
   $('gerr').textContent='Checking key…';
   // Real server-side license check BEFORE moving on -- otherwise a bad key
   // only surfaces later as a failed login, which misattributes the problem
@@ -1885,7 +1894,65 @@ async function sendAI(){
 }
 
 // ── DASHBOARD ─────────────────────────────────────────────────────────────
+// ── DEMO / SAMPLE DATA DISCLOSURE (2026-08-23) ────────────────────────────
+// seed() writes example clients, matters, a $5,000 retainer deposit and a
+// matching bank statement on first run so an empty app is explorable. Those
+// rows are real rows in the real store -- every figure computed from them is
+// honest arithmetic, not a fabricated constant -- but until this notice
+// existed, the Dashboard showed "Trust Balance $5,000" and the Trust panel
+// reconciled against a bank statement that does not exist, with nothing on
+// screen saying so. On a trust-accounting screen that is the single most
+// sensitive number the app can display, so it gets labelled rather than
+// removed: a labelled example is useful, an unlabelled fake balance is not.
+//
+// Detection is by the seed's own fixed ids rather than a "demo cleared"
+// flag, deliberately. A flag records what the USER did; these ids record
+// what is ACTUALLY still in the store, so the notice disappears on its own
+// as soon as the example rows are gone and can never claim real data is
+// demo data (or the reverse) because a boolean drifted out of sync.
+var LAW_SEED_IDS={
+  law_clients:['CL-1','CL-2'],
+  law_matters:['MT-1','MT-2'],
+  law_trusttx:['TR-1'],
+  law_bankstatements:['BS-1'],
+  law_deadlines:['DL-1'],
+  law_mattertasks:['TK-1'],
+  law_barcerts:['BR-1']
+};
+function lawDemoSeedPresent(){
+  var found={},any=false;
+  Object.keys(LAW_SEED_IDS).forEach(function(key){
+    var rows=ld(key,[]);
+    if(!Array.isArray(rows))return;
+    var hit=rows.filter(function(r){return LAW_SEED_IDS[key].indexOf(r&&r.id)!==-1;});
+    if(hit.length){found[key]=hit;any=true;}
+  });
+  var seedTx=found.law_trusttx||[];
+  return {any:any,found:found,
+    trustAmount:seedTx.reduce(function(s,t){return s+(t.status==='Voided'?0:(Number(t.amount)||0));},0),
+    trustCount:seedTx.length};
+}
+function lawRenderDemoNotice(elId,scope){
+  var el=$(elId);if(!el)return;
+  var d=lawDemoSeedPresent();
+  if(!d.any){el.style.display='none';el.innerHTML='';return;}
+  var extra='';
+  if(scope==='trust'&&d.trustCount){
+    extra=' <b>'+fmt(d.trustAmount)+'</b> of the balance shown below is example data '+
+      '(&ldquo;Initial retainer&rdquo;, client Margaret Ostrander), as is the bank statement it reconciles against. '+
+      'Neither is a real client deposit.';
+  }else if(scope==='dash'&&d.trustCount){
+    extra=' That includes <b>'+fmt(d.trustAmount)+'</b> of the Trust Balance above.';
+  }
+  el.style.display='';
+  el.innerHTML='<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;'+
+    'padding:10px 14px;color:#92400e;font-size:12px;margin-bottom:14px">'+
+    '<b>Example data is still loaded.</b> This app seeds sample clients, matters and transactions '+
+    'on first run so the panels are explorable before real data exists.'+extra+
+    ' Delete the example records to clear this notice — it disappears on its own once they are gone.</div>';
+}
 function rDash(){
+  lawRenderDemoNotice('d-demo-notice','dash');
   var mt=matters(),dl=deadlines(),tx=trustTransactions(),te=timeEntries();
   $('k-openmatters').textContent=mt.filter(function(m){return m.status==='Open';}).length;
   var weekAhead=new Date(Date.now()+7*24*60*60*1000).getTime();
@@ -2442,6 +2509,7 @@ async function explainReconciliation(){
   $('tr-explain-btn').textContent='Explain This Discrepancy (AI)';$('tr-explain-btn').disabled=false;
 }
 function rTrust(){
+  lawRenderDemoNotice('tr-demo-notice','trust');
   fillMatterSelects();
   var tx=trustTransactions();
   var r=reconcileTrust();
@@ -3966,6 +4034,13 @@ function refRenderCoverage() {
   if (!el) return;
   referenceFetch('coverage', {}).then(function (d) {
     if (!d || !d.coverage) { el.innerHTML = ''; return; }
+    // Two states only, and deliberately so. Supported coverage is the United
+    // States and England & Wales; every other row is Not covered because its
+    // own source terms prohibit this use. There is intentionally no third
+    // "pending"/"not yet configured" state -- a placeholder row in a coverage
+    // table reads to a lawyer as a promise, which is how Canada came to be
+    // advertised as Covered while every lookup 503'd (found and removed
+    // 2026-08-23). Anything not genuinely supported is simply absent.
     el.innerHTML = '<div style="font-size:12px">' + d.coverage.map(function (c) {
       return '<div style="display:flex;gap:8px;padding:3px 0;align-items:flex-start">' +
         '<span class="badge ' + (c.covered ? 'bg' : 'bx') + '" style="flex:none">' + (c.covered ? 'Covered' : 'Not covered') + '</span>' +
