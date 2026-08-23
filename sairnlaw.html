@@ -4009,8 +4009,18 @@ function mtVerifyCitations(cites) {
     return citatorFetch('lookup', { text: c }).then(function (d) {
       var verified = !!(d && !d.error && d.ok !== false && d._httpStatus === 200 &&
         (d.matched || d.clusters || d.results || d.citations));
-      return { citation: c, verified: verified, detail: d && d.error ? d.error.message : null };
-    }).catch(function () { return { citation: c, verified: false, detail: 'Verification unavailable' }; });
+      // A FAILED CHECK AND A CHECK THAT NEVER RAN ARE DIFFERENT FACTS and
+      // must not share a label. Today every call errors -- the citator has
+      // no citation-existence action -- so the honest report is that
+      // verification is unavailable, NOT that the citation failed one.
+      // Saying 'not verified, do not rely on this' about Brady v. Maryland
+      // asserts a check that did not happen, and a badge that is wrong on
+      // real authority trains people to ignore it -- the same reason the
+      // Batson guard is word-boundary matched rather than substring matched.
+      var unavailable = !!(d && d.error);
+      return { citation: c, verified: verified, unavailable: unavailable,
+        detail: d && d.error ? d.error.message : null };
+    }).catch(function () { return { citation: c, verified: false, unavailable: true, detail: 'Verification unavailable' }; });
   }));
 }
 
@@ -4070,10 +4080,16 @@ function mtRun() {
             return '<div class="srow"><span class="slbl">' + H(c.citation) + '</span><span class="sval">' +
               (c.verified
                 ? '<span class="badge bg">Found in citator</span>'
-                : '<span class="badge br">Not verified &mdash; do not rely on this</span>') +
+                : c.unavailable
+                  ? '<span class="badge bx">Verification unavailable</span>'
+                  : '<span class="badge br">Not found in citator</span>') +
               '</span></div>';
           }).join('') +
-          '<div style="font-size:11px;color:var(--muted);margin-top:6px">A citation the citator cannot find has not been confirmed to exist. Check it yourself before using it.</div>';
+          '<div style="font-size:11px;color:var(--muted);margin-top:6px">' +
+            (checked.some(function (c) { return c.unavailable; })
+              ? 'Citation checking is currently unavailable, so none of these has been checked either way. Verify every citation yourself before relying on it.'
+              : 'A citation the citator cannot find has not been confirmed to exist. Check it yourself before using it.') +
+          '</div>';
       });
     }
   }).catch(function () {
