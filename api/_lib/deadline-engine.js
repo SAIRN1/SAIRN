@@ -521,6 +521,63 @@ function computeDeadline(input) {
   var sign = direction === 'backward' ? -1 : 1;
   var steps = [];
 
+  // ── DESIGNATED-PERIOD RULES (Phase 6) ────────────────────────────────────
+  // Some rules do not set a deadline at all. They set a FLOOR on a period that
+  // one party chooses. Ohio Civ.R. 33(A) and 36(A)(1) and Ind. T.R. 33(C) and
+  // 36(A) all read "within a period designated by the party submitting ... not
+  // less than" 28 or 30 days. The operative deadline is whatever was actually
+  // designated; the number in the rule is only the minimum a valid request may
+  // demand.
+  //
+  // Phase 5 refused to seed these at all rather than state a floor as though it
+  // were a deadline -- a date that is not the user's deadline whenever the
+  // request designated longer, which is most of the time. This shape is what
+  // lets them be expressed honestly: the designated period is a REQUIRED INPUT,
+  // and the rule's own number is used only to validate it.
+  //
+  // A BELOW-FLOOR DESIGNATION IS REFUSED, NOT SILENTLY RAISED TO THE FLOOR.
+  // Computing the floor instead would answer a question nobody asked and would
+  // paper over a defective request; the caller is told the designation is
+  // invalid and what the floor is. Whether a below-floor designation voids the
+  // request outright or is merely unenforceable as to timing is a question of
+  // law, not of arithmetic, and this engine does not pick between them -- it
+  // refuses and names the floor so a human decides.
+  var designatedDays = null;
+  if (rule.designated_period) {
+    var dp = rule.designated_period;
+    var supplied = input.designated_period_days;
+    if (supplied === undefined || supplied === null || supplied === '') {
+      return { ok: false, code: 'DESIGNATED_PERIOD_REQUIRED',
+        message: 'This rule does not set a deadline. It sets a floor: the period is whatever ' +
+          (dp.designated_by || 'the requesting party') + ' designated in the request, and it may not be less than ' +
+          dp.min + ' ' + (dp.unit || 'calendar_days').replace(/_/g, ' ') +
+          '. Supply the period actually designated and the date will be computed from that.',
+        floor: { min: dp.min, unit: dp.unit || 'calendar_days', designated_by: dp.designated_by || null },
+        authority: rule.authority ? rule.authority.citation : null };
+    }
+    var n = Number(supplied);
+    if (!isFinite(n) || Math.floor(n) !== n || n <= 0) {
+      return { ok: false, code: 'BAD_DESIGNATED_PERIOD',
+        message: 'The designated period must be a whole number of ' + (dp.unit || 'calendar_days').replace(/_/g, ' ') + '.' };
+    }
+    if (n < dp.min) {
+      return { ok: false, code: 'DESIGNATED_PERIOD_BELOW_FLOOR',
+        message: 'The request designated ' + n + ' ' + (dp.unit || 'calendar_days').replace(/_/g, ' ') +
+          ', but ' + (rule.authority ? rule.authority.citation : 'this rule') + ' permits no less than ' + dp.min +
+          '. No date is computed. Whether a request designating less than the minimum is void, or merely ' +
+          'unenforceable as to timing, is a question of law this engine does not decide — check the rule and the ' +
+          'request before treating either number as the deadline.',
+        designated: n, floor: { min: dp.min, unit: dp.unit || 'calendar_days' },
+        authority: rule.authority ? rule.authority.citation : null };
+    }
+    designatedDays = n;
+    steps.push({ step: 'designated_period',
+      detail: 'This rule sets no fixed deadline. ' + (dp.designated_by || 'The requesting party') +
+        ' designated ' + n + ' ' + (dp.unit || 'calendar_days').replace(/_/g, ' ') + ', which is at or above the rule’s minimum of ' +
+        dp.min + '. The period below is counted from the designated figure, not from the minimum.',
+      authority: rule.authority ? rule.authority.citation : null, date: triggerDate });
+  }
+
   // Both of these are recorded BEFORE the base period, because each changed
   // what the base period counts from. They are separate step kinds from
   // 'service_extension' on purpose -- one moves the start, the other adds to
@@ -548,6 +605,14 @@ function computeDeadline(input) {
   // Rule 6(a)(1)(A): exclude the day of the triggering event.
   // Rule 6(a)(1)(B): count every intermediate day, weekends and holidays
   // included. So for calendar days this is plain arithmetic from the trigger.
+  //
+  // countValue is the number the period is ACTUALLY counted from. For an
+  // ordinary rule that is rule.count.value. For a designated-period rule it is
+  // the figure the requesting party designated, already validated at or above
+  // the rule's floor -- the rule's own number is a minimum and must never be
+  // the thing counted, which is the entire reason these rules were refused in
+  // Phase 5 rather than seeded as fixed periods.
+  var countValue = designatedDays === null ? Number(count.value) : designatedDays;
   var base;
   if (count.unit === 'calendar_days') {
     // Short-period weekend/holiday exclusion: gated on the STANDARD
@@ -558,23 +623,23 @@ function computeDeadline(input) {
     // assumed from one to the other) with a shared authority label per
     // standard so the audit trail still cites the RIGHT state's rule. Never
     // fires for an FRCP-family rule, which declares no such property.
-    if (std.short_period_exclusion_days && Number(count.value) < std.short_period_exclusion_days) {
-      var shortRes = countExcludingWeekendsAndHolidays(triggerDate, sign, Number(count.value), input.calendars, input.jurisdiction, direction);
+    if (std.short_period_exclusion_days && countValue < std.short_period_exclusion_days) {
+      var shortRes = countExcludingWeekendsAndHolidays(triggerDate, sign, countValue, input.calendars, input.jurisdiction, direction);
       if (!shortRes.ok) return shortRes;
       base = shortRes.date;
-      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' days ' + direction + ', excluding intermediate Saturdays, Sundays and legal holidays because the period is less than ' + std.short_period_exclusion_days + ' days.', authority: std.label, date: base });
+      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + countValue + ' days ' + direction + ', excluding intermediate Saturdays, Sundays and legal holidays because the period is less than ' + std.short_period_exclusion_days + ' days.', authority: std.label, date: base });
     } else {
-      base = addDays(triggerDate, sign * Number(count.value));
-      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + count.value + ' calendar days ' + direction + ', including intermediate weekends and holidays.', authority: std.label + (std.base_period_suffix || ''), date: base });
+      base = addDays(triggerDate, sign * countValue);
+      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + countValue + ' calendar days ' + direction + ', including intermediate weekends and holidays.', authority: std.label + (std.base_period_suffix || ''), date: base });
     }
   } else if (count.unit === 'months' || count.unit === 'years') {
-    base = addMonths(triggerDate, sign * Number(count.value) * (count.unit === 'years' ? 12 : 1));
-    steps.push({ step: 'base_period', detail: 'Counted ' + count.value + ' ' + count.unit + ' ' + direction + ' by anniversary date, clamped to end of month.', authority: std.label + (std.months_years_suffix || ''), date: base });
+    base = addMonths(triggerDate, sign * countValue * (count.unit === 'years' ? 12 : 1));
+    steps.push({ step: 'base_period', detail: 'Counted ' + countValue + ' ' + count.unit + ' ' + direction + ' by anniversary date, clamped to end of month.', authority: std.label + (std.months_years_suffix || ''), date: base });
   } else if (count.unit === 'business_days') {
     // Supported because other jurisdictions really do count this way. It is
     // NOT how the FRCP counts, and no FRCP rule may use it.
     base = triggerDate;
-    var remaining = Number(count.value);
+    var remaining = countValue;
     var guard = 0;
     while (remaining > 0 && guard++ < 400) {
       base = addDays(base, sign);
@@ -586,7 +651,7 @@ function computeDeadline(input) {
       }
       if (!isWeekend(base) && !hb.hit) remaining--;
     }
-    steps.push({ step: 'base_period', detail: 'Counted ' + count.value + ' business days ' + direction + ', skipping weekends and holidays.', date: base });
+    steps.push({ step: 'base_period', detail: 'Counted ' + countValue + ' business days ' + direction + ', skipping weekends and holidays.', date: base });
   } else {
     return { ok: false, code: 'UNKNOWN_UNIT', message: 'Rule ' + rule.rule_id + ' uses unit "' + count.unit + '", which this engine does not implement.' };
   }
