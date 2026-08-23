@@ -239,7 +239,13 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 <div class="panel on" id="panel-dashboard">
   <div class="ph"><div><div class="ptitle">Facility Dashboard</div><div class="psub">Resident census and what needs attention, scoped to what your role can see</div></div></div>
   <div class="krow">
-    <div class="kpi"><div class="klbl">Residents Visible To You</div><div class="kval" id="d-residents">0</div><div class="kt">Active</div></div>
+    <!-- Label says ACTIVE because that is what rDash() actually counts (status==='active').
+         It previously read "Residents Visible To You", which contradicted the adjacent tiles:
+         a resident in Intake is fully visible in the Residents panel and is counted under
+         Unassigned, yet this tile read 0 -- the same resident present in one tile and absent
+         from another. Found in the 2026-08-23 visual review. The count is right; the label was
+         wrong, so the label moved rather than inventing a third meaning for "visible". -->
+    <div class="kpi"><div class="klbl">Active Residents</div><div class="kval" id="d-residents">0</div><div class="kt">Status: active</div></div>
     <div class="kpi"><div class="klbl">Unassigned</div><div class="kval" id="d-unassigned">0</div><div class="kt">Management-visible only</div></div>
     <div class="kpi"><div class="klbl">In Intake</div><div class="kval" id="d-intake">0</div><div class="kt">Not yet active</div></div>
     <div class="kpi"><div class="klbl">Your Role</div><div class="kval" id="d-role" style="font-size:16px">--</div><div class="kt">Access tier</div></div>
@@ -902,9 +908,21 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div style="font-weight:700;margin-bottom:10px">Your Account</div>
     <div id="sec-account" style="font-size:13px;color:var(--muted)"></div>
   </div></div>
+  <!-- WHO HAS ACCESS (2026-08-23 visual-review fix). This panel previously offered a
+       create/update form with NO list of existing accounts, so an owner could not see who
+       could sign in to the facility, nor what role they held -- a real gap on a healthcare
+       app. The roster was already loaded in _alfRoster and used by the Residents Assign-To
+       dropdown; it simply was never shown here. -->
+  <div class="card" id="sec-roster-card" style="display:none"><div class="cb">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div><b>Who Has Access</b><div style="font-size:12px;color:var(--muted)">Everyone who can sign in to this facility, and the role their access is scoped to.</div></div>
+      <button class="btn bo bs" onclick="alfRefreshRoster(rSecurity)">Refresh</button>
+    </div>
+    <div id="sec-roster" style="margin-top:10px;font-size:12px"></div>
+  </div></div>
   <div class="card" id="sec-admin-card" style="display:none"><div class="cb">
     <div style="font-weight:700;margin-bottom:4px">Employee Accounts</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Owner only. Creates or updates one person's own credentials &mdash; there are no shared role PINs. To change someone's role or PIN, enter their existing Employee ID exactly as listed above.</div>
     <div class="fg"><label>Employee ID or email</label><input id="sec-new-eid"></div>
     <div class="fg"><label>Display name</label><input id="sec-new-name"></div>
     <div class="fg"><label>Role</label><select id="sec-new-role"><option value="nursing">Resident Care Director (Nursing)</option><option value="med_aide">Med Aide</option><option value="caregiver">Caregiver</option><option value="billing">Business Office / Billing</option><option value="activities">Activities Coordinator</option><option value="owner">Owner / Administrator</option></select></div>
@@ -1281,7 +1299,28 @@ function alfPopulateAssigneeControls(){
 function rSecurity(){
   var s=alfSession||{};
   $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(alfRoleLabel(s.role))+'</strong>';
-  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+  var isOwner=s.role==='owner';
+  $('sec-admin-card').style.display=(isOwner?'block':'none');
+  var rc=$('sec-roster-card');
+  if(rc)rc.style.display=(isOwner?'block':'none');
+  if(!isOwner)return;
+  // Load on demand, then re-render once the real roster arrives.
+  if(!_alfRoster){alfRefreshRoster(rSecurity);}
+  var box=$('sec-roster');
+  if(!box)return;
+  if(!_alfRoster){box.innerHTML='<span style="color:var(--muted)">Loading accounts…</span>';return;}
+  if(!_alfRoster.length){box.innerHTML='<span style="color:var(--muted)">No employee accounts exist yet. Create the first one below.</span>';return;}
+  box.innerHTML='<div class="tw"><table><thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody>'+
+    _alfRoster.map(function(e){
+      var isSelf=e.employee_id===s.employee_id;
+      // active is reported only when the roster actually carries the field --
+      // an absent value is shown as unknown rather than assumed active.
+      var status=(e.active===false)
+        ?'<span class="badge br">inactive</span>'
+        :(e.active===true?'<span class="badge bg">active</span>':'<span class="badge bx">--</span>');
+      return '<tr><td>'+H(e.employee_id)+(isSelf?' <span class="badge bx">you</span>':'')+'</td>'+
+        '<td>'+H(e.display_name||'--')+'</td><td>'+H(alfRoleLabel(e.role))+'</td><td>'+status+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
 }
 function secProvision(){
   var m=$('sec-admin-msg');
@@ -1500,7 +1539,7 @@ function rResidents(){
       : H(alfEmployeeName(r.assigned_employee_id));
     return '<tr><td>'+H(r.name)+'</td><td>'+H(r.room||'--')+'</td>'+
       '<td><span class="badge '+(carelevelBadge[r.care_level]||'bx')+'">'+H(careLevelLabel(currentCareLevelOf(r)))+'</span></td>'+
-      '<td><span class="badge bx">'+H((r.payer||'').replace('_',' '))+'</span></td><td>'+assignedCell+'</td>'+
+      '<td><span class="badge bx">'+H(alfLabel(ALF_PAYER_LABEL,r.payer))+'</span></td><td>'+assignedCell+'</td>'+
       '<td>'+(alfIsReadOnlyBroad()?'--':'<button class="btn bo bs" onclick="editResident(\''+r.id+'\')">Edit</button>')+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No residents found</td></tr>';
 }
@@ -1956,7 +1995,7 @@ function openCarePlanAiModal(residentId){
     box.innerHTML='<div>Drafting from the most recent recorded assessment for <b>'+H(r.name||'')+'</b> ('+H(latest.date||'')+
       '), assessed by '+H(latest.assessed_by||'unrecorded')+'.</div>'+
       '<div style="margin-top:6px;font-size:12px;color:var(--muted)">'+
-      ADL_DOMAINS.map(function(d){return H(d[1])+': '+H(latest[d[0]]||'not recorded');}).join(' &middot; ')+'</div>'+
+      ADL_DOMAINS.map(function(d){return H(d[1])+': '+H(latest[d[0]]?alfLabel(ALF_ADL_LEVEL_LABEL,latest[d[0]]):'not recorded');}).join(' &middot; ')+'</div>'+
       '<div style="margin-top:8px;font-size:12px;color:var(--muted)">The draft is a starting point for a clinician, not a finished plan, and is not saved anywhere until you copy it into the record.</div>';
   }
   $('careplanaimodal').classList.add('on');
@@ -1971,10 +2010,18 @@ async function runCarePlanAi(){
   var box=$('cpa-body');
   var prior=box.innerHTML;
   box.innerHTML=prior+'<div style="margin-top:8px;color:var(--muted)">Drafting...</div>';
-  var facts=ADL_DOMAINS.map(function(d){return d[1]+': '+(latest[d[0]]||'not recorded');}).join('\n');
+  // Human labels in the prompt too, not raw enums -- the model was being handed
+  // "total_dependence" and echoing it back into a clinical document.
+  var facts=ADL_DOMAINS.map(function(d){return d[1]+': '+(latest[d[0]]?alfLabel(ALF_ADL_LEVEL_LABEL,latest[d[0]]):'not recorded');}).join('\n');
   var msgs=[{role:'user',content:[{type:'text',text:
+    // The resident's NAME is passed explicitly. Without it the model behaved correctly --
+    // it refused to invent a name and emitted a literal "[Name]" placeholder -- but a draft
+    // care plan reading "Resident: [Name]" looks unfinished. The name is already in scope,
+    // so there was never a reason to make the model guess or placeholder. Found in the
+    // 2026-08-23 visual review.
     'You are helping a nurse draft a care plan for an assisted-living resident. Use ONLY the assessment findings below. '+
     'Do not invent diagnoses, medications, history, or any finding that is not listed. If a domain says "not recorded", say that its needs could not be determined rather than guessing.\n\n'+
+    'Resident name: '+(r.name||'(name not recorded)')+'\n'+
     'Katz ADL assessment recorded '+(latest.date||'')+':\n'+facts+
     (latest.notes?('\nAssessor notes: '+latest.notes):'')+
     (r.diagnosis?('\nDiagnosis on file: '+r.diagnosis):'')+
@@ -1989,7 +2036,10 @@ async function runCarePlanAi(){
     var text=(data.content&&data.content[0]&&data.content[0].text)||'';
     if(!text){box.innerHTML=prior+'<div style="margin-top:8px;color:var(--danger,#dc2626)">No draft was returned.</div>';return;}
     box.innerHTML=prior+
-      '<div style="margin-top:10px;padding:8px;border:1px solid var(--border);border-radius:6px;white-space:pre-wrap">'+H(text)+'</div>'+
+      // Same markdown treatment as the AI Assistant -- this draft goes into a clinical
+      // document, so literal ## and ** in it is worse here than anywhere else.
+      // alfRenderMarkdown() escapes before it formats.
+      '<div style="margin-top:10px;padding:8px;border:1px solid var(--border);border-radius:6px">'+alfRenderMarkdown(text)+'</div>'+
       '<div style="margin-top:6px;font-size:11px;color:var(--muted)">Draft only. Review every line before entering any of it into the resident record.</div>';
   }catch(e){
     box.innerHTML=prior+'<div style="margin-top:8px;color:var(--danger,#dc2626)">Network error -- nothing was generated.</div>';
@@ -2209,6 +2259,9 @@ function certDaysUntil(d){if(!d)return null;var diff=(new Date(d+'T00:00:00')-ne
 function rStaff(){
   var sf=staff();
   var isMgmt=alfIsManagement();
+  // The credential picker draws from _alfRoster, so make sure it is actually
+  // loaded when this panel is opened directly rather than via Residents.
+  if(isMgmt&&!_alfRoster)alfRefreshRoster();
   rCredentials();
   var newBtn=$('st-new-btn');if(newBtn)newBtn.style.display=isMgmt?'inline-block':'none';
   var sttb=$('sttbody');
@@ -2415,7 +2468,7 @@ function rBilling(){
   bltb.innerHTML=rows.length?rows.map(function(x){
     var r=x.r,inv=x.inv;
     var isHcbs=r.payer==='medicaid_hcbs'&&f.hcbs_enabled;
-    return '<tr><td>'+H(r.name)+'</td><td><span class="badge bx">'+H((r.payer||'').replace('_',' '))+'</span></td>'+
+    return '<tr><td>'+H(r.name)+'</td><td><span class="badge bx">'+H(alfLabel(ALF_PAYER_LABEL,r.payer))+'</span></td>'+
       '<td>'+(inv?H(inv.month):'--')+'</td>'+
       '<td>'+(inv?fmt2(inv.room_board_amount):'--')+'</td>'+
       '<td>'+(inv?fmt2(inv.care_amount):'--')+'</td>'+
@@ -2845,13 +2898,40 @@ function rCredentials(){
     }).join('')+'</tbody></table></div>';
 }
 function alfStaffName(staffId){
+  // Resolve against the real employee roster FIRST, then the alf_staff roster.
+  // Credential records are keyed by employee_id (the login identity), so looking
+  // only in alf_staff left every ledger row showing a bare id.
+  if(_alfRoster){
+    var e=_alfRoster.find(function(x){return x.employee_id===staffId;});
+    if(e)return e.display_name||e.employee_id;
+  }
   var s=staff().find(function(x){return x.id===staffId;});
-  return s?(s.name||staffId):staffId;
+  return s?(s.name||staffId):(staffId||'--');
 }
 function openCredModal(){
   if(!alfIsManagement()){toast('Only management can record a credential entry');return;}
   var sel=$('cr-staff');
-  sel.innerHTML=staff().map(function(s){return '<option value="'+H(s.id)+'">'+H(s.name||s.id)+'</option>';}).join('');
+  // THE FIX (2026-08-23 visual review, highest-severity finding): this read
+  // staff() -- the alf_staff roster -- which is empty in a fresh facility, so the
+  // picker rendered ZERO options and Record Entry dead-ended on "Select a staff
+  // member" with nobody selectable. The people who actually need credentials
+  // tracked are the ones who can log in, and they live in sairncare_employee_auth,
+  // already loaded here as _alfRoster -- the same source the Residents Assign-To
+  // dropdown uses successfully. Both lists are merged and de-duplicated so a
+  // facility that also maintains alf_staff records keeps seeing them.
+  var seen={},opts=[];
+  (_alfRoster||[]).forEach(function(e){
+    if(!e||!e.employee_id||seen[e.employee_id])return;
+    seen[e.employee_id]=true;
+    opts.push('<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+' ('+H(alfRoleLabel(e.role))+')</option>');
+  });
+  staff().forEach(function(s){
+    if(!s||!s.id||seen[s.id])return;
+    seen[s.id]=true;
+    opts.push('<option value="'+H(s.id)+'">'+H(s.name||s.id)+'</option>');
+  });
+  // Never present a working-looking form with an empty required picker.
+  sel.innerHTML=opts.length?opts.join(''):'<option value="">No staff or employee accounts yet — add one under Security &amp; Access</option>';
   $('cr-type').value='training_hours';crToggleType();
   $('cr-hours').value='';$('cr-completed').value=new Date().toISOString().slice(0,10);
   $('cr-credname').value='';$('cr-expires').value='';$('cr-notes').value='';
@@ -2906,7 +2986,7 @@ function rIncidentLog(){
     var r=rs.find(function(x){return x.id===i.resident_id;});
     return '<tr><td>'+fdate(i.date)+'</td><td>'+H(incidentCategoryLabel[i.category]||i.category)+'</td>'+
       '<td>'+(r?H(r.name):'--')+'</td><td><span class="badge '+severityBadge(i.severity)+'">'+H(i.severity||'')+'</span></td>'+
-      '<td><span class="badge '+(i.status==='closed'?'bg':(i.status==='under_review'?'bw':'bb'))+'">'+H((i.status||'open').replace('_',' '))+'</span></td>'+
+      '<td><span class="badge '+(i.status==='closed'?'bg':(i.status==='under_review'?'bw':'bb'))+'">'+H(alfLabel(ALF_INCIDENT_STATUS_LABEL,i.status||'open'))+'</span></td>'+
       '<td>'+(i.state_reported?'<span class="badge bg">Yes</span>':'<span class="badge br">No</span>')+'</td>'+
       '<td>'+H(alfEmployeeName(i.reported_by))+'</td>'+
       '<td><button class="btn bo bs" onclick="openIncidentUpdateModal(\''+i.id+'\')">Update</button></td></tr>';
@@ -3012,7 +3092,7 @@ function rOpAudit(){
     box.innerHTML='<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Detail</th><th>Result</th><th>Recorded By</th><th>Sign-Off</th></tr></thead><tbody>'+
       sorted.map(function(c){
         var detail=c.record_type==='food_temp'
-          ?(H(c.location||'--')+' &middot; '+H(String(c.temperature_f))+'&deg;F '+H((c.holding_kind||'').replace('_',' ')))
+          ?(H(c.location||'--')+' &middot; '+H(String(c.temperature_f))+'&deg;F '+H(alfLabel(ALF_HOLDING_LABEL,c.holding_kind)))
           :H(c.subject||'--');
         var result=c.passed===true?'<span class="badge bg">pass</span>'
           :(c.passed===false?'<span class="badge br">fail</span>':'<span class="badge bx">not evaluated</span>');
@@ -3020,7 +3100,7 @@ function rOpAudit(){
           ?('<span class="badge bg">'+H(c.reviewed_by)+'</span>')
           :(isMgmt?('<button class="btn bo bs" onclick="signOffOpAudit(\''+c.id+'\')">Sign Off</button>')
                   :'<span style="color:var(--muted)">pending</span>');
-        return '<tr><td>'+H(c.observed_on||'--')+'</td><td>'+H((c.record_type||'').replace('_',' '))+'</td>'+
+        return '<tr><td>'+H(c.observed_on||'--')+'</td><td>'+H(alfLabel(ALF_RECORD_TYPE_LABEL,c.record_type))+'</td>'+
           '<td>'+detail+(c.notes?(' <span style="color:var(--muted)">'+H(c.notes)+'</span>'):'')+'</td>'+
           '<td>'+result+'</td><td>'+H(c.recorded_by||'--')+'</td><td>'+signoff+'</td></tr>';
       }).join('')+'</tbody></table></div>';
@@ -3072,7 +3152,7 @@ function rActivities(){
   var acts=activities().sort(function(a,b){return (a.date||'')<(b.date||'')?1:-1;});
   var tb=$('actbody');
   tb.innerHTML=acts.length?acts.map(function(a){
-    return '<tr><td>'+fdate(a.date)+' '+H(a.time||'')+'</td><td>'+H(a.name)+'</td><td><span class="badge bx">'+H(a.category||'')+'</span></td>'+
+    return '<tr><td>'+fdate(a.date)+' '+H(a.time||'')+'</td><td>'+H(a.name)+'</td><td><span class="badge bx">'+H(alfLabel(ALF_ACTIVITY_CATEGORY_LABEL,a.category))+'</span></td>'+
       '<td>'+((a.attendees||[]).length)+'</td>'+
       '<td>'+(alfCanManageActivities()?'<button class="btn bo bs" onclick="openActivityModal(\''+a.id+'\')">Edit</button>':'--')+'</td></tr>';
   }).join(''):'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px;">No activities on file</td></tr>';
@@ -3129,7 +3209,12 @@ function aiAsk(){
     .then(function(data){
       var el=$('ai-pending');
       var text=(data&&data.content&&data.content[0]&&data.content[0].text)||(data&&data.error&&'Error: '+data.error.message)||'No response.';
-      if(el){el.removeAttribute('id');el.textContent=text;}
+      // Rendered as markdown rather than dropped in raw: the model answers with
+      // ##, ** and --- and this used to print those characters literally, which
+      // reads as broken output. alfRenderMarkdown() ESCAPES FIRST and only then
+      // introduces its own tags, so this stays subject to the same no-raw-HTML
+      // discipline as every other AI surface in this app (Guardian check 26).
+      if(el){el.removeAttribute('id');el.style.color='';el.innerHTML=alfRenderMarkdown(text);}
       hist.scrollTop=hist.scrollHeight;
     }).catch(function(e){
       var el=$('ai-pending');
@@ -3226,6 +3311,71 @@ async function saveRateCard(){
 }
 var ALF_LEVEL_LABEL={independent_living:'Independent Living',assisted_living:'Assisted Living',memory_care:'Memory Care',skilled_nursing:'Skilled Nursing'};
 var ALF_SUBTIER_LABEL={al1:'AL1 - Minimal Assistance',al2:'AL2 - Moderate Assistance',al3:'AL3 - Extensive Assistance'};
+// ── ENUM DISPLAY LABELS (2026-08-23 visual-review fix) ───────────────────
+// Raw stored enum values were leaking into user-facing text: the payer badge
+// read "private", the care-plan modal read "total_dependence", the activity
+// badge read "social". Invoice Details already rendered its levels correctly
+// via careLevelLabel(), so the pattern existed and simply was not reused --
+// these maps extend the SAME approach rather than introducing new per-site
+// formatting logic. alfLabel() falls back to a de-underscored, capitalised
+// form so an enum value added later degrades to something readable instead of
+// rendering raw, and an already-human string passes through unchanged.
+var ALF_PAYER_LABEL={private:'Private Pay',medicaid_hcbs:'Medicaid HCBS Waiver',va:'VA',self_pay:'Self-Pay'};
+var ALF_ADL_LEVEL_LABEL={independent:'Independent',supervision:'Supervision',limited:'Limited Assistance',extensive:'Extensive Assistance',total_dependence:'Total Dependence'};
+var ALF_ACTIVITY_CATEGORY_LABEL={social:'Social',physical:'Physical',cognitive:'Cognitive',spiritual:'Spiritual',other:'Other'};
+var ALF_HOLDING_LABEL={cold:'Cold holding',hot:'Hot holding',roast_hot:'Roast hot holding'};
+var ALF_RECORD_TYPE_LABEL={food_temp:'Food temperature',sanitation:'Sanitation check',emergency_drill:'Emergency drill'};
+var ALF_INCIDENT_STATUS_LABEL={open:'Open',under_review:'Under Review',closed:'Closed'};
+// ── MINIMAL MARKDOWN RENDERER (2026-08-23 visual-review fix) ────────────
+// The AI proxy returns markdown; the AI Assistant used to print it with
+// textContent, so users saw literal ##, **, ### and --- in a clinical answer.
+//
+// SECURITY POSTURE, deliberate and worth stating: this ESCAPES THE WHOLE
+// STRING FIRST via H(), then introduces only its own known-safe tags. Model
+// output is untrusted the same way user input is (Guardian check 26), so no
+// path here can emit attacker-supplied markup -- any < or > in the response is
+// already entity-encoded before a single tag is added. Deliberately supports
+// only headings, bold, italic, bullets and rules; anything else falls through
+// as escaped text rather than being interpreted.
+function alfRenderMarkdown(src){
+  var lines=H(String(src==null?'':src)).split('\n');
+  var out=[],inList=false;
+  function closeList(){if(inList){out.push('</ul>');inList=false;}}
+  lines.forEach(function(raw){
+    var line=raw.replace(/\s+$/,'');
+    if(/^\s*(---+|\*\*\*+)\s*$/.test(line)){closeList();out.push('<hr style="border:none;border-top:1px solid var(--border);margin:10px 0">');return;}
+    if(!line.trim()){closeList();return;}
+    var h=/^(#{1,6})\s+(.*)$/.exec(line);
+    if(h){
+      closeList();
+      var size=[0,16,15,14,13,13,13][h[1].length]||13;
+      out.push('<div style="font-weight:700;font-size:'+size+'px;margin:10px 0 4px">'+inline(h[2])+'</div>');
+      return;
+    }
+    var li=/^\s*[-*+]\s+(.*)$/.exec(line)||/^\s*\d+[.)]\s+(.*)$/.exec(line);
+    if(li){
+      if(!inList){out.push('<ul style="margin:4px 0 4px 18px;padding:0">');inList=true;}
+      out.push('<li style="margin:2px 0">'+inline(li[1])+'</li>');
+      return;
+    }
+    closeList();
+    out.push('<div style="margin:4px 0">'+inline(line)+'</div>');
+  });
+  closeList();
+  return out.join('');
+  function inline(t){
+    return t
+      .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>')
+      .replace(/`([^`]+)`/g,'<code>$1</code>');
+  }
+}
+function alfLabel(map,value){
+  var v=String(value==null?'':value);
+  if(!v)return '--';
+  if(map&&map[v])return map[v];
+  return v.replace(/_/g,' ').replace(/^./,function(c){return c.toUpperCase();});
+}
 // Lossless migration for residents saved before care_level_history existed (Phase 0 item 1):
 // a legacy flat al1/al2/al3 value becomes a single history entry with an HONESTLY UNKNOWN
 // effective_date -- there is no record of when it actually started, and inventing one would be
