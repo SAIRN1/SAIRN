@@ -2254,6 +2254,13 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             </div>
             <div id="elig-payer-results" style="margin-bottom:8px;"></div>
             <div class="toolbar">
+                <!-- Links this check to a claim/encounter so the note-to-code
+                     screen can show what the payer actually said for it
+                     (2026-08-23, Phase 3 item 4). Same linkage the
+                     pre-submission risk check already uses. Optional -- a
+                     check without one still works, it just cannot be
+                     surfaced against a coding session later. -->
+                <input type="text" id="elig-encounter-ref" placeholder="Claim / encounter reference (optional)" class="search-input">
                 <input type="text" id="elig-payer-id" placeholder="Payer ID (required)" class="search-input">
                 <input type="text" id="elig-npi" placeholder="Provider NPI" class="search-input">
                 <input type="text" id="elig-org" placeholder="Provider / practice name" class="search-input">
@@ -5441,11 +5448,26 @@ How to answer:
                 var statusText = (res.planStatus && res.planStatus[0] && (res.planStatus[0].status || res.planStatus[0].statusCode))
                     || ((res.errors && res.errors.length) ? 'Payer returned an error' : 'No status returned');
                 var planText = (res.planStatus && res.planStatus[0] && res.planStatus[0].planDetails) || '—';
+                // Service types the payer ACTUALLY returned a status for.
+                // Deliberately narrow: status text and service-type codes
+                // only. No dollar amounts, no deductibles, no member data
+                // beyond what this log already held -- the panel's standing
+                // rule that the full payer response is not stored still
+                // holds, and this does not weaken it.
+                var coveredTypes = [];
+                (res.planStatus || []).forEach(function(ps){
+                    (ps.serviceTypeCodes || []).forEach(function(stcode){
+                        if (coveredTypes.indexOf(stcode) === -1) coveredTypes.push(stcode);
+                    });
+                });
                 await addEligibilityRecord({
                     patient: [first, last].filter(Boolean).join(' ') || memberId || '(unnamed)',
                     payer: payerId,
                     status: statusText,
-                    plan: planText
+                    plan: planText,
+                    encounter_ref: document.getElementById('elig-encounter-ref').value.trim(),
+                    service_types: coveredTypes,
+                    checked_for: depEntered ? ([depFirst, depLast].filter(Boolean).join(' ') + ' (dependent)') : ''
                 });
             } finally {
                 btn.disabled = false; btn.textContent = 'Check Eligibility';
@@ -5487,6 +5509,9 @@ How to answer:
                 id: 'el' + Date.now(),
                 patient: rec.patient, payer: rec.payer,
                 status: rec.status, plan: rec.plan,
+                encounter_ref: String(rec.encounter_ref || '').trim(),
+                service_types: Array.isArray(rec.service_types) ? rec.service_types : [],
+                checked_for: rec.checked_for || '',
                 date: scLocalToday()
             });
             var saved = saveEligibilityEntries(list);
@@ -6024,6 +6049,63 @@ How to answer:
             var hasConnectedRef = getEncoderCodes().some(function(c){ return c.type === 'CPT' || c.type === 'CDT'; });
             return { source: hasConnectedRef ? 'none' : 'unconnected' };
         }
+        // ================================================================
+        // PAYER-ELIGIBILITY-INFORMED SUGGESTIONS (2026-08-23, Phase 3 item 4)
+        // Precondition was that real-time eligibility actually works. It now
+        // does -- all six of Stedi's documented mock payers return real
+        // benefitsInformation through api/sc-eligibility.js.
+        //
+        // ADVISORY ONLY, BY DESIGN AND BY INSTRUCTION. This never blocks a
+        // suggestion, never changes a code, and never routes anything to
+        // needs_human_review. It surfaces what the payer actually said for
+        // this encounter, next to the suggestions, so a coder sees it before
+        // assigning rather than after a denial.
+        //
+        // THE LINE IT DOES NOT CROSS, and why the design is this narrow: an
+        // ICD-10/CPT/HCPCS code does not carry an X12 service-type code, and
+        // this app has NO verified mapping between them. Claiming "this code
+        // is covered" would require inventing that mapping -- precisely the
+        // fabrication class this codebase has spent weeks removing, and here
+        // it would be a fabrication about a patient's financial liability.
+        // So the advisory reports the ENCOUNTER's real coverage status and
+        // the service types the payer actually answered for, and says plainly
+        // that it is not a per-code determination.
+        function scEligibilityForEncounter(encounterRef) {
+            var ref = String(encounterRef || '').trim();
+            if (!ref) return null;
+            var matches = getEligibilityEntries().filter(function (e) {
+                return String(e.encounter_ref || '').trim().toLowerCase() === ref.toLowerCase();
+            });
+            if (!matches.length) return null;
+            // Most recent wins -- coverage changes, and an older check is not
+            // evidence about today.
+            return matches[matches.length - 1];
+        }
+        function scRenderEligibilityAdvisory(encounterRef) {
+            var ref = String(encounterRef || '').trim();
+            if (!ref) return '';
+            var el = scEligibilityForEncounter(ref);
+            if (!el) {
+                // Absence is stated, never implied as "no coverage".
+                return '<div style="background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#374151;">'
+                    + 'No eligibility check on file for encounter <b>' + escHtml(ref) + '</b>. Coverage was not checked -- this is not a statement that coverage is absent.'
+                    + '</div>';
+            }
+            var types = (el.service_types || []).length
+                ? (el.service_types || []).join(', ')
+                : 'none reported';
+            var planBit = (el.plan && el.plan !== '\u2014') ? (' on plan ' + escHtml(el.plan)) : '';
+            return '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#1e3a8a;">'
+                + '<b>Payer eligibility on file for encounter ' + escHtml(ref) + '</b><br>'
+                + 'Payer <b>' + escHtml(el.payer || '-') + '</b> reported <b>' + escHtml(el.status || '-') + '</b>'
+                + planBit
+                + ' when checked ' + escHtml(el.date || '-') + '.'
+                + (el.checked_for ? (' Checked for ' + escHtml(el.checked_for) + '.') : '')
+                + '<br>Service types the payer answered for: <b>' + escHtml(types) + '</b>.'
+                + '<br><span style="color:#3730a3;">This is the coverage status for the encounter, not a determination about any individual code below -- this tool does not map codes to service types and will not guess one.</span>'
+                + '</div>';
+        }
+
         async function suggestCodesFromNote(){
             var noteText = document.getElementById('note-input').value;
             var resultEl = document.getElementById('note-suggest-result');
@@ -6058,11 +6140,12 @@ How to answer:
                     return;
                 }
                 if (!suggestions.length) {
-                    resultEl.innerHTML = '<div style="font-size:12px;color:#666">No codes suggested -- the note didn\'t contain anything the model could ground a specific code in.</div>';
+                    resultEl.innerHTML = scRenderEligibilityAdvisory(document.getElementById('note-encounter-ref').value)
+                        + '<div style="font-size:12px;color:#666">No codes suggested -- the note didn\'t contain anything the model could ground a specific code in.</div>';
                     return;
                 }
 
-                var html = '';
+                var html = scRenderEligibilityAdvisory(document.getElementById('note-encounter-ref').value);
                 // Suggestions are held here so the Capture button can store
                 // the EXACT quote and the REAL verification result computed
                 // at suggestion time, rather than re-deriving either from
