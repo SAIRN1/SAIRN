@@ -1020,6 +1020,11 @@ label.chk input{width:auto;}
          designated. Shown only for those rules, and the engine still refuses
          a below-floor figure rather than raising it. -->
     <div id="dr-designated" style="display:none"></div>
+    <!-- Cap rules (FRCP 45(d)(2)(B), Ohio Civ.R. 45(C)(3)): the deadline is
+         the EARLIER of the computed period and a date the issuing party fixed
+         in the subpoena. That date is required -- without it there is no way
+         to tell which limb governs. -->
+    <div id="dr-cap" style="display:none"></div>
     <div class="fr">
       <div class="fg"><label>Service method</label>
         <select id="dr-service">
@@ -4301,6 +4306,7 @@ function drOnTrigger() {
     dw.style.display = '';
   }
   drRenderDesignated(t);
+  drRenderCap(t);
   drCheckCoverage();
 }
 
@@ -4341,6 +4347,27 @@ function drRenderDesignated(t) {
 // thing it can know for certain from the trigger date alone: whether the
 // trigger year itself is uncovered, or whether it is the LAST covered year,
 // in which case any period long enough to cross the boundary will refuse.
+// A cap rule's deadline is the earlier of its computed period and a date
+// the other party wrote into the document. The panel asks for that date
+// rather than letting the user press Compute and meet a refusal. As with
+// the designated-period field, the client does NOT decide anything about
+// it -- it collects the date and lets the engine compare the limbs, so
+// there is exactly one place that knows which one governs.
+function drRenderCap(t) {
+  var el = $('dr-cap');
+  if (!el) return;
+  var cp = t && t.cap;
+  if (!cp) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  el.innerHTML = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;' +
+    'padding:10px 14px;margin-bottom:8px;color:#92400e;font-size:12px">' +
+    '<b>This deadline is the earlier of two dates.</b> The period this rule computes, or ' +
+    H(cp.label || 'a date fixed by the other party') + ' — whichever comes first. ' +
+    'That date is required: without it there is no way to tell which one governs.' +
+    '</div><div class="fr"><div class="fg"><label>' + H(cp.label || 'Date fixed by the other party') + '</label>' +
+    '<input id="dr-cap-date" type="date"></div></div>';
+}
+
 function drCheckCoverage() {
   var el = $('dr-coverage');
   if (!el) return;
@@ -4398,6 +4425,11 @@ function drCompute() {
   // engine owns that judgement and its refusal names the rule and the floor;
   // a client-side check here would be a second implementation of the same rule
   // and the one the user hits first.
+  if (sel && sel.cap) {
+    var cd = $('dr-cap-date');
+    if (!cd || !cd.value) { toast('This rule needs ' + (sel.cap.label || 'a date fixed by the other party')); return; }
+    payload.cap_date = cd.value;
+  }
   if (sel && sel.designated_period) {
     var dd = $('dr-designated-days');
     if (!dd || !String(dd.value).trim()) { toast('This rule needs the period designated in the request'); return; }
@@ -4429,6 +4461,11 @@ function drCompute() {
           ' ' + H(String(d.floor.unit || '').replace(/_/g, ' ')) + '</b>, designated by ' +
           H(d.floor.designated_by || 'the requesting party') + '. Enter the period the request actually designated.</div>';
       }
+      if (d.code === 'CAP_DATE_REQUIRED' && d.required_cap) {
+        extra = '<div style="font-size:12px;margin-top:6px">This deadline is the earlier of the rule’s own period and <b>' +
+          H(d.required_cap.label || 'a date fixed by the other party') + '</b>. Enter that date — assuming the computed period ' +
+          'would give the later of the two whenever the other is sooner.</div>';
+      }
       if (d.code === 'DESIGNATED_PERIOD_BELOW_FLOOR') {
         extra = '<div style="font-size:12px;margin-top:6px">The request designated <b>' + H(String(d.designated)) +
           '</b>; ' + H(d.authority || 'the rule') + ' permits no less than <b>' + H(String(d.floor && d.floor.min)) +
@@ -4447,6 +4484,21 @@ function drCompute() {
       '<div style="font-size:12px;color:var(--muted)">Due date</div>' +
       '<div style="font-size:24px;font-weight:700;margin-bottom:2px">' + H(fdate(d.due_date)) + '</div>' +
       '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">' + H(d.rule.label || d.rule.rule_id) + '</div>' +
+      // Which limb governed is not cosmetic: "earlier than the rule’s own
+      // period because of what the document said" is a different fact for an
+      // attorney than a bare date, and the alternative date is shown so the
+      // comparison is visible rather than implied.
+      (d.cap && d.cap.state === 'applied'
+        ? '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:8px 12px;margin-bottom:10px;color:#92400e;font-size:12px">' +
+          '<b>Cut short by the other party’s date.</b> The rule’s own period would have ended <b>' +
+          H(fdate(d.cap.computed_period_would_have_been)) + '</b>, but the earlier date governs. It is used exactly as given and is not rolled off a weekend or holiday.</div>'
+        : '') +
+      (d.cap && d.cap.state === 'tie'
+        ? '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Both limbs of this rule land on the same day.</div>'
+        : '') +
+      (d.cap && d.cap.state === 'not_applied'
+        ? '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">The other party’s date (' + H(fdate(d.cap.cap_date)) + ') falls later, so the rule’s own period governs.</div>'
+        : '') +
       // A refused extension must be VISIBLE. Before Phase 2 every non-applied
       // case collapsed to the same silent false, so a rule asking for an
       // extension the engine could not evaluate looked identical to no
