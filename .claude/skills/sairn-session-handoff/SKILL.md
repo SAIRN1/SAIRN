@@ -1,6 +1,6 @@
 ---
 name: sairn-session-handoff
-description: 'How to write a SAIRN-SESSION-N-HANDOFF.md, codified from what actually worked across three real handoffs tonight (65, 66, 67) rather than adopted wholesale from any single external source. Trigger before capacity runs low, before a known stopping point, or any time a session needs to hand off to a fresh one — same as before, now with a real, tested template instead of writing one from scratch each time.'
+description: 'How to write a SAIRN session handoff, codified from what actually worked across three real handoffs (65, 66, 67) rather than adopted wholesale from any single external source. Naming is APP-DATE-SUBJECT as of 2026-08-23 (the old app+counter scheme collided in production — see Naming convention), and a handoff is not considered written until it is committed in the same action. Trigger before capacity runs low, before a known stopping point, or any time a session needs to hand off to a fresh one.'
 ---
 
 # SAIRN Session Handoff
@@ -12,15 +12,72 @@ Two genuinely good mechanical ideas borrowed from the upstream skill, kept:
 1. **Automated triggering** — a SessionStart hook that reminds a fresh session to read the latest handoff before touching anything, and a SessionEnd hook that prompts writing one if capacity is running low. (Add to `.claude/settings.json` if not already present — mechanical trigger, not just a remembered habit.)
 2. **A redaction check before saving** — given tonight involved a real GitHub PAT and could easily have involved Stripe keys in a handoff doc, scan for anything credential-shaped before writing the file, same category of check as Guardian's "no API keys in HTML."
 
-## Naming convention — resolved 2026-07-26
+## Naming convention — CORRECTED 2026-08-23 (supersedes the 2026-07-26 resolution)
 
-Two conventions exist in the repo right now: a general `SAIRN-SESSION-N` series (used for StoneDesk work, N=63 through 67 so far) and a separate `SAIRNVET-SESSION-N` series (N=56 through 62). Both exist; neither was ever formally decided as *the* standard, which becomes a real problem the moment this skill is genuinely used for every app, not just StoneDesk.
+**Use `APP-YYYY-MM-DD-subject-handoff.md`.** Examples:
 
-**Resolved: per-app prefix, always.** `SAIRN-SESSION-N` was really StoneDesk work all along — it should be understood as `STONEDESK-SESSION-N` in spirit, and future StoneDesk handoffs should use that explicit prefix rather than the generic one, matching SAIRNvet's existing pattern. When work spans multiple apps in one session (as tonight's skill-building did), use `SAIRN-PLATFORM-SESSION-N` for that specific cross-cutting work, keeping per-app numbering independent and never colliding with any single app's own series. Do not renumber the existing 63-67 files retroactively — apply this convention going forward only, and note the historical inconsistency in the next handoff so nobody re-derives the wrong pattern from old filenames.
+```
+SAIRNLAW-2026-08-23-lemaj-handoff.md
+STONEDESK-2026-08-23-st-wrapper-sweep-handoff.md
+SAIRN-PLATFORM-2026-08-23-skills-inventory-handoff.md
+```
 
-## The Template (proven across Sessions 65-67 tonight)
+App prefix, then ISO date, then a short subject slug. Sorts chronologically, and the subject means a session that opens the wrong file knows within one line.
 
-# SAIRN — Session N Handoff
+### Why the previous convention was replaced — this is not a style preference
+
+The 2026-07-26 resolution (below, kept for the record) settled on a **per-app prefix plus a counter**: `SAIRNLAW-SESSION-N-HANDOFF.md`. That fixed cross-app collisions and was correct as far as it went. It did not survive contact with concurrent sessions.
+
+**What actually happened, 2026-08-23:** two `SAIRNLAW-SESSION6-HANDOFF.md` files existed simultaneously with completely different content — one on trust-disbursement work (2026-08-18), one on LeMAJ argument decomposition (2026-08-23). Neither session was wrong. Both were genuinely SAIRNlaw, both were genuinely the sixth. A fresh session was pointed at "the Session 6 handoff", read the wrong one, and found none of the work it had been sent to continue.
+
+**The root cause is the counter itself.** `N` can only stay unique if every session agrees on what `N` is before writing. With multiple clones and concurrent sessions on the same app, no such agreement exists and none is enforceable. A date plus a subject needs no coordination — two sessions collide only if they work the same app on the same day on the same topic, and if that happens the subject slug still distinguishes them.
+
+This is the **second** recorded instance of this failure class (the first is the `sairn_handoff_naming_correction` memory: STONEDESK numbering at 78 vs SAIRN-PLATFORM at 2, "re-derive latest, don't assume"). Treat a third as evidence the convention is still wrong, not that someone was careless.
+
+### Consequences for reading handoffs
+
+Do **not** find the latest handoff by taking the highest `N`. Sort by the date in the filename, and confirm the subject matches the work you were actually sent to do. If the content does not match the task you were given, say so immediately rather than proceeding on the wrong document.
+
+### Historical record — the superseded 2026-07-26 resolution
+
+Two conventions existed at that time: a general `SAIRN-SESSION-N` series (StoneDesk work, N=63 through 67) and a separate `SAIRNVET-SESSION-N` series (N=56 through 62). The resolution was per-app prefix always — `SAIRN-SESSION-N` understood as `STONEDESK-SESSION-N`, and `SAIRN-PLATFORM-SESSION-N` for cross-cutting work. **Do not renumber or rename existing files retroactively** under either convention; the old names stay as they are. Apply the date-stamped pattern going forward only.
+
+## A handoff is not written until it is committed — standing rule, 2026-08-23
+
+**Writing the file and committing it are one action, not two.** A handoff that exists only in a local working tree is not a handoff. It is invisible to every other clone, invisible to the fresh session that needs it, and — if a tracked file of the same name exists upstream — it will block that clone's next `git pull` outright.
+
+This is not hypothetical. The colliding `SAIRNLAW-SESSION6-HANDOFF.md` described above sat **untracked for five days** in `C:\Users\marsh\`. Its blob was never in the object database at all. It was also the only untracked file in that working tree that would have aborted a pull ("untracked working tree file would be overwritten").
+
+So, every time:
+
+1. Write the file **in one of the real clones** (see next section).
+2. Run the redaction check — scan for anything credential-shaped before it goes in a commit.
+3. `git add` + `git commit` + `git push` **in the same action as writing it.**
+4. Confirm it is actually on `origin/main` — `git cat-file -e origin/main:<file>` or equivalent. A clean `git push` is not proof, per the standing Push Protocol.
+
+If you cannot commit it — dirty tree mid-task, unresolved conflict, no push access — **say so explicitly in your report to the human.** Do not leave a local-only handoff and describe the handoff as written.
+
+## Where handoffs may be written — repo/clone structure
+
+Write handoffs only inside a dedicated clone. As of 2026-08-23 those are:
+
+```
+C:\Users\marsh\Documents\SAIRN-hank
+C:\Users\marsh\Documents\SAIRN-cc
+C:\Users\marsh\Documents\SAIRN-cody
+```
+
+These are four independent **clones**, not `git worktree` checkouts of one repo — `SAIRN-ACTIVE-WORK.md` carries the verified correction on that point. `C:\Users\marsh\Documents\SAIRN` is a fifth checkout that is **stale and abandoned (2026-08-18) — do not work in it either.** Re-derive this list rather than trusting it: check `SAIRN-ACTIVE-WORK.md` and the actual directories, since clone layout has already changed once and been documented wrongly once.
+
+**Do not write handoffs — or any repo file — to `C:\Users\marsh\` directly.** That path is itself a working-tree checkout of `SAIRN1/SAIRN`, which is the structural cause of the collision above: it is the first place a fresh session looks, a stray file there is invisible to every other clone, and it sits far behind `origin/main` with untracked files capable of blocking a pull.
+
+**This is flagged, not fixed.** Retiring that checkout is a repo-setup decision for whoever manages clone layout — raise it with them. Do not migrate, delete, or re-point it as a side effect of writing a handoff.
+
+## The Template (proven across Sessions 65-67)
+
+Save as `APP-YYYY-MM-DD-subject-handoff.md`, in a real clone, committed in the same action.
+
+# APP — Handoff, YYYY-MM-DD (subject)
 
 Written [mid-session before capacity ran out / at natural stopping point].
 Claims below are independently verified against the actual repo/live site,
