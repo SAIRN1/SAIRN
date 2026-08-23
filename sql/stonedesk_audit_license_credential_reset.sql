@@ -1,0 +1,73 @@
+-- sql/stonedesk_audit_license_credential_reset.sql
+-- Clears the employee credentials on SD-AUDIT-2026 so its documented
+-- bootstrap (audit-owner / 135790) can be run again.
+--
+-- ROOT CAUSE THIS FIXES (established live 2026-08-23, not assumed):
+--   1. The license row itself is fine. action:'check_license' against
+--      SD-AUDIT-2026 returns {"ok":true,"active":true,"app_id":"stonedesk"},
+--      contrasted against a bogus key which returns INVALID_LICENSE.
+--   2. The license IS already provisioned. action:'bootstrap' returns
+--      409 ALREADY_PROVISIONED, so at least one sd_employee_auth row
+--      exists for this license_hash. That check runs BEFORE any insert,
+--      so probing it wrote nothing.
+--   3. The documented credential does not authenticate. api/sd-auth.js
+--      returns the SAME generic INVALID_CREDENTIALS for "no such
+--      employee_id" and "wrong PIN" (deliberate — see its own comment at
+--      the login branch), so which of the two happened here cannot be
+--      determined from outside the database. It is one or the other.
+--   4. THE ACTUAL ROOT CAUSE IS STRUCTURAL, NOT A BAD PIN: api/sd-auth.js
+--      exposes exactly five actions — bootstrap, login, setup,
+--      check_license, roster. 'bootstrap' refuses once any row exists;
+--      'setup' requires an already-valid owner/admin session token. There
+--      is NO recovery path. Once a license's first owner PIN is lost, that
+--      license is permanently unusable through the API by design.
+--      That is why three StoneDesk keys have now been burned the same way
+--      (SD-PINNACLE-2026 "Headless Check Co" PIN unknown, SD-AUDIT-2026
+--      here, and SD-PARTNER-2026 provisioned specifically to dodge the
+--      first two rather than fix the cause). Adding a fourth key would
+--      repeat the pattern; this resets the second one instead.
+--
+-- WHY A DELETE IS SAFE HERE SPECIFICALLY: SD-AUDIT-2026 is a dedicated
+-- test license created by sql/stonedesk_audit_license_seed.sql for
+-- automated click-through testing. It is not a customer license. This
+-- statement touches ONLY sd_employee_auth (login credentials). It does
+-- NOT touch sd_slabs, sd_slab_lineage, sd_crm or any other data on the
+-- license — in particular the Phase 1 verification artifacts
+-- (BLK-PROD-1, BND-PROD-1, SLAB-PROD-P, SLAB-PROD-R, EVT-PROD-1,
+-- EVT-PROD-2) are unaffected and still need their own separate purge.
+--
+-- DO NOT run this against SD-PINNACLE-2026 or any customer key without a
+-- separate, explicit decision — deleting a real shop's credentials locks
+-- every one of their employees out until someone re-bootstraps.
+--
+-- license_hash below is sha256('SD-AUDIT-2026'), computed with the same
+-- hashLicense() the API uses (api/_lib/license.js:39). Verify before
+-- running:
+--   node -e "console.log(require('crypto').createHash('sha256').update('SD-AUDIT-2026').digest('hex'))"
+
+-- Optional: see what is actually there before deleting anything.
+-- select employee_id, display_name, role, active, failed_attempts, locked_until
+--   from public.sd_employee_auth
+--  where license_hash = '8f1610119858d53f7deee8f975adf501b0ed1ee6dd57c674399743da7d6b76ea';
+
+delete from public.sd_employee_auth
+ where license_hash = '8f1610119858d53f7deee8f975adf501b0ed1ee6dd57c674399743da7d6b76ea';
+
+-- Then re-bootstrap the documented credential (this is the same command
+-- sql/stonedesk_audit_license_seed.sql already documents):
+--
+--   curl -s -X POST https://sairn.vercel.app/api/sd-auth \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer SD-AUDIT-2026' \
+--     -d '{"action":"bootstrap","employee_id":"audit-owner","display_name":"Audit Owner","pin":"135790"}'
+--
+-- Expect {"ok":true,"token":...,"role":"owner"}. A 409 ALREADY_PROVISIONED
+-- means the delete did not take effect — check the license_hash matches.
+--
+-- Then confirm the credential actually logs in, which is the step that was
+-- never possible before:
+--
+--   curl -s -X POST https://sairn.vercel.app/api/sd-auth \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer SD-AUDIT-2026' \
+--     -d '{"action":"login","employee_id":"audit-owner","pin":"135790"}'
