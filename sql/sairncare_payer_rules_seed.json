@@ -2,11 +2,32 @@
   "_readme": [
     "SAIRNcare Phase 1 payer-rule seed. Load via the alf_payer_rules 'seed' action.",
     "",
-    "SCOPE IS DELIBERATELY NARROW AND STATED: Ohio and Indiana only, plus one",
-    "federal hospice rule. Michigan and Pennsylvania are NOT here because no",
-    "primary-source codes or modifiers could be located for either during this",
-    "build. The engine returns an explicit NO_RULE_FOR_STATE naming the state",
-    "rather than falling back to another state's rules.",
+    "SCOPE IS DELIBERATELY NARROW AND STATED. Ohio and Indiana are ROUTABLE:",
+    "this app will assemble a claim line for them. Michigan and Pennsylvania are",
+    "REFERENCE ONLY: real, sourced rules with real codes, which the engine",
+    "explicitly refuses to route. Plus one federal hospice rule. The engine",
+    "returns an explicit NO_RULE_FOR_STATE naming the state rather than falling",
+    "back to another state's rules.",
+    "",
+    "WHY MI AND PA ARE NOT ROUTABLE (researched 2026-08-23, and the answer is a",
+    "fact about the programs, not a limit of the research):",
+    "  MI -- MI Choice has NO assisted-living per-diem code. The service is",
+    "        Community Living Supports, billed H2015 in 15-MINUTE units of care",
+    "        actually delivered, and the provider bills the waiver agency rather",
+    "        than the state. Days present determines neither the unit count nor",
+    "        the payer.",
+    "  PA -- The OLTL fee schedule contains no assisted-living line at all. The",
+    "        nearest code, Residential Habilitation W0102, is an OBRA-waiver",
+    "        service whose licensed setting may not exceed 8 unrelated residents",
+    "        and whose unit is a day carrying at least 8 hours of service. Most",
+    "        Medicaid ALF residents in PA are in Community HealthChoices, which",
+    "        is capitated managed care with no state fee schedule to seed.",
+    "The earlier version of this file said no primary-source codes could be",
+    "LOCATED for either state. That was honest at the time and turned out to",
+    "understate the situation: the codes exist and are now recorded, but the",
+    "billing models are genuinely different, which is the more useful finding and",
+    "the more dangerous one to get wrong. A T2031-shaped Michigan rule would have",
+    "looked exactly like Ohio's and billed a code Michigan does not use.",
     "",
     "NO DOLLAR RATES APPEAR ANYWHERE IN THIS FILE, on purpose. Rates live on the",
     "facility rate card where the facility enters its own. Ohio's rates are in",
@@ -16,9 +37,18 @@
     "into billing software is the exact failure sairn-guardian-v2 Check 0b exists",
     "to catch.",
     "",
-    "Every rule carries a real authority citation with a resolvable URL, read on",
-    "2026-08-22. Day counts and thresholds are quoted from the source in",
-    "authority.quote rather than paraphrased."
+    "Every rule carries a real authority citation with a resolvable URL and the",
+    "date it was read: 2026-08-22 for OH, IN and the hospice rule, 2026-08-23 for",
+    "MI and PA. Day counts, thresholds, codes and units are quoted from the source",
+    "in authority.quote rather than paraphrased.",
+    "",
+    "ONE EXTRACTION NOTE, because it nearly produced wrong codes: the PA OLTL fee",
+    "schedule PDF misaligns by one row under a plain text dump -- the code column",
+    "lands against the wrong service name. It was re-extracted in table mode and",
+    "cross-checked against known HCPCS semantics (T1002 RN, T1003 LPN, GO for",
+    "occupational therapy, GP for physical therapy, 97537 community reintegration)",
+    "before any code here was trusted. If this schedule is ever re-read, check that",
+    "alignment first."
   ],
 
   "rules": [
@@ -183,9 +213,112 @@
           "read_on": "2026-08-22"
         }
       }
+    },
+
+    {
+      "rule_id": "MI-HCBS-CLS-2026",
+      "state": "MI",
+      "program": "medicaid_hcbs",
+      "effective_from": "2026-04-01",
+      "effective_to": null,
+      "data": {
+        "label": "Michigan MI Choice waiver — Community Living Supports in a licensed residential setting (reference only, not routable)",
+        "billing_model": "reference_only",
+        "tier_model": "none",
+        "not_routable_reason": "MI Choice pays Community Living Supports in 15-MINUTE units of service actually delivered, and the provider bills the WAIVER AGENCY, which then submits encounter data to MDHHS through CHAMPS — the provider does not bill the state directly. Neither the unit count nor the payer can be derived from how many days a resident was present, so this app records the codes and refuses to assemble a claim line. Building one from occupancy would fabricate the unit count on a Medicaid claim.",
+        "_why_this_is_not_a_t2031_state": "Ohio and Indiana both pay assisted living as a per-resident amount under T2031 keyed to days present. Michigan has no equivalent: there is no assisted-living per-diem code in MI Choice at all. The residential setting is where the service happens, not what is billed. Seeding a T2031-shaped rule for Michigan would have been the single most damaging thing available here, because it would have looked exactly like the other two states and produced claims for a code Michigan does not use.",
+        "codes": [
+          { "code": "H2015", "description": "Comprehensive Community Support Services, per 15 minutes — the MI Choice code for Community Living Supports (CLS)", "unit": "15 minutes", "evv_required": true },
+          { "code": "S5150", "description": "Unskilled Respite Care, not Hospice, per 15 minutes — MI Choice", "unit": "15 minutes", "evv_required": true },
+          { "code": "S5101", "description": "Adult day health — limited to one unit per day", "unit": "1 unit/day", "limit": "one unit per day" },
+          { "code": "S5102", "description": "Adult day health — limited to one unit per day", "unit": "1 unit/day", "limit": "one unit per day" }
+        ],
+        "modifiers": {
+          "SC": "Waiver agencies must use the SC modifier when billing for ancillary items."
+        },
+        "constraints": [
+          "CLS provided in a residential setting like assisted living, Adult Foster Care, or a Home for the Aged includes ONLY those services and supports that are IN ADDITION TO, and must not replace, the usual and customary supports and services furnished to residents in the licensed setting. Billing CLS for care the facility's own licence already obliges it to provide is a duplicate claim.",
+          "CLS does not include the costs associated with room and board.",
+          "Documentation in the participant's record must clearly identify the need for additional supports not covered by licensure, and the person-centred service plan (PCSP) must clearly identify which portion of the supports is covered by CLS.",
+          "Homemaking tasks incidental to ADL assistance may be included, but must not replace usual and customary homemaking required by licensure.",
+          "CLS excludes nursing and skilled therapy services.",
+          "Where transportation incidental to CLS is included, the waiver agency must not also authorise transportation as a separate waiver service.",
+          "H2015 and S5150 require Electronic Visit Verification for any personal care service starting or ending in the beneficiary's home.",
+          "Waiver agencies must submit all encounter data to MDHHS within 180 calendar days of the date the services were rendered."
+        ],
+        "unverified": [
+          "Rates. Michigan does not publish a statewide MI Choice fee schedule the way Ohio publishes appendix A or Pennsylvania publishes the OLTL schedule; MI Choice rates are set between MDHHS and each waiver agency. No rate is recorded here.",
+          "Whether any waiver agency requires additional local modifiers beyond SC. The Provider Manual names only SC for ancillary items; agency-level requirements were not surveyed and are not represented."
+        ],
+        "authority": {
+          "citation": "MDHHS Medicaid Provider Manual — Electronic Visit Verification chapter, § 3.1 PCS Service Codes (change made 4/1/2026), version dated July 1, 2026; and MI Choice Waiver chapter § 4.1 (Covered Waiver Services) and § 8.2 (Encounter Data Reporting), per MSA 21-48 effective January 1, 2022",
+          "url": "https://www.mdch.state.mi.us/dch-medicaid/manuals/MedicaidProviderManual.pdf",
+          "quote": "SECTION 3 — PERSONAL CARE SERVICES. 3.1 PCS SERVICE CODES [CHANGE MADE 4/1/2026] ... Program / Procedure Code / Service Description ... MI Choice — H2015 Comprehensive Community Support Services, per 15 minutes; S5150 Unskilled Respite Care, not Hospice, per 15 minutes. ... MI Choice Waiver chapter: CLS provided in a residential setting like assisted living, Adult Foster Care, or Homes for the Aged, includes only those services and supports that are in addition to, and must not replace, usual and customary supports and services furnished to residents in the licensed setting. CLS does not include the costs associated with room and board. ... HCPCS codes S5101 and S5102 are limited to one unit per day. ... Each waiver agency must submit all encounter data to MDHHS within 180 calendar days of the date that services were rendered.",
+          "read_on": "2026-08-23"
+        }
+      }
+    },
+
+    {
+      "rule_id": "PA-HCBS-RESHAB-OBRA-2025",
+      "state": "PA",
+      "program": "medicaid_hcbs",
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "data": {
+        "label": "Pennsylvania OBRA waiver / Act 150 — Residential Habilitation in a licensed PCH or ALR (reference only, not routable)",
+        "billing_model": "reference_only",
+        "tier_model": "none",
+        "not_routable_reason": "Two independent reasons, either of which is sufficient. (1) The unit is a DAY DEFINED AS A MINIMUM OF 8 HOURS OF RESIDENTIAL HABILITATION rendered within a calendar day — not a day the resident was present, so days-present is only an upper bound on the unit count and using it would over-bill. (2) The population this code reaches is narrow: it is an OBRA-waiver service, and most Pennsylvania assisted living and personal care home residents on Medicaid are in Community HealthChoices instead, which is capitated managed care with no state fee schedule at all.",
+        "_the_finding_that_matters_most": "PENNSYLVANIA HAS NO MEDICAID ASSISTED-LIVING PER-DIEM CODE. The OLTL fee schedule effective 2025-01-01 was read line by line and contains no assisted living line item of any kind. The only state-published code that reaches a licensed personal care home or assisted living residence is Residential Habilitation, and its own waiver caps the licensed setting at 8 unrelated individuals — which excludes essentially every facility this app is built for. A rule that simply listed W0102 as 'Pennsylvania's assisted living code' would have been sourced, precise, and badly wrong in practice.",
+        "codes": [
+          { "code": "W0100", "description": "Residential Habilitation 1-3 (unlicensed provider-owned setting, no more than three residents)", "unit": "1 day" },
+          { "code": "W0102", "description": "Residential Habilitation 4-8 (licensed setting: Personal Care Home under 55 Pa. Code Ch. 2600, or Assisted Living Residence under Ch. 2800)", "unit": "1 day" },
+          { "code": "W0101", "modifiers_by_level": { "level_1_1to1": "U4", "level_2_2to1_or_greater": "U5" }, "description": "Residential Enhanced Staffing add-on for the 1-3 setting", "unit": "1 hour" },
+          { "code": "W0103", "modifiers_by_level": { "level_1_1to1": "U4", "level_2_2to1_or_greater": "U5" }, "description": "Residential Enhanced Staffing add-on for the 4-8 setting", "unit": "1 hour" }
+        ],
+        "unit_definition": "A day is a period of a minimum of 8 hours of service rendered by a residential habilitation provider within a 24-hour period beginning at 12:00 am and ending at 11:59 pm.",
+        "constraints": [
+          "Payment is not made for room and board.",
+          "Effective July 1, 2014, licensed settings serving individuals enrolled in the OBRA Waiver may not exceed a licensed capacity of more than 8 unrelated individuals. A PCH or ALR licensed for 9 or more cannot deliver this service to an OBRA participant at all.",
+          "Licensed settings are settings in which four or more individuals reside and are licensed as Personal Care Homes (55 Pa. Code Ch. 2600) or Assisted Living Residences (55 Pa. Code Ch. 2800). Unlicensed settings have no more than three residents.",
+          "Transportation is a component of the Residential Habilitation rate and may NOT also be billed as a separate transportation service on the individual's ISP.",
+          "Residential Enhanced Staffing is an hourly ADD-ON, available only where the needs assessment identifies a requirement for continual assistance for medical or behavioural stability. It is not a base rate.",
+          "Residential Habilitation cannot be billed simultaneously with Community Integration, Structured Day Habilitation, Adult Daily Living, job coaching, employment skills development, or one-to-one therapies.",
+          "OBRA waiver eligibility is age 18-59 with a severe developmental physical disability requiring an ICF/ORC level of care, with substantial functional limitations in three or more major life activities. Someone who turns 60 while enrolled may continue."
+        ],
+        "community_healthchoices_note": "Community HealthChoices (CHC) is where most Medicaid-funded Pennsylvania assisted living and personal care home residents actually are. CHC is capitated managed care administered through MCOs, so there is no state-published CHC fee schedule to seed: codes and rates for a CHC participant come from the facility's contract with its MCO. That is a real absence of a state rule, not a gap in this research, and it is why no CHC rule appears here.",
+        "unverified": [
+          "Whether any individual CHC managed care organisation uses these same W-codes in its provider contracts. MCO contracts are not public and were not surveyed.",
+          "Region assignment. The OLTL schedule prices most services by four regions, but Residential Habilitation is priced identically across all four, so no region field is recorded. If a future schedule differentiates them, this rule must be re-read rather than extrapolated."
+        ],
+        "authority": {
+          "citation": "OLTL Home and Community Based Waiver Services Rates, effective January 1, 2025 (procedure codes and units); PA OBRA Waiver Appendix C-3 Waiver Services Specifications, Residential Habilitation service definition; PA DHS OBRA Waiver eligibility criteria",
+          "url": "https://www.pa.gov/content/dam/copapwp-pagov/en/dhs/documents/providers/documents/long_term_care_providers/oltl-hcbs-rates-jan-1-2025.pdf",
+          "quote": "OLTL fee schedule: Residential Habilitation 1-3 — W0100 — 1 Day; Residential Habilitation 1-3 Support 1:1 — W0101 U4 — 1 Hour; Residential Habilitation 1-3 Support 2:1 — W0101 U5 — 1 Hour; Residential Habilitation 4-8 — W0102 — 1 Day; Residential Habilitation 4-8 Support 1:1 — W0103 U4 — 1 Hour; Residential Habilitation 4-8 Support 2:1 — W0103 U5 — 1 Hour. ... Appendix C-3: Licensed Settings are settings in which four or more individuals reside and are licensed as Personal Care Homes (reference 55 PA Code Chapter 2600) or Assisted Living Residences (reference 55 PA Code Chapter 2800). ... A day is defined as a period of a minimum of 8 hours of service rendered by a residential habilitation provider within a 24-hour period beginning at 12:00 am and ending at 11:59 pm. ... Effective July 1, 2014 licensed settings serving individuals enrolled in the OBRA Waiver may not exceed a licensed capacity of more than 8 unrelated individuals. ... Payment is not made for room and board.",
+          "read_on": "2026-08-23"
+        }
+      }
     }
   ],
 
-  "claimed_hcbs_states": ["OH", "IN"],
-  "uncovered_states_disclosed": ["MI", "PA"]
+  "claimed_hcbs_states": ["OH", "IN", "MI", "PA"],
+
+  "routable_states": ["OH", "IN"],
+  "reference_only_states": ["MI", "PA"],
+  "uncovered_states_disclosed": [],
+
+  "coverage_note": [
+    "claimed_hcbs_states now lists all four, because all four have real sourced",
+    "rules on file. That is NOT the same as all four being billable through this",
+    "app, and hcbsCoverage() deliberately keeps them apart:",
+    "  routable      = OH, IN  -> have: 2",
+    "  reference only = MI, PA -> recorded, cited, and explicitly NOT routed",
+    "MI and PA are reference-only because their programs genuinely do not pay",
+    "assisted living on a days-present basis (MI bills 15-minute CLS units to a",
+    "waiver agency; PA has no assisted-living code at all and its nearest",
+    "residential code is capped at 8 residents inside a narrow waiver). Counting",
+    "them as covered would turn 'we found the real rule and it does not apply the",
+    "way you expect' into 'you are fully covered', which is the opposite claim."
+  ]
 }

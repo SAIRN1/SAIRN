@@ -96,19 +96,68 @@ function routeHcbsClaim(input) {
   }
 
   const d = rule.data || {};
-  const tiers = d.tier_modifiers || {};
+
+  // ── IS THIS RULE ROUTABLE AT ALL? ────────────────────────────────────────
+  // Added 2026-08-23, when Michigan and Pennsylvania were researched and
+  // turned out not to bill assisted living the way Ohio and Indiana do.
+  //
+  // The original engine assumed every state pays a per-resident amount keyed
+  // to days present. That is true of OH and IN and is NOT a general fact:
+  //   MI  -- MI Choice pays Community Living Supports in 15-MINUTE units of
+  //          service actually delivered, and the provider bills the waiver
+  //          agency rather than the state. Days present does not determine the
+  //          unit count, so computing one from occupancy would invent it.
+  //   PA  -- the only state-published residential code that reaches a licensed
+  //          personal care home or assisted living residence sits in the OBRA
+  //          waiver, whose unit is a day on which at least 8 HOURS of service
+  //          were rendered -- again not the same thing as a day present.
+  // A rule that declares billing_model 'reference_only' is real, sourced and
+  // worth showing, but this engine refuses to assemble a claim from it. The
+  // refusal carries the recorded codes so the information is not lost; it just
+  // is not presented as a computed claim line.
+  if (d.billing_model === 'reference_only') {
+    return refuse('NOT_ROUTABLE',
+      (rule.state || '?') + ' does not bill this service on a days-present basis, so this app will not assemble the claim. ' +
+      (d.not_routable_reason || 'The recorded codes are provided for reference and the claim must be built from the service log.'),
+      {
+        state: rule.state, rule_id: rule.rule_id || null,
+        reference_only: true,
+        codes: d.codes || null,
+        constraints: d.constraints || [],
+        authority: d.authority || null
+      });
+  }
+
+  // ── TIER ─────────────────────────────────────────────────────────────────
+  // tier_model must be DECLARED. Previously the engine read tier_modifiers and,
+  // if absent, fell through to MISSING_TIER with an empty available_tiers list
+  // -- which told a tierless state's user to supply one of nothing. A rule that
+  // has not said which case it is in is a data defect, and is now named as one
+  // rather than reported as a missing input the user could never provide.
+  const tiers = d.tier_modifiers || null;
+  const tierModel = d.tier_model || (tiers ? 'assigned' : null);
+  if (!tierModel) {
+    return refuse('MALFORMED_RULE',
+      'Rule ' + (rule.rule_id || '?') + ' declares no tier_model and carries no tier_modifiers, so it cannot say whether this state uses acuity tiers. Fix the rule; do not answer from it.');
+  }
   const tier = input.tier;
-  if (!tier) {
+  if (tierModel === 'none') {
+    // A tier supplied against a tierless state is refused rather than ignored:
+    // silently dropping it would let a caller believe a tier was applied.
+    if (tier) {
+      return refuse('TIER_NOT_APPLICABLE',
+        (rule.state || '?') + ' does not use acuity tiers for this service, so tier "' + tier + '" cannot be applied. Resubmit without a tier.');
+    }
+  } else if (!tier) {
     // The assigner is returned as its own field rather than spliced into the
     // sentence -- these descriptors are a full clause in some states and read
     // as broken prose when concatenated mid-sentence.
     return refuse('MISSING_TIER',
       'This claim needs the resident’s assigned acuity tier, which is set by an external assessment and cannot be derived from the care level on file.',
-      { assigned_by: d.tier_assigned_by || 'the state’s designee', available_tiers: Object.keys(tiers) });
-  }
-  if (!tiers[tier]) {
+      { assigned_by: d.tier_assigned_by || 'the state’s designee', available_tiers: Object.keys(tiers || {}) });
+  } else if (!tiers || !tiers[tier]) {
     return refuse('UNKNOWN_TIER',
-      'Tier "' + tier + '" is not one of the tiers ' + (rule.state || '?') + ' recognises: ' + Object.keys(tiers).join(', '));
+      'Tier "' + tier + '" is not one of the tiers ' + (rule.state || '?') + ' recognises: ' + Object.keys(tiers || {}).join(', '));
   }
 
   if (daysPresent === 0) {
@@ -198,7 +247,13 @@ function buildHcbsLine(d, spec, tier, tiers, method, serviceMonth, dim, daysPres
   const mods = (spec.modifiers || []).slice();
   // The tier modifier is substituted positionally where the rule says it
   // belongs, so a state that orders modifiers differently stays expressible.
-  const resolved = mods.map((m) => (m === '<TIER>' ? tiers[tier] : m));
+  // A <TIER> placeholder that cannot be resolved is DROPPED rather than
+  // rendered as "undefined" inside a billing string -- a tierless rule should
+  // never have one, but a malformed rule must not emit a claim line that looks
+  // real and carries a junk modifier.
+  const resolved = mods
+    .map((m) => (m === '<TIER>' ? (tiers && tier ? tiers[tier] : null) : m))
+    .filter((m) => !!m);
   return {
     method: method,
     code: spec.code || d.code || null,
@@ -364,18 +419,34 @@ function routeHospiceClaim(input) {
 // {have, need} over the states this app CLAIMS to support, so an uncovered
 // state is visible as a real gap rather than an empty result that reads like
 // "nothing to bill." Same contract shape as alf_signals.
+// TWO KINDS OF "COVERED", separated 2026-08-23 and this is the whole point of
+// the change. Before it, any rule for a state counted as coverage. Seeding MI
+// and PA -- whose real, sourced rules this engine deliberately will NOT route
+// -- would therefore have flipped the display from an honest "2 of 4" to a
+// "4 of 4" that means the opposite of what a biller would read into it.
+// `have` stays the number of states this app can actually produce a claim for.
 function hcbsCoverage(rules, claimedStates) {
   const states = (claimedStates || []).slice();
-  const covered = {};
+  const routable = {};
+  const referenceOnly = {};
   (rules || []).forEach((r) => {
-    if (r && r.program === 'medicaid_hcbs' && r.state) covered[r.state] = true;
+    if (!r || r.program !== 'medicaid_hcbs' || !r.state) return;
+    if (r.status && r.status !== 'active') return;
+    if (r.data && r.data.billing_model === 'reference_only') referenceOnly[r.state] = true;
+    else routable[r.state] = true;
   });
-  const have = states.filter((s) => covered[s]).length;
+  const routableStates = states.filter((s) => routable[s]);
+  // A state with both a routable and a reference-only rule counts as routable.
+  const referenceOnlyStates = states.filter((s) => referenceOnly[s] && !routable[s]);
   return {
-    have: have,
+    have: routableStates.length,
     need: states.length,
-    covered_states: states.filter((s) => covered[s]),
-    uncovered_states: states.filter((s) => !covered[s])
+    covered_states: routableStates,
+    reference_only_states: referenceOnlyStates,
+    uncovered_states: states.filter((s) => !routable[s] && !referenceOnly[s]),
+    note: referenceOnlyStates.length
+      ? referenceOnlyStates.join(', ') + ' have real sourced rules on file but are NOT counted as covered: their programs do not bill on a days-present basis, so this app records the codes and refuses to assemble the claim.'
+      : null
   };
 }
 

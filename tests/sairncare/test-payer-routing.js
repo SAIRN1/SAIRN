@@ -269,19 +269,83 @@ check('the diagnosis match is normalized -- formatting differences still count a
 });
 
 // ── COVERAGE ─────────────────────────────────────────────────────────────
-check('coverage reports OH/IN covered and MI/PA honestly uncovered, never a fake 4-of-4', () => {
+// ── COVERAGE, AFTER MI AND PA WERE RESEARCHED (2026-08-23) ───────────────
+// MI and PA now HAVE rules. `have` deliberately did not move, and this pair of
+// checks is the guard on that: seeding a state must not be able to raise the
+// coverage number unless the app can actually produce a claim for it.
+check('coverage still reports 2 of 4 -- seeding MI and PA did NOT create a fake 4-of-4', () => {
   const c = pr.hcbsCoverage(seed.rules, ['OH', 'IN', 'MI', 'PA']);
-  assertEq(c.have, 2);
+  assertEq(c.have, 2, 'only OH and IN can actually be routed');
   assertEq(c.need, 4);
   assertEq(c.covered_states.sort(), ['IN', 'OH']);
-  assertEq(c.uncovered_states.sort(), ['MI', 'PA']);
+  assertEq(c.reference_only_states.sort(), ['MI', 'PA']);
+  assertEq(c.uncovered_states, [], 'no claimed state is now without any rule at all');
+  assertTrue(/NOT counted as covered/.test(c.note || ''), 'the distinction has to be stated, not just structural');
 });
 
-check('an uncovered state has no rule to route with, so any claim for it fails closed', () => {
-  const miRule = seed.rules.find((r) => r.state === 'MI');
-  assertEq(miRule, undefined, 'MI must not be seeded');
+check('a reference-only state REFUSES to route and returns its real codes instead of a claim', () => {
+  ['MI', 'PA'].forEach((st) => {
+    const rule = seed.rules.find((r) => r.state === st && r.program === 'medicaid_hcbs');
+    assertTrue(!!rule, st + ' must now be seeded');
+    assertEq(rule.data.billing_model, 'reference_only');
+    const r = pr.routeHcbsClaim({ rule: rule, service_month: '2026-05', days_present: 30 });
+    assertEq(r.ok, false, st + ' must not produce a claim');
+    assertEq(r.error.code, 'NOT_ROUTABLE');
+    assertEq(r.line, undefined, 'a refusal must never carry a billable line');
+    assertEq(r.options, undefined);
+    assertTrue(Array.isArray(r.codes) && r.codes.length > 0, st + ' must still hand back the real codes for reference');
+    assertTrue(r.codes.every((c) => !!c.code && !!c.unit), 'every reference code needs its unit — a code without a unit invites the wrong unit count');
+    assertTrue(!!r.authority && /^https?:\/\//.test(r.authority.url || ''), st + ' needs a resolvable source');
+  });
+});
+
+check('supplying a tier to a tierless state is REFUSED, not silently ignored', () => {
+  const mi = seed.rules.find((r) => r.state === 'MI');
+  assertEq(mi.data.tier_model, 'none');
+  // Reference-only is checked first, so use a synthetic routable tierless rule
+  // to exercise the tier branch itself.
+  const tierless = { rule_id: 'X', state: 'XX', effective_from: '2020-01-01', data: { tier_model: 'none', daily: { code: 'X0001', unit: '1 day' } } };
+  const withTier = pr.routeHcbsClaim({ rule: tierless, service_month: '2026-05', days_present: 10, tier: 'tier1' });
+  assertEq(withTier.ok, false);
+  assertEq(withTier.error.code, 'TIER_NOT_APPLICABLE');
+  const withoutTier = pr.routeHcbsClaim({ rule: tierless, service_month: '2026-05', days_present: 10 });
+  assertEq(withoutTier.ok, true, 'a tierless state must route without a tier');
+  assertEq(withoutTier.line.billing_string, 'X0001', 'no stray modifier from an unresolved <TIER>');
+});
+
+check('a rule that declares neither tier_model nor tier_modifiers is a DATA DEFECT, named as one', () => {
+  // Before this, such a rule returned MISSING_TIER with an empty tier list --
+  // asking the user to supply one of nothing, and blaming them for the gap.
+  const broken = { rule_id: 'BROKEN-1', state: 'XX', effective_from: '2020-01-01', data: { daily: { code: 'X0001', unit: '1 day' } } };
+  const r = pr.routeHcbsClaim({ rule: broken, service_month: '2026-05', days_present: 10 });
+  assertEq(r.ok, false);
+  assertEq(r.error.code, 'MALFORMED_RULE');
+  assertTrue(/BROKEN-1/.test(r.error.message), 'the message must name the offending rule');
+});
+
+check('a state with no rule at all still fails closed', () => {
   const r = pr.routeHcbsClaim({ rule: undefined, service_month: '2026-05', days_present: 30, tier: 'tier1' });
   assertEq(r.ok, false);
+  assertEq(r.error.code, 'NO_RULE');
+});
+
+check('every reference-only rule states WHY it is not routable, in its own data', () => {
+  seed.rules.filter((r) => r.data && r.data.billing_model === 'reference_only').forEach((r) => {
+    assertTrue((r.data.not_routable_reason || '').length > 60,
+      r.rule_id + ' must explain why it cannot be routed — "not supported" is not a reason');
+    assertTrue(Array.isArray(r.data.unverified) && r.data.unverified.length > 0,
+      r.rule_id + ' must state what is still unverified rather than implying the research is complete');
+  });
+});
+
+check('every seeded HCBS rule carries a citation, a resolvable URL and a real quote', () => {
+  seed.rules.forEach((r) => {
+    const a = (r.data || {}).authority;
+    assertTrue(a && a.citation, r.rule_id + ' missing citation');
+    assertTrue(a && /^https?:\/\//.test(a.url || ''), r.rule_id + ' missing resolvable URL');
+    assertTrue(a && (a.quote || '').length > 40, r.rule_id + ' missing a real source quote');
+    assertTrue(a && /^\d{4}-\d{2}-\d{2}$/.test(a.read_on || ''), r.rule_id + ' missing the verification date');
+  });
 });
 
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
