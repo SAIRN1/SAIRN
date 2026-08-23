@@ -1015,6 +1015,11 @@ label.chk input{width:auto;}
          only when such a rule is selected; the single Trigger date above is
          hidden in that case so it is never ambiguous which field is in use. -->
     <div id="dr-multi" style="display:none"></div>
+    <!-- Designated-period rules (Ohio Civ.R. 33(A)/36(A), Ind. T.R. 33(C)/36(A))
+         set only a FLOOR; the deadline is whatever the requesting party
+         designated. Shown only for those rules, and the engine still refuses
+         a below-floor figure rather than raising it. -->
+    <div id="dr-designated" style="display:none"></div>
     <div class="fr">
       <div class="fg"><label>Service method</label>
         <select id="dr-service">
@@ -4295,7 +4300,32 @@ function drOnTrigger() {
     mw.innerHTML = '';
     dw.style.display = '';
   }
+  drRenderDesignated(t);
   drCheckCoverage();
+}
+
+// A designated-period rule sets no deadline of its own, so the panel asks for
+// the one fact that determines it rather than letting the user press Compute
+// and discover that by refusal. The field is rendered ONLY for these rules and
+// states the floor inline -- but the client does NOT enforce the floor. A
+// below-floor figure is deliberately sent to the server, because the engine is
+// the single authority on whether a designation is valid and its refusal
+// carries the citation and the explicit statement that voidness is a question
+// of law. Duplicating that check here would mean two places deciding the same
+// thing, and the weaker one would be the one users see first.
+function drRenderDesignated(t) {
+  var el = $('dr-designated');
+  if (!el) return;
+  var dp = t && t.designated_period;
+  if (!dp) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = '';
+  el.innerHTML = '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;' +
+    'padding:10px 14px;margin-bottom:8px;color:#92400e;font-size:12px">' +
+    '<b>This rule does not set a deadline.</b> It sets a floor. The period is whatever ' +
+    H(dp.designated_by || 'the requesting party') + ' designated in the request, and it may not be less than <b>' +
+    H(String(dp.min)) + '</b> ' + H(String(dp.unit || 'calendar_days').replace(/_/g, ' ')) + '.' +
+    '</div><div class="fr"><div class="fg"><label>Period designated in the request</label>' +
+    '<input id="dr-designated-days" type="number" min="1" step="1" placeholder="e.g. ' + H(String(dp.min)) + '"></div></div>';
 }
 
 // ── Coverage warning, BEFORE the refusal (Phase 4 item 2) ─────────────────
@@ -4364,6 +4394,15 @@ function drCompute() {
     if (!date) { toast('A trigger date is required'); return; }
     payload.trigger_date = date;
   }
+  // Sent whenever the field is present, INCLUDING a below-floor figure. The
+  // engine owns that judgement and its refusal names the rule and the floor;
+  // a client-side check here would be a second implementation of the same rule
+  // and the one the user hits first.
+  if (sel && sel.designated_period) {
+    var dd = $('dr-designated-days');
+    if (!dd || !String(dd.value).trim()) { toast('This rule needs the period designated in the request'); return; }
+    payload.designated_period_days = Number(dd.value);
+  }
   el.innerHTML = '<div style="color:var(--muted);font-size:13px">Computing&hellip;</div>';
   deadlinesFetch('compute', payload).then(function (d) {
     if (d.error) { el.innerHTML = '<div class="note" style="margin:0">' + H(d.error.message) + '</div>'; return; }
@@ -4381,6 +4420,21 @@ function drCompute() {
       if (d.required_events) extra = '<div style="font-size:12px;margin-top:6px">This rule runs from the <b>' +
         H(String(d.message).indexOf('earlier') !== -1 ? 'earlier' : 'later') + ' of</b>: ' + d.required_events.map(H).join(', ') +
         '.<br>Still missing a date for: <b>' + (d.missing_events || []).map(H).join(', ') + '</b></div>';
+      // Designated-period refusals (Phase 6). The below-floor case is the only
+      // refusal in this engine that says something is WRONG rather than merely
+      // absent, so it is worded as a defect in the request and deliberately
+      // repeats that voidness is a legal question the engine does not decide.
+      if (d.code === 'DESIGNATED_PERIOD_REQUIRED' && d.floor) {
+        extra = '<div style="font-size:12px;margin-top:6px">This rule sets a floor of <b>' + H(String(d.floor.min)) +
+          ' ' + H(String(d.floor.unit || '').replace(/_/g, ' ')) + '</b>, designated by ' +
+          H(d.floor.designated_by || 'the requesting party') + '. Enter the period the request actually designated.</div>';
+      }
+      if (d.code === 'DESIGNATED_PERIOD_BELOW_FLOOR') {
+        extra = '<div style="font-size:12px;margin-top:6px">The request designated <b>' + H(String(d.designated)) +
+          '</b>; ' + H(d.authority || 'the rule') + ' permits no less than <b>' + H(String(d.floor && d.floor.min)) +
+          '</b>.<br>Whether that makes the request void or merely unenforceable as to timing is a question of law — ' +
+          'this engine does not decide it, and produces no date either way.</div>';
+      }
       if (d.pending) extra = '<div style="font-size:12px;margin-top:6px">Pending motion(s): <b>' + d.pending.map(H).join(', ') +
         '</b>. Record the disposition date and the period will run from there.' +
         (d.authority ? '<br><span style="opacity:.8">' + H(d.authority) + '</span>' : '') + '</div>';

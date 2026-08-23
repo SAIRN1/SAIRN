@@ -49,13 +49,21 @@ function domLabel(code) { return DOMAIN_LABELS[code] || code; }
 // refusal. Single-trigger rules report requires_dates: null.
 function triggerOption(r) {
   const t = r.trigger_event;
+  // A designated-period rule needs one more input than a date: the period the
+  // requesting party actually chose. Reported here so the UI asks for it up
+  // front rather than the caller discovering it through a refusal, the same
+  // reason requires_dates is reported for multi-trigger rules.
+  const dp = r.designated_period
+    ? { min: r.designated_period.min, unit: r.designated_period.unit || 'calendar_days',
+        designated_by: r.designated_period.designated_by || null }
+    : null;
   if (typeof t === 'string') {
-    return { event: t, label: r.label || t, rule_id: r.rule_id, citation: (r.authority && r.authority.citation) || null, requires_dates: null };
+    return { event: t, label: r.label || t, rule_id: r.rule_id, citation: (r.authority && r.authority.citation) || null, requires_dates: null, designated_period: dp };
   }
   if (t && Array.isArray(t.events)) {
     return { event: t.id || t.events[0], label: r.label || t.id, rule_id: r.rule_id,
       citation: (r.authority && r.authority.citation) || null,
-      requires_dates: t.events.slice(), resolve: t.resolve || null };
+      requires_dates: t.events.slice(), resolve: t.resolve || null, designated_period: dp };
   }
   return null;
 }
@@ -143,6 +151,28 @@ function validateRulePayload(p) {
   // declare allows_business_days to use the unit, so a state added later
   // fails closed instead of slipping through a list nobody remembered to
   // extend.
+  // A designated-period rule sets a FLOOR, not a deadline. Its count.value is
+  // the minimum a valid request may demand and must never be the thing counted
+  // -- the engine counts the figure the caller supplies. Validated here so a
+  // malformed floor cannot be stored at all.
+  if (p.designated_period) {
+    const dp = p.designated_period;
+    if (typeof dp.min !== 'number' || Math.floor(dp.min) !== dp.min || dp.min <= 0) {
+      return 'designated_period.min must be a positive whole number — it is the minimum period the rule permits.';
+    }
+    if (dp.unit && ['calendar_days', 'business_days', 'months', 'years'].indexOf(dp.unit) === -1) {
+      return 'designated_period.unit must be calendar_days, business_days, months or years.';
+    }
+    if (!dp.designated_by) {
+      return 'designated_period.designated_by is required — name who chooses the period, since the rule itself does not set one.';
+    }
+    if (dp.min !== c.value) {
+      return 'designated_period.min must equal count.value for this rule shape. count.value holds the rule’s floor and is never counted from; a mismatch means one of the two is wrong.';
+    }
+    if (p.service_extension) {
+      return 'A designated-period rule cannot also declare a service_extension: the designated figure already is the period, and adding days to a party-chosen period would extend a deadline the rule does not set.';
+    }
+  }
   if (c.unit === 'business_days' && !COMPUTATION_STANDARDS[p.computation].allows_business_days) {
     return COMPUTATION_STANDARDS[p.computation].label + ' counts calendar days (with its own weekend/holiday handling built into the engine), so a rule using this standard cannot specify business_days. No implemented standard currently counts in business days; if a jurisdiction genuinely does, its standard must declare that explicitly rather than relying on the unit alone.';
   }
@@ -308,6 +338,10 @@ module.exports = async (req, res) => {
         jurisdiction: body.jurisdiction,
         domain: body.domain,
         service_method: body.service_method,
+        // The period a requesting party actually designated, for rules that
+        // set only a floor rather than a deadline (Ohio Civ.R. 33(A)/36(A),
+        // Ind. T.R. 33(C)/36(A)).
+        designated_period_days: body.designated_period_days,
         rules: rules.rows,
         calendars: buildCalendars(hols.rows)
       });
@@ -327,7 +361,15 @@ module.exports = async (req, res) => {
             // the clock are not all present yet. That is a different thing
             // from a bad request and from missing rule data, and a caller
             // should be able to tell them apart.
-            : ['INCOMPLETE_TRIGGERS', 'MOTION_PENDING'].indexOf(result.code) !== -1 ? 422
+            // DESIGNATED_PERIOD_REQUIRED joins them: the rule is loaded and the
+            // request is well-formed, but this rule sets no deadline of its own
+            // and the caller has not yet said what period was designated.
+            : ['INCOMPLETE_TRIGGERS', 'MOTION_PENDING', 'DESIGNATED_PERIOD_REQUIRED'].indexOf(result.code) !== -1 ? 422
+              // DESIGNATED_PERIOD_BELOW_FLOOR is a genuine 400: the caller did
+              // supply a period and it is not one the rule permits. That is a
+              // defect in the request being described, not missing information,
+              // and it is the one refusal here that says something is WRONG
+              // rather than merely absent.
               : 400);
       res.status(status).json(result);
       return;
