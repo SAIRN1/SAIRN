@@ -20,9 +20,9 @@ const { validateLicenseKey } = require('./_lib/license');
 const { tokenFromRequest, verifySessionToken } = require('./_lib/auth');
 const { writeAuditLog } = require('./_lib/audit');
 const { wexLookup } = require('./_lib/wex');
-const { COVERAGE, fclSearch, canliiBrowse, canliiCitator } = require('./_lib/intl-caselaw');
+const { COVERAGE, fclSearch } = require('./_lib/intl-caselaw');
 
-const ACTIONS = ['define', 'coverage', 'intl_search', 'canlii_browse', 'canlii_citator'];
+const ACTIONS = ['define', 'coverage', 'intl_search'];
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -123,27 +123,12 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ── PHASE B: Canada via CanLII's official keyed API ──
-    if (action === 'canlii_browse') {
-      const db = body.database_id;
-      if (!db) { res.status(400).json({ error: { message: 'canlii_browse requires database_id' } }); return; }
-      const result = await canliiBrowse(db, body.offset, body.count);
-      await audit({ action: 'canlii_browse', database_id: String(db).slice(0, 60), ok: !!result.ok, code: result.code || null });
-      res.status(result.ok ? 200 : (result.code === 'NOT_CONFIGURED' ? 503 : result.code === 'RATE_LIMITED' ? 429 : 502)).json(result);
-      return;
-    }
-
-    if (action === 'canlii_citator') {
-      const { database_id: db, case_id: caseId, metadata_type: mt } = body;
-      if (!db || !caseId || !mt) {
-        res.status(400).json({ error: { message: 'canlii_citator requires database_id, case_id and metadata_type' } });
-        return;
-      }
-      const result = await canliiCitator(db, caseId, mt);
-      await audit({ action: 'canlii_citator', database_id: String(db).slice(0, 60), case_id: String(caseId).slice(0, 60), metadata_type: String(mt).slice(0, 40), ok: !!result.ok, code: result.code || null });
-      res.status(result.ok ? 200 : (result.code === 'NOT_CONFIGURED' ? 503 : result.code === 'BAD_REQUEST' ? 400 : result.code === 'RATE_LIMITED' ? 429 : 502)).json(result);
-      return;
-    }
+    // The canlii_browse and canlii_citator actions lived here and were removed
+    // 2026-08-23 along with Canada's coverage row. They had zero callers for
+    // their entire life and no API key was ever configured, so every request
+    // they could have served would have returned 503 NOT_CONFIGURED. See
+    // api/_lib/intl-caselaw.js for why this is a scope decision, not a blocked
+    // task, and why a future Canada build should start fresh.
 
     res.status(400).json({ error: { message: 'Unsupported action' } });
   } catch (err) {

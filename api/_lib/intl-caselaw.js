@@ -37,13 +37,18 @@
 //               about and never sweeps the corpus. Coverage is England &
 //               Wales from 2001, which is why it does not replace BAILII's
 //               Irish and Scottish material.
-//   Canada   -- CanLII's official REST API (api.canlii.org/v1) with a free
-//               key. CanLII prohibits scraping; the keyed API is the
-//               sanctioned route. That distinction is not academic -- CanLII
-//               filed a claim in Nov 2024 against an AI legal-research
-//               platform over systematic scraping of its records. Verified
-//               live that the endpoint is real and returns 403 ACCESS_DENIED
-//               without a valid key.
+// Canada was ALSO built, via CanLII's official keyed REST API, and has since
+// been REMOVED ENTIRELY (2026-08-23) -- client, endpoints and helpers. It was
+// never a terms problem: CanLII's keyed API is the sanctioned route and the
+// implementation was correct. It was a scope decision. No CANLII_API_KEY was
+// ever configured, so the code shipped dormant for its whole life while the
+// coverage panel advertised Canada as supported, and no caller in
+// sairnlaw.html ever referenced it. Deleted rather than left waiting for a
+// key that is not coming. If Canada is ever back in scope, rebuild against
+// CanLII's current API terms rather than restoring this from history --
+// CanLII filed a claim in Nov 2024 against an AI legal-research platform over
+// systematic scraping, so their position on automated use is actively
+// evolving and a two-year-old implementation is not a safe starting point.
 //
 // GROUNDING CONTRACT, same as the CourtListener citator: every result carries
 // the real source URL it came from. There is no success shape without one, and
@@ -206,77 +211,8 @@ async function fclSearch(query, perPage) {
   };
 }
 
-// ── CanLII ────────────────────────────────────────────────────────────────
-const CANLII_BASE = 'https://api.canlii.org/v1';
-// CanLII publishes no explicit rate limit. A conservative self-imposed ceiling
-// is applied anyway rather than treating "undocumented" as "unlimited".
-const CANLII_LIMIT = { seconds: 3600, max: 200 };
-
-function canliiKey() {
-  const k = process.env.CANLII_API_KEY;
-  if (!k) { const e = new Error('CANLII_API_KEY not configured'); e.code = 'NOT_CONFIGURED'; throw e; }
-  return k;
-}
-
-async function canliiRequest(path) {
-  let key;
-  try { key = canliiKey(); }
-  catch (e) {
-    return { ok: false, code: 'NOT_CONFIGURED', source: 'canlii',
-      message: 'No CanLII API key is configured yet, so Canadian results are genuinely unavailable rather than incomplete. CanLII issues free keys on request; scraping is not an alternative, as CanLII prohibits it.' };
-  }
-  const gate = await checkLimit('canlii_rate_limit_log', CANLII_LIMIT.seconds, CANLII_LIMIT.max);
-  if (gate.notProvisioned) {
-    return { ok: false, code: 'NOT_PROVISIONED', source: 'canlii', message: gate.message };
-  }
-  if (gate.limited) {
-    return { ok: false, code: 'RATE_LIMITED', source: 'canlii', message: 'CanLII lookups are rate limited by this tool. Try again shortly.' };
-  }
-  const url = CANLII_BASE + path + (path.indexOf('?') === -1 ? '?' : '&') + 'api_key=' + encodeURIComponent(key);
-  let r;
-  try {
-    r = await fetch(url, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
-  } catch (e) {
-    return { ok: false, code: 'UPSTREAM', source: 'canlii', message: 'Could not reach CanLII just now.' };
-  }
-  const text = await r.text();
-  if (r.status === 403 || r.status === 401) {
-    return { ok: false, code: 'BAD_KEY', source: 'canlii', message: 'CanLII rejected the configured API key (HTTP ' + r.status + ').' };
-  }
-  if (!r.ok) {
-    return { ok: false, code: 'UPSTREAM', source: 'canlii', status: r.status, message: 'CanLII returned HTTP ' + r.status + '.' };
-  }
-  let data;
-  try { data = JSON.parse(text); } catch (e) {
-    return { ok: false, code: 'UPSTREAM', source: 'canlii', message: 'CanLII returned a response that could not be parsed.' };
-  }
-  // The key is in the URL; never hand it back to a caller.
-  return { ok: true, source: 'canlii', data, query_url: url.replace(/api_key=[^&]*/, 'api_key=REDACTED'), retrieved_at: new Date().toISOString() };
-}
-
-function canliiBrowse(databaseId, offset, count) {
-  const n = Math.min(Math.max(parseInt(count, 10) || 10, 1), 25);
-  const o = Math.max(parseInt(offset, 10) || 0, 0);
-  return canliiRequest('/caseBrowse/en/' + encodeURIComponent(databaseId) + '/?offset=' + o + '&resultCount=' + n);
-}
-
-// The real citator relationships CanLII exposes. metadataType is one of
-// citedCases / citingCases / citedLegislations, per CanLII's own documented
-// caseCitator endpoint -- rejected rather than passed through if it is
-// anything else, so a caller cannot construct an arbitrary API path.
-const CANLII_CITATOR_TYPES = { citedCases: true, citingCases: true, citedLegislations: true };
-function canliiCitator(databaseId, caseId, metadataType) {
-  if (!CANLII_CITATOR_TYPES[metadataType]) {
-    return Promise.resolve({ ok: false, code: 'BAD_REQUEST', source: 'canlii',
-      message: 'metadataType must be one of: ' + Object.keys(CANLII_CITATOR_TYPES).join(', ') });
-  }
-  return canliiRequest('/caseCitator/en/' + encodeURIComponent(databaseId) + '/' + encodeURIComponent(caseId) + '/' + metadataType);
-}
-
 module.exports = {
   COVERAGE,
   FCL_BASE, FCL_LIMIT, fclSearch, parseFclAtom,
-  CANLII_BASE, CANLII_LIMIT, CANLII_CITATOR_TYPES,
-  canliiRequest, canliiBrowse, canliiCitator,
   checkLimit, xmlTagText
 };

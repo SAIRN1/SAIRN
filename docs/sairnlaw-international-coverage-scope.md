@@ -9,9 +9,21 @@ terms. When they were checked — on 2026-08-21, before any code was written —
 **two of the three refused this use outright.**
 
 This file exists because the corrected scope kept being read as a placeholder.
-It is not. **UK (England & Wales), Canada and the US via the sanctioned sources
-is the finished answer**, and the two gaps are permanent unless a source's
-terms change or a licence is negotiated.
+It is not. **The US and UK (England & Wales) via the sanctioned sources is the
+finished answer**, and the gaps are permanent unless a source's terms change or
+a licence is negotiated.
+
+> **CANADA REMOVED — 2026-08-23, later the same day.** An earlier version of
+> this table listed Canada via CanLII's keyed API as covered. It was built and
+> it was correct, but `CANLII_API_KEY` was never configured, so the code was
+> dormant for its entire life while the in-app coverage panel advertised Canada
+> as supported — a false claim on the one screen whose whole job is honest
+> disclosure, found by a Guardian pass. Canada is now **out of scope by
+> decision**, not blocked pending a key. The client, both API actions
+> (`canlii_browse`, `canlii_citator`) and all helpers have been deleted. Do not
+> re-add Canada to this table without a new decision, and if it ever comes back,
+> rebuild against CanLII's terms as they stand then rather than restoring the
+> old code from git history.
 
 ## What is covered, and under what permission
 
@@ -19,7 +31,6 @@ terms change or a licence is negotiated.
 |---|---|---|
 | United States | CourtListener | Existing citator integration |
 | UK — England & Wales | **Find Case Law** (The National Archives) | Real public API, no auth. Open Justice Licence expressly permits commercial use and product incorporation |
-| Canada | **CanLII official keyed API** | The sanctioned route. Requires `CANLII_API_KEY` |
 
 **One constraint carried into the design rather than noted and ignored:** the
 Open Justice Licence permits commercial use but does **not** cover
@@ -84,12 +95,20 @@ the prohibited sources is not.
 
 ## Standing blockers on what IS built
 
-Neither is a scope question — both need access nobody in a coding session has:
+One remains. It is not a scope question — it needs access nobody in a coding
+session has:
 
-1. `sql/sairnlaw_wex_intl_schema.sql` — **unrun.** Wex definitions and Find
-   Case Law both return an honest `NOT_PROVISIONED` until it is run in
-   Supabase. This fails closed on purpose: without the ledger the published
-   Wex crawl-delay cannot be honoured, so the lookup is refused rather than
-   run unthrottled.
-2. `CANLII_API_KEY` — **not set.** Free key from CanLII. Canada reports
-   unavailable honestly rather than silently empty until then.
+1. `sql/sairnlaw_wex_intl_schema.sql` — Wex definitions and Find Case Law both
+   return an honest `NOT_PROVISIONED` until it is run in Supabase. This fails
+   closed on purpose: without the ledger the published Wex crawl-delay cannot
+   be honoured, so the lookup is refused rather than run unthrottled.
+   *(Session 6's handoff records this as since run and both working — re-verify
+   live before trusting either statement.)*
+
+2. ~~`CANLII_API_KEY` — not set.~~ **No longer a blocker: Canada is out of
+   scope and the code is deleted (see above).** One leftover: that migration
+   also created a `public.canlii_rate_limit_log` table, which now has nothing
+   writing to it. Dropping it is a destructive change to a shared database and
+   is deliberately NOT done here — flagged for whoever owns the Supabase
+   schema. The migration file itself is left as written; it is a record of what
+   was run, not a live description of scope.
