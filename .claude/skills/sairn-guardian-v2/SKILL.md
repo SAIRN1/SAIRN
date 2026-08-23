@@ -613,6 +613,101 @@ number.
 
 ---
 
+## Verification Discipline — six lessons from 2026-08-21/22 (three parallel sessions)
+
+Every one of these came from a real failure or near-failure caught during the
+SAIRNcode gap-closure arc, the SAIRNlaw deadline engine, and StoneDesk Phase 1.
+They are listed here rather than left in transcripts because each one is a
+repeatable check, not a war story.
+
+**1. Seed-and-recheck: distinguish an honest empty state from a real defect.**
+Independently arrived at by all three sessions the same night. When a gate,
+panel or lookup returns "nothing here," that is ambiguous — it can mean the
+feature works and the store is genuinely empty, or it can mean the feature is
+broken. **Do not report either without seeding one real record and re-running.**
+StoneDesk's PC/TC-equivalent case: SAIRNcode's `sc_pctc` gate returned "not in
+your reference" on every code, which looked like a defect and was not — seeding
+two rows flipped it to correct answers immediately. The same method proved the
+opposite on StoneDesk's Slabs panel, where an empty store was rendering
+fabricated inventory. One method, both verdicts.
+
+**2. Verify against the most specific marker, not any string that matches.**
+A live-verification grep for a KX colour fix returned a hit and looked like
+confirmation. The hit was a *different, pre-existing* code path that happened to
+contain the same substring; the actual change had not deployed yet. **Grep for
+something that exists only in the change you just made** — a new function name,
+a distinctive comment fragment — never a generic pattern the file already
+contained. A false green here is worse than no check, because it stops you
+looking.
+
+**3. Fail-closed in the wrong direction is still wrong.**
+Every gate on this platform is built to fail closed, and that is right — but
+"closed" has a direction. SAIRNcode's DMEPOS Standard Written Order gate was
+briefed as requiring seven elements. CMS's own policy article A55426 lists
+**six**; the commonly repeated seventh ("start date") is not required. A
+seven-element gate would have demanded a field CMS never asked for and
+**blocked compliant orders**. Strictness is not automatically safety. Verify the
+threshold itself against a primary source, not just the direction of the guard.
+
+**4. Check the diff SHAPE before committing, not just that syntax passes.**
+`git add <shared file>` in a tree where other sessions are working can sweep in
+work that is not yours. This happened: a commit intended to add one array entry
+to `api/sd-data.js` landed **88 insertions**, 87 of them another session's
+uncommitted handler branch, and was pushed before anyone noticed. `node --check`
+passed the whole time — syntax was never the problem. **Always run
+`git diff --cached --numstat` (or `--stat`) and confirm the line counts match
+what you meant to change, before `git commit`.** If the number surprises you,
+stop.
+
+**5. This repo has mixed line endings, file-by-file. `sed -i` is unsafe here.**
+`api/sd-data.js` is CRLF; `sairncare.html` is LF; `stonedesk.html` is CRLF.
+There is no single convention to rely on. An in-place stream edit that
+normalises line endings rewrites every line of a 2MB file, producing a diff
+that is impossible to review and that can mask a real change inside 34,000
+lines of noise. **Detect the file's existing ending first** (`b'\r\n' in data`)
+and preserve it explicitly — a Python read/modify/write in binary mode is the
+safe pattern. Verify after writing: `CRLF count` and `bare LF count` should
+match what the file started with.
+
+**6. A panel that falls back to seed data when its real store is empty is a
+fabricated-KPI risk, not a display convenience.**
+This is Check 0b, but the fallback form is easy to miss because the code looks
+defensive rather than dishonest. **Primary example, StoneDesk's Slabs panel,
+2026-08-22:** its backing key `sd_slab_tracker` was absent, so `load()` fell
+through to an in-file `SEED` constant and rendered **8 invented slabs**,
+computing all four KPIs from them — Total 8 / Available 5 / Allocated 2 /
+Inventory Value **$4,420**, every figure fabricated — while a genuinely real,
+server-synced slab written through Bulk Slab Upload was invisible and excluded
+from every count. The panel did not show *stale* data. It **invented** data
+when its real store was empty, and then did arithmetic on the invention.
+
+A `demoCleared()`-style guard is **not sufficient on its own**. StoneDesk had
+exactly such a guard and this still happened, because the guard only suppresses
+seeds once a user has explicitly cleared demo data — a user who never did, on a
+panel whose real store is empty, sees invented records presented as real stock.
+
+**What to check, per site:** *can this panel's real store be empty while the
+demo-cleared flag is false, and does the panel compute any number from what it
+renders?* Where both are true, it is the same defect. The fix is to delete the
+seed fallback outright and render an honest empty state — **not** to put the
+seed behind another flag, which leaves the same landmine one boolean away.
+
+**Sized, not estimated — and this is a platform-wide pattern, not one panel:**
+`stonedesk.html` contains **29 `SEED` constants** and **56
+`sdDemoCleared() ? [] : SEED` fallback sites**. Only the Slabs panel has been
+fixed (Phase 1a, `501d15b`). Most of the remaining 28 are probably behaving as
+intended — but "probably" is what the Slabs panel was, right up until someone
+actually looked.
+
+> **OPEN FOLLOW-ON TASK, not yet done:** audit the other 28 `SEED` sites in
+> `stonedesk.html` against the two-part test above, and then check whether
+> other SAIRN apps carry the same fallback shape. Find it the way this one was
+> found — by reaching each panel with a genuinely empty real store and looking
+> at what renders — not by assuming the guard holds because it held once you
+> looked. StoneDesk is unlikely to be the only app with this shape.
+
+---
+
 ## Cross-Session Handoff Protocol
 
 Chat/session context does not persist reliably across long sessions or tool switches
