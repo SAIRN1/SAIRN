@@ -1,0 +1,160 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- Illinois rule seed, 2026-08-23. Loaded through add_rule.",
+    "",
+    "Every rule below was read VERBATIM end to end from the official Illinois Courts",
+    "PDF of that rule before being encoded, not summarised from a secondary source.",
+    "The quote in each authority block is copied from that reading.",
+    "",
+    "COMPUTATION STANDARD: illinois_5ilcs70_111. Illinois has NO short-period",
+    "exclusion -- verified by reading all of 5 ILCS 70/1.11, which is a single",
+    "unnumbered paragraph. It therefore behaves like Michigan and Pennsylvania,",
+    "NOT like Ohio and Indiana, whose seven-day exclusion does not generalise.",
+    "",
+    "NOT ENCODED, deliberately, and flagged rather than dropped:",
+    "",
+    "1. Ill. S. Ct. R. 181(b) -- the 'summons requires appearance on a specified",
+    "   day' regime (actions for money, eviction, small claims). There is no",
+    "   period to compute there: the date comes off the face of the summons, and",
+    "   181(b)(1) then allows 10 days after that day to answer only when the",
+    "   appearance was made in writing other than by answer or motion. Encoding a",
+    "   period for a date the engine cannot see would be a guess.",
+    "",
+    "2. Ill. S. Ct. R. 303(d) -- the 30-day window to move for leave to file a",
+    "   LATE notice of appeal. It runs from when the notice was originally due,",
+    "   i.e. from a computed date rather than from a case event, and it is a",
+    "   motion for leave rather than a deadline. Out of shape for this engine.",
+    "",
+    "3. The Governor-proclamation limb of 205 ILCS 630/17(a) and the chief-judge",
+    "   limb of M.R. 5272 -- both unknowable in advance, same treatment as",
+    "   Indiana's office-closed limb in T.R. 6(A).",
+    "",
+    "4. Ill. S. Ct. R. 214's affidavit-of-completeness obligation and the",
+    "   'except by agreement or by order of court' escape in 214(a). The 28 days",
+    "   is a statutory MINIMUM the requesting party must allow, not a fixed",
+    "   response period, and a court order or party agreement displaces it. The",
+    "   rule row encodes the minimum and says so in its own note."
+  ],
+  "rules": [
+    {
+      "rule_id": "il-scr-181a-appearance-answer-30-days",
+      "jurisdiction": "il",
+      "domain": "civil-litigation",
+      "label": "Appearance and answer, summons requiring appearance within 30 days after service (Illinois)",
+      "trigger_event": "service_of_summons_requiring_appearance_within_30_days",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "computation": "illinois_5ilcs70_111",
+      "authority": {
+        "citation": "Ill. S. Ct. R. 181(a)",
+        "url": "https://ilcourtsaudio.blob.core.windows.net/antilles-resources/resources/f3e14c02-f103-410a-b192-a7b74607e49d/Rule%20181.pdf",
+        "quote": "When the summons requires appearance within 30 days after service, exclusive of the day of service (see Rule 101(d)), the 30-day period shall be computed from the day the copy of the summons is left with the person designated by law and not from the day a copy is mailed, in case mailing is also required.",
+        "note": "Trigger names the 30-day-summons regime explicitly because Rule 181 has TWO regimes and they are not interchangeable: 181(b) covers a summons requiring appearance on a SPECIFIED DAY, where the date comes off the summons and there is no period to compute. Which regime applies is a case fact the engine has no field for and must never guess between, the same reason Michigan carries separate in-state and out-of-state service rules. Note also the rule's own counting instruction, which this engine follows: the period runs from the day the copy is LEFT with the person designated by law, not from the day a copy is mailed where mailing is also required -- so a matter where service was by leave-and-mail must use the leave date as the trigger. effective_from is the earliest amendment date carried in the rule's own history block ('Amended October 21, 1969, effective January 1, 1970'); the rule has been amended five times since, most recently July 17, 2020, and the individual 30-day period's amendment history was NOT independently traced. Safe for a matter triggered in the modern era; an older matter should have the then-current text confirmed by hand.",
+        "retrieved_at": "2026-08-23"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "il-scr-213d-interrogatory-answers",
+      "jurisdiction": "il",
+      "domain": "civil-litigation",
+      "label": "Sworn answers or objections to written interrogatories (Illinois)",
+      "trigger_event": "service_of_interrogatories",
+      "count": { "value": 28, "unit": "calendar_days", "direction": "forward" },
+      "computation": "illinois_5ilcs70_111",
+      "authority": {
+        "citation": "Ill. S. Ct. R. 213(d)",
+        "url": "https://ilcourtsaudio.blob.core.windows.net/antilles-resources/resources/9326b6d2-e0ee-463d-a599-36020e9089f7/Rule%20213.pdf",
+        "quote": "Within 28 days after service of the interrogatories upon the party to whom they are directed, the party shall serve a sworn answer or an objection to each interrogatory, with proof of service upon all other parties entitled to notice.",
+        "note": "A flat 28 days from service, with no service-method extension anywhere in Rule 213 -- checked rather than assumed, because Ohio, Indiana and Pennsylvania all sit at 28 or 30 days for the same act and it would be easy to carry a neighbour's mechanism across. effective_from is the earliest date in the rule's own history block ('Amended July 1, 1985, effective August 1, 1985'); last amended Dec. 29, 2017, eff. Jan. 1, 2018.",
+        "retrieved_at": "2026-08-23"
+      },
+      "effective_from": "1985-08-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "il-scr-214a-production-minimum-time",
+      "jurisdiction": "il",
+      "domain": "civil-litigation",
+      "label": "Minimum time a request to produce must allow (Illinois)",
+      "trigger_event": "service_of_request_for_production",
+      "count": { "value": 28, "unit": "calendar_days", "direction": "forward" },
+      "computation": "illinois_5ilcs70_111",
+      "authority": {
+        "citation": "Ill. S. Ct. R. 214(a)",
+        "url": "https://ilcourtsaudio.blob.core.windows.net/antilles-resources/resources/534a469e-8a1e-454d-833d-160e60faf8b2/Rule%20214.pdf",
+        "quote": "The request shall specify a reasonable time, which shall not be less than 28 days after service of the request except by agreement or by order of court, and the place and manner of making the inspection and performing the related acts.",
+        "note": "IMPORTANT SHAPE DIFFERENCE, stated rather than smoothed over: this is a MINIMUM the requesting party must allow, not a fixed response period like Rule 213(d)'s. The rule says 'not less than 28 days', and it is expressly displaced 'by agreement or by order of court'. The date this engine produces is therefore the EARLIEST a compliant request may demand production -- not necessarily the date production is actually due, which is whatever the request itself specifies if that is later. Ohio Civ.R. 34(B) and Pa.R.C.P. 4009.12 are encoded in this same shape.",
+        "retrieved_at": "2026-08-23"
+      },
+      "effective_from": "1974-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "il-scr-216c-admission-absent-denial",
+      "jurisdiction": "il",
+      "domain": "civil-litigation",
+      "label": "Response to a request to admit before the matter is deemed admitted (Illinois)",
+      "trigger_event": "service_of_request_for_admission",
+      "count": { "value": 28, "unit": "calendar_days", "direction": "forward" },
+      "computation": "illinois_5ilcs70_111",
+      "authority": {
+        "citation": "Ill. S. Ct. R. 216(c)",
+        "url": "https://ilcourtsaudio.blob.core.windows.net/antilles-resources/resources/e690373a-a210-44b5-84bb-e1f6e28fedfb/Rule%20216.pdf",
+        "quote": "Each of the matters of fact and the genuineness of each document of which admission is requested is admitted unless, within 28 days after service thereof, the party to whom the request is directed serves upon the party requesting the admission either (1) a sworn statement denying specifically the matters of which admission is requested or setting forth in detail the reasons why the party cannot truthfully admit or deny those matters or (2) written objections on the ground that some or all of the requested admissions are privileged or irrelevant or that the request is otherwise improper in whole or in part.",
+        "note": "This is the most consequential deadline in the Illinois set: missing it does not merely forfeit an objection, it ADMITS the fact by operation of the rule. Encoded from service of the request, which is what the rule counts from. effective_from is the earliest date in the rule's own history block ('Amended July 1, 1985, effective August 1, 1985'); last amended May 29, 2014, eff. July 1, 2014.",
+        "retrieved_at": "2026-08-23"
+      },
+      "effective_from": "1985-08-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "il-scr-303a1-notice-of-appeal-final-judgment",
+      "jurisdiction": "il",
+      "domain": "appellate",
+      "label": "Notice of appeal from a final judgment of the circuit court in a civil case (Illinois)",
+      "trigger_event": "entry_of_the_final_judgment_appealed_from",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "computation": "illinois_5ilcs70_111",
+      "authority": {
+        "citation": "Ill. S. Ct. R. 303(a)(1)",
+        "url": "https://www.illinoiscourts.gov/resources/d7ab6199-0e6f-49bc-8a11-017ec66815b6/file",
+        "quote": "The notice of appeal must be filed with the clerk of the circuit court within 30 days after the entry of the final judgment appealed from, or, if a timely posttrial motion directed against the judgment is filed, whether in a jury or a nonjury case, within 30 days after the entry of the order disposing of the last pending postjudgment motion directed against that judgment or order, irrespective of whether the circuit court had entered a series of final orders that were modified pursuant to postjudgment motions.",
+        "note": "Split into two rows rather than one composite trigger, because 303(a)(1) states two ALTERNATIVE starting points and which one applies is a case fact -- whether a timely postjudgment motion was filed. Michigan's four separate Rule 7.204(A)(1) rows use the same treatment. The companion row is il-scr-303a1-notice-of-appeal-postjudgment-motion. NOT ENCODED: the rule's own caveat that a judgment is not final and appealable while a Rule 137 claim remains pending unless the court enters a Rule 304(a) finding -- that is a finality question, not a counting question, and the engine has no field for it. A user with a pending Rule 137 claim must resolve finality before trusting any date here.",
+        "retrieved_at": "2026-08-23"
+      },
+      "effective_from": "1994-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "il-scr-303a1-notice-of-appeal-postjudgment-motion",
+      "jurisdiction": "il",
+      "domain": "appellate",
+      "label": "Notice of appeal where a timely postjudgment motion was filed (Illinois)",
+      "trigger_event": "entry_of_order_disposing_of_last_pending_postjudgment_motion",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "computation": "illinois_5ilcs70_111",
+      "authority": {
+        "citation": "Ill. S. Ct. R. 303(a)(1)",
+        "url": "https://www.illinoiscourts.gov/resources/d7ab6199-0e6f-49bc-8a11-017ec66815b6/file",
+        "quote": "if a timely posttrial motion directed against the judgment is filed, whether in a jury or a nonjury case, within 30 days after the entry of the order disposing of the last pending postjudgment motion directed against that judgment or order, irrespective of whether the circuit court had entered a series of final orders that were modified pursuant to postjudgment motions.",
+        "note": "The trigger is the order disposing of the LAST pending postjudgment motion, not the first -- the rule says so expressly and the distinction decides real cases where several motions are pending. Only a TIMELY postjudgment motion restarts the period; an untimely one does not, and whether a motion was timely is a case fact this engine does not evaluate. Companion row: il-scr-303a1-notice-of-appeal-final-judgment.",
+        "retrieved_at": "2026-08-23"
+      },
+      "effective_from": "1994-02-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ]
+}

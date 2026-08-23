@@ -33,7 +33,7 @@ const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
 // showing nothing or showing the wrong name.
 const JURISDICTION_LABELS = {
   'us-federal': 'United States (Federal)',
-  oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania'
+  oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania', il: 'Illinois'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

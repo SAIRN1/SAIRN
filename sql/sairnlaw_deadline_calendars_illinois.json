@@ -1,0 +1,519 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- Illinois holiday calendars, 2026 through 2031.",
+    "Loaded through add_holidays like every other calendar.",
+    "Source: 205 ILCS 630/17(a), read verbatim from ilga.gov on 2026-08-23.",
+    "See the per-calendar authority.note for the three ways Illinois differs from",
+    "every jurisdiction already in the engine, and for the statutory-vs-court-observed",
+    "divergence that is disclosed rather than silently reconciled."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "il",
+      "year": 2026,
+      "authority": {
+        "citation": "205 ILCS 630/17(a) (legal holidays in the State of Illinois)",
+        "url": "https://www.ilga.gov/Legislation/ILCS/Fulltext?DocName=020506300K17",
+        "note": "Generated 2026-08-23 from the statutory formulas in 205 ILCS 630/17(a), read verbatim from the Illinois General Assembly's own site, then re-checked by day-of-week. NO OBSERVANCE SHIFT: 630/17(a) states no Saturday-to-Friday or Sunday-to-Monday rule at all, unlike the federal, Indiana, Michigan and Pennsylvania calendars (both-way shift) and Ohio (Sunday-only). A holiday falling on a weekend stays on its actual date; 5 ILCS 70/1.11 already excludes every Saturday and Sunday, so the deadline still rolls correctly without one. GOOD FRIDAY is computed from the Gregorian Easter algorithm, checked against eight published Easter dates before generation. GENERAL ELECTION DAY appears in even-numbered years only (2 U.S.C. 7), so even-year calendars carry one more holiday than odd-year ones -- that asymmetry is correct, not a gap. NOT INCLUDED, deliberately: 'any day proclaimed by the Governor of this State as a legal holiday' (630/17(a)) cannot be known in advance -- same treatment as Indiana's office-closed limb. IMPORTANT DIVERGENCE, disclosed rather than reconciled: the days Illinois COURTS observe are set by Supreme Court order M.R. 5272, not by this statute, and the two lists genuinely disagree in both directions. M.R. 5272 (2026) does NOT observe Casimir Pulaski's birthday or Good Friday, and DOES observe the Day Following Thanksgiving, which 630/17(a) does not list. This calendar encodes the STATUTORY list because 5 ILCS 70/1.11 excludes a day that is 'a holiday as defined or fixed in any statute' -- it keys on the statute, not on whether the clerk's office is open. A court being closed is a different question and this engine has no office-closed concept, by design.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King, Jr.'s birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-02-12",
+          "name": "Abraham Lincoln's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-03-02",
+          "name": "Casimir Pulaski's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-04-03",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-03",
+          "name": "General election for members of the House of Representatives",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "il",
+      "year": 2027,
+      "authority": {
+        "citation": "205 ILCS 630/17(a) (legal holidays in the State of Illinois)",
+        "url": "https://www.ilga.gov/Legislation/ILCS/Fulltext?DocName=020506300K17",
+        "note": "Generated 2026-08-23 from the statutory formulas in 205 ILCS 630/17(a), read verbatim from the Illinois General Assembly's own site, then re-checked by day-of-week. NO OBSERVANCE SHIFT: 630/17(a) states no Saturday-to-Friday or Sunday-to-Monday rule at all, unlike the federal, Indiana, Michigan and Pennsylvania calendars (both-way shift) and Ohio (Sunday-only). A holiday falling on a weekend stays on its actual date; 5 ILCS 70/1.11 already excludes every Saturday and Sunday, so the deadline still rolls correctly without one. GOOD FRIDAY is computed from the Gregorian Easter algorithm, checked against eight published Easter dates before generation. GENERAL ELECTION DAY appears in even-numbered years only (2 U.S.C. 7), so even-year calendars carry one more holiday than odd-year ones -- that asymmetry is correct, not a gap. NOT INCLUDED, deliberately: 'any day proclaimed by the Governor of this State as a legal holiday' (630/17(a)) cannot be known in advance -- same treatment as Indiana's office-closed limb. IMPORTANT DIVERGENCE, disclosed rather than reconciled: the days Illinois COURTS observe are set by Supreme Court order M.R. 5272, not by this statute, and the two lists genuinely disagree in both directions. M.R. 5272 (2026) does NOT observe Casimir Pulaski's birthday or Good Friday, and DOES observe the Day Following Thanksgiving, which 630/17(a) does not list. This calendar encodes the STATUTORY list because 5 ILCS 70/1.11 excludes a day that is 'a holiday as defined or fixed in any statute' -- it keys on the statute, not on whether the clerk's office is open. A court being closed is a different question and this engine has no office-closed concept, by design.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King, Jr.'s birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-12",
+          "name": "Abraham Lincoln's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Presidents Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-03-01",
+          "name": "Casimir Pulaski's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-03-26",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "il",
+      "year": 2028,
+      "authority": {
+        "citation": "205 ILCS 630/17(a) (legal holidays in the State of Illinois)",
+        "url": "https://www.ilga.gov/Legislation/ILCS/Fulltext?DocName=020506300K17",
+        "note": "Generated 2026-08-23 from the statutory formulas in 205 ILCS 630/17(a), read verbatim from the Illinois General Assembly's own site, then re-checked by day-of-week. NO OBSERVANCE SHIFT: 630/17(a) states no Saturday-to-Friday or Sunday-to-Monday rule at all, unlike the federal, Indiana, Michigan and Pennsylvania calendars (both-way shift) and Ohio (Sunday-only). A holiday falling on a weekend stays on its actual date; 5 ILCS 70/1.11 already excludes every Saturday and Sunday, so the deadline still rolls correctly without one. GOOD FRIDAY is computed from the Gregorian Easter algorithm, checked against eight published Easter dates before generation. GENERAL ELECTION DAY appears in even-numbered years only (2 U.S.C. 7), so even-year calendars carry one more holiday than odd-year ones -- that asymmetry is correct, not a gap. NOT INCLUDED, deliberately: 'any day proclaimed by the Governor of this State as a legal holiday' (630/17(a)) cannot be known in advance -- same treatment as Indiana's office-closed limb. IMPORTANT DIVERGENCE, disclosed rather than reconciled: the days Illinois COURTS observe are set by Supreme Court order M.R. 5272, not by this statute, and the two lists genuinely disagree in both directions. M.R. 5272 (2026) does NOT observe Casimir Pulaski's birthday or Good Friday, and DOES observe the Day Following Thanksgiving, which 630/17(a) does not list. This calendar encodes the STATUTORY list because 5 ILCS 70/1.11 excludes a day that is 'a holiday as defined or fixed in any statute' -- it keys on the statute, not on whether the clerk's office is open. A court being closed is a different question and this engine has no office-closed concept, by design.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Martin Luther King, Jr.'s birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-12",
+          "name": "Abraham Lincoln's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Presidents Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-03-06",
+          "name": "Casimir Pulaski's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-04-14",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-07",
+          "name": "General election for members of the House of Representatives",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "il",
+      "year": 2029,
+      "authority": {
+        "citation": "205 ILCS 630/17(a) (legal holidays in the State of Illinois)",
+        "url": "https://www.ilga.gov/Legislation/ILCS/Fulltext?DocName=020506300K17",
+        "note": "Generated 2026-08-23 from the statutory formulas in 205 ILCS 630/17(a), read verbatim from the Illinois General Assembly's own site, then re-checked by day-of-week. NO OBSERVANCE SHIFT: 630/17(a) states no Saturday-to-Friday or Sunday-to-Monday rule at all, unlike the federal, Indiana, Michigan and Pennsylvania calendars (both-way shift) and Ohio (Sunday-only). A holiday falling on a weekend stays on its actual date; 5 ILCS 70/1.11 already excludes every Saturday and Sunday, so the deadline still rolls correctly without one. GOOD FRIDAY is computed from the Gregorian Easter algorithm, checked against eight published Easter dates before generation. GENERAL ELECTION DAY appears in even-numbered years only (2 U.S.C. 7), so even-year calendars carry one more holiday than odd-year ones -- that asymmetry is correct, not a gap. NOT INCLUDED, deliberately: 'any day proclaimed by the Governor of this State as a legal holiday' (630/17(a)) cannot be known in advance -- same treatment as Indiana's office-closed limb. IMPORTANT DIVERGENCE, disclosed rather than reconciled: the days Illinois COURTS observe are set by Supreme Court order M.R. 5272, not by this statute, and the two lists genuinely disagree in both directions. M.R. 5272 (2026) does NOT observe Casimir Pulaski's birthday or Good Friday, and DOES observe the Day Following Thanksgiving, which 630/17(a) does not list. This calendar encodes the STATUTORY list because 5 ILCS 70/1.11 excludes a day that is 'a holiday as defined or fixed in any statute' -- it keys on the statute, not on whether the clerk's office is open. A court being closed is a different question and this engine has no office-closed concept, by design.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Martin Luther King, Jr.'s birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-12",
+          "name": "Abraham Lincoln's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Presidents Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-03-05",
+          "name": "Casimir Pulaski's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-03-30",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "il",
+      "year": 2030,
+      "authority": {
+        "citation": "205 ILCS 630/17(a) (legal holidays in the State of Illinois)",
+        "url": "https://www.ilga.gov/Legislation/ILCS/Fulltext?DocName=020506300K17",
+        "note": "Generated 2026-08-23 from the statutory formulas in 205 ILCS 630/17(a), read verbatim from the Illinois General Assembly's own site, then re-checked by day-of-week. NO OBSERVANCE SHIFT: 630/17(a) states no Saturday-to-Friday or Sunday-to-Monday rule at all, unlike the federal, Indiana, Michigan and Pennsylvania calendars (both-way shift) and Ohio (Sunday-only). A holiday falling on a weekend stays on its actual date; 5 ILCS 70/1.11 already excludes every Saturday and Sunday, so the deadline still rolls correctly without one. GOOD FRIDAY is computed from the Gregorian Easter algorithm, checked against eight published Easter dates before generation. GENERAL ELECTION DAY appears in even-numbered years only (2 U.S.C. 7), so even-year calendars carry one more holiday than odd-year ones -- that asymmetry is correct, not a gap. NOT INCLUDED, deliberately: 'any day proclaimed by the Governor of this State as a legal holiday' (630/17(a)) cannot be known in advance -- same treatment as Indiana's office-closed limb. IMPORTANT DIVERGENCE, disclosed rather than reconciled: the days Illinois COURTS observe are set by Supreme Court order M.R. 5272, not by this statute, and the two lists genuinely disagree in both directions. M.R. 5272 (2026) does NOT observe Casimir Pulaski's birthday or Good Friday, and DOES observe the Day Following Thanksgiving, which 630/17(a) does not list. This calendar encodes the STATUTORY list because 5 ILCS 70/1.11 excludes a day that is 'a holiday as defined or fixed in any statute' -- it keys on the statute, not on whether the clerk's office is open. A court being closed is a different question and this engine has no office-closed concept, by design.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Martin Luther King, Jr.'s birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-12",
+          "name": "Abraham Lincoln's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Presidents Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-03-04",
+          "name": "Casimir Pulaski's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-04-19",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-05",
+          "name": "General election for members of the House of Representatives",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "il",
+      "year": 2031,
+      "authority": {
+        "citation": "205 ILCS 630/17(a) (legal holidays in the State of Illinois)",
+        "url": "https://www.ilga.gov/Legislation/ILCS/Fulltext?DocName=020506300K17",
+        "note": "Generated 2026-08-23 from the statutory formulas in 205 ILCS 630/17(a), read verbatim from the Illinois General Assembly's own site, then re-checked by day-of-week. NO OBSERVANCE SHIFT: 630/17(a) states no Saturday-to-Friday or Sunday-to-Monday rule at all, unlike the federal, Indiana, Michigan and Pennsylvania calendars (both-way shift) and Ohio (Sunday-only). A holiday falling on a weekend stays on its actual date; 5 ILCS 70/1.11 already excludes every Saturday and Sunday, so the deadline still rolls correctly without one. GOOD FRIDAY is computed from the Gregorian Easter algorithm, checked against eight published Easter dates before generation. GENERAL ELECTION DAY appears in even-numbered years only (2 U.S.C. 7), so even-year calendars carry one more holiday than odd-year ones -- that asymmetry is correct, not a gap. NOT INCLUDED, deliberately: 'any day proclaimed by the Governor of this State as a legal holiday' (630/17(a)) cannot be known in advance -- same treatment as Indiana's office-closed limb. IMPORTANT DIVERGENCE, disclosed rather than reconciled: the days Illinois COURTS observe are set by Supreme Court order M.R. 5272, not by this statute, and the two lists genuinely disagree in both directions. M.R. 5272 (2026) does NOT observe Casimir Pulaski's birthday or Good Friday, and DOES observe the Day Following Thanksgiving, which 630/17(a) does not list. This calendar encodes the STATUTORY list because 5 ILCS 70/1.11 excludes a day that is 'a holiday as defined or fixed in any statute' -- it keys on the statute, not on whether the clerk's office is open. A court being closed is a different question and this engine has no office-closed concept, by design.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Martin Luther King, Jr.'s birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-12",
+          "name": "Abraham Lincoln's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Presidents Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-03-03",
+          "name": "Casimir Pulaski's birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-04-11",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth National Freedom Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    }
+  ]
+}

@@ -241,7 +241,42 @@ var COMPUTATION_STANDARDS = {
   // Subdivision lettering is real and citable: (a) days, (b) the last-day
   // omission, (d) months. Backward left blank -- Rule 107 does not address
   // backward-counted periods.
-  pa_rja_107: { label: 'Pa.R.J.A. 107', impl: 'frcp_6a', base_period_suffix: '(a)', months_years_suffix: '(d)', rollover_suffix_forward: '(b)', rollover_suffix_backward: '' }
+  pa_rja_107: { label: 'Pa.R.J.A. 107', impl: 'frcp_6a', base_period_suffix: '(a)', months_years_suffix: '(d)', rollover_suffix_forward: '(b)', rollover_suffix_backward: '' },
+  // Illinois 5 ILCS 70/1.11 (Statute on Statutes). Read verbatim from the
+  // Illinois General Assembly's own site on 2026-08-23; the whole operative
+  // text is one unnumbered paragraph:
+  //
+  //   "The time within which any act provided by law is to be done shall be
+  //    computed by excluding the first day and including the last, unless the
+  //    last day is Saturday or Sunday or is a holiday as defined or fixed in
+  //    any statute now or hereafter in force in this State, and then it shall
+  //    also be excluded. If the day succeeding such Saturday, Sunday or
+  //    holiday is also a holiday or a Saturday or Sunday then such succeeding
+  //    day shall also be excluded."
+  //
+  // Maps to the frcp_6a IMPLEMENTATION -- straight calendar counting, roll
+  // only the last day, cascading until a day that is none of those -- because
+  // Illinois genuinely works that way, NOT because most states before it did.
+  // Verified explicitly: 1.11 contains NO short-period exclusion of any kind,
+  // so it follows Michigan and Pennsylvania, not Ohio and Indiana. Declaring
+  // short_period_exclusion_days here would have pushed every short Illinois
+  // deadline LATER than the true date. The cascade sentence is the same
+  // behaviour FRCP 6(a)(1)(C) produces by saying "continue to run until"; it
+  // is stated explicitly in Illinois rather than implied.
+  //
+  // All four suffixes are BLANK on purpose. 1.11 has no subdivisions to cite
+  // -- unlike Michigan's (1)/(3) and Pennsylvania's (a)/(b)/(d) -- so citing
+  // one would invent a subdivision, and 1.11 does not address backward-counted
+  // periods or months/years at all.
+  //
+  // NOTE ON HOLIDAYS: 1.11 does not define "holiday". It incorporates whatever
+  // is "defined or fixed in any statute now or hereafter in force in this
+  // State", which is 205 ILCS 630/17(a). That is a STATUTORY list, and it is
+  // NOT the same as the list Illinois courts actually close on (Supreme Court
+  // order M.R. 5272). They disagree in both directions. The calendars encode
+  // the statutory list because that is what 1.11's own words key on; see
+  // sql/sairnlaw_deadline_calendars_illinois.json for the full disclosure.
+  illinois_5ilcs70_111: { label: '5 ILCS 70/1.11', impl: 'frcp_6a', base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
