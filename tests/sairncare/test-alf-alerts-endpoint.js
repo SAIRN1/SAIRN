@@ -22,7 +22,10 @@ process.env.SUPABASE_URL = 'https://fake.supabase.co';
 process.env.SUPABASE_SERVICE_ROLE_KEY = ['fake', 'service', 'value'].join('-');
 process.env.CRON_SECRET = FIXTURE.cronToken;
 process.env.RESEND_API_KEY = FIXTURE.mailToken;
-process.env.RESEND_FROM_ADDRESS = FIXTURE.fromAddress;
+// RESEND_FROM_EMAIL, not RESEND_FROM_ADDRESS. See the second regression guard
+// below -- this test previously set the name the code read, so both sides were
+// consistently wrong together and the suite passed while production never sent.
+process.env.RESEND_FROM_EMAIL = FIXTURE.fromAddress;
 
 const licenseMod = require(path.join(ROOT, 'api/_lib/license.js'));
 licenseMod.validateLicenseKey = async () => ({
@@ -153,6 +156,48 @@ function assertTrue(v, m) { if (!v) throw new Error(m || 'expected truthy'); }
     }
     assertEq(EMAILS.length, 0);
     FACILITIES = [{ license_hash: 'HASH1', data: saved }];
+  });
+
+  // ── THE SECOND REGRESSION GUARD ──────────────────────────────────────
+  // A REAL PRODUCTION DEFECT, same shape as the 405 one above: this file read
+  // RESEND_FROM_ADDRESS, a variable that has never existed in the Vercel
+  // project. The real one is RESEND_FROM_EMAIL, configured alongside
+  // RESEND_API_KEY. Every test passed, because the test set the same wrong
+  // name the code read -- both halves were wrong together, so nothing
+  // disagreed. The cron 503'd EMAIL_NOT_CONFIGURED on every firing.
+  //
+  // The guard therefore cannot be "the code reads NAME_X" -- that is what was
+  // already circular. It has to be a claim about the OUTGOING PAYLOAD: whatever
+  // env var the sender comes from, `from` must not arrive at Resend empty.
+  // Resend rejects an empty from, so an empty one here is a real send failure.
+  await check('the outgoing Resend payload carries a non-empty from address', async () => {
+    EMAILS = [];
+    MAR_ROWS = [{
+      entry_id: 'MED-FROM', resident_id: 'RES-1', entry_type: 'medication_order',
+      data: { name: 'Metformin', schedule_times: ['00:05'], pharmacy_status: 'accepted' }
+    }];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    if (res.body.results[0].late > 0) {
+      assertEq(EMAILS.length, 1);
+      assertTrue(EMAILS[0].from, 'from must be populated -- an undefined from means the env var name in the code does not match a real one');
+      assertEq(EMAILS[0].from, FIXTURE.fromAddress);
+    }
+  });
+
+  await check('with the sender variable unset the sweep 503s and NAMES the missing variable', async () => {
+    EMAILS = [];
+    const savedFrom = process.env.RESEND_FROM_EMAIL;
+    delete process.env.RESEND_FROM_EMAIL;
+    const res = await call('GET', { authorization: CRON_AUTH });
+    assertEq(res.statusCode, 503);
+    assertEq(res.body.error.code, 'EMAIL_NOT_CONFIGURED');
+    // Naming it is the point: the previous message listed both variables
+    // unconditionally, which sent a whole session hunting for an absent
+    // RESEND_API_KEY that was in fact present and correct.
+    assertTrue(/RESEND_FROM_EMAIL/.test(res.body.error.message), 'the message must name the variable that is actually missing');
+    assertTrue(!/RESEND_API_KEY/.test(res.body.error.message), 'it must NOT name a variable that is present');
+    assertEq(EMAILS.length, 0);
+    process.env.RESEND_FROM_EMAIL = savedFrom;
   });
 
   // ── interactive path ─────────────────────────────────────────────────
