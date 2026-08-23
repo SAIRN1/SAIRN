@@ -230,6 +230,29 @@ function assertTrue(v, m) { if (!v) throw new Error(m || 'expected truthy'); }
     }
   });
 
+  await check('a SUCCESSFUL send logs the provider message id, so success is observable too', async () => {
+    // The counterpart to the test above. Logging only failures makes "delivered"
+    // and "never attempted" produce byte-identical output: both are a 200 with
+    // an empty log. That ambiguity is not theoretical -- it is exactly what made
+    // the 2026-08-23 18:00 UTC firing unverifiable from the log alone. A send
+    // that Resend accepted must say so, with the id Resend issued.
+    EMAILS = [];
+    const infos = [];
+    const realLog = console.log;
+    console.log = (m) => infos.push(String(m));
+    MAR_ROWS = [{
+      entry_id: 'MED-OK', resident_id: 'RES-1', entry_type: 'medication_order',
+      data: { name: 'Metformin', schedule_times: ['00:05'], pharmacy_status: 'accepted' }
+    }];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    console.log = realLog;
+    if (res.body.results[0].late > 0) {
+      assertEq(res.body.results[0].emailed, true, 'an accepted send must be reported as emailed');
+      assertTrue(infos.some((m) => /Resend send OK/.test(m)), 'a successful send must reach the production log');
+      assertTrue(infos.some((m) => /resend_id em_1/.test(m)), "the log must carry Resend's message id, which is the actual proof of acceptance");
+    }
+  });
+
   // ── interactive path ─────────────────────────────────────────────────
   await check('the interactive check requires a session', async () => {
     const res = await call('POST', { authorization: 'Bearer licensevalue' }, { action: 'check' });

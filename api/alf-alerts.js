@@ -100,7 +100,13 @@ async function sendResendEmail(to, subject, text) {
     const t = await r.text().catch(() => '');
     return { sent: false, error: 'Resend returned ' + r.status + ' ' + t.slice(0, 200) };
   }
-  return { sent: true };
+  // The provider's message id is captured so a SUCCESSFUL send is positively
+  // observable in the production log, not merely inferred from the absence of
+  // the failure line below. Absence is ambiguous: a sweep that skipped the
+  // facility (nothing late, no alert_email) logs exactly as much as one that
+  // delivered. An id is proof Resend accepted a specific message.
+  const okBody = await r.json().catch(() => ({}));
+  return { sent: true, id: (okBody && okBody.id) || null };
 }
 
 function buildAlertText(facilityName, result) {
@@ -226,6 +232,9 @@ module.exports = async (req, res) => {
       if (!sendRes.sent) {
         console.error('alf-alerts: Resend send FAILED for license_hash ' + f.license_hash +
           ' (' + r.late.length + ' late) -- ' + (sendRes.error || 'no reason returned'));
+      } else {
+        console.log('alf-alerts: Resend send OK for license_hash ' + f.license_hash +
+          ' (' + r.late.length + ' late) -- resend_id ' + (sendRes.id || 'none returned'));
       }
       out.push({ license_hash: f.license_hash, late: r.late.length, emailed: sendRes.sent, error: sendRes.error || null });
     }
