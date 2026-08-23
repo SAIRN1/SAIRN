@@ -16206,21 +16206,30 @@ function saveCodes() {
 }
 
 // == SHOP SETTINGS =============================================
-function saveShopSettings() {
-  const name=document.getElementById('admin-shop-name').value.trim();
-  const addr=document.getElementById('admin-shop-addr').value.trim();
-  const phone=document.getElementById('admin-shop-phone').value.trim();
-  const email=document.getElementById('admin-shop-email').value.trim();
-  let allOk=true;
-  if(name) allOk = stRaw('fab_shop_name', name) && allOk;
-  if(addr) allOk = stRaw('fab_shop_addr', addr) && allOk;
-  if(phone) allOk = stRaw('fab_shop_phone', phone) && allOk;
-  if(email) allOk = stRaw('fab_shop_email', email) && allOk;
-  const btn=document.querySelector('[onclick="saveShopSettings()"]');
-  btn.textContent = allOk ? '✓ Settings Saved' : '⚠️ Save failed';
-  btn.style.color = allOk ? '#4ADE80' : '#dc2626';
-  setTimeout(()=>{btn.textContent='Save Shop Settings';btn.style.color='';},2000);
-}
+// saveShopSettings() removed 2026-08-23 (approved). It was unreachable dead
+// code, re-confirmed at HEAD before cutting: all four fields it read
+// (admin-shop-name/addr/phone/email) have ZERO id="..." occurrences in this
+// file, no <button> anywhere was wired to it, and its only apparent
+// "reference" was a self-reference inside its own body -- a
+// querySelector('[onclick="saveShopSettings()"]') looking for a button that
+// does not exist. It could never have run successfully: the first line
+// would have thrown on .value of null.
+//
+// WORTH KNOWING, because deleting this makes an existing gap visible rather
+// than creating one: those four functions were the ONLY writers of
+// fab_shop_name / fab_shop_addr / fab_shop_phone / fab_shop_email anywhere
+// in this file, and fab_shop_name is READ in roughly a dozen places
+// (proposals, invoices, order text, revenue config). Since the writer was
+// already unreachable, every one of those reads has always fallen through
+// to its own hardcoded default ('Your Stone Shop', 'Stone Fabrication
+// Shop', 'SAIRN Technologies LLC'). Nothing changes behaviourally here.
+// The real gap is that StoneDesk has no working way to set its own shop
+// name/address/phone/email at all -- flagged, not fixed in this change.
+//
+// loadShopSettings() below is deliberately NOT touched by this removal: it
+// is also currently callerless, but it was not part of the approved change
+// and it is defensively written (it null-checks every element), so it
+// cannot throw the way saveShopSettings() would have.
 
 function loadShopSettings() {
   const name=localStorage.getItem('fab_shop_name');
