@@ -2264,6 +2264,21 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <input type="text" id="elig-last" placeholder="Patient last name" class="search-input">
                 <input type="date" id="elig-dob" class="search-input" title="Patient date of birth">
             </div>
+            <!-- Dependent (2026-08-23). Added because this endpoint silently
+                 DROPPED dependents before today: a child on a parent's policy
+                 was transmitted as a check on the parent, so the payer answered
+                 about the parent and this page would have shown that answer as
+                 the patient's. Leave blank for an ordinary subscriber check.
+                 Date of birth is required whenever a dependent name is entered
+                 -- it is what lets the payer tell the dependent apart from the
+                 subscriber, and without it a payer commonly resolves to the
+                 subscriber instead. Enforced server-side too. -->
+            <div style="font-size:12px;color:#666;margin:14px 0 6px;">Checking a <b>dependent</b> (e.g. a child on a parent's plan)? Enter the subscriber above and the dependent here. Leave blank otherwise.</div>
+            <div class="toolbar">
+                <input type="text" id="elig-dep-first" placeholder="Dependent first name" class="search-input">
+                <input type="text" id="elig-dep-last" placeholder="Dependent last name" class="search-input">
+                <input type="date" id="elig-dep-dob" class="search-input" title="Dependent date of birth (required if a dependent name is entered)">
+            </div>
             <div class="toolbar">
                 <input type="text" id="elig-service-type" placeholder="Service type code (default 30 = general)" class="search-input">
                 <input type="date" id="elig-service-date" class="search-input" title="Date of service">
@@ -5377,10 +5392,19 @@ How to answer:
             var dob = document.getElementById('elig-dob').value;
             var stc = document.getElementById('elig-service-type').value.trim() || '30';
             var svcDate = document.getElementById('elig-service-date').value;
+            var depFirst = document.getElementById('elig-dep-first').value.trim();
+            var depLast = document.getElementById('elig-dep-last').value.trim();
+            var depDob = document.getElementById('elig-dep-dob').value;
 
             if (!payerId) { showToast('Payer ID is required'); return; }
             if (!npi && !org) { showToast('Provider NPI or practice name is required'); return; }
             if (!memberId && !last && !dob) { showToast('At least one of member ID, patient last name, or date of birth is required'); return; }
+            // Mirrors the server's dependent rule so an obviously-incomplete
+            // entry fails here with a clear message instead of coming back as
+            // a payer rejection. The server is still the real gate.
+            var depEntered = !!(depFirst || depLast || depDob);
+            if (depEntered && !(depFirst && depLast)) { showToast('A dependent needs both a first and last name'); return; }
+            if (depEntered && !depDob) { showToast('A dependent needs a date of birth — without it the payer may answer about the subscriber instead'); return; }
 
             var provider = {};
             if (npi) provider.npi = npi;
@@ -5397,9 +5421,17 @@ How to answer:
             btn.disabled = true; btn.textContent = 'Checking...';
             out.innerHTML = '<div style="font-size:12px;color:#666">Contacting the payer through your clearinghouse...</div>';
             try {
-                var res = await scPostEndpoint('/api/sc-eligibility', {
-                    action: 'check', payerId: payerId, provider: provider, subscriber: subscriber, encounter: encounter
-                });
+                var payload = {
+                    action: 'check', payerId: payerId, provider: provider,
+                    subscriber: subscriber, encounter: encounter
+                };
+                if (depEntered) {
+                    payload.dependents = [{
+                        firstName: depFirst, lastName: depLast,
+                        dateOfBirth: depDob.replace(/-/g, '')
+                    }];
+                }
+                var res = await scPostEndpoint('/api/sc-eligibility', payload);
                 if (!res.ok) { out.innerHTML = renderEligibilityError(res.error); return; }
                 out.innerHTML = renderEligibilityResult(res);
 

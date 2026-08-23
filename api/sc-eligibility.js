@@ -52,7 +52,8 @@
 // Two actions, both POST, license key via Authorization: Bearer, employee
 // session token via X-SD-Auth:
 //
-//   action: 'check'        { payerId, provider:{...}, subscriber:{...}, encounter:{...} }
+//   action: 'check'        { payerId, provider:{...}, subscriber:{...},
+//                            dependents:[{...}], encounter:{...} }
 //   action: 'search_payer' { query }
 //
 // Any authenticated SAIRNcode role may run a check -- verifying a patient's
@@ -224,6 +225,16 @@ module.exports = async (req, res) => {
   const provider = body.provider || {};
   const subscriber = body.subscriber || {};
   const encounter = body.encounter || {};
+  // dependents (2026-08-23). This field was read nowhere and forwarded nowhere
+  // before today, and its absence was NOT cosmetic: a dependent check -- a
+  // child on a parent's policy, the single most common eligibility case in a
+  // pediatric or family practice -- was silently transmitted as a check on
+  // the SUBSCRIBER. The payer then answers about the parent, and this app
+  // would have rendered the parent's benefits as though they were the
+  // patient's. A wrong-patient coverage answer presented as real is exactly
+  // what this endpoint's anti-fabrication contract exists to prevent, so the
+  // gap was in the one place it could do the most damage.
+  const dependents = Array.isArray(body.dependents) ? body.dependents : [];
 
   // Validate against Stedi's own documented minimums rather than sending a
   // request we already know is malformed and reporting the payer's rejection
@@ -237,12 +248,34 @@ module.exports = async (req, res) => {
     res.status(400).json({ error: { message: 'subscriber requires at least one of memberId, dateOfBirth, or lastName' } });
     return;
   }
+  // Same shape of check as the subscriber's above, and same reason: refuse a
+  // request we already know is malformed rather than letting the payer's
+  // rejection come back looking like a coverage answer. Stricter than the
+  // subscriber on ONE point, deliberately -- a dependent needs a real date of
+  // birth. Per Stedi's own guidance a payer can only identify a dependent
+  // from information outside the subscriber's policy, and dateOfBirth is what
+  // does that work; without it the payer commonly resolves to the subscriber
+  // instead, which is the precise wrong-patient outcome this field exists to
+  // avoid. An empty/absent dependents array is untouched and still valid --
+  // that is an ordinary subscriber check.
+  for (var di = 0; di < dependents.length; di++) {
+    var dep = dependents[di] || {};
+    if (!dep.firstName || !dep.lastName) {
+      res.status(400).json({ error: { message: 'each dependent requires firstName and lastName' } });
+      return;
+    }
+    if (!dep.dateOfBirth) {
+      res.status(400).json({ error: { message: 'each dependent requires a dateOfBirth (YYYYMMDD) -- without it a payer may answer about the subscriber instead of the dependent' } });
+      return;
+    }
+  }
 
   const stediBody = {
     tradingPartnerServiceId: payerId,
     provider: provider,
     subscriber: subscriber
   };
+  if (dependents.length) stediBody.dependents = dependents;
   if (encounter && Object.keys(encounter).length) stediBody.encounter = encounter;
 
   try {
