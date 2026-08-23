@@ -1,7 +1,7 @@
 # SAIRNlaw deadline engine — approved external-facing claim
 
-**Updated 2026-08-23, after the Phase 8 `sairn-decision-gate` re-run.**
-Supersedes the Phase 7 version. This is the sentence to use with anyone
+**Updated 2026-08-23, after the Phase 8b `sairn-decision-gate` re-run.**
+Supersedes the Phase 8 version. This is the sentence to use with anyone
 outside the team — proposals, sales conversations, status updates. Do not
 paraphrase it looser.
 
@@ -15,9 +15,27 @@ paraphrase it looser.
 > rather than estimating anything it does not cover — including where a rule
 > sets no deadline at all, as Ohio's and Indiana's discovery rules do, and
 > where a rule sets only a standard rather than a period, as every
-> jurisdiction's general deposition-notice rule does.
+> jurisdiction's general deposition-notice rule does. Where a rule makes a
+> deadline the earlier of its own period and a date the other side fixed —
+> as the federal and Ohio subpoena-objection rules do — both are computed
+> and the earlier one is reported, with the other shown alongside it.
 
-## What changed at this gate, and the fifth distinct failure mode
+## What changed at this gate (8b)
+
+The cap shape shipped: federal FRCP 45(d)(2)(B) and Ohio Civ.R. 45(C)(3)
+subpoena objections now compute, 49 → 51 rules. **No new failure mode.**
+This gate is the first that did not find one, and the reason is worth
+recording: the change closed a gap that had already been named, scoped and
+described accurately in the previous version of this document. A claim that
+was already honest about a limit does not become dishonest when the limit is
+removed — it just becomes incomplete, which is a smaller and easier problem.
+
+The one substantive edit: the "awaiting a capability" category is now empty.
+Everything still uncovered is either permanently uncomputable or simply
+unread. That distinction was introduced at the Phase 8 gate and is what made
+this one straightforward.
+
+## What changed at the Phase 8 gate, and the fifth distinct failure mode
 
 Phase 8 read the subpoena and deposition rules in all five jurisdictions and
 seeded seven. Coverage went 42 → 49 rules. Federal fell to **41%**, and
@@ -98,14 +116,14 @@ live one. When they disagree, the app is right and this file is stale.**
 
 | Jurisdiction | Rules | Families | Notes |
 |---|---:|---:|---|
-| United States (Federal) | 20 | 9 | widest family range: answer, discovery, amendment, service, summary judgment, pretrial disclosures, appeal |
+| United States (Federal) | 21 | 10 | widest family range: answer, discovery, amendment, service, summary judgment, pretrial disclosures, appeal |
 | Michigan | 14 | 7 | largest state set: answer, all three discovery devices, subpoena and deposition timing |
 | Pennsylvania | 6 | 5 | pleading, all three discovery devices, non-party subpoena prior notice |
 | Indiana | 5 | 5 | response to pleading, all three discovery devices (designated-period), organizational-deposition conferral |
-| Ohio | 4 | 4 | answer, all three discovery devices (designated-period) |
+| Ohio | 5 | 5 | answer, all three discovery devices (designated-period) |
 
-49 rules; federal 41%. Eight backward-counted. Six designated-period. Holiday
-calendars 2026–2031 for all five.
+51 rules; federal 41%. Eight backward-counted. Six designated-period. Two
+capped. Holiday calendars 2026–2031 for all five.
 
 ## Claims that are NOT approved
 
@@ -133,17 +151,17 @@ material coverage change makes the specific half stale, and the failure mode
 is different every time. Re-run `sairn-decision-gate` and rewrite the sentence
 before a new claim goes outside the team.
 
-## Not covered, and the two kinds of "not covered"
+## Not covered, and the kinds of "not covered"
+
+**This category is now empty of buildable items.** The cap shape shipped in
+Phase 8b closed the last one — federal FRCP 45(d)(2)(B) and Ohio Civ.R.
+45(C)(3) subpoena objections now compute. Everything remaining below is either
+permanently uncomputable or simply unread; nothing is waiting on a capability.
 
 **Permanently uncomputable — refusing is the final answer:**
 general deposition notice in all five jurisdictions (*"reasonable notice"*);
 Ind. T.R. 45 motions to quash (*"promptly"*); Mich. Ct. R. 2.506 objections
 (*"before the designated time for appearance"*).
-
-**Not built, awaiting a decision — a real capability would fix these:**
-federal FRCP 45(d)(2)(B) and Ohio Civ.R. 45(C)(3) subpoena objections, which
-need a *cap* shape (earlier of a computed period and a date the issuing party
-chose). Named, scoped, not improvised.
 
 **Not yet verified — absence means unread, not absent:**
 state appellate deadlines in all four states.
