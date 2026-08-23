@@ -200,6 +200,36 @@ function assertTrue(v, m) { if (!v) throw new Error(m || 'expected truthy'); }
     process.env.RESEND_FROM_EMAIL = savedFrom;
   });
 
+  await check('a Resend REJECTION is logged as an error, not swallowed into a 200', async () => {
+    // The cron's JSON response body goes nowhere -- Vercel keeps the status
+    // code and discards it. Before this, Resend rejecting every message looked
+    // identical to a perfect sweep from the outside: 200, no signal, nobody
+    // notified. The log line is the only observable difference.
+    EMAILS = [];
+    const realFetch = global.fetch;
+    global.fetch = async (url, opts) => {
+      if (/api\.resend\.com\/emails/.test(url)) {
+        return { ok: false, status: 422, text: async () => 'domain not verified' };
+      }
+      return realFetch(url, opts);
+    };
+    const errors = [];
+    const realErr = console.error;
+    console.error = (m) => errors.push(String(m));
+    MAR_ROWS = [{
+      entry_id: 'MED-REJ', resident_id: 'RES-1', entry_type: 'medication_order',
+      data: { name: 'Metformin', schedule_times: ['00:05'], pharmacy_status: 'accepted' }
+    }];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    console.error = realErr;
+    global.fetch = realFetch;
+    if (res.body.results[0].late > 0) {
+      assertEq(res.body.results[0].emailed, false, 'a rejected send must not be reported as emailed');
+      assertTrue(errors.some((e) => /Resend send FAILED/.test(e)), 'the rejection must reach the production log');
+      assertTrue(errors.some((e) => /domain not verified/.test(e)), 'the log must carry the reason Resend gave, not just "failed"');
+    }
+  });
+
   // ── interactive path ─────────────────────────────────────────────────
   await check('the interactive check requires a session', async () => {
     const res = await call('POST', { authorization: 'Bearer licensevalue' }, { action: 'check' });

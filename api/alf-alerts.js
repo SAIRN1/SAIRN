@@ -214,6 +214,19 @@ module.exports = async (req, res) => {
         'SAIRNcare: ' + r.late.length + ' late medication administration(s)',
         buildAlertText(r.facility_name, r)
       );
+      // A FAILED SEND ON THE CRON PATH WAS INVISIBLE. sendRes.error went into
+      // the JSON response, and a cron's response body goes nowhere -- Vercel
+      // records the status code and discards it. So Resend rejecting every
+      // message (unverified domain, revoked key, bad from-address) produced an
+      // identical 200 to a sweep that delivered perfectly. That is the exact
+      // silent-failure shape this app is supposed to refuse: the alerting
+      // system reporting success while notifying nobody. Logged as an error so
+      // the next firing is checkable from the production log, which is the only
+      // place anyone can actually see it.
+      if (!sendRes.sent) {
+        console.error('alf-alerts: Resend send FAILED for license_hash ' + f.license_hash +
+          ' (' + r.late.length + ' late) -- ' + (sendRes.error || 'no reason returned'));
+      }
       out.push({ license_hash: f.license_hash, late: r.late.length, emailed: sendRes.sent, error: sendRes.error || null });
     }
     res.status(200).json({ ok: true, facilities_checked: out.length, results: out });
