@@ -17,8 +17,25 @@
 //   Payer search:
 //     GET https://healthcare.us.stedi.com/2024-04-01/payers/search?query=...
 //     Response: items[] (each with payer + matches), nextPageToken, stats.
-//   Auth for both: the raw API key in the Authorization header (NOT a
-//   "Bearer " prefix -- Stedi takes the key directly).
+//   Auth for both: Authorization: Key <api_key>.
+//
+//   CORRECTED 2026-08-23. This comment previously read "the raw API key in
+//   the Authorization header (NOT a 'Bearer ' prefix -- Stedi takes the key
+//   directly)" and the code sent the key bare. Half of that was right --
+//   Stedi does not use "Bearer" -- but the conclusion was wrong: it uses the
+//   scheme word "Key", documented 66 times on Stedi's own mock-requests page
+//   as `Authorization: Key {test_api_key}`.
+//
+//   Why the bug hid for so long: a bare key still AUTHENTICATES. Every check
+//   returned a real, well-formed 271 from a real payer, never a 401, so
+//   nothing looked broken. What it did not do was resolve the key OBJECT,
+//   and per Stedi's API reference the test/production mode travels with the
+//   key itself (same host, no sandbox URL, no mode parameter). The symptom
+//   was that mock requests were forwarded to real payers, which rejected
+//   Stedi's fictional test patients with AAA code 73 "Invalid/Missing
+//   Subscriber/Insured Name" -- identically across six different payers, and
+//   identically before and after swapping a production key for a test key.
+//   That last fact is what ruled the key itself out and pointed here.
 //
 // ANTI-FABRICATION CONTRACT, the whole point of this endpoint:
 //   - If no credential is configured -> 503 NOT_CONFIGURED. Never a
@@ -184,7 +201,7 @@ module.exports = async (req, res) => {
     try {
       const r = await fetchWithTimeout(STEDI_PAYER_SEARCH_URL + '?query=' + enc(query) + '&eligibilityCheck=SUPPORTED&pageSize=10', {
         method: 'GET',
-        headers: { Authorization: stediKey }
+        headers: { Authorization: 'Key ' + stediKey }
       });
       const data = await r.json().catch(function () { return null; });
       if (!r.ok) {
@@ -231,7 +248,7 @@ module.exports = async (req, res) => {
   try {
     const r = await fetchWithTimeout(STEDI_ELIGIBILITY_URL, {
       method: 'POST',
-      headers: { Authorization: stediKey, 'Content-Type': 'application/json' },
+      headers: { Authorization: 'Key ' + stediKey, 'Content-Type': 'application/json' },
       body: JSON.stringify(stediBody)
     });
     const data = await r.json().catch(function () { return null; });
