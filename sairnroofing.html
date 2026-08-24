@@ -363,18 +363,30 @@ function saveJob(){
   if(!name){toast('Job name is required');return;}
   var id=editingJobId||('RF-'+Date.now());
   var role=rfSession&&rfSession.role;
+  var existing=editingJobId?currentJobs.filter(function(x){return x.id===editingJobId;})[0]:null;
+  // FIXED (2026-08-24, found live during verification): the server never
+  // auto-fills assigned_employee_id -- api/sd-data.js's rf_jobs gate only
+  // CHECKS the value the client sends against session.employee_id, the same
+  // shape as sen_clients/alf_clients. Omitting the field for the narrow tier
+  // left requestedAssignee resolving to null on create, which the gate then
+  // correctly refused (null !== the crew member's own id) -- a self-assign-
+  // on-create that never actually self-assigned. Fix, matching
+  // sairnsenior.html's saveClient() exactly: management picks from the
+  // dropdown; broad-read (estimator) always preserves whatever the job's
+  // current assignment already is (or stays unassigned for a new job, since
+  // reassignment is management-only); narrow tier (foreman/crew) keeps the
+  // existing assignment on edit or self-assigns on create. Always sent
+  // explicitly, never omitted.
+  var assignedTo=MANAGEMENT_ROLES[role]
+    ?(($('j-assignee').value||'').trim())
+    :(BROAD_READ_ROLES[role]
+      ?((existing&&existing.assigned_employee_id)||'')
+      :((existing&&existing.assigned_employee_id)||(rfSession&&rfSession.employee_id)||''));
   var payload={
     id:id, name:name, address:($('j-address').value||'').trim(),
-    job_class:$('j-class').value, status:$('j-status').value
+    job_class:$('j-class').value, status:$('j-status').value,
+    assigned_employee_id:assignedTo||null
   };
-  // Only management's assignee field is even shown (see rfRenderScopeNote);
-  // for everyone else, omit assigned_employee_id entirely so the server
-  // keeps its existing value (edit) or self-assigns it (new job) --
-  // matching api/sd-data.js's rf_jobs write gate exactly rather than
-  // asserting a value from a hidden field the client can't be sure of.
-  if(MANAGEMENT_ROLES[role]){
-    payload.assigned_employee_id=($('j-assignee').value||'').trim()||null;
-  }
   rfData('write','rf_jobs',payload).then(function(d){
     if(!d){toast('Save failed');return;}
     closeJobModal();
