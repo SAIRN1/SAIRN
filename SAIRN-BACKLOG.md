@@ -3,6 +3,70 @@
 Deferred items — not urgent, not forgotten. Pick up at a natural pause,
 not mid-session. Each entry: what, why deferred, what "done" looks like.
 
+## SAIRNdental multi-location: read-side half, READY TO BUILD FIRST
+
+**Logged:** 2026-08-24. **Write-side half already SHIPPED** — do not redo it.
+
+**Status:** `location_id` is captured on every SAIRNdental write as of
+2026-08-24 (`api/_lib/dnt-location.js`, wired into the generic
+`DNT_RESOURCES` write, the `dnt_appointments` write, and
+`api/sairndental/public-book.js`). Every row is attributable. A minimal
+locations registry lives on `dnt_settings.data.locations[]`, validated
+server-side. This half shipped alone because it is the **only** part with a
+deadline: a charge, payment, AR entry or appointment written without a
+location can never be attributed to one afterwards. Everything below costs
+the same later as it does now, so it was deliberately held.
+
+**Trigger:** build this the moment a second location is confirmed for a real
+practice. Not before — building it against a guess risks the wrong shape.
+
+**What is held, in build order, with costs already derived (2026-08-24
+costing pass against the real schema — do not re-derive):**
+
+1. **`dnt_settings` split, 1–2 days.** THE ONLY STRUCTURAL BLOCKER. Today
+   `unique (license_hash, settings_id)` plus a globally-unique
+   `booking_slug` means **one settings row and one public booking page per
+   license**. A second location cannot have its own booking page, address or
+   hours. Needs one settings row per location and a per-location slug, plus
+   a real migration against live rows (check the diff shape first).
+2. **`public-availability.js` location filter, included in the above.**
+   Currently resolves slug -> `license_hash` and reads providers, hours and
+   procedures **license-wide with no location filter**
+   (`api/sairndental/public-availability.js:56-97`). The moment a second
+   location exists this is a correctness bug, not a missing feature: a
+   patient booking at one office is offered every provider in the group.
+3. **Client location selector, 2–4 days.** `sairndental.html` is local-first:
+   12 accessor functions read flat unpartitioned lists out of localStorage
+   (`dnt_patients_list`, `dnt_appointments_list`, …) and **17 render
+   functions** consume them. Needs a location filter through all of them and
+   a decision on whether localStorage partitions per location or holds the
+   union.
+4. **Real `location_id` column + index on the financial tables, 0.5 day,
+   deferrable.** Only needed when filtering moves server-side; jsonb is
+   sufficient until then.
+
+**What must NOT be built:** server-side cross-location aggregation for real
+DSO scale. Dentrix holds ~90% of the top 50 DSOs; that tier is not winnable,
+and building for it trades away the local-first simplicity that makes the
+2–5 location band cheap to serve.
+
+**Known ceiling, stated so nobody discovers it at location twelve:** the
+local-first union works for roughly 2–5 locations. Beyond that it ships
+every location's patients, charges and appointments into every front desk's
+browser — a performance ceiling and a data-minimisation problem.
+
+**Deliberately NOT changed, and why (so nobody "fixes" it):** the GiST
+EXCLUDE constraints on `dnt_appointments` are already multi-location
+correct. `dntap_no_operatory_overlap` keys on `operatory_id`, and an
+operatory is a room at exactly one office, so location is implied.
+`dntap_no_provider_overlap` is location-blind on purpose — a dentist cannot
+be in two offices at once.
+
+**Done looks like:** a two-location practice with two working public booking
+pages, each offering only its own providers, and a location filter in the
+staff app — verified with a real write and read-back at each location, not
+just a clean deploy.
+
 ## SAIRNlaw AI Chain of Custody: one gap resolved, one remains open
 
 **Logged:** 2026-08-13. **Gap 1 resolved:** 2026-08-13, same day, via the

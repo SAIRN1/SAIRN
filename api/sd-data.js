@@ -30,6 +30,7 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
+const dntLocation = require('./_lib/dnt-location');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
 const careCharges = require('./_lib/care-charges');
@@ -4181,10 +4182,16 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
       }
+      // Multi-location write-side capture (2026-08-24). Stamped here rather
+      // than trusted from the client so a row can never be written without
+      // an attributable location -- that is the one part of the location
+      // model that cannot be added retroactively. Defaults to the implicit
+      // single-practice location, so this is invisible to existing clients.
+      const locStamped = dntLocation.stampLocation(payload);
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [idCol]: String(payload.id), data: locStamped, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
@@ -4208,6 +4215,15 @@ module.exports = async (req, res) => {
     }
     if (resource === 'dnt_settings' && action === 'write') {
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'dnt_settings payload.id is required' } }); return; }
+      // The minimal locations registry lives on this row as
+      // data.locations[] -- see api/_lib/dnt-location.js for why it is here
+      // and not in a new table. Validated rather than stored blindly: a
+      // duplicate location id would silently split one office's history in
+      // two, and that is not recoverable once rows are attributed to it.
+      // settings itself is NOT location-stamped -- it is practice-level
+      // config and, today, one row per license.
+      const locCheck = dntLocation.validateLocations(payload.locations);
+      if (!locCheck.ok) { res.status(400).json({ error: { code: locCheck.code, message: locCheck.message } }); return; }
       const r = await fetch(rest('dnt_settings?on_conflict=license_hash,settings_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -4286,11 +4302,17 @@ module.exports = async (req, res) => {
       // render-side H() fix in sairndental.html.
       const photosCheck = validatePhotosPayload(payload.photos);
       if (!photosCheck.ok) { res.status(400).json({ error: { code: photosCheck.code, message: photosCheck.message } }); return; }
+      // Same write-side location capture as the generic block above. The
+      // EXCLUDE constraints are deliberately NOT changed: operatory overlap
+      // already implies a location (an operatory is a room at one office),
+      // and provider overlap must stay location-blind because a dentist
+      // cannot be in two offices at once.
+      const apptStamped = dntLocation.stampLocation(payload);
       const r = await fetch(rest('dnt_appointments?on_conflict=license_hash,appointment_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({
-          license_hash: licHash, app_id: 'sairndental', appointment_id: String(payload.id), data: payload,
+          license_hash: licHash, app_id: 'sairndental', appointment_id: String(payload.id), data: apptStamped,
           provider_id: payload.provider_id || null, operatory_id: payload.operatory_id || null,
           start_time: payload.start_time || null, end_time: payload.end_time || null, status: payload.status || null,
           updated_at: nowISO()

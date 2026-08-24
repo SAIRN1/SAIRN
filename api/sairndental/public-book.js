@@ -14,6 +14,7 @@
 
 const { resolveSlug, checkAndIncrementRateLimit } = require('../_lib/dental-public');
 const { validatePhotosPayload, validatePatientNotes } = require('../_lib/dental-photo-validation');
+const dntLocation = require('../_lib/dnt-location');
 
 function supabaseHeaders(extra) {
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -107,11 +108,17 @@ module.exports = async (req, res) => {
     }
 
     const appointmentId = newId('AP');
-    const appointmentData = {
+    // Self-scheduled bookings are stamped with a location for the same
+    // reason staff writes are (api/_lib/dnt-location.js): attribution can
+    // only be captured at write time. The public booking page resolves one
+    // slug to one license and cannot yet name a location, so every booking
+    // lands on the implicit default until dnt_settings is split per
+    // location -- held work, logged in SAIRN-BACKLOG.md.
+    const appointmentData = dntLocation.stampLocation({
       id: appointmentId, patient_id: patientId, provider_id: providerId, operatory_id: operatoryId,
       procedure_type_id: procedureTypeId, start_time: startTime, end_time: endTime, status: 'Pending', source: 'self-scheduled',
       photos: Array.isArray(photos) ? photos : [], patient_notes: patientNotes
-    };
+    });
     const insertRes = await fetch(rest('dnt_appointments?on_conflict=license_hash,appointment_id'), {
       method: 'POST',
       headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
