@@ -209,12 +209,25 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
     <div style="max-width:1060px;margin:0 auto">
       <div class="section-label">Pricing</div>
       <h2 class="section-title">Start free.<br>Upgrade when it's paying for itself.</h2>
-      <p class="section-sub">No credit card on day one. Placeholder pricing -- real competitive research pending (Keeper, FlyFin, QuickBooks Self-Employed).</p>
+      <p class="section-sub">Free 30-day trial, no credit card. Paid plans are not open yet -- renewal after the trial is by request, reviewed manually. Placeholder pricing -- real competitive research pending (Keeper, FlyFin, QuickBooks Self-Employed).</p>
       <div class="pricing-grid">
-        <div class="plan">
+        <!-- ═══ PAID PLAN: PARKED 2026-08-24, NOT DELETED ═══════════════
+             Hidden because the paid path could not work and was misleading:
+             the button called showPage('app'), which lands on a paywall whose
+             only action is the free trial, so "Get Pro" never led to paying
+             for anything. Behind it, /api/sairncash/checkout returns a real
+             500 {"error":"Stripe not configured"} because STRIPE_SECRET_KEY
+             and STRIPE_PRICE_ID are unset, and the price shown was carried
+             over from SAIRNtype -- see the switch-on block in the script
+             below for exactly what turning this on requires.
+             Kept in place rather than removed: Stripe is coming, and a
+             deleted card would have to be rebuilt from memory.
+             TO RE-ENABLE: delete this comment wrapper's style="display:none"
+             on the div below, and point the button at startCheckout(). -->
+        <div class="plan" id="planPro" style="display:none">
           <div class="plan-name">Pro</div>
           <div class="plan-price"><sup>$</sup>9<span style="font-size:26px">.99</span></div>
-          <div class="plan-note">Reused SAIRNtype Stripe price -- placeholder</div>
+          <div class="plan-note">⚠ PLACEHOLDER PRICE — carried over from SAIRNtype. A real SAIRNcash price id must be created in Stripe before this is shown to anyone.</div>
           <div class="plan-period">per month · cancel anytime</div>
           <ul class="plan-features">
             <li><span>✓</span>Quarterly tax set-aside tracking</li>
@@ -222,7 +235,7 @@ textarea#inp:focus{border-color:rgba(124,111,255,0.45)}
             <li><span>✓</span>SEP IRA / Solo 401(k) estimates</li>
             <li><span>✓</span>Phone + computer synced live</li>
           </ul>
-          <button class="plan-btn" onclick="showPage('app')">Get Pro — $9.99/mo</button>
+          <button class="plan-btn" id="subBtn" onclick="startCheckout()">Get Pro — $9.99/mo</button>
         </div>
       </div>
     </div>
@@ -411,13 +424,28 @@ import { getAuth, signInWithCustomToken }
 // firebase-admin.js) -- sign in with it here, BEFORE touching the database
 // at all, so RTDB rules can require a real `auth.uid === customerId` check
 // instead of trusting an unguessable id in the URL path.
+// Sync-status reporting (2026-08-24). Replaces three console.log calls that
+// violated Guardian Check 24 and, more importantly, told the USER nothing --
+// sync silently not working is exactly the silent-failure class this platform
+// removes everywhere else. Routed through the file's own showToast() when the
+// app shell is actually on screen, and to console.warn otherwise so a failure
+// during startup still leaves a trace without popping a toast at someone
+// looking at the marketing page.
+function syncNote(msg) {
+  try {
+    const shell = document.getElementById('appShell');
+    if (shell && shell.classList.contains('show') && typeof showToast === 'function') { showToast(msg); return; }
+  } catch (e) {}
+  console.warn('[sairncash] ' + msg);
+}
+
 async function initFirebase() {
   try {
     const sub = getSub();
     const trial = getTrial();
     const customerId = (sub && sub.customerId) || (trial && trial.customerId);
     const firebaseToken = (sub && sub.firebaseToken) || (trial && trial.firebaseToken);
-    if (!customerId || !firebaseToken) { console.log('Sync unavailable -- no verified customer yet'); return; }
+    if (!customerId || !firebaseToken) { syncNote('Sync unavailable -- no verified customer yet'); return; }
     const res = await fetch('/api/sairncash/firebase-config');
     if (!res.ok) return;
     const config = await res.json();
@@ -427,7 +455,7 @@ async function initFirebase() {
     try {
       await signInWithCustomToken(auth, firebaseToken);
     } catch (authErr) {
-      console.log('Sync unavailable -- Firebase sign-in failed: ' + authErr.message);
+      syncNote('Sync unavailable -- Firebase sign-in failed: ' + authErr.message);
       return;
     }
     const db = getDatabase(app);
@@ -467,7 +495,7 @@ async function initFirebase() {
     window._fbPushRaw = push;
     window._fbSetRaw = set;
     window._fbOnValueRaw = onValue;
-  } catch(e) { console.log('Sync unavailable'); }
+  } catch(e) { syncNote('Sync unavailable'); }
 }
 // Called from initApp() once a real subscription is confirmed (moved off
 // the unconditional top-level call so customerId is guaranteed available
@@ -484,6 +512,27 @@ function showPage(page) {
     document.getElementById('appPage').classList.add('active');
     document.getElementById('appPage').style.display = 'flex';
     mainNav.style.display = 'none';
+    // RETURNING-USER LOCKOUT FIX (2026-08-24). This returned here without
+    // calling initApp(), and the load handler at the bottom of this file only
+    // calls initApp() when #appPage is ALREADY .active -- which it never is on
+    // a fresh load, since every visit starts on #homePage. So initApp() ran on
+    // exactly two paths: a Stripe return URL, and immediately after
+    // startTrial() succeeded.
+    //
+    // The effect was NOT a paywall bypass -- #paywall is display:flex by
+    // default and #appShell needs .show -- it was the opposite, and worse
+    // commercially: a user with a genuine, unexpired, server-verifiable trial
+    // who closed the tab and came back hit the paywall and had NO way past it.
+    // reverifyTrial() existed and worked the whole time; nothing ever called
+    // it. Every returning trial user was locked out of what they had signed up
+    // for.
+    //
+    // initApp() is idempotent and decides the paywall-vs-shell state itself,
+    // so calling it on every entry to the app page is the correct fix rather
+    // than a special case. Deliberately not awaited: showPage() is called from
+    // inline onclick handlers and must stay synchronous for the page swap to
+    // feel instant; initApp() renders the shell when its own checks resolve.
+    if (typeof initApp === 'function') initApp();
     return;
   }
   mainNav.style.display = 'flex';
@@ -622,6 +671,59 @@ function renderTrialBadge() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// PAID SUBSCRIPTION PATH — PARKED 2026-08-24, PENDING STRIPE
+// ═══════════════════════════════════════════════════════════════════════
+// This function is intact, reachable-by-design and NOT dead code. It is
+// parked deliberately: Stripe is being set up, so deleting this and
+// rebuilding it later from memory would be the more expensive mistake.
+//
+// STATE AS FOUND (2026-08-24 ground-truth audit, all verified live):
+//   - startCheckout() was called from NOWHERE. `onclick="startCheckout"`
+//     appeared zero times in the markup.
+//   - Its first line read document.getElementById('subBtn'), and no element
+//     with that id existed anywhere in the file, so it would have thrown a
+//     TypeError immediately if it had ever been reached.
+//   - The visible "Get Pro — $9.99/mo" button called showPage('app'), which
+//     lands on a paywall whose only action is the free trial. It never led
+//     to paying for anything.
+//   - /api/sairncash/checkout returns a real 500 {"error":"Stripe not
+//     configured"} because STRIPE_SECRET_KEY and STRIPE_PRICE_ID are unset.
+//   - The price shown was carried over from SAIRNtype and is a placeholder.
+//
+// So there was no reachable paid path, and it would not have worked if
+// reached. That is now honest instead of broken: the Pro card is hidden
+// (#planPro, style="display:none"), and the button inside it is a real
+// #subBtn wired to this function, so the wiring is genuinely ready rather
+// than merely present.
+//
+// ───────────────────────────────────────────────────────────────────────
+// TO TURN THIS ON — the whole checklist, in one place on purpose, so
+// switching on is a short task and not a rediscovery:
+//
+//   1. Create a REAL SAIRNcash price in Stripe. Do NOT reuse SAIRNtype's
+//      price id -- it belongs to a different product and would bill under
+//      the wrong name on the customer's statement.
+//   2. Set both env vars in the Vercel project (Production scope):
+//        STRIPE_SECRET_KEY   -- the live/test secret key
+//        STRIPE_PRICE_ID     -- the price id created in step 1
+//      api/sairncash/checkout.js reads exactly these two, plus optional
+//      SITE_URL (defaults to https://sairn.vercel.app).
+//   3. Redeploy, then confirm the endpoint is genuinely live:
+//        curl -s -X POST https://sairn.vercel.app/api/sairncash/checkout \
+//          -H 'Content-Type: application/json' -d '{"email":"you@example.com"}'
+//      Expect a real Stripe checkout URL. "Stripe not configured" means an
+//      env var did not reach Production.
+//   4. In the markup above: remove style="display:none" from #planPro and
+//      replace its ⚠ PLACEHOLDER PRICE note with the real price.
+//   5. Verify the return path end to end. handleStripeReturn() and
+//      reverifySubscription() already exist and are wired into initApp();
+//      a real completed checkout must come back with ?session_id= and land
+//      the user in the app shell, not on the paywall.
+//
+// Until step 4 is done a user cannot reach this function, which is the
+// intended state -- not an oversight.
+// ═══════════════════════════════════════════════════════════════════════
 async function startCheckout() {
   const btn = document.getElementById('subBtn');
   const err = document.getElementById('pwError');
