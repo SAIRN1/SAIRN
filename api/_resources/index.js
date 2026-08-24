@@ -27,6 +27,16 @@
 //      previously just overwrote each other in an object literal with no
 //      signal. assertNoDuplicates() below throws at load instead, which is the
 //      exact hazard sairnscape.js's own comment warns about for scp_jobs.
+//
+// EXTRA ACTIONS (2026-08-24). Resources whose verbs go beyond read/write now
+// declare them here too, via each module's optional `extraActions` map. This
+// closes a third, separate trap that sd-data.js had already documented against
+// itself: adding a resource meant editing THREE places -- the registry, the
+// handler branch, and a hand-written verb condition in sd-data.js -- and
+// missing the third produced a registered resource with a working branch that
+// still answered 400. Two of the three now live in the same file, and
+// assertExtraActionsAreOwned() below refuses to load a verb declared for a
+// resource its own module does not register.
 
 const REGISTRY_MODULES = [
   require('./shared'),
@@ -65,6 +75,48 @@ function assertNoDuplicates(modules) {
 
 const OWNER_BY_RESOURCE = assertNoDuplicates(REGISTRY_MODULES);
 
+// A module may only grant extra verbs to resources it actually registers.
+// Without this, a typo ('alf_payer_rule') would silently produce a verb
+// permission that can never match, which is indistinguishable from the bug
+// this map exists to prevent -- and a deliberate grant against another app's
+// resource would be a cross-app authorization change hidden in a data literal.
+function assertExtraActionsAreOwned(modules) {
+  const merged = Object.create(null);
+  for (const mod of modules) {
+    const extra = mod.extraActions || {};
+    const own = new Set(mod.resources);
+    for (const name of Object.keys(extra)) {
+      if (!own.has(name)) {
+        throw new Error(
+          'api/_resources/' + mod.app + '.js declares extraActions for "' + name +
+          '", which it does not register. A module may only grant verbs to its ' +
+          'own resources.'
+        );
+      }
+      const verbs = extra[name];
+      if (!Array.isArray(verbs) || verbs.length === 0) {
+        throw new Error(
+          'api/_resources/' + mod.app + '.js: extraActions["' + name + '"] must be ' +
+          'a non-empty array of verb strings.'
+        );
+      }
+      for (const verb of verbs) {
+        if (verb === 'read' || verb === 'write') {
+          throw new Error(
+            'api/_resources/' + mod.app + '.js: extraActions["' + name + '"] lists "' +
+            verb + '", which every resource already allows. Remove it.'
+          );
+        }
+      }
+      merged[name] = verbs.slice();
+    }
+  }
+  return merged;
+}
+
+// resource -> array of verbs allowed beyond the universal 'read'/'write'.
+const EXTRA_ACTIONS = assertExtraActionsAreOwned(REGISTRY_MODULES);
+
 // Ordered list, app by app, in the registration order above.
 const RESOURCE_NAMES = REGISTRY_MODULES.reduce(
   (all, mod) => all.concat(mod.resources), []
@@ -86,4 +138,5 @@ module.exports = {
   RESOURCE_LIST_TEXT,
   OWNER_BY_RESOURCE,
   REGISTRY_MODULES,
+  EXTRA_ACTIONS,
 };

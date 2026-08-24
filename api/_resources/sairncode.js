@@ -20,9 +20,7 @@
 // close over ~15 handler-local bindings and serve 11 live apps, and they were
 // never the source of the collisions.
 
-module.exports = {
-  app: 'sairncode',
-  resources: [
+const RESOURCES = [
   // SAIRNcode real data layer + per-employee auth (2026-08-18) -- see
   // sql/sairncode_data_schema.sql and
   // docs/superpowers/specs/2026-08-18-sairncode-real-data-layer-design.md.
@@ -169,5 +167,21 @@ module.exports = {
   // List itself -- see sql/sairncode_dme_schema.sql's header. REQUIRES
   // sql/sairncode_dme_schema.sql to be run in Supabase.
     'sc_dme',
-  ],
+];
+
+module.exports = {
+  app: 'sairncode',
+  resources: RESOURCES,
+  // 'delete' is a real verb for every sc_* resource and only for them --
+  // SAIRNcode's client has had real remove buttons since 2026-08-18. Declared
+  // here rather than as a hand-kept list inside api/sd-data.js, which is where
+  // it used to live: that file carried a SECOND copy of the 28 names purely to
+  // answer "may this resource be deleted", and a copy of a list is the exact
+  // drift this directory exists to prevent (employee_profile had already gone
+  // missing from one such copy). Derived from RESOURCES above, so a resource
+  // added to this file can never be silently ungated or over-gated.
+  extraActions: RESOURCES.reduce(function (map, name) {
+    map[name] = ['delete'];
+    return map;
+  }, {}),
 };

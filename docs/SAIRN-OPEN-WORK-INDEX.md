@@ -11,8 +11,9 @@ It does not replace those files; each row points back at the source of truth.
 **Note, 2026-08-24:** `SAIRN-ACTIVE-WORK.md` was split per session to stop the
 recurring merge conflicts. Its historical entries are still there (unchanged),
 but new active-work entries go in `SAIRN-ACTIVE-WORK-hank.md`,
-`SAIRN-ACTIVE-WORK-cc.md`, and `SAIRN-ACTIVE-WORK-cody.md`. **The next rebuild
-of this index must read all three, not just the shared file.**
+`SAIRN-ACTIVE-WORK-cc.md`, `SAIRN-ACTIVE-WORK-cody.md`, and
+`SAIRN-ACTIVE-WORK-fourth.md` (one per clone). **The next rebuild of this index
+must read all four, not just the shared file.**
 
 ---
 
@@ -60,6 +61,7 @@ Legend — **Sz**: S = under a session, M = one session, L = multi-session.
 | **SAIRNdental** | Vendor/supply ordering — deferred whole-branch-review items | Open | unassigned | — | Re-read the review list, triage | M |
 | **Tooling** | Rebuild graphify's knowledge graph, properly scoped | Open | unassigned | — | Decide scope first; the last attempt was unscoped | M |
 | **Platform** | `C:\Users\marsh\` is itself a working-tree checkout of the repo, 33+ commits behind | Open | **Michael** | Needs repo/clone-setup owner | Retire it as a checkout. Complication: it is also the user-level skill store, so the store must move too | M |
+| **Platform** | `api/sd-data.js` returns all 171 resource names to any caller with a junk bearer token | Open — minor disclosure, **deliberately not fixed** | unassigned | Needs an auth-ordering decision, not a patch | **Verified live 2026-08-24**, no credential used: `POST /api/sd-data` with `Authorization: Bearer not-a-real-key` and an unknown resource returns 400 listing every registered resource, because the resource gate (`sd-data.js:190`) runs *before* license validation (`:221`). Low severity — names only, no data, and every path past the gate still 401s. Moving license validation above the gate changes the first-failure response for **every app**, so it needs a deliberate call and the same baseline-replay proof as the verb-gate change, not a quick reorder. Note it also makes that baseline capturable without credentials, which is a real testing benefit to weigh against fixing it | M |
 | **SAIRNlaw** | `CANLII_API_KEY` | **Closed** | — | — | No longer a blocker — Canada is out of scope and the code is deleted | — |
 
 ### Added by the handoff-reading pass, 2026-08-24
