@@ -323,6 +323,72 @@ var COMPUTATION_STANDARDS = {
   // or chief judge". A Florida date from this engine is therefore correct only
   // absent an emergency order; during hurricane season that is a real caveat,
   // not a formality, and it is surfaced to the user rather than buried here.
+  // ── CALIFORNIA: TWO STANDARDS, NOT ONE ──────────────────────────────────
+  // California splits its time computation across two authorities, and which
+  // one governs depends on what created the deadline:
+  //
+  //   ca_ccp_12_12a  a period fixed by STATUTE (Code of Civil Procedure and
+  //                  every other code) -- CCP 12, 12a, 12b, 12c
+  //   ca_crc_1_10    a period fixed by the RULES OF COURT -- Cal. R. Ct. 1.10
+  //
+  // A single blanket "California" standard would cite the wrong authority on
+  // roughly half the rows. The two texts happen to produce the same arithmetic
+  // today, which is exactly why one standard is tempting and wrong: the audit
+  // trail an attorney follows has to name the authority that actually governs
+  // the deadline in front of them, and the two can diverge on amendment.
+  //
+  // NO ENGINE CHANGE WAS NEEDED. That prediction was carried forward as
+  // UNVERIFIED after Florida disproved the same prediction, and was then
+  // checked rather than assumed: CCP 12 excludes the first day and includes
+  // the last, with no short-period exclusion and no shifted start, and
+  // Rule 1.10(a) says the same in different words. Both map to frcp_6a.
+  //
+  // CCP 12, verbatim: "The time in which any act provided by law is to be done
+  // is computed by excluding the first day, and including the last, unless the
+  // last day is a holiday, and then it is also excluded."
+  //
+  // BACKWARD COUNTING IS ADDRESSED, and by its own section: CCP 12c(a), added
+  // 2011, covers acts due "no later than a specified number of days before a
+  // hearing date" and directs counting backward from the hearing, excluding
+  // the hearing day per section 12. So the backward suffix cites 12c, not 12 --
+  // Michigan, Pennsylvania and Illinois all leave it blank because their rules
+  // are silent, and California's is not.
+  //
+  // THE HOLIDAY DEFINITION IS THE SUBTLE PART, and it is not "the state
+  // holiday list". CCP 12a(a) defines holiday as "all day on Saturdays, all
+  // holidays specified in Section 135 and, to the extent provided in Section
+  // 12b, all days that by terms of Section 12b are required to be considered
+  // as holidays." CCP 135 then takes Gov. Code 6700's list, keeps only FULL
+  // days, and carves five of them back out. See the calendar file.
+  //
+  // NOT MODELLED, flagged not dropped -- CCP 12b: "If any city, county, state,
+  // or public office, other than a branch office, is closed for the whole of
+  // any day, insofar as the business of that office is concerned, that day
+  // shall be considered as a holiday for the purposes of computing time under
+  // Sections 12 and 12a." An office-closed limb, unknowable in advance, and
+  // the same class as Indiana's T.R. 6(A) limb, Illinois's
+  // Governor-proclamation limb and Florida's chief-justice limb.
+  ca_ccp_12_12a: { label: 'Cal. Code Civ. Proc. 12, 12a', impl: 'frcp_6a',
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: 'c' },
+  // Cal. R. Ct. 1.10(a), verbatim: "The time in which any act provided by
+  // these rules is to be performed is computed by excluding the first day and
+  // including the last, unless the last day is a Saturday, Sunday, or other
+  // legal holiday, and then it is also excluded." 1.10(b) carries the
+  // extension to the next non-holiday day.
+  //
+  // Note this text names Saturday and Sunday EXPLICITLY, where CCP 12a reaches
+  // Saturday through its own definition and Sunday only via Gov. Code
+  // 6700(a)(1). Same result, different route -- another reason to keep the two
+  // standards separate rather than treat one as an alias of the other.
+  //
+  // Backward is left BLANK: Rule 1.10 does not address backward-counted
+  // periods. CCP 12c does, but 12c is a statute and citing it under a
+  // rules-of-court standard would attribute to Rule 1.10 something it never
+  // says -- the citation defect already fixed once in this file for Michigan.
+  ca_crc_1_10: { label: 'Cal. R. Ct. 1.10', impl: 'frcp_6a',
+    base_period_suffix: '(a)', months_years_suffix: '',
+    rollover_suffix_forward: '(b)', rollover_suffix_backward: '' },
   fl_rgpja_2514: { label: 'Fla. R. Gen. Prac. & Jud. Admin. 2.514', impl: 'frcp_6a',
     shifted_start: true, short_period_exclusion_days: 7,
     base_period_suffix: '(a)(1)(A)-(B)', months_years_suffix: '',

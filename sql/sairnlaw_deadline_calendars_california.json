@@ -1,0 +1,510 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- California judicial holiday calendars, 2026 through 2031.",
+    "Loaded through add_holidays like every other calendar.",
+    "The list is Gov. Code 6700 FILTERED BY CCP 135, not the state holiday list:",
+    "five state holidays are carved out, Good Friday is excluded by the 'full day'",
+    "qualifier, and three are added. See each calendar's authority.note.",
+    "No automatic weekend shift -- CCP 135 makes it discretionary on the Judicial Council."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ca",
+      "year": 2026,
+      "authority": {
+        "citation": "Cal. Code Civ. Proc. 135 (judicial holidays), filtering Cal. Gov. Code 6700; holiday definition at Cal. Code Civ. Proc. 12a(a)",
+        "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=135.",
+        "statute_url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=GOV&sectionNum=6700.",
+        "note": "Generated 2026-08-24 from Gov. Code 6700, filtered by Cal. Code Civ. Proc. 135, all read verbatim from the California Legislature's own site. THIS IS NOT THE STATE HOLIDAY LIST. CCP 135 takes only 'every FULL day designated as a holiday by Section 6700', then carves five back out and adds three. CARVED OUT and deliberately absent, though all five ARE state holidays: Lunar New Year, Diwali, Genocide Remembrance Day (April 24), Admission Day (September 9) and Columbus Day (second Monday in October). ALSO ABSENT: Good Friday -- Gov. Code 6700(a)(19) designates it only 'from 12 noon until 3 p.m.', a PARTIAL day, so the 'full day' qualifier in CCP 135 excludes it. Missing that one word would extend real deadlines. ADDED by CCP 135 itself: Thanksgiving, every Saturday, and the Day after Thanksgiving Day. Saturdays and Sundays are not enumerated here -- the engine treats them as weekends, and CCP 12a reaches Saturday directly and Sunday via 6700(a)(1). NO AUTOMATIC OBSERVANCE SHIFT: CCP 135 says the Judicial Council 'MAY designate an alternative day' when a judicial holiday falls on a weekend -- discretionary, not by operation of law, unlike every other shifting jurisdiction in this engine. No shift is applied and a holiday landing on a weekend stays there; deadlines still roll because weekends are excluded anyway. NOT MODELLED, flagged: CCP 12b's office-closed limb (any non-branch public office closed for a whole day becomes a holiday for computing time under 12 and 12a); Gov. Code 6700(a)(20) days appointed by the GOVERNOR -- note CCP 135 carves out presidentially appointed days but NOT gubernatorial ones, so those really are judicial holidays and really are unknowable in advance; and the Judicial Council's discretionary designation above. Same treatment as Indiana's office-closed limb, Illinois's Governor-proclamation limb and Florida's chief-justice hurricane limb.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "January 1",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-02-12",
+          "name": "Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Third Monday in February",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-03-31",
+          "name": "Farmworkers Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Last Monday in May",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-07-04",
+          "name": "July 4",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "First Monday in September",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-09-25",
+          "name": "Native American Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-27",
+          "name": "Day after Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "December 25",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ca",
+      "year": 2027,
+      "authority": {
+        "citation": "Cal. Code Civ. Proc. 135 (judicial holidays), filtering Cal. Gov. Code 6700; holiday definition at Cal. Code Civ. Proc. 12a(a)",
+        "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=135.",
+        "statute_url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=GOV&sectionNum=6700.",
+        "note": "Generated 2026-08-24 from Gov. Code 6700, filtered by Cal. Code Civ. Proc. 135, all read verbatim from the California Legislature's own site. THIS IS NOT THE STATE HOLIDAY LIST. CCP 135 takes only 'every FULL day designated as a holiday by Section 6700', then carves five back out and adds three. CARVED OUT and deliberately absent, though all five ARE state holidays: Lunar New Year, Diwali, Genocide Remembrance Day (April 24), Admission Day (September 9) and Columbus Day (second Monday in October). ALSO ABSENT: Good Friday -- Gov. Code 6700(a)(19) designates it only 'from 12 noon until 3 p.m.', a PARTIAL day, so the 'full day' qualifier in CCP 135 excludes it. Missing that one word would extend real deadlines. ADDED by CCP 135 itself: Thanksgiving, every Saturday, and the Day after Thanksgiving Day. Saturdays and Sundays are not enumerated here -- the engine treats them as weekends, and CCP 12a reaches Saturday directly and Sunday via 6700(a)(1). NO AUTOMATIC OBSERVANCE SHIFT: CCP 135 says the Judicial Council 'MAY designate an alternative day' when a judicial holiday falls on a weekend -- discretionary, not by operation of law, unlike every other shifting jurisdiction in this engine. No shift is applied and a holiday landing on a weekend stays there; deadlines still roll because weekends are excluded anyway. NOT MODELLED, flagged: CCP 12b's office-closed limb (any non-branch public office closed for a whole day becomes a holiday for computing time under 12 and 12a); Gov. Code 6700(a)(20) days appointed by the GOVERNOR -- note CCP 135 carves out presidentially appointed days but NOT gubernatorial ones, so those really are judicial holidays and really are unknowable in advance; and the Judicial Council's discretionary designation above. Same treatment as Indiana's office-closed limb, Illinois's Governor-proclamation limb and Florida's chief-justice hurricane limb.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "January 1",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-12",
+          "name": "Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Third Monday in February",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-03-31",
+          "name": "Farmworkers Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Last Monday in May",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-04",
+          "name": "July 4",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "First Monday in September",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-24",
+          "name": "Native American Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-26",
+          "name": "Day after Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "December 25",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ca",
+      "year": 2028,
+      "authority": {
+        "citation": "Cal. Code Civ. Proc. 135 (judicial holidays), filtering Cal. Gov. Code 6700; holiday definition at Cal. Code Civ. Proc. 12a(a)",
+        "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=135.",
+        "statute_url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=GOV&sectionNum=6700.",
+        "note": "Generated 2026-08-24 from Gov. Code 6700, filtered by Cal. Code Civ. Proc. 135, all read verbatim from the California Legislature's own site. THIS IS NOT THE STATE HOLIDAY LIST. CCP 135 takes only 'every FULL day designated as a holiday by Section 6700', then carves five back out and adds three. CARVED OUT and deliberately absent, though all five ARE state holidays: Lunar New Year, Diwali, Genocide Remembrance Day (April 24), Admission Day (September 9) and Columbus Day (second Monday in October). ALSO ABSENT: Good Friday -- Gov. Code 6700(a)(19) designates it only 'from 12 noon until 3 p.m.', a PARTIAL day, so the 'full day' qualifier in CCP 135 excludes it. Missing that one word would extend real deadlines. ADDED by CCP 135 itself: Thanksgiving, every Saturday, and the Day after Thanksgiving Day. Saturdays and Sundays are not enumerated here -- the engine treats them as weekends, and CCP 12a reaches Saturday directly and Sunday via 6700(a)(1). NO AUTOMATIC OBSERVANCE SHIFT: CCP 135 says the Judicial Council 'MAY designate an alternative day' when a judicial holiday falls on a weekend -- discretionary, not by operation of law, unlike every other shifting jurisdiction in this engine. No shift is applied and a holiday landing on a weekend stays there; deadlines still roll because weekends are excluded anyway. NOT MODELLED, flagged: CCP 12b's office-closed limb (any non-branch public office closed for a whole day becomes a holiday for computing time under 12 and 12a); Gov. Code 6700(a)(20) days appointed by the GOVERNOR -- note CCP 135 carves out presidentially appointed days but NOT gubernatorial ones, so those really are judicial holidays and really are unknowable in advance; and the Judicial Council's discretionary designation above. Same treatment as Indiana's office-closed limb, Illinois's Governor-proclamation limb and Florida's chief-justice hurricane limb.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "January 1",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-12",
+          "name": "Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Third Monday in February",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-03-31",
+          "name": "Farmworkers Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Last Monday in May",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "July 4",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "First Monday in September",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-22",
+          "name": "Native American Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-24",
+          "name": "Day after Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "December 25",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ca",
+      "year": 2029,
+      "authority": {
+        "citation": "Cal. Code Civ. Proc. 135 (judicial holidays), filtering Cal. Gov. Code 6700; holiday definition at Cal. Code Civ. Proc. 12a(a)",
+        "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=135.",
+        "statute_url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=GOV&sectionNum=6700.",
+        "note": "Generated 2026-08-24 from Gov. Code 6700, filtered by Cal. Code Civ. Proc. 135, all read verbatim from the California Legislature's own site. THIS IS NOT THE STATE HOLIDAY LIST. CCP 135 takes only 'every FULL day designated as a holiday by Section 6700', then carves five back out and adds three. CARVED OUT and deliberately absent, though all five ARE state holidays: Lunar New Year, Diwali, Genocide Remembrance Day (April 24), Admission Day (September 9) and Columbus Day (second Monday in October). ALSO ABSENT: Good Friday -- Gov. Code 6700(a)(19) designates it only 'from 12 noon until 3 p.m.', a PARTIAL day, so the 'full day' qualifier in CCP 135 excludes it. Missing that one word would extend real deadlines. ADDED by CCP 135 itself: Thanksgiving, every Saturday, and the Day after Thanksgiving Day. Saturdays and Sundays are not enumerated here -- the engine treats them as weekends, and CCP 12a reaches Saturday directly and Sunday via 6700(a)(1). NO AUTOMATIC OBSERVANCE SHIFT: CCP 135 says the Judicial Council 'MAY designate an alternative day' when a judicial holiday falls on a weekend -- discretionary, not by operation of law, unlike every other shifting jurisdiction in this engine. No shift is applied and a holiday landing on a weekend stays there; deadlines still roll because weekends are excluded anyway. NOT MODELLED, flagged: CCP 12b's office-closed limb (any non-branch public office closed for a whole day becomes a holiday for computing time under 12 and 12a); Gov. Code 6700(a)(20) days appointed by the GOVERNOR -- note CCP 135 carves out presidentially appointed days but NOT gubernatorial ones, so those really are judicial holidays and really are unknowable in advance; and the Judicial Council's discretionary designation above. Same treatment as Indiana's office-closed limb, Illinois's Governor-proclamation limb and Florida's chief-justice hurricane limb.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "January 1",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-12",
+          "name": "Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Third Monday in February",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-03-31",
+          "name": "Farmworkers Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Last Monday in May",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "July 4",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "First Monday in September",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-28",
+          "name": "Native American Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-23",
+          "name": "Day after Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "December 25",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ca",
+      "year": 2030,
+      "authority": {
+        "citation": "Cal. Code Civ. Proc. 135 (judicial holidays), filtering Cal. Gov. Code 6700; holiday definition at Cal. Code Civ. Proc. 12a(a)",
+        "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=135.",
+        "statute_url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=GOV&sectionNum=6700.",
+        "note": "Generated 2026-08-24 from Gov. Code 6700, filtered by Cal. Code Civ. Proc. 135, all read verbatim from the California Legislature's own site. THIS IS NOT THE STATE HOLIDAY LIST. CCP 135 takes only 'every FULL day designated as a holiday by Section 6700', then carves five back out and adds three. CARVED OUT and deliberately absent, though all five ARE state holidays: Lunar New Year, Diwali, Genocide Remembrance Day (April 24), Admission Day (September 9) and Columbus Day (second Monday in October). ALSO ABSENT: Good Friday -- Gov. Code 6700(a)(19) designates it only 'from 12 noon until 3 p.m.', a PARTIAL day, so the 'full day' qualifier in CCP 135 excludes it. Missing that one word would extend real deadlines. ADDED by CCP 135 itself: Thanksgiving, every Saturday, and the Day after Thanksgiving Day. Saturdays and Sundays are not enumerated here -- the engine treats them as weekends, and CCP 12a reaches Saturday directly and Sunday via 6700(a)(1). NO AUTOMATIC OBSERVANCE SHIFT: CCP 135 says the Judicial Council 'MAY designate an alternative day' when a judicial holiday falls on a weekend -- discretionary, not by operation of law, unlike every other shifting jurisdiction in this engine. No shift is applied and a holiday landing on a weekend stays there; deadlines still roll because weekends are excluded anyway. NOT MODELLED, flagged: CCP 12b's office-closed limb (any non-branch public office closed for a whole day becomes a holiday for computing time under 12 and 12a); Gov. Code 6700(a)(20) days appointed by the GOVERNOR -- note CCP 135 carves out presidentially appointed days but NOT gubernatorial ones, so those really are judicial holidays and really are unknowable in advance; and the Judicial Council's discretionary designation above. Same treatment as Indiana's office-closed limb, Illinois's Governor-proclamation limb and Florida's chief-justice hurricane limb.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "January 1",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-12",
+          "name": "Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Third Monday in February",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-03-31",
+          "name": "Farmworkers Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Last Monday in May",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "July 4",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "First Monday in September",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-27",
+          "name": "Native American Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-29",
+          "name": "Day after Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "December 25",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ca",
+      "year": 2031,
+      "authority": {
+        "citation": "Cal. Code Civ. Proc. 135 (judicial holidays), filtering Cal. Gov. Code 6700; holiday definition at Cal. Code Civ. Proc. 12a(a)",
+        "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=135.",
+        "statute_url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=GOV&sectionNum=6700.",
+        "note": "Generated 2026-08-24 from Gov. Code 6700, filtered by Cal. Code Civ. Proc. 135, all read verbatim from the California Legislature's own site. THIS IS NOT THE STATE HOLIDAY LIST. CCP 135 takes only 'every FULL day designated as a holiday by Section 6700', then carves five back out and adds three. CARVED OUT and deliberately absent, though all five ARE state holidays: Lunar New Year, Diwali, Genocide Remembrance Day (April 24), Admission Day (September 9) and Columbus Day (second Monday in October). ALSO ABSENT: Good Friday -- Gov. Code 6700(a)(19) designates it only 'from 12 noon until 3 p.m.', a PARTIAL day, so the 'full day' qualifier in CCP 135 excludes it. Missing that one word would extend real deadlines. ADDED by CCP 135 itself: Thanksgiving, every Saturday, and the Day after Thanksgiving Day. Saturdays and Sundays are not enumerated here -- the engine treats them as weekends, and CCP 12a reaches Saturday directly and Sunday via 6700(a)(1). NO AUTOMATIC OBSERVANCE SHIFT: CCP 135 says the Judicial Council 'MAY designate an alternative day' when a judicial holiday falls on a weekend -- discretionary, not by operation of law, unlike every other shifting jurisdiction in this engine. No shift is applied and a holiday landing on a weekend stays there; deadlines still roll because weekends are excluded anyway. NOT MODELLED, flagged: CCP 12b's office-closed limb (any non-branch public office closed for a whole day becomes a holiday for computing time under 12 and 12a); Gov. Code 6700(a)(20) days appointed by the GOVERNOR -- note CCP 135 carves out presidentially appointed days but NOT gubernatorial ones, so those really are judicial holidays and really are unknowable in advance; and the Judicial Council's discretionary designation above. Same treatment as Indiana's office-closed limb, Illinois's Governor-proclamation limb and Florida's chief-justice hurricane limb.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "January 1",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-12",
+          "name": "Lincoln Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Third Monday in February",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-03-31",
+          "name": "Farmworkers Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Last Monday in May",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "July 4",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "First Monday in September",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-26",
+          "name": "Native American Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-28",
+          "name": "Day after Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "December 25",
+          "kind": "declared"
+        }
+      ]
+    }
+  ]
+}

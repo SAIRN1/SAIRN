@@ -1,7 +1,7 @@
 # SAIRN Open Work Index
 
 **One place to see everything that is open across the whole platform.**
-Last rebuilt: **2026-08-23**, at repo HEAD `2304054`.
+Last rebuilt: **2026-08-23**. Last updated: **2026-08-24**.
 
 Before this file existed, open work lived in `SAIRN-BACKLOG.md`, in
 `SAIRN-ACTIVE-WORK.md`, in ~40 per-app handoffs, and in skill files — so real
@@ -34,9 +34,10 @@ Legend — **Sz**: S = under a session, M = one session, L = multi-session.
 | **SAIRNlaw** | AI Chain of Custody gap 2: `matter_id` is an unvalidated localStorage id | Open (gap 1 closed) | unassigned | `law_matters` must be server-backed first | Blocked — do the SAIRNlaw server-sync item first | M |
 | **SAIRNlaw** | `law_check_and_insert_disbursement` can return a null row on a cross-client `trusttx_id` collision | Open ⚠️ | unassigned | — | The idempotency lookup keys on `(license_hash, trusttx_id)` and does **not** filter by client. Verify a cross-client collision reproduces, then add the client predicate | S |
 | **SAIRNlaw** | `ai_list` derived-status window can go stale at high license-wide volume | Open (accepted nit) | unassigned | — | Per-license row-count or per-entry status query. Fails safe toward `Unreviewed`, never fabricates a status | S |
-| **SAIRNlaw** | `public.canlii_rate_limit_log` has nothing writing to it since CanLII was deleted (`b747ecb`) | Open | **Michael** | Needs Supabase schema owner | Decide drop vs leave. Destructive on a shared DB, deliberately not done by a session | S |
 | **SAIRNlaw** | Illinois holiday list: statute (205 ILCS 630/17) vs court-observed (M.R. 5272) disagree both ways | Open — legal judgment | **Michael** | Needs a lawyer's read | Confirm the statutory list is the right basis for 5 ILCS 70/1.11. Encoded that way; changes real dates (Good Friday, Pulaski Day) | S |
-| **SAIRNlaw** | Deadline engine coverage: 7 of 50 states | In progress | **Hank** | — | Batch 1 order is IL ✅ → FL ✅ → **CA next**. Then re-decide: more states, or a third domain | L |
+| **SAIRNlaw** | Deadline engine coverage: 8 jurisdictions (federal + 7 states) | In progress | **Hank** | — | **Batch 1 complete: IL ✅ FL ✅ CA ✅.** Next decision is Michael's: more states, a third domain (family/probate/criminal), or an Ohio-neighbour track | L |
+| **SAIRNlaw** | California service-method extensions (CCP 1013, 1010.6) not encoded | Open | **Hank** | — | No row carries a `service_extension` because that text was not read verbatim. An unread extension is worse than none — it moves dates silently. First item if California is extended | M |
+| **SAIRNlaw** | Index's own first improvement: read the ~40 per-app handoffs line by line | Open | **Hank** | — | Scheduled as a separate pass after California. Items living only in a handoff are not in this index yet | M |
 | **SAIRNlaw** | Court e-filing: readiness check built, transmission not possible | Closed as scoped | — | EFSP certification is a contract, not code | Nothing to build. Revisit only if an EFSP relationship is pursued | — |
 | **StoneDesk** | ~28 `sdDemoCleared() ? [] : SEED` fallback sites unaudited (Slabs fixed in `501d15b`) | Open ⚠️ | unassigned | — | Count is `grep -c` measured, not authoritative — Guardian's note says 29 constants / 56 sites. **Re-count precisely first**, then apply the two-part test per site | L |
 | **StoneDesk** | Procedural stone texture likely inflates `canvas.toDataURL()` PNG snapshots against an existing quota risk | Open | unassigned | — | Measure a real textured snapshot's byte size before changing anything | M |
@@ -66,6 +67,9 @@ Legend — **Sz**: S = under a session, M = one session, L = multi-session.
 | SAIRNlaw | Trust disbursement cross-device atomic check | 2026-08-17/18 | `law_check_and_insert_disbursement` live in `api/sd-data.js` + `sql/sairnlaw_trust_disbursement_atomic_check.sql`; 4 `law_` resources in the allowlist. **`SAIRN-BACKLOG.md` still lists this as open — that entry is stale.** |
 | SAIRNlaw | Void-of-deposit could retroactively negative a client balance | 2026-08-17/18 | `law_check_and_void_deposit`, browser-verified |
 | SAIRNlaw | CanLII / Canada coverage | 2026-08-23 | `b747ecb` — deleted, live-verified |
+| SAIRNlaw | Orphaned `public.canlii_rate_limit_log` table | 2026-08-24 | Dropped by Michael. Was flagged for the schema owner because dropping a table on a shared DB is not a session's call — that routing worked as intended |
+| SAIRNlaw | Deadline engine: Florida | 2026-08-23 | `78af333` — 47/47 isolation + live-loaded. Needed a real engine change (`shifted_start`), contrary to the plan |
+| SAIRNlaw | Deadline engine: California | 2026-08-24 | 52/52 isolation + live-loaded. Two computation standards, statutory vs rules-of-court |
 | SAIRNlaw | Court e-filing (Ohio-first) | 2026-08-23 | `a183a07` — readiness check; transmission scoped out with reasons |
 | SAIRNlaw | Deadline engine: Illinois | 2026-08-23 | `b8250a2`, 39/39 isolation + live-loaded |
 | SAIRNdesign | Invoicing server-side uniqueness constraint | 2026-08-10 | Backlog marked resolved |
