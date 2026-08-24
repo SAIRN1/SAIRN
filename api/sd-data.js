@@ -38,6 +38,7 @@ const opAudit = require('./_lib/op-audit');
 const rfAuth = require('./rf-auth');
 const dentalCreds = require('./_lib/dental-credentials');
 const roofingCreds = require('./_lib/roofing-credentials');
+const roofingClaims = require('./_lib/roofing-claims');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -2882,6 +2883,161 @@ module.exports = async (req, res) => {
         federal: roofingCreds.federalRules(rules, today).map((r2) => ({ rule_id: r2.rule_id, label: r2.data && r2.data.label })),
         coverage: roofingCreds.credentialCoverage(rules, stateAsked ? [stateAsked] : [])
       });
+      return;
+    }
+
+    // ── SAIRNROOFING: rf_claims + rf_claim_photos (2026-08-24, Phase 3b) ─────────────────────
+    // Insurance claim record and tagged photo evidence. Money-field and status
+    // logic is PURE and lives in api/_lib/roofing-claims.js; these branches are
+    // storage + gating only.
+    //
+    // GATE: assignment-based, three-tier, the same shape as rf_jobs -- a claim
+    // belongs to a job and carries the estimator/foreman handling it. Management
+    // and broad-read see every claim; a narrow role sees only claims assigned to
+    // them, filtered server-side against the token's own employee_id. A null
+    // assignee is management-only, matching every prior assignment gate.
+    //
+    // rf_claims is MUTABLE (a claim evolves over 45-90 days), so writes upsert.
+    // rf_claim_photos is APPEND-ONLY evidence -- a plain insert, no update path.
+    if (resource === 'rf_claims' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&select=claim_id,job_id,assigned_employee_id,status,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      let data = (rows || []).map((x) => Object.assign({}, x.data || {}, {
+        claim_id: x.claim_id, job_id: x.job_id, assigned_employee_id: x.assigned_employee_id || null, status: x.status
+      }));
+      // Money summary is computed on read and never stored -- see roofing-claims.js.
+      data = data.map((c) => Object.assign(c, { money_summary: roofingClaims.summarizeMoney(c) }));
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        data = data.filter((c) => c.assigned_employee_id === session.employee_id);
+      }
+      res.status(200).json({ ok: true, data, provisioned: true, statuses: roofingClaims.CLAIM_STATUSES });
+      return;
+    }
+    if (resource === 'rf_claims' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const isManagement = !!rfAuth.MANAGEMENT_ROLES[session.role];
+      const isBroad = !!rfAuth.BROAD_READ_ROLES[session.role];
+      const problems = roofingClaims.validateClaim(payload);
+      if (problems.length) { res.status(400).json({ error: { message: 'rf_claims: ' + problems.join('; ') } }); return; }
+      // A narrow role may only write a claim already assigned to them -- never
+      // reassign it, and never touch an unassigned one. Checked against the
+      // stored row, not against what the caller sent.
+      const existingR = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+      const existingRows = await existingR.json();
+      const existing = Array.isArray(existingRows) && existingRows[0];
+      if (!isManagement && !isBroad) {
+        if (!existing || existing.assigned_employee_id !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only update a claim assigned to you' } });
+          return;
+        }
+      }
+      // Assignment is a management/broad-read decision. A narrow role's write
+      // keeps whatever assignee is already stored; it cannot set or change it.
+      const assignee = (isManagement || isBroad)
+        ? (payload.assigned_employee_id || null)
+        : (existing ? existing.assigned_employee_id : null);
+      const norm = roofingClaims.normalizeMoney(payload);
+      if (norm.problems.length) { res.status(400).json({ error: { message: 'rf_claims money: ' + norm.problems.join('; ') } }); return; }
+      // The stored data blob: everything the caller sent, with the money fields
+      // REPLACED by their normalized separate values (never a collapsed total),
+      // and a derived money_summary explicitly NOT persisted.
+      const dataBlob = Object.assign({}, payload, norm.money);
+      delete dataBlob.money_summary;
+      delete dataBlob.id;
+      const r = await fetch(rest('rf_claims?on_conflict=license_hash,claim_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', claim_id: String(payload.id),
+          job_id: String(payload.job_id), assigned_employee_id: assignee,
+          status: payload.status || 'loss_reported', data: dataBlob, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        const bt = await r.text(); let bj = null; try { bj = JSON.parse(bt); } catch (e) {}
+        const msg = (bj && (bj.message || bj.details || bj.hint)) || bt || '';
+        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+        if (/rfclm_status_check/i.test(msg)) { res.status(400).json({ error: { message: 'status must be one of: ' + roofingClaims.CLAIM_STATUSES.join(', ') } }); return; }
+        console.error('rf_claims write error (status ' + r.status + '):', msg);
+        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { claim_id: saved.claim_id, status: saved.status, money_summary: roofingClaims.summarizeMoney(saved.data) }) : payload });
+      return;
+    }
+    if (resource === 'rf_claim_photos' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      // Photos are read for a specific claim. Visibility follows the claim's own
+      // assignment gate: the caller must be able to see the claim to see its
+      // evidence.
+      const claimId = payload && payload.claim_id;
+      if (!claimId) { res.status(400).json({ error: { message: 'rf_claim_photos read requires payload.claim_id' } }); return; }
+      const claimR = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=assigned_employee_id'), { headers });
+      if (claimR.status === 404 || claimR.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const claimRows = await claimR.json();
+      const claim = Array.isArray(claimRows) && claimRows[0];
+      if (!claim) { res.status(200).json({ ok: true, data: [] }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only see evidence for a claim assigned to you' } });
+        return;
+      }
+      const r = await fetch(rest('rf_claim_photos?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=photo_id,claim_id,captured_by,data,created_at&order=created_at.asc'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, provisioned: true, data: (rows || []).map((x) => Object.assign({}, x.data || {}, { photo_id: x.photo_id, claim_id: x.claim_id, captured_by: x.captured_by, created_at: x.created_at })) });
+      return;
+    }
+    if (resource === 'rf_claim_photos' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const problems = roofingClaims.validatePhoto(payload);
+      if (problems.length) { res.status(400).json({ error: { message: 'rf_claim_photos: ' + problems.join('; ') } }); return; }
+      // Must be able to see the claim to attach evidence to it.
+      const claimR = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(payload.claim_id) + '&select=assigned_employee_id'), { headers });
+      if (claimR.status === 404 || claimR.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+      const claimRows = await claimR.json();
+      const claim = Array.isArray(claimRows) && claimRows[0];
+      if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim — create the claim before attaching evidence to it' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only attach evidence to a claim assigned to you' } });
+        return;
+      }
+      // APPEND-ONLY: evidence, not editable data. Plain insert.
+      const dataBlob = Object.assign({}, payload); delete dataBlob.id;
+      const r = await fetch(rest('rf_claim_photos'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', photo_id: String(payload.id),
+          claim_id: String(payload.claim_id), captured_by: session.employee_id, data: dataBlob
+        })
+      });
+      if (r.status === 404) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 400 || r.status === 409 || r.status === 413) {
+        const bt = await r.text(); let bj = null; try { bj = JSON.parse(bt); } catch (e) {}
+        const msg = (bj && (bj.message || bj.details || bj.hint)) || bt || '';
+        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
+        if (/duplicate key|unique constraint/i.test(msg)) { res.status(409).json({ error: { code: 'DUPLICATE_ENTRY', message: 'A photo with this id already exists. Evidence is append-only — capture a new photo, do not reuse an id.' } }); return; }
+        if (/rfcph_data_size/i.test(msg)) { res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'This photo is over the 1.5MB limit — recompress before upload' } }); return; }
+        console.error('rf_claim_photos write error (status ' + r.status + '):', msg);
+        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { photo_id: saved.photo_id, captured_by: saved.captured_by }) : payload });
       return;
     }
 

@@ -148,6 +148,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <aside>
       <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')">Jobs</button>
       <button class="sb" id="sb-certifications" onclick="nav('certifications')">Certifications<span class="badge" id="cert-badge" style="display:none;margin-left:6px;">0</span></button>
+      <button class="sb" id="sb-claims" onclick="nav('claims')">Insurance Claims</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
     </aside>
     <main>
@@ -206,6 +207,64 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><div class="ch"><div class="ct">Licensing &amp; Requirements</div></div><div class="cb">
           <div class="fr"><div class="fg"><label>Check a state</label><input type="text" id="cert-state" placeholder="OH" maxlength="2" style="text-transform:uppercase;" onchange="rfLoadCertBoard()"></div></div>
           <div id="cert-licensing"></div>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-claims">
+        <div class="ph"><div class="ptitle">Insurance Claims</div></div>
+        <div class="note">Storm &amp; insurance restoration. Every money figure is a separate field &mdash; RCV, depreciation, ACV, deductible and the recoverable-depreciation release are never rolled into one number, because that is how the release gets lost.</div>
+        <div class="card" id="claim-add-card"><div class="ch"><div class="ct">Open / Update a Claim</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Claim ID</label><input type="text" id="clm-id" placeholder="new, or pick below to edit"></div>
+            <div class="fg"><label>Job</label><select id="clm-job"></select></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Carrier</label><input type="text" id="clm-carrier" placeholder="e.g. State Farm"></div>
+            <div class="fg"><label>Claim Number</label><input type="text" id="clm-number" placeholder="carrier's claim #"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Adjuster (name / phone)</label><input type="text" id="clm-adjuster" placeholder="field adjuster contact"></div>
+            <div class="fg"><label>Date of Loss</label><input type="date" id="clm-dol"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Peril</label><select id="clm-peril"><option value="">--</option><option value="hail">Hail</option><option value="wind">Wind</option><option value="hurricane">Hurricane</option><option value="fire">Fire</option><option value="water">Water</option><option value="ice_dam">Ice dam</option><option value="fallen_tree">Fallen tree</option><option value="other">Other</option></select></div>
+            <div class="fg"><label>Policy Type</label><select id="clm-policy"><option value="">--</option><option value="RCV">RCV (Replacement Cost)</option><option value="ACV">ACV (Actual Cash Value)</option></select></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Status</label><select id="clm-status"></select></div>
+            <div class="fg"><label style="display:flex;align-items:center;gap:8px;margin-top:24px;"><input type="checkbox" id="clm-waiting"> Waiting on carrier</label></div>
+          </div>
+          <div class="ch" style="padding-left:0;"><div class="ct">Money &mdash; each field separate, never summed</div></div>
+          <div class="fr">
+            <div class="fg"><label>RCV</label><input type="number" id="clm-rcv" step="0.01" min="0"></div>
+            <div class="fg"><label>Depreciation</label><input type="number" id="clm-dep" step="0.01" min="0"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>ACV (as the carrier states it)</label><input type="number" id="clm-acv" step="0.01" min="0"></div>
+            <div class="fg"><label>Deductible</label><input type="number" id="clm-ded" step="0.01" min="0"></div>
+          </div>
+          <div class="note" id="clm-acv-note" style="display:none;"></div>
+          <div class="fr">
+            <div class="fg"><label>ACV cheque received</label><input type="date" id="clm-acv-recv"></div>
+            <div class="fg"><label>Final invoice submitted</label><input type="date" id="clm-final-inv"></div>
+          </div>
+          <div class="fg"><label>Recoverable depreciation released ($)</label><input type="number" id="clm-dep-rel" step="0.01" min="0"></div>
+          <button class="btn bp" onclick="rfSaveClaim()">Save Claim</button>
+          <button class="btn bo bs" onclick="rfClearClaimForm()">Clear</button>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Claims</div></div><div class="cb" style="padding:0;">
+          <div class="tw"><table id="clm-table"><thead><tr><th>Claim #</th><th>Carrier</th><th>Status</th><th>RCV</th><th>Dep. still out</th><th></th></tr></thead><tbody id="clm-tbody"></tbody></table></div>
+        </div></div>
+        <div class="card" id="clm-evidence-card" style="display:none;"><div class="ch"><div class="ct">Photo Evidence &mdash; <span id="clm-evidence-for"></span></div></div><div class="cb">
+          <div class="note">Tear-off photos are the evidentiary basis for a hidden-damage supplement. Evidence is append-only &mdash; a correction is a new photo, never an edit.</div>
+          <div class="fr">
+            <div class="fg"><label>Phase</label><select id="cph-phase"><option value="adjuster_meeting">Adjuster meeting</option><option value="tear_off">Tear-off</option><option value="in_progress">In progress</option><option value="completion">Completion</option></select></div>
+            <div class="fg"><label>Elevation</label><select id="cph-elev"><option value="front">Front</option><option value="rear">Rear</option><option value="left">Left</option><option value="right">Right</option><option value="other">Other</option></select></div>
+          </div>
+          <div class="fg"><label>Damage type</label><input type="text" id="cph-damage" placeholder="e.g. deck rot, missing shingles"></div>
+          <input type="file" id="cph-file" accept="image/*" capture="environment">
+          <button class="btn bp" onclick="rfAddClaimPhoto()">Attach Evidence</button>
+          <div id="cph-list" style="margin-top:12px;"></div>
         </div></div>
       </div>
 
@@ -443,6 +502,7 @@ function nav(id){
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
   if(id==='certifications'){rfRenderCertBoard(null);rfLoadCertBoard();}
+  if(id==='claims'){rfLoadClaims();}
 }
 
 // ── Jobs (rf_jobs) — server-side gate does the real filtering; this note
@@ -659,6 +719,205 @@ function rfFillCertEmployees(){
       : '<option value="">No employees on the roster yet</option>';
   });
 }
+
+// ── INSURANCE CLAIMS (rf_claims / rf_claim_photos, Phase 3b) ──────────────
+// The money lifecycle is the thing this panel must not get wrong. Each of the
+// seven fields is its own input; the server stores them separately and returns
+// a DERIVED money_summary it never persists. This panel shows that summary
+// (including the ACV-mismatch flag) but never computes or stores a total.
+var rfClaims=[];
+var rfClaimStatuses=[];
+var rfActiveClaimId=null;
+
+function rfCurrency(n){return (n==null||n==='')?'--':('$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2}));}
+
+function rfFillClaimStatusSelect(){
+  var sel=$('clm-status');
+  if(!sel||!rfClaimStatuses.length)return;
+  sel.innerHTML=rfClaimStatuses.map(function(s){
+    return '<option value="'+rfEsc(s)+'">'+rfEsc(s.replace(/_/g,' '))+'</option>';
+  }).join('');
+}
+
+function rfFillClaimJobs(){
+  var sel=$('clm-job');
+  if(!sel)return;
+  // currentJobs is populated by the Jobs panel's own load; refresh if empty.
+  var fill=function(){
+    sel.innerHTML=(currentJobs.length
+      ? currentJobs.map(function(j){return '<option value="'+rfEsc(j.id)+'">'+rfEsc(j.name||j.id)+'</option>';}).join('')
+      : '<option value="">Add a job first</option>');
+  };
+  if(currentJobs.length)fill();else rfLoadJobs().then(fill);
+}
+
+function rfClaimCanEdit(){return rfSession&&(rfSession.role==='owner'||rfSession.role==='admin'||rfSession.role==='estimator');}
+
+// The read response carries the status list at the top level (which
+// rfDataRaw would discard), so this loader uses fetch directly to keep it.
+function rfLoadClaims(){
+  rfFillClaimJobs();
+  return rfLoadClaimsFull();
+}
+function rfLoadClaimsFull(){
+  var lic=rfLicenseKey();
+  if(!lic||!rfSession||!rfSession.token)return Promise.resolve();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':rfSession.token};
+  return fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify({action:'read',resource:'rf_claims',app_id:APP_ID,payload:{}})})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      if(!r.ok||!d||!d.ok){rfClaims=[];rfRenderClaims();return;}
+      rfClaims=d.data||[];
+      if(Array.isArray(d.statuses)&&d.statuses.length)rfClaimStatuses=d.statuses;
+      rfFillClaimStatusSelect();
+      rfRenderClaims();
+    });})
+    .catch(function(){rfClaims=[];rfRenderClaims();});
+}
+
+function rfRenderClaims(){
+  if($('claim-add-card'))$('claim-add-card').style.display=rfClaimCanEdit()?'':'none';
+  var tb=$('clm-tbody');
+  if(!tb)return;
+  tb.innerHTML=rfClaims.length?rfClaims.map(function(c){
+    var m=c.money_summary||{entered:{},derived:{}};
+    var out=m.derived.depreciation_still_out;
+    var waiting=c.waiting_on_carrier?' <span class="badge bw">waiting</span>':'';
+    return '<tr>'+
+      '<td>'+rfEsc(c.claim_number||'--')+'</td>'+
+      '<td>'+rfEsc(c.carrier||'--')+'</td>'+
+      '<td>'+rfEsc((c.status||'').replace(/_/g,' '))+waiting+'</td>'+
+      '<td>'+rfCurrency(m.entered.rcv)+'</td>'+
+      '<td>'+rfCurrency(out)+'</td>'+
+      '<td><button class="btn bo bs" onclick="rfEditClaim(\''+rfEsc(c.claim_id)+'\')">Open</button></td>'+
+      '</tr>';
+  }).join(''):'<tr><td colspan="6">No claims yet.</td></tr>';
+}
+
+function rfEditClaim(claimId){
+  var c=rfClaims.find(function(x){return x.claim_id===claimId;});
+  if(!c)return;
+  rfActiveClaimId=claimId;
+  $('clm-id').value=c.claim_id;
+  $('clm-carrier').value=c.carrier||'';
+  $('clm-number').value=c.claim_number||'';
+  $('clm-adjuster').value=c.adjuster||'';
+  $('clm-dol').value=c.date_of_loss||'';
+  $('clm-peril').value=c.peril||'';
+  $('clm-policy').value=c.policy_type||'';
+  $('clm-status').value=c.status||'loss_reported';
+  $('clm-waiting').checked=!!c.waiting_on_carrier;
+  var m=(c.money_summary&&c.money_summary.entered)||{};
+  $('clm-rcv').value=m.rcv==null?'':m.rcv;
+  $('clm-dep').value=m.depreciation==null?'':m.depreciation;
+  $('clm-acv').value=m.acv==null?'':m.acv;
+  $('clm-ded').value=m.deductible==null?'':m.deductible;
+  $('clm-acv-recv').value=m.acv_check_received||'';
+  $('clm-final-inv').value=m.final_invoice_submitted||'';
+  $('clm-dep-rel').value=m.recoverable_depreciation_released==null?'':m.recoverable_depreciation_released;
+  if(c.job_id)$('clm-job').value=c.job_id;
+  rfShowAcvNote(c.money_summary);
+  // Evidence card
+  $('clm-evidence-card').style.display='';
+  $('clm-evidence-for').textContent=(c.claim_number||c.claim_id);
+  rfLoadClaimPhotos(claimId);
+}
+
+function rfShowAcvNote(summary){
+  var note=$('clm-acv-note');
+  if(!note)return;
+  if(summary&&summary.derived&&summary.derived.acv_mismatch){
+    note.style.display='';
+    note.className='note';
+    note.textContent='ACV entered ('+rfCurrency(summary.entered.acv)+') differs from RCV minus depreciation ('+rfCurrency(summary.derived.acv_implied)+'). That gap is real information for a supplement, not an error to correct.';
+  }else{
+    note.style.display='none';
+  }
+}
+
+function rfClearClaimForm(){
+  rfActiveClaimId=null;
+  ['clm-id','clm-carrier','clm-number','clm-adjuster','clm-dol','clm-rcv','clm-dep','clm-acv','clm-ded','clm-acv-recv','clm-final-inv','clm-dep-rel','cph-damage'].forEach(function(id){if($(id))$(id).value='';});
+  ['clm-peril','clm-policy'].forEach(function(id){if($(id))$(id).value='';});
+  if($('clm-waiting'))$('clm-waiting').checked=false;
+  if($('clm-acv-note'))$('clm-acv-note').style.display='none';
+  if($('clm-evidence-card'))$('clm-evidence-card').style.display='none';
+}
+
+function rfNumOrUndef(id){var v=$(id).value;return v===''?undefined:Number(v);}
+
+function rfSaveClaim(){
+  if(!rfClaimCanEdit()){toast('Only an owner, admin or estimator can edit a claim');return;}
+  var jobId=$('clm-job').value;
+  if(!jobId){toast('Pick a job first');return;}
+  if(!$('clm-carrier').value.trim()||!$('clm-number').value.trim()){toast('Carrier and claim number are required');return;}
+  var rec={
+    id:$('clm-id').value.trim()||('RFCLM-'+Date.now()),
+    job_id:jobId,
+    carrier:$('clm-carrier').value.trim(),
+    claim_number:$('clm-number').value.trim(),
+    adjuster:$('clm-adjuster').value.trim(),
+    date_of_loss:$('clm-dol').value||undefined,
+    peril:$('clm-peril').value||undefined,
+    policy_type:$('clm-policy').value||undefined,
+    status:$('clm-status').value,
+    waiting_on_carrier:$('clm-waiting').checked,
+    rcv:rfNumOrUndef('clm-rcv'),
+    depreciation:rfNumOrUndef('clm-dep'),
+    acv:rfNumOrUndef('clm-acv'),
+    deductible:rfNumOrUndef('clm-ded'),
+    acv_check_received:$('clm-acv-recv').value||undefined,
+    final_invoice_submitted:$('clm-final-inv').value||undefined,
+    recoverable_depreciation_released:rfNumOrUndef('clm-dep-rel')
+  };
+  rfDataRaw('write','rf_claims',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not save the claim',5000);return;}
+    toast('Claim saved');
+    rfActiveClaimId=rec.id;
+    rfShowAcvNote(r.data&&r.data.money_summary);
+    rfLoadClaimsFull();
+  });
+}
+
+// ── Evidence photos ──
+function rfLoadClaimPhotos(claimId){
+  var lic=rfLicenseKey();
+  if(!lic||!rfSession||!rfSession.token)return;
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':rfSession.token};
+  fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify({action:'read',resource:'rf_claim_photos',app_id:APP_ID,payload:{claim_id:claimId}})})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      var el=$('cph-list');if(!el)return;
+      var photos=(d&&d.ok&&d.data)||[];
+      el.innerHTML=photos.length?photos.map(function(p){
+        return '<div class="note" style="margin-bottom:6px;">'+rfEsc((p.phase||'').replace(/_/g,' '))+' &middot; '+rfEsc(p.elevation||'--')+
+          (p.damage_type?' &middot; '+rfEsc(p.damage_type):'')+' &middot; by '+rfEsc(p.captured_by||'--')+'</div>';
+      }).join(''):'<div class="note">No evidence attached yet.</div>';
+    });});
+}
+
+function rfAddClaimPhoto(){
+  if(!rfActiveClaimId){toast('Open a claim first');return;}
+  var file=$('cph-file').files[0];
+  if(!file){toast('Choose a photo');return;}
+  var reader=new FileReader();
+  reader.onload=function(){
+    var rec={
+      id:'RFCPH-'+Date.now(),
+      claim_id:rfActiveClaimId,
+      phase:$('cph-phase').value,
+      elevation:$('cph-elev').value,
+      damage_type:$('cph-damage').value.trim(),
+      photo_base64:reader.result
+    };
+    rfDataRaw('write','rf_claim_photos',rec).then(function(r){
+      if(!r.ok){toast(r.msg||'Could not attach the photo',5000);return;}
+      toast('Evidence attached');
+      $('cph-file').value='';$('cph-damage').value='';
+      rfLoadClaimPhotos(rfActiveClaimId);
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
 
 function rfBaseFieldsPayload(){
   var j=currentEditingJob;

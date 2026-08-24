@@ -23,6 +23,13 @@ module.exports = {
   // citation; rf_certifications is the APPEND-ONLY per-employee record store.
     'rf_cert_rules',
     'rf_certifications',
+  // Insurance claims + photo evidence (2026-08-24, Phase 3b) -- see
+  // sql/sairnroofing_claims_schema.sql. rf_claims is a MUTABLE claim record
+  // (evolves over a 45-90 day lifecycle); rf_claim_photos is APPEND-ONLY
+  // tagged evidence. The money lifecycle lives as separate fields inside
+  // rf_claims.data, normalized by api/_lib/roofing-claims.js.
+    'rf_claims',
+    'rf_claim_photos',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
