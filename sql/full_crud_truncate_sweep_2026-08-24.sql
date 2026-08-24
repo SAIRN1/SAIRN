@@ -1,6 +1,82 @@
 -- sql/full_crud_truncate_sweep_2026-08-24.sql
 -- DIAGNOSTIC + DRAFT FIX ONLY. Nothing in this file has been run.
 --
+-- ── FULL EXPORT RECEIVED, 227 TABLES -- FINDINGS BEFORE SECTION 2 RUNS ────
+-- Michael's SQL client had a row limit; the first export (100 rows) was
+-- confirmed truncated by cross-checking against tables already known to
+-- exist (SAIRNlegacy alone continues well past where that export stopped).
+-- The real export surfaced two separate classes of finding, checked
+-- against the actual codebase rather than assumed:
+--
+-- (1) ~20 tables show ZERO select/insert/update/delete for service_role
+-- (only TRUNCATE/REFERENCES/TRIGGER/MAINTAIN) -- Section 2's keep_privs
+-- would be NULL for every one, stripping them to zero grants entirely.
+-- Checked each against every real dispatch mechanism in api/sd-data.js
+-- (literal table-name calls, the generic resource===tablename pattern
+-- SD_LINEAGE uses, and the full RESOURCES/action registry) -- CONFIRMED
+-- unreferenced by any live SAIRN code path: conversations, customers
+-- (bare -- the real 'customers' RESOURCE maps to scp_customers, a
+-- different physical table, already covered), demo_calls, gl_entries,
+-- intake_submissions, invoices (bare -- real resource maps to
+-- scp_invoices), jobs (bare -- real resource maps to grd_jobs), licenses
+-- (distinct from license_keys, see below), messages, parts, payments,
+-- profiles, projects, shop_users, shops, slabs (bare -- real resource
+-- maps to sd_slabs), subscriptions, usage_logs, user_storage.
+-- Two of these were ALREADY flagged once before, not newly found here:
+-- sql/network_schema.sql's own header records that webhook_events and
+-- demo_calls surfaced via PostgREST's "perhaps you meant" hint while
+-- probing for an unrelated table, explicitly states neither was assumed
+-- to be SAIRN's, and recommended "a human check in the Supabase
+-- dashboard" that was never followed up. That caution stands: unused by
+-- this codebase is not the same as safe to touch with certainty, since a
+-- table on the same Supabase project outside this repo's visibility
+-- can't be ruled out. In practice the risk is low regardless -- Section 2
+-- never touches SELECT/INSERT/UPDATE/DELETE, and these already have none
+-- for service_role, so nothing with real read/write access today loses
+-- any -- but the dashboard check is still the honest way to close this,
+-- not a formality.
+--
+-- (2) network_insights is a DIFFERENT, more urgent case, wrongly grouped
+-- with the above at first glance: it IS real and IS used
+-- (api/network.js), confirmed by its own real schema file
+-- (sql/network_schema.sql) -- but that file has NO grant statement of any
+-- kind. service_role has held only the TRUNCATE/REFERENCES/TRIGGER/
+-- MAINTAIN default baseline since the table was created, meaning
+-- api/network.js has never been able to actually select or insert on it.
+-- This is a live, currently-broken, previously-unnoticed bug -- the same
+-- class as the StoneDesk fe730e2 incident -- not something Section 2
+-- should touch. Section 2 would leave it at zero access, unchanged,
+-- because it has nothing to preserve; the real fix is a normal
+-- `grant select, insert on network_insights to service_role`, tracked
+-- separately, not folded into this sweep.
+--
+-- (3) license_keys deserves its own caution, not blanket trust: it has NO
+-- tracked CREATE TABLE anywhere in this repo. api/_lib/license.js's own
+-- header already documents this -- the real table is "owned by a
+-- separate, not-yet-built generation system" -- and
+-- sql/demo_license_keys_seed.sql works around it with WHERE NOT EXISTS
+-- specifically because no committed schema means no constraint to check.
+-- It is almost certainly fine (every license check on the platform
+-- depends on it working today), but with no file to cross-reference its
+-- expected grants against, Section 2's correctness here can't be verified
+-- the way it can for tables with a real schema file. Recommend excluding
+-- it from an initial run and confirming it by hand afterward, given how
+-- much depends on it.
+--
+-- (4) ai_memories, bridge_data, sairn_agents, sairn_agent_commands also
+-- have NO tracked CREATE TABLE anywhere in this repo, but ARE real and
+-- used (api/sd-data.js, api/_lib/sd-store.js, api/bridge.js respectively)
+-- and are NOT in the zero-CRUD list, meaning service_role already has
+-- real access to them today -- most likely created via Supabase's Table
+-- Editor UI, which (per .claude/skills/sairn-infra-debugger/SKILL.md)
+-- auto-grants correctly unlike raw SQL migrations. Section 2 is safe for
+-- these the same way it is for every table with a real schema file: it
+-- reads and re-asserts whatever they already have, so having no file to
+-- check against doesn't create the same risk (1) and (3) do, since their
+-- CURRENT grants (not an absent expectation) are what gets preserved.
+-- Still worth a follow-up to write real schema files for all four so a
+-- future session isn't left guessing again.
+--
 -- The broader sweep deliberately deferred while closing the append-only
 -- gap tonight (sql/append_only_grant_audit.sql), logged as a named
 -- follow-up in docs/SAIRN-OPEN-WORK-INDEX.md. Same root cause, confirmed
@@ -108,6 +184,13 @@ order by t.table_name;
 --     JOIN information_schema.role_table_grants g
 --       ON g.table_name = t.table_name AND g.table_schema = t.table_schema
 --     WHERE t.table_schema = 'public' AND g.grantee = 'service_role'
+--       -- Excluded per the findings above, not silently swept in:
+--       -- license_keys has no tracked schema to verify Section 2's output
+--       -- against and carries outsized blast radius (every license check
+--       -- on the platform); network_insights already has zero real CRUD
+--       -- for service_role today (a separate, unfixed grant bug, not
+--       -- something this sweep should touch or appear to "fix").
+--       AND t.table_name NOT IN ('license_keys', 'network_insights')
 --     GROUP BY t.table_name
 --     HAVING bool_or(g.privilege_type = 'TRUNCATE')
 --   LOOP
