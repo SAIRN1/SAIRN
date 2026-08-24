@@ -1362,6 +1362,38 @@ function clearSession() {
 // the fit-check reasoning (no physical-measurement workflow; shared-
 // knowledge's existing design is multi-employee and Supabase-keyed, this
 // app is single-freelancer and Firebase-keyed).
+//
+// SAIRN DATA BRIDGE (api/bridge.js) IS ALSO DELIBERATELY NOT BUILT HERE.
+// Scoped 2026-08-24 and declined on the evidence, not deferred -- this is a
+// closed decision, not an item that should quietly reappear on a list.
+//
+// Four independent reasons, any one of which is sufficient:
+//   1. The Bridge's read side has NO consumer. `?action=pull` has zero
+//      callers across all 13 app files. bridge_data is written and never
+//      read, so a SAIRNcash push would feed a table nothing consumes.
+//   2. Wrong data shape. The push payload is {shopId, jobs, invoices,
+//      employees} -- a shop's operational state. SAIRNcash has no shop, no
+//      jobs, and no employees; it has one freelancer's income, deductions
+//      and tax profile.
+//   3. Wrong architecture. Every Bridge/platform app is Supabase +
+//      license_hash + employee credentials. This app is Firebase RTDB +
+//      customerId, single user. It references api/sd-data.js zero times and
+//      license_hash zero times. There is no shopId to key a push on.
+//   4. Wrong privacy posture. api/bridge.js's push requires NO Authorization
+//      header at all -- deliberate, because its live callers send none. That
+//      is defensible for shop metadata. It is not defensible for a
+//      freelancer's personal earnings.
+//
+// The one scenario that could justify it -- a freelancer using a SAIRN B2B
+// app wanting income to flow through -- is blocked upstream, not here:
+// license_keys is keyed (key, app_id), so the same person's two apps have
+// DIFFERENT license hashes by construction, and no account-linking table
+// exists. See docs/superpowers/specs/2026-08-18-cross-app-intelligence-
+// feasibility.md, which reached that conclusion independently.
+//
+// If cross-app sharing for consumer apps ever becomes real, the prerequisite
+// is that account-linking table plus a decision on whether push/pull should
+// authenticate at all -- both platform-level, neither SAIRNcash's to solve.
 // ================================================================
 (function() {
 'use strict';
