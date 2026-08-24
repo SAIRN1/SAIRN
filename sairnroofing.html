@@ -66,6 +66,8 @@ tr:last-child td{border-bottom:none;}
 .bg{background:#DCFCE7;color:#15803D;}
 .bb{background:#DBEAFE;color:#1D4ED8;}
 .bx{background:#F1F5F9;color:#475569;}
+.br{background:#FEE2E2;color:#B91C1C;}
+.bw{background:#FEF3C7;color:#92400E;}
 input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;font-family:inherit;}
 input:focus,select:focus{border-color:var(--p);}
 label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
@@ -145,6 +147,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="wrap">
     <aside>
       <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')">Jobs</button>
+      <button class="sb" id="sb-certifications" onclick="nav('certifications')">Certifications<span class="badge" id="cert-badge" style="display:none;margin-left:6px;">0</span></button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
     </aside>
     <main>
@@ -160,6 +163,50 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card">
           <div class="cb" id="jobs-list"><div class="empty">Loading…</div></div>
         </div>
+      </div>
+
+      <div class="panel" id="panel-certifications">
+        <div class="ph"><div class="ptitle">Certifications &amp; Licensing</div></div>
+        <div class="note" id="cert-scope-note"></div>
+        <div class="krow" id="cert-kpis">
+          <div class="kpi"><div class="klbl">Expired</div><div class="kval" id="k-cert-expired">0</div></div>
+          <div class="kpi"><div class="klbl">Expiring</div><div class="kval" id="k-cert-expiring">0</div><div class="kt">Within 30 days</div></div>
+          <div class="kpi"><div class="klbl">No Date On File</div><div class="kval" id="k-cert-unknown">0</div><div class="kt">Needs a renewal date</div></div>
+          <div class="kpi"><div class="klbl">No Expiry</div><div class="kval" id="k-cert-current">0</div><div class="kt">Valid for life</div></div>
+        </div>
+        <div class="card" id="cert-add-card"><div class="ch"><div class="ct">Record a Credential</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Employee</label><select id="cert-employee"></select></div>
+            <div class="fg"><label>Type</label><select id="cert-type" onchange="rfCertTypeChanged()">
+              <option value="osha_card">OSHA Outreach Card</option>
+              <option value="safety_training">Safety Training</option>
+              <option value="installer_cert">Installer Certification</option>
+              <option value="local_license">Local Registration</option>
+            </select></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label id="cert-name-label">Credential</label><input type="text" id="cert-name" placeholder="e.g. OSHA 30"></div>
+            <div class="fg"><label>Issuer</label><input type="text" id="cert-issuer" placeholder="e.g. OSHA-authorized trainer"></div>
+          </div>
+          <div class="fg" id="cert-jurisdiction-group" style="display:none;"><label>Jurisdiction</label><input type="text" id="cert-jurisdiction" placeholder="e.g. City of Columbus"></div>
+          <div class="fr">
+            <div class="fg"><label>Issued</label><input type="date" id="cert-issued"></div>
+            <div class="fg"><label>Expires</label><input type="date" id="cert-expires"></div>
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:8px;">
+            <input type="checkbox" id="cert-no-expiry" onchange="rfCertNoExpiryChanged()"> This credential does not expire
+          </label>
+          <div class="note" id="cert-no-expiry-note" style="display:none;">Recorded as valid for life, not as a missing date. An OSHA 10 or 30-hour Outreach card carries no federal expiration &mdash; refresh windows come from a state, a general contractor or an owner, not from OSHA.</div>
+          <button class="btn bp" onclick="rfAddCertification()">Record Credential</button>
+          <div class="note">Records are append-only. To correct one, record a new credential for the same person &mdash; the newest supersedes and the original stays as the history of what was held when.</div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Status Board</div></div><div class="cb" style="padding:0;">
+          <div class="tw"><table id="cert-table"><thead><tr><th>Employee</th><th>Type</th><th>Credential</th><th>Expires</th><th>Status</th></tr></thead><tbody id="cert-tbody"></tbody></table></div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Licensing &amp; Requirements</div></div><div class="cb">
+          <div class="fr"><div class="fg"><label>Check a state</label><input type="text" id="cert-state" placeholder="OH" maxlength="2" style="text-transform:uppercase;" onchange="rfLoadCertBoard()"></div></div>
+          <div id="cert-licensing"></div>
+        </div></div>
       </div>
 
       <div class="panel" id="panel-assistant">
@@ -392,6 +439,10 @@ function nav(id){
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   $('panel-'+id).classList.add('on');$('sb-'+id).classList.add('on');
+  // Render from nothing first, then replace with the server-computed board.
+  // The panel never decides a status itself -- api/_lib/roofing-credentials.js
+  // does, so the UI and the tests cannot drift apart.
+  if(id==='certifications'){rfRenderCertBoard(null);rfLoadCertBoard();}
 }
 
 // ── Jobs (rf_jobs) — server-side gate does the real filtering; this note
@@ -444,6 +495,169 @@ function rfDataRaw(action,resource,payload){
       return {ok:r.ok&&d&&d.ok,status:r.status,data:(d&&d.data),msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
     });})
     .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+// ── CERTIFICATIONS & LICENSING (rf_certifications / rf_cert_rules, Phase 3a) ──
+// Two things this panel deliberately does NOT do:
+//   1. It never decides a status. The board comes from the server's compute-only
+//      'evaluate' action running api/_lib/roofing-credentials.js -- the same code
+//      the engine tests exercise. A second copy of the threshold logic here is
+//      how a UI and its tests drift apart.
+//   2. It never treats "no expiry" as missing data. An OSHA Outreach card has no
+//      federal expiration; a record that SHOULD carry a renewal date and does not
+//      is a different thing, and the board reports them differently.
+var rfCertBoard=null;
+
+// Escapes before interpolation. Credential names, issuers and jurisdictions are
+// free text typed by a user, and this panel renders them into innerHTML.
+function rfEsc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+// The full response body -- 'evaluate' returns board/licensing/coverage at the
+// top level, which rfData()'s d.data would throw away.
+function rfEvaluateCerts(){
+  var lic=rfLicenseKey();
+  if(!lic||!rfSession||!rfSession.token)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':rfSession.token};
+  var st=(($('cert-state')&&$('cert-state').value)||'').trim().toUpperCase();
+  var body={action:'evaluate',resource:'rf_certifications',app_id:APP_ID,payload:st?{state:st}:{}};
+  return fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify(body)})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('rf_certifications evaluate failed ('+r.status+')');return null;}
+      return d;
+    });})
+    .catch(function(){return null;});
+}
+
+function rfCertIsManagement(){return !!(rfSession&&(rfSession.role==='owner'||rfSession.role==='admin'));}
+
+function rfCertTypeChanged(){
+  var t=$('cert-type').value;
+  $('cert-jurisdiction-group').style.display=(t==='local_license')?'':'none';
+  $('cert-name-label').textContent=(t==='local_license')?'Registration / permit name':'Credential';
+}
+
+function rfCertNoExpiryChanged(){
+  var off=$('cert-no-expiry').checked;
+  $('cert-expires').disabled=off;
+  if(off)$('cert-expires').value='';
+  $('cert-no-expiry-note').style.display=off?'':'none';
+}
+
+function rfCertStatusBadge(i){
+  if(i.status==='expired')return '<span class="badge br">Expired</span>';
+  if(i.status==='expiring')return '<span class="badge bw">'+i.days+'d</span>';
+  if(i.status==='unknown')return '<span class="badge bw">No date on file</span>';
+  if(i.status==='current')return '<span class="badge bg">No expiry</span>';
+  return '<span class="badge bg">OK</span>';
+}
+
+function rfRenderCertBoard(res){
+  var tb=$('cert-tbody');
+  if(!tb)return;
+  // Management-only controls are hidden for roles the server would refuse
+  // anyway. The server gate is the control; this only avoids offering a button
+  // that cannot work.
+  if($('cert-add-card'))$('cert-add-card').style.display=rfCertIsManagement()?'':'none';
+  if($('cert-scope-note')){
+    $('cert-scope-note').textContent=rfCertIsManagement()
+      ? 'Every credential on the roster. Only owners and admins can record one.'
+      : ((rfSession&&rfSession.role==='estimator')
+         ? 'Every credential on the roster, read-only.'
+         : 'Your own credentials only -- the server filters this by your signed-in identity, not by anything this page asks for.');
+  }
+  if(!res||!res.board){
+    tb.innerHTML='<tr><td colspan="5">No credential board yet.</td></tr>';
+    if($('cert-badge'))$('cert-badge').style.display='none';
+    return;
+  }
+  rfCertBoard=res.board;
+  var items=res.board.items||[];
+  tb.innerHTML=items.length?items.map(function(i){
+    var when=i.no_expiry?'&mdash;':rfEsc(i.expires_on||'--');
+    var name=rfEsc(i.credential||i.jurisdiction||'--');
+    return '<tr><td>'+rfEsc(i.employee_id)+'</td><td>'+rfEsc(i.record_type)+'</td><td>'+name+'</td>'+
+           '<td>'+when+'</td><td>'+rfCertStatusBadge(i)+'</td></tr>';
+  }).join(''):'<tr><td colspan="5">No credentials recorded yet.</td></tr>';
+  var c=res.board.counts||{};
+  $('k-cert-expired').textContent=c.expired||0;
+  $('k-cert-expiring').textContent=c.expiring||0;
+  $('k-cert-unknown').textContent=c.unknown||0;
+  $('k-cert-current').textContent=c.current||0;
+  var b=$('cert-badge');
+  if(b){
+    if(res.board.action_required>0){b.textContent=res.board.action_required;b.style.display='';}
+    else b.style.display='none';
+  }
+  rfRenderLicensing(res);
+}
+
+function rfRenderLicensing(res){
+  var el=$('cert-licensing');
+  if(!el)return;
+  var out='';
+  if(res.licensing&&res.licensing.ok){
+    var d=res.licensing.rule.data||{},a=d.authority||{};
+    out+='<div class="note"><strong>'+rfEsc(d.label||res.licensing.rule.rule_id)+'</strong><br>'+
+         rfEsc(a.citation||'no citation')+
+         (a.url?' &middot; <a href="'+rfEsc(a.url)+'" target="_blank" rel="noopener">source</a>':'')+
+         (a.read_on?' &middot; read '+rfEsc(a.read_on):'')+'</div>';
+  }else if(res.licensing&&res.licensing.error){
+    out+='<div class="note">'+rfEsc(res.licensing.error.message)+'</div>';
+  }
+  (res.federal||[]).forEach(function(f){
+    out+='<div class="note">Federal: '+rfEsc(f.label||f.rule_id)+'</div>';
+  });
+  if(!out)out='<div class="note">Enter a state above to see what it requires. Only states with real, sourced rules loaded will answer.</div>';
+  el.innerHTML=out;
+}
+
+function rfLoadCertBoard(){
+  rfFillCertEmployees();
+  return rfEvaluateCerts().then(function(res){rfRenderCertBoard(res);});
+}
+
+function rfAddCertification(){
+  if(!rfCertIsManagement()){toast('Only an owner or admin can record a credential');return;}
+  var employeeId=$('cert-employee').value;
+  if(!employeeId){toast('Pick an employee first');return;}
+  var noExpiry=$('cert-no-expiry').checked;
+  var expires=$('cert-expires').value;
+  if(!noExpiry&&!expires){toast('Set an expiry date, or tick "does not expire"');return;}
+  var rec={
+    id:'RFCERT-'+Date.now(),
+    employee_id:employeeId,
+    record_type:$('cert-type').value,
+    credential:$('cert-name').value.trim(),
+    issuer:$('cert-issuer').value.trim(),
+    jurisdiction:$('cert-jurisdiction').value.trim(),
+    issued_on:$('cert-issued').value||null
+  };
+  // has_expiry:false and expires_on are mutually exclusive by design -- the
+  // server refuses a record carrying neither (EXPIRY_UNSPECIFIED).
+  if(noExpiry)rec.has_expiry=false;else rec.expires_on=expires;
+  rfDataRaw('write','rf_certifications',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not record the credential',5000);return;}
+    toast('Credential recorded');
+    $('cert-name').value='';$('cert-issuer').value='';$('cert-jurisdiction').value='';
+    $('cert-issued').value='';$('cert-expires').value='';
+    $('cert-no-expiry').checked=false;rfCertNoExpiryChanged();
+    rfLoadCertBoard();
+  });
+}
+
+function rfFillCertEmployees(){
+  var sel=$('cert-employee');
+  if(!sel||!rfCertIsManagement())return;
+  rfAuth('roster',{},true).then(function(r){
+    var rows=(r.ok&&r.data&&r.data.employees)||[];
+    sel.innerHTML=rows.length
+      ? rows.map(function(e){return '<option value="'+rfEsc(e.employee_id)+'">'+rfEsc(e.name||e.employee_id)+'</option>';}).join('')
+      : '<option value="">No employees on the roster yet</option>';
+  });
 }
 
 function rfBaseFieldsPayload(){

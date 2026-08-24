@@ -83,16 +83,20 @@ const REJECTED = 400;      // the gate refused the verb
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.alf_compliance_rules, ['evaluate']);
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.alf_billing, ['derive_charges']);
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.dnt_credentials, ['evaluate']);
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_certifications, ['evaluate']);
     const grants = (verb) => reg.RESOURCE_NAMES.filter(
       (n) => (reg.EXTRA_ACTIONS[n] || []).indexOf(verb) !== -1
     );
     // Enumerated, not counted: a new grant of one of these verbs must fail
     // here and be looked at, rather than passing because the total still
-    // "looks about right". 'evaluate' is legitimately held by two resources
-    // as of 2026-08-24 (SAIRNcare compliance, SAIRNdental credentials) --
-    // both compute-only, both read-only, each declared by its own app.
+    // "looks about right". 'evaluate' is legitimately held by three resources
+    // as of 2026-08-24 (SAIRNcare compliance, SAIRNdental credentials,
+    // SAIRNroofing certifications) -- all compute-only, all read-only, each
+    // declared by its own app. Growth here is expected and fine; an
+    // UNDECLARED grant is what this line exists to catch.
     assert.deepStrictEqual(grants('route'), ['alf_payer_rules']);
-    assert.deepStrictEqual(grants('evaluate').sort(), ['alf_compliance_rules', 'dnt_credentials']);
+    assert.deepStrictEqual(grants('evaluate').sort(),
+      ['alf_compliance_rules', 'dnt_credentials', 'rf_certifications']);
     assert.deepStrictEqual(grants('derive_charges'), ['alf_billing']);
   });
 
