@@ -55,7 +55,12 @@ const KNOWN_APP_IDS = [
   // same missing-from-allowlist bug class as the 2026-07-26 correction
   // above, caught live via a direct curl against this proxy before
   // assuming the existing chat worked.
-  'sairnsenior'
+  'sairnsenior',
+  // SAIRNroofing (2026-08-24) -- added at Phase 1 build time, not
+  // retrofitted after a live 400, per the standing gap this list has hit
+  // twice before (2026-07-26, 2026-08-20). See
+  // docs/superpowers/specs/2026-08-24-sairnroofing-v1-scope.md sec.3.
+  'sairnroofing'
 ];
 
 // Server tools a frontend is allowed to request. Server-executed tool TYPES

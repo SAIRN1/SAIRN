@@ -146,7 +146,22 @@ const ROLES_BY_APP = {
   // same split as sairnsenior's billing role. 'activities' = Activities
   // Coordinator, lighter read-only roster access, no clinical or billing
   // write access at all.
-  sairncare: ['owner', 'nursing', 'med_aide', 'caregiver', 'billing', 'activities']
+  sairncare: ['owner', 'nursing', 'med_aide', 'caregiver', 'billing', 'activities'],
+  // SAIRNroofing (2026-08-24). Mid-market roofing contractor, 20-100 employees,
+  // single- and multi-location. Confirmed by Michael before Phase 1 rather than
+  // invented and discovered wrong later -- SAIRNcare cost a scope correction for
+  // exactly that.
+  //
+  // 'estimator' is DELIBERATELY ONE COMBINED SALES-AND-ESTIMATING ROLE, not a
+  // pair. That matches how residential/storm-restoration shops actually run at
+  // this size: the person who knocks the door, meets the adjuster on the roof and
+  // writes the estimate is usually the same person. A shop that later wants to
+  // split sales from estimating is not blocked -- adding a role to this array and
+  // a case to the visibility tiers is all it takes, because the privacy gate keys
+  // on TIER (broad-read vs own-assigned) rather than on the literal role string.
+  // Building the split now would be speculative structure for a shape nobody has
+  // asked for yet.
+  sairnroofing: ['owner', 'admin', 'estimator', 'foreman', 'crew']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.
