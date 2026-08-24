@@ -74,8 +74,11 @@ be aware these exist and read them when the situation matches, even if you
 arrived here through this file rather than a trigger word:
 - `sairn-guardian-v2` — the full mechanical check (syntax, fabricated-KPI
   detection, coverage-disclosure standard, dormant-code rule, multi-codebase
-  drift, safe-editing rules). This supersedes the old `sairn-code-guardian`
-  entirely — that one is now a deprecation stub.
+  drift, safe-editing rules). This replaced the old `sairn-code-guardian`
+  entirely. **Corrected 2026-08-24:** that skill is not a deprecation stub —
+  it does not exist. There is no `sairn-code-guardian` directory in
+  `~/.claude/skills/` or in any clone's `.claude/skills/`; it was deleted
+  outright, not stubbed. Do not go looking for it, and do not recreate it.
 - `sairn-decision-gate` — run before any RFP/proposal work, before claiming
   "production/complete/live" to anyone outside the team, or before any
   AI-governance-related question (uses NIST AI RMF, Shipley Bid/No-Bid,
@@ -92,8 +95,11 @@ arrived here through this file rather than a trigger word:
   live-verified build. Reusable across every SAIRN app; per-app role
   vocabulary and item-bank wording still need an explicit judgment call
   each time, not silently copied.
-- `code-scrubber` — generic (non-SAIRN) code quality pass, now with the
-  same Step 0 reality-check additions as Guardian.
+- `sairn-code-scrubber` — SAIRN-specific bug-pattern scanner, with the same
+  Step 0 reality-check additions as Guardian. **Name corrected 2026-08-24:**
+  this line previously said `code-scrubber` and described it as the generic
+  non-SAIRN pass. No skill by that name exists on disk; the real directory is
+  `sairn-code-scrubber`, and its content is SAIRN-specific, not generic.
 
 ## Tech Stack
 - Frontend: Vanilla JavaScript
@@ -137,4 +143,4 @@ A status report is a claim, not a fact, until checked against the real current s
 - State the recommendation clearly (e.g. "This looks like a hard-debugging case — worth switching to Opus 4.8") rather than silently staying on whatever model is currently active
 
 ---
-*Last Updated: 2026-08-23*
+*Last Updated: 2026-08-24*
