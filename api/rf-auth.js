@@ -377,8 +377,18 @@ module.exports = async (req, res) => {
         }
         cleaned[key] = incoming[key];
       }
-      const existing = await loadEmployee(target_id);
-      if (!existing) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such employee on this license' } }); return; }
+      // FOUND LIVE (2026-08-24, verification): this used loadEmployee(), which filters
+      // active=eq.true, so certifying a currently-DEACTIVATED employee was refused with a
+      // false NOT_FOUND -- deactivated is not the same as nonexistent, and an owner has a real
+      // reason to set a certification on a record either state (e.g. before someone's first
+      // active day, or to keep the record accurate on someone temporarily deactivated). Fixed
+      // to check existence the same active-agnostic way set_active's own target lookup already
+      // does, rather than reusing loadEmployee's active-only shape for a check it was never
+      // designed for.
+      const existingR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(target_id) + '&select=employee_id'), { headers });
+      const existingRows = await existingR.json();
+      if (!existingR.ok) return upstream(res, existingRows);
+      if (!Array.isArray(existingRows) || !existingRows[0]) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such employee on this license' } }); return; }
       const patchR = await patchEmployee(target_id, { certifications: cleaned });
       const patched = await patchR.json();
       if (!patchR.ok) return upstream(res, patched);
