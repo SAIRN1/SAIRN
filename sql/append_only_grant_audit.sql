@@ -134,13 +134,37 @@ grant select, insert on public.alf_claim_routes to service_role;
 revoke all on public.sairnlaw_audit_log from service_role;
 grant select, insert on public.sairnlaw_audit_log to service_role;
 
--- SAIRNscape org intel -- append-only.
-revoke all on public.sairnscape_org_intel from service_role;
-grant select, insert on public.sairnscape_org_intel to service_role;
-
--- SAIRNcash waitlist -- append-only (missed by 5897313).
-revoke all on public.sairncash_waitlist from service_role;
-grant select, insert on public.sairncash_waitlist to service_role;
+-- ── TWO TABLES DELIBERATELY REMOVED FROM THIS SECTION, 2026-08-24 ────────
+-- sairnscape_org_intel and sairncash_waitlist were in this list and both
+-- failed live with 42P01 "relation does not exist". Root-caused rather than
+-- dropped:
+--
+--   NOT a typo. The names here were byte-identical to the `create table`
+--   statements in sql/sairnscape_org_intel_schema.sql and
+--   sql/sairncash_waitlist_schema.sql.
+--   NOT a rename or a drop. Both schema files are present and unchanged.
+--   NOT a stale catalog read. Section 2's sweep never emitted these names --
+--   it reads information_schema and can only return tables that exist. They
+--   came from a hand-built list in Sections 3 and 5c.
+--
+--   THE ACTUAL CAUSE: neither migration was ever run. The list was derived by
+--   grepping `grant ... to service_role` across sql/*.sql, which finds tables
+--   INTENDED to exist, not tables that DO. Corroborated in the repo:
+--   docs/superpowers/specs/2026-08-10-sairncash-pivot-design.md states plainly
+--   that "sql/sairncash_waitlist_schema.sql has not been run" -- written
+--   2026-08-10 and still true today.
+--
+--   CONSEQUENCE BEYOND THIS AUDIT, worth its own look: if those tables do not
+--   exist, then api/sairncash/waitlist.js cannot record a real waitlist
+--   signup, and api/org-intel.js's save path cannot store anything. Both were
+--   built to degrade honestly (NOT_PROVISIONED rather than a crash), so this
+--   has been failing quietly rather than loudly. Not fixed here -- running an
+--   unrelated app's migration as a side effect of a privilege audit is exactly
+--   the kind of scope creep that makes a change hard to reason about later.
+--
+--   WHEN EITHER MIGRATION IS RUN, its table will start with the default-ACL
+--   baseline unless Section 4 has already been applied. Run Section 4 first
+--   and this problem never appears for them.
 
 -- SAIRNroofing -- from 5897313. rf_jobs and sairnroofing_employee_auth keep
 -- UPDATE; rf_photos does not. Schema-qualified here, which 5897313's last
@@ -197,8 +221,10 @@ select tbl,
     'public.alf_signals',
     'public.alf_claim_routes',
     'public.sairnlaw_audit_log',
-    'public.sairnscape_org_intel',
-    'public.sairncash_waitlist',
+    -- sairnscape_org_intel and sairncash_waitlist removed 2026-08-24: both
+    -- 42P01, neither migration has ever been run. has_table_privilege() errors
+    -- on a missing relation rather than returning null, so leaving them here
+    -- would abort this whole query. See the note in Section 3.
     'public.rf_photos',
     'public.rf_jobs',
     'public.sairnroofing_employee_auth',
