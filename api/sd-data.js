@@ -36,6 +36,7 @@ const careCharges = require('./_lib/care-charges');
 const opAudit = require('./_lib/op-audit');
 const rfAuth = require('./rf-auth');
 const dentalCreds = require('./_lib/dental-credentials');
+const roofingCreds = require('./_lib/roofing-credentials');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -2706,6 +2707,180 @@ module.exports = async (req, res) => {
       if (!r.ok) return upstream(res, rows);
       const saved = Array.isArray(rows) && rows[0];
       res.status(200).json({ ok: true, data: Object.assign({ id: saved && saved.id, captured_by: session.employee_id }, photoData) });
+      return;
+    }
+
+    // ── SAIRNROOFING: rf_cert_rules + rf_certifications (2026-08-24, Phase 3a) ───────────────
+    // Per-employee certifications and licensing rules. Evaluation logic is PURE and lives in
+    // api/_lib/roofing-credentials.js; these branches are storage + gating only.
+    //
+    // GATE: unlike rf_jobs, this is NOT assignment-based. A certification is employment data,
+    // not job data -- there is no assignee to key on. Rules are readable by any authenticated
+    // employee (a crew member has a real interest in what their own trade requires) and
+    // writable by management only. Certification records are readable by management and
+    // broad-read roles, and ALWAYS by the employee they are about -- self-read is derived from
+    // the caller's own verified token, never from a claimed id in the payload. Writes are
+    // management-only: a certification record is an assertion about someone's qualifications,
+    // and self-certification would defeat the point.
+    if (resource === 'rf_cert_rules' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('rf_cert_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data,verified_by'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { covered_states: [], uncovered_states: [], detail: [] } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const data = (rows || []).map((x) => ({
+        rule_id: x.rule_id, state: x.state, requirement_type: x.requirement_type,
+        role: x.role || null, effective_from: x.effective_from, effective_to: x.effective_to,
+        status: x.status || 'active', verified_by: x.verified_by || '', data: x.data || {}
+      }));
+      const claimed = Array.isArray(payload && payload.claimed_states) && payload.claimed_states.length
+        ? payload.claimed_states.map((s) => String(s).toUpperCase())
+        : Array.from(new Set(data.map((x) => x.state)));
+      res.status(200).json({ ok: true, data, provisioned: true, coverage: roofingCreds.credentialCoverage(data, claimed) });
+      return;
+    }
+    if (resource === 'rf_cert_rules' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change licensing rules' } });
+        return;
+      }
+      if (!payload || !payload.rule_id || !payload.state || !payload.requirement_type || !payload.effective_from) {
+        res.status(400).json({ error: { message: 'rf_cert_rules requires rule_id, state, requirement_type, and effective_from' } });
+        return;
+      }
+      // A requirement with no source is the fabricated-number class this seed format exists to
+      // prevent, so it is refused at the API rather than discouraged in a comment.
+      const auth = payload.data && payload.data.authority;
+      if (!auth || !auth.citation || !auth.quote || !auth.read_on) {
+        res.status(400).json({ error: { code: 'NO_AUTHORITY', message: 'rf_cert_rules requires data.authority with citation, quote, and read_on — a requirement with no source cannot be stored' } });
+        return;
+      }
+      const r = await fetch(rest('rf_cert_rules?on_conflict=license_hash,rule_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', rule_id: String(payload.rule_id),
+          state: String(payload.state).toUpperCase(), requirement_type: payload.requirement_type,
+          role: payload.role || null, effective_from: payload.effective_from,
+          effective_to: payload.effective_to || null, status: payload.status || 'active',
+          data: payload.data || {}, verified_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+    if (resource === 'rf_certifications' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('rf_certifications?license_hash=eq.' + enc(licHash) + '&select=entry_id,employee_id,record_type,data,recorded_at&order=recorded_at.asc'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      let out = (rows || []).map((x) => Object.assign({}, x.data || {}, {
+        entry_id: x.entry_id, employee_id: x.employee_id,
+        record_type: x.record_type, recorded_at: x.recorded_at
+      }));
+      // Narrow roles see only their own records — filtered server-side against the token's
+      // own employee_id, never against anything the caller sent.
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        out = out.filter((x) => x.employee_id === session.employee_id);
+      }
+      res.status(200).json({ ok: true, data: out, provisioned: true });
+      return;
+    }
+    if (resource === 'rf_certifications' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a certification' } });
+        return;
+      }
+      if (!payload || !payload.id || !payload.employee_id || !payload.record_type) {
+        res.status(400).json({ error: { message: 'rf_certifications requires payload.id, payload.employee_id, and payload.record_type' } });
+        return;
+      }
+      if (!roofingCreds.RECORD_TYPES[payload.record_type]) {
+        res.status(400).json({ error: { message: 'rf_certifications record_type must be one of: osha_card, safety_training, installer_cert, local_license' } });
+        return;
+      }
+      // A record must either declare it has no expiry or carry one. Refused here as well as by
+      // the table CHECK so the caller gets a readable reason instead of a Postgres constraint
+      // name — an OSHA card with no federal expiry is a real, valid case, and a genuinely
+      // missing renewal date is a real gap; conflating them was the bug this prevents.
+      if (payload.has_expiry !== false && !payload.expires_on) {
+        res.status(400).json({ error: { code: 'EXPIRY_UNSPECIFIED', message: 'Set expires_on, or set has_expiry:false to record a credential that genuinely does not expire (e.g. an OSHA Outreach card)' } });
+        return;
+      }
+      // APPEND-ONLY: a plain insert, deliberately not an upsert. A correction is a new row that
+      // supersedes; the table grant withholds update/delete as the backstop.
+      const r = await fetch(rest('rf_certifications'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', entry_id: String(payload.id),
+          employee_id: String(payload.employee_id), record_type: payload.record_type,
+          data: Object.assign({}, payload, { recorded_by: session.employee_id })
+        })
+      });
+      if (r.status === 404) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 400 || r.status === 409) {
+        const bodyText = await r.text();
+        let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
+        const msg = (bodyJson && (bodyJson.message || bodyJson.details || bodyJson.hint)) || bodyText || '';
+        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.' } }); return; }
+        if (/duplicate key|unique constraint/i.test(msg)) { res.status(409).json({ error: { code: 'DUPLICATE_ENTRY', message: 'A certification record with this id already exists. Records are append-only — write a new record to supersede, do not reuse an id.' } }); return; }
+        if (/rfcd_expiry_check/i.test(msg)) { res.status(400).json({ error: { code: 'EXPIRY_UNSPECIFIED', message: 'Set expires_on, or set has_expiry:false for a credential that genuinely does not expire' } }); return; }
+        console.error('rf_certifications write error (status ' + r.status + '):', msg);
+        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? Object.assign({}, rows[0].data || {}, { recorded_at: rows[0].recorded_at }) : payload });
+      return;
+    }
+    // Compute-only. Reads both tables, writes nothing.
+    if (resource === 'rf_certifications' && action === 'evaluate') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const today = (payload && payload.today) || nowISO().slice(0, 10);
+      const cr = await fetch(rest('rf_certifications?license_hash=eq.' + enc(licHash) + '&select=entry_id,employee_id,record_type,data,recorded_at'), { headers });
+      if (cr.status === 404 || cr.status === 400) { res.status(200).json({ ok: true, provisioned: false, board: null }); return; }
+      const credRows = await cr.json();
+      if (!cr.ok) return upstream(res, credRows);
+      const rr = await fetch(rest('rf_cert_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data'), { headers });
+      const ruleRows = (rr.status === 404 || rr.status === 400) ? [] : await rr.json();
+      let records = (credRows || []).map((x) => Object.assign({}, x.data || {}, {
+        entry_id: x.entry_id, employee_id: x.employee_id,
+        record_type: x.record_type, recorded_at: x.recorded_at
+      }));
+      // Same narrowing as the read branch — a crew member's board shows their own records only.
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        records = records.filter((x) => x.employee_id === session.employee_id);
+      }
+      const rules = (Array.isArray(ruleRows) ? ruleRows : []).map((x) => ({
+        rule_id: x.rule_id, state: x.state, requirement_type: x.requirement_type,
+        role: x.role || null, effective_from: x.effective_from, effective_to: x.effective_to,
+        status: x.status || 'active', data: x.data || {}
+      }));
+      const board = roofingCreds.evaluateBoard(records, rules, today);
+      if (!board.ok) { res.status(400).json({ error: board.error }); return; }
+      const stateAsked = payload && payload.state;
+      const licensing = stateAsked
+        ? roofingCreds.selectLicensingRule(rules, { state: stateAsked, on_date: today })
+        : null;
+      res.status(200).json({
+        ok: true, provisioned: true, board: board,
+        licensing: licensing,
+        federal: roofingCreds.federalRules(rules, today).map((r2) => ({ rule_id: r2.rule_id, label: r2.data && r2.data.label })),
+        coverage: roofingCreds.credentialCoverage(rules, stateAsked ? [stateAsked] : [])
+      });
       return;
     }
 

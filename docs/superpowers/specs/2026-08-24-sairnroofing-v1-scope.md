@@ -151,7 +151,21 @@ not evidence of absence.
 ### Phase 2 — Measurement → estimate
 Built to §1.3 exactly. Includes the *Aufmaß*-style field-correction path.
 
-### Phase 3 — Materials
+### Phase 3 — Materials — **SHIPPED INSIDE PHASE 2, 2026-08-24**
+Verified against the built file, not assumed: `RF_MATERIALS_LIST` in
+`sairnroofing.html` carries all eleven materials below, including the three
+solar shingles and the commercial-flat set, and `RF_MATERIALS` in
+`api/sd-data.js` enforces the same list server-side. The Tesla capability gate
+is real (`sql/sairnroofing_employee_auth_certifications_migration.sql` +
+`api/rf-auth.js`'s `set_certifications`).
+
+This heading is kept rather than renumbered so the phase numbers in earlier
+commits still resolve. **The work referred to as "Phase 3" from 2026-08-24
+onward is Phase 4 + Phase 5 below**, split 3a/3b/3c:
+  3a — certifications & licensing (§4)
+  3b — claim record + photo evidence (§5.3)
+  3c — supplement reconciliation (§5.2, deterministic, no LLM opinion)
+
 1. **Solar shingles** — the differentiator, and patent-clean because it is
    *material-specific estimating logic*, a different inventive space from
    measurement. Three products, genuinely different mechanics:

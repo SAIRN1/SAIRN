@@ -1,0 +1,136 @@
+{
+  "_readme": [
+    "SAIRNroofing Phase 3a licensing/certification rule seed. OHIO ONLY, plus",
+    "the federal OSHA rules that apply in every state.",
+    "",
+    "EVERY FIGURE READ FROM THE PRIMARY SOURCE -- the Ohio Revised Code and the",
+    "Code of Federal Regulations themselves, not a licensing vendor's summary.",
+    "Each rule carries citation, URL, verbatim quote and read_on date. Same",
+    "standard as sairndental_credentials_seed_ohio.json and",
+    "sairncare_compliance_seed.json.",
+    "",
+    "── THE FINDING THAT SHAPES THIS WHOLE FEATURE ───────────────────────────",
+    "OHIO LICENSES NO ROOFING TRADE AT THE STATE LEVEL. ORC 4740.01 enumerates",
+    "exactly five specialty contractor types -- HVAC, refrigeration, electrical,",
+    "plumbing, hydronics. The word 'roofing' does not appear. Verified by reading",
+    "the statute, not by trusting the several secondary pages that say the same",
+    "thing.",
+    "",
+    "This is the opposite shape from SAIRNdental, where Ohio DOES license and the",
+    "question was how long the licence runs. Here the correct answer for Ohio is",
+    "a negative one, and the danger is the mirror image: an app that quietly",
+    "generalises 'no state licence needed' to California or Florida would tell a",
+    "contractor they are compliant when they are not. Hence NO_RULE_FOR_STATE",
+    "fails loudly for every state except Ohio, and says so in those words.",
+    "",
+    "── SECOND FINDING: NO-EXPIRY IS AN ANSWER, NOT A BLANK ──────────────────",
+    "OSHA does not place an expiration date on the OSHA 10/30 Outreach card. The",
+    "card is valid for life under federal law; refresh windows come from states",
+    "(NY, CT, MO, NV) and from general contractors. api/_lib/roofing-credentials.js",
+    "therefore treats has_expiry:false as the status 'current', distinct from a",
+    "record that is MISSING an expiry it should have ('unknown').",
+    "",
+    "── WHAT IS DELIBERATELY NOT CLAIMED ─────────────────────────────────────",
+    "See unverified_notes. Manufacturer programmes (GAF Master Elite, Owens",
+    "Corning Platinum Preferred, CertainTeed SELECT) are COMPANY-level and are",
+    "not in this seed at all -- they are Phase 4 work per the scope doc, and",
+    "modelling them per-employee would misrepresent what they are."
+  ],
+
+  "rules": [
+    {
+      "rule_id": "OH-ROOFING-NO-STATE-LICENSE",
+      "state": "OH",
+      "requirement_type": "state_licensing",
+      "role": null,
+      "effective_from": "2003-01-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "Ohio — no state-level roofing contractor licence exists; only five trades are licensed",
+        "state_license_required": false,
+        "licensed_trades": ["HVAC", "refrigeration", "electrical", "plumbing", "hydronics"],
+        "notes": [
+          "The correct Ohio answer is a NEGATIVE one. This rule exists so the app can say 'Ohio does not license this trade' as a sourced statement, rather than showing an empty licensing panel that a user would read as 'not set up yet'.",
+          "This does NOT mean a roofer in Ohio is unregulated. Local registration, insurance and bonding requirements are set by individual municipalities and counties, and vary between them. Those are entered per-jurisdiction as 'local_license' records, because there is no statewide list to seed.",
+          "effective_from is the chapter's own era rather than a precise enactment date; the licensing-board chapter has been in force well before any date this app cares about, and no rule in this app turns on that boundary."
+        ],
+        "authority": {
+          "citation": "ORC 4740.01 (Construction Industry Licensing Board — definitions)",
+          "url": "https://codes.ohio.gov/ohio-revised-code/section-4740.01",
+          "quote": "heating, ventilating, and air conditioning contractor; refrigeration contractor; electrical contractor; plumbing contractor; hydronics contractor — the enumerated specialty contractor types; the word \"roofing\" does not appear in this section",
+          "read_on": "2026-08-24"
+        }
+      }
+    },
+    {
+      "rule_id": "US-OSHA-FALL-PROTECTION-6FT",
+      "state": "US",
+      "requirement_type": "safety_standard",
+      "role": null,
+      "effective_from": "1995-02-06",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "OSHA — fall protection required at 6 feet on low-slope and steep roofs",
+        "trigger_height_feet": 6,
+        "notes": [
+          "This is a WORKSITE standard, not a per-employee credential, and the app must not present it as one. It is seeded so the training records that support it (fall-protection training, competent-person designation) have a citable reason to exist.",
+          "Roofing-specific: 1926.501(b)(10) covers low-slope roofs and (b)(11) steep roofs, each at the same 6-foot trigger. The permitted protections differ between them.",
+          "The app does NOT compute whether a given job complies. It records whether the crew assigned to it holds current fall-protection training."
+        ],
+        "authority": {
+          "citation": "29 CFR 1926.501(b)(10)-(11)",
+          "url": "https://www.osha.gov/laws-regs/regulations/standardnumber/1926/1926.501",
+          "quote": "Each employee engaged in roofing activities on low-slope roofs, with unprotected sides and edges 6 feet (1.8 m) or more above lower levels shall be protected from falling by guardrail systems, safety net systems, personal fall arrest systems, or a combination …",
+          "read_on": "2026-08-24"
+        }
+      }
+    },
+    {
+      "rule_id": "US-OSHA-OUTREACH-CARD-NO-EXPIRY",
+      "state": "US",
+      "requirement_type": "training_card",
+      "role": null,
+      "effective_from": "2015-01-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "OSHA 10/30-hour Outreach card — no federal expiration; refresh windows are state or contract imposed",
+        "federal_expiry": false,
+        "known_state_refresh_windows_years": { "NY": 5, "CT": 5, "MO": 5, "NV": 5 },
+        "notes": [
+          "The federal half is verified from OSHA's own Outreach program: the card carries no expiration date and OSHA does not require any worker to hold one — card requirements come from states, owners, general contractors and unions.",
+          "The per-state refresh windows above are recorded as LOCATED BUT NOT PRIMARY-VERIFIED. They came from a secondary compilation; the underlying statutes (e.g. NY Labor Law 220-h) were not read in this pass. They are stored as data a user can correct, and the app must not present them as confirmed law. See unverified_notes.",
+          "Ohio is deliberately absent from that map: no Ohio refresh requirement was found, and absence of evidence is recorded as absence of a claim, not as a confirmed 'none'."
+        ],
+        "authority": {
+          "citation": "OSHA Outreach Training Program — card validity",
+          "url": "https://www.osha.gov/training/outreach",
+          "quote": "OSHA does not place an expiration date on the 10-hour or 30-hour Outreach Training Program cards; requirements to hold or renew a card originate with states, owners, general contractors and unions rather than with federal OSHA",
+          "read_on": "2026-08-24"
+        }
+      }
+    }
+  ],
+
+  "claimed_states": ["OH"],
+
+  "verification_passes": [
+    {
+      "date": "2026-08-24",
+      "scope": "Ohio state roofing licensing (negative finding), federal OSHA fall-protection trigger height, federal OSHA Outreach card expiry.",
+      "method": "ORC 4740.01 read directly at codes.ohio.gov; 29 CFR 1926.501 read at osha.gov. Search results were used only to locate the sources, never as the figure.",
+      "corrections": [
+        "Several secondary pages assert Ohio 'has no roofing licence' without citing which statute establishes the licensed set. Reading ORC 4740.01 confirms it by enumeration — five trades, roofing absent — which is a stronger and differently-shaped claim than 'no licence exists'."
+      ]
+    }
+  ],
+
+  "unverified_notes": [
+    "Whether ORC Chapter 4740 expressly preserves or limits municipal authority to license contractors. ORC 4740.13 and 4740.14 were read and neither addresses local authority. The local-registration model in this app is therefore built on the observable fact that municipalities do register roofers, not on a statutory grant this pass confirmed.",
+    "The per-state OSHA card refresh windows (NY/CT/MO/NV, 5 years) come from a secondary compilation. The underlying statutes were not read. Stored as correctable data, flagged in the rule's own notes.",
+    "Whether any Ohio municipality's roofing registration carries a CE or exam requirement. Not researched — there is no statewide list, and enumerating Ohio's municipalities was out of scope for this pass.",
+    "Every state other than Ohio. Nothing is claimed for any of them, and the engine refuses by name rather than defaulting."
+  ]
+}

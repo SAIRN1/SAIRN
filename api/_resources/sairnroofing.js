@@ -17,5 +17,18 @@ module.exports = {
   // sql/sairnroofing_photos_schema.sql. Same tier gate as rf_jobs, keyed by
   // job_id. Bespoke branch below.
     'rf_photos',
+  // Certifications + licensing (2026-08-24, Phase 3a) -- see
+  // sql/sairnroofing_certifications_schema.sql and the Ohio rule seed beside
+  // it. rf_cert_rules holds versioned requirements as data, each with a real
+  // citation; rf_certifications is the APPEND-ONLY per-employee record store.
+    'rf_cert_rules',
+    'rf_certifications',
   ],
+  // 'evaluate' computes the expiry board from stored records and seeded rules.
+  // Reads only, writes nothing -- looking at who is about to lapse must never
+  // change a credential record. Same compute-only shape as SAIRNcare's
+  // alf_compliance_rules and SAIRNdental's dnt_credentials.
+  extraActions: {
+    rf_certifications: ['evaluate'],
+  },
 };
