@@ -67,7 +67,7 @@ C:\Users\marsh\Documents\SAIRN-cc
 C:\Users\marsh\Documents\SAIRN-cody
 ```
 
-These are four independent **clones**, not `git worktree` checkouts of one repo — `SAIRN-ACTIVE-WORK.md` carries the verified correction on that point. `C:\Users\marsh\Documents\SAIRN` is a fifth checkout that is **stale and abandoned (2026-08-18) — do not work in it either.** Re-derive this list rather than trusting it: check `SAIRN-ACTIVE-WORK.md` and the actual directories, since clone layout has already changed once and been documented wrongly once.
+These are four independent **clones**, not `git worktree` checkouts of one repo — `SAIRN-ACTIVE-WORK.md` carries the verified correction on that point (that file is now historical-only; see the active-work section below). `C:\Users\marsh\Documents\SAIRN` is a fifth checkout that is **stale and abandoned (2026-08-18) — do not work in it either.** Re-derive this list rather than trusting it: check `SAIRN-ACTIVE-WORK.md` and the actual directories, since clone layout has already changed once and been documented wrongly once.
 
 **Do not write handoffs — or any repo file — to `C:\Users\marsh\` directly.** That path is itself a working-tree checkout of `SAIRN1/SAIRN`, which is the structural cause of the collision above: it is the first place a fresh session looks, a stray file there is invisible to every other clone, and it sits far behind `origin/main` with untracked files capable of blocking a pull.
 
@@ -108,6 +108,38 @@ without re-checking it's still accurate]
 ## 5. Standard verification reminder for whoever reads this next
 Verify main HEAD, verify branch, re-run relevant checks before trusting any
 claim in this document — including this one.
+
+## Active-work logging — per session as of 2026-08-24, not one shared file
+
+A handoff is written at a stopping point; the active-work log is written
+*during* the work. Both are covered here because sessions reach for them at
+the same moments.
+
+**Append active-work entries to your own session's file:**
+
+| Session | File |
+|---|---|
+| Hank | `SAIRN-ACTIVE-WORK-hank.md` |
+| CC   | `SAIRN-ACTIVE-WORK-cc.md` |
+| Cody | `SAIRN-ACTIVE-WORK-cody.md` |
+
+**Do not append to `SAIRN-ACTIVE-WORK.md`.** It was the single shared log
+until 2026-08-24, when four concurrent sessions appending to the same
+end-of-file region produced repeated merge conflicts across Hank, CC, and
+Cody in one night. Every historical entry was copied verbatim into the three
+files above, split by the `(Hank)`/`(CC)`/`(Cody)` tag each entry already
+carried; the original is kept in place as the historical record (other files
+cite it by name) with a header pointing here.
+
+A session whose name is not in that table creates
+`SAIRN-ACTIVE-WORK-<name>.md` with the same header and adds a row to the
+table in `SAIRN-ACTIVE-WORK.md`. Never fall back to appending to the shared
+file.
+
+**Read all three (or all N) before starting work.** The split removes the
+write collision, not the coordination need — knowing what another session is
+touching is still the reason these files exist, and that requires reading
+files you do not write to.
 
 ## When to write one
 

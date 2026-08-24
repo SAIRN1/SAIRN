@@ -8,6 +8,12 @@ Before this file existed, open work lived in `SAIRN-BACKLOG.md`, in
 items got missed and sessions sat idle while work existed. This is the index.
 It does not replace those files; each row points back at the source of truth.
 
+**Note, 2026-08-24:** `SAIRN-ACTIVE-WORK.md` was split per session to stop the
+recurring merge conflicts. Its historical entries are still there (unchanged),
+but new active-work entries go in `SAIRN-ACTIVE-WORK-hank.md`,
+`SAIRN-ACTIVE-WORK-cc.md`, and `SAIRN-ACTIVE-WORK-cody.md`. **The next rebuild
+of this index must read all three, not just the shared file.**
+
 ---
 
 ## How to use this in 30 seconds
@@ -144,7 +150,8 @@ against current code or git before being called stale.
 - **Sizing is judgment, not estimation.** S/M/L is a rough shape, not a
   commitment.
 - **Owners are observed, not assigned.** `unassigned` means no session has
-  claimed it in `SAIRN-ACTIVE-WORK.md` — not that it is unimportant. Rows
+  claimed it in the active-work log (`SAIRN-ACTIVE-WORK.md` at rebuild time;
+  now the three per-session files) — not that it is unimportant. Rows
   owned by **Michael** need a decision or an access level a session does not
   have.
 - **⚠️ rows carry a number or claim this rebuild could not confirm.** They say

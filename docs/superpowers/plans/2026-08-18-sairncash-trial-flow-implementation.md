@@ -928,12 +928,12 @@ curl -s -X POST https://sairn.vercel.app/api/sairncash/trial-renew \
 
 Using Playwright (or claude-in-chrome), navigate to `sairn.vercel.app/sairncash`, start a trial with a fresh test email, confirm `showAppShell()` fires and the app is usable, confirm the trial badge is hidden (30 days left, above the 5-day threshold). This is the same live-verification discipline used for the SAIRNlaw void-rollback check earlier this session — a code-review pass is not a substitute for watching it actually happen in a real browser against the real deployment.
 
-- [ ] **Step 6: Update `SAIRN-ACTIVE-WORK.md`**
+- [ ] **Step 6: Update `SAIRN-ACTIVE-WORK-hank.md`**
 
-Clear this task's active-work line, same pattern as every other cleared entry in that file this session.
+Clear this task's active-work line, same pattern as every other cleared entry in that file this session. (Updated 2026-08-24: this step originally said `SAIRN-ACTIVE-WORK.md`. That file was split per session — Hank appends to `SAIRN-ACTIVE-WORK-hank.md`, CC to `-cc.md`, Cody to `-cody.md`. Nothing is appended to the shared file any more.)
 
 ```bash
-git add SAIRN-ACTIVE-WORK.md
-git commit -m "docs: SAIRN-ACTIVE-WORK.md -- clear Hank's SAIRNcash trial-flow build task, done"
+git add SAIRN-ACTIVE-WORK-hank.md
+git commit -m "docs: SAIRN-ACTIVE-WORK-hank.md -- clear Hank's SAIRNcash trial-flow build task, done"
 git push origin main
 ```
