@@ -5,5 +5,11 @@
 node_modules
 .superpowers/
 
-# graphify generated artifacts (rebuild with: graphify . --code-only)
+# graphify generated artifacts
+# Rebuild: graphify extract <clone> --code-only --force --out <clone>
+# The wildcard is deliberate. `graphify-out/` alone matched only the exact
+# name, so a renamed variant kept during a rebuild (graphify-out.v0931/)
+# showed up as untracked and was one `git add -A` away from committing a
+# multi-MB generated graph. Any graphify-out* directory is generated output.
 graphify-out/
+graphify-out*/

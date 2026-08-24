@@ -899,9 +899,9 @@ four apps' resources do, with the same honest await+check+toast
 pattern, and the UI discloses sync status somewhere a user can actually
 see it -- not just a code comment.
 
-## Rebuild graphify's knowledge graph, properly scoped
+## Rebuild graphify's knowledge graph, properly scoped — CLOSED 2026-08-24
 
-**Logged:** 2026-08-07
+**Logged:** 2026-08-07 · **Closed:** 2026-08-24
 
 **What:** Re-run graphify against only `C:\Users\marsh\Documents\SAIRN`
 (or wherever the live SAIRN app files actually live), at the current
@@ -922,10 +922,73 @@ exists in the current codebase (e.g. a function added this session) and
 getting a real match back — not just "the command completed."
 
 **Standing reminder:** re-run after any major merge, same staleness
-problem will recur otherwise. The `graphify` skill is set to `"off"` in
-`.claude/settings.local.json`'s `skillOverrides` until this is done —
-its current output shouldn't be treated as authoritative for duplicate-
-feature checks in the meantime.
+problem will recur otherwise.
+
+---
+
+### RESOLUTION, 2026-08-24 — rebuilt, and the HTML half was a different bug
+
+**Done.** Rebuilt scoped to `Documents\SAIRN-cody` at commit `acaa600`,
+with `graphify` upgraded 0.9.31 → 0.9.48 (`uv tool install
+"graphifyy[sql]==0.9.48"`). The `graphify` skill is now back **on** in
+`skillOverrides`.
+
+| | Old (2026-07-31) | New (2026-08-24) |
+|---|---|---|
+| Root | `C:\Users\marsh` | `Documents\SAIRN-cody` |
+| Nodes | 191,739 (91% Edge/Office noise) | 1,906 (**0** noise) |
+| graph.json | 456 MB | 2.7 MB |
+| Commit | `df84b21` | `acaa600` |
+
+Node sources: `.js` 923 · `.json` 520 · `.sql` 328 · `.py` 122 · `.cjs` 5.
+The `.sql` and `.json` coverage is new — 0.9.31 emitted zero nodes for all
+106 `.sql` files (missing `tree_sitter_sql`) and only 19 for `.json`.
+Verified with real queries, not a clean exit code: `computeForFacility` →
+`api/alf-alerts.js L131`; `hcbsCoverage` → `api/_lib/payer-routing.js L428`;
+`alf_facility` → 3 nodes; `sairncare_employee_auth` → 2 nodes. God nodes are
+the real auth spine (`validateLicenseKey` 31 edges, `verifySessionToken` 28,
+`tokenFromRequest` 25), which is the strongest signal the graph is meaningful.
+
+**KNOWN LIMITATION, permanent with this tool — the graph does NOT cover the
+single-file HTML apps.** Zero nodes from any `.html` file, in either version.
+This entry originally blamed the unscoped walk for that; it was wrong. There
+are two independent causes and scoping only fixed one. The real cause:
+
+```
+graphify/detect.py:46
+DOC_EXTENSIONS = {'.md', '.mdx', '.qmd', '.skill', '.txt', '.rst', '.html', '.yaml', '.yml'}
+```
+
+`.html` is classified as a **document, not code**, and `--code-only` skips
+documents by design — every run reports "skipping 194 non-code file(s) (194
+docs)", and the 16 SAIRN app files sit inside that 194. **No AST parser is
+ever consulted for them.** Confirmed independently: `.html` appears in
+neither code-extension map (`analyze.py:33-34`, `build.py:73-74`), and
+grepping the whole installed package for `tree_sitter_html` returns nothing
+— installing that parser does nothing, because graphify never imports it.
+
+**Do not "fix" this by dropping `--code-only`.** That routes the files
+through LLM *document* extraction: a 2 MB single-file application gets
+treated as prose, producing doc-summary nodes instead of function/symbol
+nodes, at real API cost, for strictly worse data. Decided against
+explicitly, not overlooked.
+
+**What this means in practice:** duplicate-feature checks, dead-code sweeps,
+and any "where else does this exist" question **about panel code must not
+rely on the graph** — panel code lives in the HTML apps and is invisible to
+it. `tools/outline.py` already exists for exactly that job (structure/outline
+extraction for `stonedesk.html` in place of a full re-read); use it there.
+The graph is authoritative for `api/`, `agent/`, `scripts/`, `tools/`,
+`tests/`, the seed JSON, and the full SQL schema — which is most of where
+real bugs live, and it already earned its keep by surfacing `sendResendEmail`
+as ambiguous across `api/alf-alerts.js` and `api/sairndental/send-reminder.js`
+without being asked.
+
+**Rebuild command:** `graphify extract <clone> --code-only --force --out <clone>`
+
+**Left for Michael to delete** (blocked on permissions, both safe to remove):
+`C:\Users\marsh\graphify-out.STALE-2026-07-31-unscoped` (481 MB) and
+`Documents\SAIRN-cody\graphify-out.v0931` (1.3 MB).
 
 ## SAIRNdental pediatric guardian fields — `onPtDobChange()` not called at page init
 
