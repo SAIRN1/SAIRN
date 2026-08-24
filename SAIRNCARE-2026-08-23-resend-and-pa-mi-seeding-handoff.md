@@ -282,10 +282,30 @@ session, only `ALF-TEST-2026` has the full set.
 
 Three carried from the previous handoff and re-confirmed, plus two new.
 
-- **Mixed line endings.** `core.autocrlf=true` here: blobs are LF, worktree is
-  CRLF. `api/sd-data.js` has previously been mangled file-wide by `sed -i`.
-  **Check the diff *shape* (`git diff --cached --numstat`) before every commit**
-  — this session's were 20/4, 46/1, 84/13, etc., all targeted.
+- **Mixed line endings — CORRECTED 2026-08-24, read this before any scripted edit.**
+  `core.autocrlf=true` here, so the worktree is CRLF regardless of the blob.
+  **`api/sd-data.js` is now LF in the blob** — measured on `origin/main`:
+  `CRLF=0, lone_LF=5006`. It flipped from pure CRLF (4653 lines) to pure LF
+  (4828 lines) in commit `4886658` ("feat(sairnroofing): Phase 3a"), which
+  showed as **+4828/−4653** while `git diff -w` showed the real change:
+  **+175/−0**. Everything else was the terminator flip.
+
+  **Do NOT force CRLF back onto `api/sd-data.js`.** Older notes — including the
+  two `SAIRN-ACTIVE-WORK*.md` entries dated 2026-08-22, which say "this repo is
+  MIXED — `api/sd-data.js` is stored with CRLF in the blob while
+  `sairncare.html` is stored with LF" — are **stale as of `4886658`** and were
+  not rewritten here because they are historical log entries. A session that
+  follows them and re-flips the file will detonate a ~9,000-line conflict on
+  whoever is mid-edit, which is exactly what happened on 2026-08-24 when a
+  24-line change rebased into a whole-file conflict.
+
+  The durable rule is unchanged and is the one that actually catches this:
+  **check the diff *shape* (`git diff --cached --numstat`) before every commit,
+  and compare it against `git diff --cached -w --numstat`.** If the two differ
+  wildly, the terminator moved, not the code. Never `sed -i` a shared file here.
+  A repo-wide `.gitattributes` would end this class of conflict permanently —
+  logged as ready-to-apply in `docs/SAIRN-OPEN-WORK-INDEX.md`, deliberately not
+  applied mid-session.
 - **Python on Windows defaults to cp1252.** Pass `encoding='utf-8'` explicitly.
   (Avoided entirely this session by using Node, which is UTF-8 by default.)
 - **A backgrounded Chrome tab suspends painting and network completion.** Check
