@@ -567,7 +567,89 @@ var COMPUTATION_STANDARDS = {
   // is numbered and its rollover limb really is subdivision 1.
   ny_gcl_20: { label: 'N.Y. Gen. Constr. Law 20, 25-a', impl: 'frcp_6a',
     base_period_suffix: '', months_years_suffix: '',
-    rollover_suffix_forward: ' 25-a(1)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: ' 25-a(1)', rollover_suffix_backward: '' },
+  // ── GEORGIA: THE CIVIL PRACTICE ACT DELEGATES ITS ARITHMETIC OUT ────────
+  // Like New York, Georgia does not compute time in the same body of rules
+  // that sets its deadlines -- but it says so expressly rather than leaving
+  // it to a general applicability clause. O.C.G.A. 9-11-6(a), verbatim:
+  // "In computing any period of time prescribed or allowed by this chapter,
+  // by the rules of any court, by order of court, or by an applicable
+  // statute, the computation rules prescribed in paragraph (3) of subsection
+  // (d) of Code Section 1-3-1 shall be used."
+  //
+  // So the operative text is O.C.G.A. 1-3-1(d)(3), verbatim: "Except as
+  // otherwise provided by time period computations specifically applying to
+  // other laws, when a period of time measured in days, weeks, months, years,
+  // or other measurements of time except hours is prescribed for the exercise
+  // of any privilege or the discharge of any duty, the first day shall not be
+  // counted but the last day shall be counted; and, if the last day falls on
+  // Saturday or Sunday, the party having such privilege or duty shall have
+  // through the following Monday to exercise the privilege or to discharge
+  // the duty. When the last day prescribed for such action falls on a public
+  // and legal holiday as set forth in Code Section 1-4-1, the party having
+  // the privilege or duty shall have through the next business day to
+  // exercise the privilege or to discharge the duty. When the period of time
+  // prescribed is less than seven days, intermediate Saturdays, Sundays, and
+  // legal holidays shall be excluded in the computation."
+  //
+  // SHORT-PERIOD EXCLUSION IS 7, verified from Georgia's own words and not
+  // carried across: "less than seven days" is < 7, so 7 is both the number in
+  // the rule and the right value here. That matches Ohio, Indiana and Florida
+  // and differs from Texas, where the rule says "five days or less" and this
+  // field has to be 6. Reachable in Georgia, unlike in Texas: O.C.G.A.
+  // 9-11-6(d) sets a five-day motion-notice period, and the two 15-day
+  // periods in 9-11-12(a)(2) sit just above the threshold, so a maintainer
+  // seeding anything shorter will hit this branch for real.
+  //
+  // ── THE ROLLOVER IS TWO SENTENCES, AND WHETHER THEY CASCADE IS THE ONE
+  //    GENUINELY UNSETTLED THING HERE. READ BEFORE CHANGING. ───────────────
+  // Sentence one sends a last day falling on Saturday or Sunday "through the
+  // following Monday". Sentence two sends a last day falling on a public and
+  // legal holiday "through the next business day". Neither sentence says what
+  // happens when the last day is a SATURDAY and the following Monday is a
+  // holiday -- which is every Saturday before Memorial Day, Labor Day,
+  // Columbus Day, Washington's Birthday and King's Birthday.
+  //
+  //   Non-cascading reading: sentence one applies, deadline is that Monday,
+  //                          and sentence two never fires because the LAST DAY
+  //                          was the Saturday, not the holiday.
+  //   Cascading reading:     sentence one extends the period so the Monday is
+  //                          now "the last day prescribed", sentence two then
+  //                          catches it, and the deadline is Tuesday.
+  //
+  // This engine takes the CASCADING reading, which is what rollOff does
+  // naturally. Three reasons, and the first is the weakest: a Georgia
+  // deadline-calculator source states the cascade explicitly on exactly the
+  // Saturday-before-Memorial-Day facts. That is secondary and is recorded as
+  // secondary. The second is textual: sentence two's remedy is "the next
+  // BUSINESS day", a phrase that already means neither a weekend nor a
+  // holiday, which reads as a legislature thinking in business days rather
+  // than in single hops. The third is practical: the non-cascading reading
+  // fixes a filing deadline on a day the courthouse is shut.
+  //
+  // NOTE THIS IS THE ONE PLACE IN THIS ENGINE WHERE AN UNSETTLED READING WAS
+  // RESOLVED TOWARD THE LATER DATE. Everywhere else -- Texas's 21a sequencing
+  // most recently -- ambiguity was resolved toward the earlier date because
+  // late is what misses a filing. It is resolved the other way here because
+  // the earlier date is not actually available to file on: a party told
+  // "Monday" when Monday is Memorial Day cannot act on it, so the earlier
+  // reading protects nobody. If that reasoning is ever shown wrong, this is
+  // the line to change, and the fix is a per-standard flag on rollOff rather
+  // than a change to rollOff itself, which every other jurisdiction relies on.
+  //
+  // MONTHS AND YEARS ARE ADDRESSED, unlike in most of this engine's states:
+  // 1-3-1(d)(3) opens on a period "measured in days, weeks, months, years, or
+  // other measurements of time except hours", so the months suffix can cite it
+  // honestly. HOURS ARE EXPRESSLY CARVED OUT and no Georgia rule seeded here
+  // is hour-based, so nothing falls through to day counting.
+  //
+  // Backward counting is NOT addressed and the suffix is left blank. Both
+  // rollover sentences run forward only ("through the following Monday", "the
+  // next business day"), and no backward Georgia rule is seeded.
+  ga_ocga_1_3_1_d3: { label: 'O.C.G.A. 1-3-1(d)(3)', impl: 'frcp_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
@@ -730,6 +812,53 @@ var SERVICE_EXTENSION_STANDARDS = {
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── GEORGIA: THIRD JURISDICTION IN A ROW WITH THE "TO THE PERIOD" SHAPE ──
+  // O.C.G.A. 9-11-6(e), verbatim: "Whenever a party has the right or is
+  // required to do some act or take some proceedings within a prescribed
+  // period after the service of a notice or other paper, OTHER THAN PROCESS,
+  // upon him or her, and the notice or paper is served upon the party by mail
+  // or e-mail, three days shall be added to the prescribed period."
+  //
+  // SEQUENCING WAS READ FIRST THIS TIME, NOT DISCOVERED BY A FAILING TEST.
+  // Georgia says "added to the prescribed period" -- New York's and Texas's
+  // wording, not the federal "after the period would otherwise expire". Three
+  // of the four states seeded in this batch use the period-lengthening shape
+  // and only Florida follows the FRCP. Whatever intuition suggests the federal
+  // order is the default across American practice, the sample here says
+  // otherwise, and every new jurisdiction gets this read before it is seeded.
+  //
+  // "OTHER THAN PROCESS" IS AN EXPRESS CARVE-OUT, and it is the cleanest one
+  // in this engine. Texas reaches the same result by 21a(a) excluding "the
+  // citation to be served upon the filing of a cause of action", and New York
+  // by 2103(b) governing only papers served "upon an attorney" -- both
+  // inferences from scope. Georgia says the words. So the O.C.G.A. 9-11-12
+  // answer deadline, which runs from service of the summons and complaint,
+  // takes no extension, and that is the statute talking rather than a reading.
+  //
+  // E-MAIL IS INCLUDED BY THE TEXT AND ITS SCOPE IS ACTIVELY CONTESTED.
+  // 9-11-6(e) names "mail or e-mail" on its face. But whether it reaches
+  // service generated by an electronic filing service provider was litigated
+  // in Speckhals v. Golf & Tennis Pro Shop, Inc.: the trial court held the
+  // three days did NOT apply to such e-service, the Court of Appeals affirmed
+  // under its Rule 36, and the Supreme Court of Georgia DENIED certiorari in
+  // 2024 -- with a statement from Justice Warren that the text "does not
+  // appear to support" that construction and that it would cause confusion
+  // across Georgia. So the question is unresolved by any binding decision.
+  //
+  // WHAT THIS ENGINE DOES ABOUT THAT: it extends for 'email' because the
+  // statute says e-mail, and it does NOT accept a distinct EFSP service method
+  // at all, so a caller cannot get a silent answer to the contested question.
+  // The seed rows carry the warning. This is disclosed rather than resolved --
+  // picking a side of a live dispute is not something a date calculator should
+  // do quietly, in either direction.
+  ga_ocga_9_11_6_e: {
+    label: 'O.C.G.A. 9-11-6(e)',
+    // "three days shall be added TO THE PRESCRIBED PERIOD" -- period-
+    // lengthening, so one rollover at the end. Read before seeding, not after.
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail' || method === 'email'; }
   },
   // ── NEW YORK: PER-METHOD AMOUNTS, AND ONE OF THEM IS A BUSINESS DAY ──────
   // The second standard in this engine whose amount depends on the method

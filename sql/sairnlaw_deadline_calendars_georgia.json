@@ -1,0 +1,498 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- Georgia public-and-legal-holiday calendars, 2026 through 2031.",
+    "Loaded through add_holidays like every other calendar.",
+    "",
+    "READ THIS BEFORE REGENERATING. O.C.G.A. 1-4-1(a)(1) does not enumerate holidays and does",
+    "not track the federal list live. It adopts the days the federal government had designated",
+    "**as of January 1, 2022** -- a frozen snapshot. This calendar is those eleven days.",
+    "A federal holiday created after that date must NOT be added here.",
+    "",
+    "NO observance shift: 1-4-1(a)(1) takes DESIGNATED days, and 5 U.S.C. 6103(b)'s weekend",
+    "shift governs which day federal employees are excused, not what is designated. A Georgia",
+    "holiday on a Saturday stays on that Saturday.",
+    "",
+    "1-4-1(b)'s 13-day state-office closure schedule is deliberately NOT encoded -- Georgia is",
+    "the clearest case here of a statute separating designation (a) from closure (b), and",
+    "encoding the closure schedule is the error the Pennsylvania calendars exist to avoid.",
+    "",
+    "See each calendar's authority.note for the gubernatorial-proclamation limb in 1-4-1(a)(2),",
+    "which guarantees at least one uncomputable holiday every year."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ga",
+      "year": 2026,
+      "authority": {
+        "citation": "O.C.G.A. 1-4-1(a)(1) (public and legal holidays), adopting the federal designations in force as of 2022-01-01; applied to time computation by O.C.G.A. 1-3-1(d)(3)",
+        "url": "https://law.justia.com/codes/georgia/title-1/chapter-4/section-1-4-1/",
+        "computation_url": "https://law.justia.com/codes/georgia/title-1/chapter-3/section-1-3-1/",
+        "note": "Generated 2026-08-24 from O.C.G.A. 1-4-1(a)(1), read verbatim, which is NOT an enumerated list and is the whole reason this calendar needs reading before it is trusted. 1-4-1(a) provides that Georgia \"shall recognize and observe as public and legal holidays: (1) All days which have been designated AS OF JANUARY 1, 2022, as public and legal holidays by the federal government; and (2) All other days designated and proclaimed by the Governor ...\". IT IS A FROZEN SNAPSHOT, NOT A LIVE REFERENCE, AND THAT IS THE TRAP. The words \"as of January 1, 2022\" fix the federal list at that date. If Congress designates a new federal holiday tomorrow, Georgia does NOT get it through this subsection -- it would take a gubernatorial proclamation under (a)(2) or an amendment. So this calendar is the eleven federal holidays as they stood on 2022-01-01, and it must NOT be regenerated from a live federal list. Juneteenth IS included, because it was designated federally on 17 June 2021, before the freeze date. A twelfth federal holiday created after that date would be wrong to add here, and adding one would push real Georgia deadlines LATER than Georgia law does. NO OBSERVANCE SHIFT IS APPLIED, and this is a deliberate reading rather than an oversight. 1-4-1(a)(1) takes the days the federal government DESIGNATED. The federal weekend shift in 5 U.S.C. 6103(b) is about which day federal EMPLOYEES are excused, not about which day is designated a holiday, and Georgia's subsection does not reach it. So a Georgia public and legal holiday falling on a Saturday stays on that Saturday and no Friday is generated, and one falling on a Sunday stays on the Sunday and no Monday is generated. Georgia therefore joins Illinois, California and Texas in shifting not at all, and differs from us-federal, fl, in, mi and pa (both ways) and from Ohio and New York (Sunday only). Deadlines still roll off weekends independently under O.C.G.A. 1-3-1(d)(3). The alternative reading -- importing the federal observance shift -- would ADD days the statute does not designate and produce later deadlines, which is the direction that misses a filing, so it is refused. 1-4-1(b) IS A CLOSURE SCHEDULE AND IS DELIBERATELY NOT ENCODED. It directs the Governor to \"close all state offices and facilities a minimum of 13 days throughout the year and not more than 13 days\" and to specify which. That is an attendance schedule, not the statutory test, and Georgia is the clearest case in this engine of a statute separating the two in its own text -- (a) designates, (b) closes. Encoding (b) would repeat exactly the error the Pennsylvania calendars exist to avoid; see the standing note in deadline-engine.js on what belongs in a calendar. Note the consequence runs both ways here: Georgia closes state offices on days this calendar does not list, and this calendar lists days on which they may be open. NOT MODELLED, flagged rather than dropped: 1-4-1(a)(2), days designated and proclaimed by the GOVERNOR as public and legal holidays or as days of fasting and prayer or other religious observance. These are real public and legal holidays, they are unknowable in advance, and Georgia's version has a further wrinkle worth stating: the subsection REQUIRES the Governor to include at least one of January 19, April 26 or June 3, or a suitable date in lieu -- so a proclaimed holiday is certain to exist each year, but WHICH date it lands on is the Governor's choice and cannot be computed. A Georgia date from this engine is therefore correct only absent an applicable proclamation, and unlike Illinois's or Florida's equivalent limbs, here at least one such day is guaranteed annually. Same unmodellable class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b, Texas's Tex. R. App. P. 4.1(b) and New York's presidential and gubernatorial proclamation days.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ga",
+      "year": 2027,
+      "authority": {
+        "citation": "O.C.G.A. 1-4-1(a)(1) (public and legal holidays), adopting the federal designations in force as of 2022-01-01; applied to time computation by O.C.G.A. 1-3-1(d)(3)",
+        "url": "https://law.justia.com/codes/georgia/title-1/chapter-4/section-1-4-1/",
+        "computation_url": "https://law.justia.com/codes/georgia/title-1/chapter-3/section-1-3-1/",
+        "note": "Generated 2026-08-24 from O.C.G.A. 1-4-1(a)(1), read verbatim, which is NOT an enumerated list and is the whole reason this calendar needs reading before it is trusted. 1-4-1(a) provides that Georgia \"shall recognize and observe as public and legal holidays: (1) All days which have been designated AS OF JANUARY 1, 2022, as public and legal holidays by the federal government; and (2) All other days designated and proclaimed by the Governor ...\". IT IS A FROZEN SNAPSHOT, NOT A LIVE REFERENCE, AND THAT IS THE TRAP. The words \"as of January 1, 2022\" fix the federal list at that date. If Congress designates a new federal holiday tomorrow, Georgia does NOT get it through this subsection -- it would take a gubernatorial proclamation under (a)(2) or an amendment. So this calendar is the eleven federal holidays as they stood on 2022-01-01, and it must NOT be regenerated from a live federal list. Juneteenth IS included, because it was designated federally on 17 June 2021, before the freeze date. A twelfth federal holiday created after that date would be wrong to add here, and adding one would push real Georgia deadlines LATER than Georgia law does. NO OBSERVANCE SHIFT IS APPLIED, and this is a deliberate reading rather than an oversight. 1-4-1(a)(1) takes the days the federal government DESIGNATED. The federal weekend shift in 5 U.S.C. 6103(b) is about which day federal EMPLOYEES are excused, not about which day is designated a holiday, and Georgia's subsection does not reach it. So a Georgia public and legal holiday falling on a Saturday stays on that Saturday and no Friday is generated, and one falling on a Sunday stays on the Sunday and no Monday is generated. Georgia therefore joins Illinois, California and Texas in shifting not at all, and differs from us-federal, fl, in, mi and pa (both ways) and from Ohio and New York (Sunday only). Deadlines still roll off weekends independently under O.C.G.A. 1-3-1(d)(3). The alternative reading -- importing the federal observance shift -- would ADD days the statute does not designate and produce later deadlines, which is the direction that misses a filing, so it is refused. 1-4-1(b) IS A CLOSURE SCHEDULE AND IS DELIBERATELY NOT ENCODED. It directs the Governor to \"close all state offices and facilities a minimum of 13 days throughout the year and not more than 13 days\" and to specify which. That is an attendance schedule, not the statutory test, and Georgia is the clearest case in this engine of a statute separating the two in its own text -- (a) designates, (b) closes. Encoding (b) would repeat exactly the error the Pennsylvania calendars exist to avoid; see the standing note in deadline-engine.js on what belongs in a calendar. Note the consequence runs both ways here: Georgia closes state offices on days this calendar does not list, and this calendar lists days on which they may be open. NOT MODELLED, flagged rather than dropped: 1-4-1(a)(2), days designated and proclaimed by the GOVERNOR as public and legal holidays or as days of fasting and prayer or other religious observance. These are real public and legal holidays, they are unknowable in advance, and Georgia's version has a further wrinkle worth stating: the subsection REQUIRES the Governor to include at least one of January 19, April 26 or June 3, or a suitable date in lieu -- so a proclaimed holiday is certain to exist each year, but WHICH date it lands on is the Governor's choice and cannot be computed. A Georgia date from this engine is therefore correct only absent an applicable proclamation, and unlike Illinois's or Florida's equivalent limbs, here at least one such day is guaranteed annually. Same unmodellable class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b, Texas's Tex. R. App. P. 4.1(b) and New York's presidential and gubernatorial proclamation days.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ga",
+      "year": 2028,
+      "authority": {
+        "citation": "O.C.G.A. 1-4-1(a)(1) (public and legal holidays), adopting the federal designations in force as of 2022-01-01; applied to time computation by O.C.G.A. 1-3-1(d)(3)",
+        "url": "https://law.justia.com/codes/georgia/title-1/chapter-4/section-1-4-1/",
+        "computation_url": "https://law.justia.com/codes/georgia/title-1/chapter-3/section-1-3-1/",
+        "note": "Generated 2026-08-24 from O.C.G.A. 1-4-1(a)(1), read verbatim, which is NOT an enumerated list and is the whole reason this calendar needs reading before it is trusted. 1-4-1(a) provides that Georgia \"shall recognize and observe as public and legal holidays: (1) All days which have been designated AS OF JANUARY 1, 2022, as public and legal holidays by the federal government; and (2) All other days designated and proclaimed by the Governor ...\". IT IS A FROZEN SNAPSHOT, NOT A LIVE REFERENCE, AND THAT IS THE TRAP. The words \"as of January 1, 2022\" fix the federal list at that date. If Congress designates a new federal holiday tomorrow, Georgia does NOT get it through this subsection -- it would take a gubernatorial proclamation under (a)(2) or an amendment. So this calendar is the eleven federal holidays as they stood on 2022-01-01, and it must NOT be regenerated from a live federal list. Juneteenth IS included, because it was designated federally on 17 June 2021, before the freeze date. A twelfth federal holiday created after that date would be wrong to add here, and adding one would push real Georgia deadlines LATER than Georgia law does. NO OBSERVANCE SHIFT IS APPLIED, and this is a deliberate reading rather than an oversight. 1-4-1(a)(1) takes the days the federal government DESIGNATED. The federal weekend shift in 5 U.S.C. 6103(b) is about which day federal EMPLOYEES are excused, not about which day is designated a holiday, and Georgia's subsection does not reach it. So a Georgia public and legal holiday falling on a Saturday stays on that Saturday and no Friday is generated, and one falling on a Sunday stays on the Sunday and no Monday is generated. Georgia therefore joins Illinois, California and Texas in shifting not at all, and differs from us-federal, fl, in, mi and pa (both ways) and from Ohio and New York (Sunday only). Deadlines still roll off weekends independently under O.C.G.A. 1-3-1(d)(3). The alternative reading -- importing the federal observance shift -- would ADD days the statute does not designate and produce later deadlines, which is the direction that misses a filing, so it is refused. 1-4-1(b) IS A CLOSURE SCHEDULE AND IS DELIBERATELY NOT ENCODED. It directs the Governor to \"close all state offices and facilities a minimum of 13 days throughout the year and not more than 13 days\" and to specify which. That is an attendance schedule, not the statutory test, and Georgia is the clearest case in this engine of a statute separating the two in its own text -- (a) designates, (b) closes. Encoding (b) would repeat exactly the error the Pennsylvania calendars exist to avoid; see the standing note in deadline-engine.js on what belongs in a calendar. Note the consequence runs both ways here: Georgia closes state offices on days this calendar does not list, and this calendar lists days on which they may be open. NOT MODELLED, flagged rather than dropped: 1-4-1(a)(2), days designated and proclaimed by the GOVERNOR as public and legal holidays or as days of fasting and prayer or other religious observance. These are real public and legal holidays, they are unknowable in advance, and Georgia's version has a further wrinkle worth stating: the subsection REQUIRES the Governor to include at least one of January 19, April 26 or June 3, or a suitable date in lieu -- so a proclaimed holiday is certain to exist each year, but WHICH date it lands on is the Governor's choice and cannot be computed. A Georgia date from this engine is therefore correct only absent an applicable proclamation, and unlike Illinois's or Florida's equivalent limbs, here at least one such day is guaranteed annually. Same unmodellable class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b, Texas's Tex. R. App. P. 4.1(b) and New York's presidential and gubernatorial proclamation days.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ga",
+      "year": 2029,
+      "authority": {
+        "citation": "O.C.G.A. 1-4-1(a)(1) (public and legal holidays), adopting the federal designations in force as of 2022-01-01; applied to time computation by O.C.G.A. 1-3-1(d)(3)",
+        "url": "https://law.justia.com/codes/georgia/title-1/chapter-4/section-1-4-1/",
+        "computation_url": "https://law.justia.com/codes/georgia/title-1/chapter-3/section-1-3-1/",
+        "note": "Generated 2026-08-24 from O.C.G.A. 1-4-1(a)(1), read verbatim, which is NOT an enumerated list and is the whole reason this calendar needs reading before it is trusted. 1-4-1(a) provides that Georgia \"shall recognize and observe as public and legal holidays: (1) All days which have been designated AS OF JANUARY 1, 2022, as public and legal holidays by the federal government; and (2) All other days designated and proclaimed by the Governor ...\". IT IS A FROZEN SNAPSHOT, NOT A LIVE REFERENCE, AND THAT IS THE TRAP. The words \"as of January 1, 2022\" fix the federal list at that date. If Congress designates a new federal holiday tomorrow, Georgia does NOT get it through this subsection -- it would take a gubernatorial proclamation under (a)(2) or an amendment. So this calendar is the eleven federal holidays as they stood on 2022-01-01, and it must NOT be regenerated from a live federal list. Juneteenth IS included, because it was designated federally on 17 June 2021, before the freeze date. A twelfth federal holiday created after that date would be wrong to add here, and adding one would push real Georgia deadlines LATER than Georgia law does. NO OBSERVANCE SHIFT IS APPLIED, and this is a deliberate reading rather than an oversight. 1-4-1(a)(1) takes the days the federal government DESIGNATED. The federal weekend shift in 5 U.S.C. 6103(b) is about which day federal EMPLOYEES are excused, not about which day is designated a holiday, and Georgia's subsection does not reach it. So a Georgia public and legal holiday falling on a Saturday stays on that Saturday and no Friday is generated, and one falling on a Sunday stays on the Sunday and no Monday is generated. Georgia therefore joins Illinois, California and Texas in shifting not at all, and differs from us-federal, fl, in, mi and pa (both ways) and from Ohio and New York (Sunday only). Deadlines still roll off weekends independently under O.C.G.A. 1-3-1(d)(3). The alternative reading -- importing the federal observance shift -- would ADD days the statute does not designate and produce later deadlines, which is the direction that misses a filing, so it is refused. 1-4-1(b) IS A CLOSURE SCHEDULE AND IS DELIBERATELY NOT ENCODED. It directs the Governor to \"close all state offices and facilities a minimum of 13 days throughout the year and not more than 13 days\" and to specify which. That is an attendance schedule, not the statutory test, and Georgia is the clearest case in this engine of a statute separating the two in its own text -- (a) designates, (b) closes. Encoding (b) would repeat exactly the error the Pennsylvania calendars exist to avoid; see the standing note in deadline-engine.js on what belongs in a calendar. Note the consequence runs both ways here: Georgia closes state offices on days this calendar does not list, and this calendar lists days on which they may be open. NOT MODELLED, flagged rather than dropped: 1-4-1(a)(2), days designated and proclaimed by the GOVERNOR as public and legal holidays or as days of fasting and prayer or other religious observance. These are real public and legal holidays, they are unknowable in advance, and Georgia's version has a further wrinkle worth stating: the subsection REQUIRES the Governor to include at least one of January 19, April 26 or June 3, or a suitable date in lieu -- so a proclaimed holiday is certain to exist each year, but WHICH date it lands on is the Governor's choice and cannot be computed. A Georgia date from this engine is therefore correct only absent an applicable proclamation, and unlike Illinois's or Florida's equivalent limbs, here at least one such day is guaranteed annually. Same unmodellable class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b, Texas's Tex. R. App. P. 4.1(b) and New York's presidential and gubernatorial proclamation days.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ga",
+      "year": 2030,
+      "authority": {
+        "citation": "O.C.G.A. 1-4-1(a)(1) (public and legal holidays), adopting the federal designations in force as of 2022-01-01; applied to time computation by O.C.G.A. 1-3-1(d)(3)",
+        "url": "https://law.justia.com/codes/georgia/title-1/chapter-4/section-1-4-1/",
+        "computation_url": "https://law.justia.com/codes/georgia/title-1/chapter-3/section-1-3-1/",
+        "note": "Generated 2026-08-24 from O.C.G.A. 1-4-1(a)(1), read verbatim, which is NOT an enumerated list and is the whole reason this calendar needs reading before it is trusted. 1-4-1(a) provides that Georgia \"shall recognize and observe as public and legal holidays: (1) All days which have been designated AS OF JANUARY 1, 2022, as public and legal holidays by the federal government; and (2) All other days designated and proclaimed by the Governor ...\". IT IS A FROZEN SNAPSHOT, NOT A LIVE REFERENCE, AND THAT IS THE TRAP. The words \"as of January 1, 2022\" fix the federal list at that date. If Congress designates a new federal holiday tomorrow, Georgia does NOT get it through this subsection -- it would take a gubernatorial proclamation under (a)(2) or an amendment. So this calendar is the eleven federal holidays as they stood on 2022-01-01, and it must NOT be regenerated from a live federal list. Juneteenth IS included, because it was designated federally on 17 June 2021, before the freeze date. A twelfth federal holiday created after that date would be wrong to add here, and adding one would push real Georgia deadlines LATER than Georgia law does. NO OBSERVANCE SHIFT IS APPLIED, and this is a deliberate reading rather than an oversight. 1-4-1(a)(1) takes the days the federal government DESIGNATED. The federal weekend shift in 5 U.S.C. 6103(b) is about which day federal EMPLOYEES are excused, not about which day is designated a holiday, and Georgia's subsection does not reach it. So a Georgia public and legal holiday falling on a Saturday stays on that Saturday and no Friday is generated, and one falling on a Sunday stays on the Sunday and no Monday is generated. Georgia therefore joins Illinois, California and Texas in shifting not at all, and differs from us-federal, fl, in, mi and pa (both ways) and from Ohio and New York (Sunday only). Deadlines still roll off weekends independently under O.C.G.A. 1-3-1(d)(3). The alternative reading -- importing the federal observance shift -- would ADD days the statute does not designate and produce later deadlines, which is the direction that misses a filing, so it is refused. 1-4-1(b) IS A CLOSURE SCHEDULE AND IS DELIBERATELY NOT ENCODED. It directs the Governor to \"close all state offices and facilities a minimum of 13 days throughout the year and not more than 13 days\" and to specify which. That is an attendance schedule, not the statutory test, and Georgia is the clearest case in this engine of a statute separating the two in its own text -- (a) designates, (b) closes. Encoding (b) would repeat exactly the error the Pennsylvania calendars exist to avoid; see the standing note in deadline-engine.js on what belongs in a calendar. Note the consequence runs both ways here: Georgia closes state offices on days this calendar does not list, and this calendar lists days on which they may be open. NOT MODELLED, flagged rather than dropped: 1-4-1(a)(2), days designated and proclaimed by the GOVERNOR as public and legal holidays or as days of fasting and prayer or other religious observance. These are real public and legal holidays, they are unknowable in advance, and Georgia's version has a further wrinkle worth stating: the subsection REQUIRES the Governor to include at least one of January 19, April 26 or June 3, or a suitable date in lieu -- so a proclaimed holiday is certain to exist each year, but WHICH date it lands on is the Governor's choice and cannot be computed. A Georgia date from this engine is therefore correct only absent an applicable proclamation, and unlike Illinois's or Florida's equivalent limbs, here at least one such day is guaranteed annually. Same unmodellable class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b, Texas's Tex. R. App. P. 4.1(b) and New York's presidential and gubernatorial proclamation days.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ga",
+      "year": 2031,
+      "authority": {
+        "citation": "O.C.G.A. 1-4-1(a)(1) (public and legal holidays), adopting the federal designations in force as of 2022-01-01; applied to time computation by O.C.G.A. 1-3-1(d)(3)",
+        "url": "https://law.justia.com/codes/georgia/title-1/chapter-4/section-1-4-1/",
+        "computation_url": "https://law.justia.com/codes/georgia/title-1/chapter-3/section-1-3-1/",
+        "note": "Generated 2026-08-24 from O.C.G.A. 1-4-1(a)(1), read verbatim, which is NOT an enumerated list and is the whole reason this calendar needs reading before it is trusted. 1-4-1(a) provides that Georgia \"shall recognize and observe as public and legal holidays: (1) All days which have been designated AS OF JANUARY 1, 2022, as public and legal holidays by the federal government; and (2) All other days designated and proclaimed by the Governor ...\". IT IS A FROZEN SNAPSHOT, NOT A LIVE REFERENCE, AND THAT IS THE TRAP. The words \"as of January 1, 2022\" fix the federal list at that date. If Congress designates a new federal holiday tomorrow, Georgia does NOT get it through this subsection -- it would take a gubernatorial proclamation under (a)(2) or an amendment. So this calendar is the eleven federal holidays as they stood on 2022-01-01, and it must NOT be regenerated from a live federal list. Juneteenth IS included, because it was designated federally on 17 June 2021, before the freeze date. A twelfth federal holiday created after that date would be wrong to add here, and adding one would push real Georgia deadlines LATER than Georgia law does. NO OBSERVANCE SHIFT IS APPLIED, and this is a deliberate reading rather than an oversight. 1-4-1(a)(1) takes the days the federal government DESIGNATED. The federal weekend shift in 5 U.S.C. 6103(b) is about which day federal EMPLOYEES are excused, not about which day is designated a holiday, and Georgia's subsection does not reach it. So a Georgia public and legal holiday falling on a Saturday stays on that Saturday and no Friday is generated, and one falling on a Sunday stays on the Sunday and no Monday is generated. Georgia therefore joins Illinois, California and Texas in shifting not at all, and differs from us-federal, fl, in, mi and pa (both ways) and from Ohio and New York (Sunday only). Deadlines still roll off weekends independently under O.C.G.A. 1-3-1(d)(3). The alternative reading -- importing the federal observance shift -- would ADD days the statute does not designate and produce later deadlines, which is the direction that misses a filing, so it is refused. 1-4-1(b) IS A CLOSURE SCHEDULE AND IS DELIBERATELY NOT ENCODED. It directs the Governor to \"close all state offices and facilities a minimum of 13 days throughout the year and not more than 13 days\" and to specify which. That is an attendance schedule, not the statutory test, and Georgia is the clearest case in this engine of a statute separating the two in its own text -- (a) designates, (b) closes. Encoding (b) would repeat exactly the error the Pennsylvania calendars exist to avoid; see the standing note in deadline-engine.js on what belongs in a calendar. Note the consequence runs both ways here: Georgia closes state offices on days this calendar does not list, and this calendar lists days on which they may be open. NOT MODELLED, flagged rather than dropped: 1-4-1(a)(2), days designated and proclaimed by the GOVERNOR as public and legal holidays or as days of fasting and prayer or other religious observance. These are real public and legal holidays, they are unknowable in advance, and Georgia's version has a further wrinkle worth stating: the subsection REQUIRES the Governor to include at least one of January 19, April 26 or June 3, or a suitable date in lieu -- so a proclaimed holiday is certain to exist each year, but WHICH date it lands on is the Governor's choice and cannot be computed. A Georgia date from this engine is therefore correct only absent an applicable proclamation, and unlike Illinois's or Florida's equivalent limbs, here at least one such day is guaranteed annually. Same unmodellable class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b, Texas's Tex. R. App. P. 4.1(b) and New York's presidential and gubernatorial proclamation days.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "O.C.G.A. 1-4-1(a)(1), taking 5 U.S.C. 6103(a) as designated on 2022-01-01"
+        }
+      ]
+    }
+  ]
+}
