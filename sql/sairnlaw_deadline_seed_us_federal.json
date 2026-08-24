@@ -332,6 +332,46 @@
       "effective_to": null,
       "version": 1,
       "supersedes": null
+    },
+    {
+      "rule_id": "frcp-15a3-response-to-amended-pleading",
+      "jurisdiction": "us-federal",
+      "domain": "civil-litigation",
+      "label": "Response to an amended pleading, the later of the time remaining on the original and 14 days (Federal)",
+      "trigger_event": {
+        "id": "response_to_amended_pleading",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "original_response_deadline_for_the_pleading_amended",
+            "count": {
+              "value": 0,
+              "unit": "calendar_days"
+            },
+            "label": "the time remaining to respond to the original pleading, i.e. that deadline itself"
+          },
+          {
+            "event": "service_of_the_amended_pleading",
+            "count": {
+              "value": 14,
+              "unit": "calendar_days"
+            },
+            "label": "14 days after service of the amended pleading"
+          }
+        ]
+      },
+      "computation": "frcp_6a",
+      "authority": {
+        "citation": "Fed. R. Civ. P. 15(a)(3)",
+        "url": "https://www.law.cornell.edu/rules/frcp/rule_15",
+        "quote": "Unless the court orders otherwise, any required response to an amended pleading must be made within the time remaining to respond to the original pleading or within 14 days after service of the amended pleading, whichever is later.",
+        "note": "NOW COMPUTABLE, AND IT IS THE ODDEST OF THE FIVE. Refused by this engine until 2026-08-24. The second limb is an ordinary 14-day period, but THE FIRST LIMB IS NOT A PERIOD AT ALL -- \"the time remaining to respond to the original pleading\" is the original deadline itself, already fixed by whatever rule set it. It is encoded as a ZERO-DAY period running from that deadline, which is the faithful reading: a period of no days from a date is that date. THE CONSEQUENCE, STATED PLAINLY BECAUSE IT IS THE ENGINE'S KNOWN WEAK POINT: this row requires the caller to supply a date that is itself a DEADLINE, not an event. The engine does not compute the original response deadline and does not check that the date given is one -- it is the same trigger-derivation limit that applies across the engine, but sharper here, because every other rule at least asks for something that happened in the world. Compute the original deadline first, with the rule that governs it, and feed the result in. If the original pleading was a complaint served in the ordinary way, that is the FRCP 12(a)(1)(A)(i) row. NOT ENCODED: the opening \"Unless the court orders otherwise\", which is an order the engine cannot see, and Rule 15(a)(1)'s separate amend-as-of-course periods, which are already their own rows.",
+        "retrieved_at": "2026-08-24"
+      },
+      "effective_from": "2009-12-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
     }
   ],
   "holiday_calendars": [

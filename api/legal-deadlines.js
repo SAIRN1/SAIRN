@@ -65,6 +65,22 @@ function triggerOption(r) {
   if (typeof t === 'string') {
     return { event: t, label: r.label || t, rule_id: r.rule_id, citation: (r.authority && r.authority.citation) || null, requires_dates: null, designated_period: dp, cap: capSpec };
   }
+  // A resolve_periods rule needs every limb's date up front for the same
+  // reason a multi-trigger one does -- it refuses on a partial set. It reports
+  // the per-limb COUNTS as well, because "the later of two periods" is not
+  // something a user can reason about from the event names alone: the limb
+  // that wins is often not the one with the later trigger date, which is
+  // exactly the confusion that produced the fifteen-day error this shape
+  // replaced.
+  if (t && t.resolve_periods && Array.isArray(t.limbs)) {
+    return { event: t.id, label: r.label || t.id, rule_id: r.rule_id,
+      citation: (r.authority && r.authority.citation) || null,
+      requires_dates: t.limbs.map((L) => L.event),
+      resolve_periods: t.resolve_periods,
+      limbs: t.limbs.map((L) => ({ event: L.event, label: L.label || null,
+        count: L.count.value, unit: L.count.unit })),
+      designated_period: dp, cap: capSpec };
+  }
   if (t && Array.isArray(t.events)) {
     return { event: t.id || t.events[0], label: r.label || t.id, rule_id: r.rule_id,
       citation: (r.authority && r.authority.citation) || null,
@@ -78,9 +94,18 @@ function triggerOption(r) {
 // human actually read and sourced.
 function validateRulePayload(p) {
   if (!p || typeof p !== 'object') return 'A rule object is required.';
-  const need = ['rule_id', 'jurisdiction', 'domain', 'trigger_event', 'count', 'computation', 'effective_from'];
+  // `count` is required for every shape EXCEPT resolve_periods, where each
+  // limb carries its own count and there is no single number for the rule.
+  // Storing a representative one would be a fabricated field the engine then
+  // ignores -- so its absence is required rather than merely permitted.
+  const isPeriodResolution = !!(p.trigger_event && typeof p.trigger_event !== 'string' && p.trigger_event.resolve_periods);
+  const need = ['rule_id', 'jurisdiction', 'domain', 'trigger_event', 'computation', 'effective_from']
+    .concat(isPeriodResolution ? [] : ['count']);
   for (const k of need) {
     if (!p[k]) return 'Missing required field: ' + k;
+  }
+  if (isPeriodResolution && p.count) {
+    return 'A resolve_periods rule must NOT carry a top-level count. Each limb has its own, and a rule-level count would be a stored number the engine never reads.';
   }
   // trigger_event is either a plain event name, or a multi-trigger spec for a
   // rule that runs from the later/earlier of several events (FRAP 4(b)(1)(A),
@@ -89,13 +114,57 @@ function validateRulePayload(p) {
   // that is wrong in the direction that loses a right.
   if (typeof p.trigger_event !== 'string') {
     const t = p.trigger_event;
-    if (!t || !Array.isArray(t.events) || t.events.length < 2) {
-      return 'trigger_event must be an event name, or a multi-trigger spec with at least two events.';
+    if (!t) return 'trigger_event must be an event name, a multi-trigger spec, or a resolve_periods spec.';
+    if (!t.id) return 'A multi-trigger or resolve_periods spec needs an id so the rule can be referred to as a whole.';
+    if (t.resolve_periods) {
+      // THE SHAPE THAT EXISTS BECAUSE later_of GOT ONE WRONG. Georgia's
+      // O.C.G.A. 9-11-36(a)(2) was first encoded as an ordinary later_of and
+      // shipped fifteen days early, because later_of picks the later trigger
+      // DATE and then applies one count -- and that rule needs 30 days on one
+      // limb and 45 on the other. Every constraint below exists to stop a row
+      // being stored that could repeat it.
+      if (t.resolve !== undefined) {
+        return 'A spec cannot declare both resolve and resolve_periods. They are different mechanisms: resolve picks between trigger DATES under one shared count, resolve_periods computes a separate period per limb and compares the results.';
+      }
+      if (t.events !== undefined) {
+        return 'A resolve_periods spec uses limbs, not events. Each limb carries its own event AND its own count; an events array would mean the limbs share a count, which is the defect this shape exists to prevent.';
+      }
+      if (t.resolve_periods !== 'later_of' && t.resolve_periods !== 'earlier_of') {
+        return 'resolve_periods must be "later_of" or "earlier_of".';
+      }
+      if (!Array.isArray(t.limbs) || t.limbs.length < 2) {
+        return 'A resolve_periods spec needs at least two limbs.';
+      }
+      const seen = new Set();
+      for (const L of t.limbs) {
+        if (!L || !L.event) return 'Every resolve_periods limb needs an event name.';
+        if (seen.has(L.event)) return 'resolve_periods limbs must name distinct events; "' + L.event + '" appears twice.';
+        seen.add(L.event);
+        if (!L.count || typeof L.count.value !== 'number' || !L.count.unit) {
+          return 'Every resolve_periods limb needs its own count { value, unit } — that is the entire point of the shape.';
+        }
+        if (['calendar_days', 'business_days', 'months', 'years'].indexOf(L.count.unit) === -1) {
+          return 'A resolve_periods limb unit must be calendar_days, business_days, months or years.';
+        }
+        if (L.count.direction && L.count.direction !== 'forward') {
+          return 'resolve_periods limbs must count forward. What "the later of two periods" means running backward has not been read from any rule text and is refused rather than guessed.';
+        }
+      }
+      // Two limbs with identical counts do not need this shape and would be
+      // better served by the simpler date-resolving one, whose audit trail is
+      // clearer. Rejected so the shapes stay meaningfully distinct.
+      const counts = new Set(t.limbs.map((L) => L.count.value + ' ' + L.count.unit));
+      if (counts.size === 1) {
+        return 'All resolve_periods limbs declare the same count (' + [...counts][0] + '). A rule whose limbs share one count is an ordinary multi-trigger rule — use resolve with events instead, which resolves between dates and reports it more clearly.';
+      }
+    } else {
+      if (!Array.isArray(t.events) || t.events.length < 2) {
+        return 'trigger_event must be an event name, or a multi-trigger spec with at least two events.';
+      }
+      if (t.resolve !== 'later_of' && t.resolve !== 'earlier_of') {
+        return 'A multi-trigger spec needs resolve: "later_of" or "earlier_of".';
+      }
     }
-    if (t.resolve !== 'later_of' && t.resolve !== 'earlier_of') {
-      return 'A multi-trigger spec needs resolve: "later_of" or "earlier_of".';
-    }
-    if (!t.id) return 'A multi-trigger spec needs an id so the rule can be referred to as a whole.';
   }
   // A retrigger clause REPLACES the trigger; it does not add days. Validated
   // separately from service_extension for exactly that reason -- the two are
@@ -111,7 +180,7 @@ function validateRulePayload(p) {
   if (!COMPUTATION_STANDARDS[p.computation]) {
     return 'computation must be one of: ' + Object.keys(COMPUTATION_STANDARDS).join(', ');
   }
-  const c = p.count;
+  const c = p.count || (isPeriodResolution ? { value: 0, unit: 'calendar_days', direction: 'forward' } : null);
   if (!c || typeof c.value !== 'number' || !c.unit || !c.direction) {
     return 'count requires { value (number), unit, direction }.';
   }
@@ -249,7 +318,7 @@ function validateRulePayload(p) {
       return 'A rule cannot declare both cap and designated_period. One takes a party-chosen day count validated against a floor; the other compares the computed result against a party-chosen date. A rule needing both has not been understood yet.';
     }
   }
-  if (c.unit === 'business_days' && !COMPUTATION_STANDARDS[p.computation].allows_business_days) {
+  if (!isPeriodResolution && c.unit === 'business_days' && !COMPUTATION_STANDARDS[p.computation].allows_business_days) {
     return COMPUTATION_STANDARDS[p.computation].label + ' counts calendar days (with its own weekend/holiday handling built into the engine), so a rule using this standard cannot specify business_days. No implemented standard currently counts in business days; if a jurisdiction genuinely does, its standard must declare that explicitly rather than relying on the unit alone.';
   }
   return null;

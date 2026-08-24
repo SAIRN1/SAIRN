@@ -104,7 +104,11 @@
       "domain": "appellate",
       "label": "Notice of appeal from an order final upon its entry (Ohio)",
       "trigger_event": "entry_of_final_order",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ohio_civ_r_6a",
       "retrigger": {
         "on_events": [
@@ -136,7 +140,11 @@
       "domain": "appellate",
       "label": "Notice of appeal where the clerk served notice late — runs from actual service (Ohio)",
       "trigger_event": "date_clerk_actually_completed_service_of_notice_of_judgment",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ohio_civ_r_6a",
       "authority": {
         "citation": "Ohio App.R. 4(A)(3)",
@@ -156,7 +164,11 @@
       "domain": "appellate",
       "label": "Notice of appeal from a Final Judgment (Indiana — untimely filing FORFEITS the right to appeal)",
       "trigger_event": "entry_of_final_judgment_noted_in_ccs",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "indiana_tr_6a",
       "authority": {
         "citation": "Ind. App.R. 9(A)(1)",
@@ -183,7 +195,11 @@
           "motion_to_correct_error_deemed_denied_under_tr_53_3"
         ]
       },
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "indiana_tr_6a",
       "authority": {
         "citation": "Ind. App.R. 9(A)(1)",
@@ -203,7 +219,11 @@
       "domain": "appellate",
       "label": "Claim of appeal from the judgment or order appealed from (Michigan — 21 days, jurisdictional)",
       "trigger_event": "entry_of_the_judgment_or_order_appealed_from",
-      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "michigan_mcr_1108",
       "authority": {
         "citation": "Mich. Ct. R. 7.204(A)(1)(a)",
@@ -223,7 +243,11 @@
       "domain": "appellate",
       "label": "Claim of appeal running from an order appointing counsel (Michigan)",
       "trigger_event": "entry_of_order_appointing_counsel",
-      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "michigan_mcr_1108",
       "authority": {
         "citation": "Mich. Ct. R. 7.204(A)(1)(b)",
@@ -243,7 +267,11 @@
       "domain": "appellate",
       "label": "Claim of appeal running from denial of a request for appointed counsel (Michigan)",
       "trigger_event": "entry_of_order_denying_request_for_appointment_of_counsel",
-      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "michigan_mcr_1108",
       "authority": {
         "citation": "Mich. Ct. R. 7.204(A)(1)(c)",
@@ -263,7 +291,11 @@
       "domain": "appellate",
       "label": "Claim of appeal running from an order deciding a post-judgment motion (Michigan)",
       "trigger_event": "entry_of_order_deciding_postjudgment_motion",
-      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "michigan_mcr_1108",
       "authority": {
         "citation": "Mich. Ct. R. 7.204(A)(1)(d)",
@@ -283,7 +315,11 @@
       "domain": "appellate",
       "label": "Notice of appeal (Pennsylvania)",
       "trigger_event": "entry_of_the_order_appealed_from",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "pa_rja_107",
       "authority": {
         "citation": "Pa.R.A.P. 903(a)",
@@ -303,7 +339,11 @@
       "domain": "appellate",
       "label": "Cross appeal after another party's notice of appeal (Pennsylvania)",
       "trigger_event": "service_of_the_first_notice_of_appeal",
-      "count": { "value": 14, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "pa_rja_107",
       "authority": {
         "citation": "Pa.R.A.P. 903(b)",
@@ -323,7 +363,11 @@
       "domain": "appellate",
       "label": "Notice of appeal from an order changing venue or venire in a criminal proceeding (Pennsylvania — 10 days)",
       "trigger_event": "entry_of_order_changing_venue_or_venire_in_a_criminal_proceeding",
-      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "pa_rja_107",
       "authority": {
         "citation": "Pa.R.A.P. 903(c)(1)",
@@ -343,7 +387,11 @@
       "domain": "appellate",
       "label": "Notice of appeal in a matter arising under the Pennsylvania Election Code (Pennsylvania — 10 days)",
       "trigger_event": "entry_of_order_in_a_matter_arising_under_the_election_code",
-      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "pa_rja_107",
       "authority": {
         "citation": "Pa.R.A.P. 903(c)(1)",
@@ -363,7 +411,11 @@
       "domain": "appellate",
       "label": "Notice of appeal in a matter arising under the Local Government Unit Debt Act (Pennsylvania — 10 days)",
       "trigger_event": "entry_of_order_in_a_matter_arising_under_the_local_government_unit_debt_act",
-      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "pa_rja_107",
       "authority": {
         "citation": "Pa.R.A.P. 903(c)(1)",
@@ -373,6 +425,46 @@
         "retrieved_at": "2026-08-23"
       },
       "effective_from": "2024-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "oh-appr-4B1-cross-appeal",
+      "jurisdiction": "oh",
+      "domain": "appellate",
+      "label": "Notice of appeal by another party after a timely first notice of appeal, the later of the ordinary period and ten days (Ohio)",
+      "trigger_event": {
+        "id": "ohio_cross_appeal_after_first_notice",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "entry_of_final_order",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after entry of the final order, the App.R. 4(A)(1) period"
+          },
+          {
+            "event": "filing_of_the_first_notice_of_appeal",
+            "count": {
+              "value": 10,
+              "unit": "calendar_days"
+            },
+            "label": "10 days after the first notice of appeal was filed"
+          }
+        ]
+      },
+      "computation": "ohio_civ_r_6a",
+      "authority": {
+        "citation": "Ohio App.R. 4(B)(1)",
+        "url": "https://www.supremecourt.ohio.gov/docs/LegalResources/Rules/appellate/AppellateProcedure.pdf",
+        "quote": "If a notice of appeal is timely filed by a party, another party may file a notice of appeal within the appeal time period otherwise prescribed by this rule or within ten days of the filing of the first notice of appeal.",
+        "note": "NOW COMPUTABLE. This rule was refused by this engine until 2026-08-24 because its two limbs carry DIFFERENT counts -- 30 days from entry, 10 days from the first notice of appeal -- and the older multi-trigger shape resolved between trigger DATES under a single shared count. resolve_periods computes each limb in full and compares the results. NOTE THE RULE SAYS \"or\", NOT \"whichever is later\". A widely repeated secondary paraphrase supplies \"whichever is later\"; those words are NOT in App.R. 4(B)(1) and are not quoted above. The later-of reading follows from the structure -- it is a permission listing two alternatives, and an appellee who may act within either has until the later expires -- but it is a reading, not the rule's language, and it is recorded as such. LIMB ONE ASSUMES App.R. 4(A)(1). Where App.R. 4(A)(2) applies (an order not final upon entry) or App.R. 4(A)(3) applies (the clerk did not complete service within the three-day Civ.R. 58(B) period, so the 30 days run from actual service instead), the first limb runs from a DIFFERENT event and this row is wrong. Ohio already carries a separate 4(A)(3) row for the ordinary appeal; no 4(B)(1) variant is seeded for it, and that is an explicit decision rather than an oversight -- which of the three 4(A) limbs governs is a case fact the engine has no field for.",
+        "retrieved_at": "2026-08-24"
+      },
+      "effective_from": "2020-07-01",
       "effective_to": null,
       "version": 1,
       "supersedes": null

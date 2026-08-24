@@ -86,11 +86,15 @@
     "  2026-08-04 -- fifteen days EARLY, on a self-executing admission, which is the",
     "  direction that forfeits the matter outright.",
     "",
-    "  It is therefore decomposed into two rows that each compute honestly, with the",
-    "  45-day one labelled a FLOOR rather than a deadline: compute both and take the",
-    "  later. Same treatment California's Rule 8.104 three limbs get, inverted from",
-    "  earliest to latest, and the same class already named as inexpressible for",
-    "  CPLR 5513(c), Tex. R. App. P. 26.1(d), Ohio App.R. 4(B)(1) and FRCP 15(a)(3).",
+    "  UPDATED 2026-08-24: it is now encoded with resolve_periods, a real engine",
+    "  capability built for this family, which computes each limb in full through the",
+    "  same base-period code the main pipeline uses and compares the RESULTS. The",
+    "  interim decomposition into a 30-day row plus a separate 45-day FLOOR row is",
+    "  gone. That interim shape was honest but it left the combining step to a human",
+    "  on the deadline most likely to forfeit a case outright, which is the wrong place",
+    "  to require manual assembly. The engine now refuses unless both limb dates are",
+    "  supplied. Georgia was the first user of the capability; Ohio App.R. 4(B)(1),",
+    "  CPLR 5513(c), Tex. R. App. P. 26.1(d) and FRCP 15(a)(3) are the same family.",
     "",
     "Reading 'may' and 'shall not be required' as the same thing would be wrong in both",
     "directions, and the two sit within three Code sections of each other.",
@@ -305,19 +309,32 @@
       "supersedes": null
     },
     {
-      "rule_id": "ga-ocga-9-11-36-a2-admission-defendant-45-day-floor",
+      "rule_id": "ga-ocga-9-11-36-a2-admission-defendant-later-of-periods",
       "jurisdiction": "ga",
       "domain": "civil-litigation",
-      "label": "Earliest a defendant can be required to answer a request for admission, 45 days after service of process (Georgia)",
-      "trigger_event": "service_of_summons_and_complaint_for_admission",
-      "count": { "value": 45, "unit": "calendar_days", "direction": "forward" },
+      "label": "Answer or objection to a request for admission by a defendant, the later of 30 days after the request and 45 days after service of process (Georgia)",
+      "trigger_event": {
+        "id": "request_for_admission_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission_on_defendant",
+            "count": { "value": 30, "unit": "calendar_days" },
+            "label": "30 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": { "value": 45, "unit": "calendar_days" },
+            "label": "45 days after service of the summons and complaint"
+          }
+        ]
+      },
       "computation": "ga_ocga_1_3_1_d3",
       "authority": {
         "citation": "O.C.G.A. 9-11-36(a)(2)",
         "url": "https://law.justia.com/codes/georgia/title-9/chapter-11/article-5/section-9-11-36/",
         "quote": "but unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 45 days after service of the summons and complaint upon him.",
-        "note": "THIS ROW IS A FLOOR, NOT A DEADLINE, AND ON ITS OWN IT IS NOT THE DATE THE ANSWER IS DUE. A defendant's actual deadline under 9-11-36(a)(2) is the LATER of two independently computed periods: 30 days after service of the request (the ga-ocga-9-11-36-a2-admission-nondefendant row) and the 45 days this row computes. THE ENGINE COMPUTES EACH ONE INDIVIDUALLY AND DOES NOT TAKE THE LATER FOR YOU. Compute both applicable rows and use the later result; relying on the 30-day row alone can produce a date EARLIER than the true deadline, and on a self-executing admission an early date is the one that forfeits the matter. WHY IT IS NOT A later_of MULTI-TRIGGER ROW, which was the first encoding and was WRONG: the engine's later_of resolves between supplied trigger DATES and then applies ONE count to the winner. This provision needs a DIFFERENT count on each limb -- 30 days on one, 45 on the other -- so 'later of' here ranges over two computed periods rather than two dates. The first attempt returned 2026-07-20 on facts where the statute requires 2026-08-04, fifteen days early. That shape is the same one already named as inexpressible for CPLR 5513(c), Tex. R. App. P. 26.1(d), Ohio App.R. 4(B)(1) and FRCP 15(a)(3); this row is the honest decomposition of it, and is the same treatment California's Rule 8.104 three limbs get, inverted from earliest to latest. THIS IS ALSO WHAT SEPARATES 9-11-36 FROM 9-11-33 AND 9-11-34 three sections earlier, whose 45-day provisions say a defendant 'MAY serve' -- permissive elections, not floors, and each a free-standing alternative row. 'Shall not be required' operates automatically. A CAVEAT THE ENGINE CANNOT SEE: the floor opens 'unless the court shortens the time', so an order shortening it removes this limb entirely.",
-        "retrieved_at": "2026-08-24"
+        "note": "THE RULE THAT FORCED A NEW ENGINE CAPABILITY, AND THE ONE THAT ALMOST SHIPPED WRONG TWICE. A defendant's deadline here is the LATER of two separately computed periods: 30 days after service of the request, and 45 days after service of the summons and complaint. FIRST ENCODING was an ordinary later_of multi-trigger, which resolves between trigger DATES and then applies ONE count -- on a request served 2026-06-01 with process served 2026-06-20 it returned 2026-07-20 where the statute requires 2026-08-04, fifteen days EARLY on a self-executing admission. Caught by hand arithmetic, not by a test. SECOND ENCODING split it into a 30-day row and a separate 45-day FLOOR row and told the reader to take the later themselves -- honest, but it left the combining step to a human on the deadline most likely to forfeit a case outright. THIS ENCODING uses resolve_periods, which computes each limb in full through the same base-period code the main pipeline uses and compares the RESULTS. The engine REFUSES unless both dates are supplied, because resolving from one limb would be too early whenever the other governs. WHY THE LIMB WITH THE LATER TRIGGER DATE IS NOT ALWAYS THE ONE THAT WINS: the counts differ, so a request served well after process can still lose to the 45-day limb. That is precisely the intuition the first encoding got wrong. NOT AN ELECTION, A FLOOR -- and that is what separates this from the 45-day provisions in 9-11-33 and 9-11-34 three sections earlier, which both say a defendant \"MAY serve\" within 45 days. Those are permissive alternatives the defendant chooses between, and each stays its own free-standing row. Here the defendant \"shall not be REQUIRED\" to answer earlier, which operates automatically. A CAVEAT THE ENGINE CANNOT SEE: the floor opens \"unless the court shortens the time\", so an order shortening it removes the 45-day limb entirely and the 30-day row governs alone. NO SERVICE EXTENSION: one limb runs from service of process, which 9-11-6(e) excludes in terms as process, and attaching an extension that could only ever apply to one limb of a two-limb comparison is not something any rule text read here authorises.", "retrieved_at": "2026-08-24"
       },
       "effective_from": "2009-07-01",
       "effective_to": null,
