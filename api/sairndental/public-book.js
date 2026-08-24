@@ -13,7 +13,7 @@
 // review).
 
 const { resolveSlug, checkAndIncrementRateLimit } = require('../_lib/dental-public');
-const { validatePhotosPayload } = require('../_lib/dental-photo-validation');
+const { validatePhotosPayload, validatePatientNotes } = require('../_lib/dental-photo-validation');
 
 function supabaseHeaders(extra) {
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -56,6 +56,17 @@ module.exports = async (req, res) => {
     const photosCheck = validatePhotosPayload(photos);
     if (!photosCheck.ok) {
       res.status(400).json({ error: { code: photosCheck.code, message: photosCheck.message } });
+      return;
+    }
+
+    // patient_notes was trimmed and stored with NO length check of any kind,
+    // on a fully unauthenticated endpoint. dnt_appointments' size constraint
+    // is derived from these limits, and a bound over an unbounded field is
+    // not a bound -- so this cap is a prerequisite of that migration, not a
+    // separate nicety. See sql/sairndental_appointments_photo_size_migration.sql.
+    const notesCheck = validatePatientNotes(patientNotes);
+    if (!notesCheck.ok) {
+      res.status(400).json({ error: { code: notesCheck.code, message: notesCheck.message } });
       return;
     }
 

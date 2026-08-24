@@ -13,6 +13,36 @@ var MAX_PHOTOS = 3;
 var MAX_PHOTOS_PAYLOAD_BYTES = Math.round(1.2 * 1024 * 1024);
 var DATA_URL_RE = /^data:image\/[a-zA-Z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/;
 
+// patient_notes was UNBOUNDED. public-book.js trims it and stores it, with no
+// length check anywhere, on a fully unauthenticated endpoint. That mattered
+// once dnt_appointments' size constraint was sized from these limits: a
+// storage bound is only sound if every field it covers is itself bounded, and
+// an uncapped free-text field made the total unbounded no matter what number
+// the constraint carried.
+//
+// Measured in BYTES of the JSON-encoded value, not characters. A 2,000-
+// character cap sounds equivalent and is not: one emoji is 4 UTF-8 bytes, and
+// a control character becomes a 6-byte \uXXXX escape inside JSON, so 2,000
+// characters can be 12,000 bytes on the wire. Counting the encoded length is
+// the only measure the database constraint actually sees.
+var MAX_PATIENT_NOTES_JSON_BYTES = 8192;
+
+function jsonByteLength(s) {
+  return Buffer.byteLength(JSON.stringify(String(s)), 'utf8');
+}
+
+function validatePatientNotes(notes) {
+  if (notes === undefined || notes === null || notes === '') return { ok: true };
+  if (typeof notes !== 'string') {
+    return { ok: false, code: 'INVALID_NOTES', message: 'patient_notes must be a string' };
+  }
+  if (jsonByteLength(notes) > MAX_PATIENT_NOTES_JSON_BYTES) {
+    return { ok: false, code: 'NOTES_TOO_LONG',
+      message: 'Notes are too long -- please shorten them and try again' };
+  }
+  return { ok: true };
+}
+
 function validatePhotosPayload(photos) {
   if (photos === undefined || photos === null) return { ok: true };
   if (!Array.isArray(photos)) {
@@ -31,7 +61,15 @@ function validatePhotosPayload(photos) {
     if (!m) {
       return { ok: false, code: 'INVALID_PHOTO', message: 'Each photo must be a well-formed data:image/...;base64,... URL' };
     }
-    totalBase64Len += m[1].length;
+    // COUNT THE WHOLE DATA URL, not just the base64 capture group.
+    //
+    // The old version summed only m[1], the payload after "base64,". The
+    // prefix was therefore uncounted -- and DATA_URL_RE permits an arbitrarily
+    // long MIME subtype ([a-zA-Z0-9.+-]+), so "data:image/<2000 chars>;base64,"
+    // passed validation and was stored. Three of those is unbounded growth in
+    // a field the storage constraint has to bound. Tightening by ~23 bytes per
+    // photo against a 1.2MB budget costs nothing real and closes the hole.
+    totalBase64Len += entry.length;
   }
   if (totalBase64Len > MAX_PHOTOS_PAYLOAD_BYTES) {
     return { ok: false, code: 'PHOTOS_TOO_LARGE', message: 'Photos are too large -- try retaking with better lighting or removing a photo' };
@@ -62,7 +100,10 @@ function hasExifSegment(dataUrlOrBase64) {
 
 module.exports = {
   validatePhotosPayload: validatePhotosPayload,
+  validatePatientNotes: validatePatientNotes,
   hasExifSegment: hasExifSegment,
+  jsonByteLength: jsonByteLength,
   MAX_PHOTOS: MAX_PHOTOS,
-  MAX_PHOTOS_PAYLOAD_BYTES: MAX_PHOTOS_PAYLOAD_BYTES
+  MAX_PHOTOS_PAYLOAD_BYTES: MAX_PHOTOS_PAYLOAD_BYTES,
+  MAX_PATIENT_NOTES_JSON_BYTES: MAX_PATIENT_NOTES_JSON_BYTES
 };

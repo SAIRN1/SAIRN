@@ -77,7 +77,13 @@ create index if not exists idx_dntcv_license on public.dnt_coverage_rules(licens
 create table if not exists public.dnt_appointments (
   id uuid primary key default gen_random_uuid(), license_hash text not null, app_id text not null default 'sairndental',
   appointment_id text not null, data jsonb not null default '{}'::jsonb, created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
-  unique (license_hash, appointment_id), constraint dntap_data_size check (octet_length(data::text) <= 65536)
+  unique (license_hash, appointment_id),
+  -- 1291059 = MAX_PHOTOS_PAYLOAD_BYTES (1258291) + 32768 for notes, fixed
+  -- fields and JSON overhead. NOT 64KiB like the other dnt_ tables: this is
+  -- the only one on the patient photo-upload path, and a real booking with
+  -- photos is ~19x over 64KiB. Derivation and the safe ALTER for existing
+  -- databases: sql/sairndental_appointments_photo_size_migration.sql
+  constraint dntap_data_size check (octet_length(data::text) <= 1291059)
 );
 create index if not exists idx_dntap_license on public.dnt_appointments(license_hash);
 

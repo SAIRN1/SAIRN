@@ -95,6 +95,39 @@ async function main() {
     assert.strictEqual(res.body.error.code, 'PHOTOS_TOO_LARGE');
   });
 
+  // patient_notes cap, added 2026-08-24. The endpoint stored this field with
+  // no length check at all -- these tests exist because the DB size
+  // constraint on dnt_appointments is derived from the limit, and a bound
+  // over an unbounded field is not a bound.
+  await test('over-long patient_notes -> 400 NOTES_TOO_LONG, never calls fetch', async () => {
+    var res = mockRes();
+    var body = Object.assign({}, VALID_BASE, { patient_notes: 'n'.repeat(9000) });
+    await handler(mockReq(body), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'NOTES_TOO_LONG');
+  });
+
+  await test('a non-string patient_notes is ignored, not stored (trim guard)', async () => {
+    // public-book.js coerces a non-string to '' before validating, so this
+    // must NOT 400 -- it must fall through to the required-field check.
+    var res = mockRes();
+    var body = Object.assign({}, VALID_BASE, { patient_notes: { evil: true }, slug: undefined });
+    await handler(mockReq(body), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.ok(!res.body.error.code || res.body.error.code !== 'NOTES_TOO_LONG',
+      'a non-string must not be reported as too long');
+  });
+
+  await test('ordinary patient_notes passes validation and reaches the network stage', async () => {
+    var res = mockRes();
+    var reached = false;
+    global.fetch = async function () { reached = true; throw new Error('stop here'); };
+    var body = Object.assign({}, VALID_BASE, { patient_notes: 'Chipped a molar on Saturday.' });
+    try { await handler(mockReq(body), res); } catch (e) { /* expected */ }
+    assert.ok(reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG',
+      'valid notes must not be rejected by the cap');
+  });
+
   global.fetch = originalFetch;
   console.log(passed + ' passed' + (process.exitCode ? ', with failures above' : ''));
 }

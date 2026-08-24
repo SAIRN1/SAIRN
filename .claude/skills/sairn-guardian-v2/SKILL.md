@@ -1,13 +1,13 @@
 ---
 name: sairn-guardian-v2
-description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 28 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
+description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 29 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
 ---
 
 # SAIRN Guardian v2
 
 Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automatic. Zero tolerance.
 
-## The 28 Checks
+## The 29 Checks
 
 ### Architecture (5)
 1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly
@@ -134,6 +134,68 @@ flagged below as a known open item)
     "placeholder" text scan) was cut after going 0-for-7 real findings;
     the phrase-list scan (`coming next build`, `TODO`, etc.) stays —
     it's 6-true/1-false and catches real fabricated-honesty gaps.
+
+### Storage-validator changes need a real load, not unit tests (1, added
+2026-08-24 — numbered 29, continuing the same disclosure pattern as 27/26
+and 28/27 rather than silently renumbering)
+
+29. **Any change that touches a storage validator, a schema constraint, or the
+    shape of what gets persisted MUST be proven with a real write against the
+    real endpoint. Unit tests that call the compute/business function directly
+    do not exercise the storage layer at all, and will pass while the write
+    path is broken.**
+
+    **The incident, 2026-08-24, SAIRNlaw.** California's service extensions
+    needed a new shape: the amount depends on the service method, so the rule
+    row carries no `add` and the standard supplies `amount(method)` instead.
+    `api/_lib/deadline-engine.js` was taught that shape. Its validator, in the
+    separate file `api/legal-deadlines.js`, was not — it still required `add`
+    unconditionally.
+
+    **84 of 84 isolation tests passed the whole time.** They call
+    `computeDeadline()` directly and never touch the storage validator, so
+    every one of them was green while all seven California civil rows were
+    unstorable. The real load found it immediately and precisely:
+
+    ```
+    400 INVALID_RULE  "service_extension.add must be a number of days."
+    ```
+
+    The tests were not weak. They were *aimed at the wrong layer* — and the
+    green bar made that invisible, which is the part worth remembering. High
+    unit coverage on one side of a two-file change reads exactly like coverage
+    of the whole change.
+
+    **The mechanical check.** When a diff touches any of these:
+    - a validator or schema-guard function (`validateRule`, `validate*Payload`,
+      anything that returns `INVALID_*` before a write),
+    - a SQL `CHECK`, `unique`, `not null` or column type,
+    - the shape of a payload that gets stored (a new/removed/renamed field, a
+      field becoming optional, a value moving from the row to a shared table),
+
+    then before the change is called done:
+    1. **Perform a real write** through the real endpoint against the real
+       store — `add_rule`, `add_holidays`, a real booking, whatever the
+       production path is. Not a mock. Not the function in isolation.
+    2. **Read it back** and confirm the stored value is what you sent.
+    3. **Try the boundary in both directions** — one payload that must be
+       accepted and one that must be rejected, and check the rejection carries
+       the right code rather than a generic 500.
+    4. If the change RELAXES a bound, confirm the previously-rejected payload
+       now lands; if it TIGHTENS one, confirm the previously-accepted payload
+       is now refused *with a clear message*, and say so in the commit, because
+       that is a behaviour change someone downstream may be relying on.
+
+    **Two files, one change, one updated is the shape to watch for.** Engine
+    and validator, client cap and DB constraint, seed file and migration. Ask
+    explicitly: *what else has to agree with this for the write to succeed?*
+    Then check that thing rather than assuming it followed.
+
+    **A derived constraint needs a drift tripwire.** Where a stored bound is
+    computed from a code constant — as `dnt_appointments`' size ceiling is
+    derived from `MAX_PHOTOS_PAYLOAD_BYTES` — add a test asserting the
+    relationship, so raising one without the other fails loudly instead of
+    surfacing later as real users losing real data.
 
 ### Cross-app identifier collisions (1, added 2026-08-03 — numbered 28, not
 27, since 27 above already exists; same known-collision-disclosure pattern
