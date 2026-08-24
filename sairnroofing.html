@@ -85,6 +85,20 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 .aimsg.a{color:var(--pd);}
 .aibar{display:flex;gap:8px;}
 .aibar input{flex:1;}
+/* Job detail tabs (Phase 2) */
+.jtabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.jtab{border:none;background:none;padding:9px 14px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.jtab.on{color:var(--pd);border-bottom-color:var(--p);}
+.jtabpanel{display:none;}
+.jtabpanel.on{display:block;}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+.qgrid .fg{margin-bottom:0;}
+.lirow{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;margin-bottom:6px;align-items:center;}
+.lirow input{padding:6px 8px;font-size:12px;}
+.certrow{display:flex;align-items:center;gap:10px;padding:6px 0;font-size:12px;border-bottom:1px solid var(--border);}
+.certrow:last-child{border-bottom:none;}
+.hentry{padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.hentry:last-child{border-bottom:none;}
 </style>
 </head>
 <body>
@@ -165,21 +179,89 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 </div>
 
 <div class="modal" id="job-modal">
-  <div class="mbox">
+  <div class="mbox" style="width:640px;">
     <div class="mtitle" id="job-modal-title">New Job</div>
-    <div class="fg"><label>Customer / Job Name</label><input id="j-name"></div>
-    <div class="fg"><label>Address</label><input id="j-address"></div>
-    <div class="fg"><label>Job Class</label>
-      <select id="j-class"><option value="residential">Residential</option><option value="commercial">Commercial</option></select>
+    <div class="jtabs">
+      <button class="jtab on" id="jtab-overview" onclick="jobTab('overview')">Overview</button>
+      <button class="jtab" id="jtab-measurement" onclick="jobTab('measurement')">Measurement</button>
+      <button class="jtab" id="jtab-estimate" onclick="jobTab('estimate')">Estimate</button>
     </div>
-    <div class="fg"><label>Status</label>
-      <select id="j-status"><option value="lead">Lead</option><option value="scheduled">Scheduled</option><option value="in_progress">In Progress</option><option value="complete">Complete</option></select>
+
+    <div class="jtabpanel on" id="jtabpanel-overview">
+      <div class="fg"><label>Customer / Job Name</label><input id="j-name"></div>
+      <div class="fg"><label>Address</label><input id="j-address"></div>
+      <div class="fg"><label>Job Class</label>
+        <select id="j-class"><option value="residential">Residential</option><option value="commercial">Commercial</option></select>
+      </div>
+      <div class="fg"><label>Status</label>
+        <select id="j-status"><option value="lead">Lead</option><option value="scheduled">Scheduled</option><option value="in_progress">In Progress</option><option value="complete">Complete</option></select>
+      </div>
+      <div class="fg" id="j-assignee-wrap"><label>Assigned To (Employee ID)</label><input id="j-assignee" placeholder="Leave blank = unassigned"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn bp" onclick="saveJobOverview()">Save</button>
+        <button class="btn bo" onclick="closeJobModal()">Cancel</button>
+      </div>
     </div>
-    <div class="fg" id="j-assignee-wrap"><label>Assigned To (Employee ID)</label><input id="j-assignee" placeholder="Leave blank = unassigned"></div>
-    <div style="display:flex;gap:8px;margin-top:8px;">
-      <button class="btn bp" onclick="saveJob()">Save</button>
-      <button class="btn bo" onclick="closeJobModal()">Cancel</button>
+
+    <div class="jtabpanel" id="jtabpanel-measurement">
+      <div id="jm-needs-save" class="note" style="display:none;">Save the job on the Overview tab first -- measurement needs a real job to attach to.</div>
+      <div id="jm-body" style="display:none;">
+        <div class="note" id="jm-current-note">No measurement on file yet.</div>
+        <div class="photobox">
+          <input type="file" accept="image/*" capture="environment" id="jm-photo-input" onchange="handlePhotoSelect(event)">
+          <div id="jm-photo-preview"></div>
+        </div>
+        <button class="btn bo" id="jm-analyze-btn" onclick="analyzeMeasurementPhoto()" disabled>Analyze Photo</button>
+        <div class="qgrid" id="jm-quantities-form"></div>
+        <button class="btn bp" id="jm-save-reading-btn" onclick="saveMeasurementReading()" style="display:none;">Save Reading</button>
+        <div class="ch" style="margin-top:16px;padding-left:0;border-top:1px solid var(--border);padding-top:14px;"><div class="ct">Field Correction</div></div>
+        <div class="psub" style="margin-bottom:10px;">A foreman or crew member on this job can correct any value below and submit it -- the takeoff updates directly, no separate note.</div>
+        <div class="qgrid" id="jm-correction-form"></div>
+        <div class="fg"><label>Reason for correction</label><input id="jm-correction-reason" placeholder="e.g. AI missed a dormer valley"></div>
+        <button class="btn bp" onclick="submitMeasurementCorrection()">Submit Correction</button>
+        <div class="ch" style="margin-top:16px;padding-left:0;border-top:1px solid var(--border);padding-top:14px;"><div class="ct">History</div></div>
+        <div id="jm-history"></div>
+      </div>
     </div>
+
+    <div class="jtabpanel" id="jtabpanel-estimate">
+      <div id="je-needs-save" class="note" style="display:none;">Save the job on the Overview tab first -- an estimate needs a real job to attach to.</div>
+      <div id="je-body" style="display:none;">
+        <div id="je-readonly-note" class="note" style="display:none;"></div>
+        <div class="fg"><label>Material</label>
+          <select id="je-material">
+            <optgroup label="Standard">
+              <option value="asphalt">Asphalt Shingle</option>
+              <option value="metal">Metal</option>
+              <option value="slate">Slate</option>
+              <option value="copper">Copper</option>
+              <option value="wood_shake">Wood Shake</option>
+            </optgroup>
+            <optgroup label="Commercial-Flat">
+              <option value="tpo">TPO</option>
+              <option value="epdm">EPDM</option>
+              <option value="modified_bitumen">Modified Bitumen</option>
+            </optgroup>
+            <optgroup label="Solar Shingles">
+              <option value="gaf_timberline_solar">GAF Timberline Solar</option>
+              <option value="tesla_solar_roof">Tesla Solar Roof</option>
+              <option value="certainteed_solarshingle">CertainTeed SolarShingle</option>
+            </optgroup>
+          </select>
+        </div>
+        <div id="je-tesla-note" class="note" style="display:none;background:#FEF3C7;border-color:#FDE68A;color:#78350F;"></div>
+        <div id="je-line-items"></div>
+        <button class="btn bo bs" onclick="addEstimateLine()">+ Line Item</button>
+        <div class="fg" style="margin-top:12px;"><label>Status</label>
+          <select id="je-status"><option value="draft">Draft</option><option value="reviewed">Reviewed</option><option value="sent">Sent</option></select>
+        </div>
+        <div class="srow"><span class="slbl">Total</span><span class="sval" id="je-total">$0</span></div>
+        <button class="btn bp" onclick="saveEstimate()">Save Estimate</button>
+        <div id="je-certs" style="margin-top:20px;"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:10px;"><button class="btn bo" onclick="closeJobModal()">Close</button></div>
   </div>
 </div>
 
@@ -325,9 +407,10 @@ function rfRenderScopeNote(){
 }
 
 function rfLoadJobs(){
-  rfData('read','rf_jobs',{}).then(function(data){
+  return rfData('read','rf_jobs',{}).then(function(data){
     currentJobs=data||[];
     rJobs();
+    return currentJobs;
   });
 }
 
@@ -345,25 +428,96 @@ function rJobs(){
   el.innerHTML='<table><thead><tr><th>Job</th><th>Address</th><th>Class</th><th>Status</th><th>Assigned</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
+var currentEditingJob=null;
+var pendingPhotoBase64=null, pendingPhotoMediaType=null, pendingAiRawText='';
+
+// rfDataRaw mirrors rfAuth's {ok,status,data,msg,code} shape rather than rfData's
+// null-on-failure -- Phase 2 needs real error text to reach the user (the Tesla
+// certification gate is meaningless if its refusal message gets swallowed into a
+// generic "Save failed").
+function rfDataRaw(action,resource,payload){
+  var lic=rfLicenseKey();
+  if(!lic||!rfSession||!rfSession.token)return Promise.resolve({ok:false,msg:'Not signed in'});
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':rfSession.token};
+  return fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:(d&&d.data),msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+function rfBaseFieldsPayload(){
+  var j=currentEditingJob;
+  return {id:j.id, name:j.name||'', address:j.address||'', job_class:j.job_class||'residential', status:j.status||'lead', assigned_employee_id:j.assigned_employee_id||null};
+}
+
+var QUANTITY_FIELDS=[
+  {key:'squares',label:'Squares'},{key:'ridge_lf',label:'Ridge LF'},{key:'hip_lf',label:'Hip LF'},
+  {key:'valley_lf',label:'Valley LF'},{key:'eave_lf',label:'Eave LF'},{key:'rake_lf',label:'Rake LF'},
+  {key:'penetrations',label:'Penetrations'},{key:'pitch_class',label:'Pitch Class'},
+  {key:'stories',label:'Stories'},{key:'waste_factor_pct',label:'Waste Factor %'}
+];
+function renderQuantityForm(containerId,values){
+  values=values||{};
+  $(containerId).innerHTML=QUANTITY_FIELDS.map(function(f){
+    var v=values[f.key]!==undefined&&values[f.key]!==null?values[f.key]:'';
+    return '<div class="fg"><label>'+f.label+'</label><input id="q-'+containerId+'-'+f.key+'" value="'+String(v).replace(/"/g,'&quot;')+'"></div>';
+  }).join('');
+}
+function getQuantityFormValues(containerId){
+  var out={};
+  QUANTITY_FIELDS.forEach(function(f){
+    var el=$('q-'+containerId+'-'+f.key);
+    out[f.key]=el?el.value.trim():'';
+  });
+  return out;
+}
+
+function jobTab(name){
+  ['overview','measurement','estimate'].forEach(function(t){
+    $('jtab-'+t).classList.toggle('on',t===name);
+    $('jtabpanel-'+t).classList.toggle('on',t===name);
+  });
+}
+
 function openJobModal(id){
   editingJobId=id||null;
-  var j=id?currentJobs.filter(function(x){return x.id===id;})[0]:null;
+  currentEditingJob=id?(currentJobs.filter(function(x){return x.id===id;})[0]||null):null;
+  var j=currentEditingJob;
   $('job-modal-title').textContent=j?'Edit Job':'New Job';
   $('j-name').value=j?(j.name||''):'';
   $('j-address').value=j?(j.address||''):'';
   $('j-class').value=j?(j.job_class||'residential'):'residential';
   $('j-status').value=j?(j.status||'lead'):'lead';
   $('j-assignee').value=j?(j.assigned_employee_id||''):'';
+  jobTab('overview');
+  pendingPhotoBase64=null;pendingPhotoMediaType=null;pendingAiRawText='';
+  $('jm-photo-preview').innerHTML='';$('jm-analyze-btn').disabled=true;$('jm-save-reading-btn').style.display='none';$('jm-quantities-form').innerHTML='';
+  if(j){
+    $('jm-needs-save').style.display='none';$('jm-body').style.display='block';
+    $('je-needs-save').style.display='none';$('je-body').style.display='block';
+    renderMeasurementTab();renderEstimateTab();
+  } else {
+    $('jm-needs-save').style.display='block';$('jm-body').style.display='none';
+    $('je-needs-save').style.display='block';$('je-body').style.display='none';
+  }
   $('job-modal').classList.add('on');
 }
 function closeJobModal(){$('job-modal').classList.remove('on');}
 
-function saveJob(){
+function refreshCurrentEditingJob(){
+  return rfLoadJobs().then(function(jobs){
+    currentEditingJob=jobs.filter(function(x){return x.id===editingJobId;})[0]||null;
+    if(currentEditingJob){renderMeasurementTab();renderEstimateTab();}
+  });
+}
+
+function saveJobOverview(){
   var name=($('j-name').value||'').trim();
   if(!name){toast('Job name is required');return;}
   var id=editingJobId||('RF-'+Date.now());
   var role=rfSession&&rfSession.role;
-  var existing=editingJobId?currentJobs.filter(function(x){return x.id===editingJobId;})[0]:null;
+  var existing=currentEditingJob;
   // FIXED (2026-08-24, found live during verification): the server never
   // auto-fills assigned_employee_id -- api/sd-data.js's rf_jobs gate only
   // CHECKS the value the client sends against session.employee_id, the same
@@ -387,11 +541,210 @@ function saveJob(){
     job_class:$('j-class').value, status:$('j-status').value,
     assigned_employee_id:assignedTo||null
   };
-  rfData('write','rf_jobs',payload).then(function(d){
-    if(!d){toast('Save failed');return;}
-    closeJobModal();
+  rfDataRaw('write','rf_jobs',payload).then(function(r){
+    if(!r.ok){toast(r.msg||'Save failed');return;}
     toast('Job saved');
-    rfLoadJobs();
+    editingJobId=id;
+    refreshCurrentEditingJob().then(function(){
+      $('jm-needs-save').style.display='none';$('jm-body').style.display='block';
+      $('je-needs-save').style.display='none';$('je-body').style.display='block';
+      $('job-modal-title').textContent='Edit Job';
+    });
+  });
+}
+
+// ── Measurement tab (Phase 2, Aufmaß-style field correction) ──────────────
+function renderMeasurementTab(){
+  var j=currentEditingJob;
+  var history=(j.measurement&&Array.isArray(j.measurement.correction_history))?j.measurement.correction_history:[];
+  var current=history.length?history[history.length-1]:null;
+  $('jm-current-note').textContent=current
+    ?('Current reading: '+QUANTITY_FIELDS.map(function(f){return f.label+' '+(current.quantities[f.key]!==undefined&&current.quantities[f.key]!==''?current.quantities[f.key]:'--');}).join(' · ')+' (by '+current.changed_by+')')
+    :'No measurement on file yet.';
+  renderQuantityForm('jm-correction-form',current?current.quantities:{});
+  $('jm-history').innerHTML=history.length?history.slice().reverse().map(function(h){
+    return '<div class="hentry"><b>'+(h.source==='ai'?'AI read':'Correction')+'</b> by '+h.changed_by+' — '+(h.reason||'(no reason given)')+'<br>'+
+      QUANTITY_FIELDS.map(function(f){return f.label+': '+(h.quantities[f.key]!==undefined&&h.quantities[f.key]!==''?h.quantities[f.key]:'--');}).join(', ')+'</div>';
+  }).join('') : '<div class="empty">No history yet.</div>';
+}
+
+function handlePhotoSelect(event){
+  var file=event.target.files&&event.target.files[0];
+  if(!file)return;
+  pendingPhotoMediaType=file.type||'image/jpeg';
+  var reader=new FileReader();
+  reader.onload=function(){
+    var result=reader.result||'';
+    pendingPhotoBase64=result.split(',')[1]||'';
+    $('jm-photo-preview').innerHTML='<img src="'+result+'">';
+    $('jm-analyze-btn').disabled=false;
+  };
+  reader.readAsDataURL(file);
+}
+
+// Single Claude inference, never a multi-angle scan/rotate pipeline -- per the
+// scope doc §1.3 design-around and sairn-app-scaffold's proven free-text +
+// targeted-extraction baseline (StoneDesk's Field Sketch Quote), not a fragile
+// full-JSON contract. The estimator/foreman reviews and edits every field
+// below before anything is saved -- this call never writes anything itself.
+function analyzeMeasurementPhoto(){
+  if(!pendingPhotoBase64)return;
+  $('jm-analyze-btn').disabled=true;$('jm-analyze-btn').textContent='Analyzing…';
+  var sysPrompt='You are SAIRNroofing\'s measurement assistant. Analyze the attached roof photo and produce a single quantities-schedule estimate. Respond with ONLY these lines, in exactly this format, nothing else:\n'+
+    QUANTITY_FIELDS.map(function(f){return f.label+': <value>';}).join('\n')+
+    '\nIf a value cannot be determined from the photo, write "unknown" for that line rather than guessing. This is a draft for the estimator to review and correct on site, not a final measurement.';
+  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sysPrompt,messages:[{role:'user',content:[
+      {type:'image',source:{type:'base64',media_type:pendingPhotoMediaType,data:pendingPhotoBase64}},
+      {type:'text',text:'Analyze this roof photo.'}
+    ]}]})})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var text=(data&&data.content&&data.content[0]&&data.content[0].text)||'';
+      pendingAiRawText=text;
+      var parsed={};
+      QUANTITY_FIELDS.forEach(function(f){
+        var re=new RegExp(f.label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*:\\s*(.+)','i');
+        var m=text.match(re);
+        var val=m?m[1].trim():'';
+        parsed[f.key]=/^unknown$/i.test(val)?'':val;
+      });
+      renderQuantityForm('jm-quantities-form',parsed);
+      $('jm-save-reading-btn').style.display='inline-block';
+      $('jm-analyze-btn').disabled=false;$('jm-analyze-btn').textContent='Analyze Photo';
+      toast('Photo analyzed — review the values before saving');
+    })
+    .catch(function(e){
+      toast('AI analysis failed — try again');
+      $('jm-analyze-btn').disabled=false;$('jm-analyze-btn').textContent='Analyze Photo';
+    });
+}
+
+function saveMeasurementReading(){
+  var values=getQuantityFormValues('jm-quantities-form');
+  var base=rfBaseFieldsPayload();
+  rfDataRaw('write','rf_photos',{job_id:currentEditingJob.id,photo_base64:pendingPhotoBase64,ai_analysis:pendingAiRawText,parsed_quantities:values}).then(function(pr){
+    if(!pr.ok){toast(pr.msg||'Photo save failed');return;}
+    return rfDataRaw('write','rf_jobs',Object.assign({},base,{measurement_correction:{quantities:values,reason:'Initial AI photo read, reviewed before saving',source:'ai'}})).then(function(jr){
+      if(!jr.ok){toast(jr.msg||'Measurement save failed');return;}
+      toast('Measurement saved');
+      pendingPhotoBase64=null;$('jm-photo-preview').innerHTML='';$('jm-save-reading-btn').style.display='none';
+      refreshCurrentEditingJob();
+    });
+  });
+}
+
+function submitMeasurementCorrection(){
+  var values=getQuantityFormValues('jm-correction-form');
+  var reason=($('jm-correction-reason').value||'').trim();
+  if(!reason){toast('A reason is required for a correction');return;}
+  var base=rfBaseFieldsPayload();
+  rfDataRaw('write','rf_jobs',Object.assign({},base,{measurement_correction:{quantities:values,reason:reason,source:'manual'}})).then(function(r){
+    if(!r.ok){toast(r.msg||'Correction failed');return;}
+    toast('Correction saved');
+    $('jm-correction-reason').value='';
+    refreshCurrentEditingJob();
+  });
+}
+
+// ── Estimate tab (Phase 2) ─────────────────────────────────────────────────
+var RF_MATERIALS_LIST=['asphalt','metal','slate','copper','wood_shake','tpo','epdm','modified_bitumen','gaf_timberline_solar','tesla_solar_roof','certainteed_solarshingle'];
+var estimateLineCounter=0;
+function renderEstimateTab(){
+  var j=currentEditingJob;
+  var role=rfSession&&rfSession.role;
+  var canEdit=!!(MANAGEMENT_ROLES[role]||BROAD_READ_ROLES[role]);
+  var est=j.estimate||{material:'asphalt',line_items:[],status:'draft'};
+  $('je-material').value=RF_MATERIALS_LIST.indexOf(est.material)!==-1?est.material:'asphalt';
+  $('je-material').disabled=!canEdit;
+  $('je-status').value=est.status||'draft';
+  $('je-status').disabled=!canEdit;
+  $('je-readonly-note').style.display=canEdit?'none':'block';
+  $('je-readonly-note').textContent='You can view this estimate. Only management or an estimator can edit it.';
+  $('je-line-items').innerHTML='';
+  estimateLineCounter=0;
+  (est.line_items&&est.line_items.length?est.line_items:[{label:'',qty:'',unit:'',unit_cost:''}]).forEach(function(li){addEstimateLine(li,canEdit);});
+  recalcEstimateTotal();
+  $('je-material').onchange=function(){renderTeslaNote();};
+  renderTeslaNote();
+  var addBtn=document.querySelector('button[onclick="addEstimateLine()"]');
+  if(addBtn)addBtn.style.display=canEdit?'inline-block':'none';
+  var saveBtn=document.querySelector('#jtabpanel-estimate button[onclick="saveEstimate()"]');
+  if(saveBtn)saveBtn.style.display=canEdit?'inline-block':'none';
+  if(MANAGEMENT_ROLES[role])renderCertPanel();else $('je-certs').innerHTML='';
+}
+function renderTeslaNote(){
+  var note=$('je-tesla-note');
+  if($('je-material').value==='tesla_solar_roof'){
+    note.style.display='block';
+    note.textContent='Tesla Solar Roof requires the job\'s assigned installer to be Tesla Certified — this is checked when you save.'+(currentEditingJob&&!currentEditingJob.assigned_employee_id?' This job has no assigned installer yet.':'');
+  } else {
+    note.style.display='none';
+  }
+}
+function addEstimateLine(li,canEdit){
+  li=li||{label:'',qty:'',unit:'',unit_cost:''};
+  if(canEdit===undefined)canEdit=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]||BROAD_READ_ROLES[rfSession&&rfSession.role]);
+  var idx=estimateLineCounter++;
+  var dis=canEdit?'':'disabled';
+  var row=document.createElement('div');
+  row.className='lirow';row.id='li-row-'+idx;
+  row.innerHTML='<input id="li-label-'+idx+'" placeholder="Line item" value="'+String(li.label||'').replace(/"/g,'&quot;')+'" '+dis+'>'+
+    '<input id="li-qty-'+idx+'" placeholder="Qty" value="'+(li.qty||'')+'" '+dis+'>'+
+    '<input id="li-unit-'+idx+'" placeholder="Unit" value="'+String(li.unit||'').replace(/"/g,'&quot;')+'" '+dis+'>'+
+    '<input id="li-cost-'+idx+'" placeholder="Unit $" value="'+(li.unit_cost||'')+'" '+dis+'>'+
+    (canEdit?'<button class="btn bo bs" onclick="removeEstimateLine('+idx+')">×</button>':'<span></span>');
+  $('je-line-items').appendChild(row);
+  row.querySelectorAll('input').forEach(function(el){el.oninput=recalcEstimateTotal;});
+}
+function removeEstimateLine(idx){
+  var row=$('li-row-'+idx);
+  if(row)row.remove();
+  recalcEstimateTotal();
+}
+function readEstimateLineItems(){
+  var items=[];
+  document.querySelectorAll('#je-line-items .lirow').forEach(function(row){
+    var idx=row.id.replace('li-row-','');
+    var label=($('li-label-'+idx)&&$('li-label-'+idx).value||'').trim();
+    var qty=Number($('li-qty-'+idx)&&$('li-qty-'+idx).value)||0;
+    var unit=($('li-unit-'+idx)&&$('li-unit-'+idx).value||'').trim();
+    var unitCost=Number($('li-cost-'+idx)&&$('li-cost-'+idx).value)||0;
+    if(label||qty||unitCost)items.push({label:label,qty:qty,unit:unit,unit_cost:unitCost});
+  });
+  return items;
+}
+function recalcEstimateTotal(){
+  var total=readEstimateLineItems().reduce(function(sum,li){return sum+(li.qty*li.unit_cost);},0);
+  $('je-total').textContent='$'+total.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function saveEstimate(){
+  var base=rfBaseFieldsPayload();
+  var estimate={material:$('je-material').value,line_items:readEstimateLineItems(),status:$('je-status').value};
+  rfDataRaw('write','rf_jobs',Object.assign({},base,{estimate:estimate})).then(function(r){
+    if(!r.ok){toast(r.msg||'Estimate save failed');return;}
+    toast('Estimate saved');
+    refreshCurrentEditingJob();
+  });
+}
+function renderCertPanel(){
+  var wrap=$('je-certs');
+  wrap.innerHTML='<div class="ch" style="padding-left:0;border-top:1px solid var(--border);padding-top:14px;"><div class="ct">Tesla Certified Installers</div></div><div id="je-certs-list" class="empty">Loading…</div>';
+  rfAuth('roster',{},true).then(function(r){
+    var list=$('je-certs-list');
+    if(!list)return;
+    if(!r.ok){list.textContent='Could not load roster.';return;}
+    var emps=(r.data&&r.data.employees)||[];
+    if(!emps.length){list.textContent='No employees yet.';return;}
+    list.innerHTML=emps.map(function(e){
+      var checked=(e.certifications&&e.certifications.tesla_certified)?'checked':'';
+      return '<div class="certrow"><input type="checkbox" '+checked+' onchange="toggleTeslaCert(\''+e.employee_id+'\',this.checked)"> '+e.employee_id+' ('+e.role+')'+(e.active?'':' — inactive')+'</div>';
+    }).join('');
+  });
+}
+function toggleTeslaCert(employeeId,checked){
+  rfAuth('set_certifications',{employee_id:employeeId,certifications:{tesla_certified:checked}},true).then(function(r){
+    toast(r.ok?'Certification updated':(r.msg||'Update failed'));
   });
 }
 

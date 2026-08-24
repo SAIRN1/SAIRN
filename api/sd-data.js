@@ -2470,6 +2470,8 @@ module.exports = async (req, res) => {
     // prior app's assignment gate.
     const RF_MANAGEMENT_ROLES = rfAuth.MANAGEMENT_ROLES;
     const RF_BROAD_READ_ROLES = rfAuth.BROAD_READ_ROLES;
+    // Read by the Tesla Solar Roof capability check in the write branch below.
+    const RF_EMPLOYEE_TABLE = 'sairnroofing_employee_auth';
     if (resource === 'rf_jobs' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -2491,7 +2493,7 @@ module.exports = async (req, res) => {
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'rf_jobs payload.id is required' } }); return; }
       const isManagement = !!RF_MANAGEMENT_ROLES[session.role];
       const isBroadRead = !!RF_BROAD_READ_ROLES[session.role];
-      const existingR = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
+      const existingR = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Job tracking is not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } });
         return;
@@ -2499,6 +2501,7 @@ module.exports = async (req, res) => {
       const existingRows = await existingR.json();
       if (!existingR.ok) return upstream(res, existingRows);
       const existingRow = Array.isArray(existingRows) && existingRows[0];
+      const existingJobData = existingRow ? (existingRow.data || {}) : {};
       const requestedAssignee = payload.assigned_employee_id !== undefined
         ? (payload.assigned_employee_id || null)
         : (existingRow ? existingRow.assigned_employee_id : null);
@@ -2525,11 +2528,111 @@ module.exports = async (req, res) => {
           return;
         }
       }
+      // ── Phase 2: measurement (Aufmaß-style field correction) ────────────────────────────
+      // `data` is a whole-document replace on every write (Postgres upsert, not a JSON merge),
+      // same as every other resource on this endpoint -- so measurement and estimate, which are
+      // edited from separate tabs, must be explicitly carried forward when a call doesn't touch
+      // them, or an ordinary "edit the job name" save from the Overview tab would silently wipe
+      // out a completed measurement or estimate. The base fields (name/address/status) stay on
+      // the existing convention of "the client always sends the full record" -- this app has no
+      // other case of two independent sub-editors sharing one document.
+      //
+      // DELIBERATELY SIMPLER than alf_clients' care_level_history: that resource requires the
+      // client to resend the entire history array so the server can diff it for a preserved
+      // prefix. Here the client sends exactly ONE new entry (measurement_correction) and the
+      // server appends it -- less for the client to get wrong, and still genuinely append-only
+      // because the server does the appending, not the client. No separate derived "current"
+      // field either: the last entry in correction_history IS the current reading, so there is
+      // nothing that can drift out of sync with it.
+      //
+      // No role restriction beyond the assignment checks already run above -- the whole point of
+      // the Aufmaß pattern (scope doc sec.3) is that a foreman's field correction on their own
+      // assigned job updates the takeoff directly, the same access they already have to edit
+      // anything else on that job.
+      let measurement = existingJobData.measurement || null;
+      if (payload.measurement_correction !== undefined) {
+        const entry = payload.measurement_correction;
+        if (!entry || typeof entry !== 'object' || !entry.quantities || typeof entry.quantities !== 'object') {
+          res.status(400).json({ error: { message: 'measurement_correction.quantities is required' } });
+          return;
+        }
+        const priorHistory = (measurement && Array.isArray(measurement.correction_history)) ? measurement.correction_history : [];
+        const stampedEntry = {
+          quantities: entry.quantities,
+          reason: String(entry.reason || '').slice(0, 500),
+          source: entry.source === 'ai' ? 'ai' : 'manual',
+          changed_by: session.employee_id,
+          changed_at: nowISO()
+        };
+        measurement = { correction_history: priorHistory.concat([stampedEntry]) };
+      }
+
+      // ── Phase 2: estimate (materials + pricing) ─────────────────────────────────────────
+      // Pricing is estimator/management work per the confirmed role scope -- narrow tier
+      // (foreman/crew) can submit a measurement correction on their own job above, but cannot
+      // price one. Unit costs are always caller-supplied and never defaulted here: inventing a
+      // per-square-foot number would be exactly the fabricated-figure class Guardian checks for.
+      // Line totals and the subtotal ARE recomputed server-side from qty*unit_cost rather than
+      // trusted from the client, so a client-side arithmetic bug can't silently save a wrong total.
+      const RF_MATERIALS = {
+        asphalt: true, metal: true, slate: true, copper: true, wood_shake: true,
+        tpo: true, epdm: true, modified_bitumen: true,
+        gaf_timberline_solar: true, tesla_solar_roof: true, certainteed_solarshingle: true
+      };
+      let estimate = existingJobData.estimate || null;
+      if (payload.estimate !== undefined) {
+        if (!isManagement && !isBroadRead) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management or an estimator can price a job' } });
+          return;
+        }
+        const est = payload.estimate;
+        if (!est || typeof est !== 'object' || !RF_MATERIALS[est.material]) {
+          res.status(400).json({ error: { message: 'estimate.material must be one of: ' + Object.keys(RF_MATERIALS).join(', ') } });
+          return;
+        }
+        // Tesla Solar Roof capability gate (scope doc sec.3): "installable only by Tesla Energy
+        // crews or Tesla Certified Installers -- a capability gate, not merely a price line."
+        // Checked against the job's assigned installer, not the caller pricing the job -- an
+        // estimator quoting the job is very likely not the person who will be on the roof.
+        if (est.material === 'tesla_solar_roof') {
+          if (!requestedAssignee) {
+            res.status(400).json({ error: { message: 'Tesla Solar Roof requires an assigned installer before it can be estimated -- assign a foreman or crew member to this job first.' } });
+            return;
+          }
+          const installerR = await fetch(rest(RF_EMPLOYEE_TABLE + '?license_hash=eq.' + enc(licHash) + '&employee_id=eq.' + enc(requestedAssignee) + '&select=certifications'), { headers });
+          const installerRows = await installerR.json();
+          if (!installerR.ok) return upstream(res, installerRows);
+          const installerCerts = (Array.isArray(installerRows) && installerRows[0] && installerRows[0].certifications) || {};
+          if (installerCerts.tesla_certified !== true) {
+            res.status(400).json({ error: { code: 'NOT_TESLA_CERTIFIED', message: 'The assigned installer (' + requestedAssignee + ') is not Tesla Certified. Certify them (Owner-only) or choose a different material.' } });
+            return;
+          }
+        }
+        const lineItems = Array.isArray(est.line_items) ? est.line_items : [];
+        let subtotal = 0;
+        const computedItems = lineItems.map((item) => {
+          const qty = Number(item && item.qty) || 0;
+          const unitCost = Number(item && item.unit_cost) || 0;
+          const total = qty * unitCost;
+          subtotal += total;
+          return { label: String((item && item.label) || '').slice(0, 200), qty, unit: String((item && item.unit) || '').slice(0, 40), unit_cost: unitCost, total };
+        });
+        const status = ['draft', 'reviewed', 'sent'].indexOf(est.status) !== -1 ? est.status : 'draft';
+        estimate = {
+          material: est.material, line_items: computedItems, subtotal, total: subtotal,
+          status, updated_by: session.employee_id, updated_at: nowISO()
+        };
+      }
+
       const jobClass = payload.job_class === 'commercial' ? 'commercial' : 'residential';
       const jobData = Object.assign({}, payload);
       delete jobData.id;
       delete jobData.job_class;
       delete jobData.assigned_employee_id;
+      delete jobData.measurement_correction;
+      delete jobData.estimate;
+      jobData.measurement = measurement;
+      jobData.estimate = estimate;
       const r = await fetch(rest('rf_jobs?on_conflict=license_hash,job_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -2541,6 +2644,67 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, job_class: jobClass, assigned_employee_id: requestedAssignee || '' }, jobData) });
+      return;
+    }
+
+    // ── SAIRNROOFING: rf_photos measurement photo capture (2026-08-24, Phase 2) ─────────────
+    // Same tier gate as rf_jobs, keyed off the target job's own assigned_employee_id rather than
+    // re-deriving a separate rule -- a photo is visible to whoever can already see the job it
+    // belongs to. captured_by is ALWAYS the caller's own session.employee_id, never trusted from
+    // the client, same discipline as sd_progress_photos' captured_by_id.
+    if ((resource === 'rf_photos') && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const jobId = String((payload && payload.job_id) || '').trim();
+      if (!jobId) { res.status(400).json({ error: { message: 'rf_photos payload.job_id is required' } }); return; }
+      const jobR = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(jobId) + '&select=assigned_employee_id'), { headers });
+      if (jobR.status === 404 || jobR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Job tracking is not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } });
+        return;
+      }
+      const jobRows = await jobR.json();
+      if (!jobR.ok) return upstream(res, jobRows);
+      const job = Array.isArray(jobRows) && jobRows[0];
+      if (!job) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such job on this license' } }); return; }
+      const canSeeJob = RF_BROAD_READ_ROLES[session.role] || job.assigned_employee_id === session.employee_id;
+      if (!canSeeJob) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This job is not assigned to you' } }); return; }
+
+      if (action === 'read') {
+        const r = await fetch(rest('rf_photos?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(jobId) + '&select=id,captured_by,data,created_at&order=created_at.asc'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const data = (rows || []).map((p) => Object.assign({ id: p.id, captured_by: p.captured_by, created_at: p.created_at }, p.data));
+        res.status(200).json({ ok: true, data, provisioned: true });
+        return;
+      }
+
+      // write
+      if (!payload.photo_base64 || typeof payload.photo_base64 !== 'string') {
+        res.status(400).json({ error: { message: 'rf_photos payload.photo_base64 is required' } });
+        return;
+      }
+      const photoData = {
+        photo_base64: payload.photo_base64,
+        ai_analysis: String(payload.ai_analysis || '').slice(0, 20000),
+        parsed_quantities: (payload.parsed_quantities && typeof payload.parsed_quantities === 'object') ? payload.parsed_quantities : null
+      };
+      const r = await fetch(rest('rf_photos'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', job_id: jobId,
+          captured_by: session.employee_id, data: photoData
+        })
+      });
+      const rows = await r.json();
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Photo capture is not set up yet — run sql/sairnroofing_photos_schema.sql in Supabase first.' } });
+        return;
+      }
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: Object.assign({ id: saved && saved.id, captured_by: session.employee_id }, photoData) });
       return;
     }
 

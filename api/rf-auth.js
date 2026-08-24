@@ -81,7 +81,14 @@ const TABLE = 'sairnroofing_employee_auth';
 const RF_ROLES = ROLES_BY_APP[APP];
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_MINUTES = 15;
-const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'roster', 'set_active'];
+const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'roster', 'set_active', 'set_certifications'];
+
+// Phase 2, Tesla Solar Roof capability gate (scope doc sec.3). Deliberately
+// one key today -- see sql/sairnroofing_employee_auth_certifications_
+// migration.sql's header for why the column is a small jsonb bag rather
+// than a dedicated boolean, and why the other manufacturer programmes
+// named in the scope doc are NOT being added here.
+const KNOWN_CERTIFICATION_KEYS = { tesla_certified: true };
 
 // See the tier note in the header. Exported shape kept deliberately simple so a
 // later split of 'estimator' is a one-line change here, not a gate rewrite.
@@ -319,8 +326,10 @@ module.exports = async (req, res) => {
       // INCLUDES INACTIVE ROWS on purpose: set_active can reactivate, and an
       // owner has to be able to see a deactivated person in order to turn them
       // back on. Never returns pin_hash/pin_salt/failed_attempts/locked_until.
+      // certifications included (2026-08-24, Phase 2) so the Estimate tab can
+      // show which employees are Tesla-certified when assigning an installer.
       const r = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) +
-        '&select=employee_id,display_name,role,active&order=employee_id.asc'), { headers });
+        '&select=employee_id,display_name,role,active,certifications&order=employee_id.asc'), { headers });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const callerRow = (rows || []).filter(function (x) { return x.employee_id === caller.employee_id; })[0];
@@ -329,6 +338,51 @@ module.exports = async (req, res) => {
         return;
       }
       res.status(200).json({ ok: true, employees: rows || [] });
+      return;
+    }
+
+    // ── set_certifications: Tesla Solar Roof capability gate (2026-08-24, Phase 2) ──
+    // Owner-only, same provisioning gate as setup/set_active -- deliberately NOT
+    // folded into setup, which requires a pin and full role and would force a
+    // credential change just to flip a certification flag. Only known keys are
+    // ever accepted, so this can never become a free-form data store for
+    // arbitrary client-supplied jsonb.
+    if (action === 'set_certifications') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      if (!caller || PROVISIONING_ROLES.indexOf(caller.role) === -1) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner can set employee certifications' } });
+        return;
+      }
+      const callerRow = await loadEmployee(caller.employee_id);
+      if (!callerRow) {
+        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
+        return;
+      }
+      const target_id = String(body.employee_id || '').trim();
+      if (!target_id) { res.status(400).json({ error: { message: 'employee_id is required' } }); return; }
+      const incoming = body.certifications;
+      if (!incoming || typeof incoming !== 'object' || Array.isArray(incoming)) {
+        res.status(400).json({ error: { message: 'certifications must be an object' } });
+        return;
+      }
+      const cleaned = {};
+      for (const key of Object.keys(incoming)) {
+        if (!KNOWN_CERTIFICATION_KEYS[key]) {
+          res.status(400).json({ error: { message: 'Unknown certification key: ' + key } });
+          return;
+        }
+        if (typeof incoming[key] !== 'boolean') {
+          res.status(400).json({ error: { message: 'certifications.' + key + ' must be true or false' } });
+          return;
+        }
+        cleaned[key] = incoming[key];
+      }
+      const existing = await loadEmployee(target_id);
+      if (!existing) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such employee on this license' } }); return; }
+      const patchR = await patchEmployee(target_id, { certifications: cleaned });
+      const patched = await patchR.json();
+      if (!patchR.ok) return upstream(res, patched);
+      res.status(200).json({ ok: true, employee_id: target_id, certifications: cleaned });
       return;
     }
 

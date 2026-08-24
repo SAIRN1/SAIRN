@@ -13,5 +13,9 @@ module.exports = {
   // privacy gate from day one, three-tier (management/broad-read/narrow),
   // same shape as sen_clients. Bespoke branch below.
     'rf_jobs',
+  // SAIRNroofing measurement photos (2026-08-24, Phase 2) -- see
+  // sql/sairnroofing_photos_schema.sql. Same tier gate as rf_jobs, keyed by
+  // job_id. Bespoke branch below.
+    'rf_photos',
   ],
 };
