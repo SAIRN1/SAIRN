@@ -1,0 +1,57 @@
+-- sql/sairncash_verification_trial_cleanup.sql
+-- Removes the throwaway trial rows created by verification runs.
+--
+-- ⚠ NOT RUN. Flagged for Michael.
+--
+-- WHY THIS FILE EXISTS INSTEAD OF AN API CALL: api/sairncash/ exposes
+-- trial-start, trial-verify, trial-renew, checkout, verify, waitlist and
+-- firebase-config. NONE of them can delete a trial. trial-renew is
+-- admin-secret-gated but only extends a window; there is no delete verb and
+-- no deactivate flag on a trial row, so a verification signup cannot be
+-- cleaned up from outside the database.
+--
+-- This is the same structural gap that was just closed for employee
+-- credentials on StoneDesk and SAIRNcode (api/sd-auth.js and api/sc-auth.js
+-- gained set_active on 2026-08-23/24). SAIRNcash's trial table has the same
+-- shape of problem and has NOT been given the same treatment -- flagged
+-- here rather than fixed, because a trial lifecycle is a product decision
+-- (does a cancelled trial disappear, or stay recorded as cancelled?) and
+-- not a like-for-like port.
+--
+-- ROWS TO REMOVE -- all use the reserved .example TLD (RFC 2606), so none
+-- can belong to a real person:
+--   audit-probe-20260824@sairncash-verification.example
+--     Created 2026-08-24 during the ground-truth audit, probing whether
+--     trial-start reached a real table. It did.
+--   cc-returning-20260824@sairncash-verification.example
+--     Created 2026-08-24 for the returning-user click-through that verified
+--     the showPage('app') -> initApp() lockout fix.
+--
+-- Earlier verification signups from 2026-08-18/19 (cc-test-*, cc-test2-*,
+-- cc-test3-*, cc-test10-*@sairncash-verification.example) may also still be
+-- present; the pattern below catches every address on that domain in one go.
+
+-- Optional: see exactly what is about to be removed before removing it.
+-- select id, email, created_at, expires_at
+--   from public.sairncash_trial
+--  where email like '%@sairncash-verification.example'
+--  order by created_at;
+
+delete from public.sairncash_trial
+ where email like '%@sairncash-verification.example';
+
+-- Scoped to the verification domain on purpose. Do NOT broaden this to
+-- "delete expired trials" or similar: an expired trial row is the evidence
+-- that a real person signed up and when, which is exactly what a renewal
+-- request is checked against -- api/sairncash/trial-renew.js reads these
+-- rows to grant a fresh window.
+--
+-- Verify after running (expect 0):
+--   select count(*) from public.sairncash_trial
+--    where email like '%@sairncash-verification.example';
+--
+-- TABLE NAME VERIFIED, not assumed: api/sairncash/trial-start.js line 40
+-- posts to /rest/v1/sairncash_trial (singular), and its own 503 names
+-- sql/sairncash_trial_schema.sql. An earlier draft of this file said
+-- sairncash_trials (plural) and would have failed with "relation does not
+-- exist" -- corrected by reading the endpoint rather than guessing.
