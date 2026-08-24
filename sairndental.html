@@ -227,6 +227,8 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-hours" onclick="nav('hours')"><span class="sico">&#128337;</span>Provider Hours</button>
       <button class="sb" id="sb-procedures" onclick="nav('procedures')"><span class="sico">&#128220;</span>Procedure Types</button>
       <button class="sb" id="sb-coverage" onclick="nav('coverage')"><span class="sico">&#128179;</span>Coverage Rules</button>
+      <div class="ss">Compliance</div>
+      <button class="sb" id="sb-credentials" onclick="nav('credentials')"><span class="sico">&#127891;</span>Licensing &amp; DEA<span class="badge br" id="credentials-badge" style="display:none;margin-left:8px"></span></button>
       <div class="ss">Scheduling</div>
       <button class="sb" id="sb-booking-settings" onclick="nav('booking-settings')"><span class="sico">&#128279;</span>Booking Settings</button>
       <button class="sb" id="sb-pending" onclick="nav('pending')"><span class="sico">&#128203;</span>Pending Requests</button>
@@ -360,6 +362,81 @@ label.chk input{width:auto;}
         </div></div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
           <table id="providers-table"><thead><tr><th>Name</th><th>Role</th><th>Operatory</th><th></th></tr></thead><tbody id="providers-tbody"></tbody></table>
+        </div></div>
+      </div>
+
+      <div class="panel" id="panel-credentials">
+        <div class="ph"><div><div class="ptitle">Licensing &amp; DEA</div><div class="psub">State licences, DEA registrations, CE cycles and BLS/CPR &mdash; every expiry date is the one on your own document, never calculated from the state</div></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-credentials','credentials')">Export CSV</button></div>
+        </div>
+        <div class="krow">
+          <div class="kpi"><div class="klbl">Expired</div><div class="kval" id="k-cred-expired">0</div><div class="kt">Act now</div></div>
+          <div class="kpi"><div class="klbl">Expiring Soon</div><div class="kval" id="k-cred-expiring">0</div><div class="kt">Within 30 days (DEA: 60)</div></div>
+          <div class="kpi"><div class="klbl">CE Behind Pace</div><div class="kval" id="k-cred-ce">0</div><div class="kt">Hours vs time left</div></div>
+          <div class="kpi"><div class="klbl">MATE Outstanding</div><div class="kval" id="k-cred-mate">0</div><div class="kt">One-time attestation</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Add Credential Record</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Provider</label><select id="cd-add-provider"></select></div>
+            <div class="fg"><label>Record Type</label><select id="cd-add-type" onchange="cdTypeChanged()">
+              <option value="state_license">State Licence</option>
+              <option value="dea_registration">DEA Registration</option>
+              <option value="ce_cycle">CE Cycle</option>
+              <option value="certification">Certification (BLS/CPR)</option>
+            </select></div>
+          </div>
+          <div id="cd-f-license">
+            <div class="fr">
+              <div class="fg"><label>State</label><input type="text" id="cd-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
+              <div class="fg"><label>Licence Number</label><input type="text" id="cd-number" placeholder="As printed on the licence"></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><label>Issued</label><input type="date" id="cd-issued"></div>
+              <div class="fg"><label>Expires</label><input type="date" id="cd-expires"></div>
+            </div>
+          </div>
+          <div id="cd-f-dea" style="display:none">
+            <div class="fr">
+              <div class="fg"><label>DEA Number</label><input type="text" id="cd-dea-number" placeholder="As printed on the certificate"></div>
+              <div class="fg"><label>Expires</label><input type="date" id="cd-dea-expires"></div>
+            </div>
+            <div class="fg"><label>Schedules</label><input type="text" id="cd-dea-schedules" placeholder="e.g. II, III, IV, V"></div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px">
+              <input type="checkbox" id="cd-dea-mate"> MATE Act 8-hour training completed and attested
+            </label>
+            <div class="fg"><label>MATE Attested On</label><input type="date" id="cd-dea-mate-on"></div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px">A one-time attestation, not a recurring one &mdash; 8 hours, checked off on the DEA registration form at your next submission. This records that you did it; it does not make the attestation for you.</div>
+          </div>
+          <div id="cd-f-ce" style="display:none">
+            <div class="fr">
+              <div class="fg"><label>State</label><input type="text" id="cd-ce-state" placeholder="OH" maxlength="2" style="text-transform:uppercase"></div>
+              <div class="fg"><label>Role</label><select id="cd-ce-role"><option value="dentist">Dentist</option><option value="hygienist">Hygienist</option></select></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><label>Cycle Start</label><input type="date" id="cd-ce-start"></div>
+              <div class="fg"><label>Cycle End</label><input type="date" id="cd-ce-end"></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><label>Hours Logged</label><input type="number" id="cd-ce-logged" min="0" step="0.5" placeholder="0"></div>
+              <div class="fg"><label>Hours Required</label><input type="number" id="cd-ce-required" min="0" step="0.5" placeholder="leave blank to use your state's rule"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Leave Hours Required blank and the figure comes from the loaded rule for your state and role, with its citation. If your state has no loaded rule, the cycle is shown as unresolved rather than given a number.</div>
+          </div>
+          <div id="cd-f-cert" style="display:none">
+            <div class="fr">
+              <div class="fg"><label>Credential</label><input type="text" id="cd-cert-name" placeholder="e.g. BLS (CPR)"></div>
+              <div class="fg"><label>Issuer</label><input type="text" id="cd-cert-issuer" placeholder="e.g. American Heart Association"></div>
+            </div>
+            <div class="fg"><label>Expires</label><input type="date" id="cd-cert-expires"></div>
+          </div>
+          <button class="btn bp" onclick="addCredential()">Add Record</button>
+          <div style="font-size:11px;color:var(--muted);margin-top:10px">Records are append-only. To correct one, add a new record for the same provider &mdash; the newest supersedes, and the original stays on file as the history of what was held when.</div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Status Board</div></div><div class="cb" style="padding:0">
+          <table id="credentials-table"><thead><tr><th>Provider</th><th>Type</th><th>Detail</th><th>Expires</th><th>Status</th></tr></thead><tbody id="credentials-tbody"></tbody></table>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Requirements Loaded</div></div><div class="cb">
+          <div id="cd-rules" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
         </div></div>
       </div>
 
@@ -713,6 +790,10 @@ function nav(id){
   if(id==='complaints')rComplaints();
   if(id==='vendorcat')rVendorCat();
   if(id==='supplies')rSupplies();
+  // Renders from local records immediately, then replaces that with the real
+  // server-computed board when it arrives -- the panel is never blank, and
+  // never shows a status it computed itself.
+  if(id==='credentials'){rCredentials(null);refreshCredentialBoard();}
 }
 
 function exportPanelCSV(panelId,name){
@@ -753,6 +834,7 @@ function fillDentalSelects(){
   if($('icap-patient'))$('icap-patient').innerHTML=ptOpts||'<option value="">Add a patient first</option>';
   if($('rf-add-patient'))$('rf-add-patient').innerHTML='<option value="">(none yet)</option>'+ptOpts;
   if($('rf-add-provider'))$('rf-add-provider').innerHTML='<option value="">(none)</option>'+provOpts;
+  if($('cd-add-provider'))$('cd-add-provider').innerHTML=provOpts||'<option value="">Add a provider first</option>';
 }
 
 // ── PATIENTS ──────────────────────────────────────────────────────
@@ -856,6 +938,181 @@ function removeProvider(id){
   var list=providers().filter(function(p){return p.id!==id;});
   st('dnt_providers_list',list);rProviders();
   toast('Provider removed on this device');
+}
+
+// ── LICENSING / CREDENTIALING (2026-08-24) ────────────────────────
+// See sql/sairndental_credentials_schema.sql and the Ohio rule seed beside
+// it. Two things this panel deliberately does NOT do:
+//
+//   1. It never computes an expiry date from a state. ORC 4715.24(A) makes an
+//      Ohio licence expire two years from ITS OWN issuance, so there is no
+//      statewide date to compute from -- every expiry is the one typed off the
+//      practice's own document.
+//   2. It never decides the status itself. The board comes from the server's
+//      'evaluate' action, which runs api/_lib/dental-credentials.js -- the same
+//      code the tests exercise. A second copy of the threshold logic here is
+//      exactly how a UI and its tests drift apart.
+function credentials(){return ld('dnt_credentials_list',[]);}
+function credRules(){return ld('dnt_cred_rules_list',[]);}
+
+function cdTypeChanged(){
+  var t=$('cd-add-type').value;
+  $('cd-f-license').style.display=t==='state_license'?'':'none';
+  $('cd-f-dea').style.display=t==='dea_registration'?'':'none';
+  $('cd-f-ce').style.display=t==='ce_cycle'?'':'none';
+  $('cd-f-cert').style.display=t==='certification'?'':'none';
+}
+
+// sdnData() returns d.data; 'evaluate' puts its result at the top level
+// alongside coverage, so it needs the whole body. Separate helper rather than
+// changing sdnData(), which every other panel depends on.
+function sdnEvaluateCredentials(today){
+  var lic=dntLicenseKey();
+  if(!lic)return Promise.resolve(null);
+  return fetch(DATA_API,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    body:JSON.stringify({action:'evaluate',resource:'dnt_credentials',app_id:APP_ID,payload:{today:today||dntLocalToday()}})
+  }).then(function(r){return r.json().then(function(d){
+    if(!r.ok||!d||!d.ok){console.warn('credential evaluate failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+    return d;
+  });}).catch(function(e){console.warn('credential evaluate network error:',e.message);return null;});
+}
+
+async function addCredential(){
+  var providerId=$('cd-add-provider').value;
+  if(!providerId){toast('Add a provider first');return;}
+  var type=$('cd-add-type').value;
+  var rec={id:newId('DCRED'),provider_id:providerId,record_type:type,created_at:dntLocalToday()};
+  if(type==='state_license'){
+    rec.state=($('cd-state').value||'').trim().toUpperCase();
+    rec.number=$('cd-number').value.trim();
+    rec.issued_on=$('cd-issued').value;
+    rec.expires_on=$('cd-expires').value;
+    if(!rec.state||!rec.expires_on){toast('State and expiry date are required for a licence');return;}
+    rec.label=rec.state+' licence '+(rec.number||'');
+  }else if(type==='dea_registration'){
+    rec.number=$('cd-dea-number').value.trim();
+    rec.expires_on=$('cd-dea-expires').value;
+    rec.schedules=$('cd-dea-schedules').value.trim();
+    rec.mate_attested=$('cd-dea-mate').checked;
+    rec.mate_attested_on=$('cd-dea-mate-on').value||null;
+    if(!rec.expires_on){toast('Expiry date is required for a DEA registration');return;}
+    rec.label='DEA '+(rec.number||'');
+  }else if(type==='ce_cycle'){
+    rec.state=($('cd-ce-state').value||'').trim().toUpperCase();
+    rec.role=$('cd-ce-role').value;
+    rec.cycle_start=$('cd-ce-start').value;
+    rec.cycle_end=$('cd-ce-end').value;
+    rec.hours_logged=Number($('cd-ce-logged').value||0);
+    var req=$('cd-ce-required').value;
+    // Blank stays undefined on purpose -- the engine then sources the figure
+    // from the loaded rule and says which rule it used. Sending 0 here would
+    // silently assert "no hours required".
+    if(req!=='')rec.hours_required=Number(req);
+    if(!rec.state||!rec.cycle_start||!rec.cycle_end){toast('State, cycle start and cycle end are required');return;}
+    rec.label=rec.state+' CE '+rec.cycle_start+' to '+rec.cycle_end;
+  }else{
+    rec.credential=$('cd-cert-name').value.trim();
+    rec.issuer=$('cd-cert-issuer').value.trim();
+    rec.expires_on=$('cd-cert-expires').value;
+    if(!rec.credential||!rec.expires_on){toast('Credential name and expiry date are required');return;}
+    rec.label=rec.credential;
+  }
+  var list=credentials();list.push(rec);st('dnt_credentials_list',list);
+  rCredentials();
+  var syncResult=await sdnData('write','dnt_credentials',rec);
+  toast(syncResult?'Credential record added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  if(syncResult)refreshCredentialBoard();
+}
+
+function cdStatusBadge(item){
+  if(item.status==='expired')return '<span class="badge br">Expired</span>';
+  if(item.status==='expiring')return '<span class="badge bw">'+item.days+'d</span>';
+  if(item.status==='overdue')return '<span class="badge br">CE overdue</span>';
+  if(item.status==='behind')return '<span class="badge bw">Behind pace</span>';
+  if(item.status==='complete')return '<span class="badge bg">CE complete</span>';
+  if(item.status==='on_track')return '<span class="badge bg">On track</span>';
+  if(item.status==='unresolved')return '<span class="badge bw">No rule loaded</span>';
+  if(item.status==='unknown')return '<span class="badge bw">No date</span>';
+  return '<span class="badge bg">OK</span>';
+}
+
+// Renders whatever board the server last returned. With no board (offline, or
+// tables not provisioned), it says so rather than showing zeros that would
+// read as "nothing is expiring".
+function rCredentials(board){
+  var tbody=$('credentials-tbody');
+  if(!tbody)return;
+  var provs=providers();
+  var pname=function(id){var p=provs.find(function(x){return x.id===id;});return p?p.name:id;};
+  if(!board){
+    var local=credentials();
+    tbody.innerHTML=local.length
+      ? local.map(function(c){
+          return '<tr><td>'+H(pname(c.provider_id))+'</td><td>'+H(c.record_type)+'</td><td>'+H(c.label||'--')+'</td>'+
+            '<td>'+H(c.expires_on||'--')+'</td><td><span class="badge bw">Not checked yet</span></td></tr>';
+        }).join('')
+      : '<tr><td colspan="5" style="color:var(--muted);text-align:center">No credential records yet</td></tr>';
+    if($('credentials-badge'))$('credentials-badge').style.display='none';
+    return;
+  }
+  var items=board.items||[];
+  tbody.innerHTML=items.length
+    ? items.map(function(i){
+        var detail=i.record_type==='ce_cycle'
+          ? (i.status==='unresolved'?H(i.message||'')
+             :(i.hours_logged+' of '+i.hours_required+' hrs'+(i.hours_required_from&&i.hours_required_from!=='record'?' ('+H(i.hours_required_from)+')':'')))
+          : H(i.label||'--');
+        var when=i.record_type==='ce_cycle'
+          ? (i.days_remaining===undefined||i.days_remaining===null?'--':i.days_remaining+'d left in cycle')
+          : H(i.expires_on||'--');
+        var mate=i.record_type==='dea_registration'&&i.mate_attested===false
+          ? ' <span class="badge br">MATE not attested</span>' : '';
+        return '<tr><td>'+H(pname(i.provider_id))+'</td><td>'+H(i.record_type)+'</td><td>'+detail+'</td>'+
+          '<td>'+when+'</td><td>'+cdStatusBadge(i)+mate+'</td></tr>';
+      }).join('')
+    : '<tr><td colspan="5" style="color:var(--muted);text-align:center">No credential records yet</td></tr>';
+  var c=board.counts||{},ce=board.ce||{};
+  $('k-cred-expired').textContent=c.expired||0;
+  $('k-cred-expiring').textContent=c.expiring||0;
+  $('k-cred-ce').textContent=(ce.behind||0)+(ce.overdue||0);
+  $('k-cred-mate').textContent=board.mate_outstanding||0;
+  var badge=$('credentials-badge');
+  if(badge){
+    if(board.action_required>0){badge.textContent=board.action_required;badge.style.display='';}
+    else badge.style.display='none';
+  }
+}
+
+function rCredRules(coverage){
+  var el=$('cd-rules');
+  if(!el)return;
+  var rules=credRules();
+  if(!rules.length){
+    el.innerHTML='<span style="color:var(--warn,#b45309)">No licensing requirements are loaded yet.</span> '+
+      'Until they are, CE cycles must carry their own Hours Required &mdash; this app will not guess a number for your state. '+
+      'Load them by running the Ohio seed in <code>sql/sairndental_credentials_seed_ohio.json</code>.';
+    return;
+  }
+  el.innerHTML=rules.map(function(r){
+    var a=(r.data&&r.data.authority)||{};
+    return '<div style="margin-bottom:10px"><strong>'+H((r.data&&r.data.label)||r.rule_id)+'</strong><br>'+
+      '<span style="font-size:11px">'+H(a.citation||'no citation')+
+      (a.url?' &middot; <a href="'+H(a.url)+'" target="_blank" rel="noopener">source</a>':'')+
+      (a.read_on?' &middot; read '+H(a.read_on):'')+'</span></div>';
+  }).join('')+
+  (coverage&&coverage.uncovered_states&&coverage.uncovered_states.length
+    ? '<div style="margin-top:10px;color:var(--warn,#b45309)">No rules loaded for: '+H(coverage.uncovered_states.join(', '))+
+      '. Nothing is claimed about those states.</div>'
+    : '');
+}
+
+async function refreshCredentialBoard(){
+  var res=await sdnEvaluateCredentials();
+  if(!res){rCredentials(null);rCredRules(null);return;}
+  rCredentials(res.board);
+  rCredRules(res.coverage);
 }
 
 // ── OPERATORIES ───────────────────────────────────────────────────
@@ -1513,8 +1770,14 @@ var DNT_SYNC_RESOURCES=[
   ['dnt_charges','dnt_charges_list'],
   ['dnt_payments','dnt_payments_list'],
   ['dnt_referrals','dnt_referrals_list'],
-  ['dnt_complaints','dnt_complaints_list']
+  ['dnt_complaints','dnt_complaints_list'],
+  ['dnt_credentials','dnt_credentials_list']
 ];
+// dnt_cred_rules is NOT in the list above, deliberately. dntMergeById() keys on
+// a record's `id`; a rule row has `rule_id` and no `id`, so every sync would
+// see "no match" and append the whole rule set again, growing without bound.
+// Rules are a small authoritative set, so they are replaced wholesale instead
+// -- the same treatment dnt_settings gets below, and for the same reason.
 // dnt_denial/dnt_ar/dnt_revenue deliberately excluded -- no client-side
 // accessor or render function exists for any of them yet (confirmed by
 // reading the file); that's a separate, not-yet-built follow-up feature
@@ -1544,12 +1807,24 @@ async function dntSyncFromServer(){
   }else{
     failureCount++;
   }
+  // dnt_cred_rules: replaced wholesale, not merged -- see the note on
+  // DNT_SYNC_RESOURCES for why a rule row cannot go through dntMergeById().
+  var ruleData=await sdnData('read','dnt_cred_rules',{});
+  if(Array.isArray(ruleData)){
+    if(ruleData.length){st('dnt_cred_rules_list',ruleData);changed=true;}
+  }else{
+    failureCount++;
+  }
   if(changed){
     rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
     rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
+    // Only refetch the board if the panel is actually open -- 'evaluate' is a
+    // real server round trip, and a background sync should not fire one for a
+    // panel nobody is looking at.
+    if($('panel-credentials')&&$('panel-credentials').classList.contains('on'))refreshCredentialBoard();
   }
-  return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+1};
+  return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+2};
 }
 
 async function dntRefreshPending(){

@@ -1,0 +1,125 @@
+-- sql/sairndental_credentials_schema.sql
+-- SAIRNdental licensing / credentialing (2026-08-24).
+--
+--   dnt_cred_rules    -- VERSIONED licensing requirements as data, with a
+--                        required authority citation. Seeded from
+--                        sql/sairndental_credentials_seed_ohio.json.
+--   dnt_credentials   -- APPEND-ONLY credential records per provider.
+--
+-- SHAPE IS DELIBERATELY THE SAME as sairncare_compliance_schema.sql
+-- (alf_compliance_rules + alf_staff_credentials). Reused rather than
+-- reinvented: the two features answer different questions but have the
+-- identical "versioned regulation as data with a real citation, plus an
+-- append-only record of who holds what" problem.
+--
+-- ── WHY APPEND-ONLY ──────────────────────────────────────────────────────
+-- A credential row asserts that a real, named clinician held a real licence or
+-- registration on a real date. That is the exact class of record that must not
+-- be quietly edited later: if a licence number was mistyped, the correction is
+-- a NEW row that supersedes, never an overwrite of the original. The API grants
+-- service_role select+insert only -- no update, no delete -- so the endpoint
+-- physically cannot rewrite history even by mistake.
+--
+-- The reader resolves "current" by taking the LATEST row per
+-- (provider_id, record_type, subject) -- see latestByKey() in
+-- api/_lib/dental-credentials.js. A superseded row stays on disk and stops
+-- firing alerts.
+--
+-- ── NO DERIVED EXPIRY DATES, AND THAT IS LOAD-BEARING ────────────────────
+-- ORC 4715.24(A), read verbatim 2026-08-24: "A license expires on the date
+-- that is two years from the date of issuance and may be registered for
+-- additional two-year periods." That is a PER-LICENSEE ANNIVERSARY. Two widely
+-- published secondary claims ("December 31 of odd-numbered years" / "of
+-- even-numbered years") contradict each other AND the statute.
+--
+-- So expires_on lives in each row's own data, entered from the practice's own
+-- licence document. Nothing in this feature computes an expiry from a state.
+--
+-- ── NO PER-EMPLOYEE ROLE GATE, STATED PLAINLY ────────────────────────────
+-- SAIRNcare gates alf_staff_credentials by employee role because SAIRNcare has
+-- a real per-employee session (api/alf-auth.js). SAIRNdental has NO employee
+-- auth -- there is no api/dnt-auth.js, and every existing dnt_* resource is
+-- gated by the practice's license key alone. These two tables follow that same
+-- model rather than pretending to a role check the app cannot actually make.
+-- If per-employee auth is added to SAIRNdental later, this is a resource that
+-- should be re-gated at that time. Recorded here so the gap is known, not
+-- discovered.
+--
+-- Run this once in the Supabase SQL editor. Safe to re-run.
+
+create table if not exists public.dnt_cred_rules (
+  id               uuid primary key default gen_random_uuid(),
+  license_hash     text not null,
+  app_id           text not null default 'sairndental',
+  rule_id          text not null,
+  state            text not null,                  -- 'OH', or 'US' for federal
+  requirement_type text not null,                  -- continuing_education | license_term | certification | dea_term | dea_training
+  role             text,                           -- dentist | hygienist | null = applies to both
+  effective_from   date not null,
+  effective_to     date,
+  status           text not null default 'active',
+  data             jsonb not null default '{}'::jsonb,   -- carries data.authority (citation/url/quote/read_on)
+  verified_by      text,                           -- server-stamped
+  created_at       timestamptz not null default now(),
+  updated_at       timestamptz not null default now(),
+  unique (license_hash, rule_id),
+  constraint dntcr_type_check check (requirement_type in
+    ('continuing_education','license_term','certification','dea_term','dea_training')),
+  constraint dntcr_status_check check (status in ('active','superseded')),
+  constraint dntcr_data_size check (octet_length(data::text) <= 65536)
+);
+
+create index if not exists idx_dntcr_license on public.dnt_cred_rules(license_hash);
+create index if not exists idx_dntcr_state on public.dnt_cred_rules(license_hash, state);
+
+create table if not exists public.dnt_credentials (
+  id            uuid primary key default gen_random_uuid(),
+  license_hash  text not null,
+  app_id        text not null default 'sairndental',
+  entry_id      text not null,                     -- client-generated (DCRED-<timestamp>)
+  provider_id   text not null,                     -- references dnt_providers.provider_id
+  -- state_license    -- a state dental/hygiene licence: state, number, expires_on
+  -- dea_registration -- DEA number, schedules, expires_on, plus the one-time
+  --                     MATE attestation flag (NOT an expiring thing itself)
+  -- ce_cycle         -- one CE period: cycle_start, cycle_end, hours_logged
+  -- certification    -- BLS/CPR and similar: issuer, expires_on
+  record_type   text not null,
+  data          jsonb not null default '{}'::jsonb,
+  recorded_at   timestamptz not null default now(),  -- server-stamped; supersession order
+  created_at    timestamptz not null default now(),
+  unique (license_hash, entry_id),
+  constraint dntcd_type_check check (record_type in
+    ('state_license','dea_registration','ce_cycle','certification')),
+  constraint dntcd_data_size check (octet_length(data::text) <= 65536)
+);
+
+create index if not exists idx_dntcd_license on public.dnt_credentials(license_hash);
+create index if not exists idx_dntcd_provider on public.dnt_credentials(license_hash, provider_id);
+
+alter table public.dnt_cred_rules enable row level security;
+alter table public.dnt_credentials enable row level security;
+
+drop policy if exists "svc only dnt_cred_rules" on public.dnt_cred_rules;
+create policy "svc only dnt_cred_rules" on public.dnt_cred_rules
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+
+drop policy if exists "svc only dnt_credentials" on public.dnt_credentials;
+create policy "svc only dnt_credentials" on public.dnt_credentials
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+
+-- Rules may be superseded in place (status flips, effective_to gets set), so
+-- they get update. Credential records get INSERT ONLY -- see "why append-only"
+-- above. The absence of update/delete here is the enforcement, not a comment.
+grant select, insert, update on public.dnt_cred_rules to service_role;
+grant select, insert on public.dnt_credentials to service_role;
+revoke all on public.dnt_cred_rules from anon, authenticated;
+revoke all on public.dnt_credentials from anon, authenticated;
+
+-- Verify after running (expect 0 rows, no error):
+--   select count(*) from dnt_cred_rules;
+--   select count(*) from dnt_credentials;
+--
+-- Confirm the append-only grant actually took (expect NO 'UPDATE' or 'DELETE'
+-- row for dnt_credentials):
+--   select privilege_type from information_schema.role_table_grants
+--    where grantee = 'service_role' and table_name = 'dnt_credentials';

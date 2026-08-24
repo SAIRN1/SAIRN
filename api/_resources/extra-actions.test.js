@@ -78,15 +78,21 @@ const REJECTED = 400;      // the gate refused the verb
     }
   });
 
-  test('the three compute-only verbs are owned by one resource each', () => {
+  test('each compute-only verb reaches exactly its declared owners', () => {
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.alf_payer_rules, ['route']);
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.alf_compliance_rules, ['evaluate']);
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.alf_billing, ['derive_charges']);
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS.dnt_credentials, ['evaluate']);
     const grants = (verb) => reg.RESOURCE_NAMES.filter(
       (n) => (reg.EXTRA_ACTIONS[n] || []).indexOf(verb) !== -1
     );
+    // Enumerated, not counted: a new grant of one of these verbs must fail
+    // here and be looked at, rather than passing because the total still
+    // "looks about right". 'evaluate' is legitimately held by two resources
+    // as of 2026-08-24 (SAIRNcare compliance, SAIRNdental credentials) --
+    // both compute-only, both read-only, each declared by its own app.
     assert.deepStrictEqual(grants('route'), ['alf_payer_rules']);
-    assert.deepStrictEqual(grants('evaluate'), ['alf_compliance_rules']);
+    assert.deepStrictEqual(grants('evaluate').sort(), ['alf_compliance_rules', 'dnt_credentials']);
     assert.deepStrictEqual(grants('derive_charges'), ['alf_billing']);
   });
 

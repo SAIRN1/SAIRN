@@ -46,5 +46,21 @@ module.exports = {
     'dnt_settings',
     'dnt_referrals',
     'dnt_complaints',
+  // Licensing / credentialing (2026-08-24) -- see
+  // sql/sairndental_credentials_schema.sql and the Ohio rule seed beside it.
+  // dnt_cred_rules holds versioned requirements as data, each carrying a real
+  // citation; dnt_credentials is the APPEND-ONLY per-provider record store
+  // (state licences, DEA registrations, CE cycles, BLS/CPR certifications).
+    'dnt_cred_rules',
+    'dnt_credentials',
   ],
+  // 'evaluate' computes the expiry/CE alert board from stored records and the
+  // seeded rules. It READS ONLY and writes nothing -- looking at who is about
+  // to lapse must never itself change a credential record. Same compute-only
+  // shape as SAIRNcare's alf_compliance_rules 'evaluate', and the reason it is
+  // declared here rather than in api/sd-data.js is the 2026-08-24 verb-gate
+  // change: the verb belongs next to the resource that owns it.
+  extraActions: {
+    dnt_credentials: ['evaluate'],
+  },
 };

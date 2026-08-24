@@ -35,6 +35,7 @@ const complianceRules = require('./_lib/compliance-rules');
 const careCharges = require('./_lib/care-charges');
 const opAudit = require('./_lib/op-audit');
 const rfAuth = require('./rf-auth');
+const dentalCreds = require('./_lib/dental-credentials');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -4148,6 +4149,146 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // ── SAIRNDENTAL: dnt_cred_rules + dnt_credentials (2026-08-24) ─────────
+    // Licensing/credentialing. Evaluation logic is PURE and lives in
+    // api/_lib/dental-credentials.js; these branches are storage + shaping
+    // only, the same split as SAIRNcare's compliance-rules and payer-routing.
+    //
+    // NO PER-EMPLOYEE ROLE GATE, and that is deliberate rather than an
+    // oversight: SAIRNdental has no employee auth (there is no api/dnt-auth.js
+    // and no verifySessionToken caller anywhere in this app's branches), so
+    // every dnt_* resource is gated by the practice's license key alone. These
+    // follow that model. A role check written here would be decoration -- there
+    // is no session to check it against. Recorded in the schema header too, so
+    // whoever adds employee auth to SAIRNdental knows to re-gate this.
+    if (resource === 'dnt_cred_rules' && action === 'read') {
+      const r = await fetch(rest('dnt_cred_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data,verified_by'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { covered_states: [], uncovered_states: [], detail: [] } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const data = (rows || []).map((x) => ({
+        rule_id: x.rule_id, state: x.state, requirement_type: x.requirement_type,
+        role: x.role || null, effective_from: x.effective_from, effective_to: x.effective_to,
+        status: x.status || 'active', verified_by: x.verified_by || '', data: x.data || {}
+      }));
+      const claimed = Array.isArray(payload && payload.claimed_states) && payload.claimed_states.length
+        ? payload.claimed_states.map((s) => String(s).toUpperCase())
+        : Array.from(new Set(data.map((x) => x.state)));
+      res.status(200).json({ ok: true, data, provisioned: true, coverage: dentalCreds.credentialCoverage(data, claimed) });
+      return;
+    }
+    if (resource === 'dnt_cred_rules' && action === 'write') {
+      if (!payload || !payload.rule_id || !payload.state || !payload.requirement_type || !payload.effective_from) {
+        res.status(400).json({ error: { message: 'dnt_cred_rules requires rule_id, state, requirement_type, and effective_from' } });
+        return;
+      }
+      // A rule without a real citation is exactly the fabricated-number class
+      // this whole seed format exists to prevent, so it is refused at the API,
+      // not merely discouraged in the seed file's comments.
+      const auth = payload.data && payload.data.authority;
+      if (!auth || !auth.citation || !auth.quote || !auth.read_on) {
+        res.status(400).json({ error: { code: 'NO_AUTHORITY', message: 'dnt_cred_rules requires data.authority with citation, quote, and read_on — a requirement with no source cannot be stored' } });
+        return;
+      }
+      const r = await fetch(rest('dnt_cred_rules?on_conflict=license_hash,rule_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairndental', rule_id: String(payload.rule_id),
+          state: String(payload.state).toUpperCase(), requirement_type: payload.requirement_type,
+          role: payload.role || null, effective_from: payload.effective_from,
+          effective_to: payload.effective_to || null, status: payload.status || 'active',
+          data: payload.data || {}, verified_by: 'license', updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+    if (resource === 'dnt_credentials' && action === 'read') {
+      const r = await fetch(rest('dnt_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,provider_id,record_type,data,recorded_at&order=recorded_at.asc'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({
+        ok: true, provisioned: true,
+        data: (rows || []).map((x) => Object.assign({}, x.data || {}, {
+          entry_id: x.entry_id, provider_id: x.provider_id,
+          record_type: x.record_type, recorded_at: x.recorded_at
+        }))
+      });
+      return;
+    }
+    if (resource === 'dnt_credentials' && action === 'write') {
+      if (!payload || !payload.id || !payload.provider_id || !payload.record_type) {
+        res.status(400).json({ error: { message: 'dnt_credentials requires payload.id, payload.provider_id, and payload.record_type' } });
+        return;
+      }
+      if (!dentalCreds.RECORD_TYPES[payload.record_type]) {
+        res.status(400).json({ error: { message: "dnt_credentials record_type must be one of: state_license, dea_registration, ce_cycle, certification" } });
+        return;
+      }
+      // APPEND-ONLY: a plain insert, deliberately NOT an upsert. A correction
+      // is a new row that supersedes (the reader takes the latest per
+      // provider/type/subject), never an overwrite of the original assertion
+      // that a named clinician held a real licence on a real date. The table
+      // grant withholds update/delete as the backstop, so a future upsert here
+      // would fail loudly rather than silently rewriting history.
+      const r = await fetch(rest('dnt_credentials'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairndental', entry_id: String(payload.id),
+          provider_id: String(payload.provider_id), record_type: payload.record_type,
+          data: payload
+        })
+      });
+      if (r.status === 404) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.' } }); return; }
+      if (r.status === 400 || r.status === 409) {
+        const bodyText = await r.text();
+        let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
+        const msg = (bodyJson && (bodyJson.message || bodyJson.details || bodyJson.hint)) || bodyText || '';
+        if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.' } }); return; }
+        if (/duplicate key|unique constraint/i.test(msg)) { res.status(409).json({ error: { code: 'DUPLICATE_ENTRY', message: 'A credential record with this id already exists. Records are append-only — write a new record to supersede, do not reuse an id.' } }); return; }
+        console.error('dnt_credentials write error (status ' + r.status + '):', msg);
+        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? Object.assign({}, rows[0].data || {}, { recorded_at: rows[0].recorded_at }) : payload });
+      return;
+    }
+    // Compute-only. Reads both tables, writes nothing — see the verb note in
+    // api/_resources/sairndental.js.
+    if (resource === 'dnt_credentials' && action === 'evaluate') {
+      const today = (payload && payload.today) || nowISO().slice(0, 10);
+      const rr = await fetch(rest('dnt_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,provider_id,record_type,data,recorded_at'), { headers });
+      if (rr.status === 404 || rr.status === 400) { res.status(200).json({ ok: true, provisioned: false, board: null }); return; }
+      const credRows = await rr.json();
+      if (!rr.ok) return upstream(res, credRows);
+      const ruleRes = await fetch(rest('dnt_cred_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data'), { headers });
+      const ruleRows = (ruleRes.status === 404 || ruleRes.status === 400) ? [] : await ruleRes.json();
+      const records = (credRows || []).map((x) => Object.assign({}, x.data || {}, {
+        entry_id: x.entry_id, provider_id: x.provider_id,
+        record_type: x.record_type, recorded_at: x.recorded_at
+      }));
+      const rules = (Array.isArray(ruleRows) ? ruleRows : []).map((x) => ({
+        rule_id: x.rule_id, state: x.state, requirement_type: x.requirement_type,
+        role: x.role || null, effective_from: x.effective_from, effective_to: x.effective_to,
+        status: x.status || 'active', data: x.data || {}
+      }));
+      const board = dentalCreds.evaluateBoard(records, rules, today);
+      if (!board.ok) { res.status(400).json({ error: board.error }); return; }
+      res.status(200).json({
+        ok: true, provisioned: true, board: board,
+        coverage: dentalCreds.credentialCoverage(rules, Array.from(new Set(records.map((r2) => String(r2.state || '').toUpperCase()).filter(Boolean))))
+      });
       return;
     }
 
