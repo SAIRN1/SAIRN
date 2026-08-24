@@ -51,6 +51,32 @@
     "admission variants say 'at least five days', a floor, while the interrogatory",
     "one says 'five days' flat; that difference is preserved in the notes.",
     "",
+    "SERVICE EXTENSIONS: THE AMOUNT DEPENDS ON THE METHOD, AND ON FACTS THE ENGINE",
+    "CANNOT SEE. CCP 1013(a) extends a period after service by MAIL by 5 calendar",
+    "days if both the place of mailing and the place of address are within",
+    "California, 10 if either is outside California but within the United States,",
+    "12 if the address is the Secretary of State's address confidentiality program,",
+    "and 20 if either is outside the United States. CCP 1013(c) (Express Mail or",
+    "other overnight delivery), CCP 1013(e) (facsimile, permitted only by written",
+    "agreement) and CCP 1010.6(a)(3)(B) (electronic) each extend by TWO COURT DAYS.",
+    "",
+    "Court days are not calendar days. Two court days across a weekend is four",
+    "calendar days and across a holiday weekend more, so counting them as calendar",
+    "days would produce a date EARLIER than the true deadline. The engine counts",
+    "them properly.",
+    "",
+    "A BARE 'mail' SERVICE METHOD IS DELIBERATELY REJECTED. Callers must supply one",
+    "of mail_within_california, mail_outside_california_within_us,",
+    "mail_to_address_confidentiality_program or mail_outside_us. Defaulting to the",
+    "in-state five would be wrong by 5, 7 or 15 days whenever the guess is wrong,",
+    "and a service extension that is silently too short is the dangerous direction.",
+    "",
+    "THE APPELLATE ROWS CARRY NO EXTENSION, AND THAT IS THE LAW, NOT AN OMISSION.",
+    "Both CCP 1013 and CCP 1010.6(a)(3)(B) say the extension 'shall not apply to",
+    "extend the time for filing' a notice of intention to move for new trial, a",
+    "notice of intention to move to vacate judgment under Section 663a, or A NOTICE",
+    "OF APPEAL. All three Rule 8.104 rows are notices of appeal.",
+    "",
     "NOT ENCODED, deliberately, and flagged rather than dropped:",
     "",
     "1. CCP 12b, the office-closed limb: 'If any city, county, state, or public",
@@ -69,12 +95,10 @@
     "   clause in the discovery statutes, and Cal. R. Ct. 1.10(c)'s general power",
     "   to extend or shorten. A court order displaces these dates and the engine",
     "   cannot see one.",
-    "5. Service-method extensions under CCP 1010.6 and 1013. California adds time",
-    "   for mail and for electronic service, with different amounts depending on",
-    "   where the parties are. That text was NOT read verbatim in this pass, so no",
-    "   service_extension is attached to any row -- an unread extension is worse",
-    "   than none, because it would silently move dates. This is the first item to",
-    "   close if California is extended.",
+    "5. NOTHING about the service extensions -- they ARE now encoded. Added",
+    "   2026-08-24 after reading CCP 1013 and 1010.6 verbatim; an earlier version",
+    "   of this file said they were unread and unattached, which was true then and",
+    "   is not now. See SERVICE EXTENSIONS below.",
     "6. Cal. R. Ct. 8.108, which EXTENDS the time to appeal when certain",
     "   post-trial motions are filed, and rules 8.702/8.712. 8.104(a)(1) opens",
     "   'Unless a statute or rules 8.108, 8.702, or 8.712 provides otherwise' --",
@@ -89,13 +113,22 @@
       "domain": "civil-litigation",
       "label": "Written pleading in response to the complaint after service of summons (California)",
       "trigger_event": "service_of_summons_on_defendant",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_ccp_12_12a",
+      "service_extension": {
+        "standard": "ca_ccp_1013_1010_6",
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
+        "order": "after"
+      },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 412.20(a)(3)",
         "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=412.20.",
         "quote": "A direction that the defendant file with the court a written pleading in response to the complaint within 30 days after summons is served on the defendant.",
-        "note": "The 30 days is prescribed as CONTENT OF THE SUMMONS rather than as a free-standing deadline -- 412.20(a) lists what a summons must contain, and (a)(3) is the direction it must carry. The practical deadline is the same, and the section opens 'Except as otherwise required by statute', so another statute can displace it. Statutory period, so the statutory computation standard applies (CCP 12/12a), not Rule 1.10. NOT encoded: any service-method extension under CCP 1013 or 1010.6 -- see the file readme, item 5.",
+        "note": "The 30 days is prescribed as CONTENT OF THE SUMMONS rather than as a free-standing deadline -- 412.20(a) lists what a summons must contain, and (a)(3) is the direction it must carry. The practical deadline is the same, and the section opens 'Except as otherwise required by statute', so another statute can displace it. Statutory period, so the statutory computation standard applies (CCP 12/12a), not Rule 1.10. Service extensions under CCP 1013/1010.6 ARE attached; supply a specific service_method (see the file readme).",
         "retrieved_at": "2026-08-24"
       },
       "effective_from": "2011-01-01",
@@ -109,8 +142,17 @@
       "domain": "civil-litigation",
       "label": "Response to interrogatories (California)",
       "trigger_event": "service_of_interrogatories",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_ccp_12_12a",
+      "service_extension": {
+        "standard": "ca_ccp_1013_1010_6",
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
+        "order": "after"
+      },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2030.260(a)",
         "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=2030.260.",
@@ -129,8 +171,17 @@
       "domain": "civil-litigation",
       "label": "Response to interrogatories in an unlawful detainer action (California)",
       "trigger_event": "service_of_interrogatories_in_unlawful_detainer",
-      "count": { "value": 5, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 5,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_ccp_12_12a",
+      "service_extension": {
+        "standard": "ca_ccp_1013_1010_6",
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
+        "order": "after"
+      },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2030.260(b)",
         "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=2030.260.",
@@ -149,8 +200,17 @@
       "domain": "civil-litigation",
       "label": "Response to a demand for inspection, copying, testing or sampling (California)",
       "trigger_event": "service_of_demand_for_inspection",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_ccp_12_12a",
+      "service_extension": {
+        "standard": "ca_ccp_1013_1010_6",
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
+        "order": "after"
+      },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2031.260(a)",
         "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=2031.260.",
@@ -169,8 +229,17 @@
       "domain": "civil-litigation",
       "label": "Response to a demand for inspection in an unlawful detainer action (California)",
       "trigger_event": "service_of_demand_for_inspection_in_unlawful_detainer",
-      "count": { "value": 5, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 5,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_ccp_12_12a",
+      "service_extension": {
+        "standard": "ca_ccp_1013_1010_6",
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
+        "order": "after"
+      },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2031.260(b)",
         "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=2031.260.",
@@ -189,8 +258,17 @@
       "domain": "civil-litigation",
       "label": "Response to requests for admission (California)",
       "trigger_event": "service_of_request_for_admission",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_ccp_12_12a",
+      "service_extension": {
+        "standard": "ca_ccp_1013_1010_6",
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
+        "order": "after"
+      },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2033.250(a)",
         "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=2033.250.",
@@ -209,8 +287,17 @@
       "domain": "civil-litigation",
       "label": "Response to requests for admission in an unlawful detainer action (California)",
       "trigger_event": "service_of_request_for_admission_in_unlawful_detainer",
-      "count": { "value": 5, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 5,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_ccp_12_12a",
+      "service_extension": {
+        "standard": "ca_ccp_1013_1010_6",
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
+        "order": "after"
+      },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2033.250(b)",
         "url": "https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CCP&sectionNum=2033.250.",
@@ -229,13 +316,17 @@
       "domain": "appellate",
       "label": "Notice of appeal, 60 days from the clerk's service of notice of entry (California)",
       "trigger_event": "superior_court_clerk_serves_notice_of_entry_of_judgment",
-      "count": { "value": 60, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_crc_1_10",
       "authority": {
         "citation": "Cal. R. Ct. 8.104(a)(1)(A)",
         "url": "https://www.courts.ca.gov/cms/rules/index/eight/rule8_104",
         "quote": "60 days after the superior court clerk serves on the party filing the notice of appeal a document entitled 'Notice of Entry' of judgment or a filed-endorsed copy of the judgment",
-        "note": "ONE OF THREE ALTERNATIVES, AND THE DEADLINE IS THE EARLIEST OF THEM. 8.104(a)(1) requires the notice on or before the earliest of (A), (B) and (C); this engine computes each individually and does NOT take the earliest, because it is not given all three trigger dates. Compute every applicable row and use the earliest. Relying on this row alone can produce a date LATER than the true deadline. A RULE of court, so the rules-of-court computation standard applies (Cal. R. Ct. 1.10), not CCP 12/12a. NOT encoded: rule 8.108, which extends the time when certain post-trial motions are filed, and rules 8.702/8.712 -- 8.104(a)(1) is expressly subject to all three.",
+        "note": "ONE OF THREE ALTERNATIVES, AND THE DEADLINE IS THE EARLIEST OF THEM. 8.104(a)(1) requires the notice on or before the earliest of (A), (B) and (C); this engine computes each individually and does NOT take the earliest, because it is not given all three trigger dates. Compute every applicable row and use the earliest. Relying on this row alone can produce a date LATER than the true deadline. A RULE of court, so the rules-of-court computation standard applies (Cal. R. Ct. 1.10), not CCP 12/12a. NOT encoded: rule 8.108, which extends the time when certain post-trial motions are filed, and rules 8.702/8.712 -- 8.104(a)(1) is expressly subject to all three. NO SERVICE EXTENSION, by law: CCP 1013 and CCP 1010.6(a)(3)(B) both exclude a notice of appeal from the extension in terms.",
         "retrieved_at": "2026-08-24"
       },
       "effective_from": "2017-07-01",
@@ -249,13 +340,17 @@
       "domain": "appellate",
       "label": "Notice of appeal, 60 days from a party's service of notice of entry (California)",
       "trigger_event": "party_serves_or_is_served_with_notice_of_entry_of_judgment",
-      "count": { "value": 60, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_crc_1_10",
       "authority": {
         "citation": "Cal. R. Ct. 8.104(a)(1)(B)",
         "url": "https://www.courts.ca.gov/cms/rules/index/eight/rule8_104",
         "quote": "60 days after the party filing the notice of appeal serves or is served by a party with a document entitled 'Notice of Entry' of judgment or a filed-endorsed copy of the judgment, accompanied by proof of service",
-        "note": "The second of the three alternatives -- see the (A) row's note on taking the earliest. Distinct from (A) in WHO served: the clerk in (A), a party in (B). Both can happen in one matter, on different dates, and each starts its own 60 days. The rule requires proof of service accompanying the document for this limb to bite.",
+        "note": "The second of the three alternatives -- see the (A) row's note on taking the earliest. Distinct from (A) in WHO served: the clerk in (A), a party in (B). Both can happen in one matter, on different dates, and each starts its own 60 days. The rule requires proof of service accompanying the document for this limb to bite. NO SERVICE EXTENSION, by law: CCP 1013 and CCP 1010.6(a)(3)(B) both exclude a notice of appeal from the extension in terms.",
         "retrieved_at": "2026-08-24"
       },
       "effective_from": "2017-07-01",
@@ -269,13 +364,17 @@
       "domain": "appellate",
       "label": "Notice of appeal, 180-day outside limit from entry of judgment (California)",
       "trigger_event": "entry_of_judgment",
-      "count": { "value": 180, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 180,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ca_crc_1_10",
       "authority": {
         "citation": "Cal. R. Ct. 8.104(a)(1)(C)",
         "url": "https://www.courts.ca.gov/cms/rules/index/eight/rule8_104",
         "quote": "180 days after entry of judgment",
-        "note": "The outside limit, and the only one of the three that always runs -- entry of judgment always happens, while service of a notice of entry may not. It is a CEILING, not the deadline: if either 60-day limb has been triggered, the earliest controls and this date is irrelevant. Per 8.104(a)(3), where the parties stipulated to waive notice under CCP 1019.5, this limb applies unless the court or a party serves notice of entry to start (A) or (B).",
+        "note": "The outside limit, and the only one of the three that always runs -- entry of judgment always happens, while service of a notice of entry may not. It is a CEILING, not the deadline: if either 60-day limb has been triggered, the earliest controls and this date is irrelevant. Per 8.104(a)(3), where the parties stipulated to waive notice under CCP 1019.5, this limb applies unless the court or a party serves notice of entry to start (A) or (B). NO SERVICE EXTENSION, by law: CCP 1013 and CCP 1010.6(a)(3)(B) both exclude a notice of appeal from the extension in terms.",
         "retrieved_at": "2026-08-24"
       },
       "effective_from": "2017-07-01",

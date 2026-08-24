@@ -448,6 +448,70 @@ var SERVICE_EXTENSION_STANDARDS = {
     label: 'Fla. R. Gen. Prac. & Jud. Admin. 2.514(b)',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── CALIFORNIA: THE AMOUNT DEPENDS ON THE METHOD ────────────────────────
+  // Every standard above adds one fixed number of calendar days for any
+  // qualifying method. California does not, and encoding it as if it did
+  // would be wrong by up to fifteen days.
+  //
+  // CCP 1013(a), verbatim, for service by MAIL: the period "shall be extended
+  // five calendar days, upon service by mail, if the place of address and the
+  // place of mailing is within the State of California, 10 calendar days if
+  // either the place of mailing or the place of address is outside the State
+  // of California but within the United States, 12 calendar days if the place
+  // of address is the Secretary of State's address confidentiality program
+  // ..., and 20 calendar days if either the place of mailing or the place of
+  // address is outside the United States".
+  //
+  // CCP 1013(c) (Express Mail or another overnight-delivery method) and
+  // 1013(e) (facsimile, permitted only by written agreement) each extend by
+  // "two court days". CCP 1010.6(a)(3)(B) extends electronic service by "two
+  // court days" as well.
+  //
+  // COURT DAYS, NOT CALENDAR DAYS, for those three. Two court days across a
+  // weekend is four calendar days and across a holiday weekend more; treating
+  // them as calendar days yields a date EARLIER than the true deadline. The
+  // engine counts them properly -- see the court_days branch in the extension
+  // application below, added for this.
+  //
+  // THE EXCLUSIONS ARE THE MOST IMPORTANT PART AND ARE HANDLED BY ABSENCE,
+  // NOT BY CODE HERE. Both sections say the extension "shall not apply to
+  // extend the time for filing notice of intention to move for new trial,
+  // notice of intention to move to vacate judgment pursuant to Section 663a,
+  // or notice of appeal." So California's three Rule 8.104 appellate rows
+  // carry NO service_extension at all -- that is deliberate and now has a
+  // verbatim citation behind it, where before it was simply unread.
+  //
+  // Method names are the caller's vocabulary, so all four mail variants are
+  // spelled out rather than inferred from a single 'mail'. A bare 'mail' with
+  // no location qualifier is NOT accepted: the amount genuinely depends on
+  // facts the engine cannot see, and guessing the in-state five would be
+  // wrong by 5, 7 or 15 days whenever the guess is wrong.
+  ca_ccp_1013_1010_6: {
+    label: 'Cal. Code Civ. Proc. 1013, 1010.6',
+    shape: 'enumerated_allowlist_with_per_method_amount',
+    qualifies: function (method) {
+      return ({
+        mail_within_california: 1, mail_outside_california_within_us: 1,
+        mail_to_address_confidentiality_program: 1, mail_outside_us: 1,
+        express_mail: 1, overnight_delivery: 1, fax: 1,
+        electronic: 1, electronic_service: 1
+      })[method] === 1;
+    },
+    amount: function (method) {
+      var table = {
+        mail_within_california: { add: 5, unit: 'calendar_days' },
+        mail_outside_california_within_us: { add: 10, unit: 'calendar_days' },
+        mail_to_address_confidentiality_program: { add: 12, unit: 'calendar_days' },
+        mail_outside_us: { add: 20, unit: 'calendar_days' },
+        express_mail: { add: 2, unit: 'court_days' },
+        overnight_delivery: { add: 2, unit: 'court_days' },
+        fax: { add: 2, unit: 'court_days' },
+        electronic: { add: 2, unit: 'court_days' },
+        electronic_service: { add: 2, unit: 'court_days' }
+      };
+      return table[method] || null;
+    }
   }
 };
 
@@ -975,16 +1039,51 @@ function computeDeadline(input) {
         detail: 'The standard permits an extension for this service method, but this rule does not list it. No days were added — check whether the rule row is incomplete.',
         authority: extLabel, date: result });
     } else {
-      var extended = addDays(result, sign * Number(ext.add));
-      steps.push({ step: 'service_extension', detail: ext.add + ' days added because service was by ' + String(input.service_method).replace(/_/g, ' ') + ', counted after the base period expired and including intermediate weekends and holidays.', authority: extLabel, date: extended });
+      // AMOUNT AND UNIT CAN COME FROM THE STANDARD, NOT ONLY THE ROW.
+      // Every standard before California added one fixed number of calendar
+      // days for any qualifying method, so `ext.add` on the rule was enough.
+      // California is not like that: CCP 1013 adds 5, 10, 12 or 20 CALENDAR
+      // days depending on where the mail was sent from and to, and CCP 1013(c)
+      // and (e) and CCP 1010.6(a)(3)(B) each add 2 COURT days. That table is
+      // law, not row data, so it lives on the standard via an optional
+      // amount(method) and every rule row simply points at the standard.
+      // Standards without amount() are untouched and keep using ext.add.
+      var amt = (typeof extStd.amount === 'function') ? extStd.amount(input.service_method) : null;
+      var addN = amt ? Number(amt.add) : Number(ext.add);
+      var addUnit = (amt && amt.unit) || ext.unit || 'calendar_days';
+      var extended, extDetail;
+      if (addUnit === 'court_days') {
+        // COURT DAYS ARE NOT CALENDAR DAYS. A two-court-day extension over a
+        // weekend is four calendar days, and over a holiday weekend more.
+        // Counting them as calendar days would produce a date EARLIER than the
+        // true deadline, which is the direction that loses a filing.
+        extended = result;
+        var left = addN, cdGuard = 0;
+        while (left > 0 && cdGuard++ < 400) {
+          extended = addDays(extended, sign);
+          var hcd = holidayFor(input.calendars, input.jurisdiction, extended, direction);
+          if (!hcd.known) {
+            return { ok: false, code: 'NOT_PROVISIONED',
+              message: 'No holiday calendar is loaded for ' + input.jurisdiction + (hcd.missingYear ? ' for ' + hcd.missingYear : '') + ', which court-day counting requires.',
+              missing: { jurisdiction: input.jurisdiction, year: hcd.missingYear || null } };
+          }
+          if (!isWeekend(extended) && !hcd.hit) left--;
+        }
+        extDetail = addN + ' court days added because service was by ' + String(input.service_method).replace(/_/g, ' ') +
+          ', counted after the base period expired and SKIPPING weekends and legal holidays (court days, not calendar days).';
+      } else {
+        extended = addDays(result, sign * addN);
+        extDetail = addN + ' days added because service was by ' + String(input.service_method).replace(/_/g, ' ') + ', counted after the base period expired and including intermediate weekends and holidays.';
+      }
+      steps.push({ step: 'service_extension', detail: extDetail, authority: extLabel, date: extended });
       var rolled2 = rollOff(extended, input.calendars, input.jurisdiction, direction);
       if (!rolled2.ok) return rolled2;
       if (rolled2.date !== extended) {
         steps.push({ step: 'rollover_after_extension', detail: 'The added day fell on a Saturday, Sunday or legal holiday, so the last day to act is the next day that is not.', authority: extLabel + (stdKey === 'frcp_6d' ? ', 2005 Advisory Committee Note' : ''), date: rolled2.date });
       }
       result = rolled2.date;
-      extension = { state: 'applied', standard: stdKey, days_added: Number(ext.add),
-        detail: ext.add + ' days added under ' + extLabel + '.' };
+      extension = { state: 'applied', standard: stdKey, days_added: addN, unit: addUnit,
+        detail: addN + ' ' + addUnit.replace(/_/g, ' ') + ' added under ' + extLabel + '.' };
     }
   } else if (input.service_method) {
     extension = { state: 'not_requested', standard: null, days_added: 0,
