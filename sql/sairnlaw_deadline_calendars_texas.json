@@ -1,0 +1,629 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- Texas legal-holiday calendars, 2026 through 2031.",
+    "Loaded through add_holidays like every other calendar.",
+    "",
+    "The list is Tex. Gov't Code 662.021's DEFINITION of legal holiday -- 662.003(a) in full",
+    "plus 662.003(b)(1) through (6) ONLY. December 24 and December 26 are Texas state holidays",
+    "and are NOT legal holidays; they are deliberately absent, and copying 662.003(b) wholesale",
+    "is the mistake this file exists to prevent.",
+    "",
+    "See each calendar's authority.note for that cut, for the five legal holidays on which Texas",
+    "courthouses are commonly OPEN under 662.004(a), for the verified absence of any",
+    "weekend-observance shift, and for the fact that Rule 4 itself never cites 662.021."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "tx",
+      "year": 2026,
+      "authority": {
+        "citation": "Tex. Gov't Code 662.021 (legal holidays), taking Tex. Gov't Code 662.003(a) and 662.003(b)(1)-(6); applied by Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1",
+        "url": "https://statutes.capitol.texas.gov/Docs/GV/htm/GV.662.htm",
+        "rule_url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
+        "note": "Generated 2026-08-24 from Tex. Gov't Code 662.021, which is the DEFINITION of \"legal holiday\" and is narrower than the state's own holiday list. 662.021 reads: \"A legal holiday includes only the following days: (1) a national holiday under Section 662.003(a); and (2) a state holiday under Sections 662.003(b)(1) through (6).\" THE CUT AT (b)(6) IS THE WHOLE POINT AND IT IS EASY TO MISS. 662.003(b) lists EIGHT state holidays; 662.021 takes only the first SIX. So (b)(7) DECEMBER 24 and (b)(8) DECEMBER 26 are real Texas state holidays and are NOT legal holidays, and are deliberately absent here. Copying 662.003(b) wholesale would add two days in late December and push real deadlines LATER than Texas law does -- the direction that misses a filing. INCLUDED AND SURPRISING: Confederate Heroes Day (Jan 19), Texas Independence Day (Mar 2), San Jacinto Day (Apr 21), Emancipation Day in Texas (Jun 19) and Lyndon Baines Johnson Day (Aug 27) ARE legal holidays under 662.021, even though Tex. Gov't Code 662.004(a) requires state agencies to keep \"enough employees on duty during a state holiday to conduct the public business\" on exactly those days -- 662.004(b) excepts only weekend holidays, the Friday after Thanksgiving, and December 24 and 26. So Texas courthouses are commonly OPEN on five days this calendar counts as holidays. That is the opposite shape from Pennsylvania, where the closure schedule is BROADER than the statute; here it is NARROWER. The engine encodes the STATUTORY TEST in both, because that is what the rule's own words key on -- see the standing note in deadline-engine.js on what belongs in a calendar. Disclosed rather than quietly reconciled, because here the statutory test is the one that pushes dates LATER, which is the unsafe direction, and a user should know it. ONE FURTHER CAVEAT ON THAT LINK, STATED PLAINLY: Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1 both say \"legal holiday\" WITHOUT defining it and WITHOUT citing 662.021. The connection to 662.021 is the settled reading rather than an express cross-reference in the rule, and it was not found stated in either rule's own text. It is recorded here as the reading this calendar rests on so a reviewer can test it, not asserted as something the rules say. NO OBSERVANCE SHIFT, and this was checked rather than assumed. Chapter 662 contains no provision moving a legal holiday that falls on a Saturday or Sunday to an adjacent weekday; 662.004(b) instead assumes such a holiday simply falls on the weekend and excuses staffing. So a fixed-date holiday landing on a weekend STAYS there and no observed date is generated. Texas therefore matches Illinois and California and differs from us-federal/fl/in/mi/pa (both-way shift) and Ohio (Sunday only). Deadlines still roll, because Tex. R. Civ. P. 4 excludes Saturdays and Sundays independently. The State Auditor's published state-employee holiday schedule DOES shift some observances; that is a closure schedule, not the statutory test, and is not encoded. NOT MODELLED, flagged rather than dropped: Tex. R. App. P. 4.1(b)'s clerk's-office-closed limb (an appellate filing period extends when the clerk's office is closed or inaccessible on the last day) -- unknowable in advance, same class as Indiana's office-closed limb, Illinois's Governor-proclamation limb, Florida's chief-justice hurricane limb and California's CCP 12b. Tex. R. Civ. P. 4 carries NO such limb -- verified by reading it in full; a widely repeated secondary claim that Rule 4 defines a day the clerk's office is closed as a legal holiday is NOT in the rule text and is not encoded. Also not modelled: 662.003(c) optional holidays (Rosh Hashanah, Yom Kippur, Good Friday), which 662.021 excludes from the legal-holiday definition outright, and Tex. Gov't Code 662.013's optional Cesar Chavez Day.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(1)"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Confederate Heroes Day / Martin Luther King, Jr., Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(1); 662.003(a)(2)"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(3)"
+        },
+        {
+          "date": "2026-03-02",
+          "name": "Texas Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(2)"
+        },
+        {
+          "date": "2026-04-21",
+          "name": "San Jacinto Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(3)"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(4)"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Emancipation Day in Texas",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(4)"
+        },
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(5)"
+        },
+        {
+          "date": "2026-08-27",
+          "name": "Lyndon Baines Johnson Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(5)"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(6)"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(7)"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(8)"
+        },
+        {
+          "date": "2026-11-27",
+          "name": "Friday after Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(6)"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(9)"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "tx",
+      "year": 2027,
+      "authority": {
+        "citation": "Tex. Gov't Code 662.021 (legal holidays), taking Tex. Gov't Code 662.003(a) and 662.003(b)(1)-(6); applied by Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1",
+        "url": "https://statutes.capitol.texas.gov/Docs/GV/htm/GV.662.htm",
+        "rule_url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
+        "note": "Generated 2026-08-24 from Tex. Gov't Code 662.021, which is the DEFINITION of \"legal holiday\" and is narrower than the state's own holiday list. 662.021 reads: \"A legal holiday includes only the following days: (1) a national holiday under Section 662.003(a); and (2) a state holiday under Sections 662.003(b)(1) through (6).\" THE CUT AT (b)(6) IS THE WHOLE POINT AND IT IS EASY TO MISS. 662.003(b) lists EIGHT state holidays; 662.021 takes only the first SIX. So (b)(7) DECEMBER 24 and (b)(8) DECEMBER 26 are real Texas state holidays and are NOT legal holidays, and are deliberately absent here. Copying 662.003(b) wholesale would add two days in late December and push real deadlines LATER than Texas law does -- the direction that misses a filing. INCLUDED AND SURPRISING: Confederate Heroes Day (Jan 19), Texas Independence Day (Mar 2), San Jacinto Day (Apr 21), Emancipation Day in Texas (Jun 19) and Lyndon Baines Johnson Day (Aug 27) ARE legal holidays under 662.021, even though Tex. Gov't Code 662.004(a) requires state agencies to keep \"enough employees on duty during a state holiday to conduct the public business\" on exactly those days -- 662.004(b) excepts only weekend holidays, the Friday after Thanksgiving, and December 24 and 26. So Texas courthouses are commonly OPEN on five days this calendar counts as holidays. That is the opposite shape from Pennsylvania, where the closure schedule is BROADER than the statute; here it is NARROWER. The engine encodes the STATUTORY TEST in both, because that is what the rule's own words key on -- see the standing note in deadline-engine.js on what belongs in a calendar. Disclosed rather than quietly reconciled, because here the statutory test is the one that pushes dates LATER, which is the unsafe direction, and a user should know it. ONE FURTHER CAVEAT ON THAT LINK, STATED PLAINLY: Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1 both say \"legal holiday\" WITHOUT defining it and WITHOUT citing 662.021. The connection to 662.021 is the settled reading rather than an express cross-reference in the rule, and it was not found stated in either rule's own text. It is recorded here as the reading this calendar rests on so a reviewer can test it, not asserted as something the rules say. NO OBSERVANCE SHIFT, and this was checked rather than assumed. Chapter 662 contains no provision moving a legal holiday that falls on a Saturday or Sunday to an adjacent weekday; 662.004(b) instead assumes such a holiday simply falls on the weekend and excuses staffing. So a fixed-date holiday landing on a weekend STAYS there and no observed date is generated. Texas therefore matches Illinois and California and differs from us-federal/fl/in/mi/pa (both-way shift) and Ohio (Sunday only). Deadlines still roll, because Tex. R. Civ. P. 4 excludes Saturdays and Sundays independently. The State Auditor's published state-employee holiday schedule DOES shift some observances; that is a closure schedule, not the statutory test, and is not encoded. NOT MODELLED, flagged rather than dropped: Tex. R. App. P. 4.1(b)'s clerk's-office-closed limb (an appellate filing period extends when the clerk's office is closed or inaccessible on the last day) -- unknowable in advance, same class as Indiana's office-closed limb, Illinois's Governor-proclamation limb, Florida's chief-justice hurricane limb and California's CCP 12b. Tex. R. Civ. P. 4 carries NO such limb -- verified by reading it in full; a widely repeated secondary claim that Rule 4 defines a day the clerk's office is closed as a legal holiday is NOT in the rule text and is not encoded. Also not modelled: 662.003(c) optional holidays (Rosh Hashanah, Yom Kippur, Good Friday), which 662.021 excludes from the legal-holiday definition outright, and Tex. Gov't Code 662.013's optional Cesar Chavez Day.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(1)"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(2)"
+        },
+        {
+          "date": "2027-01-19",
+          "name": "Confederate Heroes Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(1)"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(3)"
+        },
+        {
+          "date": "2027-03-02",
+          "name": "Texas Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(2)"
+        },
+        {
+          "date": "2027-04-21",
+          "name": "San Jacinto Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(3)"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(4)"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Emancipation Day in Texas",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(4)"
+        },
+        {
+          "date": "2027-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(5)"
+        },
+        {
+          "date": "2027-08-27",
+          "name": "Lyndon Baines Johnson Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(5)"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(6)"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(7)"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(8)"
+        },
+        {
+          "date": "2027-11-26",
+          "name": "Friday after Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(6)"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(9)"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "tx",
+      "year": 2028,
+      "authority": {
+        "citation": "Tex. Gov't Code 662.021 (legal holidays), taking Tex. Gov't Code 662.003(a) and 662.003(b)(1)-(6); applied by Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1",
+        "url": "https://statutes.capitol.texas.gov/Docs/GV/htm/GV.662.htm",
+        "rule_url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
+        "note": "Generated 2026-08-24 from Tex. Gov't Code 662.021, which is the DEFINITION of \"legal holiday\" and is narrower than the state's own holiday list. 662.021 reads: \"A legal holiday includes only the following days: (1) a national holiday under Section 662.003(a); and (2) a state holiday under Sections 662.003(b)(1) through (6).\" THE CUT AT (b)(6) IS THE WHOLE POINT AND IT IS EASY TO MISS. 662.003(b) lists EIGHT state holidays; 662.021 takes only the first SIX. So (b)(7) DECEMBER 24 and (b)(8) DECEMBER 26 are real Texas state holidays and are NOT legal holidays, and are deliberately absent here. Copying 662.003(b) wholesale would add two days in late December and push real deadlines LATER than Texas law does -- the direction that misses a filing. INCLUDED AND SURPRISING: Confederate Heroes Day (Jan 19), Texas Independence Day (Mar 2), San Jacinto Day (Apr 21), Emancipation Day in Texas (Jun 19) and Lyndon Baines Johnson Day (Aug 27) ARE legal holidays under 662.021, even though Tex. Gov't Code 662.004(a) requires state agencies to keep \"enough employees on duty during a state holiday to conduct the public business\" on exactly those days -- 662.004(b) excepts only weekend holidays, the Friday after Thanksgiving, and December 24 and 26. So Texas courthouses are commonly OPEN on five days this calendar counts as holidays. That is the opposite shape from Pennsylvania, where the closure schedule is BROADER than the statute; here it is NARROWER. The engine encodes the STATUTORY TEST in both, because that is what the rule's own words key on -- see the standing note in deadline-engine.js on what belongs in a calendar. Disclosed rather than quietly reconciled, because here the statutory test is the one that pushes dates LATER, which is the unsafe direction, and a user should know it. ONE FURTHER CAVEAT ON THAT LINK, STATED PLAINLY: Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1 both say \"legal holiday\" WITHOUT defining it and WITHOUT citing 662.021. The connection to 662.021 is the settled reading rather than an express cross-reference in the rule, and it was not found stated in either rule's own text. It is recorded here as the reading this calendar rests on so a reviewer can test it, not asserted as something the rules say. NO OBSERVANCE SHIFT, and this was checked rather than assumed. Chapter 662 contains no provision moving a legal holiday that falls on a Saturday or Sunday to an adjacent weekday; 662.004(b) instead assumes such a holiday simply falls on the weekend and excuses staffing. So a fixed-date holiday landing on a weekend STAYS there and no observed date is generated. Texas therefore matches Illinois and California and differs from us-federal/fl/in/mi/pa (both-way shift) and Ohio (Sunday only). Deadlines still roll, because Tex. R. Civ. P. 4 excludes Saturdays and Sundays independently. The State Auditor's published state-employee holiday schedule DOES shift some observances; that is a closure schedule, not the statutory test, and is not encoded. NOT MODELLED, flagged rather than dropped: Tex. R. App. P. 4.1(b)'s clerk's-office-closed limb (an appellate filing period extends when the clerk's office is closed or inaccessible on the last day) -- unknowable in advance, same class as Indiana's office-closed limb, Illinois's Governor-proclamation limb, Florida's chief-justice hurricane limb and California's CCP 12b. Tex. R. Civ. P. 4 carries NO such limb -- verified by reading it in full; a widely repeated secondary claim that Rule 4 defines a day the clerk's office is closed as a legal holiday is NOT in the rule text and is not encoded. Also not modelled: 662.003(c) optional holidays (Rosh Hashanah, Yom Kippur, Good Friday), which 662.021 excludes from the legal-holiday definition outright, and Tex. Gov't Code 662.013's optional Cesar Chavez Day.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(1)"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(2)"
+        },
+        {
+          "date": "2028-01-19",
+          "name": "Confederate Heroes Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(1)"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(3)"
+        },
+        {
+          "date": "2028-03-02",
+          "name": "Texas Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(2)"
+        },
+        {
+          "date": "2028-04-21",
+          "name": "San Jacinto Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(3)"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(4)"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Emancipation Day in Texas",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(4)"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(5)"
+        },
+        {
+          "date": "2028-08-27",
+          "name": "Lyndon Baines Johnson Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(5)"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(6)"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(7)"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(8)"
+        },
+        {
+          "date": "2028-11-24",
+          "name": "Friday after Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(6)"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(9)"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "tx",
+      "year": 2029,
+      "authority": {
+        "citation": "Tex. Gov't Code 662.021 (legal holidays), taking Tex. Gov't Code 662.003(a) and 662.003(b)(1)-(6); applied by Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1",
+        "url": "https://statutes.capitol.texas.gov/Docs/GV/htm/GV.662.htm",
+        "rule_url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
+        "note": "Generated 2026-08-24 from Tex. Gov't Code 662.021, which is the DEFINITION of \"legal holiday\" and is narrower than the state's own holiday list. 662.021 reads: \"A legal holiday includes only the following days: (1) a national holiday under Section 662.003(a); and (2) a state holiday under Sections 662.003(b)(1) through (6).\" THE CUT AT (b)(6) IS THE WHOLE POINT AND IT IS EASY TO MISS. 662.003(b) lists EIGHT state holidays; 662.021 takes only the first SIX. So (b)(7) DECEMBER 24 and (b)(8) DECEMBER 26 are real Texas state holidays and are NOT legal holidays, and are deliberately absent here. Copying 662.003(b) wholesale would add two days in late December and push real deadlines LATER than Texas law does -- the direction that misses a filing. INCLUDED AND SURPRISING: Confederate Heroes Day (Jan 19), Texas Independence Day (Mar 2), San Jacinto Day (Apr 21), Emancipation Day in Texas (Jun 19) and Lyndon Baines Johnson Day (Aug 27) ARE legal holidays under 662.021, even though Tex. Gov't Code 662.004(a) requires state agencies to keep \"enough employees on duty during a state holiday to conduct the public business\" on exactly those days -- 662.004(b) excepts only weekend holidays, the Friday after Thanksgiving, and December 24 and 26. So Texas courthouses are commonly OPEN on five days this calendar counts as holidays. That is the opposite shape from Pennsylvania, where the closure schedule is BROADER than the statute; here it is NARROWER. The engine encodes the STATUTORY TEST in both, because that is what the rule's own words key on -- see the standing note in deadline-engine.js on what belongs in a calendar. Disclosed rather than quietly reconciled, because here the statutory test is the one that pushes dates LATER, which is the unsafe direction, and a user should know it. ONE FURTHER CAVEAT ON THAT LINK, STATED PLAINLY: Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1 both say \"legal holiday\" WITHOUT defining it and WITHOUT citing 662.021. The connection to 662.021 is the settled reading rather than an express cross-reference in the rule, and it was not found stated in either rule's own text. It is recorded here as the reading this calendar rests on so a reviewer can test it, not asserted as something the rules say. NO OBSERVANCE SHIFT, and this was checked rather than assumed. Chapter 662 contains no provision moving a legal holiday that falls on a Saturday or Sunday to an adjacent weekday; 662.004(b) instead assumes such a holiday simply falls on the weekend and excuses staffing. So a fixed-date holiday landing on a weekend STAYS there and no observed date is generated. Texas therefore matches Illinois and California and differs from us-federal/fl/in/mi/pa (both-way shift) and Ohio (Sunday only). Deadlines still roll, because Tex. R. Civ. P. 4 excludes Saturdays and Sundays independently. The State Auditor's published state-employee holiday schedule DOES shift some observances; that is a closure schedule, not the statutory test, and is not encoded. NOT MODELLED, flagged rather than dropped: Tex. R. App. P. 4.1(b)'s clerk's-office-closed limb (an appellate filing period extends when the clerk's office is closed or inaccessible on the last day) -- unknowable in advance, same class as Indiana's office-closed limb, Illinois's Governor-proclamation limb, Florida's chief-justice hurricane limb and California's CCP 12b. Tex. R. Civ. P. 4 carries NO such limb -- verified by reading it in full; a widely repeated secondary claim that Rule 4 defines a day the clerk's office is closed as a legal holiday is NOT in the rule text and is not encoded. Also not modelled: 662.003(c) optional holidays (Rosh Hashanah, Yom Kippur, Good Friday), which 662.021 excludes from the legal-holiday definition outright, and Tex. Gov't Code 662.013's optional Cesar Chavez Day.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(1)"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(2)"
+        },
+        {
+          "date": "2029-01-19",
+          "name": "Confederate Heroes Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(1)"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(3)"
+        },
+        {
+          "date": "2029-03-02",
+          "name": "Texas Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(2)"
+        },
+        {
+          "date": "2029-04-21",
+          "name": "San Jacinto Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(3)"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(4)"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Emancipation Day in Texas",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(4)"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(5)"
+        },
+        {
+          "date": "2029-08-27",
+          "name": "Lyndon Baines Johnson Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(5)"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(6)"
+        },
+        {
+          "date": "2029-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(7)"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(8)"
+        },
+        {
+          "date": "2029-11-23",
+          "name": "Friday after Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(6)"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(9)"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "tx",
+      "year": 2030,
+      "authority": {
+        "citation": "Tex. Gov't Code 662.021 (legal holidays), taking Tex. Gov't Code 662.003(a) and 662.003(b)(1)-(6); applied by Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1",
+        "url": "https://statutes.capitol.texas.gov/Docs/GV/htm/GV.662.htm",
+        "rule_url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
+        "note": "Generated 2026-08-24 from Tex. Gov't Code 662.021, which is the DEFINITION of \"legal holiday\" and is narrower than the state's own holiday list. 662.021 reads: \"A legal holiday includes only the following days: (1) a national holiday under Section 662.003(a); and (2) a state holiday under Sections 662.003(b)(1) through (6).\" THE CUT AT (b)(6) IS THE WHOLE POINT AND IT IS EASY TO MISS. 662.003(b) lists EIGHT state holidays; 662.021 takes only the first SIX. So (b)(7) DECEMBER 24 and (b)(8) DECEMBER 26 are real Texas state holidays and are NOT legal holidays, and are deliberately absent here. Copying 662.003(b) wholesale would add two days in late December and push real deadlines LATER than Texas law does -- the direction that misses a filing. INCLUDED AND SURPRISING: Confederate Heroes Day (Jan 19), Texas Independence Day (Mar 2), San Jacinto Day (Apr 21), Emancipation Day in Texas (Jun 19) and Lyndon Baines Johnson Day (Aug 27) ARE legal holidays under 662.021, even though Tex. Gov't Code 662.004(a) requires state agencies to keep \"enough employees on duty during a state holiday to conduct the public business\" on exactly those days -- 662.004(b) excepts only weekend holidays, the Friday after Thanksgiving, and December 24 and 26. So Texas courthouses are commonly OPEN on five days this calendar counts as holidays. That is the opposite shape from Pennsylvania, where the closure schedule is BROADER than the statute; here it is NARROWER. The engine encodes the STATUTORY TEST in both, because that is what the rule's own words key on -- see the standing note in deadline-engine.js on what belongs in a calendar. Disclosed rather than quietly reconciled, because here the statutory test is the one that pushes dates LATER, which is the unsafe direction, and a user should know it. ONE FURTHER CAVEAT ON THAT LINK, STATED PLAINLY: Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1 both say \"legal holiday\" WITHOUT defining it and WITHOUT citing 662.021. The connection to 662.021 is the settled reading rather than an express cross-reference in the rule, and it was not found stated in either rule's own text. It is recorded here as the reading this calendar rests on so a reviewer can test it, not asserted as something the rules say. NO OBSERVANCE SHIFT, and this was checked rather than assumed. Chapter 662 contains no provision moving a legal holiday that falls on a Saturday or Sunday to an adjacent weekday; 662.004(b) instead assumes such a holiday simply falls on the weekend and excuses staffing. So a fixed-date holiday landing on a weekend STAYS there and no observed date is generated. Texas therefore matches Illinois and California and differs from us-federal/fl/in/mi/pa (both-way shift) and Ohio (Sunday only). Deadlines still roll, because Tex. R. Civ. P. 4 excludes Saturdays and Sundays independently. The State Auditor's published state-employee holiday schedule DOES shift some observances; that is a closure schedule, not the statutory test, and is not encoded. NOT MODELLED, flagged rather than dropped: Tex. R. App. P. 4.1(b)'s clerk's-office-closed limb (an appellate filing period extends when the clerk's office is closed or inaccessible on the last day) -- unknowable in advance, same class as Indiana's office-closed limb, Illinois's Governor-proclamation limb, Florida's chief-justice hurricane limb and California's CCP 12b. Tex. R. Civ. P. 4 carries NO such limb -- verified by reading it in full; a widely repeated secondary claim that Rule 4 defines a day the clerk's office is closed as a legal holiday is NOT in the rule text and is not encoded. Also not modelled: 662.003(c) optional holidays (Rosh Hashanah, Yom Kippur, Good Friday), which 662.021 excludes from the legal-holiday definition outright, and Tex. Gov't Code 662.013's optional Cesar Chavez Day.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(1)"
+        },
+        {
+          "date": "2030-01-19",
+          "name": "Confederate Heroes Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(1)"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(2)"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(3)"
+        },
+        {
+          "date": "2030-03-02",
+          "name": "Texas Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(2)"
+        },
+        {
+          "date": "2030-04-21",
+          "name": "San Jacinto Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(3)"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(4)"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Emancipation Day in Texas",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(4)"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(5)"
+        },
+        {
+          "date": "2030-08-27",
+          "name": "Lyndon Baines Johnson Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(5)"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(6)"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(7)"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(8)"
+        },
+        {
+          "date": "2030-11-29",
+          "name": "Friday after Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(6)"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(9)"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "tx",
+      "year": 2031,
+      "authority": {
+        "citation": "Tex. Gov't Code 662.021 (legal holidays), taking Tex. Gov't Code 662.003(a) and 662.003(b)(1)-(6); applied by Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1",
+        "url": "https://statutes.capitol.texas.gov/Docs/GV/htm/GV.662.htm",
+        "rule_url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
+        "note": "Generated 2026-08-24 from Tex. Gov't Code 662.021, which is the DEFINITION of \"legal holiday\" and is narrower than the state's own holiday list. 662.021 reads: \"A legal holiday includes only the following days: (1) a national holiday under Section 662.003(a); and (2) a state holiday under Sections 662.003(b)(1) through (6).\" THE CUT AT (b)(6) IS THE WHOLE POINT AND IT IS EASY TO MISS. 662.003(b) lists EIGHT state holidays; 662.021 takes only the first SIX. So (b)(7) DECEMBER 24 and (b)(8) DECEMBER 26 are real Texas state holidays and are NOT legal holidays, and are deliberately absent here. Copying 662.003(b) wholesale would add two days in late December and push real deadlines LATER than Texas law does -- the direction that misses a filing. INCLUDED AND SURPRISING: Confederate Heroes Day (Jan 19), Texas Independence Day (Mar 2), San Jacinto Day (Apr 21), Emancipation Day in Texas (Jun 19) and Lyndon Baines Johnson Day (Aug 27) ARE legal holidays under 662.021, even though Tex. Gov't Code 662.004(a) requires state agencies to keep \"enough employees on duty during a state holiday to conduct the public business\" on exactly those days -- 662.004(b) excepts only weekend holidays, the Friday after Thanksgiving, and December 24 and 26. So Texas courthouses are commonly OPEN on five days this calendar counts as holidays. That is the opposite shape from Pennsylvania, where the closure schedule is BROADER than the statute; here it is NARROWER. The engine encodes the STATUTORY TEST in both, because that is what the rule's own words key on -- see the standing note in deadline-engine.js on what belongs in a calendar. Disclosed rather than quietly reconciled, because here the statutory test is the one that pushes dates LATER, which is the unsafe direction, and a user should know it. ONE FURTHER CAVEAT ON THAT LINK, STATED PLAINLY: Tex. R. Civ. P. 4 and Tex. R. App. P. 4.1 both say \"legal holiday\" WITHOUT defining it and WITHOUT citing 662.021. The connection to 662.021 is the settled reading rather than an express cross-reference in the rule, and it was not found stated in either rule's own text. It is recorded here as the reading this calendar rests on so a reviewer can test it, not asserted as something the rules say. NO OBSERVANCE SHIFT, and this was checked rather than assumed. Chapter 662 contains no provision moving a legal holiday that falls on a Saturday or Sunday to an adjacent weekday; 662.004(b) instead assumes such a holiday simply falls on the weekend and excuses staffing. So a fixed-date holiday landing on a weekend STAYS there and no observed date is generated. Texas therefore matches Illinois and California and differs from us-federal/fl/in/mi/pa (both-way shift) and Ohio (Sunday only). Deadlines still roll, because Tex. R. Civ. P. 4 excludes Saturdays and Sundays independently. The State Auditor's published state-employee holiday schedule DOES shift some observances; that is a closure schedule, not the statutory test, and is not encoded. NOT MODELLED, flagged rather than dropped: Tex. R. App. P. 4.1(b)'s clerk's-office-closed limb (an appellate filing period extends when the clerk's office is closed or inaccessible on the last day) -- unknowable in advance, same class as Indiana's office-closed limb, Illinois's Governor-proclamation limb, Florida's chief-justice hurricane limb and California's CCP 12b. Tex. R. Civ. P. 4 carries NO such limb -- verified by reading it in full; a widely repeated secondary claim that Rule 4 defines a day the clerk's office is closed as a legal holiday is NOT in the rule text and is not encoded. Also not modelled: 662.003(c) optional holidays (Rosh Hashanah, Yom Kippur, Good Friday), which 662.021 excludes from the legal-holiday definition outright, and Tex. Gov't Code 662.013's optional Cesar Chavez Day.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(1)"
+        },
+        {
+          "date": "2031-01-19",
+          "name": "Confederate Heroes Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(1)"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(2)"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(3)"
+        },
+        {
+          "date": "2031-03-02",
+          "name": "Texas Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(2)"
+        },
+        {
+          "date": "2031-04-21",
+          "name": "San Jacinto Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(3)"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(4)"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Emancipation Day in Texas",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(4)"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(5)"
+        },
+        {
+          "date": "2031-08-27",
+          "name": "Lyndon Baines Johnson Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(5)"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(6)"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(7)"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(8)"
+        },
+        {
+          "date": "2031-11-28",
+          "name": "Friday after Thanksgiving Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(b)(6)"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "Tex. Gov't Code 662.003(a)(9)"
+        }
+      ]
+    }
+  ]
+}

@@ -61,6 +61,10 @@ function addDays(iso, n) {
 function dayOfWeek(iso) { var d = toUTC(iso); return d ? d.getUTCDay() : null; } // 0=Sun 6=Sat
 function isWeekend(iso) { var w = dayOfWeek(iso); return w === 0 || w === 6; }
 
+// Used only by the terminal-day-rule audit step, which has to name the day of
+// the week in prose an attorney reads. Indexed to match dayOfWeek above.
+var WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 // Anniversary arithmetic for months/years, with end-of-month clamping. Adding
 // one month to 31 January yields 28/29 February, not 3 March -- the naive
 // Date.setUTCMonth rolls over and would silently overshoot.
@@ -392,7 +396,103 @@ var COMPUTATION_STANDARDS = {
   fl_rgpja_2514: { label: 'Fla. R. Gen. Prac. & Jud. Admin. 2.514', impl: 'frcp_6a',
     shifted_start: true, short_period_exclusion_days: 7,
     base_period_suffix: '(a)(1)(A)-(B)', months_years_suffix: '',
-    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(a)(5)' }
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(a)(5)' },
+  // ── TEXAS: TWO STANDARDS, AND THEY GENUINELY DIVERGE ────────────────────
+  // California also has two standards, but there the split is about citing
+  // the right authority for identical arithmetic. Texas is a stronger case:
+  // the two rules PRODUCE DIFFERENT DATES, so treating them as one would be
+  // wrong on the numbers, not merely wrong in the audit trail.
+  //
+  //   tx_trcp_4   Tex. R. Civ. P. 4      -- HAS a short-period exclusion
+  //   tx_trap_41  Tex. R. App. P. 4.1(a) -- has NONE
+  //
+  // Both read verbatim from the Texas Judicial Branch's own published rule
+  // books on 2026-08-24, each one read end to end rather than one being
+  // inferred from the other.
+  //
+  // Tex. R. Civ. P. 4, verbatim: "In computing any period of time prescribed
+  // or allowed by these rules, by order of court, or by any applicable
+  // statute, the day of the act, event, or default after which the designated
+  // period of time begins to run is not to be included. The last day of the
+  // period so computed is to be included, unless it is a Saturday, Sunday, or
+  // legal holiday, in which event the period runs until the end of the next
+  // day which is not a Saturday, Sunday, or legal holiday. Saturdays, Sundays,
+  // and legal holidays shall not be counted for any purpose in any time period
+  // of five days or less in these rules, except that Saturdays, Sundays, and
+  // legal holidays shall be counted for purpose of the three-day periods in
+  // Rules 21 and 21a, extending other periods by three days when service is
+  // made by mail."
+  //
+  // ── THE THRESHOLD IS 6 AND THAT IS NOT A TYPO. READ THIS BEFORE EDITING. ─
+  // short_period_exclusion_days is compared with a STRICT less-than at the
+  // call site (countValue < std.short_period_exclusion_days). Ohio, Indiana
+  // and Florida all say "less than seven days", so 7 is the literal number in
+  // their rule AND the right value here. Texas says "five days or less",
+  // which is <= 5, which is < 6. The literal number in the Texas rule is FIVE
+  // and the correct value in this field is SIX.
+  //
+  // Writing 5 here would silently stop excluding weekends on exactly the
+  // five-day periods the rule is aimed at, producing a date EARLIER than the
+  // true Texas deadline. Writing 7 would exclude them on six- and seven-day
+  // periods the rule does not reach, producing a date LATER -- the direction
+  // that misses a filing. Neither would throw. This is the third jurisdiction
+  // whose short-period threshold had to be read rather than carried across,
+  // and the first where the rule's number and this field's number differ.
+  //
+  // CURRENTLY UNREACHABLE BY CONSTRUCTION, AND KEPT ANYWAY. No Texas rule
+  // seeded today has a base period of five days or less -- the shortest is 20.
+  // The property is declared because it is a property of Rule 4, not of the
+  // rows that happen to exist, and omitting it would leave a live trap for
+  // whoever seeds the first short Texas period. Same call already made for
+  // StoneDesk's last-active-admin guard: reachability is a property of the
+  // current rule set, not of the rule.
+  //
+  // THE EXCEPTION CLAUSE NEEDS NO CODE, AND THAT WAS VERIFIED RATHER THAN
+  // ASSUMED. Rule 4 carves the Rule 21/21a three-day periods out of the
+  // exclusion, so those three days count Saturdays, Sundays and holidays even
+  // though three is under the threshold. The exclusion here only ever runs in
+  // the base-period branch, and the service-extension branch adds plain
+  // calendar days, so the carve-out is satisfied structurally. Checked against
+  // both call sites; if the extension path is ever changed to consult a
+  // standard's short-period property, Texas breaks and this note is the reason.
+  //
+  // Rule 4 is a single unlettered paragraph, so every suffix is BLANK -- same
+  // reasoning as Ohio, Indiana and Illinois. It does not address backward
+  // counting or months and years.
+  tx_trcp_4: { label: 'Tex. R. Civ. P. 4', impl: 'frcp_6a',
+    short_period_exclusion_days: 6,
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // Tex. R. App. P. 4.1(a), verbatim: "The day of an act, event, or default
+  // after which a designated period begins to run is not included when
+  // computing a period prescribed or allowed by these rules, by court order,
+  // or by statute. The last day of the period is included, but if that day is
+  // a Saturday, Sunday, or legal holiday, the period extends to the end of the
+  // next day that is not a Saturday, Sunday, or legal holiday."
+  //
+  // NO SHORT-PERIOD EXCLUSION -- verified by reading 4.1 in full, not inferred
+  // from the fact that the civil rule in the same state has one. Declaring one
+  // here would push Texas's 20-day accelerated appeal and every shorter
+  // appellate period LATER than the true deadline. Within a single state the
+  // two rules disagree, which is the sharpest available illustration of why
+  // this engine never carries a computation standard across a rule family.
+  //
+  // Subdivision lettering is real and citable here, unlike Rule 4: (a) carries
+  // both the day-exclusion and the last-day rollover. Backward is BLANK --
+  // 4.1 does not address backward-counted periods.
+  //
+  // NOT MODELLED: 4.1(b), the clerk's-office-closed limb -- "if the clerk's
+  // office where the document is to be filed is closed or inaccessible during
+  // regular hours on the last day for filing the document, the period for
+  // filing the document extends to the end of the next day when the clerk's
+  // office is open and accessible." Unknowable in advance, same class as
+  // Indiana's T.R. 6(A) limb, Illinois's Governor-proclamation limb, Florida's
+  // chief-justice limb and California's CCP 12b. Note it is a limb of the
+  // APPELLATE rule only: Tex. R. Civ. P. 4 has no equivalent, despite a
+  // widely repeated secondary claim that it does.
+  tx_trap_41: { label: 'Tex. R. App. P. 4.1', impl: 'frcp_6a',
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
@@ -446,6 +546,33 @@ var SERVICE_EXTENSION_STANDARDS = {
   // allowlist here is a single value rather than frcp_6d's three.
   fl_rgpja_2514b: {
     label: 'Fla. R. Gen. Prac. & Jud. Admin. 2.514(b)',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
+  },
+  // Tex. R. Civ. P. 21a(c), verbatim: "Whenever a party has the right or is
+  // required to do some act within a prescribed period after the service of a
+  // notice or other paper upon him and the notice or paper is served upon him
+  // by mail, three days shall be added to the prescribed period."
+  //
+  // THREE days like FRCP 6(d), but MAIL ONLY like Florida's five -- so it
+  // matches neither existing standard and gets its own. 21a(a)(2) lists the
+  // methods available for a document not filed electronically: "in person, by
+  // mail, by commercial delivery service, by fax, by email, or by such other
+  // manner as the court in its discretion may direct." Subdivision (c) then
+  // extends for exactly one of them. Commercial delivery service, fax, email
+  // and electronic service through the filing manager all get NO added days,
+  // even though 21a(b) gives each its own completion rule. Reading (b)'s list
+  // of methods as the set that qualifies under (c) is the available mistake
+  // here, and it would add three days that Texas law does not add.
+  //
+  // Note what this standard does NOT reach: the citation. 21a(a) opens by
+  // covering every paper required to be served under Rule 21, "other than the
+  // citation to be served upon the filing of a cause of action." So the
+  // Rule 99 answer deadline takes no service extension at all -- that is the
+  // law rather than an omission, and the Rule 99 row carries no
+  // service_extension for that reason.
+  tx_trcp_21a: {
+    label: 'Tex. R. Civ. P. 21a(c)',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
   },
@@ -919,6 +1046,95 @@ function computeDeadline(input) {
     steps.push({ step: 'base_period', detail: 'Counted ' + countValue + ' business days ' + direction + ', skipping weekends and holidays.', date: base });
   } else {
     return { ok: false, code: 'UNKNOWN_UNIT', message: 'Rule ' + rule.rule_id + ' uses unit "' + count.unit + '", which this engine does not implement.' };
+  }
+
+  // ── TERMINAL DAY RULE: A NAMED WEEKDAY STRICTLY AFTER THE PERIOD ─────────
+  // Tex. R. Civ. P. 99(b): the citation "shall direct the defendant to file a
+  // written answer to the plaintiff's petition on or before 10:00 a.m. on the
+  // Monday next after the expiration of twenty days after the date of service
+  // thereof."
+  //
+  // This is a THIRD shape, distinct from both of the ones already here:
+  //   shifted_start        moves where the count BEGINS   (Florida)
+  //   rollover             moves a bad landing day OFF it (everyone)
+  //   terminal_day_rule    moves the deadline to a NAMED WEEKDAY after the
+  //                        period expires, whether or not the landing day was
+  //                        a weekend or holiday at all
+  //
+  // Rollover cannot express it. Rollover only fires when the last day is a
+  // Saturday, Sunday or holiday, and it stops at the first day that is none of
+  // those. Texas moves the deadline to Monday from ANY weekday -- a period
+  // expiring on a Wednesday still goes to the following Monday, which rollover
+  // would never touch. Modelling this as "count 20 then roll" would be right
+  // only when day 20 happens to fall on a weekend, and would produce a date up
+  // to six days EARLY the rest of the time.
+  //
+  // STRICTLY AFTER, AND THAT IS THE WHOLE DIFFICULTY. The rule says the Monday
+  // next after the EXPIRATION of the twenty days. The twenty days expire at the
+  // end of day twenty, so when day twenty is itself a Monday the deadline is
+  // the Monday of the FOLLOWING WEEK, seven days later, not that same day.
+  // Proctor v. Green, 673 S.W.2d 390, 392 (Tex. App.-Houston [1st Dist.] 1984)
+  // is reported as holding exactly that: "When the twentieth day falls on
+  // Monday, the appearance day is the Monday of the following week."
+  //
+  // Provenance of that quote, stated plainly rather than dressed up: the
+  // opinion text was NOT read on a free primary-source site -- CourtListener
+  // confirms the case, court, date and citation but serves no accessible full
+  // text, and the two databases carrying it refused automated access. The
+  // quote comes from a legal database's rendering of the opinion. The engine
+  // does not rest on it: the same result follows from Rule 99(b)'s own words,
+  // because a period that expires at the end of a Monday cannot have its
+  // "Monday next after" be that same Monday. The case is confirmatory, and the
+  // rule row cites Rule 99(b) as its authority, not the case.
+  //
+  // THE EXPIRATION DAY IS NOT ROLLED FIRST. This is the trap, and it is the
+  // one the Proctor facts settle. There, service produced a twentieth day of
+  // Sunday 3 July 1983; the court took the Monday next after as 4 July 1983 --
+  // the very next day -- and only then applied Rule 4 to move it off the
+  // holiday to Tuesday 5 July. Had day twenty been rolled off the Sunday to
+  // Monday 4 July first, the "Monday next after" would have been 11 July and
+  // the whole case would have come out differently. So the order is fixed:
+  // count the period, find the named weekday strictly after it, THEN roll.
+  // The rollOff call below is deliberately left downstream of this block.
+  //
+  // Gated on a RULE property rather than a computation standard, because the
+  // Monday requirement lives in Rule 99, not in Rule 4. Several other Texas
+  // rules use the identical phrase (Rules 15, 122, 330(a), 606, 619, 659 and
+  // 687 among them), so the shape is reusable within Texas -- but it belongs
+  // to each of those rules, not to the state's computation standard, and
+  // hanging it on tx_trcp_4 would silently apply it to the discovery rows,
+  // which have no Monday requirement at all.
+  if (rule.terminal_day_rule) {
+    var tdr = rule.terminal_day_rule;
+    if (tdr.kind !== 'next_weekday_strictly_after') {
+      return { ok: false, code: 'UNKNOWN_TERMINAL_DAY_RULE',
+        message: 'Rule ' + rule.rule_id + ' names terminal day rule "' + tdr.kind +
+          '", which this engine does not implement. No date is computed rather than one being produced by the ordinary path, which would silently ignore the rule.' };
+    }
+    if (direction !== 'forward') {
+      // Every rule of this shape found so far measures forward from service.
+      // A backward one would have to mean the named weekday BEFORE the period,
+      // and nothing read so far says that. Refused rather than guessed.
+      return { ok: false, code: 'TERMINAL_DAY_RULE_DIRECTION',
+        message: 'Rule ' + rule.rule_id + ' applies a named-weekday terminal day rule to a backward-counted period. This engine implements that shape only for forward periods, and does not assume what the backward equivalent would mean.' };
+    }
+    var want = Number(tdr.weekday);
+    if (!(want >= 0 && want <= 6)) {
+      return { ok: false, code: 'UNKNOWN_TERMINAL_DAY_RULE',
+        message: 'Rule ' + rule.rule_id + ' names weekday "' + tdr.weekday + '", which is not a day of the week (0 = Sunday through 6 = Saturday).' };
+    }
+    var expiry = base;
+    // STRICTLY after: always advance at least one day, so an expiry that is
+    // already the named weekday moves a full week rather than standing still.
+    var walk = addDays(expiry, 1);
+    for (var tg = 0; tg < 7 && dayOfWeek(walk) !== want; tg++) walk = addDays(walk, 1);
+    base = walk;
+    steps.push({ step: 'terminal_day_rule',
+      detail: 'The ' + countValue + '-day period expired on ' + expiry + ' (' + (tdr.expiry_label || 'a ' + WEEKDAY_NAMES[dayOfWeek(expiry)]) +
+        '). This rule sets the deadline at the ' + WEEKDAY_NAMES[want] + ' next AFTER that expiration, so the deadline moves to ' + base +
+        '. Because "after" is strict, an expiration falling on a ' + WEEKDAY_NAMES[want] + ' moves a full week, not to that same day.' +
+        (tdr.time_of_day ? ' NOTE: this rule sets a time of day as well — ' + tdr.time_of_day + ' — and this engine computes dates only. The deadline is that hour on this date, not the end of it.' : ''),
+      authority: (rule.authority && rule.authority.citation) || null, date: base });
   }
 
   // Rule 6(a)(1)(C) / 6(a)(5): roll the LAST day only.
