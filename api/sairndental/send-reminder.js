@@ -30,17 +30,32 @@ async function fetchOne(resource, idCol, licenseHash, id) {
   return (Array.isArray(rows) && rows[0]) ? rows[0].data : null;
 }
 
+// NOTE ON THE VARIABLE NAME, corrected 2026-08-24: this file read
+// RESEND_FROM_ADDRESS, a name that has never existed in this Vercel project.
+// The sender address has been configured as RESEND_FROM_EMAIL since 2026-06-19
+// (alongside RESEND_API_KEY, both Production + Preview). Because of that, the
+// env-completeness guard below failed on EVERY hourly firing since this file
+// shipped and it has never sent a single reminder -- a 500 in the production
+// log every hour, for months, from a feature everyone assumed was working.
+// Identical defect to api/alf-alerts.js, found in the same sweep and fixed
+// there first. Verified with `vercel env ls production`, not assumed.
 async function sendResendEmail(to, subject, text, html) {
   var r = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: process.env.RESEND_FROM_ADDRESS, to: [to], subject: subject, text: text, html: html })
+    body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL, to: [to], subject: subject, text: text, html: html })
   });
   if (!r.ok) {
     var bodyText = await r.text().catch(function () { return ''; });
     throw new Error('Resend ' + r.status + ': ' + bodyText);
   }
-  return true;
+  // The provider's message id is returned so a SUCCESSFUL send is positively
+  // observable in the production log rather than inferred from the absence of
+  // an error. A cron's response body goes nowhere -- Vercel keeps the status
+  // code and discards it -- so a sweep that delivered and a sweep that found
+  // nothing due both produce an identical, silent 200.
+  var okBody = await r.json().catch(function () { return {}; });
+  return (okBody && okBody.id) || null;
 }
 
 async function stampReminderSent(row, stage, nowISO) {
@@ -72,8 +87,18 @@ module.exports = async (req, res) => {
     res.status(401).json({ error: { message: 'Unauthorized' } });
     return;
   }
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY || !process.env.RESEND_API_KEY || !process.env.RESEND_FROM_ADDRESS) {
-    console.error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / RESEND_API_KEY / RESEND_FROM_ADDRESS not fully set');
+  // Names ONLY the variable actually missing. The original guard listed all
+  // four unconditionally, which is what made the RESEND_FROM_ADDRESS typo look
+  // like an absent secret and sent a previous session hunting for a
+  // RESEND_API_KEY that was present and correct the whole time.
+  var missing = [
+    !process.env.SUPABASE_URL ? 'SUPABASE_URL' : null,
+    !process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' : null,
+    !process.env.RESEND_API_KEY ? 'RESEND_API_KEY' : null,
+    !process.env.RESEND_FROM_EMAIL ? 'RESEND_FROM_EMAIL' : null
+  ].filter(Boolean);
+  if (missing.length) {
+    console.error('send-reminder: not fully configured, missing: ' + missing.join(', '));
     res.status(500).json({ error: { message: 'Server configuration error' } });
     return;
   }
@@ -123,15 +148,23 @@ module.exports = async (req, res) => {
           stage: stage
         });
 
-        await sendResendEmail(patient.email, copy.subject, copy.text, copy.html);
+        var resendId = await sendResendEmail(patient.email, copy.subject, copy.text, copy.html);
         await stampReminderSent(row, stage, nowISO);
         summary.sent++;
+        console.log('send-reminder: Resend send OK for appointment ' + row.appointment_id +
+          ' stage ' + stage + ' -- resend_id ' + (resendId || 'none returned'));
       } catch (perAppointmentErr) {
         console.error('send-reminder: failed for appointment', row.appointment_id, 'stage', stage, '-', perAppointmentErr.message);
         summary.failed++;
       }
     }
 
+    // Logged, not just returned. Without this a sweep that found nothing due
+    // is indistinguishable in the production log from a sweep that never ran,
+    // because the cron's response body is discarded either way.
+    console.log('send-reminder: sweep complete -- scanned ' + rows.length +
+      ', sent ' + summary.sent + ', skippedNoEmail ' + summary.skippedNoEmail +
+      ', skippedNotDue ' + summary.skippedNotDue + ', failed ' + summary.failed);
     res.status(200).json({ ok: true, summary: summary });
   } catch (err) {
     console.error('send-reminder: fatal error', err);

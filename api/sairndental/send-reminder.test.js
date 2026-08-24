@@ -76,12 +76,40 @@ async function main() {
     clearEnv('SUPABASE_URL');
     clearEnv('SUPABASE_SERVICE_ROLE_KEY');
     clearEnv('RESEND_API_KEY');
-    clearEnv('RESEND_FROM_ADDRESS');
+    clearEnv('RESEND_FROM_EMAIL');
     delete require.cache[require.resolve('./send-reminder.js')];
     var handler = require('./send-reminder.js');
     var res = mockRes();
     await handler({ headers: { authorization: 'Bearer ' + fixtureValue } }, res);
     assert.strictEqual(res.statusCode, 500);
+  });
+
+  await test('the sender variable is RESEND_FROM_EMAIL, not the RESEND_FROM_ADDRESS that never existed', async () => {
+    // The regression this file exists for as of 2026-08-24. RESEND_FROM_ADDRESS
+    // has never been set in this Vercel project, so reading it made the guard
+    // below fail on every single hourly firing since the file shipped -- the
+    // cron 500'd for months and never sent one reminder. Setting only the four
+    // REAL variable names must be enough to get past the config guard.
+    setFixtureEnv(CRON_SECRET_ENV_NAME, fixtureValue);
+    setFixtureEnv('SUPABASE_URL', 'https://fixture.invalid');
+    setFixtureEnv('SUPABASE_SERVICE_ROLE_KEY', 'fixture-key');
+    setFixtureEnv('RESEND_API_KEY', 'fixture-key');
+    setFixtureEnv('RESEND_FROM_EMAIL', 'alerts@fixture.invalid');
+    clearEnv('RESEND_FROM_ADDRESS');
+    var realFetch = global.fetch;
+    global.fetch = async function () { throw new Error('upstream unreachable in test'); };
+    delete require.cache[require.resolve('./send-reminder.js')];
+    var handler = require('./send-reminder.js');
+    var res = mockRes();
+    await handler({ headers: { authorization: 'Bearer ' + fixtureValue } }, res);
+    global.fetch = realFetch;
+    // 502/500 from the unreachable upstream is fine and expected. What must NOT
+    // happen is the config guard rejecting a fully-configured environment.
+    assert.notStrictEqual(res.statusCode, null);
+    assert.ok(
+      !res.body || !res.body.error || res.body.error.message !== 'Server configuration error',
+      'a correctly configured environment must get past the config guard'
+    );
   });
 
   console.log(passed + ' passed' + (process.exitCode ? ', with failures above' : ''));
