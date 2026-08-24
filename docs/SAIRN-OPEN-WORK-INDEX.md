@@ -11,8 +11,9 @@ It does not replace those files; each row points back at the source of truth.
 **Note, 2026-08-24:** `SAIRN-ACTIVE-WORK.md` was split per session to stop the
 recurring merge conflicts. Its historical entries are still there (unchanged),
 but new active-work entries go in `SAIRN-ACTIVE-WORK-hank.md`,
-`SAIRN-ACTIVE-WORK-cc.md`, and `SAIRN-ACTIVE-WORK-cody.md`. **The next rebuild
-of this index must read all three, not just the shared file.**
+`SAIRN-ACTIVE-WORK-cc.md`, `SAIRN-ACTIVE-WORK-cody.md`, and
+`SAIRN-ACTIVE-WORK-fourth.md` (one per clone). **The next rebuild of this index
+must read all four, not just the shared file.**
 
 ---
 
@@ -36,7 +37,7 @@ Legend — **Sz**: S = under a session, M = one session, L = multi-session.
 |---|---|---|---|---|---|---|
 | **SAIRNbuild** | Zero server-side backup for any real business data | Open | unassigned | — | Scope the resource set, then add to `api/sd-data.js` allowlist + schema. Largest single item in the backlog | L |
 | **Platform** | No app clears local data on a license/device re-key; storage keys are not license-scoped | Open | unassigned | — | Decide scope (all 13 apps or lead app first), then namespace keys by license hash | L |
-| **Platform** | No delete capability via `api/sd-data.js` for any resource, any app | Open | unassigned | — | Design soft-delete vs hard-delete, then one handler | M |
+| **Platform** | No delete capability via `api/sd-data.js` **except** the 28-resource `SC_RESOURCES` (SAIRNcode) family | Open — **row corrected 2026-08-24** | unassigned | — | The old wording said "for any resource, any app", which is wrong: `delete` IS implemented and gated for `SC_RESOURCES`, so there is a working pattern to copy rather than a design to invent. Found while trying to clean up a verification probe from `dnt_appointments`. Decide soft- vs hard-delete, then widen the gate — note the gate and the handler branch are separate, and registering one without the other yields an unreachable 400 (`api/sd-data.js` says so in its own comment) | M |
 | **SAIRNlaw** | AI Chain of Custody gap 2: `matter_id` is an unvalidated localStorage id | Open (gap 1 closed) | unassigned | `law_matters` must be server-backed first | Blocked — do the SAIRNlaw server-sync item first | M |
 | **SAIRNlaw** | `law_check_and_insert_disbursement` can return a null row on a cross-client `trusttx_id` collision | Open ⚠️ | unassigned | — | The idempotency lookup keys on `(license_hash, trusttx_id)` and does **not** filter by client. Verify a cross-client collision reproduces, then add the client predicate | S |
 | **SAIRNlaw** | `ai_list` derived-status window can go stale at high license-wide volume | Open (accepted nit) | unassigned | — | Per-license row-count or per-entry status query. Fails safe toward `Unreviewed`, never fabricates a status | S |
@@ -60,6 +61,7 @@ Legend — **Sz**: S = under a session, M = one session, L = multi-session.
 | **SAIRNdental** | Vendor/supply ordering — deferred whole-branch-review items | Open | unassigned | — | Re-read the review list, triage | M |
 | **Tooling** | Rebuild graphify's knowledge graph, properly scoped | Open | unassigned | — | Decide scope first; the last attempt was unscoped | M |
 | **Platform** | `C:\Users\marsh\` is itself a working-tree checkout of the repo, 33+ commits behind | Open | **Michael** | Needs repo/clone-setup owner | Retire it as a checkout. Complication: it is also the user-level skill store, so the store must move too | M |
+| **Platform** | `api/sd-data.js` returns all 171 resource names to any caller with a junk bearer token | Open — minor disclosure, **deliberately not fixed** | unassigned | Needs an auth-ordering decision, not a patch | **Verified live 2026-08-24**, no credential used: `POST /api/sd-data` with `Authorization: Bearer not-a-real-key` and an unknown resource returns 400 listing every registered resource, because the resource gate (`sd-data.js:190`) runs *before* license validation (`:221`). Low severity — names only, no data, and every path past the gate still 401s. Moving license validation above the gate changes the first-failure response for **every app**, so it needs a deliberate call and the same baseline-replay proof as the verb-gate change, not a quick reorder. Note it also makes that baseline capturable without credentials, which is a real testing benefit to weigh against fixing it | M |
 | **SAIRNlaw** | `CANLII_API_KEY` | **Closed** | — | — | No longer a blocker — Canada is out of scope and the code is deleted | — |
 
 ### Added by the handoff-reading pass, 2026-08-24
@@ -115,6 +117,7 @@ against current code or git before being called stale.
 | "3 `stonedesk-demo` fallback sites" | STONEDESK-SESSION77 §4.2 | **Still open, now 2.** Reduced but not eliminated |
 | "Resend vars not reaching Production — Michael action item, not a code fix" | SAIRNCARE-SESSION2 §5.1 | **Diagnosis was wrong**, and the later SAIRNcare handoff says so itself: the real cause was a code-side name mismatch (`RESEND_FROM_ADDRESS` vs `RESEND_FROM_EMAIL`), now fixed for SAIRNcare. A *second*, separate problem — the unverified sending domain — is what remains, and that one genuinely is Michael-only |
 | "Two colour collisions: SAIRNhr/SAIRNvet `#7C3AED`, SAIRNcare/SAIRNacc `#0D9488`" | SAIRN-SESSION68 §4.4 | **Moot.** Guardian's App File Map removed SAIRNhr and SAIRNacc on 2026-08-13 as speculative entries that were never real apps, which resolves both collisions by elimination |
+| "No delete capability via `api/sd-data.js` for **any** resource, any app" | This index's own row, carried from `SAIRN-BACKLOG.md` | **Overstated.** `delete` is implemented and gated for the 28-resource `SC_RESOURCES` family (`sc_denial`, `sc_claims`, `sc_settings`, …). It is genuinely absent everywhere else — `dnt_appointments` included, which is how this surfaced. The row is corrected above rather than left to imply the work starts from nothing |
 
 ---
 

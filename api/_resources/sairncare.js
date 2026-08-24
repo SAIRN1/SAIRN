@@ -83,4 +83,21 @@ module.exports = {
   // off) and different retention. See sql/sairncare_op_audit_schema.sql.
     'alf_op_audits',
   ],
+  // Compute-only verbs, one resource each. All three read real data and write
+  // NOTHING -- previewing a routing decision, a compliance finding, or the
+  // charges a document implies must never itself route, find, or bill.
+  //
+  // Declared here because the gate used to live in api/sd-data.js as three
+  // hand-written `action === 'x' && resource === 'y'` flags, separate from the
+  // handler branch and separate from the registry. That split is what made the
+  // trap real: 'route' was registered and had a working branch and still
+  // returned a confusing 400, because the third place -- the gate -- was
+  // missed. sd-data.js's own comment recorded it ("registering a resource and
+  // adding a handler branch is NOT enough ... found exactly that way here").
+  // Verb and resource now live on the same line as each other.
+  extraActions: {
+    alf_payer_rules: ['route'],
+    alf_compliance_rules: ['evaluate'],
+    alf_billing: ['derive_charges'],
+  },
 };

@@ -52,16 +52,20 @@ const rfAuth = require('./rf-auth');
 // The request-handling branches were deliberately NOT moved: they close over
 // ~15 handler-local bindings and serve 11 live apps, and they were never the
 // source of the collisions.
-const { RESOURCES, RESOURCE_LIST_TEXT } = require('./_resources');
+const { RESOURCES, RESOURCE_LIST_TEXT, EXTRA_ACTIONS } = require('./_resources');
 
-const SC_RESOURCES = [
-  'sc_denial', 'sc_revenue', 'sc_compliance', 'sc_fraud', 'sc_prebill',
-  'sc_hcc', 'sc_drg', 'sc_query', 'sc_rac', 'sc_telehealth',
-  'sc_anesthesia', 'sc_auth', 'sc_ar', 'sc_providers', 'sc_encoder', 'sc_claims', 'sc_scrubrules',
-  'sc_denial_events', 'sc_eligibility', 'sc_settings', 'sc_auth_requests',
-  'sc_specialty_checks', 'sc_specialty_checklists', 'sc_anesthesia_base_units',
-  'sc_coded_items', 'sc_credential_scope', 'sc_pctc', 'sc_dme'
-];
+// The SAIRNcode resource family, which shares one generic handler below and is
+// the only family with a real 'delete' verb.
+//
+// DERIVED, not re-listed (2026-08-24). This was a second hand-maintained copy
+// of the same 28 names that api/_resources/sairncode.js already owned -- the
+// last duplicated resource list left in this file after the 2026-08-21 registry
+// split, and the same drift class that split was created to end (the old
+// hand-kept error string had already lost employee_profile). It stayed in sync
+// by luck, not by construction: verified identical at the moment it was
+// replaced, and the SAIRNcode DME commit (`9e54b47`) had to edit this array and
+// the registry file in the same change to keep it that way.
+const SC_RESOURCES = require('./_resources/sairncode').resources;
 // Minimum data-retention any SAIRNcode practice may configure, in years.
 // Enforced server-side rather than trusted from the client because a value
 // written today is inherited by whatever purge mechanism is built later -- a
@@ -157,27 +161,30 @@ module.exports = async (req, res) => {
   const resource = body && body.resource;
   const payload = (body && body.payload) || {};
   const isScResource = SC_RESOURCES.indexOf(resource) !== -1;
-  // 'delete' is only ever valid for the SC_RESOURCES family (see that
-  // block's own header comment for why) -- every other resource on this
-  // endpoint keeps its original read/write-only behavior unchanged.
+  // Verbs beyond the universal read/write are declared per resource in
+  // api/_resources/<app>.js and merged into EXTRA_ACTIONS. Today that is
+  // 'delete' for the 28-resource SAIRNcode family, plus three compute-only
+  // verbs owned by one resource each: 'route' (alf_payer_rules), 'evaluate'
+  // (alf_compliance_rules) and 'derive_charges' (alf_billing).
   //
-  // 'route' is likewise valid for exactly one resource: alf_payer_rules
-  // (SAIRNcare Phase 1). It computes a billing-routing decision and writes
-  // nothing. Carved out as narrowly as 'delete' rather than widening the
-  // gate globally -- a new verb available to all 160 resources would be a
-  // real surface change for no benefit. NOTE for whoever adds the next
-  // action: registering a resource and adding a handler branch is NOT
-  // enough, this gate must allow the verb too, or the branch is
-  // unreachable and returns a confusing 400 (found exactly that way here).
-  const isRouteAction = action === 'route' && resource === 'alf_payer_rules';
-  // 'evaluate' is likewise carved out for exactly one resource: alf_compliance_rules
-  // (SAIRNcare Phase 2). It computes a compliance finding and writes nothing.
-  const isEvaluateAction = action === 'evaluate' && resource === 'alf_compliance_rules';
-  // 'derive_charges' is carved out for alf_billing only (SAIRNcare Phase 3 item 2).
-  // It reads real documentation and returns the charge lines it implies; it writes
-  // nothing, so previewing what would be billed cannot itself bill anything.
-  const isDeriveAction = action === 'derive_charges' && resource === 'alf_billing';
-  if (action !== 'read' && action !== 'write' && !(action === 'delete' && isScResource) && !isRouteAction && !isEvaluateAction && !isDeriveAction) {
+  // REPLACES three hand-written `action === 'x' && resource === 'y'` flags
+  // that lived here (2026-08-24). Those were a third place to edit when adding
+  // a resource, separate from both the registry and the handler branch, and
+  // the note this block used to carry recorded what missing it costs:
+  // "registering a resource and adding a handler branch is NOT enough, this
+  // gate must allow the verb too, or the branch is unreachable and returns a
+  // confusing 400 (found exactly that way here)." The verb now lives next to
+  // the resource that owns it, so the two cannot be added apart.
+  //
+  // Deliberately still narrow: a verb reaches exactly the resources whose own
+  // app granted it. Nothing here widens a verb to all 171 resources.
+  const extraAllowed = EXTRA_ACTIONS[resource] || [];
+  const isExtraAction = extraAllowed.indexOf(action) !== -1;
+  if (action !== 'read' && action !== 'write' && !isExtraAction) {
+    // Message text unchanged from the flag-based version on purpose: 'delete'
+    // is the only extra verb it has ever named, and a resource-accurate list
+    // here would change real response bodies. Worth doing separately, on its
+    // own evidence, not as a side effect of this refactor.
     res.status(400).json({ error: { message: "action must be 'read' or 'write'" + (isScResource ? " or 'delete'" : '') } });
     return;
   }
