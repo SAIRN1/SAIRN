@@ -34,6 +34,22 @@
 -- before trusting Section 3's fix. Section 2 is the systemic sweep -- it does
 -- not depend on this file's own hand-built table list, so it will catch
 -- anything missed by grepping schema files.
+--
+-- INDEPENDENTLY CROSS-CHECKED (2026-08-24): a concurrent session investigated
+-- the same finding in parallel (sql/append_only_grant_audit.sql) and reached
+-- the same root-cause conclusion. Two things from that pass are folded in
+-- here because they were real and this pass had missed them: (1)
+-- sairncash_waitlist has the identical gap (grant select, insert, no
+-- service_role revoke) -- added to Section 3 below. (2) alf_signals is
+-- defined identically in TWO schema files (sairncare_signals_schema.sql and
+-- sairncare_all_remaining_migrations.sql); both grant the same select+insert,
+-- so the fix below is correct either way, but the duplicate definition is
+-- its own small hygiene item, noted rather than silently ignored. Also
+-- confirmed live by that session, independent of this file: service_role's
+-- UPDATE and DELETE on dnt_credentials both already fail with 42501 -- the
+-- append-only guarantee holds against the two verbs the application could
+-- plausibly issue; TRUNCATE is the separate, unaddressed hole this file
+-- exists to close.
 
 -- ── SECTION 1: confirm the root cause on the table where it was found ──────
 -- Expect: truncate = t, references = t, trigger = t, update = f, delete = f
@@ -82,7 +98,11 @@ order by t.table_name;
 -- own app code actually uses -- same shape as stonedesk_audit_log's already-
 -- correct pattern. Every one of these already has its target grant re-stated
 -- so this file is self-sufficient and re-runnable; running it does not change
--- what any table can already legitimately do.
+-- what any table can already legitimately do. None of the statements below
+-- touch UPDATE or DELETE on any table -- only TRUNCATE/REFERENCES/TRIGGER,
+-- which no SAIRN application code path issues (PostgREST/the sd-data.js API
+-- only ever performs SELECT/INSERT/UPDATE/DELETE via REST, never raw DDL) --
+-- so there is no live write path this file's revokes can break.
 
 -- SAIRNdental (found live, the original report)
 revoke all on public.dnt_credentials from service_role;
@@ -107,6 +127,11 @@ grant select, insert on public.sairnlaw_audit_log to service_role;
 -- SAIRNscape org intel -- append-only, same gap
 revoke all on public.sairnscape_org_intel from service_role;
 grant select, insert on public.sairnscape_org_intel to service_role;
+
+-- SAIRNcash waitlist -- append-only, same gap (found by the concurrent
+-- cross-check above, missed by this file's original sweep)
+revoke all on public.sairncash_waitlist from service_role;
+grant select, insert on public.sairncash_waitlist to service_role;
 
 -- SAIRNroofing -- tonight's own three tables, same gap, already committed as
 -- the fix in each table's own schema file (sql/sairnroofing_photos_schema.sql,
