@@ -14570,7 +14570,11 @@ function printDrawCutSheet() {
         <input class="fi" id="cr-memo" placeholder="Invoice ref or note"></div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn bp" onclick="crSendToBridge()">🔗 Send to SAIRNbiz</button>
+      <!-- Label corrected 2026-08-24: was "🔗 Send to SAIRNbiz", which named a
+           destination that cannot receive it (SAIRNbiz references api/bridge
+           zero times). It saves the expense locally and queues it on the
+           Bridge; nothing reads the Bridge yet. -->
+      <button class="btn bp" onclick="crSendToBridge()">💾 Save expense &amp; queue for SAIRNbiz</button>
       <button class="btn bo bsm" onclick="crExportCSV()">📊 Export CSV</button>
     </div>
     <div id="cr-send-status" style="margin-top:10px;font-size:12px"></div>
@@ -14579,7 +14583,10 @@ function printDrawCutSheet() {
   <div class="card">
     <div class="ch">
       <div class="ct">Expense Log</div>
-      <span style="font-size:11px;color:#6B7280">Sent to SAIRNbiz automatically · Check writing happens in SAIRNbiz</span>
+      <!-- Corrected 2026-08-24: said "Sent to SAIRNbiz automatically · Check
+           writing happens in SAIRNbiz". Nothing is sent automatically and
+           SAIRNbiz cannot read it -- see crSendToBridge(). -->
+      <span style="font-size:11px;color:#6B7280">Saved locally · queued on the Bridge · not yet readable by SAIRNbiz</span>
     </div>
     <div id="cr-history-tbody">
       <div style="text-align:center;padding:28px;color:#9CA3AF">
@@ -15421,9 +15428,20 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
       <span style="font-size:12px;color:#94A3B8;align-self:center" id="sairn-last-sync">Last sync: --</span>
     </div>
   </div>
+  <!-- Copy corrected 2026-08-24. It previously read: "All connected apps
+       share data through the SAIRN Bridge at sairn.vercel.app/api/bridge.
+       One click syncs payroll, GL entries, job orders, and project data
+       across your entire suite." That described a capability that does not
+       exist. api/bridge.js's read action (?action=pull) has ZERO callers
+       across all 13 app files, and no other app references api/bridge at
+       all -- so nothing sent here is ever read by anything. Building the
+       real read side is a separate scoped task; until then this says what
+       actually happens. -->
   <div style="font-size:13px;color:#6B7280">
-    All connected apps share data through the SAIRN Bridge at sairn.vercel.app/api/bridge.
-    One click syncs payroll, GL entries, job orders, and project data across your entire suite.
+    Entries you send are stored on the SAIRN Bridge under this shop's id.
+    <b>No other app reads them yet</b> — the receiving side is not built, so
+    treat this as a queue for later, not a live sync. CSV Export below is the
+    working way to move data into another system today.
   </div>
 </div>
 </div>
@@ -16078,7 +16096,7 @@ function crSendToBridge() {
     var el = document.getElementById(id); if(el) el.value = '';
   });
 
-  if(statusEl) statusEl.innerHTML = '<span style="color:#166534">Sending to SAIRNbiz...</span>';
+  if(statusEl) statusEl.innerHTML = '<span style="color:#166534">Saving...</span>';
 
   // Push to bridge
   var shopId = sdShopId();
@@ -16091,8 +16109,20 @@ function crSendToBridge() {
   })
   .then(function(r){ return r.json(); })
   .then(function(d){
+    // Corrected 2026-08-24. This said "✅ Sent to SAIRNbiz — open SAIRNbiz to
+    // write the check", which instructed the user to do something that is not
+    // possible: SAIRNbiz references api/bridge zero times and cannot see this
+    // entry. A successful push means the row reached bridge_data, nothing more.
+    //
+    // Second real defect, disclosed here rather than silently: push is
+    // latest-wins on shop_id, and this function sends ONE expense per click,
+    // so each send REPLACES the previous one in bridge_data. Verified live
+    // 2026-08-24 (pushed A then B; a pull returned only B). That is correct
+    // for the snapshot pushes the endpoint was designed around and wrong for
+    // this caller -- which is another reason the receiving side needs a real
+    // scoped design rather than a quick read.
     if(statusEl) statusEl.innerHTML = d.ok
-      ? '<span style="color:#166534">✅ Sent to SAIRNbiz — open SAIRNbiz to write the check.</span>'
+      ? '<span style="color:#166534">Saved locally and queued on the Bridge. No app reads this yet — use CSV Export to get it into SAIRNbiz.</span>'
       : '<span style="color:#dc2626">Bridge error: '+(d.error||'unknown')+'</span>';
   })
   .catch(function(){
@@ -24508,28 +24538,12 @@ document.addEventListener('DOMContentLoaded',function(){
 
 
 // == SAIRN BRIDGE SYNC =====================================================
-async function syncToSAIRNBridge() {
-  try {
-    var shopId = sdShopId();
-    var body = { shopId: shopId };
-    if (window.sd_jobs      && window.sd_jobs.length)      body.jobs      = window.sd_jobs;
-    if (window.sd_invoices  && window.sd_invoices.length)  body.invoices  = window.sd_invoices;
-    if (window.sd_team      && window.sd_team.length)      body.employees = window.sd_team;
-    var res = await fetch('https://sairn.vercel.app/api/bridge?action=push', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    });
-    // Was fire-and-forget with no res.ok check -- a 404/5xx still resolves
-    // (fetch only rejects on network failure), so this silently showed
-    // "Synced" on total failure. Confirmed live 404 (api/bridge was never
-    // deployed) before this fix -- see api/bridge.js build.
-    if (!res.ok) throw new Error('Bridge returned ' + res.status);
-    var d = await res.json().catch(function(){ return {ok:true}; });
-    if (d && d.ok === false) throw new Error(d.error || 'Bridge rejected sync');
-    notify('Synced to SAIRN Bridge', 'success');
-  } catch(e) { notify('Bridge sync failed — check connection and try again', 'red'); }
-}
+// syncToSAIRNBridge() removed 2026-08-24 (Check 0d, approved). Zero
+// callers -- no onclick, no setInterval, no internal reference; the only
+// occurrence in the file was its own definition line. It pushed
+// {jobs, invoices, employees} to api/bridge.js's ?action=push.
+// Nothing reads that data back (?action=pull: zero callers platform-wide),
+// so this was unreachable code feeding a write-only table.
 
 
 
@@ -24622,30 +24636,15 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
 
 <script>
 // SAIRNdesign Bridge — Golden Rule 2 (Construction apps)
-function syncToSAIRNdesign() {
-  var shopId = sdShopId();
-  var jobs = (window.sd_jobs || []).map(function(j) {
-    return {
-      id:           j.id,
-      jobName:      j.jobName  || j.name,
-      stage:        j.stage,
-      stoneType:    j.stoneType,
-      totalSqft:    j.totalSqft,
-      customerName: j.customerName
-    };
-  });
-  fetch('https://sairn.vercel.app/api/bridge?action=push', {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ shopId: shopId, jobs: jobs })
-  }).then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.ok) notify('Synced to SAIRNdesign', 'success');
-    })
-    .catch(function(e) {
-      
-    });
-}
+// syncToSAIRNdesign() removed 2026-08-24 (Check 0d, approved). Zero
+// callers -- the only reference in the entire file was its own definition.
+// It pushed a job snapshot to api/bridge.js's ?action=push, which writes
+// bridge_data. Nothing reads bridge_data: ?action=pull has zero callers
+// across all 13 app files, and SAIRNdesign references api/bridge zero
+// times. So this was unreachable code writing to a table with no consumer,
+// and its success path even toasted 'Synced to SAIRNdesign'.
+// The endpoint and its push/pull actions are untouched and still serve the
+// one live caller, crSendToBridge().
 </script>
 
 <script>

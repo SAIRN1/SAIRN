@@ -1,5 +1,31 @@
 // api/bridge.js
 // ---------------------------------------------------------------------------
+// ⚠ NAMING: THIS IS NOT "THE SAIRN DATA BRIDGE" MOST APPS MEAN.
+// Two different things carry that name. The real cross-app data path is
+// api/sd-data.js's shared resources (employees, shared_knowledge, ...) --
+// license-scoped, session-gated, used by 10 apps, and genuinely read by
+// them. That is what SAIRNsenior and SAIRNcare shipped as "SAIRN Data
+// Bridge integration". THIS file is a separate, StoneDesk-only endpoint.
+// Guardian v2's Check 2 named this one by mistake until 2026-08-24; see its
+// corrected entry. Use api/sd-data.js for new cross-app data.
+//
+// STATE OF THIS FILE'S THREE ACTIONS, audited live 2026-08-24:
+//   proxy_get -- healthy, in real use by StoneDesk + SAIRNbuild.
+//   push      -- one live caller (StoneDesk crSendToBridge). Two other
+//                callers were dead code and were deleted that day.
+//   pull      -- ZERO callers across all 13 app files. Speculative from the
+//                start: the build commit (df84b21) says it served "the two
+//                real, live call shapes" and pull was not one of them.
+//                Left in place because it is correct and harmless, and is
+//                the natural read side whenever one is genuinely built.
+// So bridge_data is, today, written and never read.
+//
+// NO AUTHORIZATION ON push, deliberately (see the push section below):
+// anyone can write to any shop_id. Fine for shop metadata a shop pushes
+// about itself; NOT fine for personal or financial data. That bounds what
+// this endpoint can safely carry, and any future expansion of it should
+// start by revisiting that decision.
+// ---------------------------------------------------------------------------
 // SAIRN Bridge -- action-routed cross-app relay. Built 2026-07-31 to replace
 // a URL every caller already assumed existed but never did (confirmed live
 // 404 -- no api/bridge.js was ever committed; Guardian's "Bridge rule"

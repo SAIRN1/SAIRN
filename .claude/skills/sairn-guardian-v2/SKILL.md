@@ -11,7 +11,43 @@ Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automa
 
 ### Architecture (5)
 1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly
-2. **Bridge rule** — all cross-app data uses sairn.vercel.app/api/bridge, never rebuilt inline
+2. **Bridge rule — CORRECTED 2026-08-24. "The SAIRN Bridge" means TWO
+   DIFFERENT THINGS in this codebase, and this rule named the wrong one.**
+   Before citing "the Bridge" anywhere, say which:
+
+   - **`api/sd-data.js` shared resources** — the REAL, working cross-app
+     data path, used by 10 apps. Resources like `employees` and
+     `shared_knowledge` are license-scoped, session-gated, and genuinely
+     read by other apps. This is what SAIRNsenior and SAIRNcare shipped
+     under the name "SAIRN Data Bridge" ("reads the employee roster from
+     SAIRNbiz via the existing generic 'employees' resource — zero new
+     server code"). **This is what a new app should use for cross-app data.**
+
+   - **`api/bridge.js`** — a separate, much smaller StoneDesk-only
+     endpoint with three actions. `proxy_get` is a CORS relay to allowlisted
+     external hosts (FRED etc.) and is genuinely useful and in use. `push`
+     upserts a `{shopId, jobs, invoices, employees}` snapshot into
+     `bridge_data`. `pull` reads it back — and **has zero callers across
+     all 13 app files**, verified 2026-08-24, so `bridge_data` is written
+     and never read. `push` also requires **no Authorization header at
+     all**, deliberately, because its live callers send none: anyone can
+     write to any `shop_id`. That is defensible for shop metadata a shop
+     pushes about itself and is NOT defensible for personal or financial
+     data, which bounds what this endpoint can ever safely carry.
+
+   The old wording — "all cross-app data uses sairn.vercel.app/api/bridge,
+   never rebuilt inline" — is what caused the conflation, and pointed new
+   work at the endpoint with no read side rather than the one that works.
+   It also made `api/bridge.js` look more built than it is: two of its three
+   StoneDesk push callers were dead code with zero callers (deleted
+   2026-08-24), and the one live caller wrote to a table nothing reads while
+   the UI claimed a completed sync.
+
+   **The rule, restated:** cross-app data goes through `api/sd-data.js`'s
+   shared resources. Do not rebuild that inline. `api/bridge.js` is for the
+   external-host CORS relay; do not add new consumers of its `push`/`pull`
+   without first building a real read side and deciding whether it should
+   authenticate.
 3. **App ID present** — every API fetch includes app_id matching the file's app
 4. **is_demo flag** — every API fetch includes is_demo:true
 5. **No service_role key** — Supabase anon key only in browser code
