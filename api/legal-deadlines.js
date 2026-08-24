@@ -34,7 +34,7 @@ const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
 const JURISDICTION_LABELS = {
   'us-federal': 'United States (Federal)',
   oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania', il: 'Illinois', fl: 'Florida', ca: 'California',
-  tx: 'Texas'
+  tx: 'Texas', ny: 'New York'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',
@@ -153,6 +153,16 @@ function validateRulePayload(p) {
     }
     if (se.add !== undefined && typeof se.add !== 'number') {
       return 'service_extension.add, when present, must be a number.';
+    }
+    // A cap fixes the deadline against a date the other party chose. An
+    // add-to-period extension re-derives from the period's own unrolled last
+    // day, which would discard that. The engine refuses this combination at
+    // compute time; rejecting it here stops the row being written at all.
+    // No rule declares both today -- this is a guard, not a fix.
+    if (p.cap && SERVICE_EXTENSION_STANDARDS[se.standard]
+        && SERVICE_EXTENSION_STANDARDS[se.standard].sequence === 'add_to_period_then_roll') {
+      return 'A rule cannot declare a cap together with a service-extension standard whose days are added to the period rather than after it expires (' + se.standard +
+        '). The interaction between a party-fixed cap date and a re-derived period end has not been read from any rule text, so it must not be stored.';
     }
   }
 

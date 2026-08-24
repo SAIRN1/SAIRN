@@ -492,7 +492,82 @@ var COMPUTATION_STANDARDS = {
   // widely repeated secondary claim that it does.
   tx_trap_41: { label: 'Tex. R. App. P. 4.1', impl: 'frcp_6a',
     base_period_suffix: '(a)', months_years_suffix: '(a)',
-    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' },
+  // ── NEW YORK: THE COMPUTATION RULE IS NOT IN THE CPLR AT ALL ────────────
+  // Every other jurisdiction here computes time under the same body of rules
+  // that sets its deadlines. New York does not. The CPLR contains no general
+  // computation provision, so the arithmetic comes from the General
+  // Construction Law, a different statute entirely:
+  //
+  //   Gen. Constr. Law 20    counting
+  //   Gen. Constr. Law 25-a  what happens when the last day is bad
+  //   Gen. Constr. Law 24    what counts as a public holiday
+  //
+  // THE LINK IS IN THE STATUTE'S OWN WORDS, which is worth stating because the
+  // equivalent link in Texas is not. Gen. Constr. Law 110: "This chapter is
+  // applicable to every statute unless its general object, or the context of
+  // the language construed, or other provisions of law indicate that a
+  // different meaning or application was intended from that required to be
+  // given by this chapter." The CPLR is a statute and indicates no different
+  // application. Contrast tx_trcp_4, where the rule says "legal holiday" and
+  // never cites a definition.
+  //
+  // Gen. Constr. Law 20, verbatim: "A number of days specified as a period
+  // from a certain day within which or after or before which an act is
+  // authorized or required to be done means such number of calendar days
+  // exclusive of the calendar day from which the reckoning is made. If such
+  // period is a period of two days, Saturday, Sunday or a public holiday must
+  // be excluded from the reckoning if it is an intervening day between the day
+  // from which the reckoning is made and the last day of the period. In
+  // computing any specified period of time from a specified event, the day
+  // upon which the event happens is deemed the day from which the reckoning is
+  // made. The day from which any specified period of time is reckoned shall be
+  // excluded in making the reckoning."
+  //
+  // Gen. Constr. Law 25-a(1), verbatim: "When any period of time, computed
+  // from a certain day, within which or after which or before which an act is
+  // authorized or required to be done, ends on a Saturday, Sunday or a public
+  // holiday, such act may be done on the next succeeding business day..."
+  //
+  // ── THE TWO-DAY LIMB IS DELIBERATELY NOT DECLARED, AND THAT IS A JUDGMENT
+  //    CALL RATHER THAN AN OVERSIGHT. READ BEFORE ADDING IT. ────────────────
+  // Section 20's second sentence is a short-period exclusion, so the reflex is
+  // to set short_period_exclusion_days the way Ohio, Indiana, Florida and
+  // Texas do. That would be WRONG here, for two independent reasons:
+  //
+  //   1. SCOPE. This engine's property means "exclude for every period shorter
+  //      than N", tested as countValue < N. Section 20's limb applies to a
+  //      period of EXACTLY two days -- "If such period is a period of two
+  //      days". Declaring 3 would also capture one-day periods, which the
+  //      sentence never reaches.
+  //   2. MECHANISM. The other four states exclude Saturdays, Sundays and
+  //      holidays from the COUNT. Section 20 excludes such a day only when it
+  //      is "an intervening day between the day from which the reckoning is
+  //      made and the last day of the period" -- a narrower operation on a
+  //      two-day span than the general skip-while-counting loop performs.
+  //
+  // No New York rule seeded here has a two-day period; the shortest is 20. So
+  // the limb is unreachable by the current row set either way, and declaring a
+  // property that misstates it would be worse than leaving it out. If a
+  // two-day New York period is ever seeded, this limb must be implemented on
+  // its own terms and NOT by setting short_period_exclusion_days. Contrast
+  // tx_trcp_4, which DOES declare its (equally unreachable) threshold, because
+  // there the rule's mechanism and this engine's property genuinely match.
+  //
+  // BACKWARD COUNTING IS LEFT BLANK ON PURPOSE. Section 25-a's opening does
+  // reach a period computed "before which an act is authorized or required to
+  // be done", but its only remedy is "the next succeeding business day" --
+  // forward. What that means for a backward-counted period is not resolved by
+  // the text, and extending a backward deadline forward would push it past the
+  // event it is measured against. No backward New York rule is seeded, and the
+  // suffix stays empty rather than citing 25-a for behaviour it does not
+  // describe -- the citation defect already fixed once in this file.
+  //
+  // Section 20 has no subdivisions to cite, so the base suffix is blank; 25-a
+  // is numbered and its rollover limb really is subdivision 1.
+  ny_gcl_20: { label: 'N.Y. Gen. Constr. Law 20, 25-a', impl: 'frcp_6a',
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: ' 25-a(1)', rollover_suffix_backward: '' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
@@ -514,9 +589,47 @@ var COMPUTATION_STANDARDS = {
 // guess at the membership of that set. Each standard therefore carries its own
 // predicate, and a rule naming a standard this engine does not implement is
 // REFUSED VISIBLY rather than silently not extended.
+// ── SEQUENCING: WHERE THE ADDED DAYS GO RELATIVE TO THE ROLLOVER ──────────
+// Every standard declares `sequence`, because the rules genuinely disagree and
+// the difference moves real dates. Two shapes exist:
+//
+//   'roll_then_add_then_roll'  the base period expires, its last day is rolled
+//                              off a weekend or holiday, THEN the days are
+//                              added, then the result is rolled again.
+//   'add_to_period_then_roll'  the days LENGTHEN the period itself, so there
+//                              is only ever one period and one rollover, at
+//                              the end of the lengthened period.
+//
+// This is not a stylistic choice. It is written into the rules, in words:
+//
+//   FRCP 6(d)      "3 days are added after the period would otherwise expire
+//                   under Rule 6(a)"                        -> roll first
+//   Fla. 2.514(b)  "5 days are added after the period that would otherwise
+//                   expire under subdivision (a)"           -> roll first
+//   CPLR 2103(b)(2) "five days shall be added to the prescribed period"
+//                                                           -> no interim roll
+//
+// FRCP's order was verified against the 2005 Advisory Committee Note, quoted
+// in this file's header. New York's was verified the other way: 2103(b)(2)
+// never mentions expiration, it lengthens "the prescribed period", and
+// Gen. Constr. Law 25-a then acts once on the end of that single lengthened
+// period.
+//
+// THE DIFFERENCE IS NOT COSMETIC AND IT RUNS IN THE DANGEROUS DIRECTION.
+// Worked example, caught by a failing test rather than by reading: a 20-day
+// CPLR 3133(a) period triggered 2026-06-01 expires Sunday 2026-06-21.
+//   roll first: -> Mon 06-22, +5 -> Sat 06-27, roll -> Mon 06-29
+//   add first:  -> 06-21 + 5 -> Fri 06-26, no roll needed -> Fri 06-26
+// Three days apart, and the FRCP sequencing is the LATER of the two. A date
+// that is late is how a filing is missed, so a standard that does not declare
+// its sequencing must never be given the benefit of the doubt.
+//
+// Default is 'roll_then_add_then_roll' for any standard that omits the field,
+// which preserves the behaviour every pre-existing standard was tested under.
 var SERVICE_EXTENSION_STANDARDS = {
   frcp_6d: {
     label: 'Fed. R. Civ. P. 6(d)',
+    sequence: 'roll_then_add_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) {
       return method === 'mail' || method === 'left_with_clerk' || method === 'other_consented_means';
@@ -524,6 +637,9 @@ var SERVICE_EXTENSION_STANDARDS = {
   },
   frap_26c: {
     label: 'Fed. R. App. P. 26(c)',
+    // "3 days are added after the period would otherwise expire" -- same
+    // sequencing words as FRCP 6(d).
+    sequence: 'roll_then_add_then_roll',
     shape: 'negative_condition',
     qualifies: function (method) {
       // "3 days are added after the period would otherwise expire" when the
@@ -546,6 +662,9 @@ var SERVICE_EXTENSION_STANDARDS = {
   // allowlist here is a single value rather than frcp_6d's three.
   fl_rgpja_2514b: {
     label: 'Fla. R. Gen. Prac. & Jud. Admin. 2.514(b)',
+    // "5 days are added after the period that would otherwise expire under
+    // subdivision (a)" -- expressly after expiration, like the FRCP family.
+    sequence: 'roll_then_add_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
   },
@@ -575,6 +694,79 @@ var SERVICE_EXTENSION_STANDARDS = {
     label: 'Tex. R. Civ. P. 21a(c)',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── NEW YORK: PER-METHOD AMOUNTS, AND ONE OF THEM IS A BUSINESS DAY ──────
+  // The second standard in this engine whose amount depends on the method
+  // (California was the first), and the FIRST whose extension is measured in
+  // business days rather than calendar days.
+  //
+  // CPLR 2103(b)(2), verbatim: "service by mail shall be complete upon
+  // mailing; where a period of time prescribed by law is measured from the
+  // service of a paper and service is by mail, five days shall be added to the
+  // prescribed period if the mailing is made within the state and six days if
+  // the mailing is made from outside the state but within the geographic
+  // boundaries of the United States".
+  //
+  // CPLR 2103(b)(6), verbatim: "Where a period of time prescribed by law is
+  // measured from the service of a paper and service is by overnight delivery,
+  // one business day shall be added to the prescribed period."
+  //
+  // ONE BUSINESS DAY IS NOT ONE CALENDAR DAY. Overnight service on a Friday
+  // adds a day that lands on Monday, and more across a holiday weekend.
+  // Treating it as a calendar day would produce a date EARLIER than the true
+  // deadline -- the direction that loses a right. Handled by the same branch
+  // that counts California's court days, which is why that branch now accepts
+  // both unit names; the two rules use different words for the same operation.
+  //
+  // A BARE 'mail' IS REJECTED, exactly as in California and for the same
+  // reason: the amount genuinely depends on where the mailing was made, and
+  // guessing the in-state five would be wrong by one whenever the mailing came
+  // from another state. Callers must supply mail_within_state or
+  // mail_outside_state_within_us.
+  //
+  // MAILING FROM OUTSIDE THE UNITED STATES GETS NO ENTRY, DELIBERATELY.
+  // 2103(b)(2) provides five days in-state and six from outside the state
+  // "but within the geographic boundaries of the United States", and then
+  // stops. It states no amount for a mailing from abroad. California's
+  // CCP 1013(a) does address that case and gives 20 days; New York's does not,
+  // and borrowing California's number would be inventing law. A caller
+  // supplying such a method gets a visible not_qualifying refusal rather than
+  // a silent in-state five.
+  //
+  // NO ADDED DAYS FOR FACSIMILE OR ELECTRONIC SERVICE. 2103(b)(5) and (b)(7)
+  // each define when that service is complete and neither adds time -- only
+  // (b)(2) and (b)(6) carry an added-days clause. This is the available
+  // mistake in New York practice, because e-filing feels like it should behave
+  // like mail. Any contrary provision in the rules of the chief administrator
+  // referred to by (b)(7) was NOT read for this seed, so nothing is assumed
+  // in either direction; what is encoded is what CPLR 2103(b) itself says.
+  //
+  // WHAT THIS STANDARD DOES NOT REACH: service of the SUMMONS. 2103(b) governs
+  // service "upon an attorney" of "papers to be served upon a party in a
+  // pending action". The CPLR 320(a) appearance clock and the CPLR 3012(c)
+  // answer clock both run from service of process under CPLR 308 and the
+  // related sections, not from service of a paper on an attorney, so those
+  // rows carry no service extension. Same shape as Texas's citation exclusion,
+  // reached by a different route.
+  ny_cplr_2103b: {
+    label: 'N.Y. CPLR 2103(b)(2), (b)(6)',
+    // "five days shall be added TO THE PRESCRIBED PERIOD" -- the days lengthen
+    // the period rather than following its expiry, so Gen. Constr. Law 25-a
+    // acts once, on the end of the lengthened period. See the sequencing note
+    // above the standards table; getting this wrong runs three days LATE.
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist_with_per_method_amount',
+    qualifies: function (method) {
+      return ({ mail_within_state: 1, mail_outside_state_within_us: 1, overnight_delivery: 1 })[method] === 1;
+    },
+    amount: function (method) {
+      var table = {
+        mail_within_state: { add: 5, unit: 'calendar_days' },
+        mail_outside_state_within_us: { add: 6, unit: 'calendar_days' },
+        overnight_delivery: { add: 1, unit: 'business_days' }
+      };
+      return table[method] || null;
+    }
   },
   // ── CALIFORNIA: THE AMOUNT DEPENDS ON THE METHOD ────────────────────────
   // Every standard above adds one fixed number of calendar days for any
@@ -616,6 +808,13 @@ var SERVICE_EXTENSION_STANDARDS = {
   // wrong by 5, 7 or 15 days whenever the guess is wrong.
   ca_ccp_1013_1010_6: {
     label: 'Cal. Code Civ. Proc. 1013, 1010.6',
+    // CCP 1013(a) extends the period "if served by mail" and the settled
+    // practice this engine shipped under is the FRCP sequencing. NOT
+    // re-verified against 1013's own words during the New York work, so it is
+    // declared explicitly to preserve existing behaviour rather than silently
+    // inheriting a default -- and it is named here as a row worth re-reading
+    // the next time California is touched.
+    sequence: 'roll_then_add_then_roll',
     shape: 'enumerated_allowlist_with_per_method_amount',
     qualifies: function (method) {
       return ({
@@ -1267,13 +1466,54 @@ function computeDeadline(input) {
       var amt = (typeof extStd.amount === 'function') ? extStd.amount(input.service_method) : null;
       var addN = amt ? Number(amt.add) : Number(ext.add);
       var addUnit = (amt && amt.unit) || ext.unit || 'calendar_days';
+
+      // ── WHERE THE ADDED DAYS START FROM ────────────────────────────────
+      // See the sequencing note above SERVICE_EXTENSION_STANDARDS. A standard
+      // whose rule says the days are added to THE PERIOD counts them from the
+      // period's own unrolled last day, so the interim rollover applied above
+      // is not part of the computation at all. A standard whose rule says the
+      // days are added AFTER the period expires counts them from the rolled
+      // date, which is what `result` already holds.
+      //
+      // Defaulting to the rolled date preserves the behaviour every standard
+      // that predates this field was tested under.
+      var seq = extStd.sequence || 'roll_then_add_then_roll';
+      var addFrom = result;
+      if (seq === 'add_to_period_then_roll') {
+        if (cap) {
+          // A cap fixes the deadline against a date the other party chose,
+          // then this shape would re-derive from the unrolled period and throw
+          // that away. No rule declares both today. Refused rather than
+          // resolved by picking an order nobody has read.
+          return { ok: false, code: 'CAP_EXTENSION_SEQUENCE_UNRESOLVED',
+            message: 'Rule ' + rule.rule_id + ' declares both a cap and a service extension that is added to the period rather than after it expires. Which governs has not been read from any rule text, so no date is computed.' };
+        }
+        addFrom = base;
+        if (rolled.date !== base) {
+          steps.push({ step: 'rollover_superseded',
+            detail: 'The interim rollover above does NOT apply to this deadline. Under ' + extLabel +
+              ' the added days lengthen the period itself rather than following its expiry, so there is one period and one rollover, taken at the end. The added days are counted from ' + base +
+              ', the unrolled last day of the base period, not from ' + rolled.date + '.',
+            authority: extLabel, date: base });
+        }
+      }
       var extended, extDetail;
-      if (addUnit === 'court_days') {
+      if (addUnit === 'court_days' || addUnit === 'business_days') {
         // COURT DAYS ARE NOT CALENDAR DAYS. A two-court-day extension over a
         // weekend is four calendar days, and over a holiday weekend more.
         // Counting them as calendar days would produce a date EARLIER than the
         // true deadline, which is the direction that loses a filing.
-        extended = result;
+        //
+        // 'business_days' shares this branch rather than getting its own,
+        // because the two rules describe the same operation in different
+        // words: California's CCP 1013(c)/(e) and 1010.6(a)(3)(B) say "two
+        // court days", New York's CPLR 2103(b)(6) says "one business day", and
+        // both mean skip weekends and legal holidays while counting. The unit
+        // name is preserved in the audit trail below so each cites its own
+        // rule's wording rather than being normalised to the other's -- the
+        // same reason Florida's "at least five days" was not normalised to
+        // California's flat five.
+        extended = addFrom;
         var left = addN, cdGuard = 0;
         while (left > 0 && cdGuard++ < 400) {
           extended = addDays(extended, sign);
@@ -1285,11 +1525,16 @@ function computeDeadline(input) {
           }
           if (!isWeekend(extended) && !hcd.hit) left--;
         }
-        extDetail = addN + ' court days added because service was by ' + String(input.service_method).replace(/_/g, ' ') +
-          ', counted after the base period expired and SKIPPING weekends and legal holidays (court days, not calendar days).';
+        extDetail = addN + ' ' + addUnit.replace(/_/g, ' ') + ' added because service was by ' + String(input.service_method).replace(/_/g, ' ') +
+          ', counted after the base period expired and SKIPPING weekends and legal holidays (' +
+          addUnit.replace(/_/g, ' ') + ', not calendar days).';
       } else {
-        extended = addDays(result, sign * addN);
-        extDetail = addN + ' days added because service was by ' + String(input.service_method).replace(/_/g, ' ') + ', counted after the base period expired and including intermediate weekends and holidays.';
+        extended = addDays(addFrom, sign * addN);
+        extDetail = addN + ' days added because service was by ' + String(input.service_method).replace(/_/g, ' ') + ', counted ' +
+          (seq === 'add_to_period_then_roll'
+            ? 'as a lengthening of the period itself from its unrolled last day'
+            : 'after the base period expired') +
+          ', and including intermediate weekends and holidays.';
       }
       steps.push({ step: 'service_extension', detail: extDetail, authority: extLabel, date: extended });
       var rolled2 = rollOff(extended, input.calendars, input.jurisdiction, direction);

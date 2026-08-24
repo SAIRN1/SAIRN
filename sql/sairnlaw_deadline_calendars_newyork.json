@@ -1,0 +1,615 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- New York public-holiday calendars, 2026 through 2031.",
+    "Loaded through add_holidays like every other calendar.",
+    "",
+    "The list is N.Y. Gen. Constr. Law 24's enumerated thirteen, PLUS the two things its",
+    "trailing clause adds and that are easy to miss: the Monday after any of those days that",
+    "falls on a Sunday (Flag Day expressly excepted), and EVERY GENERAL ELECTION DAY, which",
+    "N.Y. Elec. Law 8-100(1)(c) fixes annually on the Tuesday next succeeding the first Monday",
+    "in November.",
+    "",
+    "SUNDAY-ONLY shift -- a holiday on a Saturday stays put. Matches Ohio; differs from",
+    "us-federal/fl/in/mi/pa (both ways) and from il/ca/tx (no shift at all).",
+    "",
+    "See each calendar's authority.note for why both the Sunday and the observed Monday are",
+    "emitted (a deliberate divergence from the Ohio convention), why Flag Day is kept, and why",
+    "Gen. Constr. Law 110 is what makes this calendar govern CPLR deadlines at all."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ny",
+      "year": 2026,
+      "authority": {
+        "citation": "N.Y. Gen. Constr. Law 24 (public holidays), applied to the CPLR through N.Y. Gen. Constr. Law 110 and 25-a; general election day fixed by N.Y. Elec. Law 8-100(1)(c)",
+        "url": "https://law.justia.com/codes/new-york/gcn/article-2/24/",
+        "rollover_url": "https://law.justia.com/codes/new-york/gcn/article-2/25-a/",
+        "note": "Generated 2026-08-24 from N.Y. Gen. Constr. Law 24, read verbatim. Section 24 opens \"The term public holiday includes the following days in each year\" and then enumerates thirteen, followed by \"and if any of such days except Flag day is Sunday, the next day thereafter; each general election day, and each day appointed by the president of the United States or by the governor of this state as a day of general thanksgiving, general fasting and prayer, or other general religious observances.\" SUNDAY-ONLY SHIFT, AND NO SATURDAY SHIFT. A public holiday falling on a SATURDAY stays on its actual date -- section 24 provides no Saturday equivalent. New York therefore matches Ohio and differs from us-federal/fl/in/mi/pa, which shift both ways, and from Illinois, California and Texas, which do not shift at all. Deadlines still roll off a Saturday because Gen. Constr. Law 25-a excludes Saturdays independently. BOTH THE SUNDAY AND THE MONDAY ARE EMITTED, WHICH DIVERGES FROM THE OHIO CALENDARS AND IS A DELIBERATE CHOICE. Ohio's calendars emit only the shifted Monday, replacing the Sunday date. Section 24's words do not replace anything -- the term public holiday \"includes\" the enumerated day, AND the next day thereafter when that day is a Sunday. Both are public holidays on the face of the statute, so both are listed, with the Monday marked \"(observed)\". For every forward-counted period this is computationally identical to Ohio's convention, because Sunday is excluded as a weekend anyway; it differs only for a backward-counted period landing on the Sunday itself, and no backward New York rule is seeded. Recorded because a reviewer comparing the two states' calendars will see the difference and should find the reason here rather than assume one of them is a bug. FLAG DAY IS THE EXPRESS EXCEPTION and is listed even though it can never be anything but a Sunday -- the second Sunday in June. Section 24 names it a public holiday and then carves it out of the Sunday shift by name, so it never generates a Monday. Dropping it as \"always a weekend anyway\" would quietly delete a day the statute enumerates. GENERAL ELECTION DAY IS A PUBLIC HOLIDAY IN NEW YORK and is easy to miss because it is not in the enumerated thirteen -- it is added by the trailing clause. N.Y. Election Law 8-100(1)(c) fixes it: the general election is held ANNUALLY on the Tuesday next succeeding the first Monday in November. Every year, not only even-numbered years. Omitting it would produce a deadline one day early every November. LINCOLN'S BIRTHDAY (February 12) AND COLUMBUS DAY are both on this list. New York's list is longer than most in this engine; padding or trimming it to match a neighbour would move real dates in both directions. NOT MODELLED, flagged rather than dropped: days appointed by the PRESIDENT or by the GOVERNOR as days of general thanksgiving, general fasting and prayer, or other general religious observances. Unknowable in advance, and the same class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b and Texas's Tex. R. App. P. 4.1(b). Also not modelled: the half-holiday, defined by section 24 as noon to midnight of each Saturday that is not a public holiday -- it is a partial day, this engine counts whole days, and Saturdays are excluded by 25-a regardless. WHY THIS CALENDAR GOVERNS CPLR DEADLINES AT ALL, since the CPLR contains no computation rule of its own: Gen. Constr. Law 110 provides that \"This chapter is applicable to every statute unless its general object, or the context of the language construed, or other provisions of law indicate that a different meaning or application was intended.\" The CPLR is a statute and indicates no different application, so sections 20, 24 and 25-a govern. That is a real cross-reference in the statute's own words, unlike the Texas position, where Tex. R. Civ. P. 4 says \"legal holiday\" and never cites the definition the calendars use.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-02-12",
+          "name": "Lincoln's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-06-14",
+          "name": "Flag Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-11-03",
+          "name": "General election day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24, with N.Y. Elec. Law 8-100(1)(c)"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ny",
+      "year": 2027,
+      "authority": {
+        "citation": "N.Y. Gen. Constr. Law 24 (public holidays), applied to the CPLR through N.Y. Gen. Constr. Law 110 and 25-a; general election day fixed by N.Y. Elec. Law 8-100(1)(c)",
+        "url": "https://law.justia.com/codes/new-york/gcn/article-2/24/",
+        "rollover_url": "https://law.justia.com/codes/new-york/gcn/article-2/25-a/",
+        "note": "Generated 2026-08-24 from N.Y. Gen. Constr. Law 24, read verbatim. Section 24 opens \"The term public holiday includes the following days in each year\" and then enumerates thirteen, followed by \"and if any of such days except Flag day is Sunday, the next day thereafter; each general election day, and each day appointed by the president of the United States or by the governor of this state as a day of general thanksgiving, general fasting and prayer, or other general religious observances.\" SUNDAY-ONLY SHIFT, AND NO SATURDAY SHIFT. A public holiday falling on a SATURDAY stays on its actual date -- section 24 provides no Saturday equivalent. New York therefore matches Ohio and differs from us-federal/fl/in/mi/pa, which shift both ways, and from Illinois, California and Texas, which do not shift at all. Deadlines still roll off a Saturday because Gen. Constr. Law 25-a excludes Saturdays independently. BOTH THE SUNDAY AND THE MONDAY ARE EMITTED, WHICH DIVERGES FROM THE OHIO CALENDARS AND IS A DELIBERATE CHOICE. Ohio's calendars emit only the shifted Monday, replacing the Sunday date. Section 24's words do not replace anything -- the term public holiday \"includes\" the enumerated day, AND the next day thereafter when that day is a Sunday. Both are public holidays on the face of the statute, so both are listed, with the Monday marked \"(observed)\". For every forward-counted period this is computationally identical to Ohio's convention, because Sunday is excluded as a weekend anyway; it differs only for a backward-counted period landing on the Sunday itself, and no backward New York rule is seeded. Recorded because a reviewer comparing the two states' calendars will see the difference and should find the reason here rather than assume one of them is a bug. FLAG DAY IS THE EXPRESS EXCEPTION and is listed even though it can never be anything but a Sunday -- the second Sunday in June. Section 24 names it a public holiday and then carves it out of the Sunday shift by name, so it never generates a Monday. Dropping it as \"always a weekend anyway\" would quietly delete a day the statute enumerates. GENERAL ELECTION DAY IS A PUBLIC HOLIDAY IN NEW YORK and is easy to miss because it is not in the enumerated thirteen -- it is added by the trailing clause. N.Y. Election Law 8-100(1)(c) fixes it: the general election is held ANNUALLY on the Tuesday next succeeding the first Monday in November. Every year, not only even-numbered years. Omitting it would produce a deadline one day early every November. LINCOLN'S BIRTHDAY (February 12) AND COLUMBUS DAY are both on this list. New York's list is longer than most in this engine; padding or trimming it to match a neighbour would move real dates in both directions. NOT MODELLED, flagged rather than dropped: days appointed by the PRESIDENT or by the GOVERNOR as days of general thanksgiving, general fasting and prayer, or other general religious observances. Unknowable in advance, and the same class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b and Texas's Tex. R. App. P. 4.1(b). Also not modelled: the half-holiday, defined by section 24 as noon to midnight of each Saturday that is not a public holiday -- it is a partial day, this engine counts whole days, and Saturdays are excluded by 25-a regardless. WHY THIS CALENDAR GOVERNS CPLR DEADLINES AT ALL, since the CPLR contains no computation rule of its own: Gen. Constr. Law 110 provides that \"This chapter is applicable to every statute unless its general object, or the context of the language construed, or other provisions of law indicate that a different meaning or application was intended.\" The CPLR is a statute and indicates no different application, so sections 20, 24 and 25-a govern. That is a real cross-reference in the statute's own words, unlike the Texas position, where Tex. R. Civ. P. 4 says \"legal holiday\" and never cites the definition the calendars use.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-02-12",
+          "name": "Lincoln's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-06-13",
+          "name": "Flag Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (observed)",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-11-02",
+          "name": "General election day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24, with N.Y. Elec. Law 8-100(1)(c)"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2027-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ny",
+      "year": 2028,
+      "authority": {
+        "citation": "N.Y. Gen. Constr. Law 24 (public holidays), applied to the CPLR through N.Y. Gen. Constr. Law 110 and 25-a; general election day fixed by N.Y. Elec. Law 8-100(1)(c)",
+        "url": "https://law.justia.com/codes/new-york/gcn/article-2/24/",
+        "rollover_url": "https://law.justia.com/codes/new-york/gcn/article-2/25-a/",
+        "note": "Generated 2026-08-24 from N.Y. Gen. Constr. Law 24, read verbatim. Section 24 opens \"The term public holiday includes the following days in each year\" and then enumerates thirteen, followed by \"and if any of such days except Flag day is Sunday, the next day thereafter; each general election day, and each day appointed by the president of the United States or by the governor of this state as a day of general thanksgiving, general fasting and prayer, or other general religious observances.\" SUNDAY-ONLY SHIFT, AND NO SATURDAY SHIFT. A public holiday falling on a SATURDAY stays on its actual date -- section 24 provides no Saturday equivalent. New York therefore matches Ohio and differs from us-federal/fl/in/mi/pa, which shift both ways, and from Illinois, California and Texas, which do not shift at all. Deadlines still roll off a Saturday because Gen. Constr. Law 25-a excludes Saturdays independently. BOTH THE SUNDAY AND THE MONDAY ARE EMITTED, WHICH DIVERGES FROM THE OHIO CALENDARS AND IS A DELIBERATE CHOICE. Ohio's calendars emit only the shifted Monday, replacing the Sunday date. Section 24's words do not replace anything -- the term public holiday \"includes\" the enumerated day, AND the next day thereafter when that day is a Sunday. Both are public holidays on the face of the statute, so both are listed, with the Monday marked \"(observed)\". For every forward-counted period this is computationally identical to Ohio's convention, because Sunday is excluded as a weekend anyway; it differs only for a backward-counted period landing on the Sunday itself, and no backward New York rule is seeded. Recorded because a reviewer comparing the two states' calendars will see the difference and should find the reason here rather than assume one of them is a bug. FLAG DAY IS THE EXPRESS EXCEPTION and is listed even though it can never be anything but a Sunday -- the second Sunday in June. Section 24 names it a public holiday and then carves it out of the Sunday shift by name, so it never generates a Monday. Dropping it as \"always a weekend anyway\" would quietly delete a day the statute enumerates. GENERAL ELECTION DAY IS A PUBLIC HOLIDAY IN NEW YORK and is easy to miss because it is not in the enumerated thirteen -- it is added by the trailing clause. N.Y. Election Law 8-100(1)(c) fixes it: the general election is held ANNUALLY on the Tuesday next succeeding the first Monday in November. Every year, not only even-numbered years. Omitting it would produce a deadline one day early every November. LINCOLN'S BIRTHDAY (February 12) AND COLUMBUS DAY are both on this list. New York's list is longer than most in this engine; padding or trimming it to match a neighbour would move real dates in both directions. NOT MODELLED, flagged rather than dropped: days appointed by the PRESIDENT or by the GOVERNOR as days of general thanksgiving, general fasting and prayer, or other general religious observances. Unknowable in advance, and the same class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b and Texas's Tex. R. App. P. 4.1(b). Also not modelled: the half-holiday, defined by section 24 as noon to midnight of each Saturday that is not a public holiday -- it is a partial day, this engine counts whole days, and Saturdays are excluded by 25-a regardless. WHY THIS CALENDAR GOVERNS CPLR DEADLINES AT ALL, since the CPLR contains no computation rule of its own: Gen. Constr. Law 110 provides that \"This chapter is applicable to every statute unless its general object, or the context of the language construed, or other provisions of law indicate that a different meaning or application was intended.\" The CPLR is a statute and indicates no different application, so sections 20, 24 and 25-a govern. That is a real cross-reference in the statute's own words, unlike the Texas position, where Tex. R. Civ. P. 4 says \"legal holiday\" and never cites the definition the calendars use.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2028-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-02-12",
+          "name": "Lincoln's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-06-11",
+          "name": "Flag Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-11-07",
+          "name": "General election day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24, with N.Y. Elec. Law 8-100(1)(c)"
+        },
+        {
+          "date": "2028-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ny",
+      "year": 2029,
+      "authority": {
+        "citation": "N.Y. Gen. Constr. Law 24 (public holidays), applied to the CPLR through N.Y. Gen. Constr. Law 110 and 25-a; general election day fixed by N.Y. Elec. Law 8-100(1)(c)",
+        "url": "https://law.justia.com/codes/new-york/gcn/article-2/24/",
+        "rollover_url": "https://law.justia.com/codes/new-york/gcn/article-2/25-a/",
+        "note": "Generated 2026-08-24 from N.Y. Gen. Constr. Law 24, read verbatim. Section 24 opens \"The term public holiday includes the following days in each year\" and then enumerates thirteen, followed by \"and if any of such days except Flag day is Sunday, the next day thereafter; each general election day, and each day appointed by the president of the United States or by the governor of this state as a day of general thanksgiving, general fasting and prayer, or other general religious observances.\" SUNDAY-ONLY SHIFT, AND NO SATURDAY SHIFT. A public holiday falling on a SATURDAY stays on its actual date -- section 24 provides no Saturday equivalent. New York therefore matches Ohio and differs from us-federal/fl/in/mi/pa, which shift both ways, and from Illinois, California and Texas, which do not shift at all. Deadlines still roll off a Saturday because Gen. Constr. Law 25-a excludes Saturdays independently. BOTH THE SUNDAY AND THE MONDAY ARE EMITTED, WHICH DIVERGES FROM THE OHIO CALENDARS AND IS A DELIBERATE CHOICE. Ohio's calendars emit only the shifted Monday, replacing the Sunday date. Section 24's words do not replace anything -- the term public holiday \"includes\" the enumerated day, AND the next day thereafter when that day is a Sunday. Both are public holidays on the face of the statute, so both are listed, with the Monday marked \"(observed)\". For every forward-counted period this is computationally identical to Ohio's convention, because Sunday is excluded as a weekend anyway; it differs only for a backward-counted period landing on the Sunday itself, and no backward New York rule is seeded. Recorded because a reviewer comparing the two states' calendars will see the difference and should find the reason here rather than assume one of them is a bug. FLAG DAY IS THE EXPRESS EXCEPTION and is listed even though it can never be anything but a Sunday -- the second Sunday in June. Section 24 names it a public holiday and then carves it out of the Sunday shift by name, so it never generates a Monday. Dropping it as \"always a weekend anyway\" would quietly delete a day the statute enumerates. GENERAL ELECTION DAY IS A PUBLIC HOLIDAY IN NEW YORK and is easy to miss because it is not in the enumerated thirteen -- it is added by the trailing clause. N.Y. Election Law 8-100(1)(c) fixes it: the general election is held ANNUALLY on the Tuesday next succeeding the first Monday in November. Every year, not only even-numbered years. Omitting it would produce a deadline one day early every November. LINCOLN'S BIRTHDAY (February 12) AND COLUMBUS DAY are both on this list. New York's list is longer than most in this engine; padding or trimming it to match a neighbour would move real dates in both directions. NOT MODELLED, flagged rather than dropped: days appointed by the PRESIDENT or by the GOVERNOR as days of general thanksgiving, general fasting and prayer, or other general religious observances. Unknowable in advance, and the same class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b and Texas's Tex. R. App. P. 4.1(b). Also not modelled: the half-holiday, defined by section 24 as noon to midnight of each Saturday that is not a public holiday -- it is a partial day, this engine counts whole days, and Saturdays are excluded by 25-a regardless. WHY THIS CALENDAR GOVERNS CPLR DEADLINES AT ALL, since the CPLR contains no computation rule of its own: Gen. Constr. Law 110 provides that \"This chapter is applicable to every statute unless its general object, or the context of the language construed, or other provisions of law indicate that a different meaning or application was intended.\" The CPLR is a statute and indicates no different application, so sections 20, 24 and 25-a govern. That is a real cross-reference in the statute's own words, unlike the Texas position, where Tex. R. Civ. P. 4 says \"legal holiday\" and never cites the definition the calendars use.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-02-12",
+          "name": "Lincoln's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-06-10",
+          "name": "Flag Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-11-06",
+          "name": "General election day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24, with N.Y. Elec. Law 8-100(1)(c)"
+        },
+        {
+          "date": "2029-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans' Day (observed)",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ny",
+      "year": 2030,
+      "authority": {
+        "citation": "N.Y. Gen. Constr. Law 24 (public holidays), applied to the CPLR through N.Y. Gen. Constr. Law 110 and 25-a; general election day fixed by N.Y. Elec. Law 8-100(1)(c)",
+        "url": "https://law.justia.com/codes/new-york/gcn/article-2/24/",
+        "rollover_url": "https://law.justia.com/codes/new-york/gcn/article-2/25-a/",
+        "note": "Generated 2026-08-24 from N.Y. Gen. Constr. Law 24, read verbatim. Section 24 opens \"The term public holiday includes the following days in each year\" and then enumerates thirteen, followed by \"and if any of such days except Flag day is Sunday, the next day thereafter; each general election day, and each day appointed by the president of the United States or by the governor of this state as a day of general thanksgiving, general fasting and prayer, or other general religious observances.\" SUNDAY-ONLY SHIFT, AND NO SATURDAY SHIFT. A public holiday falling on a SATURDAY stays on its actual date -- section 24 provides no Saturday equivalent. New York therefore matches Ohio and differs from us-federal/fl/in/mi/pa, which shift both ways, and from Illinois, California and Texas, which do not shift at all. Deadlines still roll off a Saturday because Gen. Constr. Law 25-a excludes Saturdays independently. BOTH THE SUNDAY AND THE MONDAY ARE EMITTED, WHICH DIVERGES FROM THE OHIO CALENDARS AND IS A DELIBERATE CHOICE. Ohio's calendars emit only the shifted Monday, replacing the Sunday date. Section 24's words do not replace anything -- the term public holiday \"includes\" the enumerated day, AND the next day thereafter when that day is a Sunday. Both are public holidays on the face of the statute, so both are listed, with the Monday marked \"(observed)\". For every forward-counted period this is computationally identical to Ohio's convention, because Sunday is excluded as a weekend anyway; it differs only for a backward-counted period landing on the Sunday itself, and no backward New York rule is seeded. Recorded because a reviewer comparing the two states' calendars will see the difference and should find the reason here rather than assume one of them is a bug. FLAG DAY IS THE EXPRESS EXCEPTION and is listed even though it can never be anything but a Sunday -- the second Sunday in June. Section 24 names it a public holiday and then carves it out of the Sunday shift by name, so it never generates a Monday. Dropping it as \"always a weekend anyway\" would quietly delete a day the statute enumerates. GENERAL ELECTION DAY IS A PUBLIC HOLIDAY IN NEW YORK and is easy to miss because it is not in the enumerated thirteen -- it is added by the trailing clause. N.Y. Election Law 8-100(1)(c) fixes it: the general election is held ANNUALLY on the Tuesday next succeeding the first Monday in November. Every year, not only even-numbered years. Omitting it would produce a deadline one day early every November. LINCOLN'S BIRTHDAY (February 12) AND COLUMBUS DAY are both on this list. New York's list is longer than most in this engine; padding or trimming it to match a neighbour would move real dates in both directions. NOT MODELLED, flagged rather than dropped: days appointed by the PRESIDENT or by the GOVERNOR as days of general thanksgiving, general fasting and prayer, or other general religious observances. Unknowable in advance, and the same class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b and Texas's Tex. R. App. P. 4.1(b). Also not modelled: the half-holiday, defined by section 24 as noon to midnight of each Saturday that is not a public holiday -- it is a partial day, this engine counts whole days, and Saturdays are excluded by 25-a regardless. WHY THIS CALENDAR GOVERNS CPLR DEADLINES AT ALL, since the CPLR contains no computation rule of its own: Gen. Constr. Law 110 provides that \"This chapter is applicable to every statute unless its general object, or the context of the language construed, or other provisions of law indicate that a different meaning or application was intended.\" The CPLR is a statute and indicates no different application, so sections 20, 24 and 25-a govern. That is a real cross-reference in the statute's own words, unlike the Texas position, where Tex. R. Civ. P. 4 says \"legal holiday\" and never cites the definition the calendars use.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-02-12",
+          "name": "Lincoln's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-06-09",
+          "name": "Flag Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-11-05",
+          "name": "General election day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24, with N.Y. Elec. Law 8-100(1)(c)"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "ny",
+      "year": 2031,
+      "authority": {
+        "citation": "N.Y. Gen. Constr. Law 24 (public holidays), applied to the CPLR through N.Y. Gen. Constr. Law 110 and 25-a; general election day fixed by N.Y. Elec. Law 8-100(1)(c)",
+        "url": "https://law.justia.com/codes/new-york/gcn/article-2/24/",
+        "rollover_url": "https://law.justia.com/codes/new-york/gcn/article-2/25-a/",
+        "note": "Generated 2026-08-24 from N.Y. Gen. Constr. Law 24, read verbatim. Section 24 opens \"The term public holiday includes the following days in each year\" and then enumerates thirteen, followed by \"and if any of such days except Flag day is Sunday, the next day thereafter; each general election day, and each day appointed by the president of the United States or by the governor of this state as a day of general thanksgiving, general fasting and prayer, or other general religious observances.\" SUNDAY-ONLY SHIFT, AND NO SATURDAY SHIFT. A public holiday falling on a SATURDAY stays on its actual date -- section 24 provides no Saturday equivalent. New York therefore matches Ohio and differs from us-federal/fl/in/mi/pa, which shift both ways, and from Illinois, California and Texas, which do not shift at all. Deadlines still roll off a Saturday because Gen. Constr. Law 25-a excludes Saturdays independently. BOTH THE SUNDAY AND THE MONDAY ARE EMITTED, WHICH DIVERGES FROM THE OHIO CALENDARS AND IS A DELIBERATE CHOICE. Ohio's calendars emit only the shifted Monday, replacing the Sunday date. Section 24's words do not replace anything -- the term public holiday \"includes\" the enumerated day, AND the next day thereafter when that day is a Sunday. Both are public holidays on the face of the statute, so both are listed, with the Monday marked \"(observed)\". For every forward-counted period this is computationally identical to Ohio's convention, because Sunday is excluded as a weekend anyway; it differs only for a backward-counted period landing on the Sunday itself, and no backward New York rule is seeded. Recorded because a reviewer comparing the two states' calendars will see the difference and should find the reason here rather than assume one of them is a bug. FLAG DAY IS THE EXPRESS EXCEPTION and is listed even though it can never be anything but a Sunday -- the second Sunday in June. Section 24 names it a public holiday and then carves it out of the Sunday shift by name, so it never generates a Monday. Dropping it as \"always a weekend anyway\" would quietly delete a day the statute enumerates. GENERAL ELECTION DAY IS A PUBLIC HOLIDAY IN NEW YORK and is easy to miss because it is not in the enumerated thirteen -- it is added by the trailing clause. N.Y. Election Law 8-100(1)(c) fixes it: the general election is held ANNUALLY on the Tuesday next succeeding the first Monday in November. Every year, not only even-numbered years. Omitting it would produce a deadline one day early every November. LINCOLN'S BIRTHDAY (February 12) AND COLUMBUS DAY are both on this list. New York's list is longer than most in this engine; padding or trimming it to match a neighbour would move real dates in both directions. NOT MODELLED, flagged rather than dropped: days appointed by the PRESIDENT or by the GOVERNOR as days of general thanksgiving, general fasting and prayer, or other general religious observances. Unknowable in advance, and the same class as Illinois's Governor-proclamation limb, Indiana's office-closed limb, Florida's chief-justice hurricane limb, California's CCP 12b and Texas's Tex. R. App. P. 4.1(b). Also not modelled: the half-holiday, defined by section 24 as noon to midnight of each Saturday that is not a public holiday -- it is a partial day, this engine counts whole days, and Saturdays are excluded by 25-a regardless. WHY THIS CALENDAR GOVERNS CPLR DEADLINES AT ALL, since the CPLR contains no computation rule of its own: Gen. Constr. Law 110 provides that \"This chapter is applicable to every statute unless its general object, or the context of the language construed, or other provisions of law indicate that a different meaning or application was intended.\" The CPLR is a statute and indicates no different application, so sections 20, 24 and 25-a govern. That is a real cross-reference in the statute's own words, unlike the Texas position, where Tex. R. Civ. P. 4 says \"legal holiday\" and never cites the definition the calendars use.",
+        "retrieved_at": "2026-08-24"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Dr. Martin Luther King, Jr. Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-02-12",
+          "name": "Lincoln's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-06-08",
+          "name": "Flag Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-11-04",
+          "name": "General election day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24, with N.Y. Elec. Law 8-100(1)(c)"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "authority": "N.Y. Gen. Constr. Law 24"
+        }
+      ]
+    }
+  ]
+}
