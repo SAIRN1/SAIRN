@@ -41,6 +41,7 @@ const REGISTRY_MODULES = [
   require('./sairnbuild'),
   require('./sairnsenior'),
   require('./sairncare'),
+  require('./sairnroofing'),
 ];
 
 // Fail loudly at load rather than silently letting one app shadow another's

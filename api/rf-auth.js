@@ -93,6 +93,9 @@ const BROAD_READ_ROLES = { owner: true, admin: true, estimator: true };
 // blast radius of a mistaken deactivation is the whole company.
 const PROVISIONING_ROLES = ['owner'];
 
+// Exported so gates elsewhere (api/sd-data.js's rf_jobs branch) import these
+// rather than re-listing role names -- see the header note on why that drift
+// is the exact bug class this app is built to avoid from the start.
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
@@ -438,6 +441,9 @@ module.exports = async (req, res) => {
     return;
   }
 };
+
+module.exports.MANAGEMENT_ROLES = MANAGEMENT_ROLES;
+module.exports.BROAD_READ_ROLES = BROAD_READ_ROLES;
 
 function isMissingTable(detail) {
   const s = JSON.stringify(detail || '');

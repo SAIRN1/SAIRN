@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNroofing - Roofing Contractor Operations</title>
+<style>
+/* Brand color: #C2410C (rust/terracotta) -- distinct from every existing
+   SAIRN app color (checked against sairnbuild's amber #F59E0B, the
+   closest neighbor) and evocative of the vertical. Judgment call, not
+   confirmed with Michael ahead of building -- same disclosed-not-silent
+   pattern as every other app's color pick. */
+:root{--p:#C2410C;--pd:#9A3412;--pt:#FFF7ED;--pb:#FED7AA;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:28px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:28px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
+.pbox{background:#fff;border-radius:16px;padding:40px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.plogo{font-size:24px;font-weight:800;color:var(--pd);margin-bottom:4px;}
+.perr{color:var(--danger);font-size:12px;margin-top:8px;min-height:16px;}
+.plink{background:none;border:none;color:var(--p);font-size:12px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:underline;}
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:56px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;}
+.hlogo{font-size:20px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:13px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 14px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.25);}
+.wrap{display:flex;flex:1;overflow:hidden;}
+aside{width:200px;background:#fff;border-right:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;}
+.sb{display:flex;align-items:center;gap:10px;padding:9px 14px;border:none;background:none;width:100%;text-align:left;cursor:pointer;border-radius:8px;margin:8px 4px 1px;color:var(--text);font-size:13px;font-weight:500;}
+.sb:hover{background:var(--pt);color:var(--pd);}
+.sb.on{background:var(--pt);color:var(--pd);font-weight:700;}
+main{flex:1;overflow-y:auto;padding:24px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.ptitle{font-size:22px;font-weight:800;}
+.psub{color:var(--muted);font-size:13px;margin-top:2px;}
+.pa{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;}
+.btn{border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+.bp{background:var(--p);color:#fff;}
+.bp:hover{background:var(--pd);}
+.bo{background:#fff;border:1px solid var(--border);color:var(--text);}
+.bo:hover{border-color:var(--p);color:var(--pd);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--sh);margin-bottom:16px;}
+.ch{padding:14px 18px;border-bottom:1px solid var(--border);}
+.ct{font-size:14px;font-weight:700;}
+.cb{padding:16px 18px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg);padding:10px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.bg{background:#DCFCE7;color:#15803D;}
+.bb{background:#DBEAFE;color:#1D4ED8;}
+.bx{background:#F1F5F9;color:#475569;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;font-family:inherit;}
+input:focus,select:focus{border-color:var(--p);}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+.fg{margin-bottom:14px;}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
+.modal.on{display:flex;}
+.mbox{background:#fff;border-radius:16px;padding:28px;width:480px;max-height:90vh;overflow-y:auto;}
+.mtitle{font-size:18px;font-weight:800;margin-bottom:20px;}
+#toast{position:fixed;bottom:24px;right:24px;background:#0F172A;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:99999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;max-width:320px;}
+#toast.on{opacity:1;transform:translateY(0);}
+.note{background:var(--pt);border:1px solid var(--pb);border-radius:10px;padding:12px 14px;font-size:12px;color:#7C2D12;margin-bottom:16px;}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+/* AI Assistant panel */
+#ai-hist{height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px;background:var(--bg);}
+.aimsg{margin-bottom:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;}
+.aimsg.u{color:var(--text);font-weight:600;}
+.aimsg.a{color:var(--pd);}
+.aibar{display:flex;gap:8px;}
+.aibar input{flex:1;}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gbox">
+    <div class="glogo">SAIRNroofing</div>
+    <div class="gsub">Enter your license key</div>
+    <input class="ginp" id="gkey" placeholder="RF-XXXXX-2026" autocomplete="off">
+    <button class="gbtn" onclick="gateGo()">Continue</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div id="pin">
+  <div class="pbox">
+    <div class="plogo">SAIRNroofing</div>
+    <div id="lstep-login">
+      <div class="fg"><label>Employee ID</label><input id="l-eid" autocomplete="off"></div>
+      <div class="fg"><label>PIN</label><input id="l-pin" type="password" inputmode="numeric" autocomplete="off"></div>
+      <button class="gbtn" onclick="rfLogin()">Sign In</button>
+      <div class="perr" id="perr"></div>
+      <button class="plink" onclick="rfShowBootstrap()">First time setting up this company?</button>
+    </div>
+    <div id="lstep-bootstrap" style="display:none;">
+      <div class="fg"><label>Your Employee ID</label><input id="b-eid" autocomplete="off"></div>
+      <div class="fg"><label>Your Name</label><input id="b-name" autocomplete="off"></div>
+      <div class="fg"><label>Choose a 6-8 digit PIN</label><input id="b-pin" type="password" inputmode="numeric" autocomplete="off"></div>
+      <button class="gbtn" onclick="rfBootstrap()">Create Owner Account</button>
+      <button class="plink" onclick="rfLoginReset()">Back to sign in</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="hlogo">SAIRNroofing</div>
+    <div class="hbadge" id="hbadge">--</div>
+    <div class="hr">
+      <span class="huser" id="huser"></span>
+      <button class="hbtn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </header>
+  <div class="wrap">
+    <aside>
+      <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')">Jobs</button>
+      <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
+    </aside>
+    <main>
+
+      <div class="panel on" id="panel-dashboard">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Jobs</div>
+            <div class="psub" id="jobs-scope-note">--</div>
+          </div>
+          <div class="pa"><button class="btn bp" onclick="openJobModal()">+ New Job</button></div>
+        </div>
+        <div class="card">
+          <div class="cb" id="jobs-list"><div class="empty">Loading…</div></div>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-assistant">
+        <div class="ph"><div class="ptitle">AI Assistant</div></div>
+        <div class="note">Answers only from the jobs visible to your role -- the same scope as the Jobs list, never more.</div>
+        <div class="card"><div class="cb">
+          <div id="ai-hist"></div>
+          <div class="aibar">
+            <input id="ai-input" placeholder="Ask about your jobs…" onkeydown="if(event.key==='Enter')aiSend();">
+            <button class="btn bp" onclick="aiSend()">Send</button>
+          </div>
+        </div></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<div class="modal" id="job-modal">
+  <div class="mbox">
+    <div class="mtitle" id="job-modal-title">New Job</div>
+    <div class="fg"><label>Customer / Job Name</label><input id="j-name"></div>
+    <div class="fg"><label>Address</label><input id="j-address"></div>
+    <div class="fg"><label>Job Class</label>
+      <select id="j-class"><option value="residential">Residential</option><option value="commercial">Commercial</option></select>
+    </div>
+    <div class="fg"><label>Status</label>
+      <select id="j-status"><option value="lead">Lead</option><option value="scheduled">Scheduled</option><option value="in_progress">In Progress</option><option value="complete">Complete</option></select>
+    </div>
+    <div class="fg" id="j-assignee-wrap"><label>Assigned To (Employee ID)</label><input id="j-assignee" placeholder="Leave blank = unassigned"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveJob()">Save</button>
+      <button class="btn bo" onclick="closeJobModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var APP_ID='sairnroofing';
+var DATA_API='https://sairn.vercel.app/api/sd-data';
+var AUTH_API='https://sairn.vercel.app/api/rf-auth';
+var PROXY='https://sairn.vercel.app/api/claude';
+var VALID=['RF-','DEMO-','SAIRN-'];
+var MANAGEMENT_ROLES={owner:true,admin:true};
+var BROAD_READ_ROLES={owner:true,admin:true,estimator:true};
+
+var rfSession=null;
+var currentJobs=[];
+var editingJobId=null;
+
+function $(s){return document.getElementById(s);}
+function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
+function rfLicenseKey(){return localStorage.getItem('rf_license_key')||'';}
+
+function rfAuth(action,payload,withSession){
+  var lic=rfLicenseKey();
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if(withSession&&rfSession&&rfSession.token)h['X-SD-Auth']=rfSession.token;
+  return fetch(AUTH_API,{method:'POST',headers:h,body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+    });})
+    .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
+}
+
+// rf_jobs is the only resource so far (Phase 1) and its privacy gate lives
+// server-side in api/sd-data.js's rf_jobs branch, keyed on the real
+// employee session -- X-SD-Auth is required, not optional, for this call.
+function rfData(action,resource,payload){
+  var lic=rfLicenseKey();
+  if(!lic||!rfSession||!rfSession.token)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':rfSession.token};
+  return fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})})
+    .then(function(r){return r.json().then(function(d){
+      if(!r.ok||!d||!d.ok){console.warn('rfData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      return d.data;
+    });})
+    .catch(function(e){console.warn('rfData network error:',e.message);return null;});
+}
+
+function gateGo(){
+  var k=($('gkey').value||'').trim().toUpperCase();
+  var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
+  if(!ok){$('gerr').textContent='Invalid key format. Try RF-PINNACLE-2026';return;}
+  localStorage.setItem('rf_license_key',k);
+  $('gerr').textContent='Checking key…';
+  rfAuth('check_license',{}).then(function(r){
+    if(!r.ok){
+      localStorage.removeItem('rf_license_key');
+      $('gerr').textContent=r.msg||'That license key was not accepted.';
+      return;
+    }
+    $('gerr').textContent='';
+    $('gate').style.display='none';$('pin').classList.add('on');
+    var e=$('l-eid');if(e)e.focus();
+  });
+}
+
+function rfLoginErr(m){var e=$('perr');if(e)e.textContent=m||'';}
+function rfShowBootstrap(){$('lstep-login').style.display='none';$('lstep-bootstrap').style.display='block';rfLoginErr('');}
+function rfLoginReset(){$('lstep-bootstrap').style.display='none';$('lstep-login').style.display='block';rfLoginErr('');}
+
+function rfLogin(){
+  var eid=($('l-eid').value||'').trim();
+  var pin=($('l-pin').value||'').trim();
+  if(!eid||!pin){rfLoginErr('Enter your employee ID and PIN.');return;}
+  rfLoginErr('Signing in…');
+  rfAuth('login',{employee_id:eid,pin:pin}).then(function(r){
+    if(!r.ok){rfLoginErr(r.msg||'Sign-in failed.');return;}
+    rfEnterApp(r.data);
+  });
+}
+
+function rfBootstrap(){
+  var eid=($('b-eid').value||'').trim(),nm=($('b-name').value||'').trim(),pin=($('b-pin').value||'').trim();
+  if(!eid||!/^\d{6,8}$/.test(pin)){rfLoginErr('Employee ID and a 6-8 digit PIN are required.');return;}
+  rfLoginErr('Creating account…');
+  rfAuth('bootstrap',{employee_id:eid,display_name:nm||eid,pin:pin}).then(function(r){
+    if(!r.ok){rfLoginErr(r.msg||'Setup failed.');return;}
+    rfEnterApp(r.data);
+  });
+}
+
+function rfEnterApp(d){
+  rfSession={token:d.token,role:d.role,employee_id:d.employee_id};
+  try{localStorage.setItem('rf_session',JSON.stringify(rfSession));}catch(e){}
+  $('pin').classList.remove('on');$('app').classList.add('on');
+  $('huser').textContent=(d.employee_id||d.role)+' · '+d.role.charAt(0).toUpperCase()+d.role.slice(1);
+  $('hbadge').textContent=d.role.toUpperCase();
+  rfLoginErr('');
+  var p=$('l-pin');if(p)p.value='';
+  rfRenderScopeNote();
+  rfLoadJobs();
+}
+
+function rfRestoreSession(){
+  var s=null;try{s=JSON.parse(localStorage.getItem('rf_session')||'null');}catch(e){}
+  if(!s||!s.token||!s.role)return false;
+  var payload=null;
+  try{payload=JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}
+  if(!payload||!payload.exp||Date.now()>=payload.exp){try{localStorage.removeItem('rf_session');}catch(e){}return false;}
+  if(payload.app!=='sairnroofing'){try{localStorage.removeItem('rf_session');}catch(e){}return false;}
+  rfEnterApp(s);
+  rfAuth('whoami',{},true).then(function(r){
+    if(!r.ok){doLogout();toast('Your session is no longer valid -- please sign in again');}
+  });
+  return true;
+}
+
+function doLogout(){
+  rfSession=null;
+  try{localStorage.removeItem('rf_session');}catch(e){}
+  $('app').classList.remove('on');$('pin').classList.add('on');
+  rfLoginReset();
+  toast('Signed out');
+}
+
+function nav(id){
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
+  document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
+  $('panel-'+id).classList.add('on');$('sb-'+id).classList.add('on');
+}
+
+// ── Jobs (rf_jobs) — server-side gate does the real filtering; this note
+// only explains what the caller is already looking at, it enforces nothing. ──
+function rfRenderScopeNote(){
+  var role=rfSession&&rfSession.role;
+  var note='';
+  if(MANAGEMENT_ROLES[role])note='Showing every job — you have management visibility.';
+  else if(BROAD_READ_ROLES[role])note='Showing every job — estimators see the whole board to quote, but only management can assign or reassign.';
+  else note='Showing jobs assigned to you.';
+  $('jobs-scope-note').textContent=note;
+  $('j-assignee-wrap').style.display=MANAGEMENT_ROLES[role]?'block':'none';
+}
+
+function rfLoadJobs(){
+  rfData('read','rf_jobs',{}).then(function(data){
+    currentJobs=data||[];
+    rJobs();
+  });
+}
+
+function rJobs(){
+  var el=$('jobs-list');
+  if(!currentJobs.length){el.innerHTML='<div class="empty">No jobs yet. Click "+ New Job" to add one.</div>';return;}
+  var rows=currentJobs.map(function(j){
+    var cls=j.job_class==='commercial'?'<span class="badge bb">Commercial</span>':'<span class="badge bx">Residential</span>';
+    var status=j.status||'lead';
+    var sbadge=status==='complete'?'<span class="badge bg">Complete</span>':'<span class="badge bx">'+status.replace('_',' ')+'</span>';
+    return '<tr onclick="openJobModal(\''+j.id+'\')" style="cursor:pointer;">'+
+      '<td>'+(j.name||'(untitled)')+'</td><td>'+(j.address||'--')+'</td><td>'+cls+'</td><td>'+sbadge+'</td>'+
+      '<td>'+(j.assigned_employee_id||'<span style="color:var(--muted);">unassigned</span>')+'</td></tr>';
+  }).join('');
+  el.innerHTML='<table><thead><tr><th>Job</th><th>Address</th><th>Class</th><th>Status</th><th>Assigned</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+function openJobModal(id){
+  editingJobId=id||null;
+  var j=id?currentJobs.filter(function(x){return x.id===id;})[0]:null;
+  $('job-modal-title').textContent=j?'Edit Job':'New Job';
+  $('j-name').value=j?(j.name||''):'';
+  $('j-address').value=j?(j.address||''):'';
+  $('j-class').value=j?(j.job_class||'residential'):'residential';
+  $('j-status').value=j?(j.status||'lead'):'lead';
+  $('j-assignee').value=j?(j.assigned_employee_id||''):'';
+  $('job-modal').classList.add('on');
+}
+function closeJobModal(){$('job-modal').classList.remove('on');}
+
+function saveJob(){
+  var name=($('j-name').value||'').trim();
+  if(!name){toast('Job name is required');return;}
+  var id=editingJobId||('RF-'+Date.now());
+  var role=rfSession&&rfSession.role;
+  var payload={
+    id:id, name:name, address:($('j-address').value||'').trim(),
+    job_class:$('j-class').value, status:$('j-status').value
+  };
+  // Only management's assignee field is even shown (see rfRenderScopeNote);
+  // for everyone else, omit assigned_employee_id entirely so the server
+  // keeps its existing value (edit) or self-assigns it (new job) --
+  // matching api/sd-data.js's rf_jobs write gate exactly rather than
+  // asserting a value from a hidden field the client can't be sure of.
+  if(MANAGEMENT_ROLES[role]){
+    payload.assigned_employee_id=($('j-assignee').value||'').trim()||null;
+  }
+  rfData('write','rf_jobs',payload).then(function(d){
+    if(!d){toast('Save failed');return;}
+    closeJobModal();
+    toast('Job saved');
+    rfLoadJobs();
+  });
+}
+
+// ── AI Assistant — context is built from currentJobs, which is already
+// the role-scoped list this session received; the assistant never sees
+// more than the Jobs panel already shows. ──
+var aiHist=[];
+function aiRenderHist(){
+  var el=$('ai-hist');
+  el.innerHTML=aiHist.map(function(m){
+    return '<div class="aimsg '+(m.role==='user'?'u':'a')+'">'+(m.role==='user'?'You: ':'Assistant: ')+m.text.replace(/</g,'&lt;')+'</div>';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function aiSend(){
+  var input=$('ai-input');
+  var q=(input.value||'').trim();
+  if(!q)return;
+  input.value='';
+  aiHist.push({role:'user',text:q});aiRenderHist();
+  var jobLines=currentJobs.map(function(j){
+    return '- '+(j.name||'(untitled)')+' | '+(j.address||'no address')+' | '+(j.job_class||'residential')+' | '+(j.status||'lead')+' | assigned:'+(j.assigned_employee_id||'unassigned');
+  }).join('\n')||'(no jobs visible to you yet)';
+  var sysPrompt='You are SAIRNroofing\'s operations assistant. Answer only from the job list provided below, which is already scoped to what this employee is allowed to see -- never claim knowledge of a job not listed here.\n\nVisible jobs:\n'+jobLines;
+  fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sysPrompt,messages:[{role:'user',content:q}]})})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var text=(data&&data.content&&data.content[0]&&data.content[0].text)||'No response.';
+      aiHist.push({role:'assistant',text:text});aiRenderHist();
+    })
+    .catch(function(e){
+      aiHist.push({role:'assistant',text:'AI request failed -- try again.'});aiRenderHist();
+    });
+}
+
+(function init(){
+  var lic=rfLicenseKey();
+  if(lic){$('gate').style.display='none';
+    if(!rfRestoreSession()){$('pin').classList.add('on');}
+  }
+})();
+</script>
+</body>
+</html>

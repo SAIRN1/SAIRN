@@ -65,6 +65,10 @@
     {
       "src": "/sairncare$",
       "dest": "/sairncare.html"
+    },
+    {
+      "src": "/sairnroofing$",
+      "dest": "/sairnroofing.html"
     }
   ],
   "crons": [

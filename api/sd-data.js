@@ -34,6 +34,7 @@ const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
 const careCharges = require('./_lib/care-charges');
 const opAudit = require('./_lib/op-audit');
+const rfAuth = require('./rf-auth');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -2429,6 +2430,110 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, assigned_employee_id: requestedAssignee || '' }, clientData) });
+      return;
+    }
+
+    // ── SAIRNROOFING: rf_jobs ASSIGNMENT-BASED PRIVACY GATE (2026-08-24, Phase 1) ────────────
+    // Ground-up app. Same bespoke assignee-based-visibility shape as every other app's gate
+    // (sd_crm, sdn_clients, bld_bids, sen_clients, alf_clients) -- a job is visible to
+    // management, to the broad-read tier, or to whoever it's assigned to.
+    //
+    // THREE-TIER, built this way from the start rather than rediscovered -- the scope doc
+    // (docs/superpowers/specs/2026-08-24-sairnroofing-v1-scope.md sec.3) named both bugs this
+    // gate must not repeat:
+    //   (1) SAIRNsenior's Phase 1 gate shipped as a MANAGEMENT/everyone-else binary and silently
+    //       narrowed its real broad-read tier (coordinator/scheduler) down to own-assigned-only
+    //       until fixed 2026-08-20. This gate ships with the real three tiers from commit one.
+    //   (2) SAIRNbuild's bld_bids needed a fix so a narrow-tier user's brand-new record
+    //       self-assigns to them on create rather than landing unassigned or assignable to
+    //       someone else. The NARROW branch below does that from the start.
+    //
+    // Role tiers imported from api/rf-auth.js rather than re-listed here -- that file's own
+    // header states re-listing role names in a second place is exactly the drift that caused
+    // bug (1) above (one code path used senIsManagement() where the rest used
+    // senIsBroadRead()). Both files now read from one source.
+    //   MANAGEMENT  owner, admin            -- full read/write/reassign.
+    //   BROAD_READ  owner, admin, estimator -- sees and may edit every job (needs the whole
+    //               board to quote and to work a storm canvass), but may NOT reassign --
+    //               assignment authority stays management-only regardless of read breadth,
+    //               same rule sen_clients' broad-read tier already proved correct.
+    //   NARROW      foreman, crew           -- own assigned jobs only; a brand-new job
+    //               self-assigns to them on create.
+    // Null assigned_employee_id = unassigned, management-only-visible, same default as every
+    // prior app's assignment gate.
+    const RF_MANAGEMENT_ROLES = rfAuth.MANAGEMENT_ROLES;
+    const RF_BROAD_READ_ROLES = rfAuth.BROAD_READ_ROLES;
+    if (resource === 'rf_jobs' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,job_class,assigned_employee_id,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      let out = rows || [];
+      if (!RF_BROAD_READ_ROLES[session.role]) {
+        out = out.filter((r) => r.assigned_employee_id === session.employee_id);
+      }
+      const data = out.map((r) => Object.assign({ id: r.job_id, job_class: r.job_class || 'residential', assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'rf_jobs' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'rf_jobs payload.id is required' } }); return; }
+      const isManagement = !!RF_MANAGEMENT_ROLES[session.role];
+      const isBroadRead = !!RF_BROAD_READ_ROLES[session.role];
+      const existingR = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.id) + '&select=assigned_employee_id'), { headers });
+      if (existingR.status === 404 || existingR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Job tracking is not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } });
+        return;
+      }
+      const existingRows = await existingR.json();
+      if (!existingR.ok) return upstream(res, existingRows);
+      const existingRow = Array.isArray(existingRows) && existingRows[0];
+      const requestedAssignee = payload.assigned_employee_id !== undefined
+        ? (payload.assigned_employee_id || null)
+        : (existingRow ? existingRow.assigned_employee_id : null);
+      if (!isManagement && isBroadRead) {
+        // Estimator (broad-read tier): may edit any job's details, matching their whole-board
+        // read access, but the assignment must stay exactly as it already was (or exactly
+        // unassigned for a brand-new job) -- broad visibility to quote is not the same as
+        // authority to assign or reassign a job.
+        const currentAssignee = existingRow ? existingRow.assigned_employee_id : null;
+        if (requestedAssignee !== currentAssignee) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign or reassign a job' } });
+          return;
+        }
+      } else if (!isManagement) {
+        // Foreman/crew (narrow tier): may only touch a job already assigned to them, and a
+        // brand-new job self-assigns to them on create -- same fix already proven correct on
+        // SAIRNbuild's bld_bids.
+        if (existingRow && existingRow.assigned_employee_id !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This job is not assigned to you' } });
+          return;
+        }
+        if (requestedAssignee !== session.employee_id) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign or reassign a job' } });
+          return;
+        }
+      }
+      const jobClass = payload.job_class === 'commercial' ? 'commercial' : 'residential';
+      const jobData = Object.assign({}, payload);
+      delete jobData.id;
+      delete jobData.job_class;
+      delete jobData.assigned_employee_id;
+      const r = await fetch(rest('rf_jobs?on_conflict=license_hash,job_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', job_id: String(payload.id), job_class: jobClass,
+          assigned_employee_id: requestedAssignee, data: jobData, updated_at: nowISO()
+        })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, job_class: jobClass, assigned_employee_id: requestedAssignee || '' }, jobData) });
       return;
     }
 
