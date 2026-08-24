@@ -15,6 +15,30 @@
 -- matter actions requires those features to become server-backed first
 -- (a real sync layer, its own future build) — not done here.
 --
+--
+-- SCOPE CORRECTION 2026-08-24. "Enforced at the DATABASE level" above is true
+-- of the ROLE THE APPLICATION USES and nothing wider. It restricts
+-- service_role, which is what api/_lib/audit.js authenticates as. It does NOT
+-- restrict `postgres`, which OWNS this table and therefore holds every
+-- privilege on it implicitly -- the revokes below never named postgres, so it
+-- was never subject to them.
+--
+-- Found the hard way: the UPDATE/DELETE test printed at the bottom of this
+-- file was run in the Supabase SQL editor on 2026-08-24 and both statements
+-- SUCCEEDED. That was the expected result for that role, not a broken grant,
+-- but the test as written could not tell the difference -- and on
+-- stonedesk_audit_log the unqualified DELETE removed every row in the table.
+--
+-- Use sql/audit_log_immutability_verify.sql instead. It checks
+-- has_table_privilege('service_role', ...) directly, which is exact,
+-- non-destructive, and asks about the role that actually matters.
+--
+-- What this control covers: the application. No code path can alter or delete
+-- an audit row. What it does not cover: anyone with dashboard/postgres
+-- access, who owns these tables and can always change them. That is the
+-- normal posture for a hosted Postgres, but it is written down here rather
+-- than implied so nobody reads "immutable" as "even an administrator cannot
+-- change it".
 -- IMMUTABLE BY DESIGN, enforced at the DATABASE level, not just by
 -- convention. Two independent things make that true:
 --
