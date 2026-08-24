@@ -33,7 +33,8 @@ const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
 // showing nothing or showing the wrong name.
 const JURISDICTION_LABELS = {
   'us-federal': 'United States (Federal)',
-  oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania', il: 'Illinois', fl: 'Florida', ca: 'California'
+  oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania', il: 'Illinois', fl: 'Florida', ca: 'California',
+  tx: 'Texas'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',
@@ -196,6 +197,35 @@ function validateRulePayload(p) {
     }
     if (p.service_extension) {
       return 'A designated-period rule cannot also declare a service_extension: the designated figure already is the period, and adding days to a party-chosen period would extend a deadline the rule does not set.';
+    }
+  }
+  // A terminal day rule moves the deadline to a NAMED WEEKDAY strictly after
+  // the period expires -- Tex. R. Civ. P. 99(b)'s "the Monday next after the
+  // expiration of twenty days after the date of service."
+  //
+  // VALIDATED HERE AND NOT ONLY IN THE ENGINE, deliberately. The California
+  // rows above are the reason: the engine was taught the per-method service
+  // amount, this validator was not, and the live loader rejected all seven
+  // rows. That failure ran the safe way (nothing was stored). The same split
+  // for this shape would run the OTHER way -- terminal_day_rule is not in the
+  // required-field list and nothing here rejects unknown fields, so a row with
+  // a misspelled kind or a missing weekday would be STORED happily and only
+  // refuse later, at compute time, in front of a user. A rule that cannot ever
+  // produce a date is exactly the defect class the trigger-matching fix in the
+  // engine was written to end.
+  if (p.terminal_day_rule) {
+    const t = p.terminal_day_rule;
+    if (t.kind !== 'next_weekday_strictly_after') {
+      return 'terminal_day_rule.kind must be "next_weekday_strictly_after" — the only shape this engine implements. A rule naming another kind would be stored and then refuse at compute time.';
+    }
+    if (typeof t.weekday !== 'number' || Math.floor(t.weekday) !== t.weekday || t.weekday < 0 || t.weekday > 6) {
+      return 'terminal_day_rule.weekday must be a whole number 0 through 6 (0 = Sunday, 1 = Monday).';
+    }
+    if (c.direction !== 'forward') {
+      return 'terminal_day_rule is implemented for forward-counted periods only. What the named weekday BEFORE a backward period would mean is not settled by any rule read so far, and is refused rather than guessed.';
+    }
+    if (p.designated_period) {
+      return 'A rule cannot declare both terminal_day_rule and designated_period. One fixes the deadline on a named weekday after a period the rule sets; the other has no fixed period at all until a party chooses one.';
     }
   }
   // A cap rule's deadline is the EARLIER of its own computed period and a date
