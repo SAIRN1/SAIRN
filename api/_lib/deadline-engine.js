@@ -692,6 +692,42 @@ var SERVICE_EXTENSION_STANDARDS = {
   // service_extension for that reason.
   tx_trcp_21a: {
     label: 'Tex. R. Civ. P. 21a(c)',
+    // ── CORRECTED. This shipped in cc6899b with no sequence declared, which
+    //    defaulted it to the FRCP order, and that appears to be wrong. ──────
+    // Texas uses New York's wording, not the federal wording, and the
+    // difference is the whole question:
+    //
+    //   FRCP 6(d)       "3 days are added AFTER THE PERIOD WOULD OTHERWISE
+    //                    EXPIRE under Rule 6(a)"
+    //   Fla. 2.514(b)   "5 days are added AFTER THE PERIOD that would
+    //                    otherwise expire under subdivision (a)"
+    //   Tex. R. Civ. P. 21a(c)  "three days shall be added TO THE PRESCRIBED
+    //                    PERIOD"
+    //
+    // Texas conspicuously lacks the "after the period would otherwise expire"
+    // language that both rules it most resembles have, and Rule 4 describes
+    // the same three days from its own side as "extending other periods by
+    // three days when service is made by mail" -- extending the period, not
+    // following its expiry.
+    //
+    // WHAT THIS IS BASED ON, STATED PLAINLY. No Texas appellate authority
+    // squarely on the order of operations was found. The change rests on the
+    // two rules' own words plus two independent secondary sources that both
+    // state the addition comes first and the terminal-day check second. That
+    // is weaker than the FRCP position, which is settled by the 2005 Advisory
+    // Committee Note quoted in this file's header, and it is recorded as such
+    // rather than presented as equally certain.
+    //
+    // IT ALSO MOVES IN THE SAFE DIRECTION, which is why it is made rather than
+    // deferred pending better authority. The previous behaviour rolled the
+    // base period first and produced a LATER date; adding to the period first
+    // produces an earlier one. Where the reading is uncertain and one option
+    // is late, the late option is the one that misses a filing.
+    //
+    // Found by New York, not by Texas: the identical wording in CPLR
+    // 2103(b)(2) made a New York test fail, and the same wording was already
+    // sitting in the Texas standard undeclared.
+    sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
   },
