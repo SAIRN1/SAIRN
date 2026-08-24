@@ -39,6 +39,7 @@ const rfAuth = require('./rf-auth');
 const dentalCreds = require('./_lib/dental-credentials');
 const roofingCreds = require('./_lib/roofing-credentials');
 const roofingClaims = require('./_lib/roofing-claims');
+const roofingSupplement = require('./_lib/roofing-supplement');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -3038,6 +3039,54 @@ module.exports = async (req, res) => {
       if (!r.ok) return upstream(res, rows);
       const saved = Array.isArray(rows) && rows[0];
       res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { photo_id: saved.photo_id, captured_by: saved.captured_by }) : payload });
+      return;
+    }
+    // ── SAIRNROOFING: supplement reconciliation (2026-08-24, Phase 3c) ───────────────────────
+    // Compute-only. Reads the claim's stored supplement inputs and the linked
+    // job's measured quantities, runs the DETERMINISTIC engine in
+    // api/_lib/roofing-supplement.js, and returns the worksheet. Writes nothing
+    // -- the inputs are saved via a normal rf_claims write into
+    // data.supplement; the worksheet is derived on demand and never persisted,
+    // the same discipline as the money_summary. No LLM anywhere in this path.
+    if (resource === 'rf_claims' && action === 'reconcile') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const claimId = payload && payload.claim_id;
+      if (!claimId) { res.status(400).json({ error: { message: 'reconcile requires payload.claim_id' } }); return; }
+      const cr = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=claim_id,job_id,assigned_employee_id,data'), { headers });
+      if (cr.status === 404 || cr.status === 400) { res.status(200).json({ ok: true, provisioned: false, worksheet: null }); return; }
+      const cRows = await cr.json();
+      const claim = Array.isArray(cRows) && cRows[0];
+      if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim' } }); return; }
+      // Same assignment gate as reading the claim: you must be able to see it.
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only reconcile a claim assigned to you' } });
+        return;
+      }
+      // Measured quantities come from the linked job's LATEST measurement entry
+      // -- the authoritative Phase 2 scope, read server-side, never taken from
+      // the caller (the whole point is to compare against the real measurement).
+      const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(claim.job_id) + '&select=data'), { headers });
+      const jRows = (jr.status === 404 || jr.status === 400) ? [] : await jr.json();
+      const jobData = (Array.isArray(jRows) && jRows[0] && jRows[0].data) || {};
+      const history = (jobData.measurement && Array.isArray(jobData.measurement.correction_history)) ? jobData.measurement.correction_history : [];
+      const measured = history.length ? (history[history.length - 1].quantities || {}) : {};
+      // Supplement inputs (expected mapping, imported adjuster lines, asserted
+      // lines) live on the claim. The caller may also pass a live, unsaved set
+      // to preview before saving -- payload wins if present, otherwise stored.
+      const supp = (payload && payload.supplement) || claim.data.supplement || {};
+      const worksheet = roofingSupplement.reconcile({
+        measured: measured,
+        expected_items: supp.expected_items,
+        adjuster_lines: supp.adjuster_lines,
+        asserted_lines: supp.asserted_lines,
+        tolerance: supp.tolerance
+      });
+      res.status(200).json({
+        ok: true, provisioned: true, claim_id: claimId, job_id: claim.job_id,
+        measured_from_job: measured, has_measurement: history.length > 0,
+        worksheet: worksheet
+      });
       return;
     }
 

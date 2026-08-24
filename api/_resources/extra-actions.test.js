@@ -98,6 +98,9 @@ const REJECTED = 400;      // the gate refused the verb
     assert.deepStrictEqual(grants('evaluate').sort(),
       ['alf_compliance_rules', 'dnt_credentials', 'rf_certifications']);
     assert.deepStrictEqual(grants('derive_charges'), ['alf_billing']);
+    // 'reconcile' (SAIRNroofing 3c) is owned by rf_claims alone.
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_claims, ['reconcile']);
+    assert.deepStrictEqual(grants('reconcile'), ['rf_claims']);
   });
 
   test('no resource outside the sc_ family grants delete', () => {

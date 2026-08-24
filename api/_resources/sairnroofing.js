@@ -37,5 +37,9 @@ module.exports = {
   // alf_compliance_rules and SAIRNdental's dnt_credentials.
   extraActions: {
     rf_certifications: ['evaluate'],
+    // 'reconcile' (Phase 3c) computes the supplement worksheet -- a
+    // DETERMINISTIC comparison of the adjuster's estimate against the measured
+    // scope. Reads the claim and its job, writes nothing. Never an LLM opinion.
+    rf_claims: ['reconcile'],
   },
 };
