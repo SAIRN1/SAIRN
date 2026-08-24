@@ -120,6 +120,11 @@
           "date": "2027-12-24",
           "name": "Christmas Day (observed)",
           "kind": "declared"
+        },
+        {
+          "date": "2027-12-31",
+          "name": "New Year's Day (observed)",
+          "kind": "declared"
         }
       ]
     },
@@ -134,11 +139,6 @@
         "retrieved_at": "2026-08-23"
       },
       "dates": [
-        {
-          "date": "2027-12-31",
-          "name": "New Year's Day (observed)",
-          "kind": "declared"
-        },
         {
           "date": "2028-01-17",
           "name": "Birthday of Martin Luther King, Jr.",
