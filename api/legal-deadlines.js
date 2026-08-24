@@ -131,7 +131,28 @@ function validateRulePayload(p) {
       return 'service_extension.standard must be one of: ' + Object.keys(SERVICE_EXTENSION_STANDARDS).join(', ') +
         '. FRCP 6(d) and FRAP 26(c) are differently shaped — 6(d) is an enumerated allowlist, 26(c) is a negative condition excluding electronic service — so a standard the engine does not implement cannot be evaluated.';
     }
-    if (typeof se.add !== 'number') return 'service_extension.add must be a number of days.';
+    // `add` is required ONLY when the standard does not supply the amount
+    // itself. Every standard before California added one fixed number of
+    // calendar days, so the row had to carry it. California's CCP 1013 /
+    // 1010.6 adds 5, 10, 12 or 20 calendar days for mail depending on the
+    // places of mailing and address, and 2 COURT days for overnight, fax and
+    // electronic -- a table that is law, not row data, so it lives on the
+    // standard as amount(method) and the row correctly carries no `add`.
+    //
+    // Found by the live loader rejecting all seven California civil rows with
+    // "service_extension.add must be a number of days" AFTER the engine had
+    // already been taught the per-method shape. The engine and its validator
+    // are separate files and only the engine had been updated -- exactly the
+    // kind of half-migration a code-only check would have missed and a real
+    // load caught immediately.
+    if (typeof SERVICE_EXTENSION_STANDARDS[se.standard].amount !== 'function'
+        && typeof se.add !== 'number') {
+      return 'service_extension.add must be a number of days for this standard. ' +
+        '(A standard that supplies its own per-method amount() may omit it.)';
+    }
+    if (se.add !== undefined && typeof se.add !== 'number') {
+      return 'service_extension.add, when present, must be a number.';
+    }
   }
 
   // The requirement that makes this table trustworthy.
