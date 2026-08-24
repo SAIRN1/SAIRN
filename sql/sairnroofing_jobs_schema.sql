@@ -55,5 +55,11 @@ drop policy if exists "svc only rf_jobs" on public.rf_jobs;
 create policy "svc only rf_jobs" on public.rf_jobs
   for all using (false) with check (false);
 
+-- FIXED (2026-08-24, same platform-wide gap found live on dnt_credentials --
+-- see sql/sairnroofing_photos_schema.sql's header for the full explanation).
+-- REVOKE ALL first so the TRUNCATE/REFERENCES/TRIGGER Supabase grants by
+-- default to a raw-SQL-created table doesn't sit unnoticed behind a GRANT
+-- that only ever adds privileges.
+revoke all on public.rf_jobs from service_role;
 grant select, insert, update on public.rf_jobs to service_role;
 revoke all on public.rf_jobs from anon, authenticated;

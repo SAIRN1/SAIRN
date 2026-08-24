@@ -43,5 +43,20 @@ drop policy if exists "svc only rf_photos" on public.rf_photos;
 create policy "svc only rf_photos" on public.rf_photos
   for all using (false) with check (false);
 
+-- FIXED (2026-08-24, found live on dnt_credentials, same platform-wide gap):
+-- Supabase's own default privileges for a table created by raw SQL (as
+-- opposed to the Table Editor UI) give service_role TRUNCATE/REFERENCES/
+-- TRIGGER on the public schema by default -- see .claude/skills/
+-- sairn-infra-debugger/SKILL.md's "GRANTs and RLS are different things"
+-- section, written from the StoneDesk fe730e2 incident. Every schema file on
+-- this platform since then has added an explicit GRANT for the verbs it
+-- needs, but a plain GRANT only ADDS privileges -- it never strips the
+-- TRUNCATE/REFERENCES/TRIGGER baseline, so that gap has stood on every
+-- raw-SQL-created table, unnoticed, until now. TRUNCATE has the same
+-- practical effect as DELETE for an append-only table's integrity
+-- guarantee. REVOKE ALL first, then grant exactly what's needed -- the same
+-- shape stonedesk_audit_log_schema.sql and sairncode_audit_log_schema.sql
+-- already used correctly.
+revoke all on public.rf_photos from service_role;
 grant select, insert on public.rf_photos to service_role;
 revoke all on public.rf_photos from anon, authenticated;

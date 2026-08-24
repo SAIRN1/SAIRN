@@ -46,6 +46,13 @@ create policy "svc only sairnroofing_employee_auth" on sairnroofing_employee_aut
 
 -- No DELETE grant, matching every other employee_auth table on this
 -- platform -- deactivation is active=false, not a row delete.
+--
+-- FIXED (2026-08-24, same platform-wide gap found live on dnt_credentials --
+-- see sql/sairnroofing_photos_schema.sql's header). REVOKE ALL first so the
+-- TRUNCATE/REFERENCES/TRIGGER Supabase grants by default to a raw-SQL-created
+-- table doesn't sit unnoticed behind a GRANT that only ever adds privileges --
+-- TRUNCATE on a credentials table would wipe every employee's access at once.
+revoke all on sairnroofing_employee_auth from service_role;
 grant select, insert, update on sairnroofing_employee_auth to service_role;
 revoke all on sairnroofing_employee_auth from anon, authenticated;
 
