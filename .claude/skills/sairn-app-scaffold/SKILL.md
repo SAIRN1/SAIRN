@@ -1,11 +1,11 @@
 ---
 name: sairn-app-scaffold
-description: 'The starting-point checklist for scaffolding a new SAIRN app from zero. Created 2026-07-30 -- a prior session referenced this skill in a handoff before it actually existed on disk; this is the first real version, not a restoration. Currently covers one required component (photo-capture -> Claude analysis -> structured app output, generalized from StoneDesk''s Field Sketch Quote) rather than a full scaffold from A to Z. Trigger when starting a new SAIRN app from scratch, or when deciding what a new app''s v1 must include before the first panel gets built.'
+description: 'The starting-point checklist for scaffolding a new SAIRN app from zero. Created 2026-07-30 -- a prior session referenced this skill in a handoff before it actually existed on disk; this is the first real version, not a restoration. Covers TWO required components as of 2026-08-24: (1) photo-capture -> Claude analysis -> structured app output, generalized from StoneDesk''s Field Sketch Quote; (2) the credential-deactivation lifecycle (set_active with last-admin refusal, no self-deactivation, deactivated-caller re-check, audit on every outcome), required in v1 for any app with per-employee credentials after the same gap was found and fixed independently in three apps. Still not a full scaffold from A to Z. Trigger when starting a new SAIRN app from scratch, or when deciding what a new app''s v1 must include before the first panel gets built.'
 ---
 
 # SAIRN App Scaffold
 
-This file does not yet cover everything a new app needs (data model conventions, licensing setup, etc. live in `sairn-software-architect` and `SAIRNBUILD-SCOPE.md`-style scoping docs for now). What it does cover is a single standing requirement, added 2026-07-30 as a product decision: **every new SAIRN app's v1 scope must include the photo-to-Claude-suggestion pattern**, not bolt it on after the fact.
+This file does not yet cover everything a new app needs (data model conventions, licensing setup, etc. live in `sairn-software-architect` and `SAIRNBUILD-SCOPE.md`-style scoping docs for now). What it does cover is TWO standing requirements: **every new SAIRN app's v1 scope must include the photo-to-Claude-suggestion pattern** (added 2026-07-30), and **any new app with per-employee or per-account credentials must ship the credential-deactivation lifecycle in v1** (added 2026-08-24). Neither is to be bolted on after the fact -- the second is here precisely because it was bolted on after the fact three separate times.
 
 ## Required component: Photo Capture → Claude Analysis → Structured Output
 
@@ -56,6 +56,94 @@ StoneDesk's actual implementation is **not** strict JSON-schema output. Both Cla
 - Shared proxy helper: `async function sairnCallClaude(system, messages)` at `L12740` — POSTs to `SAIRN_PROXY = 'https://sairn.vercel.app/api/claude'` with `{app_id, is_demo:true, system, messages}`, returns `data.content?.[0]?.text || ''`
 
 New apps should write their own equivalent of `sairnCallClaude` (or literally reuse the same shape) rather than inventing a different request/response contract — one proxy-call convention across the platform, not one per app.
+
+## Required component: the credential-deactivation lifecycle (added 2026-08-24)
+
+**Any new app with per-employee or per-account credentials must ship
+`set_active` in v1.** Not "add it when someone asks" — in the first version,
+alongside `bootstrap`/`login`/`setup`/`roster`.
+
+### Why this is required, not optional
+
+This is the second standing requirement in this file, and it is here because
+the same gap was found and fixed independently in three apps rather than once:
+
+| App | How it got there |
+|---|---|
+| StoneDesk (`api/sd-auth.js`) | Retrofitted 2026-08-23 |
+| SAIRNcode (`api/sc-auth.js`) | Retrofitted 2026-08-23/24 (`12c670c`) |
+| SAIRNroofing (`api/rf-auth.js`) | Shipped in v1, deliberately, *because* of the two retrofits above |
+
+Found three times means nothing was checking for it. `api/rf-auth.js`'s own
+header already states the case better than a rule can: before `set_active`
+existed, *"the only way to neutralise a credential was a hand-written SQL
+DELETE run by a human with Supabase access, which is how three StoneDesk
+licences were lost (SD-PINNACLE-2026's PIN is still undocumented)."*
+
+**A correction worth carrying:** this pattern is sometimes described as
+StoneDesk / SAIRNcode / **SAIRNcash**. It is not. `api/sairncash/` has no auth
+lifecycle at all — verified 2026-08-24, the directory holds only
+checkout/trial/verify/waitlist handlers. SAIRNcash's trial-deactivation
+equivalent is still an open product decision, not an implementation. The real
+third instance is SAIRNroofing.
+
+### The four guards, and what each one is actually for
+
+Copy the shape from `api/rf-auth.js` (built after the lessons) or
+`api/sd-auth.js` (the fullest retrofit). Every one of these exists because
+something went wrong without it:
+
+1. **Last-active-admin refusal** — refuse to deactivate the only remaining
+   credential that can provision. Returns `409 LAST_ADMIN` naming what would
+   happen: *"Deactivating it would lock everyone out with no way back in
+   through the app — provision another first, then retry."*
+
+   Note StoneDesk's own comment marks this guard **unreachable by
+   construction** today, and keeps it anyway: *"reachability is a property of
+   today's rule set — a new provisioning role or any path skipping that check
+   makes it live again, and a lockout is not worth re-discovering in
+   production."* Keep it in a new app for the same reason. A guard that costs
+   nothing and prevents an unrecoverable state stays.
+
+2. **No self-deactivation** — `409 SELF_DEACTIVATE`. An admin removing their
+   own credential is almost always a mistake, and is indistinguishable from
+   the lockout case at the moment it happens.
+
+3. **Deactivated-caller re-check** — the one that is easy to miss and was found
+   live on SAIRNcode. **A session token carries its role claim and stays valid
+   for its full 12-hour life after the credential behind it is deactivated**,
+   so a just-removed admin can keep removing other people. Verifying the token
+   is not enough; re-read the caller's CURRENT row and confirm `active === true`
+   before honouring any privileged action. Returns `403 CREDENTIAL_INACTIVE`.
+
+   Apply it to `roster` too, not only to `set_active` — StoneDesk does.
+
+4. **Audit entry on every outcome, including refusals** — not just successes.
+   `credential_deactivated`, `credential_reactivated`, and
+   `credential_change_refused` with a `reason_code` (`SELF_DEACTIVATE`,
+   `LAST_ADMIN`, `CREDENTIAL_INACTIVE`). The refusals are the interesting
+   half: an attempt to lock out a company is exactly what someone will later
+   want to see. Return the write's own result as `audited:` in the response so
+   a failed audit write is visible rather than assumed.
+
+### Three more things the real implementations get right
+
+- **Deactivate, never DELETE.** Deleting destroys `created_at`, role history
+  and audit linkage — *"deleting is what made those three cleanups both
+  unrecoverable and unauditable."*
+- **`roster` must include inactive rows.** It originally filtered
+  `active=eq.true`, which was fine when nothing could be deactivated and became
+  wrong the moment reactivation existed: an admin has to *see* a deactivated
+  person to turn them back on.
+- **A deactivated credential must not become re-bootstrappable.** Otherwise
+  anyone holding the licence key can deactivate their way to a fresh bootstrap
+  and seize the account. Both `sd-auth.js` and `rf-auth.js` call this out
+  explicitly.
+
+### Require a `reason` when deactivating
+
+`reason` is mandatory on deactivation (max 500 chars) and lands in the audit
+entry. Reactivation does not require one.
 
 ## What still needs to be added to this scaffold (not done tonight)
 

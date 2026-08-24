@@ -1,13 +1,13 @@
 ---
 name: sairn-guardian-v2
-description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 29 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
+description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 30 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
 ---
 
 # SAIRN Guardian v2
 
 Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automatic. Zero tolerance.
 
-## The 29 Checks
+## The 30 Checks
 
 ### Architecture (5)
 1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly
@@ -134,6 +134,61 @@ flagged below as a known open item)
     "placeholder" text scan) was cut after going 0-for-7 real findings;
     the phrase-list scan (`coming next build`, `TODO`, etc.) stays —
     it's 6-true/1-false and catches real fabricated-honesty gaps.
+
+### Environment-variable name drift (1, added 2026-08-24 — numbered 30,
+continuing the same disclosure pattern rather than renumbering)
+
+30. **Every `process.env.X` read must name a variable that actually exists in
+    the Vercel project. Check the Resend sender pair specifically — it is the
+    one that has already cost months.**
+
+    **The incident, twice.** `api/alf-alerts.js` (SAIRNcare) and
+    `api/sairndental/send-reminder.js` both read `RESEND_FROM_ADDRESS`. **That
+    variable has never existed in this project.** The sender has been
+    configured as **`RESEND_FROM_EMAIL`** since 2026-06-19, alongside
+    `RESEND_API_KEY`, on both Production and Preview.
+
+    Consequence: each file's env-completeness guard failed on *every* firing
+    since it shipped. SAIRNdental's reminder cron **never sent a single
+    reminder** — a 500 in the production log every hour, for months, from a
+    feature everyone believed was working.
+
+    **The mechanical check.** Run against every `api/**/*.js`:
+
+    ```bash
+    grep -rn "RESEND_FROM_ADDRESS" api/          # must return ZERO code hits
+    grep -rn "process\.env\.RESEND" api/         # every hit must be
+                                                 # RESEND_API_KEY or RESEND_FROM_EMAIL
+    ```
+
+    Both known instances are fixed as of 2026-08-24, each with its own
+    regression test (`api/sairndental/send-reminder.test.js`,
+    `tests/sairncare/test-alf-alerts-endpoint.js`). This check is therefore
+    **preventive** — it exists so a third app does not reintroduce it, which is
+    exactly how the second one happened: the design doc for SAIRNdental's email
+    reminders specifies `RESEND_FROM_ADDRESS` throughout, so anyone building
+    from that doc will write the wrong name again.
+    **Comment mentions are fine and expected — the check is on `process.env`
+    reads, not on prose.**
+
+    **The general rule this is an instance of.** A misnamed env var does not
+    fail loudly; it reads as *undefined*, and an
+    `if (!process.env.X) return 500` guard then reports it as a *missing
+    secret*. So the symptom points at infrastructure while the cause is a typo
+    in code, and a previous session spent real time hunting for a
+    `RESEND_API_KEY` that was present and correct the whole time. Before
+    concluding any env var is "not set in Vercel", **grep the code for the name
+    first and confirm it matches what is actually configured** — `vercel env ls
+    production` is the authority, not the design doc and not the guard's own
+    error message.
+
+    **Two things that make this class findable rather than lucky:**
+    - **Name only the variable that is actually missing.** Both files
+      originally listed all four unconditionally, which is precisely what made
+      a typo look like an absent secret. Build the missing list by filtering.
+    - **A new env var is a two-place change** — the code read and the Vercel
+      project — and only one of them is in the diff. Same shape as Check 29's
+      *two files, one change, one updated*.
 
 ### Storage-validator changes need a real load, not unit tests (1, added
 2026-08-24 — numbered 29, continuing the same disclosure pattern as 27/26
