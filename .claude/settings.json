@@ -91,6 +91,28 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/marsh/tools/session_lock_check.py start",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python C:/Users/marsh/tools/session_lock_check.py heartbeat",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   },
   "outputStyle": "silent",
