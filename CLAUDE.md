@@ -50,10 +50,32 @@ across concurrent sessions in separate clones. Older files keep their
 existing names and are **not** renamed — so both patterns are on disk;
 that is expected, not drift.
 
-Handoffs live only in a real clone (`Documents\SAIRN-hank`,
-`Documents\SAIRN-cc`, `Documents\SAIRN-cody`) and are **not written until
-committed in the same action** — a local-only handoff is invisible to
-every other clone. Never write one to `C:\Users\marsh\` directly.
+Handoffs live only in a real clone — there are **four**, corrected
+2026-08-24 (this line previously listed three and omitted
+`SAIRN-fourth`): `Documents\SAIRN-hank`, `Documents\SAIRN-cc`,
+`Documents\SAIRN-cody`, `Documents\SAIRN-fourth`. All four verified on
+disk that date as separate clones of `SAIRN1/SAIRN` on `main`. Handoffs
+are **not written until committed in the same action** — a local-only
+handoff is invisible to every other clone. Never write one to
+`C:\Users\marsh\` directly.
+
+## Active work is logged per session — 2026-08-24
+
+`SAIRN-ACTIVE-WORK.md` is no longer an append target. Four sessions
+appending to one file's end produced repeated merge conflicts in a single
+night, so each clone now has its own file:
+
+| Session | Clone | File |
+|---|---|---|
+| Hank   | `Documents\SAIRN-hank`   | `SAIRN-ACTIVE-WORK-hank.md` |
+| CC     | `Documents\SAIRN-cc`     | `SAIRN-ACTIVE-WORK-cc.md` |
+| Cody   | `Documents\SAIRN-cody`   | `SAIRN-ACTIVE-WORK-cody.md` |
+| Fourth | `Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` |
+
+Append only to your own file; **read all four** before starting work — the
+split removes the write collision, not the need to know what another
+session is touching. The shared file keeps every pre-split entry as the
+historical record (code comments and SQL headers cite it by name).
 
 See the `sairn-session-handoff` skill for the full convention, the
 reasoning, and the template.

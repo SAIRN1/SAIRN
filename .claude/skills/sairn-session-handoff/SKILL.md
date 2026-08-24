@@ -59,15 +59,18 @@ If you cannot commit it — dirty tree mid-task, unresolved conflict, no push ac
 
 ## Where handoffs may be written — repo/clone structure
 
-Write handoffs only inside a dedicated clone. As of 2026-08-23 those are:
+Write handoffs only inside a dedicated clone. **There are four, corrected 2026-08-24** — this section previously listed three paths and then called them "four independent clones" in the next sentence. The fourth is `SAIRN-fourth`, which is a real, permanent clone with the same standing as the other three, not an ad-hoc or temporary checkout:
 
-```
-C:\Users\marsh\Documents\SAIRN-hank
-C:\Users\marsh\Documents\SAIRN-cc
-C:\Users\marsh\Documents\SAIRN-cody
-```
+| Session | Clone | Active-work file |
+|---|---|---|
+| Hank   | `C:\Users\marsh\Documents\SAIRN-hank`   | `SAIRN-ACTIVE-WORK-hank.md` |
+| CC     | `C:\Users\marsh\Documents\SAIRN-cc`     | `SAIRN-ACTIVE-WORK-cc.md` |
+| Cody   | `C:\Users\marsh\Documents\SAIRN-cody`   | `SAIRN-ACTIVE-WORK-cody.md` |
+| Fourth | `C:\Users\marsh\Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` |
 
-These are four independent **clones**, not `git worktree` checkouts of one repo — `SAIRN-ACTIVE-WORK.md` carries the verified correction on that point (that file is now historical-only; see the active-work section below). `C:\Users\marsh\Documents\SAIRN` is a fifth checkout that is **stale and abandoned (2026-08-18) — do not work in it either.** Re-derive this list rather than trusting it: check `SAIRN-ACTIVE-WORK.md` and the actual directories, since clone layout has already changed once and been documented wrongly once.
+All four verified on disk 2026-08-24: each is a separate clone of `https://github.com/SAIRN1/SAIRN.git` checked out on `main`.
+
+These are four independent **clones**, not `git worktree` checkouts of one repo — `SAIRN-ACTIVE-WORK.md` carries the verified correction on that point (that file is now historical-only; see the active-work section below). `C:\Users\marsh\Documents\SAIRN` is a fifth checkout that is **stale and abandoned (2026-08-18) — do not work in it either** (measured 157 commits behind `origin/main` on 2026-08-24). Re-derive this list rather than trusting it: check the actual directories, since clone layout has already changed once and been documented wrongly twice — first as worktrees, then as three clones described as four.
 
 **Do not write handoffs — or any repo file — to `C:\Users\marsh\` directly.** That path is itself a working-tree checkout of `SAIRN1/SAIRN`, which is the structural cause of the collision above: it is the first place a fresh session looks, a stray file there is invisible to every other clone, and it sits far behind `origin/main` with untracked files capable of blocking a pull.
 
@@ -115,31 +118,34 @@ A handoff is written at a stopping point; the active-work log is written
 *during* the work. Both are covered here because sessions reach for them at
 the same moments.
 
-**Append active-work entries to your own session's file:**
+**Append active-work entries to your own session's file** — one per clone,
+same four rows as the clone table above:
 
-| Session | File |
-|---|---|
-| Hank | `SAIRN-ACTIVE-WORK-hank.md` |
-| CC   | `SAIRN-ACTIVE-WORK-cc.md` |
-| Cody | `SAIRN-ACTIVE-WORK-cody.md` |
+| Session | Clone | File |
+|---|---|---|
+| Hank   | `Documents\SAIRN-hank`   | `SAIRN-ACTIVE-WORK-hank.md` |
+| CC     | `Documents\SAIRN-cc`     | `SAIRN-ACTIVE-WORK-cc.md` |
+| Cody   | `Documents\SAIRN-cody`   | `SAIRN-ACTIVE-WORK-cody.md` |
+| Fourth | `Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` |
 
 **Do not append to `SAIRN-ACTIVE-WORK.md`.** It was the single shared log
 until 2026-08-24, when four concurrent sessions appending to the same
 end-of-file region produced repeated merge conflicts across Hank, CC, and
-Cody in one night. Every historical entry was copied verbatim into the three
-files above, split by the `(Hank)`/`(CC)`/`(Cody)` tag each entry already
-carried; the original is kept in place as the historical record (other files
-cite it by name) with a header pointing here.
+Cody in one night. Every historical entry was copied verbatim into the files
+above, split by the `(Hank)`/`(CC)`/`(Cody)` tag each entry already carried
+(`-fourth.md` started empty — that clone had logged nothing before the split);
+the original is kept in place as the historical record (other files cite it by
+name) with a header pointing here.
 
-A session whose name is not in that table creates
-`SAIRN-ACTIVE-WORK-<name>.md` with the same header and adds a row to the
-table in `SAIRN-ACTIVE-WORK.md`. Never fall back to appending to the shared
-file.
+If a fifth clone is ever added, it gets the same treatment on day one: a
+`SAIRN-ACTIVE-WORK-<name>.md` with the same header, plus a row in both tables
+here and in `SAIRN-ACTIVE-WORK.md`. Never fall back to appending to the shared
+file, and never leave a clone as an unlisted special case.
 
-**Read all three (or all N) before starting work.** The split removes the
-write collision, not the coordination need — knowing what another session is
-touching is still the reason these files exist, and that requires reading
-files you do not write to.
+**Read all four before starting work.** The split removes the write collision,
+not the coordination need — knowing what another session is touching is still
+the reason these files exist, and that requires reading files you do not write
+to.
 
 ## When to write one
 

@@ -8,11 +8,19 @@ sessions can never collide on the same lines.
 
 **Append your entries here, not to `SAIRN-ACTIVE-WORK.md`.**
 
-Still read the other sessions' files (`SAIRN-ACTIVE-WORK-cc.md`,
-`SAIRN-ACTIVE-WORK-hank.md`, `SAIRN-ACTIVE-WORK-cody.md`) before starting
-anything — the point of the shared file was to avoid two sessions touching
-the same app file at once, and that reason has not gone away. Splitting the
-file removes the write collision, not the need to check.
+The four sessions and their files — one row each, all equal, no special case:
+
+| Session | Clone | File |
+|---|---|---|
+| Hank | `Documents\SAIRN-hank` | `SAIRN-ACTIVE-WORK-hank.md` |
+| CC | `Documents\SAIRN-cc` | `SAIRN-ACTIVE-WORK-cc.md` ← this file |
+| Cody | `Documents\SAIRN-cody` | `SAIRN-ACTIVE-WORK-cody.md` |
+| Fourth | `Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` |
+
+Still read the other three (`SAIRN-ACTIVE-WORK-hank.md`, `SAIRN-ACTIVE-WORK-cody.md`, `SAIRN-ACTIVE-WORK-fourth.md`) before starting anything —
+the point of the shared file was to avoid two sessions touching the same app
+file at once, and that reason has not gone away. Splitting the file removes
+the write collision, not the need to check.
 
 One line per task: app/file(s) touched, a one-line task description,
 timestamp. Add a line before starting anything new.

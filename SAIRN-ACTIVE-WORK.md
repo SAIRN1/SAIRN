@@ -9,23 +9,27 @@ the same end-of-file region at the same time.
 
 **Append your entries to your own session's file instead:**
 
-| Session | File |
-|---|---|
-| Hank | `SAIRN-ACTIVE-WORK-hank.md` |
-| CC   | `SAIRN-ACTIVE-WORK-cc.md` |
-| Cody | `SAIRN-ACTIVE-WORK-cody.md` |
+| Session | Clone | File |
+|---|---|---|
+| Hank   | `Documents\SAIRN-hank`   | `SAIRN-ACTIVE-WORK-hank.md` |
+| CC     | `Documents\SAIRN-cc`     | `SAIRN-ACTIVE-WORK-cc.md` |
+| Cody   | `Documents\SAIRN-cody`   | `SAIRN-ACTIVE-WORK-cody.md` |
+| Fourth | `Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` |
 
-If you are a session not on that list, create `SAIRN-ACTIVE-WORK-<name>.md`
-following the same header, and add a row here. Do not fall back to appending
-to this file.
+Four sessions, four clones, four files — one row each, no exceptions and no
+session that has to explain itself. If a fifth clone is ever added, create
+`SAIRN-ACTIVE-WORK-<name>.md` with the same header and add a row here. Do not
+fall back to appending to this file.
 
-**Still read all three before starting work.** The split removes the write
+**Still read all four before starting work.** The split removes the write
 collision, not the reason the shared file existed — you still need to know
 what another session is touching before you touch the same app file.
 
 The historical entries below (through 2026-08-24) were copied verbatim into
-the three per-session files, split by the `(Hank)` / `(CC)` / `(Cody)` tag
-each entry already carried. They are **left in place here, not deleted**, so
+the per-session files, split by the `(Hank)` / `(CC)` / `(Cody)` tag each
+entry already carried. `SAIRN-ACTIVE-WORK-fourth.md` starts empty because the
+Fourth clone had done no logged work before the split — that is expected, not
+a gap. They are **left in place here, not deleted**, so
 that existing references to this file from code comments, SQL headers, and
 `docs/SAIRN-OPEN-WORK-INDEX.md` still resolve to the content they cite. This
 file is now the historical record plus the correction section below; it is
@@ -67,6 +71,12 @@ evidence in this repo shows, never did.** Verified 2026-08-23:
 | Hank | `Documents\SAIRN-hank` | `main` |
 | Cody | `Documents\SAIRN-cody` | `main` |
 | (stale, abandoned 2026-08-18) | `Documents\SAIRN` | `main`, 157+ behind |
+
+*(Added 2026-08-24, not a rewrite of the correction above: there is a fourth
+working clone, `Documents\SAIRN-fourth`, on `main`, same `origin`. It has the
+same standing as the other three — see the split table at the top of this file
+and the clone table in the `sairn-session-handoff` skill. `Documents\SAIRN`
+re-measured the same day: still stale, 157 behind.)*
 
 These are independent clones, **not** `git worktree` checkouts of one repo.
 That is why every entry below describes rebasing onto a moving `origin/main`
