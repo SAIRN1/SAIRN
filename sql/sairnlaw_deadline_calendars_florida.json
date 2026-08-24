@@ -1,0 +1,359 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- Florida holiday calendars, 2026 through 2031.",
+    "Loaded through add_holidays like every other calendar.",
+    "The list is the RULE's nine enumerated observances (2.514(a)(6)(A)), not all of",
+    "Fla. Stat. 110.117. See each calendar's authority.note for what is absent and why,",
+    "and for the chief-justice hurricane-extension limb that is deliberately not modelled."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "fl",
+      "year": 2026,
+      "authority": {
+        "citation": "Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), incorporating the days set aside by Fla. Stat. 110.117(1)",
+        "url": "https://www-media.floridabar.org/uploads/2026/07/2027_01-JULY-Florida-Rules-of-General-Practice-and-Judicial-Administration-7-1-2026-1.pdf",
+        "statute_url": "https://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0100-0199/0110/Sections/0110.117.html",
+        "note": "Generated 2026-08-23 from Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), which enumerates NINE observances and takes from Fla. Stat. 110.117 only 'the day set aside ... for observing' them. The RULE is the operative authority, not the statute: 2.514(a)(6)(A) does not incorporate 110.117 wholesale, and encoding the statute instead would encode the wrong thing if either is amended. DELIBERATELY ABSENT: Columbus Day, Presidents Day, Juneteenth and Good Friday -- none appears in 110.117(1) and none is enumerated in the rule. Florida's list is genuinely shorter than Illinois's fifteen and the federal eleven; padding it to match a neighbour would extend real deadlines that Florida law does not extend. BOTH-WAY OBSERVANCE SHIFT per 110.117(1) verbatim: a holiday falling on Saturday is observed the preceding Friday, on Sunday the following Monday. Matches us-federal/in/mi/pa; differs from Ohio (Sunday-only) and Illinois (no shift). Where a shift collides two observances on one date, both names are kept rather than one being silently dropped. NOT MODELLED, flagged: 2.514(a)(6)(B), 'any day observed as a holiday by the clerk's office or as designated by the chief justice or chief judge' -- two unknowable limbs in one sentence. The chief-justice limb is Florida's HURRICANE MECHANISM and also appears in 2.514(a)(1)(C) and (a)(3)(C), where a day inside an extension order is treated like a holiday. A Florida date from this engine is correct ONLY absent such an order. During hurricane season that is a real caveat, not a formality. Same treatment as Indiana's office-closed limb and Illinois's Governor-proclamation limb.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-27",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "fl",
+      "year": 2027,
+      "authority": {
+        "citation": "Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), incorporating the days set aside by Fla. Stat. 110.117(1)",
+        "url": "https://www-media.floridabar.org/uploads/2026/07/2027_01-JULY-Florida-Rules-of-General-Practice-and-Judicial-Administration-7-1-2026-1.pdf",
+        "statute_url": "https://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0100-0199/0110/Sections/0110.117.html",
+        "note": "Generated 2026-08-23 from Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), which enumerates NINE observances and takes from Fla. Stat. 110.117 only 'the day set aside ... for observing' them. The RULE is the operative authority, not the statute: 2.514(a)(6)(A) does not incorporate 110.117 wholesale, and encoding the statute instead would encode the wrong thing if either is amended. DELIBERATELY ABSENT: Columbus Day, Presidents Day, Juneteenth and Good Friday -- none appears in 110.117(1) and none is enumerated in the rule. Florida's list is genuinely shorter than Illinois's fifteen and the federal eleven; padding it to match a neighbour would extend real deadlines that Florida law does not extend. BOTH-WAY OBSERVANCE SHIFT per 110.117(1) verbatim: a holiday falling on Saturday is observed the preceding Friday, on Sunday the following Monday. Matches us-federal/in/mi/pa; differs from Ohio (Sunday-only) and Illinois (no shift). Where a shift collides two observances on one date, both names are kept rather than one being silently dropped. NOT MODELLED, flagged: 2.514(a)(6)(B), 'any day observed as a holiday by the clerk's office or as designated by the chief justice or chief judge' -- two unknowable limbs in one sentence. The chief-justice limb is Florida's HURRICANE MECHANISM and also appears in 2.514(a)(1)(C) and (a)(3)(C), where a day inside an extension order is treated like a holiday. A Florida date from this engine is correct ONLY absent such an order. During hurricane season that is a real caveat, not a formality. Same treatment as Indiana's office-closed limb and Illinois's Governor-proclamation limb.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-26",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas Day (observed)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "fl",
+      "year": 2028,
+      "authority": {
+        "citation": "Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), incorporating the days set aside by Fla. Stat. 110.117(1)",
+        "url": "https://www-media.floridabar.org/uploads/2026/07/2027_01-JULY-Florida-Rules-of-General-Practice-and-Judicial-Administration-7-1-2026-1.pdf",
+        "statute_url": "https://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0100-0199/0110/Sections/0110.117.html",
+        "note": "Generated 2026-08-23 from Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), which enumerates NINE observances and takes from Fla. Stat. 110.117 only 'the day set aside ... for observing' them. The RULE is the operative authority, not the statute: 2.514(a)(6)(A) does not incorporate 110.117 wholesale, and encoding the statute instead would encode the wrong thing if either is amended. DELIBERATELY ABSENT: Columbus Day, Presidents Day, Juneteenth and Good Friday -- none appears in 110.117(1) and none is enumerated in the rule. Florida's list is genuinely shorter than Illinois's fifteen and the federal eleven; padding it to match a neighbour would extend real deadlines that Florida law does not extend. BOTH-WAY OBSERVANCE SHIFT per 110.117(1) verbatim: a holiday falling on Saturday is observed the preceding Friday, on Sunday the following Monday. Matches us-federal/in/mi/pa; differs from Ohio (Sunday-only) and Illinois (no shift). Where a shift collides two observances on one date, both names are kept rather than one being silently dropped. NOT MODELLED, flagged: 2.514(a)(6)(B), 'any day observed as a holiday by the clerk's office or as designated by the chief justice or chief judge' -- two unknowable limbs in one sentence. The chief-justice limb is Florida's HURRICANE MECHANISM and also appears in 2.514(a)(1)(C) and (a)(3)(C), where a day inside an extension order is treated like a holiday. A Florida date from this engine is correct ONLY absent such an order. During hurricane season that is a real caveat, not a formality. Same treatment as Indiana's office-closed limb and Illinois's Governor-proclamation limb.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2027-12-31",
+          "name": "New Year's Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-01-17",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-10",
+          "name": "Veterans' Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-24",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "fl",
+      "year": 2029,
+      "authority": {
+        "citation": "Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), incorporating the days set aside by Fla. Stat. 110.117(1)",
+        "url": "https://www-media.floridabar.org/uploads/2026/07/2027_01-JULY-Florida-Rules-of-General-Practice-and-Judicial-Administration-7-1-2026-1.pdf",
+        "statute_url": "https://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0100-0199/0110/Sections/0110.117.html",
+        "note": "Generated 2026-08-23 from Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), which enumerates NINE observances and takes from Fla. Stat. 110.117 only 'the day set aside ... for observing' them. The RULE is the operative authority, not the statute: 2.514(a)(6)(A) does not incorporate 110.117 wholesale, and encoding the statute instead would encode the wrong thing if either is amended. DELIBERATELY ABSENT: Columbus Day, Presidents Day, Juneteenth and Good Friday -- none appears in 110.117(1) and none is enumerated in the rule. Florida's list is genuinely shorter than Illinois's fifteen and the federal eleven; padding it to match a neighbour would extend real deadlines that Florida law does not extend. BOTH-WAY OBSERVANCE SHIFT per 110.117(1) verbatim: a holiday falling on Saturday is observed the preceding Friday, on Sunday the following Monday. Matches us-federal/in/mi/pa; differs from Ohio (Sunday-only) and Illinois (no shift). Where a shift collides two observances on one date, both names are kept rather than one being silently dropped. NOT MODELLED, flagged: 2.514(a)(6)(B), 'any day observed as a holiday by the clerk's office or as designated by the chief justice or chief judge' -- two unknowable limbs in one sentence. The chief-justice limb is Florida's HURRICANE MECHANISM and also appears in 2.514(a)(1)(C) and (a)(3)(C), where a day inside an extension order is treated like a holiday. A Florida date from this engine is correct ONLY absent such an order. During hurricane season that is a real caveat, not a formality. Same treatment as Indiana's office-closed limb and Illinois's Governor-proclamation limb.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans' Day (observed)",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-23",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "fl",
+      "year": 2030,
+      "authority": {
+        "citation": "Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), incorporating the days set aside by Fla. Stat. 110.117(1)",
+        "url": "https://www-media.floridabar.org/uploads/2026/07/2027_01-JULY-Florida-Rules-of-General-Practice-and-Judicial-Administration-7-1-2026-1.pdf",
+        "statute_url": "https://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0100-0199/0110/Sections/0110.117.html",
+        "note": "Generated 2026-08-23 from Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), which enumerates NINE observances and takes from Fla. Stat. 110.117 only 'the day set aside ... for observing' them. The RULE is the operative authority, not the statute: 2.514(a)(6)(A) does not incorporate 110.117 wholesale, and encoding the statute instead would encode the wrong thing if either is amended. DELIBERATELY ABSENT: Columbus Day, Presidents Day, Juneteenth and Good Friday -- none appears in 110.117(1) and none is enumerated in the rule. Florida's list is genuinely shorter than Illinois's fifteen and the federal eleven; padding it to match a neighbour would extend real deadlines that Florida law does not extend. BOTH-WAY OBSERVANCE SHIFT per 110.117(1) verbatim: a holiday falling on Saturday is observed the preceding Friday, on Sunday the following Monday. Matches us-federal/in/mi/pa; differs from Ohio (Sunday-only) and Illinois (no shift). Where a shift collides two observances on one date, both names are kept rather than one being silently dropped. NOT MODELLED, flagged: 2.514(a)(6)(B), 'any day observed as a holiday by the clerk's office or as designated by the chief justice or chief judge' -- two unknowable limbs in one sentence. The chief-justice limb is Florida's HURRICANE MECHANISM and also appears in 2.514(a)(1)(C) and (a)(3)(C), where a day inside an extension order is treated like a holiday. A Florida date from this engine is correct ONLY absent such an order. During hurricane season that is a real caveat, not a formality. Same treatment as Indiana's office-closed limb and Illinois's Governor-proclamation limb.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-29",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "fl",
+      "year": 2031,
+      "authority": {
+        "citation": "Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), incorporating the days set aside by Fla. Stat. 110.117(1)",
+        "url": "https://www-media.floridabar.org/uploads/2026/07/2027_01-JULY-Florida-Rules-of-General-Practice-and-Judicial-Administration-7-1-2026-1.pdf",
+        "statute_url": "https://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0100-0199/0110/Sections/0110.117.html",
+        "note": "Generated 2026-08-23 from Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(6)(A), which enumerates NINE observances and takes from Fla. Stat. 110.117 only 'the day set aside ... for observing' them. The RULE is the operative authority, not the statute: 2.514(a)(6)(A) does not incorporate 110.117 wholesale, and encoding the statute instead would encode the wrong thing if either is amended. DELIBERATELY ABSENT: Columbus Day, Presidents Day, Juneteenth and Good Friday -- none appears in 110.117(1) and none is enumerated in the rule. Florida's list is genuinely shorter than Illinois's fifteen and the federal eleven; padding it to match a neighbour would extend real deadlines that Florida law does not extend. BOTH-WAY OBSERVANCE SHIFT per 110.117(1) verbatim: a holiday falling on Saturday is observed the preceding Friday, on Sunday the following Monday. Matches us-federal/in/mi/pa; differs from Ohio (Sunday-only) and Illinois (no shift). Where a shift collides two observances on one date, both names are kept rather than one being silently dropped. NOT MODELLED, flagged: 2.514(a)(6)(B), 'any day observed as a holiday by the clerk's office or as designated by the chief justice or chief judge' -- two unknowable limbs in one sentence. The chief-justice limb is Florida's HURRICANE MECHANISM and also appears in 2.514(a)(1)(C) and (a)(3)(C), where a day inside an extension order is treated like a holiday. A Florida date from this engine is correct ONLY absent such an order. During hurricane season that is a real caveat, not a formality. Same treatment as Indiana's office-closed limb and Illinois's Governor-proclamation limb.",
+        "retrieved_at": "2026-08-23"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Birthday of Martin Luther King, Jr.",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-28",
+          "name": "Friday after Thanksgiving",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    }
+  ]
+}

@@ -276,7 +276,57 @@ var COMPUTATION_STANDARDS = {
   // order M.R. 5272). They disagree in both directions. The calendars encode
   // the statutory list because that is what 1.11's own words key on; see
   // sql/sairnlaw_deadline_calendars_illinois.json for the full disclosure.
-  illinois_5ilcs70_111: { label: '5 ILCS 70/1.11', impl: 'frcp_6a', base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' }
+  illinois_5ilcs70_111: { label: '5 ILCS 70/1.11', impl: 'frcp_6a', base_period_suffix: '', months_years_suffix: '', rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // Florida, Fla. R. Gen. Prac. & Jud. Admin. 2.514. Read verbatim from The
+  // Florida Bar's official rule book (July 1, 2026 edition) on 2026-08-23.
+  //
+  // THIS ONE IS NOT A REUSE, AND THE EARLIER SCOPING SAID IT WOULD BE.
+  // Florida was proposed as "data-only, no engine change" on the strength of
+  // its short-period exclusion matching Ohio's seven-day threshold. Reading
+  // the rule end to end showed that was wrong, and wrong in the dangerous
+  // direction:
+  //
+  //   2.514(a)(1)(A) "begin counting from the next day that is not a
+  //                   Saturday, Sunday, or legal holiday"
+  //   FRCP 6(a)(1)(A) "exclude the day of the event that triggers the period"
+  //
+  // Florida shifts the START of the count to the next business day and counts
+  // that day as day one. FRCP starts counting the very next calendar day.
+  // Every Florida deadline triggered on a Friday, or the day before a
+  // holiday, differs. Hence shifted_start, and hence this note -- the
+  // mistake was in the plan, not in the rule.
+  //
+  // short_period_exclusion_days IS 7, per 2.514(a)(2): "When the period stated
+  // in days is less than 7 days, Saturdays, Sundays, and legal holidays are
+  // not counted." Same threshold as Ohio and Indiana, verified independently
+  // from Florida's own text rather than carried across -- the shared number
+  // is a coincidence of drafting, not evidence of a shared rule, which is the
+  // standing lesson from Ohio/Indiana/Michigan in this file.
+  //
+  // Backward counting IS addressed, unlike Michigan, Pennsylvania and
+  // Illinois: 2.514(a)(5) defines "next day" as forward after an event and
+  // backward before one, so rollover_suffix_backward can cite (a)(5) honestly.
+  //
+  // LEGAL HOLIDAY IS NARROWER THAN THE STATUTE. 2.514(a)(6)(A) does not
+  // incorporate all of Fla. Stat. 110.117 -- it enumerates nine specific
+  // observances. See the calendar file for what that excludes and why.
+  //
+  // NOT MODELLED, deliberately: the chief-justice extension limb, which
+  // appears three times in this rule -- in (a)(1)(C), (a)(3)(C) and
+  // (a)(6)(B). It is Florida's hurricane mechanism: the chief justice may
+  // extend time by order, and a day falling within such an extension is
+  // treated like a holiday. It is unknowable in advance and the engine has no
+  // field for it, exactly like Indiana's office-closed limb in T.R. 6(A) and
+  // Illinois's Governor-proclamation limb in 205 ILCS 630/17(a). 2.514(a)(6)(B)
+  // carries a second unmodellable limb in the same breath -- "any day observed
+  // as a holiday by the clerk's office or as designated by the chief justice
+  // or chief judge". A Florida date from this engine is therefore correct only
+  // absent an emergency order; during hurricane season that is a real caveat,
+  // not a formality, and it is surfaced to the user rather than buried here.
+  fl_rgpja_2514: { label: 'Fla. R. Gen. Prac. & Jud. Admin. 2.514', impl: 'frcp_6a',
+    shifted_start: true, short_period_exclusion_days: 7,
+    base_period_suffix: '(a)(1)(A)-(B)', months_years_suffix: '',
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(a)(5)' }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
@@ -316,6 +366,22 @@ var SERVICE_EXTENSION_STANDARDS = {
       if (!method) return false;
       return method !== 'electronic' && method !== 'electronic_service';
     }
+  },
+  // Florida 2.514(b), verbatim: "When a party may or must act within a
+  // specified time after service and service is made by only mail, 5 days are
+  // added after the period that would otherwise expire under subdivision (a)."
+  //
+  // FIVE days, not the FRCP's three -- a rule that would be easy to carry
+  // across from frcp_6d and get wrong by two days on every mailed Florida
+  // service. And narrower than FRCP 6(d) in what qualifies: 6(d) extends for
+  // mail, leaving with the clerk, or other consented means; 2.514(b) extends
+  // for mail and nothing else, and only when service was by mail ONLY. A
+  // mixed method that includes e-mail does not qualify, which is why the
+  // allowlist here is a single value rather than frcp_6d's three.
+  fl_rgpja_2514b: {
+    label: 'Fla. R. Gen. Prac. & Jud. Admin. 2.514(b)',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
   }
 };
 
@@ -663,6 +729,40 @@ function computeDeadline(input) {
       if (!shortRes.ok) return shortRes;
       base = shortRes.date;
       steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + countValue + ' days ' + direction + ', excluding intermediate Saturdays, Sundays and legal holidays because the period is less than ' + std.short_period_exclusion_days + ' days.', authority: std.label, date: base });
+    } else if (std.shifted_start) {
+      // SHIFTED START. Florida's Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(1)(A)
+      // does NOT say "exclude the day of the event that triggers the period"
+      // the way FRCP 6(a)(1)(A) does. It says "begin counting from the next
+      // day that is not a Saturday, Sunday, or legal holiday" -- so the count
+      // starts at the next BUSINESS day, and that day is day one.
+      //
+      // The difference is real and it is not one day in the usual case, it is
+      // however many days it takes to clear a weekend or holiday. A 30-day
+      // period triggered on a Friday: FRCP counts Saturday as day one and
+      // lands on a Sunday, rolling to the Monday; Florida starts counting the
+      // Monday and lands two days later. Reusing the FRCP branch here -- which
+      // is what "Florida is data-only" would have meant -- would have been
+      // wrong on every Florida deadline triggered on a Friday or the day
+      // before a holiday.
+      //
+      // Gated on the STANDARD declaring shifted_start, not on a jurisdiction
+      // string, so a second state with this shape needs no new code -- the
+      // same design already used for short_period_exclusion_days.
+      //
+      // Direction-aware by 2.514(a)(5): "The 'next day' is determined by
+      // continuing to count forward when the period is measured after an event
+      // and backward when measured before an event." rollOff already walks in
+      // the direction it is given, so a backward Florida period shifts to the
+      // preceding business day rather than the following one.
+      var startRes = rollOff(addDays(triggerDate, sign), input.calendars, input.jurisdiction, direction);
+      if (!startRes.ok) return startRes;
+      var firstCounted = startRes.date;
+      base = addDays(firstCounted, sign * (countValue - 1));
+      steps.push({ step: 'base_period',
+        detail: 'Began counting from ' + firstCounted + ', the ' + (direction === 'backward' ? 'preceding' : 'next') +
+          ' day that is not a Saturday, Sunday or legal holiday, and counted that day as day one. Counted ' + countValue +
+          ' days ' + direction + ' from there, including intermediate weekends and holidays.',
+        authority: std.label + (std.base_period_suffix || ''), date: base });
     } else {
       base = addDays(triggerDate, sign * countValue);
       steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + countValue + ' calendar days ' + direction + ', including intermediate weekends and holidays.', authority: std.label + (std.base_period_suffix || ''), date: base });
