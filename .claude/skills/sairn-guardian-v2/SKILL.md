@@ -98,8 +98,22 @@ Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automa
     A Guardian pass on SAIRNlaw scored 0 for every one of its four API files
     and went looking for the gap. There is no gap: `grep -rl
     "SAIRN_INTERNAL_KEY\|INTERNAL_KEY" api/` returns **zero files across the
-    entire platform**. The mechanism this check describes does not exist
-    anywhere and has not for some time.
+    entire platform**. **Zero code reads it.** That is the accurate claim, and
+    it is the one the retirement rests on.
+    **Wording corrected 2026-08-25.** This paragraph previously read "the
+    mechanism this check describes does not exist anywhere and has not for some
+    time." That is a stronger claim than the evidence supports, and it is
+    false: `SAIRN_INTERNAL_KEY` **is real and provisioned**, present in the
+    Vercel project on both Production and Preview (~67 days before this
+    correction), confirmed by `vercel env ls production --project sairn`, which
+    prints names only and no values. So the variable exists and nothing reads
+    it — two different facts, and the difference is not pedantic. An
+    unread-but-provisioned secret is live configuration to retire deliberately,
+    not evidence a mechanism was never built; a session acting on the old
+    wording would conclude there was nothing to clean up. Same class as every
+    other claim-vs-reality drift this file already documents against itself —
+    the grep was over `api/`, and a grep of code can only ever prove something
+    about code.
     **What actually gates the API surface**, and what to check instead, is
     Check 28: a license key as `Authorization: Bearer`, plus
     `verifySessionToken(token, license_hash, expectedApp)` with the third
