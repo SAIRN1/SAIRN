@@ -837,6 +837,53 @@ var COMPUTATION_STANDARDS = {
   nc_rcp_6a: { label: 'N.C. R. Civ. P. 6(a) (G.S. 1A-1, Rule 6(a))', impl: 'nc_rcp_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── WASHINGTON: THE ONE RULE THAT NAMES ITS OWN HOLIDAY STATUTE ─────────
+  // CR 6(a), verbatim: "In computing any period of time prescribed or allowed
+  // by these rules, by the local rules of any superior court, by order of
+  // court, or by any applicable statute, the day of the act, event, or default
+  // from which the designated period of time begins to run shall not be
+  // included. The last day of the period so computed shall be included, unless
+  // it is a Saturday, a Sunday or a legal holiday, in which event the period
+  // runs until the end of the next day which is neither a Saturday, a Sunday
+  // nor a legal holiday. LEGAL HOLIDAYS ARE PRESCRIBED IN RCW 1.16.050. When
+  // the period of time prescribed or allowed is less than 7 days, intermediate
+  // Saturdays, Sundays and legal holidays shall be excluded in the
+  // computation."
+  //
+  // THAT ONE SENTENCE SETTLES WHAT FOUR OTHER JURISDICTIONS LEFT OPEN. Texas's
+  // Rule 4 says "legal holiday" and never cites Gov't Code 662.021; Kentucky's
+  // RAP 6(A) and KRS 446.030 both say it and neither defines it; West Virginia
+  // defines it two different ways in two bodies of rules; North Carolina asks a
+  // different question entirely (is the courthouse closed). Washington points
+  // at a statute by number, so its calendar needs no judgment call -- and the
+  // statute then excludes its own decoys expressly, because RCW 1.16.050(7)
+  // says the days it lists "may not be considered legal holidays for any
+  // purpose". See the calendar readme.
+  //
+  // SHORT-PERIOD EXCLUSION IS 7, from "less than 7 days" -- Washington's own
+  // number, verified here and not carried across from the four other states
+  // that happen to share it. Reachable: CR 6(d) sets a 5-day motion-notice
+  // period and a 1-day affidavit period, and CR 12(a)(A)/(B) set 10-day
+  // responsive-pleading periods, all under the threshold.
+  //
+  // BACKWARD IS BLANK, AND NO BACKWARD ROW IS SEEDED. CR 6(a) provides only
+  // that "the period runs until the end of the next day" -- forward. It never
+  // says what the next day means for a period counted BEFORE an event, and
+  // Washington has such periods: CR 6(d) requires a written motion and notice
+  // of hearing "not later than 5 days before the time specified for the
+  // hearing" and opposing affidavits "not later than 1 day before the
+  // hearing". Neither is seeded. Rolling them in either direction would be a
+  // guess, and the jurisdictions that DO define it disagree three ways --
+  // W. Va. R. Civ. P. 6(a)(5) and Fla. 2.514(a)(5) roll backward, KRS
+  // 446.030(1)(b) rolls FORWARD. Same call already made for ny_gcl_20 and
+  // nc_rcp_6a.
+  //
+  // CR 6 is lettered but not sub-numbered, so the base period and the rollover
+  // both sit in (a) and there is no separate months/years provision to cite.
+  wa_cr_6a: { label: 'Wash. Super. Ct. Civ. R. 6(a)', impl: 'wa_cr_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
@@ -1310,6 +1357,40 @@ var SERVICE_EXTENSION_STANDARDS = {
   // in the EARLY direction (three days added instead of five) rather than late.
   nc_rcp_6e: {
     label: 'N.C. R. Civ. P. 6(e) (G.S. 1A-1, Rule 6(e))',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── WASHINGTON: MAIL ONLY, AND PERIOD-LENGTHENING ───────────────────────
+  // CR 6(e), verbatim: "Whenever a party has the right or is required to do
+  // some act or take some proceedings within a prescribed period after the
+  // service of a notice or other paper upon the party and the notice or paper
+  // is served upon the party by mail, 3 days shall be added to the prescribed
+  // period."
+  //
+  // "ADDED TO THE PRESCRIBED PERIOD" -- period-lengthening, one rollover at the
+  // end of the single lengthened period. Read up front rather than caught by a
+  // failing test, per the standing habit. Same shape as North Carolina, New
+  // York, Georgia and pre-2025 West Virginia; NOT the federal after-expiry
+  // order.
+  //
+  // MAIL AND ONLY MAIL. CR 5(b)(7) authorises service "by any other means,
+  // including facsimile or electronic means, consented to in writing by the
+  // person served or as authorized under local court rule", and CR 6(e) does
+  // not reach any of it. That makes five states with five different answers on
+  // whether electronic service extends -- Kentucky's eFiling Rules 13(6)
+  // expressly treats it as mail and adds three days, West Virginia's 6(e) is
+  // contested on its face and is refused in code, North Carolina and Washington
+  // simply do not cover it, and California adds two COURT days. Nothing about
+  // e-service extensions generalises across states, and this comment exists so
+  // the next jurisdiction is read rather than assumed.
+  //
+  // WHAT THIS DOES NOT REACH: service of the summons. CR 12(a)(1) runs its
+  // 20-day answer period from service "pursuant to rule 4", and CR 6(e) extends
+  // a period run after "the service of a notice or other paper". Same scope
+  // route as West Virginia and North Carolina.
+  wa_cr_6e: {
+    label: 'Wash. Super. Ct. Civ. R. 6(e)',
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }

@@ -1,0 +1,537 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- Washington rule seed, 2026-08-25. Loaded through",
+    "add_rule. Holiday calendars are in sql/sairnlaw_deadline_calendars_washington.json",
+    "and must be loaded too, or every row below refuses with NOT_PROVISIONED.",
+    "",
+    "SOURCES: Washington's Superior Court Civil Rules are published free and in",
+    "full, one PDF per rule, by the Washington Courts at courts.wa.gov. CR 5, 6,",
+    "12, 33, 34 and 36 and RCW 1.16.050 were read verbatim on 2026-08-25. The state",
+    "passed the source-availability gate outright -- the same gate Kentucky failed",
+    "(no free civil rules at all) and Arizona failed (2017 snapshot only, current",
+    "text behind Westlaw).",
+    "",
+    "EACH ROW'S effective_from IS THE RULE'S OWN LAST AMENDMENT DATE, read off the",
+    "published footer of that rule: CR 5 and 6 and 36 2015-04-28, CR 12 2025-09-01,",
+    "CR 33 2015-12-08, CR 34 2013-09-01. That is better provenance than North",
+    "Carolina, where a blanket 1970 date had to be used and disclosed. NOTE CR 12",
+    "WAS AMENDED AS RECENTLY AS 1 SEPTEMBER 2025, so anything written about",
+    "Washington answer deadlines before that date should be re-read.",
+    "",
+    "== WASHINGTON SETTLES THE HOLIDAY QUESTION BY TEXT ========================",
+    "CR 6(a) says \"Legal holidays are prescribed in RCW 1.16.050.\" An express",
+    "cross-reference, which no other jurisdiction seeded so far provides. And RCW",
+    "1.16.050 then excludes its own decoys: subsection (1) is the legal holidays,",
+    "subsection (7) lists Columbus Day, Pearl Harbor Day and a dozen more as days",
+    "\"recognized ... but may not be considered legal holidays FOR ANY PURPOSE\".",
+    "Only subsection (1) is encoded. Full reasoning in the calendar readme.",
+    "",
+    "== CR 12(a) HAS FIVE LIMBS AND THEY ARE NOT INTERCHANGEABLE ===============",
+    "The answer period depends on HOW the defendant was served:",
+    "",
+    "    CR 12(a)(1)  20 days   ordinary service under CR 4",
+    "    CR 12(a)(2)  60 days   from FIRST PUBLICATION, service by publication",
+    "    CR 12(a)(3)  60 days   personal service out of state, or on the",
+    "                           Secretary of State under RCW 46.64.040",
+    "    CR 12(a)(4)  60 days   served in a jail, detention or prison facility",
+    "    CR 12(a)(5)   --       \"the period fixed by any other applicable",
+    "                           statutes or rules\"",
+    "",
+    "Three of the five are seeded. A caller who runs an out-of-state service date",
+    "against the ordinary 20-day row gets a date FORTY DAYS TOO EARLY, which is why",
+    "each limb is its own row with its own trigger rather than one row with a note.",
+    "",
+    "CR 12(a)(4), the jail/prison limb, is NOT SEEDED. It ends \"unless a different",
+    "time for response, appearance, or answer is specifically stated in statute\",",
+    "and which statutes those are was not researched for this seed. Encoding a flat",
+    "60 days would be right whenever no such statute exists and silently wrong",
+    "whenever one does, with no refusal either way. CR 12(a)(5) is not seeded for",
+    "the same reason in stronger form: it sets no period at all.",
+    "",
+    "== ALL THREE DISCOVERY RULES USE 30/40, AND THAT IS NOT A PATTERN =========",
+    "CR 33, CR 34 and CR 36 each give 30 days from service of the discovery paper",
+    "and 40 days from service of process for a defendant. Each was read off its own",
+    "rule. The reason that matters: North Carolina's three DIVERGE -- 45, 45 and 60",
+    "-- so a state sharing one number across three rules is a fact about that",
+    "state, not a rule of thumb. CR 36 is the one where an error hurts most,",
+    "because it is self-executing: North Carolina's 60-day floor encoded into",
+    "Washington would concede facts twenty days late.",
+    "",
+    "Each is TWO rows: a plain 30-day row for a party who is not a defendant, and a",
+    "resolve_periods later_of row for a defendant. That shape exists because",
+    "Georgia's equivalent was first encoded as an ordinary later_of and shipped a",
+    "date fifteen days early -- later_of picks the later trigger DATE and applies a",
+    "single count, and these rules need a different count per limb.",
+    "",
+    "NO later-of ROW CARRIES A SERVICE EXTENSION, and that is a reason: limb one",
+    "runs from CR 5 service, which CR 6(e) reaches, limb two from CR 4 service,",
+    "which it does not, and the engine extends the winning RESULT without knowing",
+    "which limb won.",
+    "",
+    "== CR 6(e) IS MAIL ONLY AND LENGTHENS THE PERIOD ==========================",
+    "\"3 days shall be added to the prescribed period\" -- one period, one rollover,",
+    "at the end. Not the federal after-expiry order. CR 5(b)(7) authorises service",
+    "by facsimile or electronic means consented to in writing and CR 6(e) reaches",
+    "none of it. FIVE STATES NOW ANSWER E-SERVICE FIVE DIFFERENT WAYS: Kentucky",
+    "expressly treats it as mail and adds three days, West Virginia's rule is",
+    "contested on its face and is refused in code, California adds two COURT days,",
+    "and North Carolina and Washington do not cover it at all.",
+    "",
+    "== NOT SEEDED, DELIBERATELY ===============================================",
+    "BACKWARD PERIODS. CR 6(d) requires a written motion and notice of hearing",
+    "\"not later than 5 days before the time specified for the hearing\" and opposing",
+    "affidavits \"not later than 1 day before the hearing\". Both are backward, and",
+    "CR 6(a) defines the rollover only for a period's last day running forward. The",
+    "jurisdictions that DO define it disagree three ways (W. Va. and Florida roll",
+    "backward, KRS 446.030(1)(b) rolls FORWARD), so there is no default to borrow.",
+    "Note both of these periods are also UNDER CR 6(a)'s seven-day threshold, so",
+    "whoever seeds them must handle the short-period exclusion and the backward",
+    "rollover together.",
+    "",
+    "APPELLATE. No Washington appellate row is seeded. The Rules of Appellate",
+    "Procedure (RAP) are a separate body with their own computation provision and",
+    "need their own read -- the gate applies to them too."
+  ],
+  "rules": [
+    {
+      "rule_id": "wa-cr-12-a1-answer-to-complaint",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and complaint under CR 4 (Washington)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 12(a)(1)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_12_00_00.pdf",
+        "quote": "Within 20 days, exclusive of the day of service, after the service of the summons and complaint upon the defendant pursuant to rule 4;",
+        "note": "TWENTY DAYS -- the shortest answer period of any jurisdiction seeded so far, against 30 in North Carolina, West Virginia and Georgia and 21 federally. There is no regional intuition to fall back on. THE RULE STATES ITS OWN DAY-EXCLUSION, \"exclusive of the day of service\", which duplicates what CR 6(a) already does; the engine excludes the trigger day once, not twice. NO SERVICE EXTENSION. CR 6(e) extends a period run after \"the service of a notice or other paper\", and this period runs from service of the summons and complaint \"pursuant to rule 4\". Same scope route as West Virginia and North Carolina. CR 12(a) has FOUR other limbs, three of them 60 days, each keyed to a different manner of service -- publication, out-of-state personal service, and service in a jail or prison. Two are seeded as their own rows; the jail limb is not (see the readme). CR 12(a)(5), \"within the period fixed by any other applicable statutes or rules\", is an open-ended displacement the engine cannot see.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-12-a2-answer-after-service-by-publication",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Answer where the summons is served by publication (Washington)",
+      "trigger_event": "first_publication_of_the_summons",
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 12(a)(2)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_12_00_00.pdf",
+        "quote": "Within 60 days from the date of the first publication of the summons if the summons is served by publication in accordance with rule 4(d)(3);",
+        "note": "RUNS FROM THE FIRST PUBLICATION, not from service and not from the last publication -- a trigger no other seeded jurisdiction uses. \"From the date of\" rather than \"after\" is not treated as changing the count: CR 6(a) governs computation for these rules and excludes the day the period runs from, and nothing in CR 12(a)(2) displaces it. NO SERVICE EXTENSION. CR 6(e) extends a period run after \"the service of a notice or other paper\", and this period runs from service of the summons and complaint \"pursuant to rule 4\". Same scope route as West Virginia and North Carolina.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-12-a3-answer-after-out-of-state-personal-service",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Answer where the summons is served personally out of state (Washington)",
+      "trigger_event": "out_of_state_personal_service_of_the_summons",
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 12(a)(3)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_12_00_00.pdf",
+        "quote": "Within 60 days after the service of the summons upon the defendant if the summons is served upon the defendant personally out of the state in accordance with RCW 4.28.180 and 4.28.185 or on the Secretary of State as provided by RCW 46.64.040.",
+        "note": "SIXTY DAYS, three times the ordinary twenty, and the difference turns entirely on where the defendant was served. A caller who supplies an out-of-state service date against the ordinary CR 12(a)(1) row gets a date forty days too early. NO SERVICE EXTENSION. CR 6(e) extends a period run after \"the service of a notice or other paper\", and this period runs from service of the summons and complaint \"pursuant to rule 4\". Same scope route as West Virginia and North Carolina. The same 60 days also covers service on the Secretary of State under RCW 46.64.040; that is the same limb, not a separate rule.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-12-a-answer-to-crossclaim",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Answer to a crossclaim (Washington)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "service_extension": {
+        "standard": "wa_cr_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 12(a)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_12_00_00.pdf",
+        "quote": "A party served with a pleading stating a cross claim against another party shall serve an answer thereto within 20 days after the service upon that other party.",
+        "note": "The extension applies here where it does not on the answer to the complaint: a crossclaim is served under CR 5, not CR 4. applies_when is MAIL AND ONLY MAIL, because CR 6(e) names no other method. CR 5(b)(7) authorises service \"by any other means, including facsimile or electronic means, consented to in writing\", and 6(e) reaches none of it. Five states now answer e-service five different ways; do not widen this by analogy to any of them.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-12-a-reply-to-counterclaim",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim contained in an answer (Washington)",
+      "trigger_event": "service_of_the_answer",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "service_extension": {
+        "standard": "wa_cr_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 12(a)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_12_00_00.pdf",
+        "quote": "The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer",
+        "note": "Runs from service of THE ANSWER, not from service of the counterclaim as a separate paper. applies_when is MAIL AND ONLY MAIL, because CR 6(e) names no other method. CR 5(b)(7) authorises service \"by any other means, including facsimile or electronic means, consented to in writing\", and 6(e) reaches none of it. Five states now answer e-service five different ways; do not widen this by analogy to any of them.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-12-a-reply-to-counterclaim-ordered",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim where the court orders a reply (Washington)",
+      "trigger_event": "service_of_the_order_to_reply",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "service_extension": {
+        "standard": "wa_cr_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 12(a)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_12_00_00.pdf",
+        "quote": "or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs.",
+        "note": "\"UNLESS THE ORDER OTHERWISE DIRECTS\" is a displacement the engine cannot see: an order fixing its own period governs and this row's 20 days is then simply wrong. Read the order. applies_when is MAIL AND ONLY MAIL, because CR 6(e) names no other method. CR 5(b)(7) authorises service \"by any other means, including facsimile or electronic means, consented to in writing\", and 6(e) reaches none of it. Five states now answer e-service five different ways; do not widen this by analogy to any of them.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-12-aA-responsive-pleading-after-motion-denied",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after the court denies or postpones a CR 12 motion (Washington)",
+      "trigger_event": "notice_of_court_action_on_the_motion",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 12(a)(A)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_12_00_00.pdf",
+        "quote": "If the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action.",
+        "note": "TEN DAYS, AND THIS ROW REACHES THE SHORT-PERIOD EXCLUSION. Ten is above CR 6(a)'s \"less than 7 days\" threshold, so intermediate weekends and holidays are still counted -- but it is the closest any seeded Washington row gets, and a maintainer shortening it must know the branch changes. NO SERVICE EXTENSION: the period runs after NOTICE OF THE COURT'S ACTION, not after a party serves a paper under CR 5. The clause is also expressly subject to \"unless a different time is fixed by order of the court\".",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-12-aB-responsive-pleading-after-more-definite-statement",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after service of a more definite statement (Washington)",
+      "trigger_event": "service_of_more_definite_statement",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "service_extension": {
+        "standard": "wa_cr_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 12(a)(B)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_12_00_00.pdf",
+        "quote": "If the court grants a motion for a more definite statement, the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "Runs from SERVICE, so unlike its sibling in (A) the extension does reach it. applies_when is MAIL AND ONLY MAIL, because CR 6(e) names no other method. CR 5(b)(7) authorises service \"by any other means, including facsimile or electronic means, consented to in writing\", and 6(e) reaches none of it. Five states now answer e-service five different ways; do not widen this by analogy to any of them.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-33-a-interrogatory-answers",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories, party other than a defendant (Washington)",
+      "trigger_event": "service_of_interrogatories",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "service_extension": {
+        "standard": "wa_cr_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 33(a)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_33_00_00.pdf",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within 30 days after the service of the interrogatories, except that a defendant may serve answers or objections within 40 days after service of the summons and complaint upon that defendant.",
+        "note": "NON-DEFENDANT LIMB ONLY. The defendant's 40-day alternative is a genuine later-of and is its own resolve_periods row; using this row for a defendant can give a date far too early. applies_when is MAIL AND ONLY MAIL, because CR 6(e) names no other method. CR 5(b)(7) authorises service \"by any other means, including facsimile or electronic means, consented to in writing\", and 6(e) reaches none of it. Five states now answer e-service five different ways; do not widen this by analogy to any of them.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2015-12-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-33-a-interrogatory-answers-defendant-later-of-periods",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories served on a defendant (Washington)",
+      "trigger_event": {
+        "id": "interrogatories_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_interrogatories_on_defendant",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the interrogatories"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_interrogatories",
+            "count": {
+              "value": 40,
+              "unit": "calendar_days"
+            },
+            "label": "40 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "wa_cr_6a",
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 33(a)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_33_00_00.pdf",
+        "quote": "within 30 days after the service of the interrogatories, except that a defendant may serve answers or objections within 40 days after service of the summons and complaint upon that defendant",
+        "note": "FORTY DAYS, not the 45 North Carolina uses and not the 60 its Rule 36 uses. Washington applies the SAME 40 across all three discovery rules, which is itself worth stating: North Carolina's three diverge (45/45/60), so a shared number in one state is not evidence of a shared number in the next, and each of Washington's three was read off its own rule. NO SERVICE EXTENSION, and that is a reason not an omission: limb one runs from service of a paper under CR 5, which CR 6(e) reaches, but limb two runs from service of the summons under CR 4, which it does not, and the engine extends the winning RESULT without knowing which limb won. Compute the mail extension by hand if limb one governs. Same call as Georgia's and North Carolina's later-of rows.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2015-12-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-34-b-production-response",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production or inspection, party other than a defendant (Washington)",
+      "trigger_event": "service_of_request_for_production",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "service_extension": {
+        "standard": "wa_cr_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 34(b)(2)(A)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_34_00_00.pdf",
+        "quote": "Time to Respond. The responding party shall serve a written response within 30 days after the service of the request, except that a defendant may serve a response within 40 days after service of the summons and complaint upon that defendant.",
+        "note": "NON-DEFENDANT LIMB ONLY; the defendant's 40-day alternative is its own resolve_periods row. applies_when is MAIL AND ONLY MAIL, because CR 6(e) names no other method. CR 5(b)(7) authorises service \"by any other means, including facsimile or electronic means, consented to in writing\", and 6(e) reaches none of it. Five states now answer e-service five different ways; do not widen this by analogy to any of them.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2013-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-34-b-production-response-defendant-later-of-periods",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production served on a defendant (Washington)",
+      "trigger_event": {
+        "id": "production_request_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_production_on_defendant",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_production",
+            "count": {
+              "value": 40,
+              "unit": "calendar_days"
+            },
+            "label": "40 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "wa_cr_6a",
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 34(b)(2)(A)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_34_00_00.pdf",
+        "quote": "within 30 days after the service of the request, except that a defendant may serve a response within 40 days after service of the summons and complaint upon that defendant",
+        "note": "Same 30/40 shape as CR 33, verified against CR 34's own words rather than assumed to match. No service extension, for the reason given on the CR 33 later-of row.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2013-09-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-36-a-admission-response",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission, party other than a defendant (Washington)",
+      "trigger_event": "service_of_request_for_admission",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wa_cr_6a",
+      "service_extension": {
+        "standard": "wa_cr_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 36(a)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_36_00_00.pdf",
+        "quote": "The matter is admitted unless, within 30 days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or by the party's attorney",
+        "note": "SELF-EXECUTING: missing this date admits the matter, so a date computed too late concedes a fact rather than merely losing a filing. NON-DEFENDANT LIMB ONLY -- the defendant's 40-day floor is its own row, and note it is FORTY here, where North Carolina's equivalent floor is SIXTY. applies_when is MAIL AND ONLY MAIL, because CR 6(e) names no other method. CR 5(b)(7) authorises service \"by any other means, including facsimile or electronic means, consented to in writing\", and 6(e) reaches none of it. Five states now answer e-service five different ways; do not widen this by analogy to any of them.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2015-04-28",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wa-cr-36-a-admission-response-defendant-later-of-periods",
+      "jurisdiction": "wa",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission served on a defendant (Washington)",
+      "trigger_event": {
+        "id": "admission_request_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission_on_defendant",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": {
+              "value": 40,
+              "unit": "calendar_days"
+            },
+            "label": "40 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "wa_cr_6a",
+      "authority": {
+        "citation": "Wash. Super. Ct. Civ. R. 36(a)",
+        "url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_36_00_00.pdf",
+        "quote": "but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 40 days after service of the summons and complaint upon the defendant",
+        "note": "FORTY, NOT SIXTY. North Carolina's Rule 36 gives a defendant 60 days from service of process where its Rules 33 and 34 give 45; Washington gives 40 on all three. Encoding one state's number in the other would be wrong by twenty days on the ONE rule where an error concedes facts rather than losing a filing -- CR 36 is self-executing. The limb is phrased as a floor, \"shall not be required to serve answers or objections before the expiration of 40 days\", which is the later-of that resolve_periods expresses. No service extension, for the reason given on the CR 33 later-of row.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2015-04-28",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ]
+}
