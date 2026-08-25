@@ -80,6 +80,18 @@ delete from public.rf_locations
  where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
    and location_id like 'LOC-VERIFY-%';
 
+-- Phase 4d: the disposable programmes, and the certification rows written to
+-- feed the roster-share rollup. rf_certifications is APPEND-ONLY with no delete
+-- verb through the API -- same situation as rf_claim_photos and
+-- rf_claim_agreements -- so these can only go from here.
+delete from public.rf_company_programs
+ where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
+   and program_id like 'RFPRG-VERIFY-%';
+
+delete from public.rf_certifications
+ where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
+   and entry_id like 'RFCERT-VERIFY-%';
+
 -- ── THE ACCOUNTS MOVED OUT OF THIS FILE, 2026-08-25 ─────────────────────
 -- The three disposable accounts used to be deleted here, in the same pass as
 -- the rows. That coupling had a real cost, hit twice in one session: running
@@ -106,14 +118,17 @@ delete from public.rf_locations
 --   select count(*) from public.rf_contingency_rules where rule_id like 'RFCON-VERIFY-%';
 --   select count(*) from public.rf_schedule where schedule_id like 'RFSCH-VERIFY-%';
 --   select count(*) from public.rf_locations where location_id like 'LOC-VERIFY-%';
+--   select count(*) from public.rf_company_programs where program_id like 'RFPRG-VERIFY-%';
+--   select count(*) from public.rf_certifications where entry_id like 'RFCERT-VERIFY-%';
 -- Jobs that pointed at a deleted verify branch keep that location_id string.
 -- That is correct -- the id is attribution, not a foreign key, and rewriting
 -- history to hide a deleted branch would be worse. Expect 0 here anyway, since
 -- the verify JOBS are deleted above:
 --   select job_id, location_id from public.rf_jobs where location_id like 'LOC-VERIFY-%';
 --
--- NOTE: the RFCERT-VERIFY-* rows from the 3a round trip are covered by
--- sql/sairnroofing_verify_cleanup.sql. That file ALSO deletes rf-verify-admin,
+-- NOTE: the RFCERT-VERIFY-* delete above now covers BOTH the 3a round trip's
+-- six rows and Phase 4d's three, so sql/sairnroofing_verify_cleanup.sql is no
+-- longer needed for the certifications. That file ALSO deletes rf-verify-admin,
 -- which is now the wrong coupling for the same reason described above -- if you
 -- run it before Phase 4 is finished, re-seed the admin afterwards. A header
 -- note has been added there saying so.
