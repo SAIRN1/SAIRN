@@ -418,23 +418,29 @@ create policy "svc only msb_sale_hours" on public.msb_sale_hours
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
 grant usage on schema public to service_role;
-grant select, insert, update, delete on public.grd_invasive_sightings   to service_role;
-grant select, insert, update, delete on public.grd_ecosystem_reports    to service_role;
-grant select, insert, update, delete on public.grd_designs              to service_role;
-grant select, insert, update, delete on public.grd_irr_controllers      to service_role;
-grant select, insert, update, delete on public.grd_irr_zones            to service_role;
-grant select, insert, update, delete on public.grd_irr_schedules        to service_role;
-grant select, insert, update, delete on public.grd_water_features       to service_role;
-grant select, insert, update, delete on public.grd_training_courses     to service_role;
-grant select, insert, update, delete on public.grd_training_completions to service_role;
-grant select, insert, update, delete on public.grd_boq_rates            to service_role;
-grant select, insert, update, delete on public.grd_vendors              to service_role;
-grant select, insert, update, delete on public.msb_products             to service_role;
-grant select, insert, update, delete on public.msb_sales                to service_role;
-grant select, insert, update, delete on public.msb_licenses             to service_role;
-grant select, insert, update, delete on public.msb_inventory_log        to service_role;
-grant select, insert, update, delete on public.msb_bottle_scans         to service_role;
-grant select, insert, update, delete on public.msb_food_scans           to service_role;
-grant select, insert, update, delete on public.msb_food_waste           to service_role;
-grant select, insert, update, delete on public.msb_food_cost_log        to service_role;
-grant select, insert, update, delete on public.msb_sale_hours           to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert, update on public.grd_invasive_sightings   to service_role;
+grant select, insert, update on public.grd_ecosystem_reports    to service_role;
+grant select, insert, update on public.grd_designs              to service_role;
+grant select, insert, update on public.grd_irr_controllers      to service_role;
+grant select, insert, update on public.grd_irr_zones            to service_role;
+grant select, insert, update on public.grd_irr_schedules        to service_role;
+grant select, insert, update on public.grd_water_features       to service_role;
+grant select, insert, update on public.grd_training_courses     to service_role;
+grant select, insert, update on public.grd_training_completions to service_role;
+grant select, insert, update on public.grd_boq_rates            to service_role;
+grant select, insert, update on public.grd_vendors              to service_role;
+grant select, insert, update on public.msb_products             to service_role;
+grant select, insert, update on public.msb_sales                to service_role;
+grant select, insert, update on public.msb_licenses             to service_role;
+grant select, insert, update on public.msb_inventory_log        to service_role;
+grant select, insert, update on public.msb_bottle_scans         to service_role;
+grant select, insert, update on public.msb_food_scans           to service_role;
+grant select, insert, update on public.msb_food_waste           to service_role;
+grant select, insert, update on public.msb_food_cost_log        to service_role;
+grant select, insert, update on public.msb_sale_hours           to service_role;

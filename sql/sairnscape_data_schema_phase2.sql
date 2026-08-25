@@ -145,10 +145,23 @@ create policy "svc only scp_water_features" on public.scp_water_features
 create policy "svc only scp_vendors" on public.scp_vendors
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
+-- DELETE REMOVED FROM ALL SIX LINES 2026-08-25, for the same reason and in
+-- the same pass as sql/sairnscape_data_schema.sql's six. This is the THIRD
+-- SAIRNscape file carrying the 2026-08-06 overcorrection, not the second:
+-- sql/unused_delete_grant_revoke_2026-08-24.sql's header scoped the
+-- signature at "2 files, both SAIRNscape, 7 grants" and this file was
+-- missed. It is 3 files and 13 grants -- scp_employee_auth (1),
+-- sairnscape_data_schema (6), and these 6.
+--
+-- All six of these tables had DELETE revoked live on 2026-08-25 by that
+-- sweep, so until this edit the file and the database disagreed and any
+-- routine re-run of this `create table if not exists` file would have
+-- silently restored them. SAIRNscape has no delete path; the platform's
+-- only DELETE is api/sd-data.js's SC_RESOURCES (SAIRNcode) branch.
 grant usage on schema public to service_role;
-grant select, insert, update, delete on public.scp_designs         to service_role;
-grant select, insert, update, delete on public.scp_irr_controllers to service_role;
-grant select, insert, update, delete on public.scp_irr_zones       to service_role;
-grant select, insert, update, delete on public.scp_irr_schedules   to service_role;
-grant select, insert, update, delete on public.scp_water_features  to service_role;
-grant select, insert, update, delete on public.scp_vendors         to service_role;
+grant select, insert, update on public.scp_designs         to service_role;
+grant select, insert, update on public.scp_irr_controllers to service_role;
+grant select, insert, update on public.scp_irr_zones       to service_role;
+grant select, insert, update on public.scp_irr_schedules   to service_role;
+grant select, insert, update on public.scp_water_features  to service_role;
+grant select, insert, update on public.scp_vendors         to service_role;

@@ -49,7 +49,13 @@ alter table public.dnt_settings enable row level security;
 drop policy if exists "svc only dnt_settings" on public.dnt_settings;
 create policy "svc only dnt_settings" on public.dnt_settings
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
-grant select, insert, update, delete on public.dnt_settings to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert, update on public.dnt_settings to service_role;
 
 -- dnt_appointments: promote real columns alongside the existing
 -- generic data jsonb (kept for patient_id/procedure_type_id/source/
@@ -109,7 +115,7 @@ alter table public.dnt_booking_rate_limits enable row level security;
 drop policy if exists "svc only dnt_booking_rate_limits" on public.dnt_booking_rate_limits;
 create policy "svc only dnt_booking_rate_limits" on public.dnt_booking_rate_limits
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
-grant select, insert, update, delete on public.dnt_booking_rate_limits to service_role;
+grant select, insert, update on public.dnt_booking_rate_limits to service_role;
 
 -- Verify after running:
 --   select indexname from pg_indexes where tablename='dnt_appointments';
