@@ -649,6 +649,106 @@ var COMPUTATION_STANDARDS = {
   ga_ocga_1_3_1_d3: { label: 'O.C.G.A. 1-3-1(d)(3)', impl: 'frcp_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── WEST VIRGINIA: TWO STANDARDS, BECAUSE THE STATE REALLY HAS TWO ───────
+  // Every other jurisdiction in this engine computes time one way. West
+  // Virginia computes it two DIFFERENT ways depending on which court's rules
+  // govern, and the two differ on a mechanism this engine models. Both were
+  // read verbatim on 2026-08-25 and neither was inferred from the other.
+  //
+  // ── wv_rcp_6a: THE 2025 RESTYLED CIVIL RULE ──────────────────────────────
+  // The Supreme Court of Appeals adopted amendments on 2024-01-31 effective
+  // 2025-01-01 -- the first substantial revision since 1998 -- and Rule 6 was
+  // rewritten into the modern federal shape. W. Va. R. Civ. P. 6(a)(1),
+  // verbatim: "When the period is stated in days or a longer unit of time,
+  // exclude the day of the event that triggers the period; (A) count every
+  // day, including intermediate Saturdays, Sundays and legal holidays; and
+  // (B) include the last day of the period but if the last day is a Saturday,
+  // a Sunday or legal holiday, the period continues to run until the end of
+  // the next day that is not a Saturday, Sunday, or legal holiday."
+  //
+  // NO SHORT-PERIOD EXCLUSION, AND THAT IS A CHANGE, NOT AN ABSENCE. The
+  // FORMER rule (read verbatim from the court's own "Former West Virginia
+  // Rules of Civil Procedure") said: "When the period of time prescribed or
+  // allowed is fewer than 11 days, intermediate Saturdays, Sundays, and legal
+  // holidays shall be excluded in the computation." That limb is GONE from the
+  // 2025 text -- "count every day" is now unqualified. Declaring
+  // short_period_exclusion_days here would push every short West Virginia
+  // civil deadline LATER than the true date, the direction that misses a
+  // filing. Note the former threshold was 11, not the 7 that Ohio, Indiana and
+  // Georgia use, so it could not have been carried across from them either.
+  //
+  // ONLY THE 2025 TEXT IS SEEDED. Every wv civil row carries
+  // effective_from 2025-01-01, so a period running from an earlier date is
+  // REFUSED rather than computed under a rule whose text was not read here.
+  // See the seed readme for the separate, unmodelled problem that Rule 86 keys
+  // applicability to when the CASE was commenced, not to the trigger date.
+  //
+  // The sub-lettering is real but is NOT the federal lettering: West Virginia
+  // put "exclude the day of the event" in the flush text of (1) and relettered
+  // the federal (B) and (C) as (A) and (B). Citing "(1)(A)-(B)" for the base
+  // period the way frcp_6a does would point at the wrong subparagraphs, so the
+  // base period cites (1) and the forward rollover cites (1)(B).
+  //
+  // BACKWARD COUNTING IS ADDRESSED, unlike in most of this engine's states.
+  // Rule 6(a)(5), verbatim: "The 'next day' is determined by continuing to
+  // count forward when the period is measured after an event and backward when
+  // measured before an event." So the backward suffix is a real citation here.
+  //
+  // NOT MODELLED: Rule 6(a)(3), which extends a filing deadline when the
+  // clerk's office is inaccessible. This engine has no inaccessibility input
+  // and does not guess one. A deadline computed across a closure will be
+  // EARLIER than the true one, which files early.
+  wv_rcp_6a: { label: 'W. Va. R. Civ. P. 6(a)', impl: 'frcp_6a',
+    base_period_suffix: '(1)', months_years_suffix: '(1)',
+    rollover_suffix_forward: '(1)(B)', rollover_suffix_backward: '(5)' },
+  // ── wv_rap_39a: THE APPELLATE RULE, WHICH IS NOT THE SAME RULE ───────────
+  // W. Va. R. App. P. 39(a), verbatim: "In computing any period of time
+  // prescribed by these rules, by an order of the Intermediate Court or the
+  // Supreme Court, or by any applicable statute, the day of the act, event, or
+  // default from which the designated period of time begins to run shall not
+  // be included. The last day of the period shall be included, unless it is a
+  // Saturday, a Sunday, or a legal holiday, in which event the period extends
+  // until the end of the next day which is not a Saturday, a Sunday, or a
+  // legal holiday. When the period of time prescribed or allowed is less than
+  // seven days, intermediate Saturdays, Sundays, and legal holidays shall be
+  // excluded in the computation."
+  //
+  // THE APPELLATE RULE KEPT A SHORT-PERIOD EXCLUSION THAT THE CIVIL RULE
+  // DROPPED, and at a different threshold from the one the civil rule used to
+  // have (7 here, formerly 11 there). Two standards is therefore the only
+  // correct encoding; mapping West Virginia onto one would be wrong for one
+  // half of the state's practice no matter which half was chosen.
+  //
+  // 39(a) is a single unlettered paragraph, so every suffix is blank -- the
+  // same treatment Ohio and Indiana get, and for the same reason.
+  //
+  // BACKWARD IS BLANK ON PURPOSE. 39(a)'s only remedy is that "the period
+  // extends until the end of the next day" -- forward. It does not describe a
+  // backward-counted period and no backward wv row is seeded.
+  //
+  // ── THE HOLIDAY LISTS DIFFER AND ONE CALENDAR CANNOT SERVE BOTH ──────────
+  // 39(a) defines "legal holiday" for itself and expressly names "Juneteenth
+  // Day". R. Civ. P. 6(a)(6) does not, and cannot reach it: 6(a)(6)(C) counts
+  // a day "declared a holiday by the Governor or President of the United
+  // States or any other legal holiday so designated by the West Virginia
+  // Legislature" -- it OMITS CONGRESS, which is what created Juneteenth
+  // National Independence Day, and W. Va. Code 2-2-1(a) does not list it.
+  //
+  // Calendars are keyed by jurisdiction and year only, so the single `wv`
+  // calendar encodes the CIVIL list and omits Juneteenth. The direction of the
+  // resulting error is the reason that is acceptable and the reason the
+  // opposite choice would not be: omitting a day makes an APPELLATE deadline
+  // land one day EARLY, which files early, while adding it would roll CIVIL
+  // deadlines that the civil rule does not roll and report a date LATE. That
+  // is the same rule already stated for the Pennsylvania calendars at the top
+  // of this file. Disclosed on every wv appellate row and in the calendar.
+  // impl is its own string, not Ohio's, even though the two share a seven-day
+  // threshold -- see ohio_civ_r_6a and indiana_tr_6a above on why a shared
+  // threshold is not evidence of a shared rule.
+  wv_rap_39a: { label: 'W. Va. R. App. P. 39(a)', impl: 'wv_rap_39a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
@@ -1002,6 +1102,73 @@ var SERVICE_EXTENSION_STANDARDS = {
         electronic_service: { add: 2, unit: 'court_days' }
       };
       return table[method] || null;
+    }
+  },
+  // ── WEST VIRGINIA: THE RULE'S CROSS-REFERENCE CONTRADICTS ITS OWN
+  //    PARENTHETICAL, AND THIS ENGINE REFUSES RATHER THAN PICKING A SIDE ────
+  // W. Va. R. Civ. P. 6(e), verbatim: "When a party may or shall act within a
+  // specified time after being served and service is made under Rule
+  // 5(b)(2)(C) (mail), (D) (leaving with the clerk), or (F) (other means
+  // consented to), 3 days are added after the period would otherwise expire
+  // under Rule 6(a)."
+  //
+  // But West Virginia's Rule 5(b)(2) is NOT the federal Rule 5(b)(2). It
+  // inserts a state-specific (E) -- "in counties where West Virginia E-Filing
+  // is utilized, by electronic service pursuant to Rule 15 of the West
+  // Virginia Trial Court Rules, or otherwise by ... facsimile" -- which pushes
+  // the federal (E) and (F) down one letter. So, verbatim:
+  //
+  //   5(b)(2)(F)  "sending it by other ELECTRONIC means if the person
+  //                consented in writing"
+  //   5(b)(2)(G)  "delivering it by any OTHER MEANS that the person consented
+  //                to in writing"
+  //
+  // 6(e) points at (F) and then labels it "(other means consented to)", which
+  // is the text of (G). The pointer and the parenthetical name two different
+  // subparagraphs. The cause is visible: 6(e) was carried over from FRCP 6(d),
+  // where (F) really is "other means consented to", and was not renumbered
+  // when (E) was inserted above it.
+  //
+  // THE TWO READINGS GIVE OPPOSITE ANSWERS on the one method that matters.
+  // Read by the pointer, West Virginia adds three days for consented-to
+  // ELECTRONIC service -- which the federal rule deliberately does not, having
+  // removed exactly that extension in 2016. Read by the parenthetical, it adds
+  // three days for non-electronic consented delivery and nothing for
+  // electronic, matching the federal policy.
+  //
+  // BOTH CONTESTED METHODS ARE REFUSED VISIBLY rather than resolved. The usual
+  // tie-break in this engine -- resolve toward the earlier date, because late
+  // is what misses a filing -- would mean adding nothing, and that is exactly
+  // the failure mode this file already fixed once: a silent no-extension is
+  // indistinguishable from "no extension was requested", so the caller never
+  // learns there was a question. mail and left_with_clerk are unaffected; both
+  // readings agree on them, and they are the ordinary cases.
+  //
+  // NOT COVERED AT ALL, IN EITHER READING: service under 5(b)(2)(E), the West
+  // Virginia E-Filing and facsimile subparagraph. 6(e) does not list (E) under
+  // any construction, so e-filed service carries no extension. That is the
+  // available mistake in West Virginia practice for the same reason it is in
+  // New York -- e-service feels like it should behave like mail.
+  wv_rcp_6e: {
+    label: 'W. Va. R. Civ. P. 6(e)',
+    // "3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule
+    // 6(a)" -- the federal order, read before seeding rather than caught by a
+    // failing test. THIS IS A CHANGE: the FORMER rule said "3 days shall be
+    // added TO THE PRESCRIBED PERIOD", the New York and Georgia shape. West
+    // Virginia is the first jurisdiction in this engine whose service-extension
+    // SEQUENCING flipped over time, which is the strongest evidence yet that
+    // the standing habit of reading this wording per jurisdiction is worth
+    // keeping -- here it would also have had to be read per DATE.
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail' || method === 'left_with_clerk';
+    },
+    // Optional, checked BEFORE qualifies. A method listed here is one the rule
+    // text does not resolve, so no date is offered for it in either direction.
+    contested: function (method) {
+      return method === 'other_electronic_means_consented' ||
+             method === 'other_means_consented';
     }
   }
 };
@@ -1783,6 +1950,21 @@ function computeDeadline(input) {
       steps.push({ step: 'service_extension_refused',
         detail: 'Extension under "' + stdKey + '" could not be evaluated: the standard is not implemented. No days were added.',
         authority: null, date: result });
+    } else if (typeof extStd.contested === 'function' && extStd.contested(input.service_method)) {
+      // REFUSED VISIBLY, and reported DISTINCTLY from not_qualifying. The two
+      // mean opposite things: not_qualifying says the rule clearly grants no
+      // extension for this method, while this says the rule's own text does not
+      // settle whether it does. Collapsing the second into the first would
+      // assert settled law that is not settled, and would do it silently.
+      // Today only W. Va. R. Civ. P. 6(e) declares this -- its subparagraph
+      // pointer and its parenthetical name different subparagraphs; see that
+      // standard's note.
+      extension = { state: 'refused_contested_standard', standard: stdKey, days_added: 0,
+        detail: 'Whether ' + extLabel + ' extends for service by ' + String(input.service_method).replace(/_/g, ' ') +
+          ' is not resolved by the rule\'s own text, so no days were added and no date is offered for this method. The deadline below is computed WITHOUT an extension and may therefore be EARLIER than the true one. Resolve the extension by hand before relying on it.' };
+      steps.push({ step: 'service_extension_refused',
+        detail: 'The rule text does not settle whether this service method extends the period. No days were added.',
+        authority: extLabel, date: result });
     } else if (!extStd.qualifies(input.service_method)) {
       extension = { state: 'not_qualifying', standard: stdKey, days_added: 0,
         detail: 'Service by ' + String(input.service_method).replace(/_/g, ' ') + ' does not qualify for an extension under ' + extLabel + ' (' + extStd.shape.replace(/_/g, ' ') + ').' };
