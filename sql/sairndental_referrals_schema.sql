@@ -22,4 +22,14 @@ create index if not exists idx_dntrf_license on public.dnt_referrals(license_has
 alter table public.dnt_referrals enable row level security;
 drop policy if exists "svc only dnt_referrals" on public.dnt_referrals;
 create policy "svc only dnt_referrals" on public.dnt_referrals for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
-grant select, insert, update, delete on public.dnt_referrals to service_role;
+-- DELETE removed 2026-08-25. This table is NOT YET PROVISIONED -- it does not
+-- exist in production, so it was outside sql/unused_delete_grant_revoke
+-- _2026-08-24.sql's live sweep of 134 tables. The grant is fixed here anyway,
+-- BEFORE the migration runs, so the table arrives clean instead of
+-- reintroducing on day one exactly what that sweep removed platform-wide.
+-- No delete path exists: api/sd-data.js's DNT_RESOURCES block handles only
+-- 'read' and 'write' (:4854, :4862), and sairndental.html has add and
+-- status-update paths only. The platform's ONLY reachable delete is
+-- api/sd-data.js's SC_RESOURCES (SAIRNcode) branch -- do NOT re-add `delete`
+-- here when fixing a missing grant.
+grant select, insert, update on public.dnt_referrals to service_role;

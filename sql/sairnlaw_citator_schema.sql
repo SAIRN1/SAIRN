@@ -187,9 +187,15 @@ create policy "svc only cl_rate_limit_log" on public.cl_rate_limit_log
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
 grant usage on schema public to service_role;
-grant select, insert, update, delete on public.cl_case_cache        to service_role;
-grant select, insert, update, delete on public.cl_court_cache       to service_role;
-grant select, insert, update, delete on public.cl_citing_treatments to service_role;
-grant select, insert, update, delete on public.cl_coverage          to service_role;
-grant select, insert, update, delete on public.cl_feedback_log      to service_role;
-grant select, insert, update, delete on public.cl_rate_limit_log    to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert, update on public.cl_case_cache        to service_role;
+grant select, insert, update on public.cl_court_cache       to service_role;
+grant select, insert, update on public.cl_citing_treatments to service_role;
+grant select, insert, update on public.cl_coverage          to service_role;
+grant select, insert, update on public.cl_feedback_log      to service_role;
+grant select, insert, update on public.cl_rate_limit_log    to service_role;

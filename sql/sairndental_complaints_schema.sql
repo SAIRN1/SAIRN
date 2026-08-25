@@ -25,4 +25,10 @@ create index if not exists idx_dntcp_token on public.dnt_complaints(access_token
 alter table public.dnt_complaints enable row level security;
 drop policy if exists "svc only dnt_complaints" on public.dnt_complaints;
 create policy "svc only dnt_complaints" on public.dnt_complaints for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
-grant select, insert, update, delete on public.dnt_complaints to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert, update on public.dnt_complaints to service_role;

@@ -39,10 +39,21 @@
 --            which expressly permits commercial use and incorporation into a
 --            product. NOTE: bulk "computational analysis" needs a separate
 --            licence, so this integration is on-demand lookup only.
---   Canada   CanLII official REST API at api.canlii.org/v1 with a free key.
---            CanLII prohibits scraping -- the keyed API is the sanctioned
---            route, a distinction underlined by CanLII's own Nov-2024 claim
---            against an AI legal-research platform for systematic scraping.
+--
+-- CANADA WAS COVERED AND IS NO LONGER. Removed here 2026-08-25, and the
+-- reason is a SCOPE decision, never a terms problem: CanLII's keyed REST API
+-- was the sanctioned route and the implementation was correct. The feature
+-- was deleted in b747ecb (live-verified), no CANLII_API_KEY was ever
+-- provisioned, and Michael DROPPED public.canlii_rate_limit_log on
+-- 2026-08-24. Its `create table if not exists`, index, RLS policy, grants
+-- and verification line lived in this file until now -- meaning any routine
+-- re-run of this schema would have RESURRECTED a deliberately dropped table.
+-- That is why the table definition is gone rather than merely its grant.
+-- api/_lib/intl-caselaw.js carries the full reasoning; the only remaining
+-- CanLII references anywhere on the platform are explanatory comments in
+-- that file, api/legal-citator.js and api/legal-reference.js -- confirmed by
+-- grep, no live code path. If Canada is ever restored, re-read CanLII's
+-- CURRENT API terms rather than reinstating this from history.
 
 -- ── Phase A: Wex crawl-delay ledger ──────────────────────────────────────
 create table if not exists public.wex_rate_limit_log (
@@ -61,38 +72,32 @@ create table if not exists public.fcl_rate_limit_log (
 );
 create index if not exists idx_fclratelimit_time on public.fcl_rate_limit_log(requested_at);
 
-create table if not exists public.canlii_rate_limit_log (
-  id           bigserial primary key,
-  requested_at timestamptz not null default now()
-);
-create index if not exists idx_canliiratelimit_time on public.canlii_rate_limit_log(requested_at);
 
 -- ── RLS: service-role only, same posture as every other SAIRNlaw table ───
 alter table public.wex_rate_limit_log    enable row level security;
 alter table public.fcl_rate_limit_log    enable row level security;
-alter table public.canlii_rate_limit_log enable row level security;
 
 drop policy if exists "svc only wex_rate_limit_log"    on public.wex_rate_limit_log;
 drop policy if exists "svc only fcl_rate_limit_log"    on public.fcl_rate_limit_log;
-drop policy if exists "svc only canlii_rate_limit_log" on public.canlii_rate_limit_log;
 
 create policy "svc only wex_rate_limit_log"    on public.wex_rate_limit_log    for all using (false) with check (false);
 create policy "svc only fcl_rate_limit_log"    on public.fcl_rate_limit_log    for all using (false) with check (false);
-create policy "svc only canlii_rate_limit_log" on public.canlii_rate_limit_log for all using (false) with check (false);
 
-grant select, insert, delete on public.wex_rate_limit_log    to service_role;
-grant select, insert, delete on public.fcl_rate_limit_log    to service_role;
-grant select, insert, delete on public.canlii_rate_limit_log to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert on public.wex_rate_limit_log    to service_role;
+grant select, insert on public.fcl_rate_limit_log    to service_role;
 grant usage, select on sequence public.wex_rate_limit_log_id_seq    to service_role;
 grant usage, select on sequence public.fcl_rate_limit_log_id_seq    to service_role;
-grant usage, select on sequence public.canlii_rate_limit_log_id_seq to service_role;
 
 revoke all on public.wex_rate_limit_log    from anon, authenticated;
 revoke all on public.fcl_rate_limit_log    from anon, authenticated;
-revoke all on public.canlii_rate_limit_log from anon, authenticated;
 
 -- Verify after running (expect 0, 0, 0 and no error):
 --   select
---     (select count(*) from wex_rate_limit_log)    as wex,
---     (select count(*) from fcl_rate_limit_log)    as fcl,
---     (select count(*) from canlii_rate_limit_log) as canlii;
+--     (select count(*) from wex_rate_limit_log) as wex,
+--     (select count(*) from fcl_rate_limit_log) as fcl;

@@ -368,21 +368,27 @@ create policy "svc only sdn_roomdims" on public.sdn_roomdims
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
 grant usage on schema public to service_role;
-grant select, insert, update, delete on public.sdn_clients        to service_role;
-grant select, insert, update, delete on public.sdn_projects       to service_role;
-grant select, insert, update, delete on public.sdn_specitems      to service_role;
-grant select, insert, update, delete on public.sdn_proposals      to service_role;
-grant select, insert, update, delete on public.sdn_vendors        to service_role;
-grant select, insert, update, delete on public.sdn_samplerequests to service_role;
-grant select, insert, update, delete on public.sdn_team           to service_role;
-grant select, insert, update, delete on public.sdn_moodboards     to service_role;
-grant select, insert, update, delete on public.sdn_colorcodes     to service_role;
-grant select, insert, update, delete on public.sdn_pos            to service_role;
-grant select, insert, update, delete on public.sdn_invoices       to service_role;
-grant select, insert, update, delete on public.sdn_timeentries    to service_role;
-grant select, insert, update, delete on public.sdn_schedule       to service_role;
-grant select, insert, update, delete on public.sdn_samples        to service_role;
-grant select, insert, update, delete on public.sdn_contracts      to service_role;
-grant select, insert, update, delete on public.sdn_referrals      to service_role;
-grant select, insert, update, delete on public.sdn_discounts      to service_role;
-grant select, insert, update, delete on public.sdn_roomdims       to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert, update on public.sdn_clients        to service_role;
+grant select, insert, update on public.sdn_projects       to service_role;
+grant select, insert, update on public.sdn_specitems      to service_role;
+grant select, insert, update on public.sdn_proposals      to service_role;
+grant select, insert, update on public.sdn_vendors        to service_role;
+grant select, insert, update on public.sdn_samplerequests to service_role;
+grant select, insert, update on public.sdn_team           to service_role;
+grant select, insert, update on public.sdn_moodboards     to service_role;
+grant select, insert, update on public.sdn_colorcodes     to service_role;
+grant select, insert, update on public.sdn_pos            to service_role;
+grant select, insert, update on public.sdn_invoices       to service_role;
+grant select, insert, update on public.sdn_timeentries    to service_role;
+grant select, insert, update on public.sdn_schedule       to service_role;
+grant select, insert, update on public.sdn_samples        to service_role;
+grant select, insert, update on public.sdn_contracts      to service_role;
+grant select, insert, update on public.sdn_referrals      to service_role;
+grant select, insert, update on public.sdn_discounts      to service_role;
+grant select, insert, update on public.sdn_roomdims       to service_role;
