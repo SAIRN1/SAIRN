@@ -884,6 +884,52 @@ var COMPUTATION_STANDARDS = {
   wa_cr_6a: { label: 'Wash. Super. Ct. Civ. R. 6(a)', impl: 'wa_cr_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── NEW JERSEY: R. 1:3-1 ────────────────────────────────────────────────
+  // Verbatim: "In computing any period of time fixed by rule or court order,
+  // the day of the act or event from which the designated period begins to run
+  // is not to be included. The last day of the period so computed is to be
+  // included, unless it is a Saturday, Sunday or legal holiday, in which event
+  // the period runs until the end of the next day which is neither a Saturday,
+  // Sunday nor legal holiday. In computing a period of time of less than 7
+  // days, Saturday, Sunday and legal holidays shall be excluded."
+  //
+  // SHORT-PERIOD EXCLUSION IS 7, from "less than 7 days" -- New Jersey's own
+  // number, read here rather than carried across from the five other states
+  // that share it. Note the wording omits "intermediate", which every other
+  // such rule includes; nothing in this engine turns on that, because the
+  // exclusion only ever applies to days between the trigger and the end, but
+  // it is recorded so a future reader does not think a word was dropped.
+  //
+  // "FIXED BY RULE OR COURT ORDER" -- AND NOT BY STATUTE. Every comparable rule
+  // seeded so far reaches statutory periods too: Washington's CR 6(a) covers
+  // time prescribed "by any applicable statute", North Carolina's Rule 6(a)
+  // says "or by any applicable statute", West Virginia's says the same. New
+  // Jersey's does not. A New Jersey deadline fixed by STATUTE rather than by
+  // these rules is therefore outside R. 1:3-1's own terms, and no such row is
+  // seeded. If one is ever added, do not assume this standard governs it.
+  //
+  // BACKWARD IS BLANK, AND NO BACKWARD ROW IS SEEDED. The rule provides only
+  // that "the period runs until the end of the next day" -- forward -- and says
+  // nothing about a period counted before an event. Same call as ny_gcl_20,
+  // nc_rcp_6a and wa_cr_6a; the three jurisdictions that DO define it disagree
+  // (W. Va. and Florida roll backward, KRS 446.030(1)(b) rolls forward).
+  //
+  // R. 1:3-1 is a single unnumbered paragraph, so every suffix is blank.
+  //
+  // ── ITS HOLIDAY LIST COMES FROM A COURT ORDER, NOT A STATUTE ────────────
+  // R. 1:3-1 says "legal holiday" and names nothing, which puts New Jersey with
+  // Texas, Kentucky and Arizona rather than with Washington. What saves it is
+  // that the Supreme Court of New Jersey ISSUES AN ORDER each court year
+  // designating the legal holidays by date, so an authoritative list exists
+  // even though the rule does not point at one. N.J.S.A. 36:1-1 is NOT that
+  // list and must not be used -- it is a negotiable-instruments statute, it
+  // makes every Saturday a public holiday, and its subsection (d) expressly
+  // removes Lincoln's Birthday while subsection (a) still lists it. See the
+  // calendar readme.
+  nj_r_1_3_1: { label: 'N.J. Ct. R. 1:3-1', impl: 'nj_r_1_3_1',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
@@ -1394,6 +1440,41 @@ var SERVICE_EXTENSION_STANDARDS = {
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── NEW JERSEY: FIVE DAYS, AND ORDINARY MAIL IS NOT "MAIL" ──────────────
+  // R. 1:3-3, verbatim: "When service of a notice or paper is made by ordinary
+  // mail, and a rule or court order allows the party served a period of time
+  // after the service thereof within which to take some action, 5 days shall be
+  // added to the period." Amended February 8, 2022, effective April 1, 2022.
+  //
+  // FIVE DAYS, NOT THREE. Only Florida's 2.514(b) and Arizona's Rule 6(c)
+  // (unseeded) also add five; the federal rule, West Virginia, North Carolina,
+  // Washington, Georgia and Texas all add three, and New York and California
+  // vary by method. There is no default to fall back on, which is why every
+  // jurisdiction's amount is read rather than inherited.
+  //
+  // "ADDED TO THE PERIOD" -- period-lengthening, one rollover at the end.
+  //
+  // THE QUALIFYING METHOD IS ordinary_mail AND DELIBERATELY NOT mail. This is
+  // the narrowest allowlist in the engine and the name carries the reason.
+  // R. 1:5-2 authorises, for service on a party, "registered or certified mail,
+  // return receipt requested, and simultaneously by ordinary mail", and for
+  // service on an attorney, ordinary mail, email to an address listed on an
+  // approved electronic court system, handing it over, or leaving it at the
+  // office. Only the ordinary-mail limb extends. Accepting a bare "mail" here
+  // would silently add five days to a certified-mail service that R. 1:3-3 does
+  // not obviously reach; refusing it produces a visible not_qualifying instead,
+  // which is the behaviour this engine already chose when it stopped letting a
+  // silent no-extension look like "none requested".
+  //
+  // WHAT THIS DOES NOT REACH: the summons and complaint, served under R. 4:4-4
+  // rather than by ordinary mail under R. 1:5-2. Same scope route as West
+  // Virginia, North Carolina and Washington.
+  nj_r_1_3_3: {
+    label: 'N.J. Ct. R. 1:3-3',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'ordinary_mail'; }
   }
 };
 
