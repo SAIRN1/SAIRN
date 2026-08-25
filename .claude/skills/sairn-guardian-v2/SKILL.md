@@ -10,7 +10,15 @@ Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automa
 ## The 30 Checks
 
 ### Architecture (5)
-1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly
+1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly.
+   **FALSE-POSITIVE WARNING, added 2026-08-25.** The mechanical form of this
+   check (`grep -n "api.anthropic.com"` … "should be 0 results") is wrong as
+   written and was firing on clean code. In stonedesk.html the 2 hits are a
+   **guard** (`if (url.includes('api.anthropic.com'))`) and a comment — i.e.
+   the enforcement of this rule, not a violation of it. **Read every hit before
+   calling it a failure.** A hit is a real violation only if it is the URL an
+   actual request is sent to (`fetch`/`XMLHttpRequest`/axios target, or a
+   base-URL constant). Guards, comments, and error strings pass.
 2. **Bridge rule — CORRECTED 2026-08-24. "The SAIRN Bridge" means TWO
    DIFFERENT THINGS in this codebase, and this rule named the wrong one.**
    Before citing "the Bridge" anywhere, say which:
@@ -53,7 +61,13 @@ Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automa
 5. **No service_role key** — Supabase anon key only in browser code
 
 ### JavaScript Safety (6)
-6. **No Unicode box-drawing chars** — no ─ │ ╔ ═ └ in JS strings (breaks silently)
+6. **No Unicode box-drawing chars** — no ─ │ ╔ ═ └ in JS strings (breaks silently).
+   **FALSE-POSITIVE WARNING, added 2026-08-25.** The rule says *in JS strings*
+   but the mechanical scan below greps the **whole file**, so it fires on
+   comments and HTML text too. In stonedesk.html all 4 U+2500 hits are in
+   comments, and Check 0a parses 128/128 blocks clean — proof they do not break
+   anything. **A hit is a failure only if the character sits inside a JS string
+   literal.** If 0a passes, a box-char hit in a comment is not a finding.
 7. **Regex newlines escaped** — all \n in regex are \\n not literal newlines
 8. **No duplicate IDs** — each HTML id= appears exactly once
 9. **No undefined functions called** — every onclick/onchange function is defined
@@ -510,7 +524,10 @@ listing (`/repos/SAIRN1/SAIRN/contents/` on the parent dir) before trusting the 
 
 ```bash
 # Run checks
-grep -n "api.anthropic.com" file.html          # Check 1 — should be 0 results
+grep -n "api.anthropic.com" file.html          # Check 1 — READ EVERY HIT, do not
+                                               # assume 0. Guards (if url.includes(...))
+                                               # and comments are the rule being enforced,
+                                               # not broken. Fail only on a real request target.
 grep -n "app_id" file.html | wc -l             # Check 3 — should be >0
 grep -n "is_demo" file.html | wc -l            # Check 4 — should be >0
 grep -n "service_role" file.html               # Check 5 — should be 0 results
@@ -522,7 +539,10 @@ box_chars = '─│╔╗╚╝═║╠╣╦╩╬'
 for ch in box_chars:
     if ch in content:
         lines = [i+1 for i,l in enumerate(content.split('\n')) if ch in l]
-        print(f'FAIL: Unicode box char {repr(ch)} found at lines {lines[:5]}')
+        # REVIEW, not FAIL — this greps the whole file but Check 6 is about JS
+        # STRINGS. Open each line: only a box char inside a string literal fails.
+        # In comments/HTML text it is fine, and a passing Check 0a proves it parses.
+        print(f'REVIEW: Unicode box char {repr(ch)} found at lines {lines[:5]}')
 # Check duplicate IDs
 ids = re.findall(r'id=[\"\\']([^\"\\']+)[\"\\']', content)
 from collections import Counter
