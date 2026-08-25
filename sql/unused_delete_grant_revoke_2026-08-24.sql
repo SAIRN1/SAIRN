@@ -27,29 +27,27 @@
 -- any sibling clone (SAIRN-cc dd5327b) adds documentation and zero tables.
 -- New tables account for approximately none of the 57.
 --
--- WHERE THE 135 COMES FROM, parsed from every grant line in sql/*.sql:
+-- WHERE THE 135 COMES FROM -- predicted from repo grant lines, then
+-- CHECKED against Section 1's real output on 2026-08-25:
 --   131  non-sc_* tables this repo grants anything on to service_role
 --    83    of those carry an explicit `grant ... delete` line  <- the
 --          original count, i.e. it counted GRANT LINES IN THIS REPO and
---          reported them as live rows
---    48    of those are granted only SELECT/INSERT/UPDATE here -- of which
---          10 explicitly REVOKE delete (or revoke all first) and are
---          confirmed clean, leaving 38 real candidates. See the audit-log
---          section below for why that number moved.
---   + ~4  real tables with NO tracked CREATE TABLE in this repo at all
---          (license_keys, ai_memories, bridge_data, sairn_agents,
---          sairn_agent_commands -- see the truncate sweep's findings 3+4)
---   = 135, which matches the live count almost exactly.
+--          reported them as live rows. scp_employee_auth is one of these.
+--    48    of those are granted only SELECT/INSERT/UPDATE here -- 10 of
+--          which explicitly REVOKE delete, leaving 38 candidates.
+--          *** ALL 38 CAME BACK CLEAN. Zero hold DELETE. ***
+--   ~52  the real remainder: tables with NO grant-delete line in this repo
+--          at all, consistent with 227 live tables vs 131 granted here.
+--          This is where the 57-table gap actually lived -- untracked
+--          schema, not a default privilege.
 --
--- THE CONSEQUENCE, and the thing to look at in Section 1's real output:
--- if those 48 do hold DELETE, the grant is NOT coming from this repo's
--- schema files for most tables -- it is arriving by default privilege,
--- the same mechanism already confirmed live via pg_default_acl for
--- TRUNCATE/REFERENCES/TRIGGER/MAINTAIN in sql/append_only_grant_audit.sql.
--- That does not change what Section 2 does (it is list-free and acts on
--- whatever is live), but it does change what "fixed" means: revoking
--- without also fixing the default privilege leaves every FUTURE table
--- arriving with DELETE again.
+-- MY FIRST EXPLANATION WAS WRONG AND IS RECORDED AS WRONG: I predicted the
+-- 48 (later 38) would be "granted only SELECT/INSERT/UPDATE here yet hold
+-- DELETE live anyway", and proposed that as evidence the grant arrives by
+-- default privilege. The live result is the exact opposite. The arithmetic
+-- 83 + 48 + 4 = 135 fitted well enough to look like confirmation and was
+-- coincidence. Flagged as unverified at the time, which is the only reason
+-- it did not become a fact in this file.
 --
 -- ── AUDIT-LOG CHECK CAME BACK CLEAN, AND MY TEST WAS A BAD TEST ──────────
 -- Confirmed live 2026-08-25: sairncode_audit_log, stonedesk_audit_log and
@@ -75,12 +73,74 @@
 -- (3), the eight *_employee_auth tables, bld_bids, bld_tna_assessments,
 -- dnt_cred_rules, dnt_credentials, sairncash_trial, sairncash_waitlist,
 -- sairnscape_org_intel, sd_render_usage, sd_shared_knowledge -- are the
--- real discriminator. If they hold DELETE live, something grants it beyond
--- this repo's lines. If they do NOT, the 135 is 83 explicit grants plus
--- ~52 tables with no tracked schema at all (227 live tables vs 131 this
--- repo grants), and the default-ACL question below is moot.
+-- real discriminator. RESOLVED BELOW: they came back clean, so the second
+-- branch is what happened -- the 135 is 83 explicit grants plus ~52 tables
+-- with no tracked schema, and the default-ACL question is moot.
 --
--- ── DOES THE DEFAULT-ACL FIX NEED WIDENING TO INCLUDE DELETE? PROBABLY NOT ─
+-- ── SECTION 1 RAN 2026-08-25. 135 ROWS. RESULT: 0 OF THE 38 HOLD DELETE ──
+-- The candidate hypothesis is DEAD, and cleanly so. All 38 tables that are
+-- granted SELECT/INSERT/UPDATE with no delete granted and no revoke
+-- protecting them came back CLEAN. Nothing is arriving by default.
+--
+-- ONE CORRECTION TO HOW THIS WAS REPORTED BACK: the single table found
+-- holding DELETE, scp_employee_auth, was NOT one of the 38. It was in the
+-- 83 -- the set with an EXPLICIT `grant ... delete` line in this repo. So
+-- the score is 0 of 38, not 1 of 38, which makes the result stronger, not
+-- weaker: no unprotected table anywhere acquired DELETE without being
+-- explicitly granted it.
+--
+-- ── WHY scp_employee_auth DIFFERS FROM THE OTHER SEVEN: IT JUST SAYS SO ──
+-- Not a missing revoke, not grant order, not a stray `grant all`, and not
+-- a fix applied to the others but never to it. sql/scp_employee_auth_schema.sql:47
+-- literally reads:
+--     grant select, insert, update, delete on scp_employee_auth to service_role;
+-- It is the ONLY *_employee_auth file on the platform whose grant line
+-- contains `delete` -- confirmed by
+-- `grep -niE "^\s*grant[^;]*delete[^;]*employee_auth" sql/*.sql`, one hit.
+-- Every sibling (sb_, sairncode_, sairnlaw_, sairnbuild_, sairncare_,
+-- sairndesign_, sairnlegacy_, sairnsenior_) grants `select, insert, update`
+-- and stops.
+--
+-- The file's own header says why, and the reason is an OVERCORRECTION, not
+-- an oversight: "GRANT statements included explicitly this session
+-- (2026-08-06) -- a known recurring gap flagged after the SAIRNgrounds
+-- license-row issue. service_role bypasses RLS by default in Supabase, but
+-- being explicit here removes any ambiguity rather than relying on that
+-- default silently." The author was fixing a pattern of MISSING grants and,
+-- being explicit, wrote the full CRUD verb list instead of the verbs the
+-- app actually uses. SAIRNscape has no delete path -- the platform's only
+-- DELETE is the SAIRNcode branch -- so it has never been used.
+--
+-- That makes it exactly what this sweep is for, and it should still be
+-- revoked. Root cause understood, not revoked blind.
+--
+-- ── WHAT THE REMAINING ~52 ROWS ARE ──────────────────────────────────────
+-- 135 live, minus the 83 with an explicit repo grant-delete line, leaves
+-- ~52 unaccounted for by any grant line in sql/*.sql. That is the
+-- untracked-schema bucket, and it is consistent in size with the gap
+-- already known: 227 live tables against 131 this repo grants anything on.
+-- Some of the 83 may also never have been run (commit 6776f99 found two
+-- audited tables that do not exist), so ~52 is a floor, not a fixed number.
+-- EXACT BUCKETING NEEDS THE 135-ROW LIST ITSELF, which this session has not
+-- seen -- only the 38-candidate verdict was reported back. Section 2 acts
+-- correctly on all of them regardless, since it is list-free and preserves
+-- whatever SELECT/INSERT/UPDATE each table already holds.
+--
+-- ── DOES THE DEFAULT-ACL FIX NEED WIDENING TO INCLUDE DELETE? NO ─────────
+-- ANSWERED 2026-08-25 by the result above, ahead of the pg_default_acl
+-- query: 37 of 38 -- now 38 of 38 -- tables with NO revoke protecting them
+-- hold no DELETE. If any default privilege granted DELETE, those tables
+-- would have it. They do not. Widening Section 4 of
+-- sql/append_only_grant_audit.sql to include `delete` would be a no-op that
+-- reads like a fix. DO NOT WIDEN IT.
+--
+-- The pg_default_acl query (every row, not just postgres's) is still worth
+-- running, but it is now CONFIRMATORY rather than decisive. If it somehow
+-- shows a second defaclrole granting DELETE, that would CONTRADICT the live
+-- table evidence and the contradiction itself would be the finding -- do
+-- not quietly reconcile it in favour of either side.
+--
+-- ── SUPERSEDED REASONING, KEPT SO IT IS NOT RE-DERIVED ───────────────────
 -- sql/append_only_grant_audit.sql Section 4 revokes only
 -- `truncate, references, trigger, maintain` from the default privileges,
 -- not delete. Whether that needs widening depends entirely on the answer
@@ -95,17 +155,14 @@
 --     delete grant, no revoke, and no DELETE. Exactly what the "default
 --     privilege is not the source" answer predicts.
 --
--- CHEAPEST WAY TO SETTLE IT, two queries, before touching Section 4:
---   1. Re-run append_only_grant_audit.sql Section 1a and read EVERY row,
---      not just the postgres one. A second defaclrole (supabase_admin) with
---      a broader grant is the only way DELETE arrives by default.
---   2. Re-run its Section 1b against dnt_credentials and confirm del=f.
--- If 1a shows no DELETE and 1b reads del=f, do NOT widen Section 4 --
--- widening it would be a no-op change that looks like a fix.
+-- Both bullets above turned out to be right, and Section 1's real output
+-- settled it directly rather than by inference. dnt_credentials was one of
+-- the 38 and came back clean, matching its recorded `del=f`.
 --
--- UNVERIFIED, STATED PLAINLY: this session has no database access and did
--- not see the live list. The 38 are a named candidate set derived from repo
--- grant lines, not a confirmed subset of the 135.
+-- STATUS OF THIS BLOCK: superseded, not wrong. Kept because the reasoning
+-- is what made the 38 the right thing to ask about, and because a later
+-- session finding the pg_default_acl output should know this question was
+-- already answered from the table side first.
 --
 -- ── WHY ───────────────────────────────────────────────────────────────────
 -- Exactly ONE piece of code in the entire repo issues a DELETE:
@@ -276,6 +333,14 @@ order by t.table_name;
 --   service_role. Those roles are locked out by RLS on these tables, but
 --   their grants were not audited here.
 -- * Schemas other than public.
+-- * THE SOURCE LINE IN scp_employee_auth's OWN SCHEMA FILE. Section 2
+--   revokes the live grant, but sql/scp_employee_auth_schema.sql:47 still
+--   reads `grant select, insert, update, delete ...`. That file is
+--   `create table if not exists` and safe to re-run, so re-running it after
+--   this sweep would put DELETE straight back. Fix the line to
+--   `grant select, insert, update` to match its eight siblings. Not done
+--   here because this file is a grant sweep, not a schema edit, and the two
+--   should not land in one commit.
 -- * The DEFAULT PRIVILEGES that made this recur -- a new table created by a
 --   schema file that copies the usual `grant select, insert, update, delete`
 --   line will reintroduce a DELETE grant. The durable fix is to stop writing
