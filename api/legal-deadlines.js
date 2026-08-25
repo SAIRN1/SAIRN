@@ -34,7 +34,7 @@ const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
 const JURISDICTION_LABELS = {
   'us-federal': 'United States (Federal)',
   oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania', il: 'Illinois', fl: 'Florida', ca: 'California',
-  tx: 'Texas', ny: 'New York', ga: 'Georgia', wv: 'West Virginia'
+  tx: 'Texas', ny: 'New York', ga: 'Georgia', wv: 'West Virginia', nc: 'North Carolina'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

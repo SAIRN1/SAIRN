@@ -1,0 +1,225 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- North Carolina holiday calendars. Loaded through",
+    "add_holidays alongside sql/sairnlaw_deadline_seed_northcarolina.json.",
+    "",
+    "== THIS CALENDAR IS A COURT CLOSURE SCHEDULE, NOT A HOLIDAY STATUTE, AND THAT",
+    "   IS WHAT THE RULE ASKS FOR ==========================================",
+    "READ THIS BEFORE 'FIXING' ANY ENTRY AGAINST G.S. 103-4. N.C. R. Civ. P. 6(a)",
+    "-- G.S. 1A-1, Rule 6(a) -- rolls a last day off \"a Saturday, Sunday or a legal",
+    "holiday WHEN THE COURTHOUSE IS CLOSED FOR TRANSACTIONS\". It never cites",
+    "G.S. 103-4 and the qualifier is not decoration: it makes actual closure the",
+    "test. So the operative source is the Judicial Branch's published closure",
+    "schedule, read from nccourts.gov/holiday-schedule on 2026-08-25, and NOT the",
+    "statutory list.",
+    "",
+    "THE TWO LISTS ARE VERY DIFFERENT AND THE STATUTE IS THE DANGEROUS ONE.",
+    "G.S. 103-4(a) declares as legal public holidays, among others: Robert E. Lee's",
+    "Birthday (19 January), Greek Independence Day (25 March), the anniversary of",
+    "the Halifax Resolves (12 April), Confederate Memorial Day (10 May), the",
+    "anniversary of the Mecklenburg Declaration (20 May), Washington's Birthday",
+    "(third Monday in February), First Responders Day (11 September), Columbus Day",
+    "(second Monday in October), Yom Kippur, and the Tuesday after the first Monday",
+    "in November in general election years. THE JUDICIAL BRANCH CLOSES FOR NONE OF",
+    "THEM. Encoding G.S. 103-4 would add roughly nine holidays a year that no",
+    "courthouse observes, and every one of them would roll a deadline LATER than the",
+    "true date -- the direction that misses a filing.",
+    "",
+    "NOTE THIS INVERTS THE STANDING GUIDANCE IN api/_lib/deadline-engine.js. That",
+    "note, written for Pennsylvania, says to encode the statute and disclose the",
+    "divergence when a published closure schedule is broader than the statutory",
+    "list. Pennsylvania's rule tests whether a day is \"made a legal holiday by the",
+    "laws of this Commonwealth\" -- a statutory test -- so encoding the statute is",
+    "right THERE. North Carolina's rule tests closure, so encoding the statute is",
+    "wrong HERE. The guidance is conditional on the rule's own test, and the engine",
+    "note has been amended to say so.",
+    "",
+    "== COVERAGE IS 2026-2027 ONLY, AND THAT IS A PROPERTY OF THE SOURCE =========",
+    "Every other jurisdiction in this engine carries 2026-2031. The NCAOC publishes",
+    "dated closure schedules roughly two years forward, and 2028 was not published",
+    "as of 2026-08-25. A North Carolina computation that crosses into 2028 REFUSES",
+    "with NOT_PROVISIONED rather than being computed against a year that is not",
+    "known. THIS CALENDAR NEEDS RE-RUNNING EACH YEAR as NCAOC publishes, which is",
+    "not true of any other jurisdiction here.",
+    "",
+    "DO NOT EXTEND IT BY COMPUTATION. The Christmas and Thanksgiving blocks are",
+    "administrative allocations, not derivable from any rule: Christmas is THREE",
+    "days (2026: 24, 25 and 28 December; 2027: 23, 24 and 27 December) and",
+    "Thanksgiving is TWO. Nothing in G.S. 103-4 or in Rule 6 produces those dates.",
+    "A generated North Carolina calendar would be wrong, and it would be wrong in",
+    "both directions at once.",
+    "",
+    "== ONE KNOWN GAP AT THE 2027 YEAR BOUNDARY, AND IT FAILS EARLY =============",
+    "1 January 2028 is a Saturday. On the Judicial Branch's own stated convention --",
+    "\"When a designated holiday falls on Saturday, the preceding Friday will be",
+    "observed\" -- New Year's Day 2028 would be observed on Friday 31 December 2027,",
+    "a date belonging to this 2027 calendar. It is NOT included, because the 2028",
+    "schedule that would establish it has not been published and inventing it would",
+    "be encoding a prediction. Consequence: a deadline landing on 31 December 2027",
+    "does not roll and is computed EARLIER than it may truly be, which files early.",
+    "Add it when NCAOC publishes 2028.",
+    "",
+    "== NOT MODELLED ===========================================================",
+    "Rule 6(a) says \"the courthouse\", singular, and North Carolina's trial courts",
+    "sit county by county. A county courthouse closed for weather, a local",
+    "emergency or a county-specific event is closed for transactions and its",
+    "closure is a Rule 6(a) holiday for that court. None of that is enumerable in",
+    "advance and none of it is below. This is the same treatment already given to",
+    "Michigan, whose MCR 8.110(D)(2)(c) expressly permits local administrative",
+    "orders modifying the schedule. A deadline computed across a local closure is",
+    "EARLY, never late.",
+    "",
+    "Rule 6(a) also provides that \"A half holiday shall be considered as other days",
+    "and not as a holiday.\" No half holiday appears below, by that instruction."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "nc",
+      "year": 2026,
+      "authority": {
+        "citation": "North Carolina Judicial Branch published holiday schedule, as the closure test in N.C. R. Civ. P. 6(a) (G.S. 1A-1, Rule 6(a)) requires",
+        "url": "https://www.nccourts.gov/holiday-schedule",
+        "computation_url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_6.html",
+        "statute_not_used_url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_103/GS_103-4.html",
+        "note": "Read 2026-08-25 from the North Carolina Judicial Branch's published holiday schedule at nccourts.gov/holiday-schedule. THIS IS A CLOSURE SCHEDULE, NOT G.S. 103-4, because N.C. R. Civ. P. 6(a) rolls off \"a legal holiday when the courthouse is closed for transactions\" -- closure is the rule's own test and the statute is never cited. G.S. 103-4 lists roughly nine further days (Robert E. Lee's Birthday, Greek Independence Day, Halifax Resolves, Confederate Memorial Day, Mecklenburg Declaration, Washington's Birthday, First Responders Day, Columbus Day, Yom Kippur, general election day) for which the Judicial Branch does NOT close; encoding them would push deadlines LATE. Twelve days a year, with Thanksgiving at two days and Christmas at three, both allocated administratively and NOT derivable from any rule. Weekend convention per the Judicial Branch: Saturday -> preceding Friday, Sunday -> following Monday. County-level closures (weather, local emergency) are Rule 6(a) holidays for that courthouse and are not enumerable; a deadline computed across one is EARLY, never late. The page is JavaScript-rendered and refuses plain automated fetches, so it was read in a real browser.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-04-03",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day (observed; 4 July 2026 is a Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving (day 1 of 2)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-27",
+          "name": "Thanksgiving (day 2 of 2)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-24",
+          "name": "Christmas (day 1 of 3)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas (day 2 of 3)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-28",
+          "name": "Christmas (day 3 of 3)",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "nc",
+      "year": 2027,
+      "authority": {
+        "citation": "North Carolina Judicial Branch published holiday schedule, as the closure test in N.C. R. Civ. P. 6(a) (G.S. 1A-1, Rule 6(a)) requires",
+        "url": "https://www.nccourts.gov/holiday-schedule",
+        "computation_url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_6.html",
+        "statute_not_used_url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_103/GS_103-4.html",
+        "note": "Read 2026-08-25 from the North Carolina Judicial Branch's published holiday schedule at nccourts.gov/holiday-schedule. THIS IS A CLOSURE SCHEDULE, NOT G.S. 103-4, because N.C. R. Civ. P. 6(a) rolls off \"a legal holiday when the courthouse is closed for transactions\" -- closure is the rule's own test and the statute is never cited. G.S. 103-4 lists roughly nine further days (Robert E. Lee's Birthday, Greek Independence Day, Halifax Resolves, Confederate Memorial Day, Mecklenburg Declaration, Washington's Birthday, First Responders Day, Columbus Day, Yom Kippur, general election day) for which the Judicial Branch does NOT close; encoding them would push deadlines LATE. Twelve days a year, with Thanksgiving at two days and Christmas at three, both allocated administratively and NOT derivable from any rule. Weekend convention per the Judicial Branch: Saturday -> preceding Friday, Sunday -> following Monday. County-level closures (weather, local emergency) are Rule 6(a) holidays for that courthouse and are not enumerable; a deadline computed across one is EARLY, never late. The page is JavaScript-rendered and refuses plain automated fetches, so it was read in a real browser.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King, Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-03-26",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day (observed; 4 July 2027 is a Sunday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving (day 1 of 2)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-26",
+          "name": "Thanksgiving (day 2 of 2)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-23",
+          "name": "Christmas (day 1 of 3)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas (day 2 of 3)",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-27",
+          "name": "Christmas (day 3 of 3)",
+          "kind": "declared"
+        }
+      ]
+    }
+  ]
+}

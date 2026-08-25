@@ -112,6 +112,31 @@ function addMonths(iso, n) {
 // encode the statute and disclose the divergence in the seed's authority note.
 // Do not reconcile the two by adding the closure days.
 //
+// ── AMENDED 2026-08-25: THAT RULE IS CONDITIONAL ON WHAT THE RULE'S OWN TEST
+//    IS, AND NORTH CAROLINA IS THE COUNTER-EXAMPLE. ────────────────────────
+// The paragraph above is right for Pennsylvania because Pa.R.J.A. 107(b) asks a
+// STATUTORY question -- is the day "made a legal holiday by the laws of this
+// Commonwealth or of the United States". Where the rule asks that, the statute
+// is the answer and a closure schedule is not.
+//
+// N.C. R. Civ. P. 6(a) (G.S. 1A-1, Rule 6(a)) asks the OPPOSITE question. It
+// rolls off "a Saturday, Sunday or a legal holiday WHEN THE COURTHOUSE IS
+// CLOSED FOR TRANSACTIONS", never cites G.S. 103-4, and that qualifier makes
+// actual closure the test. Encoding the statute there would be wrong, and wrong
+// in the dangerous direction: G.S. 103-4(a) declares roughly nine days the
+// Judicial Branch does not close for -- Robert E. Lee's Birthday, Greek
+// Independence Day, the Halifax Resolves anniversary, Confederate Memorial Day,
+// the Mecklenburg Declaration anniversary, Washington's Birthday, First
+// Responders Day, Columbus Day, Yom Kippur and general election day -- and each
+// would roll a deadline LATER than the truth.
+//
+// SO THE RULE IS: read the rule's own test first, then pick the source that
+// answers THAT question. A statutory test takes the statute even where courts
+// close more often; a closure test takes the published closure schedule even
+// where the statute lists more days. Neither is a default. What does not change
+// is the direction check -- whichever source is chosen, ask which way an error
+// in it moves the date, and prefer the source that fails EARLY.
+//
 // (Michigan has the same shape in weaker form: MCR 8.110(D)(2)(c) expressly
 // authorises local administrative orders modifying the schedule, so its
 // calendars are the MCR default rather than a guarantee for any given court.)
@@ -749,6 +774,69 @@ var COMPUTATION_STANDARDS = {
   wv_rap_39a: { label: 'W. Va. R. App. P. 39(a)', impl: 'wv_rap_39a',
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── NORTH CAROLINA: G.S. 1A-1, Rule 6(a) ────────────────────────────────
+  // Its Rules of Civil Procedure are STATUTES -- Chapter 1A, Rule 6 is
+  // G.S. 1A-1, Rule 6 -- so the whole text is public on the General Assembly's
+  // own site. Read verbatim 2026-08-25:
+  //
+  //   "In computing any period of time prescribed or allowed by these rules, by
+  //    order of court, or by any applicable statute, including rules, orders or
+  //    statutes respecting publication of notices, the day of the act, event,
+  //    default or publication after which the designated period of time begins
+  //    to run is not to be included. The last day of the period so computed is
+  //    to be included, unless it is a Saturday, Sunday or a legal holiday when
+  //    the courthouse is closed for transactions, in which event the period
+  //    runs until the end of the next day which is not a Saturday, Sunday, or a
+  //    legal holiday when the courthouse is closed for transactions. When the
+  //    period of time prescribed or allowed is less than seven days,
+  //    intermediate Saturdays, Sundays, and holidays shall be excluded in the
+  //    computation. A half holiday shall be considered as other days and not as
+  //    a holiday."
+  //
+  // SHORT-PERIOD EXCLUSION IS 7, from "less than seven days" -- verified from
+  // North Carolina's own words, not carried across from the four other states
+  // that happen to use the same threshold.
+  //
+  // THE RULE STATES TWO DIFFERENT HOLIDAY TESTS IN CONSECUTIVE SENTENCES, and
+  // it is worth knowing which one this engine implements. The last-day rollover
+  // tests "a legal holiday WHEN THE COURTHOUSE IS CLOSED for transactions"; the
+  // short-period exclusion tests plain "holidays", with no closure qualifier.
+  // Read literally the second sentence could reach a G.S. 103-4 day the
+  // courthouse stays open for -- Columbus Day, say -- and exclude it from the
+  // count, lengthening a short period. This engine applies ONE calendar to
+  // both, and that calendar is the closure schedule, so a short North Carolina
+  // period counts such a day rather than skipping it. That is the EARLIER
+  // result and therefore the safe one, and it is a choice, not an oversight.
+  // See the calendar's readme for why the closure schedule is the right source
+  // for the rollover, which is the sentence that governs most rows here.
+  //
+  // BACKWARD IS BLANK, AND NO BACKWARD ROW IS SEEDED. Rule 6(a) speaks only of
+  // "the last day of the period" running "until the end of the next day" --
+  // forward. It never defines what the next day means for a period counted
+  // BEFORE an event, and North Carolina really has such periods: Rule 6(d)
+  // requires a written motion and notice of hearing "not later than five days
+  // before the time specified for the hearing", and an opposing affidavit "at
+  // least two days before the hearing". Neither is seeded, because rolling them
+  // in either direction would be this engine guessing at a rule that is silent,
+  // and because the two-day one carries its own service definition anyway
+  // ("service shall mean personal delivery, facsimile transmission, or other
+  // means such that the party actually receives the affidavit within the
+  // required time") which is actual receipt, not the ordinary service rule.
+  // Same call already made for ny_gcl_20's backward suffix, for the same
+  // reason. Contrast W. Va. R. Civ. P. 6(a)(5) and Fla. 2.514(a)(5), which do
+  // define it, and KRS 446.030(1)(b), which defines it the OTHER way (a
+  // backward North Carolina-style period rolling FORWARD) -- three jurisdictions,
+  // three answers, so there is no default to fall back on.
+  //
+  // Rule 6 is lettered but its subsections are not sub-numbered, so the base
+  // period and the rollover both sit in (a) and there is no separate
+  // months/years provision to cite. NOT MODELLED: the half-holiday sentence
+  // needs no code (no half holiday is ever put in the calendar), and Rule 6(f)'s
+  // Address Confidentiality Program extension is discussed at nc_rcp_6e below.
+  nc_rcp_6a: { label: 'N.C. R. Civ. P. 6(a) (G.S. 1A-1, Rule 6(a))', impl: 'nc_rcp_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
@@ -1170,6 +1258,61 @@ var SERVICE_EXTENSION_STANDARDS = {
       return method === 'other_electronic_means_consented' ||
              method === 'other_means_consented';
     }
+  },
+  // ── NORTH CAROLINA: MAIL AND ONLY MAIL ──────────────────────────────────
+  // N.C. R. Civ. P. 6(e) (G.S. 1A-1, Rule 6(e)), verbatim: "Whenever a party
+  // has the right to do some act or take some proceedings within a prescribed
+  // period after the service of a notice or other paper upon him and the notice
+  // or paper is served upon him by mail, three days shall be added to the
+  // prescribed period."
+  //
+  // THE NARROWEST ALLOWLIST IN THIS ENGINE, and deliberately so. Mail is the
+  // only method named. North Carolina's Rule 5(b) authorises service through
+  // the court's electronic filing system, by email to an address of record, by
+  // confirmed telefacsimile and by hand -- and 6(e) reaches NONE of them. This
+  // is the available mistake in North Carolina practice and it is worth stating
+  // next to its neighbours, because three jurisdictions seeded in two days
+  // answer it three different ways: Kentucky's eFiling Rules 13(6) says
+  // electronic service "is treated the same as service by mail under CR 6.05
+  // for the purpose of adding three (3) days"; West Virginia's 6(e) is contested
+  // on its face and refused; North Carolina's simply does not cover it. Nothing
+  // about e-service extensions generalises across states.
+  //
+  // SEQUENCING IS PERIOD-LENGTHENING, read up front rather than caught by a
+  // failing test: "three days shall be ADDED TO THE PRESCRIBED PERIOD" -- the
+  // New York, Georgia and pre-2025 West Virginia shape, not the federal
+  // after-expiry order. One period, one rollover, at the end.
+  //
+  // WHAT THIS STANDARD DOES NOT REACH: service of the summons and complaint.
+  // Rule 5(b1) excepts "pleadings and papers whose service is governed by Rule
+  // 4", and 6(e) runs from "the service of a notice or other paper". So the
+  // Rule 12(a)(1) answer deadline carries no extension -- reached by scope, the
+  // same route as West Virginia, where Georgia gets there by express words
+  // ("other than process") and Texas and New York by inference.
+  //
+  // ── RULE 6(f) IS NOT IMPLEMENTED, AND IT IS NOT AN OVERSIGHT ─────────────
+  // Rule 6(f), verbatim: "Whenever a person participating in the Address
+  // Confidentiality Program established by Chapter 15C of the General Statutes
+  // has a legal right to act within a prescribed period of 10 days or less
+  // after the service of a notice or other paper upon the program participant,
+  // and the notice or paper is served upon the program participant by mail,
+  // five days shall be added to the prescribed period."
+  //
+  // FIVE days rather than three, but conditioned on THE LENGTH OF THE BASE
+  // PERIOD -- "a prescribed period of 10 days or less". Every per-method amount
+  // this engine implements (California's CCP 1013 table, New York's 2103(b))
+  // varies by METHOD alone, and amount(method) is handed nothing but the
+  // method. It cannot see that the rule it is extending is a 10-day one. A new
+  // shape is needed -- an amount() that also receives the base period -- and it
+  // is not being invented on the way past. No seeded North Carolina row is 10
+  // days or shorter, so 6(f) is unreachable in the current row set either way;
+  // it must be implemented before any such row is added, and the omission fails
+  // in the EARLY direction (three days added instead of five) rather than late.
+  nc_rcp_6e: {
+    label: 'N.C. R. Civ. P. 6(e) (G.S. 1A-1, Rule 6(e))',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
   }
 };
 
