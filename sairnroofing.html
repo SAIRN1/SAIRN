@@ -148,6 +148,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <aside>
       <button class="sb on" id="sb-dashboard" onclick="nav('dashboard')">Jobs</button>
       <button class="sb" id="sb-certifications" onclick="nav('certifications')">Certifications<span class="badge" id="cert-badge" style="display:none;margin-left:6px;">0</span></button>
+      <button class="sb" id="sb-schedule" onclick="nav('schedule')">Schedule</button>
       <button class="sb" id="sb-claims" onclick="nav('claims')">Insurance Claims</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
     </aside>
@@ -314,6 +315,34 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div></div>
       </div>
 
+      <div class="panel" id="panel-schedule">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Schedule</div>
+            <div class="psub" id="sch-scope-note">--</div>
+          </div>
+          <div class="pa"><button class="btn bp" id="sch-new-btn" onclick="openScheduleModal()" style="display:none;">+ Schedule a Day</button></div>
+        </div>
+        <div class="card"><div class="cb">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="margin:0;"><label>From</label><input type="date" id="sch-from"></div>
+            <div class="fg" style="margin:0;"><label>To</label><input type="date" id="sch-to"></div>
+            <button class="btn bo" onclick="rfLoadSchedule()">Show</button>
+          </div>
+        </div></div>
+        <div class="card"><div class="cb" id="sch-list"><div class="empty">Loading…</div></div></div>
+        <div class="card" id="sch-loc-card" style="display:none;"><div class="ch"><div class="ct">Locations / Branches</div></div><div class="cb">
+          <div class="note">Deactivate a branch rather than deleting it &mdash; jobs point at it by id, and a deleted branch would orphan their attribution.</div>
+          <div id="sch-loc-list" style="margin-top:10px;"></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-top:10px;">
+            <div class="fg" style="margin:0;"><label>Location id</label><input id="loc-id" placeholder="LOC-CBUS"></div>
+            <div class="fg" style="margin:0;"><label>Name</label><input id="loc-name" placeholder="Columbus"></div>
+            <div class="fg" style="margin:0;"><label>Address</label><input id="loc-address" placeholder="optional"></div>
+            <button class="btn bp" onclick="rfSaveLocation()">Save Location</button>
+          </div>
+        </div></div>
+      </div>
+
       <div class="panel" id="panel-assistant">
         <div class="ph"><div class="ptitle">AI Assistant</div></div>
         <div class="note">Answers only from the jobs visible to your role -- the same scope as the Jobs list, never more.</div>
@@ -347,6 +376,10 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       </div>
       <div class="fg"><label>Status</label>
         <select id="j-status"><option value="lead">Lead</option><option value="scheduled">Scheduled</option><option value="in_progress">In Progress</option><option value="complete">Complete</option></select>
+      </div>
+      <div class="fg" id="j-location-wrap"><label>Location / Branch</label>
+        <select id="j-location"><option value="">Main (default)</option></select>
+        <div class="note" style="margin-top:4px;">Which branch this job belongs to. Recorded for reporting -- it does not change who can see the job.</div>
       </div>
       <div class="fg" id="j-assignee-wrap"><label>Assigned To (Employee ID)</label><input id="j-assignee" placeholder="Leave blank = unassigned"></div>
       <div style="display:flex;gap:8px;margin-top:8px;">
@@ -549,6 +582,19 @@ function nav(id){
   // does, so the UI and the tests cannot drift apart.
   if(id==='certifications'){rfRenderCertBoard(null);rfLoadCertBoard();}
   if(id==='claims'){rfLoadClaims();}
+  if(id==='schedule'){
+    // Management-only affordances match the server rule exactly (staffing a
+    // crew is an assignment decision) rather than being hidden decoration --
+    // the server refuses regardless, this just stops offering a button that
+    // would always 403.
+    var isMgmt=!!MANAGEMENT_ROLES[rfSession&&rfSession.role];
+    if($('sch-new-btn'))$('sch-new-btn').style.display=isMgmt?'':'none';
+    if($('sch-loc-card'))$('sch-loc-card').style.display=isMgmt?'':'none';
+    rfLoadLocations().then(function(){
+      if(isMgmt)rfRenderLocations();
+      rfLoadSchedule();
+    });
+  }
 }
 
 // ── Jobs (rf_jobs) — server-side gate does the real filtering; this note
@@ -1254,6 +1300,137 @@ function rfRescindAgreement(){
 }
 
 
+// ── LOCATIONS + SCHEDULE (Phase 4a) ───────────────────────────────────────
+// location_id is attribution, not access control. Nothing in this file filters
+// anything by location, and that is deliberate -- see the header of
+// api/_lib/roofing-locations.js.
+var rfLocations=[],rfSchedule=[],editingScheduleId=null;
+
+function rfLoadLocations(){
+  return rfDataRaw('read','rf_locations',{}).then(function(r){
+    rfLocations=(r.ok&&r.data&&r.data.data)||[];
+    return rfLocations;
+  });
+}
+
+function rfFillLocationSelect(selected){
+  var el=$('j-location');if(!el)return;
+  function paint(){
+    var opts='<option value="">Main (default)</option>';
+    rfLocations.filter(function(l){return l.active!==false||l.location_id===selected;}).forEach(function(l){
+      opts+='<option value="'+rfEsc(l.location_id)+'">'+rfEsc(l.name)+(l.active===false?' (inactive)':'')+'</option>';
+    });
+    el.innerHTML=opts;
+    // A job on the implicit default shows as "Main" rather than as a blank --
+    // the two are the same thing and rendering them differently would suggest
+    // the job is unattributed when it is not.
+    el.value=(selected&&selected!=='LOC-DEFAULT')?selected:'';
+  }
+  if(rfLocations.length)paint(); else rfLoadLocations().then(paint);
+}
+
+function rfLocationName(id){
+  if(!id||id==='LOC-DEFAULT')return 'Main';
+  var l=rfLocations.filter(function(x){return x.location_id===id;})[0];
+  return l?l.name:id;
+}
+
+function rfSaveLocation(){
+  var id=($('loc-id').value||'').trim(),name=($('loc-name').value||'').trim();
+  if(!id){toast('A location needs an id');return;}
+  if(!name){toast('A location needs a name');return;}
+  rfDataRaw('write','rf_locations',{id:id,name:name,address:($('loc-address').value||'').trim()}).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not save the location',5000);return;}
+    toast('Location saved');
+    $('loc-id').value='';$('loc-name').value='';$('loc-address').value='';
+    rfLoadLocations().then(rfRenderLocations);
+  });
+}
+
+function rfRenderLocations(){
+  var el=$('sch-loc-list');if(!el)return;
+  if(!rfLocations.length){el.innerHTML='<div class="note">No branches yet. Every job is attributed to Main until one is added.</div>';return;}
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Id</th><th>Name</th><th>Address</th><th>Active</th></tr></thead><tbody>'+
+    rfLocations.map(function(l){
+      return '<tr><td>'+rfEsc(l.location_id)+'</td><td>'+rfEsc(l.name)+'</td><td>'+rfEsc(l.address||'')+'</td><td>'+(l.active===false?'<span class="badge bx">inactive</span>':'<span class="badge bg">active</span>')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function rfLoadSchedule(){
+  var p={};
+  if($('sch-from')&&$('sch-from').value)p.from=$('sch-from').value;
+  if($('sch-to')&&$('sch-to').value)p.to=$('sch-to').value;
+  return rfDataRaw('read','rf_schedule',p).then(function(r){
+    if(!r.ok){$('sch-list').innerHTML='<div class="empty">Could not load the schedule.</div>';return;}
+    rfSchedule=(r.data&&r.data.data)||[];
+    rfRenderSchedule();
+  });
+}
+
+function rfRenderSchedule(){
+  var el=$('sch-list');if(!el)return;
+  var note=$('sch-scope-note');
+  if(note){
+    note.textContent=MANAGEMENT_ROLES[rfSession&&rfSession.role]||BROAD_READ_ROLES[rfSession&&rfSession.role]
+      ?'Every scheduled day across the company.'
+      :'Days you are on the crew for, plus days on jobs assigned to you.';
+  }
+  if(!rfSchedule.length){el.innerHTML='<div class="empty">No scheduled days in this range.</div>';return;}
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Date</th><th>Job</th><th>Branch</th><th>Crew</th><th>Status</th><th></th></tr></thead><tbody>'+
+    rfSchedule.map(function(sc){
+      var job=(currentJobs||[]).filter(function(j){return j.id===sc.job_id;})[0];
+      var crew=(sc.crew||[]).join(', ')||'<span class="note">nobody assigned</span>';
+      var opts=(['planned','confirmed','in_progress','done','cancelled']).map(function(st){
+        return '<option value="'+st+'"'+(st===sc.status?' selected':'')+'>'+st.replace('_',' ')+'</option>';
+      }).join('');
+      return '<tr><td>'+rfEsc(sc.scheduled_date)+'</td><td>'+rfEsc(job?(job.name||sc.job_id):sc.job_id)+'</td><td>'+rfEsc(rfLocationName(sc.location_id))+'</td><td>'+crew+'</td>'+
+        '<td><select onchange="rfSetScheduleStatus(\''+rfEsc(sc.schedule_id)+'\',this.value)">'+opts+'</select></td>'+
+        '<td>'+(MANAGEMENT_ROLES[rfSession&&rfSession.role]?'<button class="btn bo bs" onclick="openScheduleModal(\''+rfEsc(sc.schedule_id)+'\')">Edit</button>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function rfSetScheduleStatus(id,status){
+  rfDataRaw('set_status','rf_schedule',{schedule_id:id,status:status}).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not update that day',5000);rfLoadSchedule();return;}
+    toast('Marked '+status.replace('_',' '));
+    rfLoadSchedule();
+  });
+}
+
+function openScheduleModal(id){
+  var sc=id?(rfSchedule.filter(function(x){return x.schedule_id===id;})[0]||null):null;
+  editingScheduleId=id||null;
+  $('sch-modal-title').textContent=sc?'Edit Scheduled Day':'Schedule a Day';
+  var jobOpts=(currentJobs||[]).map(function(j){
+    return '<option value="'+rfEsc(j.id)+'"'+(sc&&sc.job_id===j.id?' selected':'')+'>'+rfEsc(j.name||j.id)+'</option>';
+  }).join('');
+  $('sch-job').innerHTML=jobOpts||'<option value="">No jobs yet</option>';
+  $('sch-date').value=sc?sc.scheduled_date:'';
+  $('sch-crew').value=sc?((sc.crew||[]).join(', ')):'';
+  $('sch-status').value=sc?sc.status:'planned';
+  $('sch-notes').value=sc?(sc.notes||''):'';
+  $('schedule-modal').classList.add('on');
+}
+function closeScheduleModal(){$('schedule-modal').classList.remove('on');}
+
+function rfSaveSchedule(){
+  var jobId=$('sch-job').value;
+  if(!jobId){toast('Pick a job first');return;}
+  if(!$('sch-date').value){toast('Pick a date');return;}
+  var rec={
+    id:editingScheduleId||('RFSCH-'+Date.now()),
+    job_id:jobId,
+    scheduled_date:$('sch-date').value,
+    status:$('sch-status').value,
+    crew:($('sch-crew').value||'').split(',').map(function(x){return x.trim();}).filter(Boolean),
+    notes:($('sch-notes').value||'').trim()
+  };
+  rfDataRaw('write','rf_schedule',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not save that day',5000);return;}
+    toast('Day saved');closeScheduleModal();rfLoadSchedule();
+  });
+}
+
 function rfBaseFieldsPayload(){
   var j=currentEditingJob;
   return {id:j.id, name:j.name||'', address:j.address||'', job_class:j.job_class||'residential', status:j.status||'lead', assigned_employee_id:j.assigned_employee_id||null};
@@ -1298,6 +1475,7 @@ function openJobModal(id){
   $('j-class').value=j?(j.job_class||'residential'):'residential';
   $('j-status').value=j?(j.status||'lead'):'lead';
   $('j-assignee').value=j?(j.assigned_employee_id||''):'';
+  rfFillLocationSelect(j?(j.location_id||''):'');
   jobTab('overview');
   pendingPhotoBase64=null;pendingPhotoMediaType=null;pendingAiRawText='';
   $('jm-photo-preview').innerHTML='';$('jm-analyze-btn').disabled=true;$('jm-save-reading-btn').style.display='none';$('jm-quantities-form').innerHTML='';
@@ -1349,6 +1527,13 @@ function saveJobOverview(){
     job_class:$('j-class').value, status:$('j-status').value,
     assigned_employee_id:assignedTo||null
   };
+  // Phase 4a: only send location_id when the user actually picked one. The
+  // server carries an existing job's location forward when the field is
+  // ABSENT, so omitting it here is what stops a blank dropdown from silently
+  // reattributing an edited job to the default branch. rfBaseFieldsPayload()
+  // (measurement/estimate saves) omits it for the same reason.
+  var pickedLoc=$('j-location')?($('j-location').value||''):'';
+  if(pickedLoc)payload.location_id=pickedLoc;
   rfDataRaw('write','rf_jobs',payload).then(function(r){
     if(!r.ok){toast(r.msg||'Save failed');return;}
     toast('Job saved');
@@ -1605,5 +1790,24 @@ function aiSend(){
   }
 })();
 </script>
+<div class="modal" id="schedule-modal">
+  <div class="mbox" style="width:520px;">
+    <div class="mtitle" id="sch-modal-title">Schedule a Day</div>
+    <div class="fg"><label>Job</label><select id="sch-job"></select></div>
+    <div class="fg"><label>Date</label><input type="date" id="sch-date"></div>
+    <div class="fg"><label>Crew (employee ids, comma separated)</label><input id="sch-crew" placeholder="fmA, crw1, crw2"></div>
+    <div class="note">Anyone listed here can see this day and mark it done, whether or not the job is assigned to them.</div>
+    <div class="fg"><label>Status</label><select id="sch-status">
+      <option value="planned">Planned</option><option value="confirmed">Confirmed</option>
+      <option value="in_progress">In Progress</option><option value="done">Done</option>
+      <option value="cancelled">Cancelled</option>
+    </select></div>
+    <div class="fg"><label>Notes</label><input id="sch-notes" placeholder="start time, access, materials on site"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="rfSaveSchedule()">Save</button>
+      <button class="btn bo" onclick="closeScheduleModal()">Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

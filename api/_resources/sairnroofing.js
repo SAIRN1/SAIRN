@@ -37,6 +37,14 @@ module.exports = {
   // APPEND-ONLY signed-document record, where a rescission is a second row.
     'rf_contingency_rules',
     'rf_claim_agreements',
+  // Multi-location + crew scheduling (2026-08-25, Phase 4a) -- see
+  // sql/sairnroofing_locations_schema.sql. rf_locations is the branch
+  // registry; rf_schedule is mutable crew days (a schedule genuinely changes,
+  // unlike the append-only evidence tables above). location_id is ATTRIBUTION
+  // only -- it is deliberately NOT an access-control axis, see
+  // api/_lib/roofing-locations.js.
+    'rf_locations',
+    'rf_schedule',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -53,5 +61,9 @@ module.exports = {
     // Looking at whether a cancellation window is open must never advance,
     // extend or close it -- same compute-only shape as 'reconcile'.
     rf_claim_agreements: ['agreement_status'],
+    // 'set_status' (Phase 4a) lets a crew member mark their own scheduled day.
+    // Status ONLY -- it cannot move the day, change the job or touch the crew,
+    // so it is not a way around the management-only schedule write.
+    rf_schedule: ['set_status'],
   },
 };
