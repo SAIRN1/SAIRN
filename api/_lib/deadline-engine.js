@@ -999,7 +999,66 @@ var COMPUTATION_STANDARDS = {
   // late. See JURISDICTION_COVERAGE below for the text that ships with results.
   va_code_1_210: { label: 'Va. Code § 1-210', impl: 'va_code_1_210',
     base_period_suffix: '(A)', months_years_suffix: '(A)',
-    rollover_suffix_forward: '(B)', rollover_suffix_backward: '(A)' }
+    rollover_suffix_forward: '(B)', rollover_suffix_backward: '(A)' },
+  // ── MASSACHUSETTS: THE RULE NAMES ITS OWN HOLIDAY STATUTE ────────────────
+  // Mass. R. Civ. P. 6(a), verbatim in full:
+  //
+  //   "In computing any period of time prescribed or allowed by these rules,
+  //    by order of court, or by any applicable statute or rule, the day of the
+  //    act, event, or default after which the designated period of time begins
+  //    to run shall not be included. The last day of the period so computed
+  //    shall be included, unless it is a Saturday, a Sunday, or a legal
+  //    holiday, in which event the period runs until the end of the next day
+  //    which is not a Saturday, a Sunday, or a legal holiday. When the period
+  //    of time prescribed or allowed is less than 7 days, intermediate
+  //    Saturdays, Sundays, and legal holidays shall be excluded in the
+  //    computation. As used in this rule and in Rule 77(c), 'legal holiday'
+  //    includes those days specified in Mass. G.L. c. 4, § 7 and any other day
+  //    appointed as a holiday by the President or the Congress of the United
+  //    States or designated by the laws of the Commonwealth."
+  //
+  // THE HOLIDAY QUESTION IS ANSWERED IN THE RULE'S OWN TEXT, which puts
+  // Massachusetts with WASHINGTON and against Texas, Arizona and Kentucky.
+  // CR 6(a) in Washington says "Legal holidays are prescribed in RCW
+  // 1.16.050"; Rule 6(a) here names Mass. G.L. c. 4, § 7. Neither needs the
+  // bundled lawyer's question that Texas, Kentucky, Illinois, West Virginia
+  // and Arizona are all waiting on. Rule 77(b) then keeps the clerk's office
+  // closed "on all days except Saturdays, Sundays, and legal holidays" -- the
+  // same defined term, so the statute governs closure and rolling alike.
+  //
+  // SHORT-PERIOD EXCLUSION AT SEVEN, READ NOT ASSUMED. "less than 7 days" is
+  // the rule's own wording, and 7 is therefore both the literal number in the
+  // rule and the correct value for this field, which is compared with a strict
+  // less-than. Same as New Jersey, North Carolina, Washington and West
+  // Virginia's appellate rule; NOT Arizona's eleven.
+  //
+  // BACKWARD IS LEFT BLANK, like New Jersey, North Carolina and Washington and
+  // unlike Virginia. Rule 6(a) speaks only of a period that "begins to run"
+  // after an act, event or default; it says nothing about a period counted
+  // backward from a hearing. No backward row is seeded and none may be added
+  // without reading a rule that actually defines the direction.
+  //
+  // ── THE COVERAGE GAP IS GEOGRAPHIC, WHICH IS NEW HERE ───────────────────
+  // Mass. G.L. c. 4, § 7, Cl. 18 makes Evacuation Day (17 March) and Bunker
+  // Hill Day (17 June) legal holidays "with respect to SUFFOLK COUNTY ONLY".
+  // holidayFor() keys a calendar by jurisdiction and year, so one `ma`
+  // calendar cannot express a day that is a holiday in one county and not in
+  // the other thirteen. West Virginia's two lists split by BODY OF RULES
+  // (civil vs appellate); this one splits by PLACE, and no field exists for
+  // place at all.
+  //
+  // ENCODED STATEWIDE, DISCLOSED FOR SUFFOLK, and the direction is why:
+  // including the two days would roll deadlines in thirteen counties LATE,
+  // while omitting them can only ever run EARLY in Suffolk. The same clause
+  // also requires Suffolk offices to "be open for business and appropriately
+  // staffed" on both days, so whether a Rule 6(a) period rolls off them at all
+  // is an open question -- which makes the omission either CORRECT or EARLY,
+  // never late, on both readings. SUFFOLK COUNTY IS BOSTON: this is the
+  // busiest venue in the Commonwealth and the disclosure says so out loud.
+  ma_rcp_6a: { label: 'Mass. R. Civ. P. 6(a)', impl: 'ohio_civ_r_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1024,6 +1083,18 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'Virginia court closures beyond the statewide statutory holidays are NOT modelled. This date may be EARLIER than the true deadline, never later.',
     detail: 'The calendar encodes Saturdays, Sundays and the legal holidays in Va. Code § 2.2-3300, which § 17.1-207(A) requires every clerk\'s office to close for statewide. It does NOT encode two further categories that Va. Code § 1-210(B) also rolls off, because neither is knowable in advance: (1) § 1-210(F) makes any day the Governor authorizes the closing of state government a legal holiday, announced ad hoc; (2) § 17.1-207 lets a clerk also close on locality-adopted holidays, on Christmas Eve, and on days a chief or presiding judge authorizes for a health or safety threat — all discretionary and all per-locality. If the computed date below falls on a day the relevant clerk\'s office was in fact closed, the true deadline rolls to the next open day and is LATER than shown. Confirm the local court\'s own closure schedule before relying on a date that falls near one of these.'
+  },
+  // MASSACHUSETTS. The FIRST gap in this table that is GEOGRAPHIC rather than
+  // temporal or discretionary: two days are legal holidays in one county and
+  // in no other, and a calendar keyed by jurisdiction+year has no field for
+  // place. Named explicitly rather than folded into a general "local closures"
+  // sentence, because a Massachusetts practitioner can check this one against
+  // a single fact -- which county the matter is in -- and act on it.
+  ma: {
+    complete: false,
+    direction: 'early',
+    summary: 'SUFFOLK COUNTY (Boston) has two legal holidays no other Massachusetts county has, and they are NOT modelled. In Suffolk County this date may be EARLIER than the true deadline, never later. Everywhere else in the Commonwealth this calendar is complete.',
+    detail: 'The calendar encodes Saturdays, Sundays and the statewide legal holidays in Mass. G.L. c. 4, § 7, Cl. 18, which Mass. R. Civ. P. 6(a) incorporates by name. Clause 18 additionally makes Evacuation Day (17 March) and Bunker Hill Day (17 June) legal holidays "with respect to Suffolk county only". A holiday calendar here is keyed by jurisdiction and year and has no notion of county, so those two days are omitted. THE OMISSION IS SAFE IN BOTH DIRECTIONS OF THE OPEN QUESTION: if a Rule 6(a) period does roll off them in Suffolk, this date is EARLY by one day when it lands on or just after 17 March or 17 June; if it does not — and the same clause requires all state and municipal offices in Suffolk to "be open for business and appropriately staffed" on both days, which is a real argument that it does not — then this date is simply correct. It is never late. Outside Suffolk County the two days are not legal holidays at all and nothing is missing. Rule 6(a) also reaches "any other day appointed as a holiday by the President or the Congress of the United States", which is ad hoc and not knowable in advance; that limb is likewise not encoded and fails in the same EARLY direction. If your matter is in Suffolk County and this date falls on or shortly after 17 March or 17 June, confirm it by hand.'
   }
 };
 
@@ -1675,6 +1746,53 @@ var SERVICE_EXTENSION_STANDARDS = {
       return (minutes <= 17 * 60)
         ? { add: 0, unit: 'calendar_days' }
         : { add: 1, unit: 'calendar_days' };
+    }
+  },
+  // ── MASSACHUSETTS: THREE DAYS FOR ELECTRONIC SERVICE TOO ────────────────
+  // Mass. R. Civ. P. 6(d), verbatim in full:
+  //
+  //   "Whenever a party has the right or is required to do some act within a
+  //    prescribed period after the service of a notice or other papers upon
+  //    the party and the notice or paper is served upon the party by mail, by
+  //    e-mail pursuant to Rule 5(b)(1), or otherwise electronically, including
+  //    through the Electronic Filing Service Provider pursuant to Rule 7(b) of
+  //    the Massachusetts Rules of Electronic Filing, three (3) days shall be
+  //    added to the prescribed period."
+  //
+  // THE ELECTRONIC LIMB IS THE WHOLE POINT AND IT IS THE OPPOSITE OF FEDERAL
+  // PRACTICE. FRCP 6(d) STOPPED extending for electronic service in 2016;
+  // Massachusetts extends for it expressly, and names three separate routes
+  // (e-mail under Rule 5(b)(1), "or otherwise electronically", and the
+  // Electronic Filing Service Provider under Mass. R. Elec. Fil. 7(b)). North
+  // Carolina's 6(e), by contrast, reaches MAIL AND ONLY MAIL, and West
+  // Virginia's 6(e) is contested precisely because its electronic limb is
+  // ambiguous. Three neighbouring answers; this one was read, not inherited.
+  // Kentucky's eFiling Rules 13(6) is the closest match found so far.
+  //
+  // "SHALL BE ADDED TO THE PRESCRIBED PERIOD" -- period-lengthening, one
+  // rollover at the end, the same shape as New Jersey, North Carolina,
+  // Washington, New York and Virginia, and NOT the federal after-expiry order.
+  // Read from the rule's own words up front rather than caught by a test.
+  //
+  // WHAT THIS DOES NOT REACH: service of the summons and complaint. R. 6(d)
+  // runs from "the service of a notice or other papers upon the party", which
+  // is Rule 5 service between parties; a summons and complaint go out under
+  // Rule 4. Same scope route as West Virginia, North Carolina, Washington,
+  // New Jersey and Virginia. The answer row therefore carries no extension.
+  //
+  // ONE MASSACHUSETTS ROW REFUSES THIS EXTENSION BY THE RULE'S OWN WORDS, and
+  // it is worth knowing before someone "fixes" it: R. 33(a)(4)'s 40-day period
+  // says "The period of time set forth in the previous sentence shall be
+  // deemed to include the three day period allowed pursuant to Rule 6(d)."
+  // The three days are already inside the 40. Adding them again would extend a
+  // deadline the rule does not extend, so that row deliberately carries no
+  // service_extension at all. See its note in the seed.
+  ma_rcp_6d: {
+    label: 'Mass. R. Civ. P. 6(d)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return ({ mail: 1, email: 1, electronic: 1, efiling_service_provider: 1 })[method] === 1;
     }
   }
 };

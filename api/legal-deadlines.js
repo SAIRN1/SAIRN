@@ -35,7 +35,7 @@ const JURISDICTION_LABELS = {
   'us-federal': 'United States (Federal)',
   oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania', il: 'Illinois', fl: 'Florida', ca: 'California',
   tx: 'Texas', ny: 'New York', ga: 'Georgia', wv: 'West Virginia', nc: 'North Carolina', wa: 'Washington', nj: 'New Jersey',
-  va: 'Virginia'
+  va: 'Virginia', ma: 'Massachusetts'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',
