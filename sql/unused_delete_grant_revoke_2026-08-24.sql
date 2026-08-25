@@ -333,14 +333,25 @@ order by t.table_name;
 --   service_role. Those roles are locked out by RLS on these tables, but
 --   their grants were not audited here.
 -- * Schemas other than public.
--- * THE SOURCE LINE IN scp_employee_auth's OWN SCHEMA FILE. Section 2
---   revokes the live grant, but sql/scp_employee_auth_schema.sql:47 still
---   reads `grant select, insert, update, delete ...`. That file is
---   `create table if not exists` and safe to re-run, so re-running it after
---   this sweep would put DELETE straight back. Fix the line to
---   `grant select, insert, update` to match its eight siblings. Not done
---   here because this file is a grant sweep, not a schema edit, and the two
---   should not land in one commit.
+-- * scp_employee_auth's source line -- FIXED 2026-08-25 in its own commit,
+--   separately from this sweep. sql/scp_employee_auth_schema.sql now grants
+--   `select, insert, update`. Verified afterwards: zero *_employee_auth
+--   files on the platform still grant delete.
+-- * THE SAME OVERCORRECTION IN sairnscape_data_schema.sql -- STILL OPEN.
+--   The one-off check that fix required found it is NOT a one-off:
+--   sql/sairnscape_data_schema.sql:24 carries the same rationale sentence
+--   and same 2026-08-06 date, and grants delete on six more SAIRNscape
+--   tables at lines 147-152 (scp_customers, scp_jobs, scp_quotes,
+--   scp_schedule, scp_invoices, scp_progress_photos). Section 2 will revoke
+--   all six live, after which that file and the database disagree and a
+--   re-run of it restores them -- the exact failure mode the
+--   scp_employee_auth fix just closed. Not fixed here: it is a schema edit,
+--   it is six lines not one, and it deserves its own decision rather than
+--   riding along in a grant sweep. Tracked in docs/SAIRN-OPEN-WORK-INDEX.md.
+--   For scale, so this is not mistaken for the whole problem: 83 non-sc_*
+--   `grant ... delete` lines exist across 35 files. Explicit delete grants
+--   are common and are what this sweep is for. The overcorrection SIGNATURE
+--   is what is narrow -- 2 files, both SAIRNscape, 7 grants.
 -- * The DEFAULT PRIVILEGES that made this recur -- a new table created by a
 --   schema file that copies the usual `grant select, insert, update, delete`
 --   line will reintroduce a DELETE grant. The durable fix is to stop writing

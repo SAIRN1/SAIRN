@@ -44,4 +44,20 @@ create index if not exists idx_scp_employee_auth_license
 -- default-bypass behavior alone.
 alter table scp_employee_auth enable row level security;
 grant usage on schema public to service_role;
-grant select, insert, update, delete on scp_employee_auth to service_role;
+-- DELETE removed 2026-08-25. This line previously read
+-- `grant select, insert, update, delete ...`, making this the ONLY
+-- *_employee_auth file on the platform granting delete -- all eight siblings
+-- (sb_, sairnbuild_, sairncare_, sairncode_, sairndesign_, sairnlaw_,
+-- sairnlegacy_, sairnsenior_) stop at update. It was an overcorrection, not
+-- a considered choice: the header above records that grants were added
+-- explicitly on 2026-08-06 to fix a pattern of MISSING grants after the
+-- SAIRNgrounds license-row issue, and the full CRUD verb list got written
+-- instead of the verbs SAIRNscape actually uses. SAIRNscape has no delete
+-- path -- the platform's only DELETE is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch -- so this grant was never used.
+--
+-- Fixed at SOURCE separately from the live sweep on purpose: this file is
+-- `create table if not exists` and safe to re-run, so re-running it after
+-- sql/unused_delete_grant_revoke_2026-08-24.sql would have put the grant
+-- straight back. The sweep fixes the database; this line fixes the file.
+grant select, insert, update on scp_employee_auth to service_role;
