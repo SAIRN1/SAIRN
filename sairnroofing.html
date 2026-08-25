@@ -2290,7 +2290,13 @@ var RF_REPORTS=[
     key:'jobs', label:'Jobs', resource:'rf_jobs', action:'read', payload:{},
     gate:'Management and estimators export every job. A foreman or crew member exports only jobs assigned to them.',
     columns:[
-      ['id','job_id'],['name','name'],['address','address'],['job_class','job_class'],
+      // The field is `id`, NOT `job_id`. rf_jobs' read renames the column on
+      // the way out (api/sd-data.js:2495 maps `id: r.job_id`), unlike claims,
+      // schedule, certifications and invoices, which all keep their <thing>_id
+      // name. Getting this backwards exported eight rows with a blank
+      // identifier and every other column correct -- found by opening the
+      // file, not by the export succeeding.
+      ['job_id','id'],['name','name'],['address','address'],['job_class','job_class'],
       ['status','status'],['assigned_employee_id','assigned_employee_id'],['location_id','location_id']
     ]
   },
