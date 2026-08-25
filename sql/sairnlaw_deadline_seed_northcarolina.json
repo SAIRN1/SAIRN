@@ -1,0 +1,529 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- North Carolina rule seed, 2026-08-25. Loaded",
+    "through add_rule. Holiday calendars are in",
+    "sql/sairnlaw_deadline_calendars_northcarolina.json and must be loaded too, or",
+    "every row below refuses with NOT_PROVISIONED.",
+    "",
+    "NORTH CAROLINA WAS CHOSEN PARTLY BECAUSE OF WHERE ITS RULES LIVE. Its Rules of",
+    "Civil Procedure are STATUTES -- G.S. 1A-1 -- published free and in full by the",
+    "General Assembly at ncleg.gov. Kentucky was attempted first and abandoned",
+    "because the Kentucky Court of Justice does not publish its civil rules at all,",
+    "pointing instead to a commercial publisher; see",
+    "docs/sairnlaw-kentucky-deadline-seed-blockers.md. Rules 5, 6, 12, 33, 34 and 36",
+    "and G.S. 103-4 were read verbatim from ncleg.gov on 2026-08-25.",
+    "",
+    "== THE CALENDAR IS A CLOSURE SCHEDULE, NOT G.S. 103-4 =====================",
+    "Rule 6(a) rolls off \"a Saturday, Sunday or a legal holiday WHEN THE COURTHOUSE",
+    "IS CLOSED FOR TRANSACTIONS\". It never cites G.S. 103-4, and the qualifier makes",
+    "actual closure the test. G.S. 103-4 declares about nine further days the",
+    "Judicial Branch does not close for -- Robert E. Lee's Birthday, Greek",
+    "Independence Day, the Halifax Resolves anniversary, Confederate Memorial Day,",
+    "the Mecklenburg Declaration anniversary, Washington's Birthday, First",
+    "Responders Day, Columbus Day, Yom Kippur and general election day -- and every",
+    "one would roll a deadline LATER than the truth. Full reasoning, and why this",
+    "INVERTS the Pennsylvania guidance in the engine header, is in the calendar's",
+    "own readme. The engine note has been amended to say the choice depends on what",
+    "the rule's own test is.",
+    "",
+    "COVERAGE IS 2026-2027 ONLY, against 2026-2031 everywhere else, because NCAOC",
+    "publishes dated closure schedules about two years forward. Anything crossing",
+    "into 2028 refuses. The calendar needs re-running annually.",
+    "",
+    "== THREE DISCOVERY RULES, THREE DIFFERENT DEFENDANT PERIODS ===============",
+    "Each of Rules 33, 34 and 36 gives an ordinary 30 days from service of the",
+    "discovery paper AND a longer alternative for a defendant measured from service",
+    "of process. The alternatives are NOT the same number:",
+    "",
+    "    Rule 33 interrogatories   30 / 45",
+    "    Rule 34 production        30 / 45",
+    "    Rule 36 admissions        30 / 60",
+    "",
+    "Each was read off its own rule rather than carried across from the one before,",
+    "and Rule 36 is where getting it wrong would hurt most, because Rule 36 is",
+    "SELF-EXECUTING -- a row built on 45 days would concede facts fifteen days",
+    "before the defendant was ever required to answer.",
+    "",
+    "Each is TWO rows, not one: a plain 30-day row for a party who is not a",
+    "defendant, and a resolve_periods later_of row for a defendant. That shape",
+    "exists because Georgia's equivalent was first encoded as an ordinary later_of",
+    "and shipped a date fifteen days early -- later_of picks the later trigger DATE",
+    "and then applies a single count, and these rules need a different count per",
+    "limb.",
+    "",
+    "== NO later-of ROW CARRIES A SERVICE EXTENSION, AND THAT IS A REASON =======",
+    "Limb one of each runs from service of a paper under Rule 5, which Rule 6(e)",
+    "reaches. Limb two runs from service of the summons and complaint under Rule 4,",
+    "which it does not. The engine applies an extension to the winning RESULT",
+    "without knowing which limb won, so a blanket extension would sometimes lengthen",
+    "a Rule 4 period that 6(e) never touches. Compute it by hand where limb one",
+    "governs. Georgia's later-of row makes the same call.",
+    "",
+    "== RULE 6(e) IS MAIL AND ONLY MAIL ========================================",
+    "\"...served upon him by mail, three days shall be added to the prescribed",
+    "period.\" No other method is named, and Rule 5(b) authorises several: the",
+    "court's electronic filing system, email to an address of record, confirmed",
+    "telefacsimile, hand delivery. NONE of them extends. Three states seeded in two",
+    "days answer this three different ways -- Kentucky's eFiling Rules 13(6)",
+    "expressly treats e-service the same as mail, West Virginia's 6(e) is contested",
+    "on its own face and is refused in code, North Carolina's simply does not cover",
+    "it -- so nothing here generalises.",
+    "",
+    "Sequencing is PERIOD-LENGTHENING (\"added to the prescribed period\"), read up",
+    "front rather than caught by a failing test.",
+    "",
+    "== NOT SEEDED, DELIBERATELY ===============================================",
+    "BACKWARD PERIODS. Rule 6(d) requires a written motion and notice of hearing",
+    "\"not later than five days before the time specified for the hearing\" and an",
+    "opposing affidavit \"at least two days before the hearing\", and Rule 5(a1)",
+    "requires certain briefs \"at least two days before the hearing\". None is seeded,",
+    "because Rule 6(a) defines the rollover only for \"the last day of the period\"",
+    "running \"until the end of the next day\" -- forward -- and says nothing about a",
+    "period counted BEFORE an event. Rolling one in either direction would be a",
+    "guess. Three jurisdictions give three different answers to that question",
+    "(W. Va. R. Civ. P. 6(a)(5) rolls backward, Fla. 2.514(a)(5) rolls backward,",
+    "KRS 446.030(1)(b) rolls FORWARD), so there is no default to borrow. The two-day",
+    "rules additionally carry their own service definition -- actual receipt, not",
+    "ordinary service -- which this engine does not model.",
+    "",
+    "APPELLATE. No North Carolina appellate row is seeded in this pass. The N.C.",
+    "Rules of Appellate Procedure are court rules rather than statutes and are not",
+    "on ncleg.gov, so they need their own source check before anything is encoded --",
+    "the gate that Kentucky taught us to run first.",
+    "",
+    "RULE 6(f), the Address Confidentiality Program extension: FIVE days rather than",
+    "three, but only on \"a prescribed period of 10 days or less\". That is an amount",
+    "conditioned on the length of the BASE PERIOD, and amount(method) is handed only",
+    "the method. No seeded row is 10 days or shorter so it is unreachable here, and",
+    "the omission fails EARLY (three days instead of five). It must be implemented",
+    "before any short North Carolina row is added.",
+    "",
+    "== EFFECTIVE_FROM IS THE ORIGINAL 1970 DATE, AND THAT IS A KNOWN WEAKNESS ==",
+    "G.S. 1A-1 took effect 1 January 1970. Individual rules have been amended since",
+    "(Rule 6 itself carries 1967, c. 954; 2000-127; 2002-171; 2003-337), and the",
+    "amendment dates were NOT traced per rule for this seed. Every row therefore",
+    "claims to be in force from 1970, which is too early for any provision added",
+    "later -- a period running from a 1990s trigger would select a row whose current",
+    "text may not have applied then. Nothing in the app computes historical",
+    "deadlines today, and the calendars only cover 2026-2027 so any such request",
+    "refuses on the calendar first. Trace the amendment history before that changes."
+  ],
+  "rules": [
+    {
+      "rule_id": "nc-rcp-12-a1-answer-to-complaint",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint after service of the summons and complaint (North Carolina)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "authority": {
+        "citation": "N.C. R. Civ. P. 12(a)(1) (G.S. 1A-1, Rule 12(a)(1))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_12.html",
+        "quote": "A defendant shall serve his answer within 30 days after service of the summons and complaint upon him.",
+        "note": "THIRTY DAYS, not the federal 21 and not Kentucky's 20 next door. NO SERVICE EXTENSION, reached by Rule 5's scope rather than by a carve-out phrase. Rule 6(e) adds days only where a period runs \"after the service of a notice or other paper\", and Rule 5(b1) excepts \"pleadings and papers whose service is governed by Rule 4\" -- the summons and complaint go out under Rule 4. Same route as West Virginia; Georgia reaches it by express words (\"other than process\"), Texas and New York by inference. Rule 12(a)(1)'s closing words, \"unless a different time is fixed by order of the court\", attach to the motion-altered periods that follow; a court order displacing this period is in any case something the engine cannot see.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-12-a1-answer-to-crossclaim",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Answer to a crossclaim (North Carolina)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "service_extension": {
+        "standard": "nc_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.C. R. Civ. P. 12(a)(1) (G.S. 1A-1, Rule 12(a)(1))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_12.html",
+        "quote": "A party served with a pleading stating a crossclaim against him shall serve an answer thereto within 30 days after service upon him.",
+        "note": "The extension applies here where it does not on the answer to the complaint: a crossclaim is served under Rule 5, not Rule 4. applies_when is MAIL AND ONLY MAIL, because Rule 6(e) names no other method. North Carolina's Rule 5(b) authorises service through the court's electronic filing system, by email to an address of record, and by confirmed telefacsimile, and 6(e) reaches none of them. Do not widen this by analogy to Kentucky, whose eFiling Rules 13(6) expressly treats electronic service the same as mail. NOTE RULE 12(a)(1) NAMES NO PERIOD FOR AN ANSWER TO A COUNTERCLAIM AS SUCH -- it sets a period for the plaintiff's REPLY to a counterclaim, which is its own row. Do not use this crossclaim row for a counterclaim.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-12-a1-reply-to-counterclaim",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim contained in an answer (North Carolina)",
+      "trigger_event": "service_of_the_answer",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "service_extension": {
+        "standard": "nc_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.C. R. Civ. P. 12(a)(1) (G.S. 1A-1, Rule 12(a)(1))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_12.html",
+        "quote": "The plaintiff shall serve his reply to a counterclaim in the answer within 30 days after service of the answer",
+        "note": "Runs from service of THE ANSWER, not from service of the counterclaim as a separate paper -- the counterclaim is in the answer. applies_when is MAIL AND ONLY MAIL, because Rule 6(e) names no other method. North Carolina's Rule 5(b) authorises service through the court's electronic filing system, by email to an address of record, and by confirmed telefacsimile, and 6(e) reaches none of them. Do not widen this by analogy to Kentucky, whose eFiling Rules 13(6) expressly treats electronic service the same as mail.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-12-a1-reply-to-counterclaim-ordered",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim where the court orders a reply (North Carolina)",
+      "trigger_event": "service_of_the_order_to_reply",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "service_extension": {
+        "standard": "nc_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.C. R. Civ. P. 12(a)(1) (G.S. 1A-1, Rule 12(a)(1))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_12.html",
+        "quote": "or, if a reply is ordered by the court, within 30 days after service of the order, unless the order otherwise directs",
+        "note": "\"UNLESS THE ORDER OTHERWISE DIRECTS\" is a displacement the engine cannot see: if the order setting the reply fixes its own period, that period governs and this row's 30 days is simply wrong. Read the order before relying on this date. applies_when is MAIL AND ONLY MAIL, because Rule 6(e) names no other method. North Carolina's Rule 5(b) authorises service through the court's electronic filing system, by email to an address of record, and by confirmed telefacsimile, and 6(e) reaches none of them. Do not widen this by analogy to Kentucky, whose eFiling Rules 13(6) expressly treats electronic service the same as mail.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-12-a1a-responsive-pleading-after-motion-ruled",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after the court rules on or postpones a Rule 12 motion (North Carolina)",
+      "trigger_event": "notice_of_court_action_ruling_on_motion",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "authority": {
+        "citation": "N.C. R. Civ. P. 12(a)(1)a (G.S. 1A-1, Rule 12(a)(1)a)",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_12.html",
+        "quote": "The responsive pleading shall be served within 20 days after notice of the court's action in ruling on the motion or postponing its disposition until the trial on the merits;",
+        "note": "TWENTY DAYS, where the parent answer period is thirty -- the two halves of North Carolina's Rule 12(a) do not share a number, and neither matches the federal 21/14 pair. NO SERVICE EXTENSION: Rule 6(e) extends a period run after the SERVICE of a notice or paper, and this one runs after NOTICE OF THE COURT'S ACTION, which is not a party serving a paper under Rule 5. The subsection is also expressly subject to \"unless a different time is fixed by order of the court\".",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-12-a1b-responsive-pleading-after-more-definite-statement",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after service of a more definite statement (North Carolina)",
+      "trigger_event": "service_of_more_definite_statement",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "service_extension": {
+        "standard": "nc_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.C. R. Civ. P. 12(a)(1)b (G.S. 1A-1, Rule 12(a)(1)b)",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_12.html",
+        "quote": "If the court grants a motion for a more definite statement, the responsive pleading shall be served within 20 days after service of the more definite statement.",
+        "note": "Runs from SERVICE of the more definite statement, so unlike its sibling in (a)(1)a the extension does reach it. applies_when is MAIL AND ONLY MAIL, because Rule 6(e) names no other method. North Carolina's Rule 5(b) authorises service through the court's electronic filing system, by email to an address of record, and by confirmed telefacsimile, and 6(e) reaches none of them. Do not widen this by analogy to Kentucky, whose eFiling Rules 13(6) expressly treats electronic service the same as mail.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-12-a2-answer-after-remand-from-federal-court",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Answer after remand from a United States district court (North Carolina)",
+      "trigger_event": "filing_in_state_court_of_certified_copy_of_order_of_remand",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "authority": {
+        "citation": "N.C. R. Civ. P. 12(a)(2) (G.S. 1A-1, Rule 12(a)(2))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_12.html",
+        "quote": "shall have 30 days after the filing in such State court of a certified copy of the order of remand to file motions and to answer or otherwise plead",
+        "note": "Runs from the FILING of the certified copy in the State court -- not from the federal court's order, not from service on anyone, and not from receipt. NO SERVICE EXTENSION: nothing is served, so Rule 6(e) has nothing to attach to. The trigger is a docket event the caller has to look up, and the engine neither derives nor validates it.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-33-a-interrogatory-answers",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories, party other than a defendant (North Carolina)",
+      "trigger_event": "service_of_interrogatories",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "service_extension": {
+        "standard": "nc_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.C. R. Civ. P. 33(a) (G.S. 1A-1, Rule 33(a))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_33.html",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within 30 days after the service of the interrogatories.",
+        "note": "THIS ROW IS THE NON-DEFENDANT LIMB ONLY. Rule 33(a) continues \"except that a defendant may serve answers or objections within 45 days after service of the summons and complaint upon the defendant\", which is a genuine later-of and is its own resolve_periods row. Using this row for a defendant gives a date that can be far too early. \"The court may allow a shorter or longer time\" is a displacement the engine cannot see. applies_when is MAIL AND ONLY MAIL, because Rule 6(e) names no other method. North Carolina's Rule 5(b) authorises service through the court's electronic filing system, by email to an address of record, and by confirmed telefacsimile, and 6(e) reaches none of them. Do not widen this by analogy to Kentucky, whose eFiling Rules 13(6) expressly treats electronic service the same as mail.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-33-a-interrogatory-answers-defendant-later-of-periods",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories served on a defendant (North Carolina)",
+      "trigger_event": {
+        "id": "interrogatories_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_interrogatories_on_defendant",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the interrogatories"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_interrogatories",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "nc_rcp_6a",
+      "authority": {
+        "citation": "N.C. R. Civ. P. 33(a) (G.S. 1A-1, Rule 33(a))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_33.html",
+        "quote": "within 30 days after the service of the interrogatories, except that a defendant may serve answers or objections within 45 days after service of the summons and complaint upon the defendant",
+        "note": "TWO PERIODS OF DIFFERENT LENGTHS, so this is resolve_periods and not an ordinary later_of -- the limb that wins needs its OWN count, and resolving between trigger dates first and then applying one count is how the Georgia equivalent shipped a date fifteen days early. NO SERVICE EXTENSION, and this is a REASON rather than an omission: limb one runs from service of a paper under Rule 5, which Rule 6(e) reaches, but limb two runs from service of the summons and complaint under Rule 4, which it does not. The engine applies an extension to the winning RESULT without knowing which limb won, so adding three mail days here would sometimes extend a Rule 4 period that 6(e) never touches. Same call Georgia's later-of row makes. Compute the mail extension by hand if limb one governs.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-34-b-production-response",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production or inspection, party other than a defendant (North Carolina)",
+      "trigger_event": "service_of_request_for_production",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "service_extension": {
+        "standard": "nc_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.C. R. Civ. P. 34(b) (G.S. 1A-1, Rule 34(b))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_34.html",
+        "quote": "The party upon whom the request is served shall serve a written response within 30 days after the service of the request",
+        "note": "NON-DEFENDANT LIMB ONLY, exactly as with Rule 33 -- the defendant's 45-day alternative is a separate resolve_periods row. applies_when is MAIL AND ONLY MAIL, because Rule 6(e) names no other method. North Carolina's Rule 5(b) authorises service through the court's electronic filing system, by email to an address of record, and by confirmed telefacsimile, and 6(e) reaches none of them. Do not widen this by analogy to Kentucky, whose eFiling Rules 13(6) expressly treats electronic service the same as mail.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-34-b-production-response-defendant-later-of-periods",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production served on a defendant (North Carolina)",
+      "trigger_event": {
+        "id": "production_request_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_production_on_defendant",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_production",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "nc_rcp_6a",
+      "authority": {
+        "citation": "N.C. R. Civ. P. 34(b) (G.S. 1A-1, Rule 34(b))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_34.html",
+        "quote": "within 30 days after the service of the request, except that a defendant may serve a response within 45 days after service of the summons and complaint upon that defendant",
+        "note": "Same shape and the same 30/45 numbers as the Rule 33 defendant row, and they were verified separately rather than assumed to match -- Rule 36's equivalent is 30/60, not 30/45, so within one state the three discovery rules do NOT share a second period. No service extension, for the reason given on the Rule 33 later-of row.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-36-a-admission-response",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission, party other than a defendant (North Carolina)",
+      "trigger_event": "service_of_request_for_admission",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nc_rcp_6a",
+      "service_extension": {
+        "standard": "nc_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.C. R. Civ. P. 36(a) (G.S. 1A-1, Rule 36(a))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_36.html",
+        "quote": "The matter is admitted unless, within 30 days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter",
+        "note": "SELF-EXECUTING: missing this date admits the matter, so a date computed too late here does not merely lose a filing, it concedes a fact. NON-DEFENDANT LIMB ONLY -- the defendant's 60-day floor is its own row, and note it is SIXTY here where Rules 33 and 34 use forty-five. applies_when is MAIL AND ONLY MAIL, because Rule 6(e) names no other method. North Carolina's Rule 5(b) authorises service through the court's electronic filing system, by email to an address of record, and by confirmed telefacsimile, and 6(e) reaches none of them. Do not widen this by analogy to Kentucky, whose eFiling Rules 13(6) expressly treats electronic service the same as mail.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nc-rcp-36-a-admission-response-defendant-later-of-periods",
+      "jurisdiction": "nc",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission served on a defendant (North Carolina)",
+      "trigger_event": {
+        "id": "admission_request_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission_on_defendant",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": {
+              "value": 60,
+              "unit": "calendar_days"
+            },
+            "label": "60 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "nc_rcp_6a",
+      "authority": {
+        "citation": "N.C. R. Civ. P. 36(a) (G.S. 1A-1, Rule 36(a))",
+        "url": "https://www.ncleg.gov/EnactedLegislation/Statutes/HTML/BySection/Chapter_1A/GS_1A-1,_Rule_36.html",
+        "quote": "but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 60 days after service of the summons and complaint upon him",
+        "note": "SIXTY DAYS ON LIMB TWO, NOT FORTY-FIVE. Rules 33 and 34 both give a defendant 45 days from service of process and Rule 36 gives 60, in the same statute, and the difference was read off each rule separately rather than carried across. Getting it wrong here is the worst case in the North Carolina set, because Rule 36 is self-executing: a row computed on 45 days would concede facts fifteen days before the defendant was ever required to answer. The limb is phrased as a floor -- \"shall not be required to serve answers or objections before the expiration of 60 days\" -- which is the later-of that resolve_periods expresses. No service extension, for the reason given on the Rule 33 later-of row.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1970-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ]
+}

@@ -1,4 +1,71 @@
 -- sql/full_crud_truncate_sweep_2026-08-24.sql
+--
+-- ══ SECTION 2 WAS RUN 2026-08-25. CLEAN PASS. ═══════════════════════════
+-- The "nothing has been run" status below is HISTORICAL from here down;
+-- it described this file up to the moment of the run and is left intact
+-- because the reasoning was built under it.
+--
+-- 3a -- ONE row: license_keys, full TRUNCATE family. That is the
+-- deliberate exclusion and nothing else. All 213 other tables from the
+-- 214-row Section 1 list are clean, INCLUDING the 20 zero-CRUD tables --
+-- their outcome is confirmed HERE, not in 3b, because having contributed
+-- no baseline rows they are silent in the diff by construction.
+-- network_insights was swept (its exclusion having been removed) and does
+-- not appear, so its excess is gone and, per 3b, its INSERT and SELECT
+-- survived -- the end of that correction chain.
+--
+-- 3b -- FIVE rows, ALL 'GAINED', ZERO 'LOST'. Zero LOST is the whole
+-- claim of this sweep: across 774 baseline privilege rows on 209 tables,
+-- not one pre-existing privilege disappeared. Section 2 removed no
+-- functional capability, verified against a real before-state rather than
+-- argued from the loop's shape.
+--   THE FIVE ARE rf_contingency_rules (INSERT, SELECT, UPDATE) and
+--   rf_claim_agreements (INSERT, SELECT) -- the two SAIRNroofing Phase 5
+--   tables, created by CC's migration AFTER Section 0 captured.
+--   WHY THIS IS NOT A SECTION 2 BUG, and the structural argument is
+--   stronger than the attribution: SECTION 2 CANNOT PRODUCE A 'GAINED'
+--   ROW AT ALL. Its GRANT list is keep_privs, filtered out of all_privs,
+--   which is that same table's own existing grants -- so it can only ever
+--   restore a SUBSET of what a table already held. It has no mechanism to
+--   invent a privilege. Any GAINED row therefore originates outside this
+--   script, whatever its source turns out to be.
+--   THE ATTRIBUTION THEN CONFIRMS IT INDEPENDENTLY: both tables are
+--   ABSENT from the 214-row Section 1 export (they did not exist), the
+--   privilege counts match sairnroofing_agreements_schema.sql:149 and :151
+--   exactly (3 + 2 = 5), and neither appears in 3a -- so both arrived
+--   already clean and Section 2's loop never selected them.
+--   HONEST NOTE ON THE EARLIER PREDICTION: P2 flagged these two tables and
+--   called them safe, and that conclusion held -- but it named the wrong
+--   mechanism. P2 reasoned they would be created BEFORE Section 0 and so
+--   would push the BASELINE count up. They were created AFTER it, so they
+--   touched the baseline not at all and surfaced as GAINED instead. Right
+--   tables, right verdict, wrong route. Recorded rather than smoothed
+--   over, because "that is the case I predicted" is exactly the kind of
+--   near-miss this file has already corrected twice.
+--
+-- 3c -- 774 rows / 209 tables, UNCHANGED from capture. Confirms Section 2
+-- did not touch the baseline table, so 3b's comparison is against the
+-- real before-state and not a mutated copy of the after-state.
+--
+-- VERDICT: clean pass. The baseline table is safe to drop (Section 4).
+--
+-- THE SOURCE OF THIS EXCESS IS ALREADY FIXED, so it cannot return: no
+-- schema file on this platform ever explicitly granted
+-- TRUNCATE/REFERENCES/TRIGGER/MAINTAIN (confirmed by grep), the baseline
+-- came from the default ACL, and append_only_grant_audit.sql:192-193
+-- applied `alter default privileges for role postgres in schema public
+-- revoke truncate, references, trigger, maintain on tables from
+-- service_role` -- which is why the Phase 5 tables arrived clean without
+-- anyone doing anything. Re-running a `create table if not exists` file
+-- cannot reintroduce it. This is NOT the `delete` case, where a source
+-- grant line would put the privilege straight back.
+--
+-- NEXT SWEEP MUST CAPTURE ITS OWN BASELINE. unused_delete_grant_revoke
+-- _2026-08-24.sql cannot reuse _grant_baseline_2026_08_25: that snapshot
+-- predates this run and predates the Phase 5 tables. One sweep, one
+-- window, one baseline.
+-- ════════════════════════════════════════════════════════════════════════
+--
 -- DIAGNOSTIC + DRAFT FIX ONLY. Nothing in this file has been run.
 --
 -- ── FULL EXPORT RECEIVED, 227 TABLES -- FINDINGS BEFORE SECTION 2 RUNS ────
@@ -457,6 +524,80 @@
 -- REVOKE requires the object owner, which is postgres. Section 2 is
 -- prepared, hardened and simulated; executing it needs a Supabase SQL
 -- editor session as postgres.
+--
+-- ── PRECONDITION STATUS, 2026-08-25: ALL QUERY CHECKS GREEN ──────────────
+--   R6  current_user = postgres                           CONFIRMED
+--   R4a pg_attribute.attacl via aclexplode -> 0 rows       CONFIRMED
+--   R4b is_grantable = 'YES' -> 0 rows                     CONFIRMED
+--   R2  Section 1b -> 0 rows                               CONFIRMED
+--   R1  Section 0 baseline -> 774 rows / 209 tables        CONFIRMED
+--   Section 1 re-run -> still 214 rows, no drift           CONFIRMED
+--
+-- R2 IS CLOSED, NOT MERELY UNTESTED. Section 1b returning empty means no
+-- table anywhere in public holds REFERENCES, TRIGGER or MAINTAIN without
+-- also holding TRUNCATE. The 214-row Section 1 list is therefore the
+-- COMPLETE set of affected tables -- nothing is hiding outside the
+-- TRUNCATE filter. That was the one thing the 214-row export could not
+-- tell us about itself, by construction, and now a query has.
+--
+-- THE BASELINE RECONCILES EXACTLY, WHICH IS STRONGER THAN THE TEST ASKED
+-- FOR. Section 3c only required a lower bound of 739 rows / 194 tables.
+-- The real figures are 774 / 209, and the difference is fully accounted
+-- for -- derived independently from this repo's own grant lines, not
+-- reverse-engineered to fit:
+--   194 tables + 15 = 209   and   739 rows + 35 = 774
+-- The 15 are precisely the tables that hold CRUD but NOT TRUNCATE, so they
+-- appear in Section 0 and could never appear in Section 1 -- the nine from
+-- append_only_grant_audit.sql (alf_claim_routes 2, alf_signals 2,
+-- alf_staff_credentials 2, dnt_cred_rules 3, dnt_credentials 2,
+-- sairnlaw_audit_log 2, rf_jobs 3, rf_photos 2,
+-- sairnroofing_employee_auth 3), the two audit logs (sairncode_audit_log 2,
+-- stonedesk_audit_log 2), and the four remaining rf_* (rf_cert_rules 3,
+-- rf_certifications 2, rf_claims 3, rf_claim_photos 2). 35 rows, 15 tables,
+-- zero left over.
+-- WHAT THAT BUYS: not just "Section 0 did not under-read". It means the
+-- live CRUD grant state matches what this repo says it should be, table
+-- for table and privilege for privilege, with nothing unexplained. 3b's
+-- diff is now anchored to a baseline whose every row is accounted for.
+--
+-- ── THREE PRECONDITIONS THAT ARE NOT QUERY RESULTS -- READ BEFORE RUNNING ──
+--
+-- (P1) NO OTHER GRANT SCRIPT MAY RUN INSIDE THIS ONE'S WINDOW. This is
+-- the one that will actually bite, because a second grant change is
+-- already written, decided and waiting on the same Supabase session:
+-- sql/unused_delete_grant_revoke_2026-08-24.sql (confirmed still unrun --
+-- zero uncommented mutating statements as of 2026-08-25). It deliberately
+-- REVOKEs DELETE on ~135 non-sc_* tables. If it runs between Section 0 and
+-- Section 3 here, Section 3b reports every one of those DELETEs as LOST --
+-- a real, intended change misread as a failure of THIS script. The worse
+-- outcome is the second-order one: once 3b's output is known to contain
+-- expected noise, a genuine LOST row hides inside it and the check stops
+-- being a check.
+--   RUN THEM AS TWO CLOSED WINDOWS, NOT INTERLEAVED. Recommended order:
+--   this sweep first, start to finish (Section 0 -> 2 -> 3 -> 4), because
+--   it provably changes no functional capability and its verification is
+--   the stricter of the two; confirm 3a/3b/3c clean, DROP the baseline,
+--   and only then run the DELETE revoke with its own before/after. Either
+--   order works. Overlapping does not.
+--
+-- (P2) SECTION 0 AND SECTION 1 MUST RUN IN THE SAME SITTING. The 214-row
+-- figure is from the 2026-08-25 export, captured earlier. If Section 1 now
+-- returns anything other than 214, the database moved underneath the
+-- analysis -- STOP and re-report rather than proceeding on a stale
+-- picture. Two SAIRNroofing tables (rf_contingency_rules,
+-- rf_claim_agreements, added 3c10091 on 2026-08-25) are not yet run and
+-- would be new arrivals; both use the sound revoke-all-first pattern, so
+-- they would NOT appear in Section 1 even if run, and they can only push
+-- Section 3c's baseline count UPWARD, which 3c already treats as a lower
+-- bound. So they are safe -- checked, not assumed.
+--
+-- (P3) THE QUIET WINDOW IS STILL UNSCHEDULED (this is R5, unresolved).
+-- GRANT/REVOKE takes an AccessExclusiveLock per relation, and the DO block
+-- is one transaction -- so the FIRST table it touches stays locked for the
+-- entire loop, not just its own statement. Catalog-only work across ~214
+-- tables should be fast, but "should be" is not a measurement, and four
+-- sessions have been pushing live work tonight. Pick the window
+-- deliberately; do not run it because the preconditions happen to be green.
 --
 -- ── RUN ORDER ────────────────────────────────────────────────────────────
 --   Section R6  -> confirm you are postgres
