@@ -458,6 +458,80 @@
 -- prepared, hardened and simulated; executing it needs a Supabase SQL
 -- editor session as postgres.
 --
+-- ── PRECONDITION STATUS, 2026-08-25: ALL QUERY CHECKS GREEN ──────────────
+--   R6  current_user = postgres                           CONFIRMED
+--   R4a pg_attribute.attacl via aclexplode -> 0 rows       CONFIRMED
+--   R4b is_grantable = 'YES' -> 0 rows                     CONFIRMED
+--   R2  Section 1b -> 0 rows                               CONFIRMED
+--   R1  Section 0 baseline -> 774 rows / 209 tables        CONFIRMED
+--   Section 1 re-run -> still 214 rows, no drift           CONFIRMED
+--
+-- R2 IS CLOSED, NOT MERELY UNTESTED. Section 1b returning empty means no
+-- table anywhere in public holds REFERENCES, TRIGGER or MAINTAIN without
+-- also holding TRUNCATE. The 214-row Section 1 list is therefore the
+-- COMPLETE set of affected tables -- nothing is hiding outside the
+-- TRUNCATE filter. That was the one thing the 214-row export could not
+-- tell us about itself, by construction, and now a query has.
+--
+-- THE BASELINE RECONCILES EXACTLY, WHICH IS STRONGER THAN THE TEST ASKED
+-- FOR. Section 3c only required a lower bound of 739 rows / 194 tables.
+-- The real figures are 774 / 209, and the difference is fully accounted
+-- for -- derived independently from this repo's own grant lines, not
+-- reverse-engineered to fit:
+--   194 tables + 15 = 209   and   739 rows + 35 = 774
+-- The 15 are precisely the tables that hold CRUD but NOT TRUNCATE, so they
+-- appear in Section 0 and could never appear in Section 1 -- the nine from
+-- append_only_grant_audit.sql (alf_claim_routes 2, alf_signals 2,
+-- alf_staff_credentials 2, dnt_cred_rules 3, dnt_credentials 2,
+-- sairnlaw_audit_log 2, rf_jobs 3, rf_photos 2,
+-- sairnroofing_employee_auth 3), the two audit logs (sairncode_audit_log 2,
+-- stonedesk_audit_log 2), and the four remaining rf_* (rf_cert_rules 3,
+-- rf_certifications 2, rf_claims 3, rf_claim_photos 2). 35 rows, 15 tables,
+-- zero left over.
+-- WHAT THAT BUYS: not just "Section 0 did not under-read". It means the
+-- live CRUD grant state matches what this repo says it should be, table
+-- for table and privilege for privilege, with nothing unexplained. 3b's
+-- diff is now anchored to a baseline whose every row is accounted for.
+--
+-- ── THREE PRECONDITIONS THAT ARE NOT QUERY RESULTS -- READ BEFORE RUNNING ──
+--
+-- (P1) NO OTHER GRANT SCRIPT MAY RUN INSIDE THIS ONE'S WINDOW. This is
+-- the one that will actually bite, because a second grant change is
+-- already written, decided and waiting on the same Supabase session:
+-- sql/unused_delete_grant_revoke_2026-08-24.sql (confirmed still unrun --
+-- zero uncommented mutating statements as of 2026-08-25). It deliberately
+-- REVOKEs DELETE on ~135 non-sc_* tables. If it runs between Section 0 and
+-- Section 3 here, Section 3b reports every one of those DELETEs as LOST --
+-- a real, intended change misread as a failure of THIS script. The worse
+-- outcome is the second-order one: once 3b's output is known to contain
+-- expected noise, a genuine LOST row hides inside it and the check stops
+-- being a check.
+--   RUN THEM AS TWO CLOSED WINDOWS, NOT INTERLEAVED. Recommended order:
+--   this sweep first, start to finish (Section 0 -> 2 -> 3 -> 4), because
+--   it provably changes no functional capability and its verification is
+--   the stricter of the two; confirm 3a/3b/3c clean, DROP the baseline,
+--   and only then run the DELETE revoke with its own before/after. Either
+--   order works. Overlapping does not.
+--
+-- (P2) SECTION 0 AND SECTION 1 MUST RUN IN THE SAME SITTING. The 214-row
+-- figure is from the 2026-08-25 export, captured earlier. If Section 1 now
+-- returns anything other than 214, the database moved underneath the
+-- analysis -- STOP and re-report rather than proceeding on a stale
+-- picture. Two SAIRNroofing tables (rf_contingency_rules,
+-- rf_claim_agreements, added 3c10091 on 2026-08-25) are not yet run and
+-- would be new arrivals; both use the sound revoke-all-first pattern, so
+-- they would NOT appear in Section 1 even if run, and they can only push
+-- Section 3c's baseline count UPWARD, which 3c already treats as a lower
+-- bound. So they are safe -- checked, not assumed.
+--
+-- (P3) THE QUIET WINDOW IS STILL UNSCHEDULED (this is R5, unresolved).
+-- GRANT/REVOKE takes an AccessExclusiveLock per relation, and the DO block
+-- is one transaction -- so the FIRST table it touches stays locked for the
+-- entire loop, not just its own statement. Catalog-only work across ~214
+-- tables should be fast, but "should be" is not a measurement, and four
+-- sessions have been pushing live work tonight. Pick the window
+-- deliberately; do not run it because the preconditions happen to be green.
+--
 -- ── RUN ORDER ────────────────────────────────────────────────────────────
 --   Section R6  -> confirm you are postgres
 --   Section R4  -> pre-flight, expect zero rows from both queries
@@ -472,13 +546,49 @@
 -- ── SECTION R6: PRECONDITION. Must print `postgres`. ─────────────────────
 select current_user, session_user;
 
--- ── SECTION R4: PRE-FLIGHT. Both queries must return ZERO rows. ──────────
--- If either returns anything, STOP: Section 2's REVOKE ALL would destroy
--- a column-level grant or a WITH GRANT OPTION that its re-GRANT cannot
--- restore. The repo has neither, but the repo is not the database.
-select table_name, column_name, privilege_type
-from information_schema.role_column_grants
-where table_schema = 'public' and grantee = 'service_role';
+-- ── SECTION R4: PRE-FLIGHT ───────────────────────────────────────────────
+-- The concern is real: REVOKE ALL on a table cascades to that table's
+-- COLUMN-level privileges, while the re-GRANT below restores table-level
+-- ones only. So a genuine column grant would be destroyed silently.
+-- WITH GRANT OPTION is likewise not carried across.
+--
+-- R4a WAS WRITTEN WRONG AND IS CORRECTED HERE, 2026-08-25. It originally
+-- queried information_schema.role_column_grants and said "expect zero
+-- rows". That test CANNOT pass on any normal database and would have sent
+-- every reader into a false stop. The SQL standard requires
+-- column_privileges (which role_column_grants sits on) to report a row per
+-- column whenever the privilege is held, INCLUDING when it is held via a
+-- table-level grant -- Postgres expands relacl across every column. So a
+-- plain `grant select on t to service_role` yields one row per column of
+-- t, and the view cannot distinguish that from a real narrower grant.
+-- Caught on the first live run: it returned hundreds of rows, covering
+-- exactly SELECT/INSERT/UPDATE/REFERENCES -- which are precisely the four
+-- privileges Postgres allows at column level -- on tables already holding
+-- them at table level. That is the standard's echo, not a finding.
+--
+-- THE REAL TEST IS pg_attribute.attacl, which is NULL unless a genuine
+-- column-specific GRANT/REVOKE was issued against that column. It has no
+-- table-level echo. aclexplode decodes it, so a hit names the exact
+-- column, grantee and privilege rather than leaving an aclitem[] to read
+-- by eye. relkind is filtered so only real and partitioned tables count.
+-- ZERO ROWS = no column ACL exists anywhere in public; R4a passes in
+-- substance and REVOKE ALL loses nothing.
+-- ANY ROWS = genuine column-level restrictions narrower than the table
+-- grant. STOP, and report which columns.
+select
+  c.relname                   as table_name,
+  a.attname                   as column_name,
+  acl.grantee::regrole::text  as grantee,
+  acl.privilege_type
+from pg_attribute a
+join pg_class c     on c.oid = a.attrelid
+join pg_namespace n on n.oid = c.relnamespace
+cross join lateral aclexplode(a.attacl) as acl
+where n.nspname = 'public'
+  and c.relkind in ('r', 'p')
+  and a.attacl is not null
+  and not a.attisdropped
+order by 1, 2, 3;
 
 select table_name, privilege_type
 from information_schema.role_table_grants

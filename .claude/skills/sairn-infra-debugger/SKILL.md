@@ -21,13 +21,41 @@ from information_schema.table_privileges
 where table_name = '<table_name>';
 ```
 
-If `service_role` is missing `SELECT`/`INSERT`/`UPDATE`/`DELETE`, that's the bug. Fix:
+If `service_role` is missing the verbs the app's code actually uses, that's the bug. Fix — **grant only those verbs**:
 
 ```sql
-grant select, insert, update, delete on <table_name> to service_role;
+grant select, insert, update on <table_name> to service_role;
 ```
 
 Check every new table you create this same way — this bug tends to affect every table created in the same migration, not just one.
+
+### Do NOT add `delete` reflexively (corrected 2026-08-25)
+
+**This section used to prescribe `grant select, insert, update, delete` as the
+standard fix. That template caused a real bug.** On 2026-08-06 a session
+correcting a pattern of *missing* grants wrote the full CRUD verb list into
+`sql/scp_employee_auth_schema.sql` and `sql/sairnscape_data_schema.sql` —
+7 unused `DELETE` grants across 7 SAIRNscape tables, including an auth
+credentials table. SAIRNscape has no delete path. Found 2026-08-25 during the
+platform DELETE-grant sweep; see `sql/unused_delete_grant_revoke_2026-08-24.sql`.
+
+**Grant the verbs the code calls, and no more.** On this platform that is
+almost always `select, insert, update` — corrections are upserts
+(`?on_conflict=`), cancellation is a status field, and the entire repo
+contains **exactly one** `method: 'DELETE'` (the SAIRNcode `SC_RESOURCES`
+branch in `api/sd-data.js`, admin-session gated). Verify with
+`grep -rn "method: *'DELETE'" --include=*.js .` before granting `delete` to
+anything.
+
+Why it matters beyond tidiness: these tables carry RLS `using (false)`, and
+`service_role` **bypasses RLS entirely** — so the grant is the only layer
+between a leaked service key, or a future coding mistake, and irreversible
+row loss.
+
+**Cleanup scripts are not a reason to grant `delete`.** Every delete-issuing
+maintenance script on this platform runs as the **owner** role in the Supabase
+SQL editor, not as `service_role` — their own headers say so. If a script
+needs to delete, that is already how it works.
 
 ## Order of operations for ANY "403/401 from Supabase" report
 

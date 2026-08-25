@@ -141,7 +141,12 @@ arrived here through this file rather than a trigger word:
   every turn; don't swap styles (e.g. caveman) to fix drift, it won't help.
 
 ## Push Protocol — standing rule, both directions, no exceptions
-1. **Before pushing:** run full Check 0 + all 26 sairn-guardian-v2 checks
+1. **Before pushing:** run full Check 0 + all 30 sairn-guardian-v2 checks
+   (**count corrected 2026-08-25** — this line said 26, the loaded global
+   copy of the skill said 28, and the committed skill said 30. Three live
+   numbers at once. **Do not trust this number either** — re-read the
+   skill's own heading, `## The N Checks`, which is the only source that
+   moves when a check is added.)
    locally against the changed file(s). Do not push on a partial check or
    on "syntax passed" alone — syntax-clean is necessary, not sufficient.
 2. **After pushing:** live-verify the specific fix against
