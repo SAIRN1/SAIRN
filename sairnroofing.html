@@ -414,6 +414,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="jtab on" id="jtab-overview" onclick="jobTab('overview')">Overview</button>
       <button class="jtab" id="jtab-measurement" onclick="jobTab('measurement')">Measurement</button>
       <button class="jtab" id="jtab-estimate" onclick="jobTab('estimate')">Estimate</button>
+      <button class="jtab" id="jtab-billing" onclick="jobTab('billing')">Proposal &amp; Invoice</button>
     </div>
 
     <div class="jtabpanel on" id="jtabpanel-overview">
@@ -491,6 +492,53 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="srow"><span class="slbl">Total</span><span class="sval" id="je-total">$0</span></div>
         <button class="btn bp" onclick="saveEstimate()">Save Estimate</button>
         <div id="je-certs" style="margin-top:20px;"></div>
+      </div>
+    </div>
+
+    <div class="jtabpanel" id="jtabpanel-billing">
+      <div id="jb-needs-save" class="note" style="display:none;">Save the job on the Overview tab first.</div>
+      <div id="jb-body" style="display:none;">
+        <div class="ch" style="padding-left:0;"><div class="ct">Proposal</div></div>
+        <div class="note">A proposal <strong>snapshots</strong> the price you sent. Editing the estimate afterwards does not change it &mdash; re-pricing issues a new proposal, which is what actually happened.</div>
+        <div id="jb-prop-state" style="margin-top:10px;"></div>
+        <div id="jb-prop-actions" style="margin-top:12px;"></div>
+        <div id="jb-prop-decide" style="display:none;margin-top:12px;">
+          <div class="fr">
+            <div class="fg"><label>Decision</label><select id="jb-decision">
+              <option value="accepted">Accepted</option><option value="declined">Declined</option><option value="withdrawn">Withdrawn</option>
+            </select></div>
+            <div class="fg"><label>Date</label><input type="date" id="jb-decided-on"></div>
+            <div class="fg"><label>Who decided</label><input id="jb-accepted-by" placeholder="customer name"></div>
+            <div class="fg"><label>How</label><select id="jb-accept-method" onchange="rfAcceptMethodChanged()">
+              <option value="in_person">In person</option><option value="email">Email</option>
+              <option value="phone">Phone</option><option value="signature">Signature</option><option value="other">Other</option>
+            </select></div>
+          </div>
+          <div id="jb-sig-wrap" style="display:none;">
+            <div class="fg"><label>Signature</label></div>
+            <canvas id="jb-sig" width="600" height="140" style="border:1px solid var(--bd);border-radius:6px;width:100%;touch-action:none;background:#fff;"></canvas>
+            <button class="btn bo bs" onclick="rfPropSigClear()">Clear</button>
+          </div>
+          <button class="btn bp" onclick="rfRecordDecision()">Record Decision</button>
+        </div>
+
+        <div class="ch" style="padding-left:0;margin-top:20px;"><div class="ct">Invoices</div></div>
+        <div id="jb-inv-gate" class="note" style="display:none;">Billing is management-level information.</div>
+        <div id="jb-inv-body">
+          <div id="jb-inv-list"></div>
+          <div class="fr" style="margin-top:10px;">
+            <div class="fg"><label>Bill to</label><input id="jb-bill-to" placeholder="customer name"></div>
+            <div class="fg"><label>Terms</label><input id="jb-terms" placeholder="Net 30"></div>
+            <div class="fg"><label>Due date</label><input type="date" id="jb-due"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Tax rate %</label><input id="jb-tax-rate" placeholder="leave blank if none"></div>
+            <div class="fg"><label>or tax amount</label><input id="jb-tax-amt" placeholder="overrides the rate"></div>
+            <div class="fg"><label>Link to claim (optional)</label><input id="jb-claim" placeholder="RFCLM-..."></div>
+          </div>
+          <div class="note">No tax rate is assumed. Roofing tax turns on whether the work is a capital improvement, which is a question about this job and this jurisdiction &mdash; enter it or leave it blank.</div>
+          <button class="btn bp" onclick="rfCreateInvoiceFromProposal()">Draft Invoice from the Accepted Proposal</button>
+        </div>
       </div>
     </div>
 
@@ -1356,6 +1404,214 @@ function rfRescindAgreement(){
 }
 
 
+// ── PROPOSAL + INVOICE (Phase 4b) ─────────────────────────────────────────
+// The panel never computes a total, a balance or an invoice number. Totals are
+// recomputed server-side from quantity x unit_price, the balance is derived on
+// every read, and the number comes from the gapless allocator. A second
+// arithmetic path here is a second answer that can disagree with the one the
+// customer is holding.
+var rfPropState=null,rfInvoices=[],rfPropSigCtx=null,rfPropSigDrawn=false;
+
+function rfLoadBilling(){
+  var j=currentEditingJob;if(!j)return;
+  rfDataRaw('read','rf_proposals',{job_id:j.id}).then(function(r){
+    rfPropState=(r.ok&&r.data&&r.data.state)||null;
+    rfRenderProposal();
+  });
+  // Invoices are management/broad-read only. A foreman gets a 403 here by
+  // design; show the reason rather than an empty list that looks like "none".
+  var canBill=!!BROAD_READ_ROLES[rfSession&&rfSession.role];
+  $('jb-inv-gate').style.display=canBill?'none':'';
+  $('jb-inv-body').style.display=canBill?'':'none';
+  if(!canBill)return;
+  rfDataRaw('read','rf_invoices',{job_id:j.id}).then(function(r){
+    rfInvoices=(r.ok&&r.data&&r.data.data)||[];
+    rfRenderInvoices();
+  });
+}
+
+function rfPropBadge(st){
+  if(st==='accepted')return '<span class="badge bg">accepted</span>';
+  if(st==='declined')return '<span class="badge br">declined</span>';
+  if(st==='withdrawn')return '<span class="badge bx">withdrawn</span>';
+  if(st==='awaiting_decision')return '<span class="badge bw">awaiting decision</span>';
+  return '<span class="badge bx">none issued</span>';
+}
+
+function rfRenderProposal(){
+  var el=$('jb-prop-state');if(!el)return;
+  var canPrice=!!BROAD_READ_ROLES[rfSession&&rfSession.role];
+  var s=rfPropState;
+  if(!s||s.status==='none'){
+    el.innerHTML='<div class="note">No proposal has been issued for this job yet.</div>';
+    $('jb-prop-actions').innerHTML=canPrice?'<button class="btn bp" onclick="rfIssueProposal()">Issue a Proposal from the Estimate</button>':'';
+    $('jb-prop-decide').style.display='none';
+    return;
+  }
+  var rows=(s.totals&&s.totals.line_items||[]).map(function(l){
+    return '<tr><td>'+rfEsc(l.description)+'</td><td>'+l.quantity+' '+rfEsc(l.unit||'')+'</td><td>'+rfCurrency(l.unit_price)+'</td><td>'+rfCurrency(l.amount)+'</td></tr>';
+  }).join('');
+  el.innerHTML=
+    '<div style="font-weight:600;">Proposal '+rfEsc(s.latest.proposal_id)+' &mdash; issued '+rfEsc(s.latest.issued_on||'')+' '+rfPropBadge(s.status)+'</div>'+
+    (s.superseded_count?'<div class="note">'+s.superseded_count+' earlier proposal(s) superseded.</div>':'')+
+    '<div class="tw" style="margin-top:8px;"><table><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="4">No lines.</td></tr>')+'</tbody></table></div>'+
+    '<div class="srow"><span class="slbl">Proposal total</span><span class="sval">'+rfCurrency(s.totals.total)+'</span></div>'+
+    (s.decision?'<div class="note">'+rfEsc(s.decision.event_type)+' on '+rfEsc(s.decision.decided_on||'')+(s.decision.accepted_by?' by '+rfEsc(s.decision.accepted_by):'')+(s.decision.acceptance_method?' ('+rfEsc(s.decision.acceptance_method)+')':'')+'</div>':'');
+  $('jb-prop-actions').innerHTML=canPrice?'<button class="btn bo" onclick="rfIssueProposal()">Re-price &mdash; issue a new proposal</button>':'';
+  $('jb-prop-decide').style.display=(canPrice&&s.status==='awaiting_decision')?'':'none';
+  if(canPrice&&s.status==='awaiting_decision')rfAcceptMethodChanged();
+}
+
+function rfAcceptMethodChanged(){
+  var wantSig=$('jb-decision').value==='accepted'&&$('jb-accept-method').value==='signature';
+  $('jb-sig-wrap').style.display=wantSig?'':'none';
+  if(wantSig)rfPropSigInit();
+}
+function rfPropSigInit(){
+  var cv=$('jb-sig');if(!cv||rfPropSigCtx)return;
+  rfPropSigCtx=cv.getContext('2d');
+  rfPropSigCtx.lineWidth=2;rfPropSigCtx.lineCap='round';rfPropSigCtx.strokeStyle='#111';
+  var drawing=false;
+  function pos(e){var r=cv.getBoundingClientRect();var t=(e.touches&&e.touches[0])||e;
+    return {x:(t.clientX-r.left)*(cv.width/r.width),y:(t.clientY-r.top)*(cv.height/r.height)};}
+  function start(e){e.preventDefault();drawing=true;rfPropSigDrawn=true;var p=pos(e);rfPropSigCtx.beginPath();rfPropSigCtx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;e.preventDefault();var p=pos(e);rfPropSigCtx.lineTo(p.x,p.y);rfPropSigCtx.stroke();}
+  function end(){drawing=false;}
+  cv.addEventListener('mousedown',start);cv.addEventListener('mousemove',move);
+  cv.addEventListener('mouseup',end);cv.addEventListener('mouseleave',end);
+  cv.addEventListener('touchstart',start,{passive:false});
+  cv.addEventListener('touchmove',move,{passive:false});
+  cv.addEventListener('touchend',end);
+}
+function rfPropSigClear(){
+  var cv=$('jb-sig');if(!cv||!rfPropSigCtx)return;
+  rfPropSigCtx.clearRect(0,0,cv.width,cv.height);rfPropSigDrawn=false;
+}
+
+function rfIssueProposal(){
+  var j=currentEditingJob;if(!j){toast('Save the job first');return;}
+  var est=j.estimate;
+  if(!est||!Array.isArray(est.line_items)||!est.line_items.length){
+    toast('Price the job on the Estimate tab first -- a proposal snapshots real lines',5000);return;
+  }
+  // Map the estimate's internal names onto the standard export names. The
+  // server recomputes every amount regardless.
+  var lines=est.line_items.map(function(l){
+    return {description:l.label||'',quantity:l.qty,unit:l.unit||'',unit_price:l.unit_cost};
+  });
+  rfDataRaw('write','rf_proposals',{
+    id:'RFPRO-'+Date.now(), job_id:j.id, event_type:'issued',
+    issued_on:new Date().toISOString().slice(0,10), line_items:lines
+  }).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not issue the proposal',5000);return;}
+    toast('Proposal issued');rfLoadBilling();
+  });
+}
+
+function rfRecordDecision(){
+  var j=currentEditingJob;if(!j||!rfPropState||!rfPropState.latest){toast('Nothing to decide');return;}
+  var decision=$('jb-decision').value;
+  var rec={
+    id:'RFPRO-'+Date.now(), job_id:j.id, event_type:decision,
+    supersedes:rfPropState.latest.proposal_id,
+    decided_on:$('jb-decided-on').value||new Date().toISOString().slice(0,10)
+  };
+  if(decision==='accepted'){
+    rec.accepted_by=($('jb-accepted-by').value||'').trim();
+    rec.acceptance_method=$('jb-accept-method').value;
+    if(!rec.accepted_by){toast('Record who accepted it');return;}
+    if(rec.acceptance_method==='signature'){
+      if(!rfPropSigDrawn){toast('Capture the signature, or pick another method');return;}
+      rec.signature_data=$('jb-sig').toDataURL('image/png');
+    }
+  }
+  rfDataRaw('write','rf_proposals',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not record the decision',5000);return;}
+    toast('Decision recorded');rfPropSigClear();rfLoadBilling();
+  });
+}
+
+function rfInvBadge(inv){
+  if(inv.status==='void')return '<span class="badge bx">void</span>';
+  if(inv.status==='draft')return '<span class="badge bw">draft</span>';
+  var s=inv.summary||{};
+  if(s.settlement==='settled')return '<span class="badge bg">paid in full</span>';
+  if(s.settlement==='overpaid')return '<span class="badge bw">overpaid</span>';
+  return '<span class="badge br">'+rfCurrency(s.balance)+' outstanding</span>';
+}
+
+function rfRenderInvoices(){
+  var el=$('jb-inv-list');if(!el)return;
+  if(!rfInvoices.length){el.innerHTML='<div class="note">No invoices on this job yet.</div>';return;}
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Number</th><th>Status</th><th>Total</th><th>Paid</th><th></th></tr></thead><tbody>'+
+    rfInvoices.map(function(i){
+      var s=i.summary||{};
+      var actions=(i.status==='draft'?'<button class="btn bp bs" onclick="rfIssueInvoice(\''+rfEsc(i.invoice_id)+'\')">Issue</button> ':'')+
+        (i.status==='issued'?'<button class="btn bo bs" onclick="rfPromptPayment(\''+rfEsc(i.invoice_id)+'\')">Record payment</button> ':'')+
+        (i.claim_id?'<button class="btn bo bs" onclick="rfReconcileInvoice(\''+rfEsc(i.invoice_id)+'\')">Check vs claim</button>':'');
+      return '<tr><td>'+rfEsc(i.invoice_number||'(unissued draft)')+'</td><td>'+rfInvBadge(i)+'</td><td>'+rfCurrency(s.total)+'</td><td>'+rfCurrency(s.paid)+'</td><td>'+actions+'</td></tr>';
+    }).join('')+'</tbody></table></div><div id="jb-recon" style="margin-top:8px;"></div>';
+}
+
+function rfCreateInvoiceFromProposal(){
+  var j=currentEditingJob;if(!j)return;
+  var s=rfPropState;
+  if(!s||s.status!=='accepted'){toast('Invoice from an ACCEPTED proposal -- record the acceptance first',5000);return;}
+  var rate=($('jb-tax-rate').value||'').trim();
+  var amt=($('jb-tax-amt').value||'').trim();
+  var rec={
+    id:'RFINV-'+Date.now(), job_id:j.id, status:'draft',
+    line_items:(s.totals&&s.totals.line_items)||[],
+    bill_to:($('jb-bill-to').value||'').trim(),
+    terms:($('jb-terms').value||'').trim(),
+    due_date:$('jb-due').value||null,
+    claim_id:($('jb-claim').value||'').trim()||null
+  };
+  if(rate!=='')rec.tax_rate=Number(rate);
+  if(amt!=='')rec.tax=Number(amt);
+  rfDataRaw('write','rf_invoices',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not draft the invoice',5000);return;}
+    toast('Draft invoice created');rfLoadBilling();
+  });
+}
+
+function rfIssueInvoice(id){
+  rfDataRaw('issue','rf_invoices',{invoice_id:id}).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not issue the invoice',5000);return;}
+    toast(r.data&&r.data.already_issued?('Already issued as '+r.data.invoice_number):('Issued as '+(r.data&&r.data.invoice_number)));
+    rfLoadBilling();
+  });
+}
+
+function rfPromptPayment(id){
+  var amt=prompt('Payment amount (a negative amount reverses an earlier one):');
+  if(amt===null)return;
+  var n=Number(String(amt).trim());
+  if(!n){toast('Enter a non-zero amount');return;}
+  var rec={payment_id:'RFPAY-'+Date.now(),amount:n,received_on:new Date().toISOString().slice(0,10),method:'check'};
+  if(n<0){
+    var rev=prompt('Which payment_id does this reverse?');
+    if(!rev)return;
+    rec.reverses=rev.trim();
+  }
+  rfDataRaw('add_payment','rf_invoices',{invoice_id:id,payment:rec}).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not record the payment',5000);return;}
+    toast('Payment recorded');rfLoadBilling();
+  });
+}
+
+function rfReconcileInvoice(id){
+  rfDataRaw('reconcile_claim','rf_invoices',{invoice_id:id}).then(function(r){
+    var el=$('jb-recon');if(!el)return;
+    if(!r.ok){el.innerHTML='<div class="note">'+rfEsc(r.msg||'Could not compare against the claim.')+'</div>';return;}
+    var rc=r.data&&r.data.reconciliation;
+    if(!rc||!rc.linked){el.innerHTML='<div class="note">This invoice is not linked to a claim.</div>';return;}
+    el.innerHTML='<div class="note"><strong>Invoice vs claim '+rfEsc(rc.claim_id||'')+'</strong><br>'+
+      rc.notes.map(rfEsc).join('<br>')+'<br><em>'+rfEsc(rc.disclosure)+'</em></div>';
+  });
+}
+
 // ── MANUFACTURER PROGRAMMES (Phase 4d) ────────────────────────────────────
 // Company-level, voluntary, commercial. The panel never decides a verdict --
 // api/_lib/roofing-programs.js does, and every disclosure rendered here comes
@@ -1676,10 +1932,11 @@ function getQuantityFormValues(containerId){
 }
 
 function jobTab(name){
-  ['overview','measurement','estimate'].forEach(function(t){
+  ['overview','measurement','estimate','billing'].forEach(function(t){
     $('jtab-'+t).classList.toggle('on',t===name);
     $('jtabpanel-'+t).classList.toggle('on',t===name);
   });
+  if(name==='billing'&&currentEditingJob)rfLoadBilling();
 }
 
 function openJobModal(id){
@@ -1699,10 +1956,12 @@ function openJobModal(id){
   if(j){
     $('jm-needs-save').style.display='none';$('jm-body').style.display='block';
     $('je-needs-save').style.display='none';$('je-body').style.display='block';
+    $('jb-needs-save').style.display='none';$('jb-body').style.display='block';
     renderMeasurementTab();renderEstimateTab();
   } else {
     $('jm-needs-save').style.display='block';$('jm-body').style.display='none';
     $('je-needs-save').style.display='block';$('je-body').style.display='none';
+    $('jb-needs-save').style.display='block';$('jb-body').style.display='none';
   }
   $('job-modal').classList.add('on');
 }

@@ -43,6 +43,7 @@ const roofingSupplement = require('./_lib/roofing-supplement');
 const roofingAgreements = require('./_lib/roofing-agreements');
 const roofingLocations = require('./_lib/roofing-locations');
 const roofingPrograms = require('./_lib/roofing-programs');
+const roofingBilling = require('./_lib/roofing-billing');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -3106,6 +3107,311 @@ module.exports = async (req, res) => {
         worksheet: worksheet
       });
       return;
+    }
+
+    // ── SAIRNROOFING: estimate -> proposal -> invoice (2026-08-25, Phase 4b) ─────────────────
+    // The job-visibility gate, mirroring rfClaimGate. Proposals follow job
+    // visibility (a foreman assigned a job can already see its estimate, so
+    // hiding the proposal would be inconsistent); INVOICES DO NOT -- what the
+    // customer was billed and what they have paid is billing information a
+    // crew member has no operational need for. Michael's call 2026-08-25.
+    const rfJobGate = async (lh, hdrs, jobId, session, response) => {
+      const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(lh) + '&job_id=eq.' + enc(jobId) + '&select=job_id,assigned_employee_id,location_id'), { headers: hdrs });
+      if (jr.status === 404 || jr.status === 400) {
+        response.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Jobs are not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } });
+        return { ok: false };
+      }
+      const rows = await jr.json();
+      const job = Array.isArray(rows) && rows[0];
+      if (!job) { response.status(404).json({ error: { code: 'NO_JOB', message: 'No such job' } }); return { ok: false }; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && job.assigned_employee_id !== session.employee_id) {
+        response.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only work on a job assigned to you' } });
+        return { ok: false };
+      }
+      return { ok: true, job: job };
+    };
+
+    if (resource === 'rf_proposals' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const jobId = payload && payload.job_id;
+      if (!jobId) { res.status(400).json({ error: { message: 'rf_proposals read requires payload.job_id' } }); return; }
+      const gate = await rfJobGate(licHash, headers, jobId, session, res);
+      if (!gate.ok) return;
+      const r = await fetch(rest('rf_proposals?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(jobId) + '&select=proposal_id,job_id,event_type,supersedes,recorded_by,data,created_at&order=created_at.asc'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, state: null }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      // Same reasoning as rf_claim_agreements: an acceptance signature is up to
+      // 1.5MB and nothing renders it, so it is stripped unless asked for.
+      const withSig = payload && payload.include_signature === true;
+      const events = (rows || []).map((x) => {
+        const blob = Object.assign({}, x.data || {});
+        if (!withSig) { delete blob.signature_data; blob.has_signature = !!(x.data && x.data.signature_data); }
+        return Object.assign(blob, {
+          proposal_id: x.proposal_id, job_id: x.job_id, event_type: x.event_type,
+          supersedes: x.supersedes, recorded_by: x.recorded_by, created_at: x.created_at
+        });
+      });
+      res.status(200).json({
+        ok: true, provisioned: true, data: events,
+        state: roofingBilling.proposalState(events),
+        events: roofingBilling.PROPOSAL_EVENTS,
+        acceptance_methods: roofingBilling.ACCEPTANCE_METHODS
+      });
+      return;
+    }
+    if (resource === 'rf_proposals' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      // Pricing is estimator/management work, matching the Phase 2 estimate
+      // block -- a foreman may SEE the proposal on their job but cannot issue
+      // one or record a customer's decision on it.
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management or an estimator can issue or decide a proposal' } });
+        return;
+      }
+      const problems = roofingBilling.validateProposal(payload);
+      if (problems.length) { res.status(400).json({ error: { message: 'rf_proposals: ' + problems.join('; ') } }); return; }
+      const gate = await rfJobGate(licHash, headers, payload.job_id, session, res);
+      if (!gate.ok) return;
+      if (payload.event_type !== 'issued') {
+        // A decision must name a real ISSUED proposal on THIS job. Checked
+        // server-side against the stored chain -- otherwise a stray supersedes
+        // could decide a proposal on a job the caller cannot see.
+        const pr = await fetch(rest('rf_proposals?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.job_id) + '&proposal_id=eq.' + enc(payload.supersedes) + '&event_type=eq.issued&select=proposal_id'), { headers });
+        const pRows = (pr.status === 404 || pr.status === 400) ? [] : await pr.json();
+        if (!Array.isArray(pRows) || !pRows.length) {
+          res.status(400).json({ error: { code: 'NO_SUCH_PROPOSAL', message: 'That job has no issued proposal with the id being responded to' } });
+          return;
+        }
+      }
+      const blob = Object.assign({}, payload);
+      ['id', 'job_id', 'event_type', 'supersedes'].forEach((k) => { delete blob[k]; });
+      // The price is SNAPSHOT and recomputed server-side, never trusted from
+      // the client and never a pointer at the live estimate.
+      if (payload.event_type === 'issued') {
+        const totals = roofingBilling.computeTotals(payload.line_items, payload.tax_rate, payload.tax);
+        blob.line_items = totals.line_items;
+        blob.subtotal = totals.subtotal;
+        blob.tax_rate = totals.tax_rate;
+        blob.tax = totals.tax;
+        blob.total = totals.total;
+      }
+      const r = await fetch(rest('rf_proposals'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', proposal_id: String(payload.id),
+          job_id: String(payload.job_id), event_type: payload.event_type,
+          supersedes: payload.supersedes || null,
+          recorded_by: session.employee_id, data: blob
+        })
+      });
+      if (r.status === 404 || r.status === 400 || r.status === 409) {
+        const bt = await r.text();
+        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Proposals are not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
+        if (/duplicate key|unique/i.test(bt)) { res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'A proposal with that id already exists — append-only, ids are never reused' } }); return; }
+        res.status(400).json({ error: { message: 'Data store rejected the proposal', detail: bt } }); return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { proposal_id: saved.proposal_id, event_type: saved.event_type, recorded_by: saved.recorded_by }) : payload });
+      return;
+    }
+
+    // Invoices: management/broad-read only, read AND write. No narrow tier.
+    if (resource === 'rf_invoices' && (action === 'read' || action === 'write' || action === 'issue' || action === 'add_payment' || action === 'reconcile_claim')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Billing is management-level information' } });
+        return;
+      }
+      const loadInvoice = async (invId) => {
+        const r = await fetch(rest('rf_invoices?license_hash=eq.' + enc(licHash) + '&invoice_id=eq.' + enc(invId) + '&select=invoice_id,invoice_number,invoice_seq,job_id,location_id,claim_id,status,issue_date,due_date,data,payments,created_by'), { headers });
+        if (r.status === 404 || r.status === 400) return { missing: 'table' };
+        const rows = await r.json();
+        return { row: Array.isArray(rows) && rows[0] };
+      };
+      const shape = (x) => Object.assign({}, x.data || {}, {
+        invoice_id: x.invoice_id, invoice_number: x.invoice_number, invoice_seq: x.invoice_seq,
+        job_id: x.job_id, location_id: x.location_id, claim_id: x.claim_id, status: x.status,
+        issue_date: x.issue_date, due_date: x.due_date, payments: x.payments || [], created_by: x.created_by
+      });
+
+      if (action === 'read') {
+        let q = 'rf_invoices?license_hash=eq.' + enc(licHash) + '&select=invoice_id,invoice_number,invoice_seq,job_id,location_id,claim_id,status,issue_date,due_date,data,payments,created_by&order=created_at.desc';
+        if (payload && payload.job_id) q += '&job_id=eq.' + enc(String(payload.job_id));
+        const r = await fetch(rest(q), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({
+          ok: true, provisioned: true,
+          // summary is DERIVED on every read and never persisted -- see the
+          // schema header for why there is no balance column.
+          data: (rows || []).map((x) => { const inv = shape(x); return Object.assign(inv, { summary: roofingBilling.summarizeInvoice(inv) }); }),
+          statuses: roofingBilling.INVOICE_STATUSES,
+          payment_methods: roofingBilling.PAYMENT_METHODS
+        });
+        return;
+      }
+
+      if (action === 'write') {
+        const problems = roofingBilling.validateInvoice(payload);
+        if (problems.length) { res.status(400).json({ error: { message: 'rf_invoices: ' + problems.join('; ') } }); return; }
+        const gate = await rfJobGate(licHash, headers, payload.job_id, session, res);
+        if (!gate.ok) return;
+        const existing = await loadInvoice(String(payload.id));
+        if (existing.missing === 'table') { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
+        // An ISSUED or PAID invoice is a document the customer holds. Editing
+        // its money after the fact is exactly what a void-and-reissue exists to
+        // avoid, so only the status may move once it has left draft.
+        if (existing.row && existing.row.status !== 'draft' && payload.status !== 'void') {
+          res.status(409).json({ error: { code: 'NOT_A_DRAFT', message: 'This invoice has been issued. Void it and raise a new one rather than editing what the customer already has.' } });
+          return;
+        }
+        const totals = roofingBilling.computeTotals(payload.line_items, payload.tax_rate, payload.tax);
+        const blob = Object.assign({}, payload);
+        ['id', 'job_id', 'location_id', 'claim_id', 'status', 'issue_date', 'due_date', 'payments', 'invoice_number', 'invoice_seq'].forEach((k) => { delete blob[k]; });
+        blob.line_items = totals.line_items;
+        blob.subtotal = totals.subtotal;
+        blob.tax_rate = totals.tax_rate;
+        blob.tax = totals.tax;
+        blob.total = totals.total;
+        const body = {
+          license_hash: licHash, app_id: 'sairnroofing', invoice_id: String(payload.id),
+          job_id: String(payload.job_id),
+          location_id: (gate.job && gate.job.location_id) || roofingLocations.DEFAULT_LOCATION_ID,
+          claim_id: payload.claim_id || null,
+          status: payload.status || (existing.row ? existing.row.status : 'draft'),
+          issue_date: payload.issue_date || (existing.row ? existing.row.issue_date : null),
+          due_date: payload.due_date || null,
+          data: blob, created_by: (existing.row && existing.row.created_by) || session.employee_id,
+          updated_at: nowISO()
+        };
+        // The number is NEVER allocated here -- only the 'issue' verb does that,
+        // so a draft cannot burn a sequence number and leave a gap. An existing
+        // invoice keeps whatever it already has; a new one is written with an
+        // EXPLICIT null rather than by omission, so the intent is on the wire
+        // instead of resting on a column default.
+        body.invoice_number = existing.row ? existing.row.invoice_number : null;
+        body.invoice_seq = existing.row ? existing.row.invoice_seq : null;
+        const r = await fetch(rest('rf_invoices?on_conflict=license_hash,invoice_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify(body)
+        });
+        if (r.status === 404 || r.status === 400) {
+          const bt = await r.text();
+          if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
+          if (/rfinv_issued_needs_number/i.test(bt)) { res.status(400).json({ error: { message: 'An invoice cannot leave draft without a number — use the issue action, which allocates one.' } }); return; }
+          res.status(400).json({ error: { message: 'Data store rejected the invoice', detail: bt } }); return;
+        }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const saved = Array.isArray(rows) && rows[0];
+        const inv = saved ? shape(saved) : payload;
+        res.status(200).json({ ok: true, data: Object.assign(inv, { summary: roofingBilling.summarizeInvoice(inv) }) });
+        return;
+      }
+
+      if (action === 'issue') {
+        const invId = payload && payload.invoice_id;
+        if (!invId) { res.status(400).json({ error: { message: 'issue requires payload.invoice_id' } }); return; }
+        const found = await loadInvoice(String(invId));
+        if (found.missing === 'table') { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
+        if (!found.row) { res.status(404).json({ error: { code: 'NO_INVOICE', message: 'No such invoice' } }); return; }
+        if (found.row.status !== 'draft') {
+          // Idempotent rather than an error: re-issuing must NOT allocate a
+          // second number, which would burn one and break the gapless
+          // sequence in the one direction nobody can fix afterwards.
+          res.status(200).json({ ok: true, already_issued: true, invoice_number: found.row.invoice_number, invoice_seq: found.row.invoice_seq, status: found.row.status });
+          return;
+        }
+        const issueDate = (payload && payload.issue_date) || nowISO().slice(0, 10);
+        const alloc = await fetch(rest('rpc/rf_allocate_invoice_number'), {
+          method: 'POST', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ p_license_hash: licHash, p_location_id: found.row.location_id || roofingLocations.DEFAULT_LOCATION_ID })
+        });
+        const allocRows = await alloc.json();
+        if (!alloc.ok) return upstream(res, allocRows);
+        const got = Array.isArray(allocRows) ? allocRows[0] : allocRows;
+        if (!got || !got.invoice_number) { res.status(502).json({ error: { message: 'The invoice number allocator returned nothing — the invoice was NOT issued' } }); return; }
+        const r = await fetch(rest('rf_invoices?license_hash=eq.' + enc(licHash) + '&invoice_id=eq.' + enc(String(invId))), {
+          method: 'PATCH', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ status: 'issued', invoice_number: got.invoice_number, invoice_seq: got.invoice_seq, issue_date: issueDate, updated_at: nowISO() })
+        });
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const saved = Array.isArray(rows) && rows[0];
+        res.status(200).json({ ok: true, invoice_number: got.invoice_number, invoice_seq: got.invoice_seq, issue_date: issueDate, data: saved ? shape(saved) : null });
+        return;
+      }
+
+      if (action === 'add_payment') {
+        const invId = payload && payload.invoice_id;
+        if (!invId) { res.status(400).json({ error: { message: 'add_payment requires payload.invoice_id' } }); return; }
+        const entry = payload && payload.payment;
+        const problems = roofingBilling.validatePayment(entry);
+        if (problems.length) { res.status(400).json({ error: { message: 'payment: ' + problems.join('; ') } }); return; }
+        const found = await loadInvoice(String(invId));
+        if (found.missing === 'table') { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
+        if (!found.row) { res.status(404).json({ error: { code: 'NO_INVOICE', message: 'No such invoice' } }); return; }
+        if (found.row.status === 'draft') { res.status(400).json({ error: { code: 'NOT_ISSUED', message: 'Issue the invoice before recording a payment against it' } }); return; }
+        if (found.row.status === 'void') { res.status(400).json({ error: { code: 'VOID_INVOICE', message: 'This invoice is void — a payment cannot be recorded against it' } }); return; }
+        const prior = Array.isArray(found.row.payments) ? found.row.payments : [];
+        if (prior.some((p) => p && p.payment_id === entry.payment_id)) {
+          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'A payment with that id is already on this invoice' } });
+          return;
+        }
+        if (entry.amount < 0 && !prior.some((p) => p && p.payment_id === entry.reverses)) {
+          res.status(400).json({ error: { code: 'NO_SUCH_PAYMENT', message: 'That reversal names a payment which is not on this invoice' } });
+          return;
+        }
+        // THE SERVER APPENDS. The client sends ONE entry and never the array,
+        // the same shape as rf_jobs' measurement_correction -- so the history
+        // is genuinely append-only rather than append-only by convention.
+        const stamped = Object.assign({}, entry, { recorded_by: session.employee_id, recorded_at: nowISO() });
+        const next = prior.concat([stamped]);
+        const r = await fetch(rest('rf_invoices?license_hash=eq.' + enc(licHash) + '&invoice_id=eq.' + enc(String(invId))), {
+          method: 'PATCH', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ payments: next, updated_at: nowISO() })
+        });
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const saved = Array.isArray(rows) && rows[0];
+        const inv = saved ? shape(saved) : null;
+        res.status(200).json({ ok: true, data: inv, summary: inv ? roofingBilling.summarizeInvoice(inv) : null });
+        return;
+      }
+
+      if (action === 'reconcile_claim') {
+        const invId = payload && payload.invoice_id;
+        if (!invId) { res.status(400).json({ error: { message: 'reconcile_claim requires payload.invoice_id' } }); return; }
+        const found = await loadInvoice(String(invId));
+        if (found.missing === 'table') { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql in Supabase first.' } }); return; }
+        if (!found.row) { res.status(404).json({ error: { code: 'NO_INVOICE', message: 'No such invoice' } }); return; }
+        const inv = shape(found.row);
+        let claim = null;
+        if (found.row.claim_id) {
+          // The claim is read SERVER-SIDE from the stored link, never taken
+          // from the caller -- the whole point is comparing against the real
+          // claim record.
+          const cr = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(found.row.claim_id) + '&select=claim_id,data'), { headers });
+          const cRows = (cr.status === 404 || cr.status === 400) ? [] : await cr.json();
+          const row = Array.isArray(cRows) && cRows[0];
+          if (row) claim = Object.assign({}, row.data || {}, { claim_id: row.claim_id });
+        }
+        res.status(200).json({
+          ok: true, invoice_id: inv.invoice_id, claim_id: found.row.claim_id || null,
+          summary: roofingBilling.summarizeInvoice(inv),
+          reconciliation: roofingBilling.reconcileAgainstClaim(inv, claim)
+        });
+        return;
+      }
     }
 
     // ── SAIRNROOFING: manufacturer programmes, company level (2026-08-25, Phase 4d) ──────────
