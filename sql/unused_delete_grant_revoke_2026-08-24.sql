@@ -271,10 +271,30 @@
 --       Section 2's "held ONLY DELETE" branch never fires and NO table is
 --       left with zero grants. The loop anticipates the case; it does not
 --       occur.
---   779 rows / 211 tables is the expected fresh baseline: the truncate
---       sweep captured 774/209, lost nothing (zero LOST), and the two
---       Phase 5 tables added 5 rows / 2 tables after it.
---   645 rows / 211 tables expected after Section 2 -- 779 minus 134 DELETE
+--   785 rows / 213 tables is the MEASURED fresh baseline, captured
+--       2026-08-25. The prediction here was 779/211 and it was SHORT by
+--       6 rows / 2 tables -- corrected, with the cause verified in the
+--       repo rather than accepted from the arithmetic fit. SAIRNroofing
+--       Phase 4a (68668ec) landed between the derivation and the capture:
+--       sql/sairnroofing_locations_schema.sql creates rf_locations (:43)
+--       and rf_schedule (:82) and grants `select, insert, update` on each
+--       (:121, :123) -- 3 privileges x 2 tables = 6 rows, and NO delete on
+--       either grant line. Commit, table names, privilege count and the
+--       absence of DELETE all confirmed by reading the file. Chain back:
+--       774/209 (truncate capture) + 5/2 (Phase 5) + 6/2 (Phase 4a) =
+--       785/213.
+--       WHY IT CHANGES NOTHING ABOUT SCOPE: neither table holds DELETE, so
+--       neither enters Section 1's 135 or this sweep's 134, and both were
+--       already present when Section 0 captured -- so they sit on BOTH
+--       sides of 3b's join and are silent there. Contrast the Phase 5
+--       tables, which were created AFTER the truncate sweep's Section 0
+--       and therefore surfaced as GAINED. Same kind of table, opposite
+--       signature, decided purely by which side of the capture it landed.
+--       Both Phase 4a tables also use the sound revoke-all-from-
+--       service_role idiom (:120, :122), so they carry no
+--       TRUNCATE/REFERENCES/TRIGGER and license_keys remains the only
+--       table in public still holding that family.
+--   651 rows / 213 tables expected after Section 2 -- 785 minus 134 DELETE
 --       rows, with the TABLE count unchanged because none is emptied.
 --
 -- ══ PRECONDITIONS THAT ARE NOT QUERY RESULTS ═══════════════════════════
@@ -353,7 +373,8 @@ where table_schema = 'public'
   and grantee = 'service_role'
   and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE');
 
--- Expect 779 rows / 211 tables (see derivation above). More is possible if
+-- Expect 785 rows / 213 tables -- MEASURED 2026-08-25, not predicted (see
+-- the derivation above for why the earlier 779/211 was short). Higher is possible if
 -- a migration ran since; ANY LOWER means Section 0 under-read and 3b would
 -- pass vacuously -- treat that as a failed capture, not a pass.
 select count(*) as baseline_rows,
@@ -522,13 +543,15 @@ order by 1, 2;
 -- 3c. THE ARITHMETIC CLOSES, AND THE BASELINE WAS REAL. If Section 0
 --     under-read, 3b compares against a short baseline and passes
 --     vacuously -- the one way 3b can lie. Expect:
---       baseline_rows   779   (or higher if a migration ran since)
---       baseline_tables 211
+--       baseline_rows   785   (measured 2026-08-25; higher if a migration
+--                             ran since -- verify the cause in the repo,
+--                             do not accept an arithmetic fit as evidence)
+--       baseline_tables 213
 --       live_rows       baseline_rows - 134
 --       live_tables     baseline_tables  (UNCHANGED -- no table is emptied,
 --                       because zero tables hold DELETE without also
 --                       holding SELECT/INSERT/UPDATE)
---     baseline_rows at or below 774 means the capture predates the Phase 5
+--     baseline_rows at or below 779 means the capture predates the Phase 4a
 --     tables or under-read; do not trust 3b in that case.
 select
   (select count(*) from public._delete_grant_baseline_2026_08_25)                    as baseline_rows,
