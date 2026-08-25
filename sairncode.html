@@ -10220,8 +10220,18 @@ How to answer:
         // whole audit arc removing. A refusal must read as a refusal.
         var _scLastDataError = null;
         function scLastDataError() { return _scLastDataError; }
+        // Set from the read response's `provisioned` flag, which api/sd-data.js
+        // has always sent and this client always threw away (2026-08-25). A
+        // missing sc_* table makes 'read' return 200 {data:[],provisioned:false},
+        // so discarding the flag made "the table does not exist" and "the table
+        // is empty" the same observation -- and scSyncOneResource, seeing an
+        // empty server list, would then push every local row into a table that
+        // cannot accept them, one 503 per row, silently. null = not yet known.
+        var _scLastProvisioned = null;
+        function scLastProvisioned() { return _scLastProvisioned; }
         function scData(action, resource, payload) {
             _scLastDataError = null;
+            _scLastProvisioned = null;
             var lic = null, sessionToken = null;
             try { lic = localStorage.getItem('sc_license_key'); } catch (e) {}
             try { sessionToken = localStorage.getItem('sc_session_token'); } catch (e) {}
@@ -10251,6 +10261,7 @@ How to answer:
                         console.warn('scData ' + resource + ' failed (' + r.status + '):', _scLastDataError.code);
                         return null;
                     }
+                    if (Object.prototype.hasOwnProperty.call(d, 'provisioned')) _scLastProvisioned = d.provisioned;
                     return d.data;
                 });
             }).catch(function(e) {
@@ -10327,6 +10338,14 @@ How to answer:
             var serverList = await scData('read', resource, {});
             if (Array.isArray(serverList) && serverList.length > 0) {
                 try { localStorage.setItem(storageKey, JSON.stringify(serverList)); } catch (e) {}
+                return;
+            }
+            // The server told us this table does not exist yet. Pushing local
+            // rows up would be one 503 per row with nothing to show for it, and
+            // it would leave the operator believing a sync had been attempted
+            // and merely come back empty. Stop, and say why. (2026-08-25)
+            if (scLastProvisioned() === false) {
+                console.warn('scSync ' + resource + ': table not provisioned server-side -- local rows kept, nothing pushed');
                 return;
             }
             var local = [];

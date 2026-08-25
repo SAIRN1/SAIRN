@@ -5790,7 +5790,7 @@ module.exports = async (req, res) => {
           headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
           body: JSON.stringify({ license_hash: licHash, app_id: 'sairncode', entry_id: String(payload.id), data: payload, updated_at: nowISO() })
         });
-        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNcode data tables are not set up yet -- run sql/sairncode_data_schema.sql in Supabase first.' } }); return; }
+        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: scNotProvisionedMessage(resource) } }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
@@ -5812,7 +5812,7 @@ module.exports = async (req, res) => {
         const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id))), {
           method: 'DELETE', headers: headers
         });
-        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNcode data tables are not set up yet -- run sql/sairncode_data_schema.sql in Supabase first.' } }); return; }
+        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: scNotProvisionedMessage(resource) } }); return; }
         if (!r.ok) { const errRows = await r.json().catch(function () { return null; }); return upstream(res, errRows); }
         res.status(200).json({ ok: true });
         return;
@@ -5826,6 +5826,25 @@ module.exports = async (req, res) => {
     res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
   }
 };
+
+// NOT_PROVISIONED message for the generic SC_RESOURCES branch (2026-08-25).
+// This branch serves ~29 sc_* resources spread across a dozen different
+// migration files, but both call sites used to hardcode
+// "run sql/sairncode_data_schema.sql" -- wrong for every resource that has
+// its own file. Following that message runs an already-applied migration
+// whose `create table if not exists` is a silent no-op, so the operator
+// concludes the table is fine and looks elsewhere. That is exactly what
+// happened to sc_specialty_checks / sc_anesthesia_base_units / sc_pctc,
+// which sat unprovisioned from 2026-08-20 until the 2026-08-25 sweep.
+//
+// Deliberately NOT a resource->filename map: the map would need a new row
+// every time a resource is added and would rot the same way the single
+// hardcoded name did. Naming the resource and telling the operator to grep
+// for it cannot go stale.
+function scNotProvisionedMessage(resource) {
+  return 'SAIRNcode table "' + resource + '" is not set up yet -- run the migration that creates it ' +
+    '(grep sql/ for "' + resource + '"; it is one of the sql/sairncode_*_schema.sql files) in Supabase first.';
+}
 
 // Flatten a stored data jsonb blob back into the flat object the client expects,
 // with any promoted columns (shop_id, created_at) merged on top.
