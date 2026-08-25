@@ -742,13 +742,26 @@ var pendingPhotoBase64=null, pendingPhotoMediaType=null, pendingAiRawText='';
 // null-on-failure -- Phase 2 needs real error text to reach the user (the Tesla
 // certification gate is meaningless if its refusal message gets swallowed into a
 // generic "Save failed").
+// `data` is the WHOLE response body, matching rfAuth above -- NOT d.data.
+// It returned d.data from Phase 2 (31e0337) until 2026-08-25. That was latent
+// while every caller was a write touching only r.ok/r.msg, and became a real
+// bug the moment Phase 3b added the first read caller: a read body is
+// {ok,provisioned,data:[...],...}, so d.data is the rows array and every
+// caller's r.data.data was undefined. Eleven consumers across Phases 3b/4a/4b/5
+// silently rendered empty -- schedule, locations, invoices, proposal state,
+// agreement chain and status, programs board, the ACV-mismatch note, and two
+// invoice toasts. Every one of those phases passed live API verification,
+// because curl exercised the endpoint and nothing exercised this line.
+// Actions like agreement_status and evaluate return their payload at the TOP
+// level with no `data` key at all, which is the other half of why this must be
+// the full body -- see rfEvaluateCerts's own note about d.data throwing it away.
 function rfDataRaw(action,resource,payload){
   var lic=rfLicenseKey();
   if(!lic||!rfSession||!rfSession.token)return Promise.resolve({ok:false,msg:'Not signed in'});
   var h={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':rfSession.token};
   return fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})})
     .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
-      return {ok:r.ok&&d&&d.ok,status:r.status,data:(d&&d.data),msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,msg:(d&&d.error&&d.error.message)||'',code:(d&&d.error&&d.error.code)||''};
     });})
     .catch(function(e){return {ok:false,status:0,data:null,msg:'Network error — check your connection.',code:'NETWORK'};});
 }
@@ -1076,7 +1089,11 @@ function rfSaveClaim(){
     if(!r.ok){toast(r.msg||'Could not save the claim',5000);return;}
     toast('Claim saved');
     rfActiveClaimId=rec.id;
-    rfShowAcvNote(r.data&&r.data.money_summary);
+    // The ONE consumer that was correct under the old d.data convention, so it
+    // is the one the helper fix would otherwise have silently broken. A write
+    // reply nests its record under `data` (api/sd-data.js:2994), unlike the
+    // read and compute actions whose payload sits at the top level.
+    rfShowAcvNote(r.data&&r.data.data&&r.data.data.money_summary);
     rfLoadClaimsFull();
   });
 }
