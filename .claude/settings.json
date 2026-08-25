@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/Users/marsh/tools/html_script_check.py",
+            "command": "python C:/SAIRN/tools/html_script_check.py",
             "timeout": 30
           }
         ]
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/Users/marsh/tools/deploy_verify_notify.py",
+            "command": "python C:/SAIRN/tools/deploy_verify_notify.py",
             "if": "Bash(git push*)",
             "timeout": 90,
             "statusMessage": "Verifying live deploy...",
@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/Users/marsh/tools/git_push_master_guard.py",
+            "command": "python C:/SAIRN/tools/git_push_master_guard.py",
             "timeout": 10
           }
         ]
@@ -74,7 +74,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/Users/marsh/tools/redaction_check.py",
+            "command": "python C:/SAIRN/tools/redaction_check.py",
             "timeout": 10
           }
         ]
@@ -86,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"PreCompact fired: if a StoneDesk handoff is overdue (see sairn-session-handoff skill), write SAIRN-SESSION-N-HANDOFF.md now -- self-contained, independently re-verified -- before this compaction erases working context.\"},\"suppressOutput\":true}'",
+            "command": "echo '{\"hookSpecificOutput\": {\"hookEventName\": \"PreCompact\", \"additionalContext\": \"PreCompact fired: if a SAIRN handoff is overdue (see sairn-session-handoff skill), write it NOW -- self-contained, independently re-verified -- before this compaction erases working context. Naming is APP-YYYY-MM-DD-subject-handoff.md, for example SAIRNCARE-2026-08-24-resend-handoff.md. Do NOT use SAIRN-SESSION-N-HANDOFF.md; that counter scheme was retired 2026-08-23 after two different real SAIRNLAW-SESSION6 files existed at once and a session read the wrong one. Write it inside a real clone (Documents/SAIRN-hank, Documents/SAIRN-cc, Documents/SAIRN-cody, Documents/SAIRN-fourth), never in the home directory, and it is not written until it is committed in the same action.\"}, \"suppressOutput\": true}'",
             "timeout": 5
           }
         ]
@@ -97,7 +97,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/Users/marsh/tools/session_lock_check.py start",
+            "command": "python C:/SAIRN/tools/session_lock_check.py start",
             "timeout": 10
           }
         ]
@@ -108,7 +108,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/Users/marsh/tools/session_lock_check.py heartbeat",
+            "command": "python C:/SAIRN/tools/session_lock_check.py heartbeat",
             "timeout": 5
           }
         ]
