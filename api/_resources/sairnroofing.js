@@ -30,6 +30,13 @@ module.exports = {
   // rf_claims.data, normalized by api/_lib/roofing-claims.js.
     'rf_claims',
     'rf_claim_photos',
+  // Contingency agreement + per-state rescission rules (2026-08-25, Phase 5
+  // final piece) -- see sql/sairnroofing_agreements_schema.sql and the Ohio
+  // rule seed beside it. rf_contingency_rules holds the per-state rescission
+  // requirements as data, each with a real citation; rf_claim_agreements is the
+  // APPEND-ONLY signed-document record, where a rescission is a second row.
+    'rf_contingency_rules',
+    'rf_claim_agreements',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -41,5 +48,10 @@ module.exports = {
     // DETERMINISTIC comparison of the adjuster's estimate against the measured
     // scope. Reads the claim and its job, writes nothing. Never an LLM opinion.
     rf_claims: ['reconcile'],
+    // 'agreement_status' (Phase 5) computes the rescission clock from the
+    // claim's append-only agreement chain and the state rule. Reads only.
+    // Looking at whether a cancellation window is open must never advance,
+    // extend or close it -- same compute-only shape as 'reconcile'.
+    rf_claim_agreements: ['agreement_status'],
   },
 };
