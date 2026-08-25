@@ -11,6 +11,18 @@
 -- (1) ~20 tables show ZERO select/insert/update/delete for service_role
 -- (only TRUNCATE/REFERENCES/TRIGGER/MAINTAIN) -- Section 2's keep_privs
 -- would be NULL for every one, stripping them to zero grants entirely.
+-- CONFIRMED EXACTLY, 2026-08-25: the real Section 1 export shows 20 such
+-- tables, and they are this list name for name. The count and the members
+-- both hold.
+-- ONE MEMBER'S DESCRIPTION IS WRONG, THOUGH ITS PRESENCE IS NOT --
+-- intake_submissions is NOT "unreferenced by any live SAIRN code path".
+-- StoneDesk reads it on every Intake panel load (stonedesk.html:31943,
+-- :31982), straight to Supabase on the ANON key, never through api/ --
+-- which is why an api/-only sweep could not see it. It still belongs on
+-- this list, because an anon-key path uses no service_role at all, so its
+-- service_role grants really are dead weight; "unused by service_role" and
+-- "unreferenced by any code" are different claims and this entry merged
+-- them. Full detail in Correction B further down.
 -- Checked each against every real dispatch mechanism in api/sd-data.js
 -- (literal table-name calls, the generic resource===tablename pattern
 -- SD_LINEAGE uses, and the full RESOURCES/action registry) -- CONFIRMED
@@ -36,19 +48,57 @@
 -- any -- but the dashboard check is still the honest way to close this,
 -- not a formality.
 --
--- (2) network_insights is a DIFFERENT, more urgent case, wrongly grouped
--- with the above at first glance: it IS real and IS used
--- (api/network.js), confirmed by its own real schema file
--- (sql/network_schema.sql) -- but that file has NO grant statement of any
--- kind. service_role has held only the TRUNCATE/REFERENCES/TRIGGER/
--- MAINTAIN default baseline since the table was created, meaning
+-- (2) network_insights -- CORRECTED 2026-08-25. THIS ENTRY WAS WRONG.
+-- It previously read: "service_role has held only the TRUNCATE/REFERENCES/
+-- TRIGGER/MAINTAIN default baseline since the table was created, meaning
 -- api/network.js has never been able to actually select or insert on it.
 -- This is a live, currently-broken, previously-unnoticed bug -- the same
--- class as the StoneDesk fe730e2 incident -- not something Section 2
--- should touch. Section 2 would leave it at zero access, unchanged,
--- because it has nothing to preserve; the real fix is a normal
--- `grant select, insert on network_insights to service_role`, tracked
--- separately, not folded into this sweep.
+-- class as the StoneDesk fe730e2 incident." The quote is kept because the
+-- claim was acted on -- it is what put a network_insights exclusion into
+-- Section 2 -- and deleting it would hide why that exclusion ever existed.
+--
+-- THERE IS NO BUG. service_role holds SELECT and INSERT on this table
+-- today. Three independent proofs, in increasing order of authority:
+--   1. LIVE ENDPOINT. GET /api/network?app=stonedesk returns HTTP 200
+--      {"ok":true,"insights":[]}, three consecutive calls, no credential.
+--   2. THE ERROR SURFACE THAT DID NOT FIRE. A missing grant is Postgres
+--      42501, which api/network.js:121 converts to a NAMED 503
+--      PERMISSION_DENIED; a missing table is 42P01/PGRST205 -> 503
+--      NOT_PROVISIONED at :115. Neither appeared, so the 200 is a
+--      completed SELECT and not a fallback path.
+--   3. THE GRANT TABLE ITSELF, which is decisive. The 2026-08-25 Section 1
+--      export lists network_insights as
+--      "INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE".
+--
+-- WHY THE ORIGINAL INFERENCE FAILED, since the reasoning was sound and the
+-- conclusion still wrong: sql/network_schema.sql genuinely contains no
+-- GRANT of any kind -- that part was correct and independently re-checked.
+-- The unstated assumption was that a table's grants can only come from its
+-- own schema file. They can also come from Supabase's Table Editor, which
+-- auto-grants on creation where a raw SQL migration does not -- the exact
+-- mechanism entry (4) below already invokes for ai_memories, bridge_data,
+-- sairn_agents and sairn_agent_commands. Applied there and not here, by
+-- the same author, in the same block. That is the reusable lesson: absence
+-- of a grant in a schema file is not evidence of absence in the database.
+-- It is the same shape as the error corrected further down this file --
+-- reading one file per table and stopping.
+--
+-- CONSEQUENCES, both already applied:
+--   * Section 2 no longer excludes network_insights. Keeping the exclusion
+--     would leave TRUNCATE standing on a working table for no reason and
+--     make Section 3 report a leftover row that looks like a failure.
+--     Section 2 will take it from "INSERT, REFERENCES, SELECT, TRIGGER,
+--     TRUNCATE" to "INSERT, SELECT" -- confirmed by offline simulation
+--     against the real export.
+--   * The follow-up this entry called for -- "the real fix is a normal
+--     `grant select, insert on network_insights to service_role`" -- must
+--     NOT be run. Those grants already exist. Running it would be
+--     harmless, but chasing it would be time spent on a bug that does not
+--     exist, which is precisely what this correction is here to prevent.
+-- STILL GENUINELY OPEN, and small: INSERT is confirmed only by the grant
+-- table, never by an observed successful write. Proving that needs a real
+-- production POST, which was not worth firing to settle an argument the
+-- catalog already settles.
 --
 -- (3) license_keys deserves its own caution, not blanket trust: it has NO
 -- tracked CREATE TABLE anywhere in this repo. api/_lib/license.js's own
