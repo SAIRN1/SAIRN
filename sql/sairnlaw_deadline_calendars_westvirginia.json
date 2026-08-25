@@ -1,0 +1,575 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- West Virginia holiday calendars, 2026-2031. Loaded",
+    "through add_holidays alongside sql/sairnlaw_deadline_seed_westvirginia.json.",
+    "",
+    "SOURCE OF THE DATES: W. Va. Code 2-2-1(a), read verbatim from the West Virginia",
+    "Legislature's own code site on 2026-08-25. SOURCE OF WHICH DAYS COUNT: W. Va.",
+    "R. Civ. P. 6(a)(6), read verbatim from the Supreme Court of Appeals' published",
+    "Rules of Civil Procedure. Those are two different lists and they are not the",
+    "same list -- see below. This calendar encodes the CIVIL one.",
+    "",
+    "== WEST VIRGINIA HAS TWO OFFICIAL HOLIDAY LISTS AND THEY DISAGREE ==========",
+    "R. Civ. P. 6(a)(6) and R. App. P. 39(a) each define \"legal holiday\" for their",
+    "own body of rules, and the definitions are not identical. The engine keys a",
+    "holiday calendar by JURISDICTION AND YEAR only, so one `wv` calendar has to",
+    "serve both, and it cannot serve both correctly.",
+    "",
+    "THE IRREDUCIBLE DIFFERENCE IS JUNETEENTH. R. App. P. 39(a) names \"Juneteenth",
+    "Day\" expressly. R. Civ. P. 6(a)(6) does not, and cannot reach it indirectly:",
+    "6(a)(6)(C) covers a day \"declared a holiday by the Governor or President of the",
+    "United States or any other legal holiday so designated by the West Virginia",
+    "Legislature\" -- it omits CONGRESS, which is what created Juneteenth National",
+    "Independence Day, and W. Va. Code 2-2-1(a) does not list Juneteenth either.",
+    "",
+    "THIS CALENDAR OMITS JUNETEENTH, AND THAT IS THE SAFE DIRECTION, NOT A",
+    "PREFERENCE. Including it would roll CIVIL deadlines off 19 June that the civil",
+    "rule does not roll -- a LATER date, which is the direction that misses a",
+    "filing. Omitting it makes APPELLATE deadlines landing on 19 June compute one",
+    "day EARLY, which files early. This file follows the rule already stated for the",
+    "Pennsylvania calendars in api/_lib/deadline-engine.js: an honestly incomplete",
+    "calendar is safer than one padded with days a rule does not make holidays.",
+    "The consequence is real and is disclosed on every appellate row in the seed.",
+    "",
+    "Note the divergence does NOT bite in 2026: 20 June 2026 is a Saturday, so West",
+    "Virginia Day is observed Friday 19 June 2026 and that date is in this calendar",
+    "anyway. The first year it can bite is a year where 19 June is a business day",
+    "and is not already West Virginia Day observed.",
+    "",
+    "== \"LINCOLN'S DAY\" IS THE DAY AFTER THANKSGIVING, NOT 12 FEBRUARY ==========",
+    "READ THIS BEFORE 'CORRECTING' ANY ENTRY BELOW. R. Civ. P. 6(a)(6)(A) names",
+    "\"Lincoln's Birthday\", which reads like Indiana's 12 February holiday. It is",
+    "not. The rule counts \"the day set aside BY STATUTE for observing\" it, and the",
+    "only day the statute sets aside under Lincoln's name is 2-2-1(a)(11): \"The day",
+    "after Thanksgiving Day is 'Lincoln's Day'.\" R. App. P. 39(a) uses the statutory",
+    "name \"Lincoln's Day\" and confirms the reading. No West Virginia statute read on",
+    "2026-08-25 sets aside 12 February, and no February entry appears below.",
+    "",
+    "== THE WEEKEND SHIFT RUNS BOTH WAYS ========================================",
+    "2-2-1(b), verbatim: \"If a holiday otherwise described in subsection (a) of this",
+    "section falls on a Sunday, then the following Monday is the legal holiday. If a",
+    "holiday otherwise described in subsection (a) of this section falls on a",
+    "Saturday, then the preceding Friday is the legal holiday: Provided, That this",
+    "subsection shall not apply to subdivisions (13), (14), and (15), subsection (a)",
+    "of this section.\" So election days, Susan B. Anthony Day and gubernatorial days",
+    "never shift; the twelve named holidays do, in BOTH directions. Only the",
+    "fixed-date ones can shift at all: 1 January, 20 June, 4 July, 11 November and",
+    "25 December.",
+    "",
+    "THE BACKWARD SHIFT PUTS A HOLIDAY IN THE PREVIOUS YEAR. When 1 January falls",
+    "on a Saturday the legal holiday is the preceding Friday, 31 December -- a date",
+    "belonging to the earlier year's calendar. 2027-12-31 is filed under 2027 here",
+    "for that reason, and deliberately NOT also under 2028: the engine resolves a",
+    "holiday by the year of the date and the endpoint rejects a date whose year does",
+    "not match its calendar, so a 2028-filed entry would be silently unreachable.",
+    "The generator's own self-check caught it filed under both.",
+    "",
+    "== ELECTION DAYS: STATEWIDE ONLY, AND THE REST ARE NOT ENUMERABLE ==========",
+    "2-2-1(a)(13) makes any general, primary or special election day a holiday",
+    "\"throughout the state, a political subdivision of the state, a district or an",
+    "incorporated city, town or village in which the election is conducted\", and",
+    "R. Civ. P. 6(a)(6)(B) reaches an election held \"in the State, or in the county",
+    "in which the circuit court sits\". Only the two STATEWIDE elections are",
+    "enumerable and only those appear below: the primary, \"the second Tuesday in",
+    "May\" of each even year (W. Va. Code 3-5-1), and the general, \"the Tuesday next",
+    "after the first Monday in November of each even year\" (W. Va. Code 3-1-31(a)).",
+    "",
+    "MUNICIPAL ELECTIONS ADD NO DATES, which is narrower than the same problem in",
+    "Indiana and is worth knowing: 3-1-31(a) requires that \"all local municipal",
+    "elections shall be held concurrently with a regularly scheduled statewide",
+    "primary or general election\". COUNTY SPECIAL ELECTIONS STILL DO. A special",
+    "election in the county where the circuit court sits is a legal holiday for that",
+    "court under 6(a)(6)(B) and cannot be enumerated in advance. A deadline computed",
+    "across one will be EARLY, not late.",
+    "",
+    "== ALSO NOT ENUMERABLE, AND ALSO EARLY-FAILING ============================",
+    "2-2-1(a)(15) gubernatorial days of special observance, and 2-2-1(c) statewide",
+    "employee days off, which \"may, for all courts, be treated as if it were a legal",
+    "holiday\". Both are declared ad hoc. Neither is below.",
+    "",
+    "Susan B. Anthony Day (2-2-1(a)(14)) needs no separate entry: it IS general",
+    "election day in even years.",
+    "",
+    "No 2025 calendar is provided even though the restyled civil rules took effect",
+    "2025-01-01. A 2025 trigger therefore draws a NOT_PROVISIONED refusal rather",
+    "than a date computed against a missing calendar."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "wv",
+      "year": 2026,
+      "authority": {
+        "citation": "W. Va. Code 2-2-1(a) (legal holidays), as applied to civil time computation by W. Va. R. Civ. P. 6(a)(6)",
+        "url": "https://code.wvlegislature.gov/2-2-1/",
+        "computation_url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "note": "Generated 2026-08-25 from W. Va. Code 2-2-1(a) (the dates) and W. Va. R. Civ. P. 6(a)(6) (which days count for civil computation), both read verbatim. Twelve named holidays plus statewide election days in even years. EXCLUDES JUNETEENTH -- neither 2-2-1(a) nor R. Civ. P. 6(a)(6) lists it, and 6(a)(6)(C) omits Congress from the bodies whose declarations count, so the federal designation does not reach the civil rule. R. App. P. 39(a) DOES name it, and this one calendar cannot serve both lists; see the file readme. \"Lincoln's Day\" is the day after Thanksgiving per 2-2-1(a)(11), NOT 12 February. Weekend shift is both-way per 2-2-1(b) (Sunday -> following Monday, Saturday -> preceding Friday) and does not apply to election days or gubernatorial days. Gubernatorial days of special observance (2-2-1(a)(15)), statewide employee days off (2-2-1(c)) and county special elections (R. Civ. P. 6(a)(6)(B)) are declared ad hoc and are not enumerable; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-12",
+          "name": "Primary election day (statewide)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "West Virginia Day",
+          "kind": "declared",
+          "note": "observed (Saturday -> preceding Friday, 2-2-1(b))"
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day",
+          "kind": "declared",
+          "note": "observed (Saturday -> preceding Friday, 2-2-1(b))"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-03",
+          "name": "General election day (statewide)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-27",
+          "name": "Lincoln's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wv",
+      "year": 2027,
+      "authority": {
+        "citation": "W. Va. Code 2-2-1(a) (legal holidays), as applied to civil time computation by W. Va. R. Civ. P. 6(a)(6)",
+        "url": "https://code.wvlegislature.gov/2-2-1/",
+        "computation_url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "note": "Generated 2026-08-25 from W. Va. Code 2-2-1(a) (the dates) and W. Va. R. Civ. P. 6(a)(6) (which days count for civil computation), both read verbatim. Twelve named holidays plus statewide election days in even years. EXCLUDES JUNETEENTH -- neither 2-2-1(a) nor R. Civ. P. 6(a)(6) lists it, and 6(a)(6)(C) omits Congress from the bodies whose declarations count, so the federal designation does not reach the civil rule. R. App. P. 39(a) DOES name it, and this one calendar cannot serve both lists; see the file readme. \"Lincoln's Day\" is the day after Thanksgiving per 2-2-1(a)(11), NOT 12 February. Weekend shift is both-way per 2-2-1(b) (Sunday -> following Monday, Saturday -> preceding Friday) and does not apply to election days or gubernatorial days. Gubernatorial days of special observance (2-2-1(a)(15)), statewide employee days off (2-2-1(c)) and county special elections (R. Civ. P. 6(a)(6)(B)) are declared ad hoc and are not enumerable; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-21",
+          "name": "West Virginia Day",
+          "kind": "declared",
+          "note": "observed (Sunday -> following Monday, 2-2-1(b))"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day",
+          "kind": "declared",
+          "note": "observed (Sunday -> following Monday, 2-2-1(b))"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-26",
+          "name": "Lincoln's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "note": "observed (Saturday -> preceding Friday, 2-2-1(b))"
+        },
+        {
+          "date": "2027-12-31",
+          "name": "New Year's Day (2028)",
+          "kind": "declared",
+          "note": "observed in 2027: 1 January 2028 falls on a Saturday, so 2-2-1(b) sets the preceding Friday, which is 31 December 2027"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wv",
+      "year": 2028,
+      "authority": {
+        "citation": "W. Va. Code 2-2-1(a) (legal holidays), as applied to civil time computation by W. Va. R. Civ. P. 6(a)(6)",
+        "url": "https://code.wvlegislature.gov/2-2-1/",
+        "computation_url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "note": "Generated 2026-08-25 from W. Va. Code 2-2-1(a) (the dates) and W. Va. R. Civ. P. 6(a)(6) (which days count for civil computation), both read verbatim. Twelve named holidays plus statewide election days in even years. EXCLUDES JUNETEENTH -- neither 2-2-1(a) nor R. Civ. P. 6(a)(6) lists it, and 6(a)(6)(C) omits Congress from the bodies whose declarations count, so the federal designation does not reach the civil rule. R. App. P. 39(a) DOES name it, and this one calendar cannot serve both lists; see the file readme. \"Lincoln's Day\" is the day after Thanksgiving per 2-2-1(a)(11), NOT 12 February. Weekend shift is both-way per 2-2-1(b) (Sunday -> following Monday, Saturday -> preceding Friday) and does not apply to election days or gubernatorial days. Gubernatorial days of special observance (2-2-1(a)(15)), statewide employee days off (2-2-1(c)) and county special elections (R. Civ. P. 6(a)(6)(B)) are declared ad hoc and are not enumerable; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2028-01-17",
+          "name": "Martin Luther King's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-09",
+          "name": "Primary election day (statewide)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-06-20",
+          "name": "West Virginia Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-10-09",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-07",
+          "name": "General election day (statewide)",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-10",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "note": "observed (Saturday -> preceding Friday, 2-2-1(b))"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-24",
+          "name": "Lincoln's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wv",
+      "year": 2029,
+      "authority": {
+        "citation": "W. Va. Code 2-2-1(a) (legal holidays), as applied to civil time computation by W. Va. R. Civ. P. 6(a)(6)",
+        "url": "https://code.wvlegislature.gov/2-2-1/",
+        "computation_url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "note": "Generated 2026-08-25 from W. Va. Code 2-2-1(a) (the dates) and W. Va. R. Civ. P. 6(a)(6) (which days count for civil computation), both read verbatim. Twelve named holidays plus statewide election days in even years. EXCLUDES JUNETEENTH -- neither 2-2-1(a) nor R. Civ. P. 6(a)(6) lists it, and 6(a)(6)(C) omits Congress from the bodies whose declarations count, so the federal designation does not reach the civil rule. R. App. P. 39(a) DOES name it, and this one calendar cannot serve both lists; see the file readme. \"Lincoln's Day\" is the day after Thanksgiving per 2-2-1(a)(11), NOT 12 February. Weekend shift is both-way per 2-2-1(b) (Sunday -> following Monday, Saturday -> preceding Friday) and does not apply to election days or gubernatorial days. Gubernatorial days of special observance (2-2-1(a)(15)), statewide employee days off (2-2-1(c)) and county special elections (R. Civ. P. 6(a)(6)(B)) are declared ad hoc and are not enumerable; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Martin Luther King's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-06-20",
+          "name": "West Virginia Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-10-08",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "note": "observed (Sunday -> following Monday, 2-2-1(b))"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-23",
+          "name": "Lincoln's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wv",
+      "year": 2030,
+      "authority": {
+        "citation": "W. Va. Code 2-2-1(a) (legal holidays), as applied to civil time computation by W. Va. R. Civ. P. 6(a)(6)",
+        "url": "https://code.wvlegislature.gov/2-2-1/",
+        "computation_url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "note": "Generated 2026-08-25 from W. Va. Code 2-2-1(a) (the dates) and W. Va. R. Civ. P. 6(a)(6) (which days count for civil computation), both read verbatim. Twelve named holidays plus statewide election days in even years. EXCLUDES JUNETEENTH -- neither 2-2-1(a) nor R. Civ. P. 6(a)(6) lists it, and 6(a)(6)(C) omits Congress from the bodies whose declarations count, so the federal designation does not reach the civil rule. R. App. P. 39(a) DOES name it, and this one calendar cannot serve both lists; see the file readme. \"Lincoln's Day\" is the day after Thanksgiving per 2-2-1(a)(11), NOT 12 February. Weekend shift is both-way per 2-2-1(b) (Sunday -> following Monday, Saturday -> preceding Friday) and does not apply to election days or gubernatorial days. Gubernatorial days of special observance (2-2-1(a)(15)), statewide employee days off (2-2-1(c)) and county special elections (R. Civ. P. 6(a)(6)(B)) are declared ad hoc and are not enumerable; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Martin Luther King's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-14",
+          "name": "Primary election day (statewide)",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-06-20",
+          "name": "West Virginia Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-10-14",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-05",
+          "name": "General election day (statewide)",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-29",
+          "name": "Lincoln's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wv",
+      "year": 2031,
+      "authority": {
+        "citation": "W. Va. Code 2-2-1(a) (legal holidays), as applied to civil time computation by W. Va. R. Civ. P. 6(a)(6)",
+        "url": "https://code.wvlegislature.gov/2-2-1/",
+        "computation_url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "note": "Generated 2026-08-25 from W. Va. Code 2-2-1(a) (the dates) and W. Va. R. Civ. P. 6(a)(6) (which days count for civil computation), both read verbatim. Twelve named holidays plus statewide election days in even years. EXCLUDES JUNETEENTH -- neither 2-2-1(a) nor R. Civ. P. 6(a)(6) lists it, and 6(a)(6)(C) omits Congress from the bodies whose declarations count, so the federal designation does not reach the civil rule. R. App. P. 39(a) DOES name it, and this one calendar cannot serve both lists; see the file readme. \"Lincoln's Day\" is the day after Thanksgiving per 2-2-1(a)(11), NOT 12 February. Weekend shift is both-way per 2-2-1(b) (Sunday -> following Monday, Saturday -> preceding Friday) and does not apply to election days or gubernatorial days. Gubernatorial days of special observance (2-2-1(a)(15)), statewide employee days off (2-2-1(c)) and county special elections (R. Civ. P. 6(a)(6)(B)) are declared ad hoc and are not enumerable; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Martin Luther King's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-06-20",
+          "name": "West Virginia Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-10-13",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-28",
+          "name": "Lincoln's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    }
+  ]
+}

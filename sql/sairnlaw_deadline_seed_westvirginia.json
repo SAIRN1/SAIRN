@@ -1,0 +1,615 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- West Virginia rule seed, 2026-08-25. Loaded through",
+    "add_rule. Holiday calendars are in sql/sairnlaw_deadline_calendars_westvirginia.json",
+    "and must be loaded too, or every row below refuses with NOT_PROVISIONED.",
+    "",
+    "SOURCES, each read verbatim on 2026-08-25 and each from the court's or the",
+    "legislature's own site, not a secondary summary:",
+    "  W. Va. R. Civ. P. 5, 6, 12, 33, 34, 36 -- courtswv.gov, the current Rules of",
+    "    Civil Procedure PDF, cross-checked against the same court's HTML rendering",
+    "    of the rules for the one provision this seed builds code on (Rule 6(e)).",
+    "  Former W. Va. R. Civ. P. 6 -- courtswv.gov's published 'Former West Virginia",
+    "    Rules of Civil Procedure', read to establish what the 2025 restyling",
+    "    CHANGED rather than assuming the new text had always said this.",
+    "  W. Va. R. App. P. 1, 5, 39 -- courtswv.gov.",
+    "  W. Va. Code 2-2-1, 3-1-31, 3-5-1 -- code.wvlegislature.gov.",
+    "",
+    "== THE RULES CHANGED ON 2025-01-01 AND THE CHANGES MOVE REAL DATES ==========",
+    "The Supreme Court of Appeals adopted amendments on 2024-01-31, effective",
+    "2025-01-01 -- the first substantial revision since 1998. Three of the changes",
+    "matter to this engine, and every one of them would have been encoded WRONG by",
+    "carrying the old rule forward:",
+    "",
+    "  1. THE SHORT-PERIOD EXCLUSION IS GONE. The former Rule 6(a) excluded",
+    "     intermediate Saturdays, Sundays and holidays for any period \"fewer than",
+    "     11 days\". The 2025 text says \"count every day\", unqualified. The 7-day",
+    "     reply-memorandum row below is the one seeded period this reaches, and a",
+    "     practitioner using the old habit computes it several days late.",
+    "  2. THE SERVICE-EXTENSION SEQUENCING FLIPPED. The former 6(e) said three days",
+    "     \"shall be added TO THE PRESCRIBED PERIOD\" -- the New York and Georgia",
+    "     shape. The current 6(e) says three days \"are added AFTER THE PERIOD WOULD",
+    "     OTHERWISE EXPIRE under Rule 6(a)\" -- the federal shape. West Virginia is",
+    "     the first jurisdiction in this engine where that wording changed over",
+    "     time, so the standing habit of reading it per jurisdiction is not quite",
+    "     enough here; it has to be read per DATE as well.",
+    "  3. Rule 6 acquired the federal hour-counting, clerk-inaccessibility and",
+    "     'next day' machinery it did not have before. Only the 'next day' rule is",
+    "     modelled; hours and inaccessibility are not.",
+    "",
+    "ONLY THE POST-2025 TEXT IS SEEDED. Every civil row carries effective_from",
+    "2025-01-01 and a period running from an earlier date is REFUSED rather than",
+    "computed under a rule whose words were not read for this seed.",
+    "",
+    "== AND THE SAME STATE SEQUENCES ITS TWO SERVICE EXTENSIONS OPPOSITE WAYS ====",
+    "R. Civ. P. 6(e): three days \"after the period would otherwise expire\".",
+    "R. App. P. 39(c): three days \"shall be added to the prescribed period\".",
+    "Same state, same number of days, opposite order. No appellate row here uses",
+    "39(c) -- see below -- so no standard is implemented for it, but anyone seeding",
+    "a West Virginia appellate period that DOES extend must not reuse wv_rcp_6e.",
+    "",
+    "== RULE 6(e) POINTS AT THE WRONG SUBPARAGRAPH AND WE REFUSE RATHER THAN GUESS",
+    "6(e), verbatim: \"...service is made under Rule 5(b)(2)(C) (mail), (D) (leaving",
+    "with the clerk), or (F) (other means consented to)...\". But West Virginia's",
+    "Rule 5(b)(2) inserts a state-specific (E) for West Virginia E-Filing and",
+    "facsimile, which pushes the federal lettering down one:",
+    "  5(b)(2)(F) = \"sending it by other ELECTRONIC means if the person consented",
+    "               in writing\"",
+    "  5(b)(2)(G) = \"delivering it by any OTHER MEANS that the person consented to",
+    "               in writing\"",
+    "So 6(e)'s pointer names (F) while its parenthetical describes (G). Read by the",
+    "pointer, West Virginia extends for consented ELECTRONIC service -- which the",
+    "federal rule deliberately stopped doing in 2016. Read by the parenthetical, it",
+    "does the federal thing. The two readings disagree on the only method at issue.",
+    "",
+    "THIS ENGINE REFUSES BOTH CONTESTED METHODS VISIBLY (extension state",
+    "'refused_contested_standard') instead of resolving them. The usual tie-break",
+    "here -- prefer the earlier date, because late is what misses a filing -- would",
+    "mean adding nothing, and a silent no-extension is indistinguishable from 'no",
+    "extension was requested'. That silence is the exact defect this engine already",
+    "fixed once. mail and left_with_clerk are unaffected: both readings agree, and",
+    "they are what applies_when lists on every extending row below.",
+    "",
+    "SERVICE UNDER 5(b)(2)(E) -- West Virginia E-Filing or facsimile -- gets NO",
+    "extension under any reading, because 6(e) does not list (E) at all.",
+    "",
+    "== THE APPELLATE ROWS ARE COMPUTED AGAINST THE CIVIL HOLIDAY LIST ===========",
+    "R. Civ. P. 6(a)(6) and R. App. P. 39(a) define \"legal holiday\" differently and",
+    "the irreducible difference is Juneteenth: 39(a) names it, 6(a)(6) does not and",
+    "cannot reach it, because 6(a)(6)(C) counts days declared by the Governor, the",
+    "President or the West Virginia Legislature and OMITS CONGRESS. Calendars are",
+    "keyed by jurisdiction and year only, so one wv calendar serves both and it",
+    "encodes the civil list. A WEST VIRGINIA APPELLATE DEADLINE LANDING ON 19 JUNE",
+    "IS THEREFORE COMPUTED ONE DAY EARLY. Early files early; the opposite choice",
+    "would have rolled civil deadlines LATE, which is how a filing is missed. Both",
+    "appellate rows say so in their own notes.",
+    "",
+    "The two computation standards differ in one more way: 39(a) kept a short-period",
+    "exclusion (\"less than seven days\") that the civil rule dropped. No seeded",
+    "appellate period is under seven days, so it is unreachable in this row set --",
+    "declared anyway, because the mechanism genuinely matches, which is the same",
+    "call made for tx_trcp_4 and the opposite of the one made for ny_gcl_20 (where",
+    "the mechanism did NOT match).",
+    "",
+    "== NO APPELLATE ROW CARRIES A SERVICE EXTENSION, BY THE RULE'S OWN WORDS ====",
+    "39(c) adds three days for mail service but \"does not apply to extend the",
+    "deadline provided by law or these rules for docketing or perfecting an appeal,",
+    "and further does not apply to extend any deadline set forth in an order or",
+    "notice\". Rule 5(b) is docketing, 5(f) is perfecting, and 5(c) runs from FILING",
+    "rather than service. All three are outside it.",
+    "",
+    "== TWO KNOWN STRUCTURAL LIMITS, NEITHER NEW AND NEITHER FIXED HERE =========",
+    "  APPLICABILITY IS KEYED TO THE CASE, NOT THE TRIGGER. R. Civ. P. 86: these",
+    "  rules \"govern all proceedings in cases thereafter commenced and insofar as",
+    "  just and practicable, all proceedings then pending\". R. App. P. 1(e) keys the",
+    "  appellate rules to orders entered after 2022-06-30 / 2022-07-01. The engine",
+    "  selects a version by the date the PERIOD RUNS FROM and has no case_filed_on",
+    "  input, so a 2024 West Virginia case whose trigger falls in 2025 silently gets",
+    "  the post-2025 row. Identical in kind to the Texas Misc. Docket 20-9153 hole",
+    "  already recorded in docs/SAIRN-OPEN-WORK-INDEX.md.",
+    "",
+    "  TRIGGER DATES ARE TAKEN AS GIVEN. Both appellate rows run from ENTRY, a date",
+    "  the engine neither derives nor validates. Same open row as Florida's",
+    "  rendition, California's notice of entry, Texas's signing and New York's",
+    "  service with notice of entry -- West Virginia makes a fifth way to start an",
+    "  appeal clock and nothing stops a caller conflating them.",
+    "",
+    "NOT MODELLED, and each one fails EARLY (files early) rather than late: Rule",
+    "6(a)(2) hour-based periods, Rule 6(a)(3) clerk's-office inaccessibility, court",
+    "orders and stipulations that displace a period (Rules 6(b), 6(d)(3), 29, 33,",
+    "34, 36 all name one), and county special elections, gubernatorial days of",
+    "special observance and statewide employee days off, which are legal holidays",
+    "under 6(a)(6)(B)-(C) and 2-2-1(c) but cannot be enumerated in advance."
+  ],
+  "rules": [
+    {
+      "rule_id": "wv-rcp-12-a1A-answer-to-complaint",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint after service of the summons and complaint (West Virginia)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 12(a)(1)(A)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "A defendant shall serve an answer within 30 days after being served with the summons and complaint.",
+        "note": "THIRTY DAYS, not the federal 21. West Virginia restyled its civil rules into the modern federal shape effective 2025-01-01 but did NOT adopt the federal period here, which is the trap in a rule that otherwise reads almost word for word like FRCP 12(a)(1)(A). NO SERVICE EXTENSION, and in West Virginia that follows from Rule 5's own scope rather than from a carve-out phrase. R. Civ. P. 6(e) extends only where \"service is made under Rule 5(b)(2)\", and Rule 5(a)(1)(B) reaches \"a pleading filed AFTER the original complaint\" -- the summons and complaint go out under Rule 4, not Rule 5. Georgia reaches the same result by express words (\"other than process\"), Texas and New York by inference; West Virginia by scope. The rule also requires the answer to be accompanied by a completed civil case information statement under Rule 3(b); that is a content requirement, not a separate deadline, and is not modelled. NOT encoded from this subsection: Rule 12(a)(2)'s two 14-day periods, which are separate rows because each runs from a different event.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-12-a1B-answer-to-counterclaim-or-crossclaim",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Answer to a counterclaim or crossclaim (West Virginia)",
+      "trigger_event": "service_of_pleading_stating_counterclaim_or_crossclaim",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 12(a)(1)(B)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "A party shall serve an answer to a counterclaim or crossclaim within 30 days after being served with the pleading that states the counterclaim or crossclaim.",
+        "note": "EXTENSION APPLIES here where it does not on the answer to the complaint, and the difference is Rule 5's scope: a counterclaim or crossclaim is \"a pleading filed after the original complaint\" under Rule 5(a)(1)(B), so it is served under Rule 5(b)(2) and Rule 6(e) reaches it. applies_when lists only mail and leaving with the clerk; the third method 6(e) names is contested on the rule's own face and is refused rather than resolved -- see the file readme.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-12-a1C-reply-to-answer",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Reply to an answer or third-party answer after an order to reply (West Virginia)",
+      "trigger_event": "service_of_order_to_reply",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 12(a)(1)(C)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "A party shall serve a reply to an answer or third-party answer within 30 days after being served with an order to reply, unless the order specifies a different time.",
+        "note": "\"UNLESS THE ORDER SPECIFIES A DIFFERENT TIME\" is a displacement this engine cannot see. If the order setting the reply fixes its own period, that period governs and this row's 30 days is simply wrong -- there is no input for the order's terms and no refusal is raised. Read the order before relying on this date. The extension applies because an order stating that service is required is served under Rule 5(a)(1)(A).",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-12-a2A-responsive-pleading-after-motion-denied",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 12 motion is denied or its disposition postponed (West Virginia)",
+      "trigger_event": "notice_of_court_action_denying_or_postponing_motion",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 12(a)(2)(A)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "if the court denies the motion or postpones its disposition until the trial, the responsive pleading shall be served within 14 days after notice of the court's action",
+        "note": "FOURTEEN DAYS, matching the federal period even though the parent 30-day answer period does not -- so the two halves of West Virginia's Rule 12(a) diverge from the FRCP in different amounts, and neither can be predicted from the other. NO SERVICE EXTENSION: Rule 6(e) extends a period run \"after being SERVED\", and this one runs after NOTICE OF THE COURT'S ACTION, which is not service of a paper by a party under Rule 5(b)(2). The subsection also opens \"Unless the court sets a different time\", which this engine cannot see.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-12-a2B-responsive-pleading-after-more-definite-statement",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after service of a more definite statement (West Virginia)",
+      "trigger_event": "service_of_more_definite_statement",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 12(a)(2)(B)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "if the court grants a motion for a more definite statement, the responsive pleading shall be served within 14 days after the service of the more definite statement",
+        "note": "Runs from SERVICE of the more definite statement, so unlike its sibling in (a)(2)(A) the extension does reach it. Do not confuse this 14 days with the separate 14 days in Rule 12(e), which is the time the pleader has to OBEY an order for a more definite statement; that one runs from notice of the order and is not seeded.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-12-f2-motion-to-strike",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Motion to strike matter from a pleading to which no response is allowed (West Virginia)",
+      "trigger_event": "service_of_the_pleading",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 12(f)(2)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "on motion made by a party either before responding to the pleading or, if a response is not allowed, within 21 days after being served with the pleading",
+        "note": "TWENTY-ONE DAYS, and the period only exists on the second limb. Where a response to the pleading IS allowed, Rule 12(f)(2) sets no number of days at all -- it requires only that the motion come \"before responding to the pleading\", which is a sequencing constraint this engine does not model. This row is the no-response-allowed limb and its rule id does not say so; use it only in that case.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-33-b2-interrogatory-answers",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories (West Virginia)",
+      "trigger_event": "service_of_interrogatories",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 33(b)(2)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "The responding party shall serve its answers and any objections within 30 days after being served with the interrogatories.",
+        "note": "NO 45-DAY DEFENDANT LIMB, unlike Georgia's O.C.G.A. 9-11-33(a)(2). West Virginia's rule is a flat 30 days from service with no alternative period for a defendant served early in the case, so this row needs no resolve_periods and none is declared. \"A shorter or longer time may be stipulated to under Rule 29 or be ordered by the court\" -- a stipulation or order displaces this period and the engine cannot see either.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-34-b2A-production-response",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production or inspection, ordinary case (West Virginia)",
+      "trigger_event": "service_of_request_for_production",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 34(b)(2)(A)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "The party to whom the request is directed shall respond in writing within 30 days after being served",
+        "note": "THIS IS THE ORDINARY LIMB ONLY. Rule 34(b)(2)(A) states two alternatives in one sentence and this row encodes the first. The second -- a request delivered under Rule 26(d)(2) -- runs from a conference rather than from service and is its own row, because the trigger differs. Using this row for an early-delivered request gives a date computed from the wrong event.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-34-b2A-production-response-early-delivery",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production delivered before the Rule 26(f) conference (West Virginia)",
+      "trigger_event": "first_rule_26f_conference",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 34(b)(2)(A)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "or - if the request was delivered under Rule 26(d)(2) - within 30 days after the parties' first Rule 26(f) conference",
+        "note": "NOT A LATER-OF RULE, and it would be easy to encode as one. The two limbs of Rule 34(b)(2)(A) are ALTERNATIVES SELECTED BY HOW THE REQUEST WAS DELIVERED, not competing periods whose later end governs: a request delivered under Rule 26(d)(2) uses this limb and nothing else, an ordinarily served one uses the other. Two rows, one trigger each. NO SERVICE EXTENSION: the period runs from the conference, not from being served, so Rule 6(e) does not reach it -- which means an early- delivered request can end up with a SHORTER effective response time than an ordinary one.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-36-a3-admission-response",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission (West Virginia)",
+      "trigger_event": "service_of_request_for_admission",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 36(a)(3)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "A matter is admitted unless, within 30 days after being served, the party to whom the request is directed serves on the requesting party a written answer or objection addressed to the matter and signed by the party or its attorney.",
+        "note": "SELF-EXECUTING: missing this date admits the matter, so an over-long computed date here does not merely lose a filing, it concedes a fact. Flat 30 days from service with no defendant limb -- contrast Georgia, where the equivalent rule needed resolve_periods and shipped fifteen days early when it was first encoded as an ordinary later_of.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-6-d3-response-memorandum",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Memorandum in response to a motion (West Virginia)",
+      "trigger_event": "service_of_the_motion",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 6(d)(3)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "Memoranda and other materials in response to motions shall be filed and served on opposing counsel and unrepresented parties within 21 days of service of the motion.",
+        "note": "\"These times for serving memoranda may be modified by the judicial officer to whom the motion is addressed\" -- an express displacement the engine cannot see. Note the deadline is to FILE AND SERVE, not merely to serve.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-6-d3-reply-memorandum",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Reply memorandum in support of a motion (West Virginia)",
+      "trigger_event": "service_of_the_response_memorandum",
+      "count": {
+        "value": 7,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rcp_6a",
+      "service_extension": {
+        "standard": "wv_rcp_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ]
+      },
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 6(d)(3)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "Any reply memoranda shall be filed and served on opposing counsel and unrepresented parties within 7 days from the date of service of the memorandum in response to the motion.",
+        "note": "SEVEN DAYS, AND IT COUNTS EVERY DAY. Under the FORMER West Virginia rule a period this short would have excluded intermediate Saturdays, Sundays and holidays -- the old Rule 6(a) excluded them for any period \"fewer than 11 days\" -- and the 2025 restyling removed that limb entirely. A practitioner carrying the old habit forward will compute this one several days late. It is the shortest civil period seeded here for exactly that reason.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-6-d1-motion-and-notice-of-hearing",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Service of a written motion and notice of hearing, counted backward from the hearing (West Virginia)",
+      "trigger_event": "time_specified_for_the_hearing",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "computation": "wv_rcp_6a",
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 6(d)(1)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "A written motion and notice of the hearing shall be served at least 14 days before the time specified for the hearing",
+        "note": "COUNTED BACKWARD, and West Virginia is one of the few jurisdictions here whose rule actually says what that means: Rule 6(a)(5), \"The 'next day' is determined by continuing to count forward when the period is measured after an event and backward when measured before an event.\" So a landing date on a weekend or holiday rolls EARLIER, never later. NO SERVICE EXTENSION: Rule 6(e) adds days \"after the period would otherwise expire\", which describes a forward period; applying it to a backward one would push the service date later and shorten the notice the rule guarantees. Four express exceptions in (d)(1)(A)-(D) -- ex parte motions, another rule's time, a court order, and a Rule 16 schedule -- are not modelled.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rcp-6-d2-opposing-affidavit",
+      "jurisdiction": "wv",
+      "domain": "civil-litigation",
+      "label": "Service of an opposing affidavit, counted backward from the hearing (West Virginia)",
+      "trigger_event": "the_hearing",
+      "count": {
+        "value": 7,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "computation": "wv_rcp_6a",
+      "authority": {
+        "citation": "W. Va. R. Civ. P. 6(d)(2)",
+        "url": "https://www.courtswv.gov/sites/default/pubfilesmnt/2025-02/RCP%20Final.pdf",
+        "quote": "Except as Rule 59(c) provides otherwise, any opposing affidavit shall be served at least 7 days before the hearing, unless the court permits service at another time.",
+        "note": "Backward, on the same reasoning as the 14-day notice row. Rule 59(c) is named in the rule's own words as an exception and is NOT seeded, so a Rule 59 matter must not use this row.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rap-5-b-notice-of-appeal",
+      "jurisdiction": "wv",
+      "domain": "appellate",
+      "label": "Notice of appeal from a final order or mandate (West Virginia)",
+      "trigger_event": "entry_of_the_final_order_or_mandate",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rap_39a",
+      "authority": {
+        "citation": "W. Va. R. App. P. 5(b)",
+        "url": "https://www.courtswv.gov/legal-community/court-rules/rules-appellate-procedure",
+        "quote": "Within thirty days of entry of the final order or mandate being appealed, the party appealing shall file the notice of appeal, including attachments required in the notice of appeal form contained in Appendix A of these Rules.",
+        "note": "RUNS FROM ENTRY, which is a computed date this engine does not derive -- the same input gap already recorded across Florida's rendition, California's notice of entry, Texas's signing and New York's service with notice of entry. A caller supplying the signature date rather than the entry date gets a date that is too early and draws no refusal. NO SERVICE EXTENSION IS AVAILABLE HERE AS A MATTER OF TEXT: R. App. P. 39(c) adds three days for service by mail but expressly \"does not apply to extend the deadline provided by law or these rules for docketing or perfecting an appeal\", and 5(b) is the docketing deadline. COMPUTED AGAINST THE CIVIL HOLIDAY LIST: the single wv calendar omits Juneteenth because R. Civ. P. 6(a)(6) does not list it, while R. App. P. 39(a) does. An appellate deadline landing on 19 June is therefore computed ONE DAY EARLY. Rule 5(a) excludes abuse and neglect (Rule 11), workers' compensation (Rule 12), family court (Rule 13), the Public Service Commission (Rule 14) and certified questions (Rule 17); none of those is seeded.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2022-07-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rap-5-f-perfect-appeal",
+      "jurisdiction": "wv",
+      "domain": "appellate",
+      "label": "Perfecting an appeal after entry of the judgment (West Virginia)",
+      "trigger_event": "entry_of_the_judgment_being_appealed",
+      "count": {
+        "value": 4,
+        "unit": "months",
+        "direction": "forward"
+      },
+      "computation": "wv_rap_39a",
+      "authority": {
+        "citation": "W. Va. R. App. P. 5(f)",
+        "url": "https://www.courtswv.gov/legal-community/court-rules/rules-appellate-procedure",
+        "quote": "Unless otherwise provided by law, an appeal must be perfected within four months of the date the judgment being appealed was entered.",
+        "note": "MONTHS, NOT DAYS, and it runs from ENTRY OF THE JUDGMENT rather than from the notice of appeal -- so it is not four months after the 30-day docketing deadline, it overlaps it. Counted by anniversary date with end-of-month clamping. \"Unless otherwise provided by law\" is an express displacement the engine cannot see. Extensions under 5(i)(2) (up to two further months, and only if a complete notice of appeal was timely filed) are discretionary and are not modelled. Like 5(b), expressly outside R. App. P. 39(c)'s mail extension, which does not extend a deadline for perfecting an appeal.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2022-07-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "wv-rap-5-c-notice-of-continuing-interest",
+      "jurisdiction": "wv",
+      "domain": "appellate",
+      "label": "Notice that a party designated as no longer interested remains a party (West Virginia)",
+      "trigger_event": "filing_of_the_notice_of_appeal",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "wv_rap_39a",
+      "authority": {
+        "citation": "W. Va. R. App. P. 5(c)",
+        "url": "https://www.courtswv.gov/legal-community/court-rules/rules-appellate-procedure",
+        "quote": "Such notice shall be filed with the Clerk within twenty days of the filing of the notice of appeal.",
+        "note": "Runs from the FILING of the notice of appeal, not from service of it and not from entry of the order, so R. App. P. 39(c) does not reach it even leaving aside that rule's docketing carve-out. Seeded because it is one of the few appellate periods fixed by the rules themselves rather than by the scheduling order the court issues under Rule 5(d) -- briefing dates come from that order and are therefore not seedable at all.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "2022-07-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ]
+}

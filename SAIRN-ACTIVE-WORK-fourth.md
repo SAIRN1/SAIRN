@@ -32,3 +32,5 @@ correction — stays in `SAIRN-ACTIVE-WORK.md`.
 
 ---
 
+
+- sql/full_crud_truncate_sweep_2026-08-24.sql, docs/SAIRN-OPEN-WORK-INDEX.md (Fourth) — resumed the dead-table check the crashed session lost, then reviewed Section 2. 19 of 20 bare-named tables confirmed reachable by no code path (four channels enumerated, incl. the browser's direct anon-key Supabase calls — a gap my first pass had). Section 2's "cannot change capability" claim holds for the logic; 6 findings raised on coverage/verification/blast radius, none applied. Two evidenced corrections to SAIRN-cc's dd5327b block: network_insights has SELECT (3 live 200s, INSERT still unverified), intake_submissions is read by stonedesk.html:31982. Export as pasted here enumerates to 215, not 227 — second truncation. NOTHING RUN against the live DB; Section 1 remains the only executable statement. 2026-08-25
