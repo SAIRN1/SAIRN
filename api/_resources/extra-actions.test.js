@@ -84,23 +84,35 @@ const REJECTED = 400;      // the gate refused the verb
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.alf_billing, ['derive_charges']);
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.dnt_credentials, ['evaluate']);
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_certifications, ['evaluate']);
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_company_programs, ['evaluate']);
     const grants = (verb) => reg.RESOURCE_NAMES.filter(
       (n) => (reg.EXTRA_ACTIONS[n] || []).indexOf(verb) !== -1
     );
     // Enumerated, not counted: a new grant of one of these verbs must fail
     // here and be looked at, rather than passing because the total still
-    // "looks about right". 'evaluate' is legitimately held by three resources
-    // as of 2026-08-24 (SAIRNcare compliance, SAIRNdental credentials,
-    // SAIRNroofing certifications) -- all compute-only, all read-only, each
-    // declared by its own app. Growth here is expected and fine; an
-    // UNDECLARED grant is what this line exists to catch.
+    // "looks about right". 'evaluate' is legitimately held by FOUR resources
+    // as of 2026-08-25 (SAIRNcare compliance, SAIRNdental credentials,
+    // SAIRNroofing certifications, SAIRNroofing company programmes) -- all
+    // compute-only, all read-only, each declared by its own app. Growth here is
+    // expected and fine; an UNDECLARED grant is what this line exists to catch.
+    //
+    // rf_company_programs was added 2026-08-25 (Phase 4d) and this line caught
+    // it, which is the tripwire working. Checked before widening it: the
+    // handler branch reads programmes, the roster and rf_certifications, runs
+    // api/_lib/roofing-programs.js and issues no write -- its own suite asserts
+    // zero non-GET requests. It also carries a HARDER gate than the other
+    // three (management/broad-read only), because a roster-credential share is
+    // an aggregate over colleagues rather than a fact about the caller.
     assert.deepStrictEqual(grants('route'), ['alf_payer_rules']);
     assert.deepStrictEqual(grants('evaluate').sort(),
-      ['alf_compliance_rules', 'dnt_credentials', 'rf_certifications']);
+      ['alf_compliance_rules', 'dnt_credentials', 'rf_certifications', 'rf_company_programs']);
     assert.deepStrictEqual(grants('derive_charges'), ['alf_billing']);
     // 'reconcile' (SAIRNroofing 3c) is owned by rf_claims alone.
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_claims, ['reconcile']);
     assert.deepStrictEqual(grants('reconcile'), ['rf_claims']);
+    // Phase 4a/4d single-owner verbs.
+    assert.deepStrictEqual(grants('set_status'), ['rf_schedule']);
+    assert.deepStrictEqual(grants('agreement_status'), ['rf_claim_agreements']);
   });
 
   test('no resource outside the sc_ family grants delete', () => {

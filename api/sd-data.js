@@ -42,6 +42,7 @@ const roofingClaims = require('./_lib/roofing-claims');
 const roofingSupplement = require('./_lib/roofing-supplement');
 const roofingAgreements = require('./_lib/roofing-agreements');
 const roofingLocations = require('./_lib/roofing-locations');
+const roofingPrograms = require('./_lib/roofing-programs');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -3103,6 +3104,114 @@ module.exports = async (req, res) => {
         ok: true, provisioned: true, claim_id: claimId, job_id: claim.job_id,
         measured_from_job: measured, has_measurement: history.length > 0,
         worksheet: worksheet
+      });
+      return;
+    }
+
+    // ── SAIRNROOFING: manufacturer programmes, company level (2026-08-25, Phase 4d) ──────────
+    // Voluntary commercial programmes, NOT regulation. Read is management-only:
+    // unlike state licensing (which a foreman needs to know they personally
+    // hold), a company's standing in GAF Master Elite is commercial strategy,
+    // and the roster-share requirement exposes how many colleagues hold a
+    // credential -- an aggregate a crew member has no need for.
+    if (resource === 'rf_company_programs' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Company programme standing is management-level information' } });
+        return;
+      }
+      const r = await fetch(rest('rf_company_programs?license_hash=eq.' + enc(licHash) + '&select=program_id,manufacturer,program_name,status,obtained_on,expires_on,has_expiry,requirements,data,updated_by&order=manufacturer.asc'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({
+        ok: true, provisioned: true,
+        data: (rows || []).map((x) => Object.assign({}, x.data || {}, {
+          program_id: x.program_id, manufacturer: x.manufacturer, program_name: x.program_name,
+          status: x.status, obtained_on: x.obtained_on, expires_on: x.expires_on,
+          has_expiry: x.has_expiry, requirements: x.requirements || [], updated_by: x.updated_by
+        })),
+        statuses: roofingPrograms.PROGRAM_STATUSES,
+        computed_kinds: roofingPrograms.COMPUTED_KINDS,
+        denominators: roofingPrograms.DENOMINATORS
+      });
+      return;
+    }
+    if (resource === 'rf_company_programs' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a programme' } }); return; }
+      const problems = roofingPrograms.validateProgram(payload);
+      if (problems.length) { res.status(400).json({ error: { message: 'rf_company_programs: ' + problems.join('; ') } }); return; }
+      const blob = Object.assign({}, payload);
+      ['id', 'manufacturer', 'program_name', 'status', 'obtained_on', 'expires_on', 'has_expiry', 'requirements'].forEach((k) => { delete blob[k]; });
+      const r = await fetch(rest('rf_company_programs?on_conflict=license_hash,program_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', program_id: String(payload.id),
+          manufacturer: String(payload.manufacturer), program_name: String(payload.program_name),
+          status: payload.status || 'not_enrolled',
+          obtained_on: payload.obtained_on || null,
+          expires_on: payload.expires_on || null,
+          has_expiry: payload.has_expiry !== false,
+          requirements: Array.isArray(payload.requirements) ? payload.requirements : [],
+          data: blob, updated_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        const bt = await r.text();
+        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Programmes are not set up yet — run sql/sairnroofing_programs_schema.sql in Supabase first.' } }); return; }
+        if (/rfprg_expiry_coherent/i.test(bt)) { res.status(400).json({ error: { message: 'A programme recorded as held needs either a renewal date or an explicit "does not expire" — the two cases must stay distinguishable.' } }); return; }
+        res.status(400).json({ error: { message: 'Data store rejected the programme', detail: bt } }); return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Array.isArray(rows) && rows[0] });
+      return;
+    }
+    // Compute-only. Reads the programmes, the ROSTER and the Phase 3a
+    // certification records server-side, runs the engine, writes nothing.
+    if (resource === 'rf_company_programs' && action === 'evaluate') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Company programme standing is management-level information' } });
+        return;
+      }
+      const today = (payload && payload.today) || nowISO().slice(0, 10);
+      const pr = await fetch(rest('rf_company_programs?license_hash=eq.' + enc(licHash) + '&select=program_id,manufacturer,program_name,status,obtained_on,expires_on,has_expiry,requirements'), { headers });
+      if (pr.status === 404 || pr.status === 400) { res.status(200).json({ ok: true, provisioned: false, programs: [] }); return; }
+      const progRows = await pr.json();
+      if (!pr.ok) return upstream(res, progRows);
+      // The roster and the certification records are read WHOLE here, not
+      // narrowed to the caller: a company-level share is by definition an
+      // aggregate over everyone, which is exactly why this verb is gated to
+      // management/broad-read above rather than being open like 'evaluate' on
+      // rf_certifications.
+      const er = await fetch(rest('sairnroofing_employee_auth?license_hash=eq.' + enc(licHash) + '&select=employee_id,role,active'), { headers });
+      const empRows = (er.status === 404 || er.status === 400) ? [] : await er.json();
+      const cr = await fetch(rest('rf_certifications?license_hash=eq.' + enc(licHash) + '&select=entry_id,employee_id,record_type,data,recorded_at'), { headers });
+      const certRows = (cr.status === 404 || cr.status === 400) ? [] : await cr.json();
+      const records = roofingCreds.latestByKey((Array.isArray(certRows) ? certRows : []).map((x) => Object.assign({}, x.data || {}, {
+        entry_id: x.entry_id, employee_id: x.employee_id, record_type: x.record_type, recorded_at: x.recorded_at
+      })));
+      const roster = (Array.isArray(empRows) ? empRows : []).map((e) => ({
+        employee_id: e.employee_id, role: e.role, active: e.active !== false
+      }));
+      const programs = (Array.isArray(progRows) ? progRows : []).map((x) => roofingPrograms.evaluateProgram({
+        program: {
+          program_id: x.program_id, manufacturer: x.manufacturer, program_name: x.program_name,
+          requirements: x.requirements || [],
+          standing: { status: x.status, obtained_on: x.obtained_on, expires_on: x.expires_on, has_expiry: x.has_expiry }
+        },
+        roster: roster, certifications: records, today: today
+      }));
+      res.status(200).json({
+        ok: true, provisioned: true, today: today,
+        roster_size: roster.filter((e) => e.active).length,
+        programs: programs
       });
       return;
     }

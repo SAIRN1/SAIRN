@@ -1,4 +1,57 @@
 -- sql/unused_delete_grant_revoke_2026-08-24.sql
+--
+-- ══ SECTION 2 WAS RUN 2026-08-25. CLEAN PASS, ALL FOUR CHECKS. ══════════
+-- Everything below this block is HISTORICAL from here down -- it described
+-- the file up to the moment of the run and is left intact because the
+-- reasoning was built under it.
+--
+-- 3a -- ONE row: license_keys, the deliberate exclusion, nothing else.
+--       Every other non-sc_* table has lost DELETE.
+-- 3b -- ONE row: LOST | DELETE | 134. Exactly the assertion this file's
+--       inverted Section 3 was built around: 134 LOST, every one of them
+--       DELETE, ZERO GAINED, and ZERO LOST of any other privilege type.
+--       That last clause is the one that did the real work -- it is what
+--       proves no SELECT/INSERT/UPDATE was collaterally dropped, which 3a
+--       cannot see and which the file's original prose Section 3 had no
+--       way of detecting at all.
+-- 3c -- baseline 785/213, live 651/213. 785 - 134 = 651 exactly, and the
+--       TABLE count is unchanged, confirming the prediction that no table
+--       is emptied because none held DELETE without also holding
+--       SELECT/INSERT/UPDATE.
+-- 3d -- 26 sc_* tables, DELETE intact on every one. SAIRNcode untouched.
+--
+-- ── WHY 3d SAYS 26 AND SECTION 2'S COMMENT BELOW SAYS 29 ────────────────
+-- Flagged because the two numbers sit in the same file and the mismatch
+-- reads like three lost grants. NOTHING WAS LOST. The sc_* family has 26
+-- LIVE tables, all 26 hold DELETE, and all 26 came through. The larger
+-- figure counts REGISTERED resources, not live tables: SC_RESOURCES in
+-- api/_resources/sairncode.js registers 28 names, and three of them --
+-- sc_specialty_checks, sc_anesthesia_base_units, sc_pctc -- have schema
+-- files but NO live table. They are the migrations SAIRN-ACTIVE-WORK.md
+-- already logs as "QUEUED, NOT RUN", the same class as sairncash_waitlist
+-- and sairnscape_org_intel in 6776f99. So 26 is correct and complete for
+-- what exists; the sweep neither touched nor could have touched a table
+-- that is not there. Left as a note rather than a fix -- provisioning
+-- another app's queued migrations is not this sweep's business.
+--
+-- ── THE ONE THING THAT WILL UNDO PART OF THIS IF LEFT ───────────────────
+-- sql/sairnscape_data_schema.sql:147-152 still grants DELETE on six scp_*
+-- tables (scp_customers, scp_jobs, scp_quotes, scp_schedule, scp_invoices,
+-- scp_progress_photos). Those six have just lost it live, so the file and
+-- the database now DISAGREE, and `create table if not exists` files get
+-- re-run routinely -- a re-run restores all six. This is the exact failure
+-- mode the scp_employee_auth source fix closed for one table and left open
+-- for six. Tracked in docs/SAIRN-OPEN-WORK-INDEX.md and deliberately not
+-- folded in here, but the sweep is NOT DURABLE until it lands. Schedule
+-- it; do not merely note it.
+-- (scp_employee_auth itself is now consistent: its source line reads
+-- `select, insert, update` at sql/scp_employee_auth_schema.sql:63, and its
+-- live grant was revoked by this run -- both halves finally agree.)
+--
+-- VERDICT: clean pass. The baseline table _delete_grant_baseline_2026_08_25
+-- is safe to drop (Section 4).
+-- ════════════════════════════════════════════════════════════════════════
+--
 -- Revokes service_role's DELETE on every public table EXCEPT the SAIRNcode
 -- sc_* family, which is the only app with a real, reachable delete path.
 --
