@@ -1,13 +1,19 @@
 # Tennessee — deadline-seed source-availability gate
 
-**Run 2026-08-25. Verdict: GATED OUT — a NEAR MISS like Arizona, not a dead end
-like Kentucky. One decision unblocks it, and it is not the same decision that
-unblocked Arizona.**
+**Run 2026-08-25. Verdict: FAILED — Tennessee is not seedable, and this is a
+decision made, not a decision pending.**
+
+> **Verdict upgraded from "gated out, awaiting a decision" to FAILED on
+> 2026-08-25**, on Michael's direction after he found the Administrative Office
+> of the Courts' own Code page. See §2A for that page's verbatim text and for a
+> correction to how it was first characterised — the AOC's warning is real and
+> decisive, but it does not say what it was first reported to say, and the
+> distinction changes which reason does the work.
 
 Tennessee (~7.1M) is the largest unseeded state. Its **rules pass the gate
-outright**. It fails on the **holiday statute its own rule expressly requires**
-— and the failure is an ACCESS problem, not a definitional one, which is what
-makes it a near miss.
+outright**. It fails on the **holiday statute its own rule expressly requires** —
+an ACCESS failure rather than a definitional one, which is why so much usable
+work survives it (§5) even though the state itself is refused.
 
 ---
 
@@ -70,6 +76,57 @@ since is exactly the **Arizona** method, and it was failed there for a reason
 that applies unchanged: *a reconstruction cannot prove its own completeness,
 and a missed amendment yields wrong dates with no refusal.*
 
+## 2A. The AOC's own Code page — verbatim, and a correction to how it was first read
+
+Found by Michael 2026-08-25 and then read directly from
+`https://www.tncourts.gov/Tennessee%20Code` through a real browser. The page is
+titled **"Tennessee Code - Lexis Law Link"** and says, in full:
+
+> At the bottom of this page is a link to the LEXIS Law Publishing Web Site.
+> **The site is not operated by, nor is it under the control of, The Tennessee
+> Administrative Office of the Courts.**
+>
+> This link is provided solely as a service, and any inquires regarding the
+> usage of, or problems with, the LEXIS Law Publishing query tools should be
+> directed by LEXIS Law Publishing Customer Service.
+>
+> **Please note that Lexis has changed its free version of the Tennessee Code.
+> Before you can view the content, you must click a button that says you agree
+> to its terms and conditions.**
+
+**CORRECTION, STATED PLAINLY BECAUSE THE DIFFERENCE MATTERS.** This finding was
+first relayed as the state courts "flagging the free edition as unreliable" —
+i.e. a warning about the *integrity of the content*. **The page does not say
+that.** It says two narrower things: the AOC does not operate or control the
+site, and Lexis has changed its free edition so that content is now behind a
+**click-through terms-and-conditions acceptance**. Nothing on the page
+characterises the text as inaccurate or untrustworthy.
+
+The verdict is unchanged, and arguably rests on firmer ground once the page is
+read literally rather than as a reliability warning:
+
+1. **There is now an explicit terms-acceptance gate.** Viewing the Code requires
+   affirmatively clicking a button agreeing to LexisNexis's terms. **An agent
+   cannot click that on anyone's behalf.** This project has already declined to
+   route around exactly this kind of gate — the BAILII/AustLII reasoning, and
+   CanLII's suit against Caseway AI. That is a bright line and it is reached
+   before any question of content quality arises.
+2. **The state's own courts disclaim the source.** "not operated by, nor …
+   under the control of" the AOC is the AOC declining to vouch for the only free
+   access point it can offer for a statute its own Rule 6.01 makes load-bearing.
+3. The stale-snapshot and dangerous-direction findings below stand on their own
+   and are independent of both.
+
+**How this differs from Arizona, precisely.** Arizona's problem was
+*completeness*: a free, complete, official base text that provably lagged, with
+the maintained version behind a paywall — a staleness question, and the
+free-government-edition terms were later cleared. Tennessee's problem is
+*access permission at the front door*: the current text is not merely stale but
+sits behind a terms gate this project will not click through, and the state
+courts expressly disclaim the host. That is closer to **Kentucky** — refused on
+source availability — than to Arizona, though the mechanism differs: Kentucky
+had no free base text at all, Tennessee has one it may not pass the gate to.
+
 ### And the error direction is NOT uniformly safe, which rules out shipping it with a disclosure
 
 - **Missing Juneteenth** → a deadline landing on 19 June would not roll →
@@ -100,25 +157,41 @@ Massachusetts-style disclosure. That is the whole verdict.
 Tennessee is the *narrowest* block of the three. The law is clear and the rules
 are excellent; only a current authoritative copy of one statute is missing.
 
-## 4. The decision that would unblock it — and it is NOT the Arizona decision
+## 4. Why no decision is pending — and what would have to change
 
-Michael cleared `azrules.westgroup.com` → **`govt.westlaw.com`** free government
-edition terms for Arizona. **That does not carry over.** Tennessee's Code is
-published under contract with the **Tennessee Code Commission** by
-**LexisNexis**, and the state's designated free public access point is
-`lexisnexis.com/hottopics/tncode` — a different publisher, different terms, and
-currently returning 403 to everything tried.
+An earlier draft of this document left two questions open for Michael: whether
+the LexisNexis free Tennessee Code edition was acceptable on the same reasoning
+that cleared Westlaw's government edition for Arizona, and whether the URL was
+reachable at all. **Both are now answered, and the answer is no on the first,
+which is dispositive.**
 
-Two separable questions, both Michael's:
+- **The terms question is not a judgement call about publisher policy — there
+  is a literal click-through gate.** The AOC's page states that content cannot
+  be viewed until you "click a button that says you agree to its terms and
+  conditions." Clearing Westlaw's *free government edition* for Arizona was a
+  decision about reading a page that simply loads. This is a decision about
+  affirmatively accepting a contract on a user's behalf, which is not the same
+  act and is not covered by that earlier decision.
+- **The reachability question is moot.** `lexisnexis.com/hottopics/tncode`
+  returns HTTP 403 (CloudFront) to `curl` and to a real browser alike, and
+  `advance.lexis.com` renders "Page Unavailable". Even setting the terms gate
+  aside, nothing loads.
 
-1. **Is the LexisNexis free Tennessee Code edition acceptable to read** on the
-   same reasoning that cleared the Westlaw government edition? (Terms question.)
-2. **Can it actually be reached at all?** The 403 is a CloudFront block, not a
-   paywall notice. It may be transient, geo-, or bot-related. Worth one retry
-   from a normal browser session before treating it as closed — if it loads for
-   a human, the blocker is purely mechanical.
+**What would change the verdict** (none of which is work this project can do
+unilaterally):
 
-If both clear, Tennessee is immediately seedable: everything else is done.
+1. Tennessee publishing the Code in a free, official form that is not behind a
+   terms acceptance — as Virginia, Massachusetts, Washington and North Carolina
+   all do for their statutes.
+2. A human obtaining § 15-1-101 through the gate and supplying the verbatim
+   current text, together with the governor's standing designations under Acts
+   1984 ch. 979 for the election-day holidays.
+3. A decision, made explicitly and by a person, that accepting those terms is
+   acceptable for this use.
+
+Route 2 is the realistic one and it is small: **a single statute section plus
+one designation list**. Everything else Tennessee needs is already read and
+recorded in §5 below. Tennessee is refused today, not abandoned.
 
 ## 5. Banked verbatim — reusable whether or not Tennessee is ever seeded
 
@@ -202,14 +275,26 @@ All read directly from `tncourts.gov`, 2026-08-25.
 
 ## 6. Verdict
 
-**GATED OUT, banked not abandoned.** Rules pass; the statute Rule 6.01 requires
-is unreachable in a current official free form, the only free full text lags by
-a proven amendment, and one of the three gaps in that stale text runs **LATE**,
-which forecloses shipping it behind a disclosure.
+**FAILED. Not seedable, and not pending a decision.**
 
-**Next action:** Michael to decide (a) whether the LexisNexis free Tennessee Code
-edition is acceptable on the same reasoning that cleared Westlaw's government
-edition for Arizona — noting it is a *different publisher and different terms* —
-and (b) whether `lexisnexis.com/hottopics/tncode` loads at all from a normal
-browser session, since the 403 may be mechanical rather than substantive.
-Everything else needed to seed Tennessee is already read and recorded above.
+The rules pass the gate — free, complete, official, maintained, with real
+per-rule currency. Everything needed to seed Tennessee is read and banked in §5.
+
+It fails on the statute Rule 6.01 makes load-bearing. The only free access point
+the state's own courts can offer is a host they expressly disclaim control over,
+whose content now sits behind a **click-through terms acceptance an agent must
+not click**, and which returns 403 in any case. The only free full text actually
+reachable is a 2021 snapshot that provably predates a 2023 amendment to the
+holiday list. And one of the three gaps in that stale text — election-day
+holidays, which § 15-1-101 grants on its face while its own Compiler's Notes
+record the governor deleting them — runs **LATE**, which forecloses shipping it
+behind a Virginia-style disclosure.
+
+**Refused for a related but distinct reason from Kentucky.** Kentucky has no
+permitted primary source *and* a holiday basis that fails late. Tennessee has a
+permitted, excellent primary source for its *rules*, and a front-door access
+barrier on the one *statute* those rules require. Both end in refusal; the
+mechanisms are different and should not be collapsed when either is revisited.
+
+Banked, not abandoned — see §5, and the standing-habit finding about deeming
+provisions in service rules, which is the most reusable thing this gate produced.
