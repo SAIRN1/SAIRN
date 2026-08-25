@@ -7,6 +7,59 @@
 -- it is pulled from information_schema at run time, so a table added after
 -- this file was written is still covered.
 --
+-- ── COUNT CORRECTION 2026-08-25: THE "~107 / ~78" FIGURE WAS WRONG ────────
+-- A live count on 2026-08-25 returned 135 non-sc_* tables holding DELETE,
+-- not the ~78 this file's first revision implied. Reconciled before any
+-- revoke runs, because a 57-table gap is not a rounding difference.
+--
+-- CAUSE: the original figure came from a TRUNCATED EXPORT, and was then
+-- written into docs/SAIRN-OPEN-WORK-INDEX.md as though it described the
+-- database. sql/full_crud_truncate_sweep_2026-08-24.sql records the same
+-- root cause in its own header, found independently by the SAIRN-cc
+-- session: "Michael's SQL client had a row limit; the first export
+-- (100 rows) was confirmed truncated by cross-checking against tables
+-- already known to exist (SAIRNlegacy alone continues well past where
+-- that export stopped)." The real export is 227 tables. Any count near
+-- 100 taken during that window is capped, not measured.
+--
+-- NOT THE CAUSE -- checked, not assumed: new tables created since. origin
+-- has no schema commit after the original count; the only unpushed work in
+-- any sibling clone (SAIRN-cc dd5327b) adds documentation and zero tables.
+-- New tables account for approximately none of the 57.
+--
+-- WHERE THE 135 COMES FROM, parsed from every grant line in sql/*.sql:
+--   131  non-sc_* tables this repo grants anything on to service_role
+--    83    of those carry an explicit `grant ... delete` line  <- the
+--          original count, i.e. it counted GRANT LINES IN THIS REPO and
+--          reported them as live rows
+--    48    of those are granted only SELECT/INSERT/UPDATE here, yet hold
+--          DELETE live anyway -- the actual body of the gap
+--   + ~4  real tables with NO tracked CREATE TABLE in this repo at all
+--          (license_keys, ai_memories, bridge_data, sairn_agents,
+--          sairn_agent_commands -- see the truncate sweep's findings 3+4)
+--   = 135, which matches the live count almost exactly.
+--
+-- THE CONSEQUENCE, and the thing to look at in Section 1's real output:
+-- if those 48 do hold DELETE, the grant is NOT coming from this repo's
+-- schema files for most tables -- it is arriving by default privilege,
+-- the same mechanism already confirmed live via pg_default_acl for
+-- TRUNCATE/REFERENCES/TRIGGER/MAINTAIN in sql/append_only_grant_audit.sql.
+-- That does not change what Section 2 does (it is list-free and acts on
+-- whatever is live), but it does change what "fixed" means: revoking
+-- without also fixing the default privilege leaves every FUTURE table
+-- arriving with DELETE again.
+--
+-- THREE NAMES IN THAT 48 MATTER MORE THAN THE REST -- check them first:
+-- sairncode_audit_log, stonedesk_audit_log and sairnlaw_audit_log. The
+-- first two are the only schema files on the platform documented as using
+-- the SOUND `revoke all ... from service_role` pattern. If they appear in
+-- Section 1's output holding DELETE, then either that pattern does not do
+-- what it is believed to do, or those revokes were never actually run --
+-- either way that is a separate finding worth more than this sweep.
+-- UNVERIFIED: this session has no database access and did not see the live
+-- list. The 48 are a named candidate set derived from repo grant lines, not
+-- a confirmed subset of the 135.
+--
 -- ── WHY ───────────────────────────────────────────────────────────────────
 -- Exactly ONE piece of code in the entire repo issues a DELETE:
 -- api/sd-data.js, inside the SC_RESOURCES branch (line 5029 as of
@@ -113,6 +166,15 @@ order by t.table_name;
 --     WHERE t.table_schema = 'public'
 --       AND g.grantee = 'service_role'
 --       AND t.table_name NOT LIKE 'sc\_%'
+--       -- DECIDE BEFORE RUNNING, not silently either way: license_keys has
+--       -- no tracked CREATE TABLE anywhere in this repo, so Section 2's
+--       -- output cannot be checked against an expected schema, and every
+--       -- license check on the platform depends on it. The truncate sweep
+--       -- excluded it for exactly this reason. This sweep is gentler on it
+--       -- (SELECT/INSERT/UPDATE are preserved, and license checks are
+--       -- reads), so excluding it is a judgement call, not a requirement.
+--       -- Uncomment to exclude:
+--       -- AND t.table_name <> 'license_keys'
 --     GROUP BY t.table_name
 --     HAVING bool_or(g.privilege_type = 'DELETE')
 --   LOOP
