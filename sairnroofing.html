@@ -209,6 +209,54 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <div class="fr"><div class="fg"><label>Check a state</label><input type="text" id="cert-state" placeholder="OH" maxlength="2" style="text-transform:uppercase;" onchange="rfLoadCertBoard()"></div></div>
           <div id="cert-licensing"></div>
         </div></div>
+        <div class="card" id="prg-card" style="display:none;"><div class="ch"><div class="ct">Manufacturer Programmes</div></div><div class="cb">
+          <div class="note"><strong>These are voluntary commercial programmes, not regulation.</strong> Nothing here is a licensing or compliance status. The requirements and thresholds are the ones you enter from your own programme agreement &mdash; this app does not know them and does not verify them against the manufacturer.</div>
+          <div id="prg-board" style="margin-top:12px;"><div class="empty">Loading…</div></div>
+          <div class="ch" style="padding-left:0;margin-top:16px;"><div class="ct">Track a programme</div></div>
+          <div class="fr">
+            <div class="fg"><label>Programme id</label><input id="prg-id" placeholder="RFPRG-GAF-ME"></div>
+            <div class="fg"><label>Manufacturer</label><input id="prg-mfr" placeholder="GAF"></div>
+            <div class="fg"><label>Programme name</label><input id="prg-name" placeholder="Master Elite"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Standing</label><select id="prg-status">
+              <option value="not_enrolled">Not enrolled</option><option value="in_progress">Working toward it</option>
+              <option value="held">Held</option><option value="lapsed">Lapsed</option>
+            </select></div>
+            <div class="fg"><label>Obtained</label><input type="date" id="prg-obtained"></div>
+            <div class="fg"><label>Renews / expires</label><input type="date" id="prg-expires"></div>
+            <div class="fg"><label><input type="checkbox" id="prg-noexpiry"> Does not expire</label></div>
+          </div>
+          <button class="btn bp" onclick="rfSaveProgram()">Save Programme</button>
+          <div class="ch" style="padding-left:0;margin-top:16px;"><div class="ct">Requirements for a programme</div></div>
+          <div class="note">A requirement with no source is not evaluated. Say where it comes from &mdash; your programme agreement, your rep &mdash; so a number nobody can trace never becomes a verdict.</div>
+          <div class="fr">
+            <div class="fg"><label>Programme</label><select id="prq-prog"></select></div>
+            <div class="fg"><label>Label</label><input id="prq-label" placeholder="Half the crew hold Master Craftsman"></div>
+            <div class="fg"><label>Kind</label><select id="prq-kind" onchange="rfPrqKindChanged()">
+              <option value="employee_credential_share">Computed &mdash; % of roster holding a credential</option>
+              <option value="employee_credential_count">Computed &mdash; number of people holding a credential</option>
+              <option value="attested">Self-reported business fact</option>
+            </select></div>
+          </div>
+          <div class="fr" id="prq-computed-row">
+            <div class="fg"><label>Credential to count</label><input id="prq-credential" placeholder="Master Craftsman"></div>
+            <div class="fg"><label>Measured against</label><select id="prq-denominator" onchange="rfPrqKindChanged()">
+              <option value="all_active">Everyone active</option><option value="listed_roles">Only these roles</option>
+            </select></div>
+            <div class="fg" id="prq-roles-wrap" style="display:none;"><label>Roles (comma separated)</label><input id="prq-roles" placeholder="foreman, crew"></div>
+          </div>
+          <div class="fr" id="prq-attested-row" style="display:none;">
+            <div class="fg"><label>Your recorded value</label><input id="prq-value" placeholder="2000000"></div>
+            <div class="fg"><label>As of</label><input type="date" id="prq-attested-on"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Threshold</label><input id="prq-threshold" placeholder="50"></div>
+            <div class="fg"><label>Unit</label><input id="prq-unit" placeholder="% / USD / years"></div>
+            <div class="fg"><label>Source (required)</label><input id="prq-source" placeholder="our programme agreement, rev C"></div>
+          </div>
+          <button class="btn bp" onclick="rfAddRequirement()">Add Requirement</button>
+        </div></div>
       </div>
 
       <div class="panel" id="panel-claims">
@@ -580,7 +628,15 @@ function nav(id){
   // Render from nothing first, then replace with the server-computed board.
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
-  if(id==='certifications'){rfRenderCertBoard(null);rfLoadCertBoard();}
+  if(id==='certifications'){
+    rfRenderCertBoard(null);rfLoadCertBoard();
+    // Phase 4d. Management/broad-read only -- the roster-share requirement is
+    // an aggregate over colleagues, which is why the server gates it harder
+    // than the per-employee board above. Hidden here to match, not to enforce.
+    var canSeePrograms=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]||BROAD_READ_ROLES[rfSession&&rfSession.role]);
+    if($('prg-card'))$('prg-card').style.display=canSeePrograms?'':'none';
+    if(canSeePrograms){rfPrqKindChanged();rfLoadPrograms();}
+  }
   if(id==='claims'){rfLoadClaims();}
   if(id==='schedule'){
     // Management-only affordances match the server rule exactly (staffing a
@@ -1299,6 +1355,167 @@ function rfRescindAgreement(){
   });
 }
 
+
+// ── MANUFACTURER PROGRAMMES (Phase 4d) ────────────────────────────────────
+// Company-level, voluntary, commercial. The panel never decides a verdict --
+// api/_lib/roofing-programs.js does, and every disclosure rendered here comes
+// off the server's own result rather than being re-typed in the UI, so the two
+// cannot drift apart.
+var rfPrograms=[];
+
+function rfLoadPrograms(){
+  return rfDataRaw('evaluate','rf_company_programs',{}).then(function(r){
+    if(!r.ok){
+      // A foreman hitting this is a 403 by design, not a failure to report.
+      $('prg-board').innerHTML='<div class="note">'+rfEsc(r.msg||'Programme standing is management-level information.')+'</div>';
+      return;
+    }
+    rfPrograms=(r.data&&r.data.programs)||[];
+    rfRenderPrograms(r.data);
+    rfFillProgramSelect();
+  });
+}
+
+function rfFillProgramSelect(){
+  var el=$('prq-prog');if(!el)return;
+  el.innerHTML=rfPrograms.map(function(p){
+    return '<option value="'+rfEsc(p.program_id)+'">'+rfEsc(p.manufacturer+' — '+p.program_name)+'</option>';
+  }).join('')||'<option value="">Save a programme first</option>';
+}
+
+function rfPrqKindChanged(){
+  var computed=$('prq-kind').value!=='attested';
+  $('prq-computed-row').style.display=computed?'':'none';
+  $('prq-attested-row').style.display=computed?'none':'';
+  $('prq-roles-wrap').style.display=(computed&&$('prq-denominator').value==='listed_roles')?'':'none';
+}
+
+function rfVerdictBadge(v){
+  if(v==='appears_met')return '<span class="badge bg">meets the requirements you entered</span>';
+  if(v==='requirements_not_met')return '<span class="badge br">requirements not met</span>';
+  if(v==='incomplete')return '<span class="badge bw">incomplete</span>';
+  return '<span class="badge bx">no requirements entered</span>';
+}
+function rfReqBadge(st){
+  if(st==='met')return '<span class="badge bg">met</span>';
+  if(st==='not_met')return '<span class="badge br">not met</span>';
+  if(st==='unusable')return '<span class="badge br">unusable</span>';
+  return '<span class="badge bw">unknown</span>';
+}
+function rfRenewalLine(rn){
+  if(!rn||rn.status==='not_applicable')return '';
+  if(rn.status==='no_expiry')return '<div class="note">Recorded as not expiring.</div>';
+  if(rn.status==='unknown')return '<div class="note">Held, but no renewal date recorded — enter one so a lapse can be seen coming.</div>';
+  if(rn.status==='lapsed_by_date')return '<div class="note" style="color:#B91C1C;">The renewal date ('+rfEsc(rn.expires_on)+') has passed. Standing still says held — confirm with the manufacturer.</div>';
+  if(rn.status==='expiring')return '<div class="note" style="color:#B45309;">Renews in '+rn.days+' days ('+rfEsc(rn.expires_on)+').</div>';
+  return '<div class="note">Renews '+rfEsc(rn.expires_on)+' ('+rn.days+' days).</div>';
+}
+
+function rfRenderPrograms(d){
+  var el=$('prg-board');if(!el)return;
+  if(!rfPrograms.length){el.innerHTML='<div class="empty">No programmes tracked yet.</div>';return;}
+  el.innerHTML=rfPrograms.map(function(p){
+    var reqs=(p.requirements||[]).map(function(q){
+      var actual=(q.actual===null||q.actual===undefined)?'--':(q.actual+(q.unit?' '+q.unit:''));
+      var thr=(q.threshold===undefined||q.threshold===null)?'--':(q.threshold+(q.unit?' '+q.unit:''));
+      return '<tr><td>'+rfEsc(q.label)+'</td><td>'+(q.basis==='computed'?'<span class="badge bg">computed</span>':'<span class="badge bx">self-reported</span>')+
+        '</td><td>'+rfReqBadge(q.status)+'</td><td>'+rfEsc(String(actual))+'</td><td>'+rfEsc(String(thr))+'</td><td class="note">'+rfEsc(q.detail||'')+'</td></tr>';
+    }).join('');
+    return '<div class="card" style="margin-bottom:12px;"><div class="cb">'+
+      '<div style="font-weight:600;">'+rfEsc(p.manufacturer+' — '+p.program_name)+' '+rfVerdictBadge(p.verdict)+'</div>'+
+      '<div class="note">Standing: '+rfEsc((p.standing&&p.standing.status)||'not_enrolled').replace(/_/g,' ')+'</div>'+
+      rfRenewalLine(p.renewal)+
+      (reqs?'<div class="tw" style="margin-top:8px;"><table><thead><tr><th>Requirement</th><th>Basis</th><th></th><th>You</th><th>Needs</th><th>Detail</th></tr></thead><tbody>'+reqs+'</tbody></table></div>':'<div class="note">No requirements entered yet — nothing can be checked.</div>')+
+      '<div class="note" style="margin-top:8px;">'+rfEsc(p.disclosures.verified_by_app)+'</div>'+
+      '<div class="note">'+rfEsc(p.disclosures.thresholds_are_yours)+'</div>'+
+      '</div></div>';
+  }).join('')+'<div class="note">Roster used for computed requirements: '+((d&&d.roster_size)||0)+' active employees.</div>';
+}
+
+function rfSaveProgram(){
+  var id=($('prg-id').value||'').trim();
+  if(!id){toast('A programme needs an id');return;}
+  var existing=rfPrograms.filter(function(p){return p.program_id===id;})[0];
+  var rec={
+    id:id, manufacturer:($('prg-mfr').value||'').trim(), program_name:($('prg-name').value||'').trim(),
+    status:$('prg-status').value,
+    obtained_on:$('prg-obtained').value||null,
+    expires_on:$('prg-expires').value||null,
+    has_expiry:!$('prg-noexpiry').checked,
+    // Requirements are edited through rfAddRequirement, not here -- a whole-row
+    // upsert that forgot to carry them would wipe the lot, the same
+    // whole-document-replace trap the job tabs already guard against.
+    requirements:existing?(existing.requirements||[]).map(rfStripEvaluated):[]
+  };
+  rfDataRaw('write','rf_company_programs',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not save the programme',5000);return;}
+    toast('Programme saved');rfLoadPrograms();
+  });
+}
+
+// The server returns EVALUATED requirements (status, detail, holders...). Only
+// the stored fields go back on a write -- persisting a computed verdict would
+// be exactly the fabricated-figure class, a number that looks stored but was
+// derived at some past moment.
+function rfStripEvaluated(q){
+  var out={req_id:q.req_id,label:q.label,kind:q.kind,source:q.source};
+  if(q.threshold!==undefined&&q.threshold!==null)out.threshold=q.threshold;
+  if(q.unit)out.unit=q.unit;
+  if(q.basis==='computed'){
+    out.credential=q.credential;out.denominator=q.denominator;
+    if(q.roles&&q.roles.length)out.roles=q.roles;
+  }else{
+    if(q.attested_value!==undefined)out.attested_value=q.attested_value;
+    if(q.attested_on)out.attested_on=q.attested_on;
+    if(q.attested_by)out.attested_by=q.attested_by;
+  }
+  return out;
+}
+
+function rfAddRequirement(){
+  var progId=$('prq-prog').value;
+  if(!progId){toast('Save a programme first');return;}
+  var prog=rfPrograms.filter(function(p){return p.program_id===progId;})[0];
+  if(!prog){toast('Reload the board first');return;}
+  var source=($('prq-source').value||'').trim();
+  if(!source){toast('A requirement needs a source — where does this threshold come from?');return;}
+  var kind=$('prq-kind').value;
+  var req={
+    req_id:'REQ-'+Date.now(),
+    label:($('prq-label').value||'').trim()||'unnamed requirement',
+    kind:kind==='attested'?(($('prq-unit').value||'').trim()||'other'):kind,
+    source:source
+  };
+  var thr=($('prq-threshold').value||'').trim();
+  if(thr!=='')req.threshold=Number(thr);
+  var unit=($('prq-unit').value||'').trim();
+  if(unit)req.unit=unit;
+  if(kind==='attested'){
+    req.attested_value=($('prq-value').value||'').trim();
+    req.attested_on=$('prq-attested-on').value||'';
+    req.attested_by=(rfSession&&rfSession.employee_id)||'';
+  }else{
+    req.credential=($('prq-credential').value||'').trim();
+    req.denominator=$('prq-denominator').value;
+    if(req.denominator==='listed_roles'){
+      req.roles=($('prq-roles').value||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+    }
+  }
+  var rec={
+    id:prog.program_id, manufacturer:prog.manufacturer, program_name:prog.program_name,
+    status:(prog.standing&&prog.standing.status)||'not_enrolled',
+    obtained_on:(prog.standing&&prog.standing.obtained_on)||null,
+    expires_on:(prog.renewal&&prog.renewal.expires_on)||null,
+    has_expiry:!(prog.renewal&&prog.renewal.status==='no_expiry'),
+    requirements:(prog.requirements||[]).map(rfStripEvaluated).concat([req])
+  };
+  rfDataRaw('write','rf_company_programs',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not add the requirement',5000);return;}
+    toast('Requirement added');
+    ['prq-label','prq-credential','prq-roles','prq-value','prq-threshold','prq-unit','prq-source'].forEach(function(id){if($(id))$(id).value='';});
+    rfLoadPrograms();
+  });
+}
 
 // ── LOCATIONS + SCHEDULE (Phase 4a) ───────────────────────────────────────
 // location_id is attribution, not access control. Nothing in this file filters
