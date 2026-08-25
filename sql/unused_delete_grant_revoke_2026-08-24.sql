@@ -9,7 +9,9 @@
 --
 -- ── WHY ───────────────────────────────────────────────────────────────────
 -- Exactly ONE piece of code in the entire repo issues a DELETE:
--- api/sd-data.js:4980, inside the SC_RESOURCES branch, gated by a
+-- api/sd-data.js, inside the SC_RESOURCES branch (line 5029 as of
+-- 2026-08-25 -- the line number drifts as that file grows, the branch
+-- does not; it was 4980 when this file was first written), gated by a
 -- server-side re-check that the caller holds a valid SAIRNcode *admin*
 -- session (a forged client claim of admin-ness is rejected there). Verified
 -- by grepping every .js/.cjs/.mjs/.ts/.html in the repo, not just api/ --
