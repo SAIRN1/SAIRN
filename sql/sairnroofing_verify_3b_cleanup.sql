@@ -27,6 +27,19 @@
 --                     purpose, to prove has_measurement:false does not crash)
 --   employee_auth   : rf-verify-admin, rf-verify-fmA, rf-verify-fmB (disposable)
 --
+-- PHASE 5 (2026-08-25) added, all matched by the SAME patterns below -- no new
+-- delete was needed for the claims/jobs, only the two at the bottom:
+--   rf_jobs             : RFJOB-VERIFY-P5
+--   rf_claims           : RFCLM-VERIFY-P5-OH, -SHOP, -NORULE, -IND
+--   rf_claim_agreements : RFAGR-VERIFY-P5-OH, -R2 (the rescission), -SHOP,
+--                         -NR, -IND        (append-only -- needs SQL to remove)
+--   rf_contingency_rules: RFCON-VERIFY-OH-HSSA
+-- Three further ids appear in the harness and are NOT in the database because
+-- the endpoint refused them, which was the point of those checks:
+-- RFCON-VERIFY-BAD (no citation), RFCON-VERIFY-FM (foreman, 403),
+-- RFAGR-VERIFY-P5-R0/R1 (rescission with no / a bogus supersedes),
+-- RFAGR-VERIFY-P5-EVIL (wrong foreman, 403).
+--
 -- Phase 3c wrote NO new table and NO new resource: `reconcile` is compute-only
 -- and was proven live to write nothing at all (claim and jobs rows byte-identical
 -- across repeat calls). Everything above came from ordinary rf_jobs/rf_claims
