@@ -137,7 +137,30 @@ begin
       'create policy %I on public.%I for all using (auth.role() = ''service_role'') with check (auth.role() = ''service_role'')',
       'svc only ' || t, t
     );
-    execute format('grant select, insert, update, delete on public.%I to service_role', t);
+    -- DELETE removed 2026-08-25. This line previously read
+    -- `grant select, insert, update, delete on public.%I to service_role`.
+    -- Fixed in the FORMAT STRING, not by editing a table list, so it cannot
+    -- reintroduce delete on any table the loop covers -- including tables added
+    -- to the array above later. That is the whole reason this one survived the
+    -- platform-wide pass: that pass matched literal `grant ... delete` lines
+    -- with real table names, and here the table name is `%I`, supplied at
+    -- runtime, so all 12 dnt_* tables were invisible to the grep.
+    --
+    -- Fixed at SOURCE separately from the live sweep, for the reason that makes
+    -- it urgent rather than tidy: this file is `create table if not exists` and
+    -- safe to re-run, and sql/unused_delete_grant_revoke_2026-08-24.sql revoked
+    -- these live on 2026-08-25. Until this edit, file and database DISAGREED,
+    -- and a routine re-run would have silently restored delete on all 12 --
+    -- undoing part of a verified sweep with no error and no signal.
+    --
+    -- SAIRNdental has no delete path: DNT_RESOURCES in api/sd-data.js handles
+    -- only 'read' and 'write' (:4854, :4862), and a delete request returns 400
+    -- "action must be 'read' or 'write'" -- confirmed live 2026-08-25 against
+    -- dnt_referrals. The platform's only reachable DELETE is the SC_RESOURCES
+    -- (SAIRNcode) branch. So do NOT re-add `delete` here when fixing a missing
+    -- grant; adding the full CRUD verb list instead of the verbs actually used
+    -- is precisely the 2026-08-06 overcorrection this is undoing.
+    execute format('grant select, insert, update on public.%I to service_role', t);
   end loop;
 end $$;
 

@@ -34,16 +34,35 @@
 -- that is not there. Left as a note rather than a fix -- provisioning
 -- another app's queued migrations is not this sweep's business.
 --
--- ── THE ONE THING THAT WILL UNDO PART OF THIS IF LEFT ───────────────────
--- sql/sairnscape_data_schema.sql:147-152 still grants DELETE on six scp_*
--- tables (scp_customers, scp_jobs, scp_quotes, scp_schedule, scp_invoices,
--- scp_progress_photos). Those six have just lost it live, so the file and
--- the database now DISAGREE, and `create table if not exists` files get
--- re-run routinely -- a re-run restores all six. This is the exact failure
--- mode the scp_employee_auth source fix closed for one table and left open
--- for six. Tracked in docs/SAIRN-OPEN-WORK-INDEX.md and deliberately not
--- folded in here, but the sweep is NOT DURABLE until it lands. Schedule
--- it; do not merely note it.
+-- ── THE ONE THING THAT WILL UNDO PART OF THIS IF LEFT -- ALL LANDED ─────
+-- RESOLVED 2026-08-25. Kept, not deleted, because the original warning is
+-- what drove the fixes and because the stale version of it below caused a
+-- real wasted cycle: a later session re-reported SAIRNscape as broken off
+-- this paragraph after it was already fixed.
+--
+-- SAIRNscape: LANDED in 46c8bd9. sql/sairnscape_data_schema.sql lines
+-- 165-170 now read `grant select, insert, update` on all six scp_* tables
+-- (scp_customers, scp_jobs, scp_quotes, scp_schedule, scp_invoices,
+-- scp_progress_photos). Lines 147-152 are now the COMMENT BLOCK explaining
+-- the removal -- which is precisely why a grep for `delete` still lands
+-- there and keeps regenerating the false "still grants DELETE" claim. If
+-- you arrived here from such a grep, read the executable grant lines, not
+-- the comment.
+--
+-- Two DYNAMIC sites then had to be fixed before the sweep was actually
+-- durable, and neither was visible to the literal grep that found the
+-- SAIRNscape lines: sql/sairndental_data_schema.sql and
+-- sql/sairnlegacy_data_schema.sql each built their grant as
+-- `execute format('grant select, insert, update, delete on public.%I to
+-- service_role', t)` inside a foreach loop, so the table name never
+-- appeared on the grant line and 48 tables (12 dnt_*, 36 leg_*) went
+-- unseen. Both fixed 2026-08-25 IN THE FORMAT STRING, so they cannot
+-- reintroduce delete on tables added to their arrays later.
+--
+-- Confirmed after those three fixes: ZERO `grant ... delete` outside sc_*
+-- anywhere in this repo, literal or dynamic; the only two executable
+-- dynamic grant sites on the platform are the two above, both delete-free;
+-- sc_* untouched at 29 lines / 15 files. This sweep is now DURABLE.
 -- (scp_employee_auth itself is now consistent: its source line reads
 -- `select, insert, update` at sql/scp_employee_auth_schema.sql:63, and its
 -- live grant was revoked by this run -- both halves finally agree.)
