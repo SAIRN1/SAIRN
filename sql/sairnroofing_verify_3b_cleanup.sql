@@ -3,6 +3,12 @@
 -- by this session. Run once in the Supabase SQL editor AFTER the assignment-gate
 -- portion has been run (it needs the foreman seed first).
 --
+-- SCOPE WIDENED AGAIN 2026-08-25 (second pass): this now also covers the
+-- Phase 5 contingency-agreement round trip. Two more DELETEs at the bottom --
+-- rf_claim_agreements is APPEND-ONLY with no delete verb through the API, so
+-- like rf_claim_photos and rf_certifications its verification rows can only be
+-- removed here.
+--
 -- SCOPE WIDENED 2026-08-25: this now also covers the Phase 3c live round trip.
 -- The filename is deliberately NOT changed -- 3c wrote only VERIFY-tagged rows
 -- that the LIKE patterns below already match, so a separate 3c file would issue
@@ -38,6 +44,17 @@ delete from public.rf_jobs
  where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
    and job_id like 'RFJOB-VERIFY-%';
 
+-- Phase 5: the append-only agreement rows, and the disposable contingency rule.
+-- The rule delete is scoped to the VERIFY prefix so a REAL Ohio rule a
+-- contractor entered is never caught by it.
+delete from public.rf_claim_agreements
+ where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
+   and agreement_id like 'RFAGR-VERIFY-%';
+
+delete from public.rf_contingency_rules
+ where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
+   and rule_id like 'RFCON-VERIFY-%';
+
 -- The three disposable accounts (the 3a admin + the 3b foremen). This also
 -- supersedes the cleanup line in sql/sairnroofing_verify_admin_seed.sql --
 -- delete all three here in one pass.
@@ -51,6 +68,8 @@ delete from public.sairnroofing_employee_auth
 --   select count(*) from public.rf_jobs where job_id like 'RFJOB-VERIFY-%';
 --   select count(*) from public.sairnroofing_employee_auth
 --    where employee_id in ('rf-verify-admin','rf-verify-fmA','rf-verify-fmB');
+--   select count(*) from public.rf_claim_agreements where agreement_id like 'RFAGR-VERIFY-%';
+--   select count(*) from public.rf_contingency_rules where rule_id like 'RFCON-VERIFY-%';
 --
 -- NOTE: the RFCERT-VERIFY-* rows and rf-verify-admin from the 3a round trip are
 -- covered by sql/sairnroofing_verify_cleanup.sql. If that has not been run yet,
