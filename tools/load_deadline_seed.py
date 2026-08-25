@@ -20,6 +20,19 @@ that can compute some dates and not others is harder to reason about than one
 that refuses everything. Loading calendars first means the window where a rule
 exists without its calendar is as short as possible.
 
+PUSH AND WAIT FOR THE DEPLOY BEFORE LOADING A JURISDICTION THAT NEEDS A NEW
+COMPUTATION STANDARD. Standards live in api/_lib/deadline-engine.js and are
+validated server-side, so loading North Carolina against a deployment that
+predated nc_rcp_6a rejected all 13 rules with "computation must be one of..."
+while both calendars loaded fine -- a half-loaded jurisdiction, and exactly the
+window the paragraph above is about. It failed safe (the rules simply were not
+stored) and re-running after the deploy fixed it, because these are upserts.
+
+NEVER PROBE A DEPLOYMENT WITH A WRITE ENDPOINT. Checking whether a standard had
+deployed by POSTing a dummy add_rule stored the dummy: a junk `zz` / `__probe__`
+row is now in the live store and this endpoint implements no delete. Probe with
+rules_status (read-only), or with a compute you expect to refuse.
+
 Usage:
     set SAIRNLAW_LICENSE_KEY=...            (or export, or pass --key)
     python tools/load_deadline_seed.py westvirginia
