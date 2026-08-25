@@ -150,6 +150,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-certifications" onclick="nav('certifications')">Certifications<span class="badge" id="cert-badge" style="display:none;margin-left:6px;">0</span></button>
       <button class="sb" id="sb-schedule" onclick="nav('schedule')">Schedule</button>
       <button class="sb" id="sb-claims" onclick="nav('claims')">Insurance Claims</button>
+      <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
     </aside>
     <main>
@@ -387,6 +388,32 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
             <div class="fg" style="margin:0;"><label>Name</label><input id="loc-name" placeholder="Columbus"></div>
             <div class="fg" style="margin:0;"><label>Address</label><input id="loc-address" placeholder="optional"></div>
             <button class="btn bp" onclick="rfSaveLocation()">Save Location</button>
+          </div>
+        </div></div>
+      </div>
+
+      <!-- Reports / CSV export (Phase 4c). Every report below is produced from
+           the rows the ordinary gated read already returned -- see the
+           rfReports block in the script for why there is no server-side
+           export action and no second copy of any gate. -->
+      <div class="panel" id="panel-reports">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Reports</div>
+            <div class="psub" id="rpt-scope-note">--</div>
+          </div>
+        </div>
+        <div class="note">
+          Every export contains <strong>exactly the records this panel can already show you</strong> and nothing else.
+          A report is built from the same gated read the matching panel uses, so what lands in the file is what your
+          role can see &mdash; a colleague on a different role exporting the same report will not get the same rows.
+        </div>
+        <div class="card"><div class="cb" id="rpt-list"><div class="empty">Loading…</div></div></div>
+        <div class="card"><div class="cb">
+          <div class="note">
+            Figures that this app derives rather than stores &mdash; an invoice balance, a claim's implied ACV &mdash;
+            are exported under their own column names and recomputed on every read, the same as on screen. Nothing in
+            a CSV is a number the app kept a copy of and might be out of date about.
           </div>
         </div></div>
       </div>
@@ -686,6 +713,7 @@ function nav(id){
     if(canSeePrograms){rfPrqKindChanged();rfLoadPrograms();}
   }
   if(id==='claims'){rfLoadClaims();}
+  if(id==='reports'){rfRenderReports();}
   if(id==='schedule'){
     // Management-only affordances match the server rule exactly (staffing a
     // crew is an assignment decision) rather than being hidden decoration --
@@ -2232,6 +2260,219 @@ function toggleTeslaCert(employeeId,checked){
   rfAuth('set_certifications',{employee_id:employeeId,certifications:{tesla_certified:checked}},true).then(function(r){
     toast(r.ok?'Certification updated':(r.msg||'Update failed'));
   });
+}
+
+// ── REPORTS + CSV EXPORT (Phase 4c) ───────────────────────────────────────
+// THE GATE IS INHERITED, NOT RE-ASSERTED. Every report here calls the ordinary
+// gated read for its resource -- the same action, with the same session token,
+// that the matching panel already calls. The rows that come back have already
+// been filtered server-side against this session's own employee_id, so the CSV
+// cannot contain a row the caller could not already open on screen. That is a
+// structural property, not a rule this file remembers to follow.
+//
+// The alternative was a server-side `action:'export'` branch per resource.
+// Rejected deliberately (Michael, 2026-08-25): it would put a SECOND read path
+// next to the first, and the gate would then live in two places that have to
+// agree forever. This codebase has already paid for that shape twice --
+// api/rf-auth.js's own header records SAIRNsenior's gate drifting because role
+// names were listed in two files, and the open-work index still carries the
+// duplicated signature-pad row where two near-copies silently diverged. A
+// export that re-implements a filter is one refactor away from disagreeing
+// with the panel it claims to mirror.
+//
+// PROPOSALS ARE DEFERRED, ON PURPOSE. rf_proposals is the one resource whose
+// read is per-job (it requires payload.job_id), so a cross-job proposals report
+// would need either N calls fanned out from here or a new server branch --
+// exactly the shape this design avoids. Logged as its own item rather than
+// bent into v1.
+var RF_REPORTS=[
+  {
+    key:'jobs', label:'Jobs', resource:'rf_jobs', action:'read', payload:{},
+    gate:'Management and estimators export every job. A foreman or crew member exports only jobs assigned to them.',
+    columns:[
+      ['id','job_id'],['name','name'],['address','address'],['job_class','job_class'],
+      ['status','status'],['assigned_employee_id','assigned_employee_id'],['location_id','location_id']
+    ]
+  },
+  {
+    key:'claims', label:'Insurance Claims', resource:'rf_claims', action:'read', payload:{},
+    gate:'Management and estimators export every claim. A narrow role exports only claims assigned to them.',
+    columns:[
+      ['claim_id','claim_id'],['job_id','job_id'],['carrier','carrier'],['claim_number','claim_number'],
+      ['adjuster','adjuster'],['status','status'],['date_of_loss','date_of_loss'],['peril','peril'],
+      ['policy_type','policy_type'],['assigned_employee_id','assigned_employee_id'],
+      ['rcv','money_summary.entered.rcv'],['depreciation','money_summary.entered.depreciation'],
+      ['acv_entered','money_summary.entered.acv'],['deductible','money_summary.entered.deductible'],
+      ['acv_check_received','money_summary.entered.acv_check_received'],
+      ['final_invoice_submitted','money_summary.entered.final_invoice_submitted'],
+      ['recoverable_depreciation_released','money_summary.entered.recoverable_depreciation_released'],
+      // DERIVED, and named so in the header rather than passed off as entered
+      // figures -- roofing-claims.js computes these on every read and stores
+      // none of them. acv_implied exists to surface a disagreement with the
+      // carrier's stated ACV, so exporting it without acv_entered beside it
+      // would hide the very thing it is for.
+      ['acv_implied_derived','money_summary.derived.acv_implied'],
+      ['acv_mismatch_derived','money_summary.derived.acv_mismatch'],
+      ['depreciation_still_out_derived','money_summary.derived.depreciation_still_out']
+    ]
+  },
+  {
+    key:'schedule', label:'Schedule', resource:'rf_schedule', action:'read', payload:{},
+    gate:'Management and estimators export every scheduled day. A crew member exports the days they are crewed on -- including days on a job assigned to somebody else.',
+    columns:[
+      ['schedule_id','schedule_id'],['scheduled_date','scheduled_date'],['job_id','job_id'],
+      ['location_id','location_id'],['status','status'],['crew','crew'],['created_by','created_by']
+    ]
+  },
+  {
+    key:'certifications', label:'Certifications', resource:'rf_certifications', action:'read', payload:{},
+    gate:'Management and estimators export the whole roster’s credentials. Everyone else exports only their own.',
+    columns:[
+      ['entry_id','entry_id'],['employee_id','employee_id'],['record_type','record_type'],
+      ['credential','credential'],['issuer','issuer'],['jurisdiction','jurisdiction'],
+      ['expires_on','expires_on'],['has_expiry','has_expiry'],['recorded_at','recorded_at']
+    ]
+  },
+  {
+    key:'invoices', label:'Invoices', resource:'rf_invoices', action:'read', payload:{},
+    // Not assignment-based, unlike every other report here. The server refuses
+    // this read outright below the estimator tier, so this one can 403 where
+    // the others would simply return fewer rows -- surfaced as the refusal it
+    // is rather than as an empty file that reads like "no invoices".
+    managementOnly:true,
+    gate:'Billing is management-level information. Only an owner, admin or estimator can export invoices at all.',
+    columns:[
+      ['invoice_id','invoice_id'],['invoice_number','invoice_number'],['invoice_seq','invoice_seq'],
+      ['job_id','job_id'],['location_id','location_id'],['claim_id','claim_id'],['status','status'],
+      ['issue_date','issue_date'],['due_date','due_date'],['bill_to','bill_to'],['terms','terms'],
+      ['subtotal_derived','summary.subtotal'],['tax_derived','summary.tax'],
+      ['tax_basis_derived','summary.tax_basis'],['total_derived','summary.total'],
+      ['paid_derived','summary.paid'],['balance_derived','summary.balance'],
+      ['settlement_derived','summary.settlement'],['payment_count_derived','summary.payment_count']
+    ]
+  }
+];
+
+// Dotted path read, so a column can name a derived sub-field without this file
+// re-deriving it. Returns undefined rather than throwing on a missing branch.
+function rfPluck(row,path){
+  return String(path).split('.').reduce(function(o,k){
+    return (o===null||o===undefined)?undefined:o[k];
+  },row);
+}
+
+// One CSV cell, RFC 4180.
+//
+// The leading-apostrophe guard is not decoration. Customer names, addresses,
+// bill-to lines and adjuster names are free text a user typed, and a value
+// starting with = + - @ (or tab/CR) is executed as a formula when the file is
+// opened in Excel or Sheets. A roofing CSV goes straight to a bookkeeper, so
+// the spreadsheet is the normal destination, not an edge case. Prefixing an
+// apostrophe keeps the value visible and inert. A plain negative number is
+// deliberately NOT caught by this -- '-1200.50' is a real figure on an
+// overpaid invoice and must stay numeric.
+function rfCsvCell(v){
+  if(v===null||v===undefined)return '';
+  if(Array.isArray(v))v=v.join('; ');
+  else if(typeof v==='object')v=JSON.stringify(v);
+  var s=String(v);
+  if(/^[=+@\t\r]/.test(s)||(/^-/.test(s)&&!/^-?\d+(\.\d+)?$/.test(s)))s="'"+s;
+  if(/[",\n\r]/.test(s)||/^\s|\s$/.test(s))s='"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+
+function rfToCsv(rows,columns){
+  var head=columns.map(function(c){return rfCsvCell(c[0]);}).join(',');
+  var body=rows.map(function(r){
+    return columns.map(function(c){return rfCsvCell(rfPluck(r,c[1]));}).join(',');
+  });
+  // CRLF per RFC 4180, and a BOM so Excel reads it as UTF-8 rather than
+  // mangling any non-ASCII in a customer name.
+  return '﻿'+[head].concat(body).join('\r\n')+'\r\n';
+}
+
+function rfReportCanSee(rep){
+  if(!rep.managementOnly)return true;
+  return !!(MANAGEMENT_ROLES[rfSession&&rfSession.role]||BROAD_READ_ROLES[rfSession&&rfSession.role]);
+}
+
+function rfRenderReports(){
+  var el=$('rpt-list');if(!el)return;
+  var note=$('rpt-scope-note');
+  if(note){
+    note.textContent=(MANAGEMENT_ROLES[rfSession&&rfSession.role]||BROAD_READ_ROLES[rfSession&&rfSession.role])
+      ? 'Exporting with management visibility — every record on the licence.'
+      : 'Exporting with your own visibility — only the records assigned to you.';
+  }
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Report</th><th>Who can see what</th><th></th></tr></thead><tbody>'+
+    RF_REPORTS.map(function(rep){
+      var allowed=rfReportCanSee(rep);
+      // Hidden affordance matches the server rule; the server refuses
+      // regardless, this just stops offering a button that would always 403.
+      var action=allowed
+        ? '<button class="btn bo" id="rpt-btn-'+rfEsc(rep.key)+'" onclick="rfExportReport(\''+rfEsc(rep.key)+'\')">Export CSV</button>'
+        : '<span class="badge bx">not your role</span>';
+      return '<tr><td><strong>'+rfEsc(rep.label)+'</strong></td>'+
+        '<td class="note">'+rfEsc(rep.gate)+'</td>'+
+        '<td style="text-align:right;">'+action+'</td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div class="note" id="rpt-result" style="margin-top:10px;"></div>';
+}
+
+function rfExportReport(key){
+  var rep=null;
+  RF_REPORTS.forEach(function(r){if(r.key===key)rep=r;});
+  if(!rep){toast('Unknown report');return;}
+  var out=$('rpt-result');
+  var btn=$('rpt-btn-'+key);
+  if(btn){btn.disabled=true;btn.textContent='Exporting…';}
+  var done=function(){if(btn){btn.disabled=false;btn.textContent='Export CSV';}};
+
+  rfDataRaw(rep.action,rep.resource,rep.payload).then(function(r){
+    done();
+    if(!r.ok){
+      // A refusal is reported as a refusal. The failure this whole phase came
+      // out of was an empty list standing in for a broken read, so an export
+      // that quietly writes a header-only file on a 403 would repeat it.
+      if(out)out.innerHTML='<span style="color:#B91C1C;">'+rfEsc(rep.label)+' not exported — '+rfEsc(r.msg||('the server refused this read ('+r.status+')'))+'</span>';
+      toast(r.msg||'Could not export '+rep.label,5000);
+      return;
+    }
+    var body=r.data||{};
+    var rows=body.data||[];
+    // provisioned:false means the table has not been created yet. That is a
+    // different fact from "you can see no rows", and saying so is the point.
+    if(body.provisioned===false){
+      if(out)out.innerHTML=rfEsc(rep.label)+' is not set up on this licence yet — nothing to export. No file was written.';
+      toast(rep.label+' is not set up yet');
+      return;
+    }
+    if(!rows.length){
+      if(out)out.innerHTML='No '+rfEsc(rep.label.toLowerCase())+' are visible to your role — nothing to export. No file was written, rather than an empty one that would look like a completed export.';
+      toast('Nothing visible to export');
+      return;
+    }
+    var csv=rfToCsv(rows,rep.columns);
+    var name='sairnroofing-'+rep.key+'-'+new Date().toISOString().slice(0,10)+'.csv';
+    rfDownload(name,csv);
+    if(out){
+      out.innerHTML='Exported <strong>'+rows.length+'</strong> '+rfEsc(rep.label.toLowerCase())+
+        ' to <code>'+rfEsc(name)+'</code> — '+rep.columns.length+' columns, scoped to what your role can see.';
+    }
+    toast('Exported '+rows.length+' row'+(rows.length===1?'':'s'));
+  });
+}
+
+function rfDownload(filename,text){
+  var blob=new Blob([text],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();
+  document.body.removeChild(a);
+  // Revoked on the next tick -- revoking synchronously can cancel the download
+  // in some browsers before it has read the blob.
+  setTimeout(function(){URL.revokeObjectURL(url);},0);
 }
 
 // ── AI Assistant — context is built from currentJobs, which is already
