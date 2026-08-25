@@ -266,6 +266,23 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <button class="btn bp" onclick="rfAddClaimPhoto()">Attach Evidence</button>
           <div id="cph-list" style="margin-top:12px;"></div>
         </div></div>
+        <div class="card" id="clm-supp-card" style="display:none;"><div class="ch"><div class="ct">Supplement Worksheet</div></div><div class="cb">
+          <div class="note">A deterministic line-item check &mdash; the adjuster's estimate against your measured scope. Quantity shortfalls and omitted items are computed; code upgrades and hidden damage are your assertions, and each needs a photo. Not an opinion about what the adjuster "should" have done.</div>
+          <div class="ch" style="padding-left:0;"><div class="ct">Expected items (each tied to a measured quantity)</div></div>
+          <div id="supp-expected"></div>
+          <button class="btn bo bs" onclick="rfSuppAddExpected()">+ Expected item</button>
+          <div class="ch" style="padding-left:0;"><div class="ct">Adjuster's estimate lines</div></div>
+          <div id="supp-adjuster"></div>
+          <button class="btn bo bs" onclick="rfSuppAddAdjuster()">+ Adjuster line</button>
+          <div class="ch" style="padding-left:0;"><div class="ct">Asserted lines (code upgrade / hidden damage &mdash; photo required)</div></div>
+          <div id="supp-asserted"></div>
+          <button class="btn bo bs" onclick="rfSuppAddAsserted()">+ Asserted line</button>
+          <div style="margin-top:14px;">
+            <button class="btn bp" onclick="rfSaveSupplement()">Save Worksheet</button>
+            <button class="btn bo" onclick="rfReconcile()">Reconcile</button>
+          </div>
+          <div id="supp-worksheet" style="margin-top:16px;"></div>
+        </div></div>
       </div>
 
       <div class="panel" id="panel-assistant">
@@ -820,6 +837,8 @@ function rfEditClaim(claimId){
   $('clm-evidence-card').style.display='';
   $('clm-evidence-for').textContent=(c.claim_number||c.claim_id);
   rfLoadClaimPhotos(claimId);
+  if($('clm-supp-card'))$('clm-supp-card').style.display=rfClaimCanEdit()?'':'none';
+  rfSuppLoadFromClaim(c);
 }
 
 function rfShowAcvNote(summary){
@@ -841,6 +860,7 @@ function rfClearClaimForm(){
   if($('clm-waiting'))$('clm-waiting').checked=false;
   if($('clm-acv-note'))$('clm-acv-note').style.display='none';
   if($('clm-evidence-card'))$('clm-evidence-card').style.display='none';
+  if($('clm-supp-card'))$('clm-supp-card').style.display='none';
 }
 
 function rfNumOrUndef(id){var v=$(id).value;return v===''?undefined:Number(v);}
@@ -916,6 +936,149 @@ function rfAddClaimPhoto(){
     });
   };
   reader.readAsDataURL(file);
+}
+
+
+// ── SUPPLEMENT WORKSHEET (rf_claims reconcile, Phase 3c) ──────────────────
+// Deterministic line-item reconciliation. This panel collects the three input
+// sets, saves them onto the claim, and asks the server to reconcile. The
+// server computes the worksheet against the JOB's measured scope -- this panel
+// never computes a supplement total itself, exactly as the money summary is
+// never computed client-side.
+var rfSuppExpected=[];
+var rfSuppAdjuster=[];
+var rfSuppAsserted=[];
+
+function rfSuppMeasuredKeys(){
+  // QUANTITY_FIELDS is the Phase 2 measured schedule.
+  return QUANTITY_FIELDS.map(function(f){return f.key;});
+}
+
+function rfSuppAddExpected(row){
+  rfSuppExpected.push(row||{item_key:'',label:'',measured_from:'squares',unit:'',unit_price:''});
+  rfSuppRenderExpected();
+}
+function rfSuppAddAdjuster(row){
+  rfSuppAdjuster.push(row||{item_key:'',description:'',quantity:'',unit_price:''});
+  rfSuppRenderAdjuster();
+}
+function rfSuppAddAsserted(row){
+  rfSuppAsserted.push(row||{reason_code:'hidden_damage',description:'',quantity:'',unit:'',unit_price:'',photo_ids:'',note:''});
+  rfSuppRenderAsserted();
+}
+
+function rfSuppRenderExpected(){
+  var keyOpts=rfSuppMeasuredKeys().map(function(k){return '<option value="'+rfEsc(k)+'">'+rfEsc(k)+'</option>';}).join('');
+  $('supp-expected').innerHTML=rfSuppExpected.map(function(e,i){
+    return '<div class="fr" style="align-items:end;">'+
+      '<div class="fg"><label>Item key</label><input value="'+rfEsc(e.item_key)+'" onchange="rfSuppExpected['+i+'].item_key=this.value"></div>'+
+      '<div class="fg"><label>Label</label><input value="'+rfEsc(e.label)+'" onchange="rfSuppExpected['+i+'].label=this.value"></div>'+
+      '<div class="fg"><label>Measured from</label><select onchange="rfSuppExpected['+i+'].measured_from=this.value">'+keyOpts.replace('value="'+rfEsc(e.measured_from)+'"','value="'+rfEsc(e.measured_from)+'" selected')+'</select></div>'+
+      '<div class="fg"><label>Unit $</label><input type="number" step="0.01" value="'+rfEsc(e.unit_price)+'" onchange="rfSuppExpected['+i+'].unit_price=this.value"></div>'+
+      '<div class="fg"><button class="btn bo bs" onclick="rfSuppExpected.splice('+i+',1);rfSuppRenderExpected()">Remove</button></div>'+
+      '</div>';
+  }).join('')||'<div class="note">No expected items yet.</div>';
+}
+function rfSuppRenderAdjuster(){
+  $('supp-adjuster').innerHTML=rfSuppAdjuster.map(function(a,i){
+    return '<div class="fr" style="align-items:end;">'+
+      '<div class="fg"><label>Item key</label><input value="'+rfEsc(a.item_key)+'" onchange="rfSuppAdjuster['+i+'].item_key=this.value"></div>'+
+      '<div class="fg"><label>Description</label><input value="'+rfEsc(a.description)+'" onchange="rfSuppAdjuster['+i+'].description=this.value"></div>'+
+      '<div class="fg"><label>Quantity</label><input type="number" step="0.01" value="'+rfEsc(a.quantity)+'" onchange="rfSuppAdjuster['+i+'].quantity=this.value"></div>'+
+      '<div class="fg"><label>Unit $</label><input type="number" step="0.01" value="'+rfEsc(a.unit_price)+'" onchange="rfSuppAdjuster['+i+'].unit_price=this.value"></div>'+
+      '<div class="fg"><button class="btn bo bs" onclick="rfSuppAdjuster.splice('+i+',1);rfSuppRenderAdjuster()">Remove</button></div>'+
+      '</div>';
+  }).join('')||'<div class="note">No adjuster lines entered yet.</div>';
+}
+function rfSuppRenderAsserted(){
+  $('supp-asserted').innerHTML=rfSuppAsserted.map(function(a,i){
+    var rc=a.reason_code==='code_upgrade';
+    return '<div class="fr" style="align-items:end;">'+
+      '<div class="fg"><label>Reason</label><select onchange="rfSuppAsserted['+i+'].reason_code=this.value">'+
+        '<option value="hidden_damage"'+(rc?'':' selected')+'>Hidden damage</option>'+
+        '<option value="code_upgrade"'+(rc?' selected':'')+'>Code upgrade</option></select></div>'+
+      '<div class="fg"><label>Description</label><input value="'+rfEsc(a.description)+'" onchange="rfSuppAsserted['+i+'].description=this.value"></div>'+
+      '<div class="fg"><label>Qty</label><input type="number" step="0.01" value="'+rfEsc(a.quantity)+'" onchange="rfSuppAsserted['+i+'].quantity=this.value"></div>'+
+      '<div class="fg"><label>Unit $</label><input type="number" step="0.01" value="'+rfEsc(a.unit_price)+'" onchange="rfSuppAsserted['+i+'].unit_price=this.value"></div>'+
+      '<div class="fg"><label>Photo IDs (comma)</label><input value="'+rfEsc(a.photo_ids)+'" onchange="rfSuppAsserted['+i+'].photo_ids=this.value" placeholder="RFCPH-..."></div>'+
+      '<div class="fg"><button class="btn bo bs" onclick="rfSuppAsserted.splice('+i+',1);rfSuppRenderAsserted()">Remove</button></div>'+
+      '</div>';
+  }).join('')||'<div class="note">No asserted lines. Code upgrades and hidden damage go here &mdash; each needs at least one photo ID.</div>';
+}
+
+function rfSuppLoadFromClaim(claim){
+  var sp=(claim&&claim.supplement)||{};
+  rfSuppExpected=(sp.expected_items||[]).map(function(e){return {item_key:e.item_key||'',label:e.label||'',measured_from:e.measured_from||'squares',unit:e.unit||'',unit_price:e.unit_price==null?'':e.unit_price};});
+  rfSuppAdjuster=(sp.adjuster_lines||[]).map(function(a){return {item_key:a.item_key||'',description:a.description||'',quantity:a.quantity==null?'':a.quantity,unit_price:a.unit_price==null?'':a.unit_price};});
+  rfSuppAsserted=(sp.asserted_lines||[]).map(function(a){return {reason_code:a.reason_code||'hidden_damage',description:a.description||'',quantity:a.quantity==null?'':a.quantity,unit:a.unit||'',unit_price:a.unit_price==null?'':a.unit_price,photo_ids:(a.photo_ids||[]).join(', '),note:a.note||''};});
+  rfSuppRenderExpected();rfSuppRenderAdjuster();rfSuppRenderAsserted();
+  if($('supp-worksheet'))$('supp-worksheet').innerHTML='';
+}
+
+function rfSuppNum(v){return v===''||v==null?undefined:Number(v);}
+function rfSuppBuildPayload(){
+  return {
+    expected_items:rfSuppExpected.map(function(e){return {item_key:e.item_key.trim(),label:e.label.trim(),measured_from:e.measured_from,unit:e.unit,unit_price:rfSuppNum(e.unit_price)};}),
+    adjuster_lines:rfSuppAdjuster.map(function(a){return {item_key:a.item_key.trim(),description:a.description.trim(),quantity:rfSuppNum(a.quantity),unit_price:rfSuppNum(a.unit_price)};}),
+    asserted_lines:rfSuppAsserted.map(function(a){return {reason_code:a.reason_code,description:a.description.trim(),quantity:rfSuppNum(a.quantity),unit:a.unit,unit_price:rfSuppNum(a.unit_price),photo_ids:String(a.photo_ids||'').split(',').map(function(s){return s.trim();}).filter(Boolean),note:a.note||''};})
+  };
+}
+
+function rfSaveSupplement(){
+  if(!rfActiveClaimId){toast('Open a claim first');return;}
+  var claim=rfClaims.find(function(c){return c.claim_id===rfActiveClaimId;});
+  if(!claim){toast('Reload the claim first');return;}
+  // Save writes the whole claim back with the supplement inputs attached.
+  var rec={id:claim.claim_id,job_id:claim.job_id,carrier:claim.carrier,claim_number:claim.claim_number,status:claim.status,supplement:rfSuppBuildPayload()};
+  rfDataRaw('write','rf_claims',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not save the worksheet',5000);return;}
+    toast('Worksheet saved');rfLoadClaimsFull();
+  });
+}
+
+function rfReconcile(){
+  if(!rfActiveClaimId){toast('Open a claim first');return;}
+  var lic=rfLicenseKey();
+  if(!lic||!rfSession||!rfSession.token)return;
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':rfSession.token};
+  // Preview the live, unsaved inputs -- the server computes against the job's
+  // measured scope and returns the worksheet without writing.
+  var body={action:'reconcile',resource:'rf_claims',app_id:APP_ID,payload:{claim_id:rfActiveClaimId,supplement:rfSuppBuildPayload()}};
+  fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify(body)})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      if(!r.ok||!d||!d.ok){toast((d&&d.error&&d.error.message)||'Reconcile failed',5000);return;}
+      rfRenderWorksheet(d);
+    });})
+    .catch(function(){toast('Reconcile network error',5000);});
+}
+
+function rfRenderWorksheet(d){
+  var el=$('supp-worksheet');if(!el)return;
+  var w=d.worksheet;if(!w){el.innerHTML='<div class="note">No worksheet.</div>';return;}
+  if(!d.has_measurement){
+    el.innerHTML='<div class="note">This claim\'s job has no saved measurement yet. Reconciliation compares against the measured scope &mdash; add a measurement on the job first.</div>';
+    return;
+  }
+  var rows=w.derived.map(function(dv){
+    var badge=dv.status==='omitted'?'<span class="badge br">omitted</span>'
+      :dv.status==='quantity_short'?'<span class="badge bw">short '+dv.shortfall_qty+'</span>'
+      :dv.status==='adjuster_over'?'<span class="badge bx">over</span>'
+      :dv.status==='no_measurement'?'<span class="badge bw">no measurement</span>'
+      :'<span class="badge bg">matched</span>';
+    return '<tr><td>'+rfEsc(dv.label)+'</td><td>'+badge+'</td><td>'+(dv.expected_qty==null?'--':dv.expected_qty)+'</td><td>'+(dv.adjuster_qty==null?'--':dv.adjuster_qty)+'</td><td>'+rfCurrency(dv.supplement_amount)+'</td></tr>';
+  }).join('');
+  var arows=w.asserted.map(function(a){
+    var st=a.valid?'<span class="badge bg">counted</span>':'<span class="badge br">'+rfEsc((a.issues[0]||'invalid'))+'</span>';
+    return '<tr><td>'+rfEsc(a.reason_code)+'</td><td>'+st+'</td><td>'+rfEsc(a.description)+'</td><td>'+rfCurrency(a.supplement_amount)+'</td></tr>';
+  }).join('');
+  var probs=(w.problems&&w.problems.length)?'<div class="note" style="color:#B91C1C;">'+w.problems.map(rfEsc).join('<br>')+'</div>':'';
+  el.innerHTML=
+    '<div class="tw"><table><thead><tr><th>Item</th><th>Status</th><th>Measured</th><th>Adjuster</th><th>Supplement</th></tr></thead><tbody>'+
+    (rows||'<tr><td colspan="5">No expected items.</td></tr>')+'</tbody></table></div>'+
+    (arows?'<div class="tw" style="margin-top:8px;"><table><thead><tr><th>Asserted</th><th></th><th>Description</th><th>Amount</th></tr></thead><tbody>'+arows+'</tbody></table></div>':'')+
+    probs+
+    '<div style="margin-top:10px;font-weight:600;">Computed from '+w.totals.quantity_short_count+' quantity correction(s) + '+w.totals.omitted_count+' omitted item(s)'+(w.totals.asserted_invalid_count?' &middot; '+w.totals.asserted_invalid_count+' asserted line(s) not counted (no evidence)':'')+
+    '<br>Derived '+rfCurrency(w.totals.derived_supplement)+' + Asserted '+rfCurrency(w.totals.asserted_supplement)+' = <span style="font-size:1.1em;">Total supplement '+rfCurrency(w.totals.total_supplement)+'</span></div>';
 }
 
 

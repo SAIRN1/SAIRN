@@ -166,7 +166,11 @@
       "domain": "civil-litigation",
       "label": "Answer to a petition after service of citation (Texas)",
       "trigger_event": "service_of_citation_and_petition",
-      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trcp_4",
       "terminal_day_rule": {
         "kind": "next_weekday_strictly_after",
@@ -192,7 +196,11 @@
       "domain": "civil-litigation",
       "label": "Initial disclosures, measured from the first answer or general appearance (Texas)",
       "trigger_event": "filing_of_first_answer_or_general_appearance",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trcp_4",
       "authority": {
         "citation": "Tex. R. Civ. P. 194.2(a)",
@@ -212,7 +220,11 @@
       "domain": "civil-litigation",
       "label": "Initial disclosures for a party served or joined after the first answer (Texas)",
       "trigger_event": "service_or_joinder_of_party_after_first_answer",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trcp_4",
       "authority": {
         "citation": "Tex. R. Civ. P. 194.2(a)",
@@ -232,9 +244,21 @@
       "domain": "civil-litigation",
       "label": "Response to interrogatories (Texas)",
       "trigger_event": "service_of_interrogatories",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trcp_4",
-      "service_extension": { "standard": "tx_trcp_21a", "add": 3, "unit": "calendar_days", "applies_when": ["mail"], "order": "after" },
+      "service_extension": {
+        "standard": "tx_trcp_21a",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after"
+      },
       "authority": {
         "citation": "Tex. R. Civ. P. 197.2(a)",
         "url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
@@ -253,9 +277,21 @@
       "domain": "civil-litigation",
       "label": "Written response to a request for production and inspection (Texas)",
       "trigger_event": "service_of_request_for_production",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trcp_4",
-      "service_extension": { "standard": "tx_trcp_21a", "add": 3, "unit": "calendar_days", "applies_when": ["mail"], "order": "after" },
+      "service_extension": {
+        "standard": "tx_trcp_21a",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after"
+      },
       "authority": {
         "citation": "Tex. R. Civ. P. 196.2(a)",
         "url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
@@ -274,9 +310,21 @@
       "domain": "civil-litigation",
       "label": "Response to requests for admissions before the matter is admitted (Texas)",
       "trigger_event": "service_of_request_for_admission",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trcp_4",
-      "service_extension": { "standard": "tx_trcp_21a", "add": 3, "unit": "calendar_days", "applies_when": ["mail"], "order": "after" },
+      "service_extension": {
+        "standard": "tx_trcp_21a",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after"
+      },
       "authority": {
         "citation": "Tex. R. Civ. P. 198.2(a), (c)",
         "url": "https://www.txcourts.gov/media/1462349/texas-rules-of-civil-procedure.pdf",
@@ -295,7 +343,11 @@
       "domain": "appellate",
       "label": "Notice of appeal in a civil case, ordinary 30-day period (Texas)",
       "trigger_event": "signing_of_the_judgment",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trap_41",
       "authority": {
         "citation": "Tex. R. App. P. 26.1",
@@ -315,7 +367,11 @@
       "domain": "appellate",
       "label": "Notice of appeal in a civil case where a qualifying post-judgment motion was timely filed, 90 days (Texas)",
       "trigger_event": "signing_of_the_judgment_with_timely_postjudgment_motion",
-      "count": { "value": 90, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 90,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trap_41",
       "authority": {
         "citation": "Tex. R. App. P. 26.1(a)",
@@ -335,7 +391,11 @@
       "domain": "appellate",
       "label": "Notice of appeal in an accelerated appeal, 20 days (Texas)",
       "trigger_event": "signing_of_the_judgment_in_accelerated_appeal",
-      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "tx_trap_41",
       "authority": {
         "citation": "Tex. R. App. P. 26.1(b)",
@@ -355,13 +415,57 @@
       "domain": "appellate",
       "label": "Notice of appeal in a restricted appeal, six months (Texas)",
       "trigger_event": "signing_of_the_judgment_in_restricted_appeal",
-      "count": { "value": 6, "unit": "months", "direction": "forward" },
+      "count": {
+        "value": 6,
+        "unit": "months",
+        "direction": "forward"
+      },
       "computation": "tx_trap_41",
       "authority": {
         "citation": "Tex. R. App. P. 26.1(c)",
         "url": "https://www.txcourts.gov/media/1461885/texas-rules-of-appellate-procedure.pdf",
         "quote": "in a restricted appeal, the notice of appeal must be filed within six months after the judgment or order is signed; and",
         "note": "SIX MONTHS, NOT 180 DAYS, and the rule says months so the row does. The engine counts months by anniversary date with end-of-month clamping, so a judgment signed 31 August yields 28 or 29 February rather than 2 or 3 March. Encoding this as 180 days would be a different date in most months and would misquote a rule that chose the word 'months'. Contrast California's Rule 8.104(a)(1)(C), which really does say 180 days and is encoded that way -- the two look interchangeable and are not. A restricted appeal is available only to a party who did not participate in the hearing and did not timely file a post-judgment motion, request for findings or notice of appeal (Tex. R. App. P. 30); that is a case fact the engine has no field for and never infers.",
+        "retrieved_at": "2026-08-24"
+      },
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "tx-trap-261d-cross-appeal-ordinary",
+      "jurisdiction": "tx",
+      "domain": "appellate",
+      "label": "Notice of appeal by another party after a first-filed notice, ordinary 30-day appeal only, the later of that period and 14 days (Texas)",
+      "trigger_event": {
+        "id": "tx_cross_appeal_ordinary_appeal",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "signing_of_the_judgment",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after the judgment is signed, the ordinary Rule 26.1 period"
+          },
+          {
+            "event": "filing_of_the_first_notice_of_appeal",
+            "count": {
+              "value": 14,
+              "unit": "calendar_days"
+            },
+            "label": "14 days after the first notice of appeal was filed"
+          }
+        ]
+      },
+      "computation": "tx_trap_41",
+      "authority": {
+        "citation": "Tex. R. App. P. 26.1(d)",
+        "url": "https://www.txcourts.gov/media/1461885/texas-rules-of-appellate-procedure.pdf",
+        "quote": "if any party timely files a notice of appeal, another party may file a notice of appeal within the applicable period stated above or 14 days after the first filed notice of appeal, whichever is later.",
+        "note": "NOW COMPUTABLE, BUT ONLY FOR THE ORDINARY APPEAL, AND THE RULE ID SAYS SO. Refused by this engine until 2026-08-24 because the limbs carry different counts (30 and 14) from different events. THE CATCH THAT MAKES TEXAS HARDER THAN OHIO OR NEW YORK: limb one is \"the applicable period stated above\", and Rule 26.1 states FOUR of them -- 30 days ordinarily, 90 where a qualifying post-judgment motion was filed, 20 in an accelerated appeal, and six months in a restricted appeal. Which applies is a case fact the engine has no field for. This row encodes the 30-day ordinary period ONLY. NO ROW IS SEEDED for a cross-appeal off an accelerated, post-judgment-motion-extended or restricted appeal, and that is an explicit decision: each would need its own trigger vocabulary, and guessing between four periods is exactly what this engine must not do. If the underlying appeal is anything other than an ordinary 30-day appeal, DO NOT use this row -- compute limb one from the correct Rule 26.1 variant and take the later by hand. NO SERVICE EXTENSION: neither limb runs from service of a paper on a party, and Tex. R. App. P. 9.5 was not read for this seed.",
         "retrieved_at": "2026-08-24"
       },
       "effective_from": "2026-01-01",

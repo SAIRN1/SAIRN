@@ -147,7 +147,11 @@
       "domain": "civil-litigation",
       "label": "Appearance after personal delivery of the summons within the state (New York)",
       "trigger_event": "service_of_summons_by_personal_delivery_in_state",
-      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "authority": {
         "citation": "N.Y. CPLR 320(a)",
@@ -167,7 +171,11 @@
       "domain": "civil-litigation",
       "label": "Appearance where the summons was not personally delivered in state, measured from completion of service (New York)",
       "trigger_event": "completion_of_service_of_summons_by_alternative_method",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "authority": {
         "citation": "N.Y. CPLR 320(a)",
@@ -187,11 +195,19 @@
       "domain": "civil-litigation",
       "label": "Answer or reply to a pleading served in a pending action (New York)",
       "trigger_event": "service_of_pleading_to_which_the_answer_responds",
-      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "service_extension": {
         "standard": "ny_cplr_2103b",
-        "applies_when": ["mail_within_state", "mail_outside_state_within_us", "overnight_delivery"],
+        "applies_when": [
+          "mail_within_state",
+          "mail_outside_state_within_us",
+          "overnight_delivery"
+        ],
         "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted.",
         "order": "after"
       },
@@ -213,7 +229,11 @@
       "domain": "civil-litigation",
       "label": "Answer where the summons and complaint were not personally delivered in state, measured from completion of service (New York)",
       "trigger_event": "completion_of_service_of_summons_and_complaint_by_alternative_method",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "authority": {
         "citation": "N.Y. CPLR 3012(c)",
@@ -233,11 +253,19 @@
       "domain": "civil-litigation",
       "label": "Answers or objections to interrogatories (New York)",
       "trigger_event": "service_of_interrogatories",
-      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "service_extension": {
         "standard": "ny_cplr_2103b",
-        "applies_when": ["mail_within_state", "mail_outside_state_within_us", "overnight_delivery"],
+        "applies_when": [
+          "mail_within_state",
+          "mail_outside_state_within_us",
+          "overnight_delivery"
+        ],
         "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted.",
         "order": "after"
       },
@@ -259,11 +287,19 @@
       "domain": "civil-litigation",
       "label": "Objection to a notice to produce or subpoena duces tecum (New York)",
       "trigger_event": "service_of_notice_to_produce_or_subpoena_duces_tecum",
-      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "service_extension": {
         "standard": "ny_cplr_2103b",
-        "applies_when": ["mail_within_state", "mail_outside_state_within_us", "overnight_delivery"],
+        "applies_when": [
+          "mail_within_state",
+          "mail_outside_state_within_us",
+          "overnight_delivery"
+        ],
         "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted.",
         "order": "after"
       },
@@ -285,9 +321,17 @@
       "domain": "civil-litigation",
       "label": "Production under a notice to produce, on the date the notice designated (New York)",
       "trigger_event": "service_of_notice_to_produce_for_production_date",
-      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
-      "designated_period": { "min": 20, "unit": "calendar_days", "designated_by": "the party serving the notice or subpoena duces tecum" },
+      "designated_period": {
+        "min": 20,
+        "unit": "calendar_days",
+        "designated_by": "the party serving the notice or subpoena duces tecum"
+      },
       "authority": {
         "citation": "N.Y. CPLR 3120(2)",
         "url": "https://www.nysenate.gov/legislation/laws/CVP/3120",
@@ -306,11 +350,19 @@
       "domain": "civil-litigation",
       "label": "Sworn denial before a requested admission is deemed admitted (New York)",
       "trigger_event": "service_of_request_for_admission",
-      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "service_extension": {
         "standard": "ny_cplr_2103b",
-        "applies_when": ["mail_within_state", "mail_outside_state_within_us", "overnight_delivery"],
+        "applies_when": [
+          "mail_within_state",
+          "mail_outside_state_within_us",
+          "overnight_delivery"
+        ],
         "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted.",
         "order": "after"
       },
@@ -332,11 +384,19 @@
       "domain": "appellate",
       "label": "Appeal as of right, measured from another party's service of the judgment with notice of entry (New York)",
       "trigger_event": "service_upon_appellant_of_judgment_with_written_notice_of_entry",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "service_extension": {
         "standard": "ny_cplr_2103b",
-        "applies_when": ["mail_within_state", "mail_outside_state_within_us", "overnight_delivery"],
+        "applies_when": [
+          "mail_within_state",
+          "mail_outside_state_within_us",
+          "overnight_delivery"
+        ],
         "note": "Attached on the express authority of CPLR 5513(d), which provides that where the judgment and notice of entry are served by mail under 2103(b)(2) or by overnight delivery under 2103(b)(6), the additional days provided by those paragraphs apply, regardless of which party served. Amount and unit come from the standard: 5 CALENDAR days for mail within the state, 6 for mail from outside the state but within the United States, 1 BUSINESS day for overnight delivery.",
         "order": "after"
       },
@@ -358,11 +418,19 @@
       "domain": "appellate",
       "label": "Appeal as of right where the appellant served the judgment with notice of entry (New York)",
       "trigger_event": "service_by_appellant_of_judgment_with_written_notice_of_entry",
-      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
       "computation": "ny_gcl_20",
       "service_extension": {
         "standard": "ny_cplr_2103b",
-        "applies_when": ["mail_within_state", "mail_outside_state_within_us", "overnight_delivery"],
+        "applies_when": [
+          "mail_within_state",
+          "mail_outside_state_within_us",
+          "overnight_delivery"
+        ],
         "note": "Attached on the express authority of CPLR 5513(d), whose closing words -- 'regardless of which party serves the judgment or order with notice of entry' -- reach this limb specifically. Amount and unit come from the standard: 5 CALENDAR days for mail within the state, 6 for mail from outside the state but within the United States, 1 BUSINESS day for overnight delivery.",
         "order": "after"
       },
@@ -371,6 +439,46 @@
         "url": "https://law.justia.com/codes/new-york/cvp/article-55/5513/",
         "quote": "except that when the appellant has served a copy of the judgment or order and written notice of its entry, the appeal must be taken within thirty days thereof.",
         "note": "A DIFFERENT CLOCK FROM A DIFFERENT EVENT, which is why it is its own row: the ordinary limb runs from service BY ANOTHER PARTY upon the appellant, this one from the appellant's OWN service. Both are thirty days, so the difference is invisible in the number and lives entirely in which date starts it -- a party who serves notice of entry to start the other side's clock starts their own at the same moment, and it is easy to assume only the recipient's clock runs. Which limb applies is a case fact the engine has no field for and never infers. 5513(d)'s 'regardless of which party serves' clause is what makes the service extension apply on this limb too.",
+        "retrieved_at": "2026-08-24"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "ny-cplr-5513c-cross-appeal",
+      "jurisdiction": "ny",
+      "domain": "appellate",
+      "label": "Appeal or motion for permission by a party served with a notice of appeal, the later of ten days and the subdivision (a) period (New York)",
+      "trigger_event": {
+        "id": "ny_cross_appeal_after_service_of_notice_of_appeal",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_the_adverse_partys_notice_of_appeal",
+            "count": {
+              "value": 10,
+              "unit": "calendar_days"
+            },
+            "label": "10 days after service of the adverse party's notice of appeal or motion papers"
+          },
+          {
+            "event": "service_upon_appellant_of_judgment_with_written_notice_of_entry",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the judgment with written notice of entry, the subdivision (a) period"
+          }
+        ]
+      },
+      "computation": "ny_gcl_20",
+      "authority": {
+        "citation": "N.Y. CPLR 5513(c)",
+        "url": "https://law.justia.com/codes/new-york/cvp/article-55/5513/",
+        "quote": "A party upon whom the adverse party has served a notice of appeal or motion papers on a motion for permission to appeal may take an appeal or make a motion for permission to appeal within ten days after such service or within the time limited by subdivision (a) or (b) of this section, whichever is longer, if such appeal or motion is otherwise available to such party.",
+        "note": "NOW COMPUTABLE. Refused by this engine until 2026-08-24: the limbs carry different counts (10 and 30) from different events, which the older date-resolving multi-trigger shape could not express. \"Whichever is longer\" is the rule's own language here, unlike Ohio's App.R. 4(B)(1), which says only \"or\". LIMB TWO IS THE SUBDIVISION (a) PERIOD IN ITS ORDINARY FORM -- 30 days after another party served the judgment with written notice of entry. The quoted text says \"subdivision (a) OR (b)\", and (b) is the permission-to-appeal period, which is also thirty days but runs from a different event and has its own posture including a prior denial. No (b) variant is seeded; which subdivision governs is a case fact. Nor is a variant seeded for 5513(a)'s own \"except that\" limb, where the appellant served the notice of entry themselves. NO SERVICE EXTENSION, and that is a deliberate departure from the two 5513(a) rows either side of it. CPLR 5513(d) attaches the 2103(b)(2) and (b)(6) added days by name to service of \"the judgment or order to be appealed from and written notice of its entry\" -- it does not mention service of a NOTICE OF APPEAL, which is what starts limb one. Extending one limb and not the other on a comparison of two periods is not something 5513(d) authorises on its face, so none is attached and the row produces the earlier, safer date. Flagged rather than silently resolved.",
         "retrieved_at": "2026-08-24"
       },
       "effective_from": "2025-01-01",

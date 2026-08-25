@@ -1010,6 +1010,105 @@ var SERVICE_EXTENSION_STANDARDS = {
 // NO LONGER used as a gate -- gating is per-standard above.
 var SERVICE_METHODS_EXTENDING = { mail: true, left_with_clerk: true, other_consented_means: true };
 
+// ── Base-period computation, shared ───────────────────────────────────────
+// EXTRACTED, NOT REWRITTEN. This is the block that used to sit inline in
+// computeDeadline, moved out verbatim so that the period-resolution shape
+// below can call the SAME code rather than a second copy of it.
+//
+// The reason that matters more than tidiness: resolve_periods has to compute
+// each limb's end date to find out which one governs, and every subtlety in
+// here would otherwise have to be duplicated -- the short-period exclusion,
+// Florida's shifted start, month arithmetic with end-of-month clamping, the
+// business-day loop, and the refusal when a holiday year is missing. A second
+// copy would drift, and it would drift silently, because the two would only
+// disagree on the boundary cases nobody tests by hand.
+//
+// Returns { ok, date, detail, authority } so the caller decides whether to
+// push an audit step. Refusals are returned unchanged for the caller to
+// propagate.
+function computeBasePeriod(std, triggerDate, countValue, unit, direction, sign, calendars, jurisdiction, ruleId) {
+  if (unit === 'calendar_days') {
+    // Short-period weekend/holiday exclusion: gated on the STANDARD
+    // declaring short_period_exclusion_days, not on a specific impl string or
+    // jurisdiction, because more than one state's rule uses this exact
+    // mechanism (Ohio Civ.R. 6(A) and Indiana T.R. 6(A) both read "less than
+    // seven days... excluded" -- verified independently for each, not
+    // assumed from one to the other) with a shared authority label per
+    // standard so the audit trail still cites the RIGHT state's rule. Never
+    // fires for an FRCP-family rule, which declares no such property.
+    if (std.short_period_exclusion_days && countValue < std.short_period_exclusion_days) {
+      var shortRes = countExcludingWeekendsAndHolidays(triggerDate, sign, countValue, calendars, jurisdiction, direction);
+      if (!shortRes.ok) return shortRes;
+      return { ok: true, date: shortRes.date, authority: std.label,
+        detail: 'Excluded the trigger day and counted ' + countValue + ' days ' + direction +
+          ', excluding intermediate Saturdays, Sundays and legal holidays because the period is less than ' +
+          std.short_period_exclusion_days + ' days.' };
+    }
+    if (std.shifted_start) {
+      // SHIFTED START. Florida's Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(1)(A)
+      // does NOT say "exclude the day of the event that triggers the period"
+      // the way FRCP 6(a)(1)(A) does. It says "begin counting from the next
+      // day that is not a Saturday, Sunday, or legal holiday" -- so the count
+      // starts at the next BUSINESS day, and that day is day one.
+      //
+      // The difference is real and it is not one day in the usual case, it is
+      // however many days it takes to clear a weekend or holiday. A 30-day
+      // period triggered on a Friday: FRCP counts Saturday as day one and
+      // lands on a Sunday, rolling to the Monday; Florida starts counting the
+      // Monday and lands two days later. Reusing the FRCP branch here -- which
+      // is what "Florida is data-only" would have meant -- would have been
+      // wrong on every Florida deadline triggered on a Friday or the day
+      // before a holiday.
+      //
+      // Gated on the STANDARD declaring shifted_start, not on a jurisdiction
+      // string, so a second state with this shape needs no new code -- the
+      // same design already used for short_period_exclusion_days.
+      //
+      // Direction-aware by 2.514(a)(5): "The 'next day' is determined by
+      // continuing to count forward when the period is measured after an event
+      // and backward when measured before an event." rollOff already walks in
+      // the direction it is given, so a backward Florida period shifts to the
+      // preceding business day rather than the following one.
+      var startRes = rollOff(addDays(triggerDate, sign), calendars, jurisdiction, direction);
+      if (!startRes.ok) return startRes;
+      var firstCounted = startRes.date;
+      return { ok: true, date: addDays(firstCounted, sign * (countValue - 1)),
+        authority: std.label + (std.base_period_suffix || ''),
+        detail: 'Began counting from ' + firstCounted + ', the ' + (direction === 'backward' ? 'preceding' : 'next') +
+          ' day that is not a Saturday, Sunday or legal holiday, and counted that day as day one. Counted ' + countValue +
+          ' days ' + direction + ' from there, including intermediate weekends and holidays.' };
+    }
+    return { ok: true, date: addDays(triggerDate, sign * countValue),
+      authority: std.label + (std.base_period_suffix || ''),
+      detail: 'Excluded the trigger day and counted ' + countValue + ' calendar days ' + direction +
+        ', including intermediate weekends and holidays.' };
+  }
+  if (unit === 'months' || unit === 'years') {
+    return { ok: true, date: addMonths(triggerDate, sign * countValue * (unit === 'years' ? 12 : 1)),
+      authority: std.label + (std.months_years_suffix || ''),
+      detail: 'Counted ' + countValue + ' ' + unit + ' ' + direction + ' by anniversary date, clamped to end of month.' };
+  }
+  if (unit === 'business_days') {
+    // Supported because other jurisdictions really do count this way. It is
+    // NOT how the FRCP counts, and no FRCP rule may use it.
+    var cur = triggerDate, remaining = countValue, guard = 0;
+    while (remaining > 0 && guard++ < 400) {
+      cur = addDays(cur, sign);
+      var hb = holidayFor(calendars, jurisdiction, cur, direction);
+      if (!hb.known) {
+        return { ok: false, code: 'NOT_PROVISIONED',
+          message: 'No holiday calendar is loaded for ' + jurisdiction + (hb.missingYear ? ' for ' + hb.missingYear : '') + ', which business-day counting requires.',
+          missing: { jurisdiction: jurisdiction, year: hb.missingYear || null } };
+      }
+      if (!isWeekend(cur) && !hb.hit) remaining--;
+    }
+    return { ok: true, date: cur, authority: null,
+      detail: 'Counted ' + countValue + ' business days ' + direction + ', skipping weekends and holidays.' };
+  }
+  return { ok: false, code: 'UNKNOWN_UNIT',
+    message: 'Rule ' + ruleId + ' uses unit "' + unit + '", which this engine does not implement.' };
+}
+
 // ── Multi-trigger resolution (Phase 2, Gap 1) ─────────────────────────────
 // Some periods run from "the later of" two events -- FRAP 4(b)(1)(A) (14 days
 // after the later of entry of judgment or the government's notice of appeal)
@@ -1020,7 +1119,123 @@ var SERVICE_METHODS_EXTENDING = { mail: true, left_with_clerk: true, other_conse
 // a date, the engine does NOT quietly fall back to single-trigger behaviour --
 // that is precisely how such a rule computes a date that is too early roughly
 // half the time, and too early is the direction that loses a right.
-function resolveTrigger(rule, input) {
+//
+// ── resolve_periods: THE LATER OF TWO COMPUTED PERIODS ────────────────────
+// The shape above resolves between DATES and then applies ONE count. A whole
+// family of rules needs something it cannot express: two limbs that each run
+// from a different event AND for a different number of days, with the later
+// (or earlier) of the two RESULTS governing.
+//
+//   O.C.G.A. 9-11-36(a)(2)   30 days after the request, but a defendant is not
+//                            required to answer before 45 days after service
+//                            of process
+//   Ohio App.R. 4(B)(1)      "within the appeal time period otherwise
+//                            prescribed by this rule or within ten days of the
+//                            filing of the first notice of appeal"
+//   N.Y. CPLR 5513(c)        "within ten days after such service or within the
+//                            time limited by subdivision (a) or (b) ...
+//                            whichever is longer"
+//   Fed. R. Civ. P. 15(a)(3) "within the time remaining to respond to the
+//                            original pleading or within 14 days after service
+//                            of the amended pleading, whichever is later"
+//
+// WHY THIS IS A REAL CAPABILITY AND NOT A DATA WORKAROUND. Georgia's was first
+// encoded as an ordinary later_of and shipped a date FIFTEEN DAYS EARLY on a
+// self-executing admission -- later_of picked the later trigger date and then
+// applied the single 30-day count to it, when the limb that won needed 45. It
+// was caught by hand arithmetic, not by a test. Anything that resolves between
+// dates before the counts are applied is wrong for this family, in the
+// direction that forfeits the right.
+//
+// EACH LIMB IS COMPUTED THROUGH computeBasePeriod, the same function the main
+// pipeline uses, so every limb gets the standard's short-period exclusion,
+// shifted start, month clamping and missing-calendar refusal. The winner's
+// trigger date AND its count are then handed back, and the main pipeline runs
+// normally from there -- rollover, cap and service extension all apply to the
+// winning limb exactly as they would to any single-trigger rule.
+//
+// COMPARING UNROLLED BASE DATES IS SOUND, and this is the one thing here worth
+// proving rather than asserting. rollOff is monotonic non-decreasing for a
+// forward period: if a <= b then the first good day at or after a is at or
+// before the first good day at or after b. So max(roll(a), roll(b)) equals
+// roll(max(a, b)), and likewise for min. Rolling both limbs and comparing
+// therefore gives the same final date as comparing raw and rolling the winner.
+// The second is chosen because it keeps one rollover step in the audit trail
+// instead of two discarded ones.
+//
+// REFUSES ON PARTIAL INPUT for the same reason the date-resolving shape does,
+// and the message names which direction the error would have run.
+//
+// FORWARD ONLY. Every rule of this shape read so far measures forward. What
+// "the later of two periods" means when both run backward is not settled by
+// any text read here, and the monotonicity argument above would need redoing
+// for a backward roll. Refused rather than guessed.
+function resolvePeriods(rule, input, std) {
+  var spec = rule.trigger_event;
+  var limbs = spec.limbs;
+  if (!Array.isArray(limbs) || limbs.length < 2) {
+    return { ok: false, code: 'BAD_RULE_TRIGGER',
+      message: 'Rule ' + rule.rule_id + ' declares resolve_periods but does not list at least two limbs.' };
+  }
+  if (spec.resolve_periods !== 'later_of' && spec.resolve_periods !== 'earlier_of') {
+    return { ok: false, code: 'BAD_RULE_TRIGGER',
+      message: 'Rule ' + rule.rule_id + ' uses resolve_periods "' + spec.resolve_periods + '"; only later_of and earlier_of are implemented.' };
+  }
+  for (var li = 0; li < limbs.length; li++) {
+    var L = limbs[li];
+    if (!L || !L.event || !L.count || typeof L.count.value !== 'number' || !L.count.unit) {
+      return { ok: false, code: 'BAD_RULE_TRIGGER',
+        message: 'Rule ' + rule.rule_id + ' has a limb missing an event or a well-formed count. Each limb carries its OWN count -- that is the entire point of this shape.' };
+    }
+    if ((L.count.direction || 'forward') !== 'forward') {
+      return { ok: false, code: 'PERIOD_RESOLUTION_DIRECTION',
+        message: 'Rule ' + rule.rule_id + ' applies resolve_periods to a backward-counted limb. Only forward limbs are implemented; what "the later of two periods" means running backward has not been read from any rule text.' };
+    }
+  }
+
+  var supplied = input.trigger_dates || {};
+  var missing = limbs.filter(function (L) { return !toUTC(supplied[L.event]); }).map(function (L) { return L.event; });
+  if (missing.length) {
+    return {
+      ok: false, code: 'INCOMPLETE_TRIGGERS',
+      message: 'This rule is the ' + spec.resolve_periods.replace('_', ' ') + ' ' + limbs.length +
+        ' separately computed periods, each running from its own event for its own number of days, and ' +
+        missing.length + (missing.length === 1 ? ' of them has' : ' of them have') + ' no date recorded. No deadline is computed from a partial set — ' +
+        'resolving it from the limbs supplied would produce a date that is ' +
+        (spec.resolve_periods === 'later_of' ? 'too early' : 'too late') + ' whenever the missing limb governs.',
+      required_events: limbs.map(function (L) { return L.event; }), missing_events: missing
+    };
+  }
+
+  var computed = [];
+  for (var i = 0; i < limbs.length; i++) {
+    var lb = limbs[i];
+    var res = computeBasePeriod(std, supplied[lb.event], Number(lb.count.value), lb.count.unit,
+      'forward', 1, input.calendars, input.jurisdiction, rule.rule_id);
+    if (!res.ok) return res;
+    computed.push({ limb: lb, trigger: supplied[lb.event], end: res.date });
+  }
+  var sorted = computed.slice().sort(function (a, b) { return a.end < b.end ? -1 : a.end > b.end ? 1 : 0; });
+  var winner = spec.resolve_periods === 'later_of' ? sorted[sorted.length - 1] : sorted[0];
+
+  return {
+    ok: true,
+    date: winner.trigger,
+    count_override: { value: Number(winner.limb.count.value), unit: winner.limb.count.unit, direction: 'forward' },
+    period_resolution: {
+      resolve: spec.resolve_periods,
+      governing_event: winner.limb.event,
+      governing_label: winner.limb.label || null,
+      limbs: computed.map(function (c) {
+        return { event: c.limb.event, label: c.limb.label || null, trigger_date: c.trigger,
+          count: c.limb.count.value + ' ' + c.limb.count.unit, period_ends: c.end,
+          governs: c === winner };
+      })
+    }
+  };
+}
+
+function resolveTrigger(rule, input, std) {
   var spec = rule.trigger_event;
 
   // Single-trigger rules: unchanged behaviour.
@@ -1030,6 +1245,10 @@ function resolveTrigger(rule, input) {
     }
     return { ok: true, date: input.trigger_date, resolution: null };
   }
+
+  // Two-limb period resolution is a different shape from date resolution and
+  // is dispatched before it, because a spec carrying `limbs` has no `events`.
+  if (spec && spec.resolve_periods) return resolvePeriods(rule, input, std);
 
   if (!spec || !spec.resolve || !Array.isArray(spec.events) || spec.events.length < 2) {
     return { ok: false, code: 'BAD_RULE_TRIGGER', message: 'Rule ' + rule.rule_id + ' has a malformed multi-trigger specification.' };
@@ -1199,11 +1418,23 @@ function computeDeadline(input) {
   var resolvedByRule = {};
   for (var ri = 0; ri < matching.length; ri++) {
     var rr = matching[ri];
-    var res = resolveTrigger(rr, input);
+    // The standard is needed BEFORE resolution now, because resolve_periods
+    // computes each limb's period to find out which governs, and that uses the
+    // same computation standard the main pipeline will. Looked up here and
+    // refused here rather than later, so an unknown standard on a
+    // period-resolving rule fails with the same message as on any other.
+    var rrStd = COMPUTATION_STANDARDS[rr.computation];
+    if (!rrStd) {
+      return { ok: false, code: 'UNKNOWN_STANDARD',
+        message: 'Rule ' + rr.rule_id + ' names computation standard "' + rr.computation + '", which this engine does not implement.' };
+    }
+    var res = resolveTrigger(rr, input, rrStd);
     if (!res.ok) return res;
     var ret = applyRetrigger(rr, res.date, input);
     if (!ret.ok) return ret;
-    resolvedByRule[rr.rule_id] = { date: ret.date, resolution: res.resolution, retrigger: ret.retriggered ? ret : null };
+    resolvedByRule[rr.rule_id] = { date: ret.date, resolution: res.resolution,
+      period_resolution: res.period_resolution || null, count_override: res.count_override || null,
+      retrigger: ret.retriggered ? ret : null };
   }
 
   // Effective-window selection: the rule as it stood at the TRIGGER date, not
@@ -1238,7 +1469,11 @@ function computeDeadline(input) {
       message: 'Rule ' + rule.rule_id + ' names computation standard "' + rule.computation + '", which this engine does not implement.' };
   }
 
-  var count = rule.count || {};
+  // COUNT COMES FROM THE WINNING LIMB on a period-resolving rule, and such a
+  // rule carries NO rule.count at all -- there is no single number to put
+  // there, and storing a representative one would be a fabricated field that
+  // the engine then ignores. The validator enforces its absence.
+  var count = resolved.count_override || rule.count || {};
   var direction = count.direction === 'backward' ? 'backward' : 'forward';
   var sign = direction === 'backward' ? -1 : 1;
   var steps = [];
@@ -1304,6 +1539,20 @@ function computeDeadline(input) {
   // what the base period counts from. They are separate step kinds from
   // 'service_extension' on purpose -- one moves the start, the other adds to
   // the end, and conflating them in the audit trail would misdescribe the law.
+  if (resolved.period_resolution) {
+    var pr = resolved.period_resolution;
+    steps.push({
+      step: 'period_resolution',
+      detail: 'This deadline is the ' + pr.resolve.replace('_', ' ') + ' ' + pr.limbs.length +
+        ' separately computed periods. ' +
+        pr.limbs.map(function (L) {
+          return (L.label || L.event) + ': ' + L.count + ' from ' + L.trigger_date + ' ends ' + L.period_ends + (L.governs ? ' <- governs' : '');
+        }).join('; ') + '. The counts differ per limb, so the later of the two TRIGGER DATES is not the answer — ' +
+        'each period is computed in full and the results compared.',
+      authority: rule.authority ? rule.authority.citation : null,
+      date: pr.limbs.filter(function (L) { return L.governs; })[0].period_ends
+    });
+  }
   if (resolved.resolution) {
     steps.push({
       step: 'multi_trigger_resolution',
@@ -1335,82 +1584,11 @@ function computeDeadline(input) {
   // the thing counted, which is the entire reason these rules were refused in
   // Phase 5 rather than seeded as fixed periods.
   var countValue = designatedDays === null ? Number(count.value) : designatedDays;
-  var base;
-  if (count.unit === 'calendar_days') {
-    // Short-period weekend/holiday exclusion: gated on the STANDARD
-    // declaring short_period_exclusion_days, not on a specific impl string or
-    // jurisdiction, because more than one state's rule uses this exact
-    // mechanism (Ohio Civ.R. 6(A) and Indiana T.R. 6(A) both read "less than
-    // seven days... excluded" -- verified independently for each, not
-    // assumed from one to the other) with a shared authority label per
-    // standard so the audit trail still cites the RIGHT state's rule. Never
-    // fires for an FRCP-family rule, which declares no such property.
-    if (std.short_period_exclusion_days && countValue < std.short_period_exclusion_days) {
-      var shortRes = countExcludingWeekendsAndHolidays(triggerDate, sign, countValue, input.calendars, input.jurisdiction, direction);
-      if (!shortRes.ok) return shortRes;
-      base = shortRes.date;
-      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + countValue + ' days ' + direction + ', excluding intermediate Saturdays, Sundays and legal holidays because the period is less than ' + std.short_period_exclusion_days + ' days.', authority: std.label, date: base });
-    } else if (std.shifted_start) {
-      // SHIFTED START. Florida's Fla. R. Gen. Prac. & Jud. Admin. 2.514(a)(1)(A)
-      // does NOT say "exclude the day of the event that triggers the period"
-      // the way FRCP 6(a)(1)(A) does. It says "begin counting from the next
-      // day that is not a Saturday, Sunday, or legal holiday" -- so the count
-      // starts at the next BUSINESS day, and that day is day one.
-      //
-      // The difference is real and it is not one day in the usual case, it is
-      // however many days it takes to clear a weekend or holiday. A 30-day
-      // period triggered on a Friday: FRCP counts Saturday as day one and
-      // lands on a Sunday, rolling to the Monday; Florida starts counting the
-      // Monday and lands two days later. Reusing the FRCP branch here -- which
-      // is what "Florida is data-only" would have meant -- would have been
-      // wrong on every Florida deadline triggered on a Friday or the day
-      // before a holiday.
-      //
-      // Gated on the STANDARD declaring shifted_start, not on a jurisdiction
-      // string, so a second state with this shape needs no new code -- the
-      // same design already used for short_period_exclusion_days.
-      //
-      // Direction-aware by 2.514(a)(5): "The 'next day' is determined by
-      // continuing to count forward when the period is measured after an event
-      // and backward when measured before an event." rollOff already walks in
-      // the direction it is given, so a backward Florida period shifts to the
-      // preceding business day rather than the following one.
-      var startRes = rollOff(addDays(triggerDate, sign), input.calendars, input.jurisdiction, direction);
-      if (!startRes.ok) return startRes;
-      var firstCounted = startRes.date;
-      base = addDays(firstCounted, sign * (countValue - 1));
-      steps.push({ step: 'base_period',
-        detail: 'Began counting from ' + firstCounted + ', the ' + (direction === 'backward' ? 'preceding' : 'next') +
-          ' day that is not a Saturday, Sunday or legal holiday, and counted that day as day one. Counted ' + countValue +
-          ' days ' + direction + ' from there, including intermediate weekends and holidays.',
-        authority: std.label + (std.base_period_suffix || ''), date: base });
-    } else {
-      base = addDays(triggerDate, sign * countValue);
-      steps.push({ step: 'base_period', detail: 'Excluded the trigger day and counted ' + countValue + ' calendar days ' + direction + ', including intermediate weekends and holidays.', authority: std.label + (std.base_period_suffix || ''), date: base });
-    }
-  } else if (count.unit === 'months' || count.unit === 'years') {
-    base = addMonths(triggerDate, sign * countValue * (count.unit === 'years' ? 12 : 1));
-    steps.push({ step: 'base_period', detail: 'Counted ' + countValue + ' ' + count.unit + ' ' + direction + ' by anniversary date, clamped to end of month.', authority: std.label + (std.months_years_suffix || ''), date: base });
-  } else if (count.unit === 'business_days') {
-    // Supported because other jurisdictions really do count this way. It is
-    // NOT how the FRCP counts, and no FRCP rule may use it.
-    base = triggerDate;
-    var remaining = countValue;
-    var guard = 0;
-    while (remaining > 0 && guard++ < 400) {
-      base = addDays(base, sign);
-      var hb = holidayFor(input.calendars, input.jurisdiction, base, direction);
-      if (!hb.known) {
-        return { ok: false, code: 'NOT_PROVISIONED',
-          message: 'No holiday calendar is loaded for ' + input.jurisdiction + (hb.missingYear ? ' for ' + hb.missingYear : '') + ', which business-day counting requires.',
-          missing: { jurisdiction: input.jurisdiction, year: hb.missingYear || null } };
-      }
-      if (!isWeekend(base) && !hb.hit) remaining--;
-    }
-    steps.push({ step: 'base_period', detail: 'Counted ' + countValue + ' business days ' + direction + ', skipping weekends and holidays.', date: base });
-  } else {
-    return { ok: false, code: 'UNKNOWN_UNIT', message: 'Rule ' + rule.rule_id + ' uses unit "' + count.unit + '", which this engine does not implement.' };
-  }
+  var baseRes = computeBasePeriod(std, triggerDate, countValue, count.unit, direction, sign,
+    input.calendars, input.jurisdiction, rule.rule_id);
+  if (!baseRes.ok) return baseRes;
+  var base = baseRes.date;
+  steps.push({ step: 'base_period', detail: baseRes.detail, authority: baseRes.authority, date: base });
 
   // ── TERMINAL DAY RULE: A NAMED WEEKDAY STRICTLY AFTER THE PERIOD ─────────
   // Tex. R. Civ. P. 99(b): the citation "shall direct the defendant to file a
@@ -1749,6 +1927,6 @@ function computeDeadline(input) {
 module.exports = {
   toUTC, fromUTC, addDays, addMonths, dayOfWeek, isWeekend,
   holidayFor, rollOff, countExcludingWeekendsAndHolidays, computeDeadline,
-  resolveTrigger, applyRetrigger,
+  resolveTrigger, resolvePeriods, computeBasePeriod, applyRetrigger,
   COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS
 };
