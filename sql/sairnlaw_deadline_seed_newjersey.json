@@ -1,0 +1,443 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- New Jersey rule seed, 2026-08-25. Loaded through",
+    "add_rule. The holiday calendar is in sql/sairnlaw_deadline_calendars_newjersey.json",
+    "and must be loaded too, or every row below refuses with NOT_PROVISIONED.",
+    "",
+    "SOURCE: njcourts.gov publishes the complete Rules Governing the Courts of the",
+    "State of New Jersey, free, with a stated currency line on the page -- \"Includes",
+    "amendments effective on or before June 1, 2026\". No other jurisdiction seeded",
+    "so far states its own currency, which is why New Jersey passed the",
+    "source-availability gate more cleanly than any state before it. R. 1:3-1,",
+    "1:3-3, 1:5-2, 4:6-1, 4:6-4, 4:17-4, 4:18-1 and 4:22-1 were read verbatim.",
+    "",
+    "== COVERAGE IS CALENDAR 2026 ONLY. READ THE CALENDAR README. ===============",
+    "New Jersey fixes court legal holidays by ORDER of the Supreme Court, one court",
+    "year at a time, July to June. Calendar 2026 is assembled from two orders;",
+    "calendar 2027 cannot be completed until the 2027-2028 order issues, and a",
+    "half-known year was deliberately not loaded because the engine refuses on a",
+    "missing YEAR rather than a missing day. Anything outside 2026 refuses.",
+    "",
+    "== N.J.S.A. 36:1-1 IS THE WRONG SOURCE, AND WRONG IN THE LATE DIRECTION ====",
+    "R. 1:3-1 says \"legal holiday\" and names no statute, which puts New Jersey in",
+    "the same undefined category as Texas, Kentucky and Arizona. The obvious",
+    "candidate, N.J.S.A. 36:1-1, must NOT be used:",
+    "  - Its operative scope is negotiable instruments and \"the transaction of",
+    "    business in the public offices of this State\", not court deadlines.",
+    "  - It makes EVERY SATURDAY a public holiday.",
+    "  - It lists LINCOLN'S BIRTHDAY (12 February) and then subsection (d)",
+    "    expressly removes it, requiring public offices to be OPEN that day. A",
+    "    calendar built from subsection (a) alone would roll deadlines off a day the",
+    "    same statute says is a working day.",
+    "  - It carries a Sunday-only shift, where the court orders state observed dates",
+    "    directly and shift both ways in practice.",
+    "The Supreme Court's own orders designate the days by the words \"Legal Holiday\"",
+    "and are what R. 1:3-1 and R. 1:30-3 are about. New Jersey therefore joins the",
+    "bundled lawyer's question as a SIXTH jurisdiction -- but unlike Kentucky it is",
+    "not blocked by it, because the orders give an authoritative list either way.",
+    "",
+    "== FOUR RULES, FOUR DIFFERENT FIRST PERIODS ===============================",
+    "    R. 4:6-1  answer                35 days",
+    "    R. 4:6-1  reply to an answer    20 days",
+    "    R. 4:17-4 interrogatories       60 days   -- and NO defendant limb",
+    "    R. 4:18-1 production            35 / 50",
+    "    R. 4:22-1 admissions            30 / 45",
+    "",
+    "Nothing here is predictable from another state. The 35-day answer is the",
+    "longest seeded anywhere; the 60-day interrogatory period is double the usual",
+    "30 AND has no process-date alternative, so that row is deliberately not a",
+    "resolve_periods rule while its two siblings are; and the two later-of rules do",
+    "not share a pair with each other (35/50 against 30/45), which is the same trap",
+    "North Carolina sets with 45/45/60 and the opposite of Washington's uniform",
+    "30/40. Each number was read off its own rule.",
+    "",
+    "R. 4:17-4(b) says CONSENT ORDERS ENLARGING THE TIME ARE PROHIBITED. The",
+    "parties cannot stipulate around the 60 days; only a timely motion moves it.",
+    "",
+    "== R. 1:3-3 IS FIVE DAYS, ORDINARY MAIL ONLY, AND LENGTHENS THE PERIOD =====",
+    "\"When service of a notice or paper is made by ordinary mail ... 5 days shall be",
+    "added to the period.\" FIVE, matching only Florida and Arizona among everything",
+    "read so far; six other jurisdictions add three. \"To the period\" makes it",
+    "period-lengthening, not the federal after-expiry order.",
+    "",
+    "THE SERVICE METHOD IS NAMED ordinary_mail, NOT mail, ON PURPOSE. R. 1:5-2",
+    "authorises service on a party \"by registered or certified mail, return receipt",
+    "requested, and simultaneously by ordinary mail\", and service on an attorney by",
+    "email, by hand, or by leaving it at the office. Only ordinary mail extends. A",
+    "caller supplying a bare \"mail\" gets a visible not_qualifying refusal rather",
+    "than a silent five days. Amended February 8, 2022, effective April 1, 2022.",
+    "",
+    "== EFFECTIVE_FROM IS A BLANKET 1969 DATE AND THAT IS A DISCLOSED WEAKNESS ==",
+    "The rules carry per-rule amendment notes, but the notes give amendment dates",
+    "rather than a clean in-force range per subsection, and they were not traced",
+    "for this seed. Every row uses 1969-09-08, the general effective date of the",
+    "revised rules. Too early for any provision added later. Nothing in the app",
+    "computes historical deadlines, and the calendar covers 2026 alone, so any such",
+    "request refuses on the calendar first. Trace the history before that changes.",
+    "This is the same weakness disclosed for North Carolina and the opposite of",
+    "Washington, where each rule's own last-amendment date was available.",
+    "",
+    "== NOT SEEDED, DELIBERATELY ===============================================",
+    "BACKWARD PERIODS. R. 1:3-1 defines the rollover only for a period's last day",
+    "running forward. No backward New Jersey row is seeded, on the same reasoning",
+    "as North Carolina and Washington.",
+    "",
+    "R. 4:6-1(a)'s four express carve-outs -- R. 4:7-5(c) crossclaims, R. 4:8-1(b)",
+    "third-party joinder, R. 4:9-1 answer to an amended complaint, R. 4:64-1(i)",
+    "governmental foreclosure answers -- are named in the rule and are not modelled.",
+    "",
+    "APPELLATE. R. 2:4 (Time For Appeal) is not seeded; it needs its own read.",
+    "",
+    "R. 1:5-4, which fixes WHEN service by mail is complete, is not modelled. It",
+    "bears on what date a caller should supply as the trigger, and this engine takes",
+    "trigger dates as given -- the standing input gap already recorded for Florida's",
+    "rendition, California's notice of entry, Texas's signing, New York's service",
+    "with notice of entry, West Virginia's entry and Kentucky's docket notation."
+  ],
+  "rules": [
+    {
+      "rule_id": "nj-r-4-6-1-answer-to-complaint",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint after service of the summons and complaint (New Jersey)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "count": {
+        "value": 35,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "authority": {
+        "citation": "N.J. Ct. R. 4:6-1(a)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "the defendant shall serve an answer, including therein any counterclaim, within 35 days after service of the summons and complaint on that defendant",
+        "note": "THIRTY-FIVE DAYS -- longer than every other jurisdiction seeded (Washington 20, federal 21, North Carolina and West Virginia and Georgia 30) and not predictable from any of them. The rule requires the answer to include any counterclaim, which is a content requirement and not a separate deadline. NO SERVICE EXTENSION. R. 1:3-3 extends a period run after service of \"a notice or paper\" by ordinary mail; the summons and complaint are served under R. 4:4-4, not by ordinary mail under R. 1:5-2. Same scope route as West Virginia, North Carolina and Washington. FOUR EXPRESS CARVE-OUTS are named in the rule's own opening and are NOT modelled: R. 4:7-5(c) crossclaims, R. 4:8-1(b) third-party joinder, R. 4:9-1 answer to an amended complaint, and R. 4:64-1(i) governmental answer in foreclosure actions. A matter in any of those is outside this row. The rule also provides that where service is made by court order under R. 4:4-4(b)(3) the time for the answer \"may be specified therein\" -- an order the engine cannot see.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-6-1-answer-to-counterclaim-or-crossclaim",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Answer to a counterclaim or crossclaim (New Jersey)",
+      "trigger_event": "service_of_pleading_stating_counterclaim_or_crossclaim",
+      "count": {
+        "value": 35,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "service_extension": {
+        "standard": "nj_r_1_3_3",
+        "add": 5,
+        "unit": "calendar_days",
+        "applies_when": [
+          "ordinary_mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.J. Ct. R. 4:6-1(a)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "A party served with a pleading stating a counterclaim or crossclaim against that party shall serve an answer thereto within 35 days after the service upon that party.",
+        "note": "The extension can reach this row where it cannot reach the answer to the complaint, because a counterclaim or crossclaim is served under R. 1:5 rather than R. 4:4-4. applies_when is ORDINARY_MAIL and nothing else, and the method name is deliberately not plain \"mail\". R. 1:3-3 extends only \"when service of a notice or paper is made by ORDINARY mail\", and R. 1:5-2 separately authorises service on a party \"by registered or certified mail, return receipt requested, and simultaneously by ordinary mail\", and service on an attorney by email, by hand, or by leaving it at the office. A caller supplying \"mail\" gets a visible not_qualifying refusal rather than a silent five days, which is the intended behaviour on a rule this narrow.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-6-1-reply-to-answer",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Reply to an answer, where a reply is permitted (New Jersey)",
+      "trigger_event": "service_of_the_answer",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "service_extension": {
+        "standard": "nj_r_1_3_3",
+        "add": 5,
+        "unit": "calendar_days",
+        "applies_when": [
+          "ordinary_mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.J. Ct. R. 4:6-1(a)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "A reply to an answer, where permitted, shall be served within 20 days after service of the answer.",
+        "note": "TWENTY DAYS, not the 35 that governs the answer and the answer to a counterclaim -- the same subsection carries two different numbers. \"WHERE PERMITTED\" is a threshold this engine does not evaluate: a reply is not permitted as of right in every case, and this row computes a date without deciding whether a reply may be served at all. applies_when is ORDINARY_MAIL and nothing else, and the method name is deliberately not plain \"mail\". R. 1:3-3 extends only \"when service of a notice or paper is made by ORDINARY mail\", and R. 1:5-2 separately authorises service on a party \"by registered or certified mail, return receipt requested, and simultaneously by ordinary mail\", and service on an attorney by email, by hand, or by leaving it at the office. A caller supplying \"mail\" gets a visible not_qualifying refusal rather than a silent five days, which is the intended behaviour on a rule this narrow.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-6-1b-responsive-pleading-after-motion-denied",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a motion is denied or its disposition postponed (New Jersey)",
+      "trigger_event": "notice_of_court_action_on_the_motion",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "authority": {
+        "citation": "N.J. Ct. R. 4:6-1(b)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "if the motion is denied in whole or part or its disposition postponed until trial, the responsive pleading shall be served within 10 days after notice of the court's action",
+        "note": "TEN DAYS, AND THIS ROW CROSSES THE SHORT-PERIOD THRESHOLD IN THE OTHER DIRECTION FROM WASHINGTON'S. R. 1:3-1 excludes Saturdays, Sundays and legal holidays when computing a period \"of less than 7 days\"; ten is above that, so intermediate weekends and holidays ARE counted. NO SERVICE EXTENSION: the period runs after NOTICE OF THE COURT'S ACTION, which is not a party serving a paper by ordinary mail. The subsection opens \"Unless the court fixes a different time period\", which the engine cannot see. The motions that trigger it are named: a motion under R. 4:6, or for summary judgment under R. 4:46 or R. 4:69-2.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-6-1b-responsive-pleading-after-more-definite-statement",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after service of a more definite statement (New Jersey)",
+      "trigger_event": "service_of_more_definite_statement",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "service_extension": {
+        "standard": "nj_r_1_3_3",
+        "add": 5,
+        "unit": "calendar_days",
+        "applies_when": [
+          "ordinary_mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.J. Ct. R. 4:6-1(b)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "if a motion for a more definite statement is granted, the responsive pleadings shall be served within 10 days after the service of such statement",
+        "note": "Runs from SERVICE of the statement, so unlike its sibling the extension can reach it. Do not confuse this ten days with the separate ten days in R. 4:6-4, which is the time the PLEADER has to comply with an order for a more definite statement and runs from notice of the order. Both are seeded, and they run from different events. applies_when is ORDINARY_MAIL and nothing else, and the method name is deliberately not plain \"mail\". R. 1:3-3 extends only \"when service of a notice or paper is made by ORDINARY mail\", and R. 1:5-2 separately authorises service on a party \"by registered or certified mail, return receipt requested, and simultaneously by ordinary mail\", and service on an attorney by email, by hand, or by leaving it at the office. A caller supplying \"mail\" gets a visible not_qualifying refusal rather than a silent five days, which is the intended behaviour on a rule this narrow.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-6-4-comply-with-order-for-more-definite-statement",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Complying with an order for a more definite statement (New Jersey)",
+      "trigger_event": "notice_of_the_order_for_a_more_definite_statement",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "authority": {
+        "citation": "N.J. Ct. R. 4:6-4(a)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "If the motion is granted and the order of the court not complied with within 10 days after notice of the order or within such other time as the court fixes, the court may strike the pleading to which the motion was directed or make such order as it deems appropriate.",
+        "note": "THE CONSEQUENCE IS DISCRETIONARY, NOT AUTOMATIC: missing this date lets the court strike the pleading, it does not strike it. That is a materially different kind of deadline from R. 4:22-1's self-executing admission, and the distinction is worth keeping in view when this date is shown to a user. Runs from NOTICE OF THE ORDER, so no service extension. \"Or within such other time as the court fixes\" is a displacement the engine cannot see.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-17-4-interrogatory-answers",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Answers to interrogatories (New Jersey)",
+      "trigger_event": "service_of_interrogatories",
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "service_extension": {
+        "standard": "nj_r_1_3_3",
+        "add": 5,
+        "unit": "calendar_days",
+        "applies_when": [
+          "ordinary_mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.J. Ct. R. 4:17-4(b)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "the party served with interrogatories shall serve answers thereto upon the party propounding them within 60 days after being served with the interrogatories",
+        "note": "SIXTY DAYS, AND THERE IS NO DEFENDANT LIMB AT ALL. Every other jurisdiction seeded pairs a 30-day period from service of the discovery paper with a longer alternative measured from service of process -- 45 in North Carolina, 40 in Washington, 45 in Georgia. New Jersey has ONE period, twice as long, running from one event, so this row is deliberately NOT a resolve_periods rule while its Rule 4:18 and Rule 4:22 siblings are. Anyone adding a defendant limb here by analogy would be inventing one. \"CONSENT ORDERS ENLARGING THE TIME ARE PROHIBITED\" -- the rule says so expressly, which is unusual and worth surfacing: the parties cannot agree their way out of this date, and only a motion on notice made within the 60-day period can move it. Subject to the exception in R. 4:17-1(b)(2), which is not modelled. applies_when is ORDINARY_MAIL and nothing else, and the method name is deliberately not plain \"mail\". R. 1:3-3 extends only \"when service of a notice or paper is made by ORDINARY mail\", and R. 1:5-2 separately authorises service on a party \"by registered or certified mail, return receipt requested, and simultaneously by ordinary mail\", and service on an attorney by email, by hand, or by leaving it at the office. A caller supplying \"mail\" gets a visible not_qualifying refusal rather than a silent five days, which is the intended behaviour on a rule this narrow.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-18-1-production-response",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production, party other than a defendant (New Jersey)",
+      "trigger_event": "service_of_request_for_production",
+      "count": {
+        "value": 35,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "service_extension": {
+        "standard": "nj_r_1_3_3",
+        "add": 5,
+        "unit": "calendar_days",
+        "applies_when": [
+          "ordinary_mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.J. Ct. R. 4:18-1(b)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "within 35 days after the service of the request, except that a defendant may serve a response within 50 days after service of the summons and complaint on that defendant",
+        "note": "THIRTY-FIVE DAYS, not the 30 every other seeded state uses for this rule -- New Jersey matches its production period to its answer period rather than to the usual discovery 30. NON-DEFENDANT LIMB ONLY; the 50-day defendant alternative is its own resolve_periods row. applies_when is ORDINARY_MAIL and nothing else, and the method name is deliberately not plain \"mail\". R. 1:3-3 extends only \"when service of a notice or paper is made by ORDINARY mail\", and R. 1:5-2 separately authorises service on a party \"by registered or certified mail, return receipt requested, and simultaneously by ordinary mail\", and service on an attorney by email, by hand, or by leaving it at the office. A caller supplying \"mail\" gets a visible not_qualifying refusal rather than a silent five days, which is the intended behaviour on a rule this narrow.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-18-1-production-response-defendant-later-of-periods",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Response to a request for production served on a defendant (New Jersey)",
+      "trigger_event": {
+        "id": "production_request_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_production_on_defendant",
+            "count": {
+              "value": 35,
+              "unit": "calendar_days"
+            },
+            "label": "35 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_production",
+            "count": {
+              "value": 50,
+              "unit": "calendar_days"
+            },
+            "label": "50 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "nj_r_1_3_1",
+      "authority": {
+        "citation": "N.J. Ct. R. 4:18-1(b)",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "within 35 days after the service of the request, except that a defendant may serve a response within 50 days after service of the summons and complaint on that defendant",
+        "note": "THIRTY-FIVE AND FIFTY, a pair no other jurisdiction uses -- Washington is 30/40, North Carolina 30/45, Georgia 30/45. Both numbers were read off R. 4:18-1 itself. NO SERVICE EXTENSION, and that is a reason rather than an omission: limb one runs from service of a paper under R. 1:5, which R. 1:3-3 can reach, but limb two runs from service of the summons under R. 4:4-4, which it cannot, and the engine applies an extension to the winning RESULT without knowing which limb won. Compute it by hand if limb one governs. Same call as Georgia's, North Carolina's and Washington's later-of rows.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-22-1-admission-response",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission, party other than a defendant (New Jersey)",
+      "trigger_event": "service_of_request_for_admission",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "computation": "nj_r_1_3_1",
+      "service_extension": {
+        "standard": "nj_r_1_3_3",
+        "add": 5,
+        "unit": "calendar_days",
+        "applies_when": [
+          "ordinary_mail"
+        ]
+      },
+      "authority": {
+        "citation": "N.J. Ct. R. 4:22-1",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "The matter is admitted unless, within 30 days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or by the party's attorney",
+        "note": "SELF-EXECUTING: missing this date admits the matter, so an over-long computed date here concedes a fact rather than merely losing a filing. THIRTY DAYS -- note New Jersey uses 30 here while using 35 for production and 60 for interrogatories, so its three discovery rules carry three different first periods. NON-DEFENDANT LIMB ONLY; the 45-day defendant floor is its own row. applies_when is ORDINARY_MAIL and nothing else, and the method name is deliberately not plain \"mail\". R. 1:3-3 extends only \"when service of a notice or paper is made by ORDINARY mail\", and R. 1:5-2 separately authorises service on a party \"by registered or certified mail, return receipt requested, and simultaneously by ordinary mail\", and service on an attorney by email, by hand, or by leaving it at the office. A caller supplying \"mail\" gets a visible not_qualifying refusal rather than a silent five days, which is the intended behaviour on a rule this narrow.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    },
+    {
+      "rule_id": "nj-r-4-22-1-admission-response-defendant-later-of-periods",
+      "jurisdiction": "nj",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission served on a defendant (New Jersey)",
+      "trigger_event": {
+        "id": "admission_request_on_defendant",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission_on_defendant",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "nj_r_1_3_1",
+      "authority": {
+        "citation": "N.J. Ct. R. 4:22-1",
+        "url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "quote": "but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 45 days after being served with the summons and complaint",
+        "note": "THIRTY AND FORTY-FIVE, against this state's own 35/50 for production -- the two resolve_periods rules in New Jersey do NOT share a pair, which is the same trap North Carolina sets with 45/45/60 and the opposite of Washington's uniform 30/40. Each was read off its own rule. This is the row where an error is worst, because R. 4:22-1 is self-executing. The limb is phrased as a floor -- \"shall not be required to serve answers or objections before the expiration of 45 days\" -- which is exactly what resolve_periods expresses. No service extension, for the reason given on the R. 4:18-1 later-of row.",
+        "retrieved_at": "2026-08-25"
+      },
+      "effective_from": "1969-09-08",
+      "effective_to": null,
+      "version": 1,
+      "supersedes": null
+    }
+  ]
+}

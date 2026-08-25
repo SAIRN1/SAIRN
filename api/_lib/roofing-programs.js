@@ -73,7 +73,14 @@ const DENOMINATORS = ['all_active', 'listed_roles'];
 const DEFAULT_WARN_DAYS = 30;
 
 function isDate(s) { return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s); }
-function num(v) { const n = Number(v); return (typeof n === 'number' && isFinite(n)) ? n : null; }
+// null/''/undefined are ABSENT, not zero. Number(null) is 0, so the naive
+// version turned a requirement stored with `threshold: null` into a threshold
+// of ZERO -- which every holding satisfies, so an unusable requirement would
+// have reported 'met'. Not reachable through the panel (it omits an empty
+// threshold rather than sending null) but reachable by a direct API write,
+// which is exactly the caller that would do it. Same root cause as the
+// billing bug found the same day.
+function num(v) { if (v === null || v === undefined || v === '') return null; const n = Number(v); return (typeof n === 'number' && isFinite(n)) ? n : null; }
 function str(v) { return typeof v === 'string' ? v.trim() : ''; }
 
 function daysUntil(dateStr, today) {

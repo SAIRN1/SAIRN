@@ -34,7 +34,8 @@ const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
 const JURISDICTION_LABELS = {
   'us-federal': 'United States (Federal)',
   oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania', il: 'Illinois', fl: 'Florida', ca: 'California',
-  tx: 'Texas', ny: 'New York', ga: 'Georgia', wv: 'West Virginia', nc: 'North Carolina', wa: 'Washington'
+  tx: 'Texas', ny: 'New York', ga: 'Georgia', wv: 'West Virginia', nc: 'North Carolina', wa: 'Washington', nj: 'New Jersey',
+  va: 'Virginia'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',
@@ -483,6 +484,12 @@ module.exports = async (req, res) => {
         jurisdiction: body.jurisdiction,
         domain: body.domain,
         service_method: body.service_method,
+        // The clock time service was completed, HH:MM in 24-hour form. Read
+        // only by standards whose amount genuinely turns on it -- today that
+        // is Va. Sup. Ct. R. 1:7, whose 5:00 p.m. cutoff decides between a
+        // 0-day and a 1-day extension for the same method. Absent for every
+        // other jurisdiction, which ignores it.
+        service_time: body.service_time,
         // The period a requesting party actually designated, for rules that
         // set only a floor rather than a deadline (Ohio Civ.R. 33(A)/36(A),
         // Ind. T.R. 33(C)/36(A)).

@@ -884,7 +884,147 @@ var COMPUTATION_STANDARDS = {
   wa_cr_6a: { label: 'Wash. Super. Ct. Civ. R. 6(a)', impl: 'wa_cr_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
-    rollover_suffix_forward: '', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── NEW JERSEY: R. 1:3-1 ────────────────────────────────────────────────
+  // Verbatim: "In computing any period of time fixed by rule or court order,
+  // the day of the act or event from which the designated period begins to run
+  // is not to be included. The last day of the period so computed is to be
+  // included, unless it is a Saturday, Sunday or legal holiday, in which event
+  // the period runs until the end of the next day which is neither a Saturday,
+  // Sunday nor legal holiday. In computing a period of time of less than 7
+  // days, Saturday, Sunday and legal holidays shall be excluded."
+  //
+  // SHORT-PERIOD EXCLUSION IS 7, from "less than 7 days" -- New Jersey's own
+  // number, read here rather than carried across from the five other states
+  // that share it. Note the wording omits "intermediate", which every other
+  // such rule includes; nothing in this engine turns on that, because the
+  // exclusion only ever applies to days between the trigger and the end, but
+  // it is recorded so a future reader does not think a word was dropped.
+  //
+  // "FIXED BY RULE OR COURT ORDER" -- AND NOT BY STATUTE. Every comparable rule
+  // seeded so far reaches statutory periods too: Washington's CR 6(a) covers
+  // time prescribed "by any applicable statute", North Carolina's Rule 6(a)
+  // says "or by any applicable statute", West Virginia's says the same. New
+  // Jersey's does not. A New Jersey deadline fixed by STATUTE rather than by
+  // these rules is therefore outside R. 1:3-1's own terms, and no such row is
+  // seeded. If one is ever added, do not assume this standard governs it.
+  //
+  // BACKWARD IS BLANK, AND NO BACKWARD ROW IS SEEDED. The rule provides only
+  // that "the period runs until the end of the next day" -- forward -- and says
+  // nothing about a period counted before an event. Same call as ny_gcl_20,
+  // nc_rcp_6a and wa_cr_6a; the three jurisdictions that DO define it disagree
+  // (W. Va. and Florida roll backward, KRS 446.030(1)(b) rolls forward).
+  //
+  // R. 1:3-1 is a single unnumbered paragraph, so every suffix is blank.
+  //
+  // ── ITS HOLIDAY LIST COMES FROM A COURT ORDER, NOT A STATUTE ────────────
+  // R. 1:3-1 says "legal holiday" and names nothing, which puts New Jersey with
+  // Texas, Kentucky and Arizona rather than with Washington. What saves it is
+  // that the Supreme Court of New Jersey ISSUES AN ORDER each court year
+  // designating the legal holidays by date, so an authoritative list exists
+  // even though the rule does not point at one. N.J.S.A. 36:1-1 is NOT that
+  // list and must not be used -- it is a negotiable-instruments statute, it
+  // makes every Saturday a public holiday, and its subsection (d) expressly
+  // removes Lincoln's Birthday while subsection (a) still lists it. See the
+  // calendar readme.
+  nj_r_1_3_1: { label: 'N.J. Ct. R. 1:3-1', impl: 'nj_r_1_3_1',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── VIRGINIA: A STATUTE COMPUTES THE TIME, NOT A RULE ───────────────────
+  // Va. Code § 1-210(A), verbatim: "When an act of the General Assembly or rule
+  // of court requires that an act be performed a prescribed amount of time
+  // before a motion or proceeding, the day of such motion or proceeding shall
+  // not be counted against the time allowed, but the day on which such act is
+  // performed may be counted as part of the time. When an act of the General
+  // Assembly or rule of court requires that an act be performed within a
+  // prescribed amount of time after any event or judgment, the day on which the
+  // event or judgment occurred shall not be counted against the time allowed."
+  //
+  // § 1-210(B), verbatim: "When the last day for performing an act during the
+  // course of a judicial proceeding falls on a Saturday, Sunday, legal holiday,
+  // or any day or part of a day on which the clerk's office is closed as
+  // authorized by an act of the General Assembly, the act may be performed on
+  // the next day that is not a Saturday, Sunday, legal holiday, or day or part
+  // of a day on which the clerk's office is closed as authorized by an act of
+  // the General Assembly."
+  //
+  // THIS IS THE EXACT INVERSE OF NEW JERSEY, AND THE PAIR IS WHY NEITHER WAS
+  // ASSUMED FROM THE OTHER. N.J. R. 1:3-1 computes time fixed "by rule or court
+  // order" and NOT by statute. Va. Code § 1-210 is itself a STATUTE and reaches
+  // time fixed by "an act of the General Assembly OR rule of court" -- both.
+  // A Virginia deadline fixed by statute is inside this standard's terms where
+  // the equivalent New Jersey one is outside R. 1:3-1's.
+  //
+  // NO SHORT-PERIOD EXCLUSION, AND THAT WAS CHECKED RATHER THAN ASSUMED.
+  // Six seeded jurisdictions exclude intermediate weekends and holidays from
+  // short periods (Ohio and Indiana at "less than seven days", New Jersey,
+  // North Carolina, Washington and West Virginia at seven). Virginia has no
+  // such provision anywhere: not in § 1-210, and not in the Rules -- a search
+  // of the complete published Rules for "intermediate Saturdays", "less than
+  // seven days" and "less than 7 days" returns nothing. Every intermediate day
+  // counts no matter how short the period. `short_period_exclusion_days` is
+  // therefore ABSENT rather than set, which is the same treatment the federal
+  // standard gets and for the same reason.
+  //
+  // BACKWARD IS DEFINED, UNLIKE NEW JERSEY, NORTH CAROLINA AND WASHINGTON.
+  // § 1-210(A)'s first sentence expressly handles an act required "a prescribed
+  // amount of time BEFORE a motion or proceeding" -- the day of the motion is
+  // not counted, the day the act is performed may be. That is a real backward
+  // direction in the statute's own words, so the suffix names (A). No backward
+  // row is seeded in this batch even so; the seed is forward-only, and the
+  // standard is honest about the statute rather than about the row set.
+  //
+  // ── ITS HOLIDAY LIST: A DERIVABLE CORE AND AN UNKNOWABLE LAYER ──────────
+  // § 1-210 says "legal holiday" and names no statute, which puts Virginia with
+  // Texas, Kentucky, Arizona and New Jersey rather than with Washington. What
+  // makes it seedable is § 17.1-207(A), which requires every clerk's office to
+  // be kept open "on every day except Saturday ... and Sunday, and the days
+  // provided for in § 2.2-3300" -- so the statutory list IS reachable, by the
+  // closure statute rather than by a cross-reference in § 1-210 itself.
+  //
+  // WHAT IS NOT REACHABLE, AND RIDES AS A DISCLOSURE ON EVERY VIRGINIA RESULT:
+  //   § 1-210(F)  "any day on which the Governor authorizes the closing of the
+  //               state government shall be considered a legal holiday" -- an
+  //               executive act announced ad hoc, never knowable in advance.
+  //   § 17.1-207  a clerk MAY also close on locality-adopted holidays, on
+  //               Christmas Eve, and on days a chief or presiding judge
+  //               authorizes for a health or safety threat. All discretionary,
+  //               all per-locality.
+  // THE OMISSION FAILS IN THE SAFE DIRECTION and that is why it is disclosed
+  // rather than refused. An unmodelled closure means the computed date lands on
+  // a day the office was in fact shut, and § 1-210(B) would roll the true
+  // deadline LATER -- so this engine reports EARLY, never late. That is the
+  // opposite of Kentucky, which is refused because encoding KRS 2.110 would run
+  // late. See JURISDICTION_COVERAGE below for the text that ships with results.
+  va_code_1_210: { label: 'Va. Code § 1-210', impl: 'va_code_1_210',
+    base_period_suffix: '(A)', months_years_suffix: '(A)',
+    rollover_suffix_forward: '(B)', rollover_suffix_backward: '(A)' }
+};
+
+// ── Per-jurisdiction coverage disclosure ──────────────────────────────────
+// A jurisdiction whose calendar is knowably INCOMPLETE in a way the engine
+// cannot refuse on declares it here, and the text rides on the top level of
+// every successful computation for that jurisdiction rather than being buried
+// in one rule's authority note.
+//
+// The distinction that decides whether a gap belongs here or in a refusal:
+//   REFUSED   the gap can make the engine report a date that is LATE, or the
+//             engine cannot tell whether it would. A late date loses a filing.
+//             New Jersey's missing 2027 and Kentucky's holiday basis are both
+//             this, and both refuse.
+//   DISCLOSED the gap can only ever make the engine report a date that is
+//             EARLY. Filing before the true deadline is safe; being told a
+//             deadline has passed when it has not is a usability cost, not a
+//             malpractice one. Refusing here would buy no safety.
+// Nothing is added to this table without deciding which of the two it is.
+var JURISDICTION_COVERAGE = {
+  va: {
+    complete: false,
+    direction: 'early',
+    summary: 'Virginia court closures beyond the statewide statutory holidays are NOT modelled. This date may be EARLIER than the true deadline, never later.',
+    detail: 'The calendar encodes Saturdays, Sundays and the legal holidays in Va. Code § 2.2-3300, which § 17.1-207(A) requires every clerk\'s office to close for statewide. It does NOT encode two further categories that Va. Code § 1-210(B) also rolls off, because neither is knowable in advance: (1) § 1-210(F) makes any day the Governor authorizes the closing of state government a legal holiday, announced ad hoc; (2) § 17.1-207 lets a clerk also close on locality-adopted holidays, on Christmas Eve, and on days a chief or presiding judge authorizes for a health or safety threat — all discretionary and all per-locality. If the computed date below falls on a day the relevant clerk\'s office was in fact closed, the true deadline rolls to the next open day and is LATER than shown. Confirm the local court\'s own closure schedule before relying on a date that falls near one of these.'
+  }
 };
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
@@ -1346,15 +1486,26 @@ var SERVICE_EXTENSION_STANDARDS = {
   // five days shall be added to the prescribed period."
   //
   // FIVE days rather than three, but conditioned on THE LENGTH OF THE BASE
-  // PERIOD -- "a prescribed period of 10 days or less". Every per-method amount
-  // this engine implements (California's CCP 1013 table, New York's 2103(b))
-  // varies by METHOD alone, and amount(method) is handed nothing but the
-  // method. It cannot see that the rule it is extending is a 10-day one. A new
-  // shape is needed -- an amount() that also receives the base period -- and it
-  // is not being invented on the way past. No seeded North Carolina row is 10
-  // days or shorter, so 6(f) is unreachable in the current row set either way;
-  // it must be implemented before any such row is added, and the omission fails
-  // in the EARLY direction (three days added instead of five) rather than late.
+  // PERIOD -- "a prescribed period of 10 days or less".
+  //
+  // THE BLOCKER MOVED WHEN VIRGINIA WAS SEEDED, AND DID NOT VANISH. This note
+  // used to say the shape needed was "an amount() that also receives the base
+  // period", and that shape now EXISTS: amount(method, ctx) is handed
+  // ctx.base_period_count and ctx.base_period_unit, built for Va. Sup. Ct.
+  // R. 1:7 and deliberately made general enough to serve this rule too.
+  //
+  // What still blocks 6(f) is the OTHER condition in its own text: it applies
+  // only to "a person participating in the Address Confidentiality Program".
+  // That is a fact about the SERVED PARTY, not about the method, the period or
+  // the date, and this engine accepts no input carrying it. Inventing one on
+  // the way past a Virginia seed would be exactly the speculative widening this
+  // file avoids. It needs its own decision about where that fact comes from and
+  // whether a caller can be trusted to assert it.
+  //
+  // Unchanged: no seeded North Carolina row is 10 days or shorter, so 6(f) is
+  // unreachable in the current row set either way; it must be implemented
+  // before any such row is added, and the omission fails in the EARLY direction
+  // (three days added instead of five) rather than late.
   nc_rcp_6e: {
     label: 'N.C. R. Civ. P. 6(e) (G.S. 1A-1, Rule 6(e))',
     sequence: 'add_to_period_then_roll',
@@ -1394,6 +1545,137 @@ var SERVICE_EXTENSION_STANDARDS = {
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── NEW JERSEY: FIVE DAYS, AND ORDINARY MAIL IS NOT "MAIL" ──────────────
+  // R. 1:3-3, verbatim: "When service of a notice or paper is made by ordinary
+  // mail, and a rule or court order allows the party served a period of time
+  // after the service thereof within which to take some action, 5 days shall be
+  // added to the period." Amended February 8, 2022, effective April 1, 2022.
+  //
+  // FIVE DAYS, NOT THREE. Only Florida's 2.514(b) and Arizona's Rule 6(c)
+  // (unseeded) also add five; the federal rule, West Virginia, North Carolina,
+  // Washington, Georgia and Texas all add three, and New York and California
+  // vary by method. There is no default to fall back on, which is why every
+  // jurisdiction's amount is read rather than inherited.
+  //
+  // "ADDED TO THE PERIOD" -- period-lengthening, one rollover at the end.
+  //
+  // THE QUALIFYING METHOD IS ordinary_mail AND DELIBERATELY NOT mail. This is
+  // the narrowest allowlist in the engine and the name carries the reason.
+  // R. 1:5-2 authorises, for service on a party, "registered or certified mail,
+  // return receipt requested, and simultaneously by ordinary mail", and for
+  // service on an attorney, ordinary mail, email to an address listed on an
+  // approved electronic court system, handing it over, or leaving it at the
+  // office. Only the ordinary-mail limb extends. Accepting a bare "mail" here
+  // would silently add five days to a certified-mail service that R. 1:3-3 does
+  // not obviously reach; refusing it produces a visible not_qualifying instead,
+  // which is the behaviour this engine already chose when it stopped letting a
+  // silent no-extension look like "none requested".
+  //
+  // WHAT THIS DOES NOT REACH: the summons and complaint, served under R. 4:4-4
+  // rather than by ordinary mail under R. 1:5-2. Same scope route as West
+  // Virginia, North Carolina and Washington.
+  nj_r_1_3_3: {
+    label: 'N.J. Ct. R. 1:3-3',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'ordinary_mail'; }
+  },
+  // ── VIRGINIA: THE AMOUNT DEPENDS ON WHAT TIME OF DAY SERVICE FINISHED ────
+  // Va. Sup. Ct. R. 1:7, verbatim in full:
+  //
+  //   "Whenever a party is required or permitted under these Rules, or by
+  //    direction of the court, to do an act within a prescribed period of days
+  //    after service of a paper upon counsel of record,
+  //    (a) No days will be added if the paper is served by:
+  //    (1) manual delivery no later than 5:00 p.m. by counsel, counsel's agent
+  //        or courier, or a commercial delivery service making same-day
+  //        delivery;
+  //    (2) facsimile transmission completed no later than 5:00 p.m.; or
+  //    (3) electronic mail transmitted no later than 5:00 p.m.
+  //    (b) One day will be added to the prescribed time if the paper is served
+  //        by:
+  //    (1) placing the paper in the hands of a commercial delivery service
+  //        before midnight for next-day delivery, or
+  //    (2) completion of the following after 5:00 p.m. but before midnight:
+  //        (A) manual delivery by counsel, counsel's agent or courier, or a
+  //        commercial delivery service making same-day delivery; (B)
+  //        transmission by facsimile; or (C) transmission by electronic mail.
+  //    (c) three days will be added to the prescribed time if the paper is
+  //        served by mail. With respect to Parts Five and Five A of the Rules,
+  //        this Rule applies only to the time for filing a brief in opposition."
+  //
+  // FOUR METHODS ARE WORTH 0 OR 1 DAY DEPENDING ONLY ON THE CLOCK. Manual
+  // delivery, facsimile, electronic mail and same-day commercial delivery each
+  // add nothing at or before 5:00 p.m. and one day after it. No other seeded
+  // jurisdiction conditions an amount on time of day, and amount(method) could
+  // not express it -- see the context note at the application site.
+  //
+  // A MISSING service_time IS REFUSED, NOT GUESSED. Defaulting to 0 would be
+  // the EARLY direction and defaulting to 1 the LATE one; the rule allows both
+  // and the engine knows which only if it is told. This is the one refusal in
+  // this file the caller can always fix, and the message says exactly how.
+  //
+  // COMMERCIAL DELIVERY IS TWO METHODS, NOT ONE, because the rule splits it by
+  // the SERVICE BOUGHT rather than by the clock: same-day delivery is treated
+  // like manual delivery and follows the 5:00 p.m. cutoff, while next-day
+  // delivery adds one day whenever it was handed over before midnight. A single
+  // 'commercial_delivery' would have to guess which was purchased, so the two
+  // are named separately and a bare 'commercial_delivery' does not qualify.
+  //
+  // "ADDED TO THE PRESCRIBED TIME" -- period-lengthening, one rollover at the
+  // end, the same shape as New Jersey, North Carolina, Washington and New York
+  // and NOT the federal after-expiry order. Read from the rule's own words up
+  // front rather than caught by a failing test.
+  //
+  // WHAT THIS DOES NOT REACH: service of the summons and complaint. R. 1:7 runs
+  // from "service of a paper upon counsel of record", and Rule 3:8(a)'s answer
+  // period runs from service of the summons and complaint on the defendant, who
+  // has no counsel of record yet. Same scope route as West Virginia, North
+  // Carolina, Washington and New Jersey. It also reaches only periods fixed
+  // "under these Rules, or by direction of the court" -- NOT statutory periods,
+  // which is the narrower scope its own opening gives it even though the
+  // computation statute § 1-210 is broader. No statutory-period row is seeded.
+  //
+  // PARTS FIVE AND FIVE A ARE CARVED OUT by (c)'s final sentence and no
+  // appellate row is seeded, so the carve-out is unreachable today. It is
+  // recorded because a future Virginia appellate batch must honour it: there,
+  // R. 1:7 reaches ONLY the time for filing a brief in opposition.
+  va_rule_1_7: {
+    label: 'Va. Sup. Ct. R. 1:7',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist_with_per_method_amount',
+    qualifies: function (method) {
+      return ({
+        manual_delivery: 1, facsimile: 1, electronic_mail: 1,
+        commercial_delivery_same_day: 1, commercial_delivery_next_day: 1, mail: 1
+      })[method] === 1;
+    },
+    amount: function (method, ctx) {
+      // Fixed amounts first: neither depends on the clock.
+      if (method === 'mail') return { add: 3, unit: 'calendar_days' };
+      if (method === 'commercial_delivery_next_day') return { add: 1, unit: 'calendar_days' };
+
+      // The remaining four turn on the 5:00 p.m. cutoff.
+      var t = ctx && ctx.service_time;
+      if (!t || !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(t))) {
+        return { refuse: {
+          code: 'SERVICE_TIME_REQUIRED',
+          message: 'Va. Sup. Ct. R. 1:7 adds NO days for service by ' + String(method).replace(/_/g, ' ') +
+            ' completed at or before 5:00 p.m., and ONE day for the same service completed after 5:00 p.m. but before midnight. ' +
+            (t ? 'The service_time supplied ("' + t + '") is not a 24-hour HH:MM time. '
+               : 'No service_time was supplied. ') +
+            'The engine will not choose between the two: guessing 0 days would report a date EARLIER than the true deadline and guessing 1 day LATER. Supply service_time as HH:MM in 24-hour form (for example "16:45" or "17:30") and the extension will be computed. The date below is computed WITHOUT any extension.'
+        } };
+      }
+      var parts = String(t).split(':');
+      var minutes = (Number(parts[0]) * 60) + Number(parts[1]);
+      // "no later than 5:00 p.m." includes 17:00 exactly; "after 5:00 p.m."
+      // begins at 17:01. The boundary minute is worth a test of its own.
+      return (minutes <= 17 * 60)
+        ? { add: 0, unit: 'calendar_days' }
+        : { add: 1, unit: 'calendar_days' };
+    }
   }
 };
 
@@ -2212,7 +2494,57 @@ function computeDeadline(input) {
       // law, not row data, so it lives on the standard via an optional
       // amount(method) and every rule row simply points at the standard.
       // Standards without amount() are untouched and keep using ext.add.
-      var amt = (typeof extStd.amount === 'function') ? extStd.amount(input.service_method) : null;
+      // ── amount() RECEIVES A CONTEXT, NOT ONLY A METHOD ──────────────────
+      // Until Virginia, every per-method amount varied by METHOD ALONE, so
+      // amount(method) was enough. Two real rules break that, in two different
+      // ways, and both were documented as blocked on the same missing shape:
+      //
+      //   Va. Sup. Ct. R. 1:7   the amount depends on the TIME OF DAY service
+      //                         was completed -- 0 days at or before 5:00 p.m.,
+      //                         1 day after 5:00 p.m. but before midnight, for
+      //                         the same method.
+      //   N.C. R. Civ. P. 6(f)  the amount depends on the LENGTH OF THE BASE
+      //                         PERIOD -- five days rather than three, but only
+      //                         on "a prescribed period of 10 days or less".
+      //
+      // One addition serves both: amount() is handed a context object carrying
+      // the facts it may need. The context is populated from what the engine
+      // already knows at this point, so no caller changes for a standard that
+      // does not read it, and every existing amount() ignores the second
+      // argument and behaves exactly as before.
+      //
+      // NOTE ON 6(f): the MECHANISM now exists, but 6(f) itself is still not
+      // implemented -- it additionally needs to know whether the served party
+      // is an Address Confidentiality Program participant, which is a fact
+      // about the PARTY and not an input this engine accepts today. No seeded
+      // North Carolina row is 10 days or shorter, so it remains unreachable.
+      // See its standard's note. It is named here so the next reader knows the
+      // blocker moved rather than vanished.
+      var amtCtx = {
+        service_time: input.service_time || null,
+        base_period_count: countValue,
+        base_period_unit: count.unit
+      };
+      var amt = (typeof extStd.amount === 'function') ? extStd.amount(input.service_method, amtCtx) : null;
+
+      // A standard may REFUSE rather than return an amount, when the context
+      // it needs was not supplied. It must not fall through to ext.add: that
+      // would silently pick one of the amounts the rule allows and present it
+      // as computed. Reported as its own state for the same reason the other
+      // three refusals are distinct from each other -- this one is the only
+      // one the CALLER can fix, by supplying the missing fact.
+      var refused = !!(amt && amt.refuse);
+      if (refused) {
+        extension = { state: 'refused_missing_context', standard: stdKey, days_added: 0,
+          detail: amt.refuse.message };
+        steps.push({ step: 'service_extension_refused',
+          detail: amt.refuse.message,
+          authority: extLabel, date: result });
+      }
+      // Everything below applies the extension, and is skipped entirely on a
+      // refusal so that `result` keeps the unextended date the other refusal
+      // states also return.
+      if (!refused) {
       var addN = amt ? Number(amt.add) : Number(ext.add);
       var addUnit = (amt && amt.unit) || ext.unit || 'calendar_days';
 
@@ -2294,6 +2626,7 @@ function computeDeadline(input) {
       result = rolled2.date;
       extension = { state: 'applied', standard: stdKey, days_added: addN, unit: addUnit,
         detail: addN + ' ' + addUnit.replace(/_/g, ' ') + ' added under ' + extLabel + '.' };
+      }
     }
   } else if (input.service_method) {
     extension = { state: 'not_requested', standard: null, days_added: 0,
@@ -2309,6 +2642,11 @@ function computeDeadline(input) {
     // state they need to distinguish a refusal from an absence.
     service_extension_applied: extension.state === 'applied',
     service_extension: extension,
+    // Present only for a jurisdiction whose calendar is knowably incomplete in
+    // a way that can only ever report EARLY. Top level, not inside rule.authority,
+    // because a caller must not have to read a rule note to learn that the
+    // date carries a caveat. Null for every jurisdiction with no declared gap.
+    coverage: JURISDICTION_COVERAGE[input.jurisdiction] || null,
     // Present only for rules that declare a cap. Reports which limb governed
     // AND what the other one would have been, because "your deadline is
     // earlier than the rule's own period because of what the subpoena said"
@@ -2334,5 +2672,6 @@ module.exports = {
   toUTC, fromUTC, addDays, addMonths, dayOfWeek, isWeekend,
   holidayFor, rollOff, countExcludingWeekendsAndHolidays, computeDeadline,
   resolveTrigger, resolvePeriods, computeBasePeriod, applyRetrigger,
-  COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS
+  COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS,
+  JURISDICTION_COVERAGE
 };

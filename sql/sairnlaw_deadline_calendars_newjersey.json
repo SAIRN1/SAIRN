@@ -1,0 +1,152 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- New Jersey holiday calendar. Loaded through",
+    "add_holidays alongside sql/sairnlaw_deadline_seed_newjersey.json.",
+    "",
+    "== ONE YEAR ONLY, AND THAT IS A PROPERTY OF THE SOURCE, NOT A SHORTCUT =====",
+    "Every other jurisdiction here carries 2026-2031; North Carolina carries",
+    "2026-2027. NEW JERSEY CARRIES 2026 ALONE. Read why before trying to extend it.",
+    "",
+    "New Jersey's legal holidays for the courts are fixed by ORDER OF THE SUPREME",
+    "COURT OF NEW JERSEY, issued one court year at a time, and a New Jersey court",
+    "year runs 1 JULY TO 30 JUNE. So calendar year 2026 is assembled from TWO",
+    "orders -- January to June 2026 from the 2025-2026 order, July to December 2026",
+    "from the 2026-2027 order -- and calendar 2027 cannot be completed at all,",
+    "because the July-December half of it belongs to a 2027-2028 order that has not",
+    "been issued. Both source orders were read on 2026-08-25.",
+    "",
+    "A HALF-KNOWN 2027 WAS DELIBERATELY NOT LOADED. The engine refuses on a missing",
+    "YEAR, not on a missing day, so a 2027 calendar holding only the January-June",
+    "holidays would look complete and would silently under-report every holiday in",
+    "the second half of the year. Refusing all of 2027 is the honest behaviour.",
+    "Load it when the 2027-2028 order is published, and re-run this every July.",
+    "",
+    "DO NOT DERIVE THE MISSING YEARS FROM N.J.S.A. 36:1-1. See the seed readme --",
+    "that statute is the wrong source, and it is wrong in the LATE direction.",
+    "",
+    "== THE ORDER DISTINGUISHES LEGAL HOLIDAYS FROM RECESSES, AND SO DOES THIS ==",
+    "Each order marks some days \"Legal Holiday (Emergent Matters Only)\" and others",
+    "\"Court Recess\" or \"Statewide Judicial College\", also emergent matters only.",
+    "ONLY THE DAYS THE ORDER ITSELF CALLS LEGAL HOLIDAYS ARE ENCODED. R. 1:3-1",
+    "rolls a last day off \"a Saturday, Sunday or legal holiday\" -- it does not",
+    "mention recesses -- so encoding the recess days would roll deadlines LATER",
+    "than the rule provides, which is the direction that misses a filing.",
+    "",
+    "Excluded on that basis for 2026: the Statewide Judicial College on Monday to",
+    "Wednesday 23-25 November 2026, and the Court Recess from Monday 28 December",
+    "2026 through Thursday 31 December 2026. The courts are largely shut on those",
+    "days and a practitioner will feel the difference; the rule still does not make",
+    "them legal holidays. A deadline computed across them is EARLY, never late.",
+    "",
+    "== TWO ENTRIES THAT LOOK LIKE MISTAKES AND ARE NOT ========================",
+    "COLUMBUS DAY IS A NEW JERSEY LEGAL HOLIDAY. Monday 12 October 2026 is in the",
+    "order by name. North Carolina and Washington both EXCLUDE Columbus Day -- North",
+    "Carolina because its courts do not close, Washington because RCW 1.16.050(7)",
+    "says its recognized days \"may not be considered legal holidays for any",
+    "purpose\". Three states, three answers, and New Jersey is the one that counts",
+    "it. Do not carry another state's treatment across.",
+    "",
+    "GENERAL ELECTION DAY IS A LEGAL HOLIDAY, EVERY YEAR. Tuesday 3 November 2026",
+    "is in the order, and so was Tuesday 4 November 2025 in the previous one --",
+    "New Jersey elects its General Assembly annually, so unlike Illinois, Indiana,",
+    "West Virginia and Georgia, where statewide election days fall in even years",
+    "only, New Jersey's recurs every year. That is a reason not to generate this",
+    "calendar from an even/odd rule.",
+    "",
+    "JUNETEENTH IS THE THIRD FRIDAY IN JUNE, NOT 19 JUNE. N.J.S.A. 36:1-1(a) says",
+    "\"the third Friday in June, Juneteenth Day\", and the orders follow it: 19 June",
+    "2026 and 18 June 2027. In 2026 the third Friday happens to fall on the 19th,",
+    "which will make a naive 19-June rule look correct for exactly this year and",
+    "then fail. Every other state seeded that observes Juneteenth -- Washington --",
+    "fixes it on the calendar date.",
+    "",
+    "GOOD FRIDAY MOVES and is a legal holiday here: 3 April 2026, 26 March 2027.",
+    "",
+    "== NO WEEKEND-SHIFT RULE IS APPLIED, BECAUSE THE ORDER ALREADY DID IT =======",
+    "The order states observed dates directly. Independence Day 2026 appears as",
+    "FRIDAY 3 JULY 2026 because 4 July 2026 is a Saturday; nothing here computes",
+    "that shift, it is read off the order. This is the opposite of West Virginia and",
+    "Washington, where a statute states the shift and the calendar applies it."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "nj",
+      "year": 2026,
+      "authority": {
+        "citation": "Orders of the Supreme Court of New Jersey scheduling legal holidays and court recesses for the 2025-2026 and 2026-2027 court years, as applied to time computation by N.J. Ct. R. 1:3-1",
+        "url": "https://www.njcourts.gov/notices/order-schedule-of-2026-2027-legal-holidays-and-court-recesses",
+        "prior_year_order_url": "https://www.njcourts.gov/court-holidays-and-recesses-2025-2026",
+        "computation_url": "https://www.njcourts.gov/attorneys/rules-of-court",
+        "note": "Read 2026-08-25 from two Orders of the Supreme Court of New Jersey: the order for the court year 1 July 2025 to 30 June 2026 supplies January to June 2026, and the order for 1 July 2026 to 30 June 2027 supplies July to December 2026. New Jersey fixes its court legal holidays by ORDER, one court year at a time, and a court year runs July to June -- so a calendar year is assembled from two orders and 2027 cannot be completed until the 2027-2028 order issues. ONLY DAYS THE ORDERS THEMSELVES LABEL \"Legal Holiday\" ARE ENCODED. The same orders separately designate a Statewide Judicial College (23-25 November 2026) and a Court Recess (28-31 December 2026), both \"Emergent Matters Only\"; R. 1:3-1 rolls off a \"legal holiday\" and says nothing about recesses, so encoding those would push deadlines LATE. NOT DERIVED AND NOT DERIVABLE: Columbus Day IS a New Jersey legal holiday (North Carolina and Washington both exclude it); general election day is a legal holiday EVERY year, not in even years only, because New Jersey elects its General Assembly annually; Juneteenth is \"the third Friday in June\" per N.J.S.A. 36:1-1(a), NOT 19 June, and 2026 is the year that coincidence hides the difference; and Good Friday moves. The observed-date shift is already applied by the order (3 July 2026 for Independence Day) and is not computed here.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Washington's Birthday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-04-03",
+          "name": "Good Friday",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth Day (third Friday in June)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day (observed; 4 July 2026 is a Saturday)",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-03",
+          "name": "General Election Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    }
+  ]
+}

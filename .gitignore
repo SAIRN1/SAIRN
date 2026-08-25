@@ -14,3 +14,8 @@ node_modules
 graphify-out/
 graphify-out*/
 __pycache__/
+
+# Local-only SQL scratch files (probe seeds, round-trip cleanups).
+# These carry real license_hash values and one-off test job IDs; they are
+# working notes for a single live verification, not schema the platform runs.
+sql/_scratch_*

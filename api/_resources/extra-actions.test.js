@@ -113,6 +113,37 @@ const REJECTED = 400;      // the gate refused the verb
     // Phase 4a/4d single-owner verbs.
     assert.deepStrictEqual(grants('set_status'), ['rf_schedule']);
     assert.deepStrictEqual(grants('agreement_status'), ['rf_claim_agreements']);
+    // Phase 4b.
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_invoices, ['issue', 'add_payment', 'reconcile_claim']);
+    ['issue', 'add_payment', 'reconcile_claim'].forEach((v) => {
+      assert.deepStrictEqual(grants(v), ['rf_invoices'], v + ' must be owned by rf_invoices alone');
+    });
+  });
+
+  test('the COMPLETE set of extra verbs is declared -- a wholly new one fails here', () => {
+    // GAP CLOSED 2026-08-25. The enumeration above catches a new resource
+    // granting a KNOWN verb, but three entirely new verbs (issue, add_payment,
+    // reconcile_claim) were added in Phase 4b and nothing fired, because no
+    // line named them. A verb nobody has enumerated is exactly as undeclared as
+    // a grant nobody has enumerated.
+    //
+    // Every verb below is compute-only or append-only and gated in its own
+    // handler branch. Adding one here is a deliberate act: check the branch
+    // actually refuses the roles it should before widening this list.
+    const all = new Set();
+    reg.RESOURCE_NAMES.forEach((n) => (reg.EXTRA_ACTIONS[n] || []).forEach((v) => all.add(v)));
+    assert.deepStrictEqual([...all].sort(), [
+      'add_payment',
+      'agreement_status',
+      'delete',
+      'derive_charges',
+      'evaluate',
+      'issue',
+      'reconcile',
+      'reconcile_claim',
+      'route',
+      'set_status'
+    ]);
   });
 
   test('no resource outside the sc_ family grants delete', () => {
