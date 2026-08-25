@@ -1,0 +1,17 @@
+# Scoped deliberately: this file governs docs/skill-backups/ ONLY.
+#
+# A repo-wide .gitattributes was logged as "ready" in commit d837382 but is not
+# on disk. This is NOT that file and does not attempt to be — this repo is
+# mixed on purpose (api/sd-data.js is stored CRLF, sairncare.html LF), so a
+# blanket rule would rewrite real source files. Adding one is still open work
+# for whoever owns that decision.
+#
+# WHY THIS RULE EXISTS
+# docs/skill-backups/ is a byte-exact disaster-recovery archive of 29 skills
+# that exist nowhere else. This repo runs core.autocrlf=true with no
+# .gitattributes, so Git would convert those files' LF endings to CRLF on
+# checkout. A restored archive would then differ byte-for-byte from what was
+# backed up — silently, and only visible at the moment you most need it to be
+# correct. `-text` disables all end-of-line conversion in both directions, so
+# what is committed is what is restored.
+docs/skill-backups/** -text
