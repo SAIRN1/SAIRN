@@ -32,8 +32,10 @@
 --    83    of those carry an explicit `grant ... delete` line  <- the
 --          original count, i.e. it counted GRANT LINES IN THIS REPO and
 --          reported them as live rows
---    48    of those are granted only SELECT/INSERT/UPDATE here, yet hold
---          DELETE live anyway -- the actual body of the gap
+--    48    of those are granted only SELECT/INSERT/UPDATE here -- of which
+--          10 explicitly REVOKE delete (or revoke all first) and are
+--          confirmed clean, leaving 38 real candidates. See the audit-log
+--          section below for why that number moved.
 --   + ~4  real tables with NO tracked CREATE TABLE in this repo at all
 --          (license_keys, ai_memories, bridge_data, sairn_agents,
 --          sairn_agent_commands -- see the truncate sweep's findings 3+4)
@@ -49,16 +51,61 @@
 -- without also fixing the default privilege leaves every FUTURE table
 -- arriving with DELETE again.
 --
--- THREE NAMES IN THAT 48 MATTER MORE THAN THE REST -- check them first:
--- sairncode_audit_log, stonedesk_audit_log and sairnlaw_audit_log. The
--- first two are the only schema files on the platform documented as using
--- the SOUND `revoke all ... from service_role` pattern. If they appear in
--- Section 1's output holding DELETE, then either that pattern does not do
--- what it is believed to do, or those revokes were never actually run --
--- either way that is a separate finding worth more than this sweep.
--- UNVERIFIED: this session has no database access and did not see the live
--- list. The 48 are a named candidate set derived from repo grant lines, not
--- a confirmed subset of the 135.
+-- ── AUDIT-LOG CHECK CAME BACK CLEAN, AND MY TEST WAS A BAD TEST ──────────
+-- Confirmed live 2026-08-25: sairncode_audit_log, stonedesk_audit_log and
+-- sairnlaw_audit_log all show INSERT/SELECT only, no DELETE. The
+-- `revoke all ... from service_role` pattern does what it is supposed to.
+-- It is not broken -- it is just not universal (9 tables use it; see
+-- `grep -l "revoke all.*from service_role" sql/*.sql`).
+--
+-- But I proposed those three as the DISCRIMINATING test, and they are not.
+-- All three are EXPLICITLY protected in their own schema files --
+-- sairncode_audit_log and stonedesk_audit_log by `revoke all` first,
+-- sairnlaw_audit_log by an explicit `revoke update, delete ... from
+-- service_role` at sql/sairnlaw_audit_log*.sql:87. A table that explicitly
+-- revokes DELETE showing no DELETE is consistent with BOTH hypotheses and
+-- therefore separates neither. Recording this because the wrong test
+-- passing is easy to mistake for the question being answered.
+--
+-- CANDIDATE SET NARROWED 48 -> 38. The first pass counted only `grant`
+-- lines and ignored `revoke` lines, so it wrongly listed all 10 explicitly
+-- protected tables as candidates. Re-parsed for both verbs: 38 non-sc_*
+-- tables are granted SELECT/INSERT/UPDATE with NO delete granted AND no
+-- revoke protecting them. Those 38 -- alf_* (13), sen_* (5), sd_sub*/sd_subs
+-- (3), the eight *_employee_auth tables, bld_bids, bld_tna_assessments,
+-- dnt_cred_rules, dnt_credentials, sairncash_trial, sairncash_waitlist,
+-- sairnscape_org_intel, sd_render_usage, sd_shared_knowledge -- are the
+-- real discriminator. If they hold DELETE live, something grants it beyond
+-- this repo's lines. If they do NOT, the 135 is 83 explicit grants plus
+-- ~52 tables with no tracked schema at all (227 live tables vs 131 this
+-- repo grants), and the default-ACL question below is moot.
+--
+-- ── DOES THE DEFAULT-ACL FIX NEED WIDENING TO INCLUDE DELETE? PROBABLY NOT ─
+-- sql/append_only_grant_audit.sql Section 4 revokes only
+-- `truncate, references, trigger, maintain` from the default privileges,
+-- not delete. Whether that needs widening depends entirely on the answer
+-- above -- and there is already evidence in hand that it does NOT:
+--
+--   * Section 1a of that file confirmed live what postgres's default ACL
+--     actually grants service_role: TRUNCATE, REFERENCES, TRIGGER,
+--     MAINTAIN. DELETE is NOT in that list. If DELETE is not in the
+--     default ACL, revoking it from the default ACL changes nothing.
+--   * Section 1b of that file records dnt_credentials -- which IS one of
+--     the 38 -- reading `del=f` before the fix. That is a table with no
+--     delete grant, no revoke, and no DELETE. Exactly what the "default
+--     privilege is not the source" answer predicts.
+--
+-- CHEAPEST WAY TO SETTLE IT, two queries, before touching Section 4:
+--   1. Re-run append_only_grant_audit.sql Section 1a and read EVERY row,
+--      not just the postgres one. A second defaclrole (supabase_admin) with
+--      a broader grant is the only way DELETE arrives by default.
+--   2. Re-run its Section 1b against dnt_credentials and confirm del=f.
+-- If 1a shows no DELETE and 1b reads del=f, do NOT widen Section 4 --
+-- widening it would be a no-op change that looks like a fix.
+--
+-- UNVERIFIED, STATED PLAINLY: this session has no database access and did
+-- not see the live list. The 38 are a named candidate set derived from repo
+-- grant lines, not a confirmed subset of the 135.
 --
 -- ── WHY ───────────────────────────────────────────────────────────────────
 -- Exactly ONE piece of code in the entire repo issues a DELETE:
@@ -166,15 +213,16 @@ order by t.table_name;
 --     WHERE t.table_schema = 'public'
 --       AND g.grantee = 'service_role'
 --       AND t.table_name NOT LIKE 'sc\_%'
---       -- DECIDE BEFORE RUNNING, not silently either way: license_keys has
---       -- no tracked CREATE TABLE anywhere in this repo, so Section 2's
---       -- output cannot be checked against an expected schema, and every
---       -- license check on the platform depends on it. The truncate sweep
---       -- excluded it for exactly this reason. This sweep is gentler on it
---       -- (SELECT/INSERT/UPDATE are preserved, and license checks are
---       -- reads), so excluding it is a judgement call, not a requirement.
---       -- Uncomment to exclude:
---       -- AND t.table_name <> 'license_keys'
+--       -- EXCLUDED ON MICHAEL'S DECISION 2026-08-25. Not a judgement call
+--       -- left open any more: license_keys has no tracked CREATE TABLE
+--       -- anywhere in this repo, so Section 2's output cannot be checked
+--       -- against an expected schema, and every license check on the
+--       -- platform depends on it. Real risk, not worth carrying in the same
+--       -- pass as the rest. The truncate sweep excluded it for the same
+--       -- reason. It gets its own dedicated review -- see the license_keys
+--       -- row in docs/SAIRN-OPEN-WORK-INDEX.md. Do NOT quietly fold it back
+--       -- into a later sweep.
+--       AND t.table_name <> 'license_keys'
 --     GROUP BY t.table_name
 --     HAVING bool_or(g.privilege_type = 'DELETE')
 --   LOOP
@@ -193,7 +241,14 @@ order by t.table_name;
 -- END $$;
 
 -- ── SECTION 3: VERIFY, after Section 2 is actually run ───────────────────
--- Re-run SECTION 1. Expect ZERO rows.
+-- Re-run SECTION 1. Expect EXACTLY ONE row: license_keys, still holding
+-- DELETE, because Section 2 deliberately excludes it (see the exclusion
+-- comment there and the license_keys row in the open-work index). Anything
+-- ELSE still listed is a real miss and needs investigating.
+--
+-- NOT "expect zero rows" -- that was this file's wording before license_keys
+-- was excluded on 2026-08-25, and leaving it would have made the deliberate
+-- exclusion look like a failed revoke.
 --
 -- And confirm SAIRNcode was untouched -- expect its full family back,
 -- every row still showing DELETE:
