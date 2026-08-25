@@ -458,6 +458,45 @@
 -- prepared, hardened and simulated; executing it needs a Supabase SQL
 -- editor session as postgres.
 --
+-- ── THREE PRECONDITIONS THAT ARE NOT QUERY RESULTS -- READ BEFORE RUNNING ──
+--
+-- (P1) NO OTHER GRANT SCRIPT MAY RUN INSIDE THIS ONE'S WINDOW. This is
+-- the one that will actually bite, because a second grant change is
+-- already written, decided and waiting on the same Supabase session:
+-- sql/unused_delete_grant_revoke_2026-08-24.sql (confirmed still unrun --
+-- zero uncommented mutating statements as of 2026-08-25). It deliberately
+-- REVOKEs DELETE on ~135 non-sc_* tables. If it runs between Section 0 and
+-- Section 3 here, Section 3b reports every one of those DELETEs as LOST --
+-- a real, intended change misread as a failure of THIS script. The worse
+-- outcome is the second-order one: once 3b's output is known to contain
+-- expected noise, a genuine LOST row hides inside it and the check stops
+-- being a check.
+--   RUN THEM AS TWO CLOSED WINDOWS, NOT INTERLEAVED. Recommended order:
+--   this sweep first, start to finish (Section 0 -> 2 -> 3 -> 4), because
+--   it provably changes no functional capability and its verification is
+--   the stricter of the two; confirm 3a/3b/3c clean, DROP the baseline,
+--   and only then run the DELETE revoke with its own before/after. Either
+--   order works. Overlapping does not.
+--
+-- (P2) SECTION 0 AND SECTION 1 MUST RUN IN THE SAME SITTING. The 214-row
+-- figure is from the 2026-08-25 export, captured earlier. If Section 1 now
+-- returns anything other than 214, the database moved underneath the
+-- analysis -- STOP and re-report rather than proceeding on a stale
+-- picture. Two SAIRNroofing tables (rf_contingency_rules,
+-- rf_claim_agreements, added 3c10091 on 2026-08-25) are not yet run and
+-- would be new arrivals; both use the sound revoke-all-first pattern, so
+-- they would NOT appear in Section 1 even if run, and they can only push
+-- Section 3c's baseline count UPWARD, which 3c already treats as a lower
+-- bound. So they are safe -- checked, not assumed.
+--
+-- (P3) THE QUIET WINDOW IS STILL UNSCHEDULED (this is R5, unresolved).
+-- GRANT/REVOKE takes an AccessExclusiveLock per relation, and the DO block
+-- is one transaction -- so the FIRST table it touches stays locked for the
+-- entire loop, not just its own statement. Catalog-only work across ~214
+-- tables should be fast, but "should be" is not a measurement, and four
+-- sessions have been pushing live work tonight. Pick the window
+-- deliberately; do not run it because the preconditions happen to be green.
+--
 -- ── RUN ORDER ────────────────────────────────────────────────────────────
 --   Section R6  -> confirm you are postgres
 --   Section R4  -> pre-flight, expect zero rows from both queries
