@@ -52,6 +52,13 @@ module.exports = {
   // Nothing is seeded; the contractor enters their own thresholds citing their
   // own programme agreement.
     'rf_company_programs',
+  // Estimate -> proposal -> invoice (2026-08-25, Phase 4b) -- see
+  // sql/sairnroofing_billing_schema.sql. rf_proposals is APPEND-ONLY and every
+  // issued row SNAPSHOTS its price rather than pointing at the live estimate;
+  // rf_invoices is a mutable header whose payments the SERVER appends. There is
+  // no balance column anywhere -- it is derived on read.
+    'rf_proposals',
+    'rf_invoices',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -77,5 +84,10 @@ module.exports = {
     // Phase 3a rf_certifications store and treating every business fact as
     // self-reported. Reads only, writes nothing.
     rf_company_programs: ['evaluate'],
+    // Phase 4b. 'issue' allocates the gapless invoice number and is idempotent
+    // -- re-issuing must never burn a second number. 'add_payment' appends ONE
+    // entry server-side. 'reconcile_claim' compares the invoice against the
+    // linked claim and writes nothing to either.
+    rf_invoices: ['issue', 'add_payment', 'reconcile_claim'],
   },
 };

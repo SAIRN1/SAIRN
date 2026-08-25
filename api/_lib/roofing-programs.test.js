@@ -263,6 +263,23 @@ test('renewal is not_applicable when the company does not hold the programme', (
   assert.strictEqual(r.renewal.status, 'not_applicable');
 });
 
+test('a requirement stored with threshold:null is UNUSABLE, not a threshold of zero', () => {
+  // Number(null) is 0, so a naive num() turned "no threshold" into "zero",
+  // which every holding satisfies -- an unusable requirement would have
+  // reported 'met'. Not reachable through the panel (it omits an empty
+  // threshold) but reachable by a direct API write, which is exactly the
+  // caller that would do it.
+  const r = pg.evaluateRequirement(shareReq({ threshold: null }), { roster: ROSTER, certifications: CERTS, today: TODAY });
+  assert.strictEqual(r.status, 'unusable');
+  assert.match(r.detail, /threshold is not a number/);
+});
+
+test('an attested requirement with threshold:null is treated as non-numeric, not as zero', () => {
+  const r = pg.evaluateRequirement(attestedReq({ threshold: null, attested_value: 'signed' }), {});
+  assert.strictEqual(r.status, 'met');
+  assert.match(r.detail, /recorded as "signed"/);
+});
+
 test('validateProgram demands a manufacturer and a programme name', () => {
   const p = pg.validateProgram({ id: 'PRG-1' });
   assert.ok(p.some((x) => /manufacturer/.test(x)));
