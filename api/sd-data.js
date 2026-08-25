@@ -41,6 +41,7 @@ const roofingCreds = require('./_lib/roofing-credentials');
 const roofingClaims = require('./_lib/roofing-claims');
 const roofingSupplement = require('./_lib/roofing-supplement');
 const roofingAgreements = require('./_lib/roofing-agreements');
+const roofingLocations = require('./_lib/roofing-locations');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -2481,7 +2482,7 @@ module.exports = async (req, res) => {
     if (resource === 'rf_jobs' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      const r = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,job_class,assigned_employee_id,data'), { headers });
+      const r = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,job_class,assigned_employee_id,location_id,data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -2489,7 +2490,7 @@ module.exports = async (req, res) => {
       if (!RF_BROAD_READ_ROLES[session.role]) {
         out = out.filter((r) => r.assigned_employee_id === session.employee_id);
       }
-      const data = out.map((r) => Object.assign({ id: r.job_id, job_class: r.job_class || 'residential', assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      const data = out.map((r) => Object.assign({ id: r.job_id, job_class: r.job_class || 'residential', assigned_employee_id: r.assigned_employee_id || '', location_id: r.location_id || roofingLocations.DEFAULT_LOCATION_ID }, r.data));
       res.status(200).json({ ok: true, data, provisioned: true });
       return;
     }
@@ -2499,7 +2500,7 @@ module.exports = async (req, res) => {
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'rf_jobs payload.id is required' } }); return; }
       const isManagement = !!RF_MANAGEMENT_ROLES[session.role];
       const isBroadRead = !!RF_BROAD_READ_ROLES[session.role];
-      const existingR = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,data'), { headers });
+      const existingR = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.id) + '&select=assigned_employee_id,location_id,data'), { headers });
       if (existingR.status === 404 || existingR.status === 400) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Job tracking is not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } });
         return;
@@ -2637,19 +2638,34 @@ module.exports = async (req, res) => {
       delete jobData.assigned_employee_id;
       delete jobData.measurement_correction;
       delete jobData.estimate;
+      delete jobData.location_id;
       jobData.measurement = measurement;
       jobData.estimate = estimate;
+      // ── Phase 4a: location attribution ──────────────────────────────────────────────────
+      // Stamped on EVERY write, defaulting so a single-branch shop and every
+      // job that already existed behave exactly as before. This is the part
+      // that cannot be added later: a job saved with no location can never be
+      // attributed to one afterwards, because the fact was never captured.
+      // An EXISTING job keeps its location unless this write names a new one --
+      // otherwise an ordinary "edit the job name" save from the Overview tab
+      // would silently move the job to the default branch, which is the same
+      // whole-document-replace trap the measurement/estimate carry-forward
+      // above already exists to prevent.
+      const locationId = (payload.location_id !== undefined)
+        ? roofingLocations.stampLocation(payload).location_id
+        : ((existingRow && existingRow.location_id) || roofingLocations.DEFAULT_LOCATION_ID);
       const r = await fetch(rest('rf_jobs?on_conflict=license_hash,job_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({
           license_hash: licHash, app_id: 'sairnroofing', job_id: String(payload.id), job_class: jobClass,
-          assigned_employee_id: requestedAssignee, data: jobData, updated_at: nowISO()
+          assigned_employee_id: requestedAssignee, location_id: locationId,
+          data: jobData, updated_at: nowISO()
         })
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, job_class: jobClass, assigned_employee_id: requestedAssignee || '' }, jobData) });
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, job_class: jobClass, assigned_employee_id: requestedAssignee || '', location_id: locationId }, jobData) });
       return;
     }
 
@@ -3088,6 +3104,155 @@ module.exports = async (req, res) => {
         measured_from_job: measured, has_measurement: history.length > 0,
         worksheet: worksheet
       });
+      return;
+    }
+
+    // ── SAIRNROOFING: locations + crew scheduling (2026-08-25, Phase 4a) ─────────────────────
+    // location_id is ATTRIBUTION, not access control -- see the header of
+    // api/_lib/roofing-locations.js. Nothing below grants or restricts anything
+    // on the basis of location, and that is deliberate.
+    if (resource === 'rf_locations' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      // Any signed-in role: a foreman needs to know which branch a job belongs
+      // to, and the list is company structure, not sensitive data.
+      const r = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,name,active,data&order=name.asc'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, provisioned: true, data: (rows || []).map((x) => Object.assign({}, x.data || {}, { location_id: x.location_id, name: x.name, active: x.active })), default_location_id: roofingLocations.DEFAULT_LOCATION_ID });
+      return;
+    }
+    if (resource === 'rf_locations' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can add or edit a location' } }); return; }
+      const problems = roofingLocations.validateLocation(payload);
+      if (problems.length) { res.status(400).json({ error: { message: 'rf_locations: ' + problems.join('; ') } }); return; }
+      const blob = Object.assign({}, payload); delete blob.id; delete blob.name; delete blob.active;
+      const r = await fetch(rest('rf_locations?on_conflict=license_hash,location_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', location_id: String(payload.id),
+          name: String(payload.name), active: payload.active !== false,
+          data: blob, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        const bt = await r.text();
+        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Locations are not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
+        res.status(400).json({ error: { message: 'Data store rejected the location', detail: bt } }); return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Array.isArray(rows) && rows[0] });
+      return;
+    }
+    if (resource === 'rf_schedule' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      let q = 'rf_schedule?license_hash=eq.' + enc(licHash) + '&select=schedule_id,job_id,location_id,scheduled_date,status,crew,data,created_by&order=scheduled_date.asc';
+      if (payload && payload.from) q += '&scheduled_date=gte.' + enc(String(payload.from));
+      if (payload && payload.to) q += '&scheduled_date=lte.' + enc(String(payload.to));
+      const r = await fetch(rest(q), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      // The narrow-tier filter needs each row's JOB assignee, so the job
+      // assignments are read once and indexed rather than per row.
+      let assignees = {};
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,assigned_employee_id'), { headers });
+        const jRows = (jr.status === 404 || jr.status === 400) ? [] : await jr.json();
+        (Array.isArray(jRows) ? jRows : []).forEach((j) => { assignees[j.job_id] = j.assigned_employee_id; });
+      }
+      const data = (rows || [])
+        .filter((x) => roofingLocations.canSeeSchedule(session, x, assignees[x.job_id], rfAuth.MANAGEMENT_ROLES, rfAuth.BROAD_READ_ROLES))
+        .map((x) => Object.assign({}, x.data || {}, {
+          schedule_id: x.schedule_id, job_id: x.job_id, location_id: x.location_id,
+          scheduled_date: x.scheduled_date, status: x.status, crew: x.crew || [], created_by: x.created_by
+        }));
+      res.status(200).json({ ok: true, provisioned: true, data, statuses: roofingLocations.SCHEDULE_STATUSES });
+      return;
+    }
+    if (resource === 'rf_schedule' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      // Putting a named person on a crew for a given day IS an assignment
+      // decision, and rf_jobs already holds that only management assigns or
+      // reassigns. Broad-read (estimator) can see the whole board but does not
+      // staff it -- quoting a job is not the same authority as sending people
+      // to it. A crew member changing their own day's STATUS goes through
+      // 'set_status' below, which cannot touch the crew, the job or the date.
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can schedule a crew' } }); return; }
+      const problems = roofingLocations.validateSchedule(payload);
+      if (problems.length) { res.status(400).json({ error: { message: 'rf_schedule: ' + problems.join('; ') } }); return; }
+      // The job must exist, and the day inherits ITS location rather than
+      // taking one from the caller -- a crew day cannot be attributed to a
+      // branch the job does not belong to.
+      const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(payload.job_id) + '&select=job_id,location_id'), { headers });
+      if (jr.status === 404 || jr.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Jobs are not set up yet — run sql/sairnroofing_jobs_schema.sql in Supabase first.' } }); return; }
+      const jRows = await jr.json();
+      const job = Array.isArray(jRows) && jRows[0];
+      if (!job) { res.status(404).json({ error: { code: 'NO_JOB', message: 'No such job — create the job before scheduling a day on it' } }); return; }
+      const blob = Object.assign({}, payload);
+      ['id', 'job_id', 'location_id', 'scheduled_date', 'status', 'crew'].forEach((k) => { delete blob[k]; });
+      const r = await fetch(rest('rf_schedule?on_conflict=license_hash,schedule_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', schedule_id: String(payload.id),
+          job_id: String(payload.job_id),
+          location_id: job.location_id || roofingLocations.DEFAULT_LOCATION_ID,
+          scheduled_date: payload.scheduled_date,
+          status: payload.status || 'planned',
+          crew: roofingLocations.normalizeCrew(payload.crew),
+          data: blob, created_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        const bt = await r.text();
+        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Scheduling is not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
+        res.status(400).json({ error: { message: 'Data store rejected the schedule entry', detail: bt } }); return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { schedule_id: saved.schedule_id, job_id: saved.job_id, location_id: saved.location_id, scheduled_date: saved.scheduled_date, status: saved.status, crew: saved.crew, created_by: saved.created_by }) : payload });
+      return;
+    }
+    // A crew member marking their own day. Status ONLY -- it cannot move the
+    // day, change the job, or add anyone to the crew, so it is not a backdoor
+    // around the management-only write above.
+    if (resource === 'rf_schedule' && action === 'set_status') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const schedId = payload && payload.schedule_id;
+      const status = payload && payload.status;
+      if (!schedId) { res.status(400).json({ error: { message: 'set_status requires payload.schedule_id' } }); return; }
+      if (roofingLocations.SCHEDULE_STATUSES.indexOf(status) === -1) { res.status(400).json({ error: { message: 'status must be one of: ' + roofingLocations.SCHEDULE_STATUSES.join(', ') } }); return; }
+      const sr = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) + '&schedule_id=eq.' + enc(schedId) + '&select=schedule_id,job_id,crew'), { headers });
+      if (sr.status === 404 || sr.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Scheduling is not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
+      const sRows = await sr.json();
+      const entry = Array.isArray(sRows) && sRows[0];
+      if (!entry) { res.status(404).json({ error: { code: 'NO_SCHEDULE', message: 'No such scheduled day' } }); return; }
+      const jr2 = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&job_id=eq.' + enc(entry.job_id) + '&select=assigned_employee_id'), { headers });
+      const jRows2 = (jr2.status === 404 || jr2.status === 400) ? [] : await jr2.json();
+      const assignee = (Array.isArray(jRows2) && jRows2[0] && jRows2[0].assigned_employee_id) || null;
+      if (!roofingLocations.canSeeSchedule(session, entry, assignee, rfAuth.MANAGEMENT_ROLES, rfAuth.BROAD_READ_ROLES)) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You are not on that day' } });
+        return;
+      }
+      const r = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) + '&schedule_id=eq.' + enc(schedId)), {
+        method: 'PATCH',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ status: status, updated_at: nowISO() })
+      });
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, schedule_id: schedId, status: saved ? saved.status : status });
       return;
     }
 
