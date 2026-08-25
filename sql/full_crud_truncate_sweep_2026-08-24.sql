@@ -248,44 +248,88 @@
 -- Recorded because the near-miss is the argument for the list-free
 -- design, not a footnote to it.
 --
--- ── THE EXPORT HAS NOW BEEN TRUNCATED TWICE -- CHECK THE ONE IN FRONT OF YOU ──
--- SCOPE, because this is easy to misread: what follows is about the
--- 227-table list as PASTED INTO THE SAIRN-fourth SESSION on 2026-08-25.
--- It is NOT a claim about the export SAIRN-cc analysed in the block at
--- the top of this file. That block already established the first
--- truncation and its cause -- Michael's SQL client had a row limit and
--- the first export stopped at 100 rows -- and gives 227 as the real
--- table count. This is a SECOND, independent shortfall in a later
--- rendering of the same data, which is the point: the failure mode
--- recurred after being diagnosed once.
+-- ── THE 11 "MISSING" TABLES: SETTLED 2026-08-25. NOT A TRUNCATION. ───────
+-- RETRACTION FIRST. An earlier version of this block argued the export had
+-- been truncated a second time, on the strength of 11 tables that were
+-- code-reachable, had real schema files, and appeared to use the UNSOUND
+-- grant pattern -- so they "MUST" carry the excess baseline and "MUST"
+-- appear in a TRUNCATE-filtered list. That inference was WRONG, and the
+-- export is right. Both halves of it are now explained, from the repo and
+-- from one live probe, and neither half is a missing row.
 --
--- Two problems in that paste, both found by checking rather than trusting:
---   COUNT: it is labelled 227 tables. Enumerating it, including the
---   families given in shorthand at their stated sizes (leg_* 34, msb_* 9,
---   sc_* 29, scp_* 14, sdn_* 17), totals 215 -- 12 short of its own label.
---   CONTENT: 11 tables that are code-reachable, have a real schema file,
---   and use the UNSOUND grant pattern -- so they MUST carry the excess
---   baseline and MUST appear in a TRUNCATE-filtered list -- are absent
---   from it: alf_claim_routes, alf_signals, alf_staff_credentials,
---   dnt_cred_rules, dnt_credentials, sen_caregivers, sen_claims,
---   sen_clients, sen_portal_links, sen_visits, sairnsenior_employee_auth.
---   Their schema files do carry a `revoke all`, but it reads
---   `revoke all on public.X from anon, authenticated` -- NOT from
---   service_role (sairnsenior_visits_schema.sql:51-52 is the pattern), so
---   the default-ACL baseline survives untouched and absence is unexplained.
---   Note what that set is: every SAIRNsenior table plus the SAIRNcare and
---   SAIRNdental stragglers -- a contiguous alphabetical-ish tail, which is
---   what a row cap looks like, not what a random omission looks like.
--- Two readings, not resolved here: either those migrations were never run
--- (the exact class 6776f99 found for sairnscape_org_intel and
--- sairncash_waitlist), or this rendering is short too. 11 unexplained
--- absences against a 12-table count shortfall is suggestive of the
--- latter, and is not proof of either. The two counts can also both be
--- right about different things -- 227 real tables, 215 pasted.
--- CONSEQUENCE: run Section 1 live and read its real output before
--- Section 2. Section 2 itself is unaffected -- it queries
--- information_schema directly and never reads the export -- but anyone
--- predicting what Section 2 will touch from that paste will be wrong.
+-- THE METHOD ERROR, stated plainly because it is the reusable part: for
+-- each table I read that table's OWN schema file, found
+-- `revoke all on public.X from anon, authenticated` -- no service_role --
+-- and concluded the baseline survived. I never checked whether a LATER
+-- file had already fixed it. One did, and this very file names it in its
+-- own opening paragraph. Reading one file per table and stopping is how a
+-- structurally-plausible claim gets built on a real gap in the evidence.
+--
+-- FIVE OF ELEVEN -- possibility (2), already revoked, no longer unsound.
+-- sql/append_only_grant_audit.sql does an explicit
+-- `revoke all ... from service_role` followed by a narrow re-grant on
+-- dnt_credentials (:118), dnt_cred_rules (:120), alf_staff_credentials
+-- (:124), alf_signals (:126) and alf_claim_routes (:128). That file was
+-- RUN live -- 6776f99 reports two of its tables failing with a real 42P01
+-- from the actual database, which only happens to a script that executed.
+-- CORROBORATED BY THE EXPORT ITSELF, which is the part worth keeping: that
+-- file revokes from service_role on NINE tables in total -- the five above
+-- plus sairnlaw_audit_log (:134), rf_photos (:172), rf_jobs (:174) and
+-- sairnroofing_employee_auth (:176) -- and ALL NINE are absent from the
+-- export. 9 for 9. A truncation does not select exactly the nine rows a
+-- known REVOKE touched. sairnlaw_audit_log is the cleanest single case,
+-- because it has no sound schema file of its own; its absence is
+-- attributable to nothing but that audit having run.
+--
+-- SIX OF ELEVEN -- possibility (1), never migrated. The whole SAIRNsenior
+-- family: sen_caregivers, sen_claims, sen_clients, sen_portal_links,
+-- sen_visits, sairnsenior_employee_auth. Not touched by the audit file
+-- (zero `sen_` matches in it), and their schema files are dated 2026-08-20,
+-- four days BEFORE the ALTER DEFAULT PRIVILEGES fix -- so had they been run
+-- they would carry the baseline and would have to appear. They do not,
+-- because the tables are not there.
+--   REPO EVIDENCE, from the build sessions' own logs at the time:
+--   SAIRN-ACTIVE-WORK.md:153 "SEN- license still not provisioned, both new
+--   migrations still queued, not run"; :155 "Same blocker as every
+--   SAIRNsenior entry so far, unchanged: ... a third migration queued,
+--   none run yet". No later entry ever reverses that.
+--   LIVE PROOF, and it needed no credential and wrote nothing --
+--   api/sen-portal.js's `view` action is deliberately auth-free (:92-95),
+--   and a bogus token cannot reach the last_accessed_at write at :107:
+--     curl -sX POST https://sairn.vercel.app/api/sen-portal \
+--       -H 'Content-Type: application/json' \
+--       -d '{"action":"view","token":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}'
+--     -> HTTP 503 {"error":{"code":"NOT_PROVISIONED",
+--                  "message":"Portal links are not set up yet."}}
+--   A table that EXISTS returns 404 INVALID_LINK for an unknown token
+--   (:104). 503 NOT_PROVISIONED is the 42P01/PGRST205 branch at :100.
+--   sen_portal_links does not exist in production. Same failure mode Cody
+--   found for sairncash_waitlist and sairnscape_org_intel: schema file in
+--   the repo, migration never run against production.
+--
+-- WHAT IS STILL UNRESOLVED, and it is small: the count. Enumerating the
+-- pasted list, with the shorthand families taken at their stated sizes
+-- (leg_* 34, msb_* 9, sc_* 29, scp_* 14, sdn_* 17), totals 215 against a
+-- 227 label. The raw jsonb_agg result was offered but the message carried
+-- the placeholder text "[same JSON dataset as above]" in place of the
+-- data, so it could not be recounted and the 12-table gap is NOT settled.
+-- It no longer bears on the 11, which are fully accounted for above, and
+-- the likeliest reading is that a shorthand family size is off by a few.
+-- Do not treat 215 as a defect in the export on the strength of this file.
+--
+-- THE REAL, ACTIONABLE FINDING UNDERNEATH ALL OF THIS: SAIRNsenior has SIX
+-- unrun migrations in production and an unprovisioned SEN- license. Every
+-- endpoint degrades honestly to NOT_PROVISIONED rather than crashing, so
+-- it has been failing quietly since 2026-08-20. That is an app-readiness
+-- item, not a grant item, and it is tracked as its own row in
+-- docs/SAIRN-OPEN-WORK-INDEX.md rather than fixed here -- running another
+-- app's migrations as a side effect of a privilege audit is precisely the
+-- scope creep 6776f99 refused, and this file refuses it for the same reason.
+--
+-- CONSEQUENCE FOR THIS SWEEP: none of the 11 needs anything from Section 2.
+-- Five are already correctly narrowed; six do not exist. Section 1 remains
+-- the thing to run and read first, for the ordinary reason that it queries
+-- information_schema live and no pasted list is a substitute.
 --
 -- ── WHY THE FIX BELOW IS DYNAMIC, NOT 150 HAND-WRITTEN LINES ─────────────
 -- Hand-enumerating ~150 REVOKE/GRANT pairs is exactly the kind of manual
