@@ -143,10 +143,28 @@ create policy "svc only scp_progress_photos" on public.scp_progress_photos
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
 -- ── GRANTs: explicit, not left to the RLS-bypass default alone ─────────────
+--
+-- DELETE REMOVED FROM ALL SIX LINES 2026-08-25. They previously read
+-- `grant select, insert, update, delete`. Same overcorrection this file's
+-- header points at, and the same one already fixed in
+-- sql/scp_employee_auth_schema.sql: the 2026-08-06 session was closing a
+-- pattern of MISSING grants and, being explicit, wrote the full CRUD verb
+-- list rather than the verbs SAIRNscape actually uses. SAIRNscape has no
+-- delete path -- the platform's only DELETE is api/sd-data.js's
+-- SC_RESOURCES (SAIRNcode) branch -- so these six were never used.
+--
+-- Fixed at SOURCE separately from the live sweep, on purpose and for the
+-- reason that makes this urgent rather than tidy: this file is
+-- `create table if not exists` and safe to re-run, and
+-- sql/unused_delete_grant_revoke_2026-08-24.sql revoked these six live on
+-- 2026-08-25. Until this edit, file and database DISAGREED, and any
+-- routine re-run of this file would have silently restored all six --
+-- undoing part of a verified sweep with no error and no signal. The sweep
+-- fixes the database; these lines fix the file. Both halves are required.
 grant usage on schema public to service_role;
-grant select, insert, update, delete on public.scp_customers to service_role;
-grant select, insert, update, delete on public.scp_jobs      to service_role;
-grant select, insert, update, delete on public.scp_quotes    to service_role;
-grant select, insert, update, delete on public.scp_schedule  to service_role;
-grant select, insert, update, delete on public.scp_invoices  to service_role;
-grant select, insert, update, delete on public.scp_progress_photos to service_role;
+grant select, insert, update on public.scp_customers to service_role;
+grant select, insert, update on public.scp_jobs      to service_role;
+grant select, insert, update on public.scp_quotes    to service_role;
+grant select, insert, update on public.scp_schedule  to service_role;
+grant select, insert, update on public.scp_invoices  to service_role;
+grant select, insert, update on public.scp_progress_photos to service_role;
