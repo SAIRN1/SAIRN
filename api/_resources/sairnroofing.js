@@ -45,6 +45,13 @@ module.exports = {
   // api/_lib/roofing-locations.js.
     'rf_locations',
     'rf_schedule',
+  // Manufacturer certification programmes at COMPANY level (2026-08-25,
+  // Phase 4d) -- see sql/sairnroofing_programs_schema.sql. Voluntary
+  // commercial programmes, NOT regulation: deliberately a different table and
+  // a different posture from rf_cert_rules, which carries state licensing.
+  // Nothing is seeded; the contractor enters their own thresholds citing their
+  // own programme agreement.
+    'rf_company_programs',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -65,5 +72,10 @@ module.exports = {
     // Status ONLY -- it cannot move the day, change the job or touch the crew,
     // so it is not a way around the management-only schedule write.
     rf_schedule: ['set_status'],
+    // 'evaluate' (Phase 4d) scores the company against the requirements the
+    // contractor entered, computing the roster-credential share from the real
+    // Phase 3a rf_certifications store and treating every business fact as
+    // self-reported. Reads only, writes nothing.
+    rf_company_programs: ['evaluate'],
   },
 };
