@@ -3,13 +3,28 @@
 -- by this session. Run once in the Supabase SQL editor AFTER the assignment-gate
 -- portion has been run (it needs the foreman seed first).
 --
+-- SCOPE WIDENED 2026-08-25: this now also covers the Phase 3c live round trip.
+-- The filename is deliberately NOT changed -- 3c wrote only VERIFY-tagged rows
+-- that the LIKE patterns below already match, so a separate 3c file would issue
+-- the identical DELETEs against the identical rows. One cleanup, not two.
+--
 -- license_hash = sha256('RF-PINNACLE-2026').
 --
--- WHAT THE ROUND TRIP WROTE, all disposable, all VERIFY-tagged:
+-- WHAT THE ROUND TRIPS WROTE, all disposable, all VERIFY-tagged:
 --   rf_claim_photos : RFCPH-VERIFY-1        (append-only -- needs SQL to remove)
 --   rf_claims       : RFCLM-VERIFY-1        (mutable)
---   rf_jobs         : RFJOB-VERIFY-3B       (the job the claim hung on)
+--                     RFCLM-VERIFY-3C-NOMEAS      (3c: the unmeasured-job case)
+--   rf_jobs         : RFJOB-VERIFY-3B       (the job the claim hung on; 3c also
+--                     appended one measurement_correction entry to it, which
+--                     goes away with the row)
+--                     RFJOB-VERIFY-3C-NOMEAS      (3c: kept measurement-free on
+--                     purpose, to prove has_measurement:false does not crash)
 --   employee_auth   : rf-verify-admin, rf-verify-fmA, rf-verify-fmB (disposable)
+--
+-- Phase 3c wrote NO new table and NO new resource: `reconcile` is compute-only
+-- and was proven live to write nothing at all (claim and jobs rows byte-identical
+-- across repeat calls). Everything above came from ordinary rf_jobs/rf_claims
+-- writes used to set up the inputs.
 
 delete from public.rf_claim_photos
  where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'

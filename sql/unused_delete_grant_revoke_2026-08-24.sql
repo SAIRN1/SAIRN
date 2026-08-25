@@ -1,0 +1,227 @@
+-- sql/unused_delete_grant_revoke_2026-08-24.sql
+-- Revokes service_role's DELETE on every public table EXCEPT the SAIRNcode
+-- sc_* family, which is the only app with a real, reachable delete path.
+--
+-- Same three-section shape as sql/full_crud_truncate_sweep_2026-08-24.sql:
+-- discover live, review, then fix. The table list is NEVER hand-written --
+-- it is pulled from information_schema at run time, so a table added after
+-- this file was written is still covered.
+--
+-- ── COUNT CORRECTION 2026-08-25: THE "~107 / ~78" FIGURE WAS WRONG ────────
+-- A live count on 2026-08-25 returned 135 non-sc_* tables holding DELETE,
+-- not the ~78 this file's first revision implied. Reconciled before any
+-- revoke runs, because a 57-table gap is not a rounding difference.
+--
+-- CAUSE: the original figure came from a TRUNCATED EXPORT, and was then
+-- written into docs/SAIRN-OPEN-WORK-INDEX.md as though it described the
+-- database. sql/full_crud_truncate_sweep_2026-08-24.sql records the same
+-- root cause in its own header, found independently by the SAIRN-cc
+-- session: "Michael's SQL client had a row limit; the first export
+-- (100 rows) was confirmed truncated by cross-checking against tables
+-- already known to exist (SAIRNlegacy alone continues well past where
+-- that export stopped)." The real export is 227 tables. Any count near
+-- 100 taken during that window is capped, not measured.
+--
+-- NOT THE CAUSE -- checked, not assumed: new tables created since. origin
+-- has no schema commit after the original count; the only unpushed work in
+-- any sibling clone (SAIRN-cc dd5327b) adds documentation and zero tables.
+-- New tables account for approximately none of the 57.
+--
+-- WHERE THE 135 COMES FROM, parsed from every grant line in sql/*.sql:
+--   131  non-sc_* tables this repo grants anything on to service_role
+--    83    of those carry an explicit `grant ... delete` line  <- the
+--          original count, i.e. it counted GRANT LINES IN THIS REPO and
+--          reported them as live rows
+--    48    of those are granted only SELECT/INSERT/UPDATE here, yet hold
+--          DELETE live anyway -- the actual body of the gap
+--   + ~4  real tables with NO tracked CREATE TABLE in this repo at all
+--          (license_keys, ai_memories, bridge_data, sairn_agents,
+--          sairn_agent_commands -- see the truncate sweep's findings 3+4)
+--   = 135, which matches the live count almost exactly.
+--
+-- THE CONSEQUENCE, and the thing to look at in Section 1's real output:
+-- if those 48 do hold DELETE, the grant is NOT coming from this repo's
+-- schema files for most tables -- it is arriving by default privilege,
+-- the same mechanism already confirmed live via pg_default_acl for
+-- TRUNCATE/REFERENCES/TRIGGER/MAINTAIN in sql/append_only_grant_audit.sql.
+-- That does not change what Section 2 does (it is list-free and acts on
+-- whatever is live), but it does change what "fixed" means: revoking
+-- without also fixing the default privilege leaves every FUTURE table
+-- arriving with DELETE again.
+--
+-- THREE NAMES IN THAT 48 MATTER MORE THAN THE REST -- check them first:
+-- sairncode_audit_log, stonedesk_audit_log and sairnlaw_audit_log. The
+-- first two are the only schema files on the platform documented as using
+-- the SOUND `revoke all ... from service_role` pattern. If they appear in
+-- Section 1's output holding DELETE, then either that pattern does not do
+-- what it is believed to do, or those revokes were never actually run --
+-- either way that is a separate finding worth more than this sweep.
+-- UNVERIFIED: this session has no database access and did not see the live
+-- list. The 48 are a named candidate set derived from repo grant lines, not
+-- a confirmed subset of the 135.
+--
+-- ── WHY ───────────────────────────────────────────────────────────────────
+-- Exactly ONE piece of code in the entire repo issues a DELETE:
+-- api/sd-data.js, inside the SC_RESOURCES branch (line 5029 as of
+-- 2026-08-25 -- the line number drifts as that file grows, the branch
+-- does not; it was 4980 when this file was first written), gated by a
+-- server-side re-check that the caller holds a valid SAIRNcode *admin*
+-- session (a forged client claim of admin-ness is rejected there). Verified
+-- by grepping every .js/.cjs/.mjs/.ts/.html in the repo, not just api/ --
+-- one hit, no others.
+--
+-- Every other table's DELETE grant is a default copied forward through
+-- schema files. Nothing built or planned needs it:
+--   * erroneous-entry correction -> upsert on (license_hash, <entry>_id),
+--     which is how every sd_*/grd_*/msb_* resource already works
+--   * job/appointment cancellation -> a status ('Cancelled', 'INACTIVE'),
+--     because a cancelled job you cannot see is indistinguishable from one
+--     that never existed
+--   * GDPR erasure -> the platform's own design (SAIRNcare) KEEPS the
+--     identifier plus a suppression flag and reason code and deletes the
+--     surrounding personal data. That is field-level redaction inside a
+--     retained row -- an UPDATE, not a DELETE. These tables hold stone
+--     inventory, landscaping jobs and beverage sales, not the personal-data
+--     surface an erasure request targets anyway.
+--
+-- The grant is also the ONLY layer here. Every one of these tables has RLS
+-- `for all using (false) with check (false)`, and service_role bypasses RLS
+-- entirely -- so the grant is the sole thing between a leaked service key,
+-- or a future coding mistake, and irreversible row loss.
+--
+-- One table makes the contradiction explicit: sd_slab_history is documented
+-- in sql/sd_slab_lineage_schema.sql as "one row per event, append-only in
+-- practice" and is granted DELETE. That is the provenance trail someone
+-- reads when auditing a high-value slab.
+--
+-- ── NOTHING INTERNAL RELIES ON THIS, CHECKED NOT ASSUMED ──────────────────
+-- The cleanup scripts that DO issue real deletes against in-scope tables
+-- (sql/rbac_test_artifact_cleanup.sql -> msb_sales, grd_progress_photos;
+-- sairndesign_*_cleanup.sql; sairncash_verification_trial_cleanup.sql;
+-- sairndental_credentials_verify_cleanup.sql) run in the Supabase SQL
+-- editor as the owner role, NOT as service_role. rbac_test_artifact_cleanup
+-- says so in its own header: "This needs direct Supabase access -- same
+-- hand-off as every other provisioning/schema step." Revoking service_role's
+-- DELETE does not affect them. Neither Vercel cron
+-- (/api/sairndental/send-reminder, /api/alf-alerts) deletes anything.
+--
+-- ── REVERSAL ──────────────────────────────────────────────────────────────
+-- One line per table: GRANT DELETE ON public.<t> TO service_role.
+-- This does NOT foreclose the deferred test/demo-data cleanup capability in
+-- SAIRN-BACKLOG.md -- that item is explicitly undecided between soft- and
+-- hard-delete. Revoking forces the decision to be made deliberately rather
+-- than inherited from a copied grant.
+
+-- ── SECTION 1: DISCOVER -- run this first, review the real output ─────────
+-- Every table service_role can DELETE from that is NOT SAIRNcode's.
+-- These are the rows Section 2 will change.
+
+select
+  t.table_name,
+  string_agg(distinct g.privilege_type, ', ' order by g.privilege_type) as current_privs
+from information_schema.tables t
+join information_schema.role_table_grants g
+  on g.table_name = t.table_name and g.table_schema = t.table_schema
+where t.table_schema = 'public'
+  and g.grantee = 'service_role'
+  and t.table_name not like 'sc\_%'
+group by t.table_name
+having bool_or(g.privilege_type = 'DELETE')
+order by t.table_name;
+
+-- Sanity counterpart -- the sc_* tables that must be LEFT ALONE.
+-- Expect the SAIRNcode family here, and expect Section 2 not to touch them.
+--
+-- select t.table_name
+-- from information_schema.tables t
+-- join information_schema.role_table_grants g
+--   on g.table_name = t.table_name and g.table_schema = t.table_schema
+-- where t.table_schema = 'public' and g.grantee = 'service_role'
+--   and t.table_name like 'sc\_%'
+-- group by t.table_name
+-- having bool_or(g.privilege_type = 'DELETE')
+-- order by t.table_name;
+
+-- ── SECTION 2: DRAFT FIX -- NOT RUN. Review Section 1's real output first. ──
+-- Revoke-then-grant, so nothing regresses: strips ALL of service_role's
+-- privileges on the table, then re-grants exactly whichever of
+-- SELECT/INSERT/UPDATE it already held -- never more, never fewer, and
+-- never DELETE. A table that somehow held only DELETE ends with no grant,
+-- which is reported rather than silently done.
+--
+-- Excludes sc_* by the same pattern Section 1 uses, so the 29 SAIRNcode
+-- grants are untouched. Idempotent and safe to re-run. Touches no row data.
+--
+-- DO $$
+-- DECLARE
+--   r RECORD;
+--   keep_privs TEXT;
+-- BEGIN
+--   FOR r IN
+--     SELECT t.table_name,
+--            string_agg(DISTINCT g.privilege_type, ', ') AS all_privs
+--     FROM information_schema.tables t
+--     JOIN information_schema.role_table_grants g
+--       ON g.table_name = t.table_name AND g.table_schema = t.table_schema
+--     WHERE t.table_schema = 'public'
+--       AND g.grantee = 'service_role'
+--       AND t.table_name NOT LIKE 'sc\_%'
+--       -- DECIDE BEFORE RUNNING, not silently either way: license_keys has
+--       -- no tracked CREATE TABLE anywhere in this repo, so Section 2's
+--       -- output cannot be checked against an expected schema, and every
+--       -- license check on the platform depends on it. The truncate sweep
+--       -- excluded it for exactly this reason. This sweep is gentler on it
+--       -- (SELECT/INSERT/UPDATE are preserved, and license checks are
+--       -- reads), so excluding it is a judgement call, not a requirement.
+--       -- Uncomment to exclude:
+--       -- AND t.table_name <> 'license_keys'
+--     GROUP BY t.table_name
+--     HAVING bool_or(g.privilege_type = 'DELETE')
+--   LOOP
+--     SELECT string_agg(priv, ', ') INTO keep_privs
+--     FROM unnest(string_to_array(r.all_privs, ', ')) AS priv
+--     WHERE priv IN ('SELECT', 'INSERT', 'UPDATE');
+--
+--     EXECUTE format('REVOKE ALL ON public.%I FROM service_role', r.table_name);
+--     IF keep_privs IS NOT NULL THEN
+--       EXECUTE format('GRANT %s ON public.%I TO service_role', keep_privs, r.table_name);
+--     END IF;
+--
+--     RAISE NOTICE 'Revoked DELETE on %: kept %', r.table_name,
+--       coalesce(keep_privs, '(nothing -- this table held ONLY DELETE, check it)');
+--   END LOOP;
+-- END $$;
+
+-- ── SECTION 3: VERIFY, after Section 2 is actually run ───────────────────
+-- Re-run SECTION 1. Expect ZERO rows.
+--
+-- And confirm SAIRNcode was untouched -- expect its full family back,
+-- every row still showing DELETE:
+--
+-- select t.table_name,
+--        string_agg(distinct g.privilege_type, ', ' order by g.privilege_type) as privs
+-- from information_schema.tables t
+-- join information_schema.role_table_grants g
+--   on g.table_name = t.table_name and g.table_schema = t.table_schema
+-- where t.table_schema = 'public' and g.grantee = 'service_role'
+--   and t.table_name like 'sc\_%'
+-- group by t.table_name
+-- having bool_or(g.privilege_type = 'DELETE')
+-- order by t.table_name;
+--
+-- Then confirm the app still works where it must: SAIRNcode's delete path
+-- (api/sd-data.js SC_RESOURCES branch, admin session) must still succeed,
+-- and a normal read/write round-trip on any sd_*/grd_*/dnt_* resource must
+-- still succeed. A 403 from PostgREST on a WRITE would mean the re-grant
+-- dropped a privilege -- that is what Section 2's keep_privs exists to
+-- prevent, and what this check exists to catch if it failed anyway.
+
+-- ── WHAT THIS DOES NOT COVER ──────────────────────────────────────────────
+-- * The `anon` and `authenticated` roles. This file only touches
+--   service_role. Those roles are locked out by RLS on these tables, but
+--   their grants were not audited here.
+-- * Schemas other than public.
+-- * The DEFAULT PRIVILEGES that made this recur -- a new table created by a
+--   schema file that copies the usual `grant select, insert, update, delete`
+--   line will reintroduce a DELETE grant. The durable fix is to stop writing
+--   `delete` into new schema files; this sweep only cleans what exists now.
