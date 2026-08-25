@@ -86,7 +86,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"PreCompact fired: if a SAIRN handoff is overdue (see sairn-session-handoff skill), write it NOW -- self-contained, independently re-verified -- before this compaction erases working context. Naming is APP-YYYY-MM-DD-subject-handoff.md, for example SAIRNCARE-2026-08-24-resend-handoff.md. Do NOT use SAIRN-SESSION-N-HANDOFF.md; that counter scheme was retired 2026-08-23 after two different real SAIRNLAW-SESSION6 files existed at once and a session read the wrong one. Write it inside a real clone (Documents/SAIRN-hank, Documents/SAIRN-cc, Documents/SAIRN-cody), never in the home directory, and it is not written until it is committed in the same action.\"},\"suppressOutput\":true}'",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreCompact\",\"additionalContext\":\"PreCompact fired: if a SAIRN handoff is overdue (see sairn-session-handoff skill), write it NOW -- self-contained, independently re-verified -- before this compaction erases working context. Naming is APP-YYYY-MM-DD-subject-handoff.md, for example SAIRNCARE-2026-08-24-resend-handoff.md. Do NOT use SAIRN-SESSION-N-HANDOFF.md; that counter scheme was retired 2026-08-23 after two different real SAIRNLAW-SESSION6 files existed at once and a session read the wrong one. Write it inside a real clone (Documents/SAIRN-hank, Documents/SAIRN-cc, Documents/SAIRN-cody, Documents/SAIRN-fourth), never in the home directory, and it is not written until it is committed in the same action.\"},\"suppressOutput\":true}'",
             "timeout": 5
           }
         ]
