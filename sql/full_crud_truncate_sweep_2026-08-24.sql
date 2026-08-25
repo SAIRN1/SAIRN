@@ -149,15 +149,34 @@
 -- suspected dead. Checked from code, not from the grant export, because
 -- the export is a claim like any other (see the caveat block below).
 --
--- METHOD -- the reachable-table set was enumerated exhaustively from
--- api/, not sampled. Three and only three ways a table name can reach
--- PostgREST in this codebase, all three enumerated:
+-- Reached independently and by a different route from the SAIRN-cc block
+-- (1) above, which is why both are kept: two methods, same 19 names, is
+-- worth more than one method asserted twice. Where they DISAGREE, the
+-- disagreements are resolved below and neither claim was quietly dropped.
+--
+-- METHOD -- the reachable-table set was enumerated exhaustively, not
+-- sampled. FOUR channels can put a table name in front of PostgREST in
+-- this codebase, all four walked:
 --   1. `rest('literal')` string constants        -- extracted, 107 names
 --   2. `const TABLE = '...'` / `*_TABLE` consts  -- 21 sites, all prefixed
 --   3. `rest(resource + ...)` dynamic sites      -- 12 sites, every one of
 --      them keyed on an explicit map of PREFIXED names (SD_LINEAGE,
 --      SDN_RESOURCES, the 28-name SC_RESOURCES, etc.), so `resource` can
 --      never be a bare name at those call sites
+--   4. THE BROWSER, going straight to Supabase with the ANON key and
+--      never touching api/ at all -- `sb.from('table')` in the app HTML
+--
+-- CHANNEL 4 IS A REAL GAP THIS CHECK ORIGINALLY HAD, and it is recorded
+-- rather than silently patched: the first pass enumerated api/ only, and
+-- an api/-only sweep cannot see a table the browser reads directly. It
+-- was caught by cross-checking against the SAIRN-cc block, which listed
+-- `intake_submissions` -- a name absent from api/ entirely. Re-running
+-- with channel 4 included (`grep -rhoE "\.from\(['\"]?[a-z_]+" *.html`)
+-- returns exactly TWO real client-side tables platform-wide: `employees`
+-- and `intake_submissions` (via `INTAKE_TABLE`, stonedesk.html:31943).
+-- Neither is among the 19, so the conclusion below survives the wider
+-- method -- but it survives because it was re-checked, not because the
+-- first method was sound.
 --
 -- RESULT: 19 of the 20 are reachable by nothing.
 --   conversations, demo_calls, gl_entries, licenses, messages, parts,
@@ -173,33 +192,77 @@
 --   prefixed resource names were chosen "specifically to avoid the
 --   collision", so this is by design, not coincidence.
 --
--- THE ONE EXCEPTION, and it corrects the claim that put it on the list:
--- network_insights is LIVE, not dead -- real schema (sql/network_schema.sql),
--- real endpoint (api/network.js), real caller (stonedesk.html:24833). It was
--- carried as having zero SELECT/INSERT/UPDATE/DELETE grants. That is wrong,
--- and it was disproved without any credential:
---     curl -s "https://sairn.vercel.app/api/network?app=stonedesk"
---     -> HTTP 200 {"ok":true,"insights":[]}
--- A missing grant returns Postgres 42501, which api/network.js:121 turns
--- into 503 PERMISSION_DENIED by name. A 200 is therefore a successful
--- SELECT against network_insights, so service_role holds SELECT on it.
--- Same lesson as 6776f99: the derived list was wrong, the per-table
--- confirmation was right. Prefer the confirmation.
+-- ── TWO CORRECTIONS TO BLOCK (1)/(2) ABOVE, BOTH EVIDENCED ───────────────
 --
--- WHAT THIS DOES AND DOES NOT LICENCE: nothing here changes Section 2,
--- which reads each table's OWN live grants and never consults this list.
--- That is exactly why the wrong zero-grant claim could not have caused
--- harm -- had Section 2 been driven by the derived list it would have
--- stripped network_insights' real SELECT and silently killed StoneDesk's
--- Intelligence Network panel. Recorded because the near-miss is the
--- argument for the list-free design, not a footnote to it.
+-- CORRECTION A -- network_insights is NOT currently broken. Block (2)
+-- above states that service_role "has held only the TRUNCATE/REFERENCES/
+-- TRIGGER/MAINTAIN default baseline since the table was created, meaning
+-- api/network.js has never been able to actually select or insert on it,"
+-- and calls it a live bug of the fe730e2 class. SELECT, at least, works.
+-- Disproved live, three consecutive calls, no credential used:
+--     curl -s -w " [HTTP %{http_code}]" \
+--       "https://sairn.vercel.app/api/network?app=stonedesk"
+--     -> {"ok":true,"insights":[]} [HTTP 200]   (x3)
+-- A missing grant is Postgres 42501, which api/network.js:121 turns into
+-- a NAMED 503 PERMISSION_DENIED, and a missing table is 42P01/PGRST205 ->
+-- 503 NOT_PROVISIONED (:115). Neither fired. A 200 with ok:true is a
+-- completed SELECT against network_insights, so service_role holds SELECT.
+-- HOW, given sql/network_schema.sql really does contain no grant: block
+-- (4) above supplies the mechanism -- a table created through Supabase's
+-- Table Editor auto-grants, unlike a raw SQL migration. That is the
+-- likeliest explanation and it is a hypothesis, not a finding.
+-- WHAT IS STILL OPEN: INSERT is UNVERIFIED. Proving it needs a real POST
+-- that writes a row, which is not something to fire at production to win
+-- an argument, so it was not done. The honest statement is: SELECT
+-- confirmed present, INSERT unknown. Do not upgrade that to "the table is
+-- fine" without checking the write path.
+-- WHY IT MATTERS BEYOND ONE TABLE: network_insights was on the ~20
+-- zero-CRUD list, and it demonstrably has CRUD. The zero-CRUD list is
+-- therefore not reliable per-row, which is the same defect as the
+-- truncated export it came from.
 --
--- ── THE 227-TABLE EXPORT IS NOT COMPLETE -- DO NOT DRIVE ANYTHING OFF IT ──
--- Two independent problems, both found by checking rather than trusting:
---   COUNT: the export is labelled 227 tables. Enumerating it, including
---   the families given in shorthand at their stated sizes (leg_* 34,
---   msb_* 9, sc_* 29, scp_* 14, sdn_* 17), totals 215. 12 short of its
---   own label.
+-- CORRECTION B -- intake_submissions is NOT unreferenced. Block (1) lists
+-- it as "CONFIRMED unreferenced by any live SAIRN code path." StoneDesk
+-- reads it on every Intake panel load: `INTAKE_TABLE` is declared at
+-- stonedesk.html:31943 and `sb.from(INTAKE_TABLE).select('*')` runs in
+-- intakeRefresh() at :31982. It is invisible to an api/-only sweep
+-- because it never goes through api/ -- it is channel 4, the browser's
+-- own Supabase client on the ANON key. Both sweeps had the same blind
+-- spot in opposite directions, which is precisely why this is written
+-- down rather than corrected in place.
+-- NUANCE THAT CUTS THE OTHER WAY, stated so nobody over-reads this: an
+-- anon-key path does not use service_role at all, so intake_submissions'
+-- service_role grants may genuinely be dead weight even though the TABLE
+-- is very much alive. "Unused by service_role" and "unreferenced by any
+-- code" are different claims and block (1) merged them.
+-- SEPARATE, NOT CHASED HERE: intakeRefresh()'s catch falls back to
+-- localStorage silently, so if that anon read is failing today the panel
+-- shows stale cached rows and reports nothing. That is a silent-failure
+-- candidate for sairn-silent-failure-sweep, not a grant question.
+--
+-- WHAT NONE OF THIS CHANGES: Section 2 reads each table's OWN live grants
+-- and never consults any list in this file. That is exactly why two
+-- wrong list entries could not have caused harm -- had Section 2 been
+-- driven by the derived list it would have stripped network_insights'
+-- real SELECT and silently killed StoneDesk's Intelligence Network panel.
+-- Recorded because the near-miss is the argument for the list-free
+-- design, not a footnote to it.
+--
+-- ── THE EXPORT HAS NOW BEEN TRUNCATED TWICE -- CHECK THE ONE IN FRONT OF YOU ──
+-- SCOPE, because this is easy to misread: what follows is about the
+-- 227-table list as PASTED INTO THE SAIRN-fourth SESSION on 2026-08-25.
+-- It is NOT a claim about the export SAIRN-cc analysed in the block at
+-- the top of this file. That block already established the first
+-- truncation and its cause -- Michael's SQL client had a row limit and
+-- the first export stopped at 100 rows -- and gives 227 as the real
+-- table count. This is a SECOND, independent shortfall in a later
+-- rendering of the same data, which is the point: the failure mode
+-- recurred after being diagnosed once.
+--
+-- Two problems in that paste, both found by checking rather than trusting:
+--   COUNT: it is labelled 227 tables. Enumerating it, including the
+--   families given in shorthand at their stated sizes (leg_* 34, msb_* 9,
+--   sc_* 29, scp_* 14, sdn_* 17), totals 215 -- 12 short of its own label.
 --   CONTENT: 11 tables that are code-reachable, have a real schema file,
 --   and use the UNSOUND grant pattern -- so they MUST carry the excess
 --   baseline and MUST appear in a TRUNCATE-filtered list -- are absent
@@ -210,11 +273,15 @@
 --   `revoke all on public.X from anon, authenticated` -- NOT from
 --   service_role (sairnsenior_visits_schema.sql:51-52 is the pattern), so
 --   the default-ACL baseline survives untouched and absence is unexplained.
+--   Note what that set is: every SAIRNsenior table plus the SAIRNcare and
+--   SAIRNdental stragglers -- a contiguous alphabetical-ish tail, which is
+--   what a row cap looks like, not what a random omission looks like.
 -- Two readings, not resolved here: either those migrations were never run
 -- (the exact class 6776f99 found for sairnscape_org_intel and
--- sairncash_waitlist), or the export is truncated. 11 unexplained
+-- sairncash_waitlist), or this rendering is short too. 11 unexplained
 -- absences against a 12-table count shortfall is suggestive of the
--- latter, and is not proof of either.
+-- latter, and is not proof of either. The two counts can also both be
+-- right about different things -- 227 real tables, 215 pasted.
 -- CONSEQUENCE: run Section 1 live and read its real output before
 -- Section 2. Section 2 itself is unaffected -- it queries
 -- information_schema directly and never reads the export -- but anyone
@@ -254,6 +321,108 @@ group by t.table_name
 having bool_or(g.privilege_type = 'TRUNCATE')
 order by t.table_name;
 
+-- ── SECTION 2 REVIEW, 2026-08-25 -- 6 FINDINGS, NOTHING CHANGED YET ──────
+-- Section 2 was reviewed line by line rather than approved on the strength
+-- of its own comment. The central claim -- "cannot add or remove
+-- functional capability, by construction" -- holds for the code path as
+-- written: keep_privs is filtered to a fixed IN-list, so the re-GRANT can
+-- only ever restore a subset of what the table already had. The findings
+-- below are about coverage, verification and blast radius, not about that
+-- claim being false. Ordered by how much they matter. NONE of them are
+-- applied -- the DO block is untouched, because whoever actually runs this
+-- against the live database should decide, and one of the six is a
+-- decision, not a defect.
+--
+-- (R1) THE "CANNOT CHANGE CAPABILITY" CLAIM IS UNPROVEN FOR THE ACTUAL
+-- RUN, and this is the biggest gap. It is proven for the LOGIC; it is not
+-- proven for the EVENT. There is no before-capture step anywhere in this
+-- file, so after Section 2 runs there is no artifact to diff against and
+-- the only verification (Section 3) checks that TRUNCATE is GONE, never
+-- that SELECT/INSERT/UPDATE/DELETE SURVIVED. A bug in the loop that
+-- dropped a privilege would pass Section 3 silently. The index row for the
+-- verb-gate change already demands baseline-replay proof for exactly this
+-- class of change; this file should meet the same bar. Recommended, as a
+-- new Section 0 run BEFORE Section 2 in the same editor session:
+--     create temp table grant_baseline as
+--     select table_name, privilege_type
+--     from information_schema.role_table_grants
+--     where table_schema='public' and grantee='service_role'
+--       and privilege_type in ('SELECT','INSERT','UPDATE','DELETE');
+-- and then, as the real Section 3, a full-outer-join of that snapshot
+-- against the post-run state expecting ZERO rows on either side. Note the
+-- temp table dies with the session, so Sections 0, 2 and 3 must be one
+-- editor session -- which is a feature: it makes the proof and the change
+-- inseparable.
+--
+-- (R2) BOTH SECTIONS FILTER ON TRUNCATE ALONE, SO A REFERENCES-ONLY OR
+-- TRIGGER-ONLY TABLE IS INVISIBLE TO THE SWEEP AND TO ITS VERIFICATION.
+-- `having bool_or(privilege_type = 'TRUNCATE')` is the filter in Section
+-- 1, Section 2 and (by reference) Section 3. This file is titled for four
+-- privileges and only searches for one of them. The defence is that the
+-- default ACL grants all four together so they co-occur -- but that
+-- coupling is precisely what append_only_grant_audit.sql and the
+-- ALTER DEFAULT PRIVILEGES fix have already been breaking on purpose, and
+-- any hand-run REVOKE breaks it too. Section 3 would then report "zero
+-- rows, clean" over tables still holding REFERENCES. Recommended filter,
+-- all three places:
+--     having bool_or(privilege_type in
+--       ('TRUNCATE','REFERENCES','TRIGGER','MAINTAIN'))
+--
+-- (R3) THE EXCLUSION OF network_insights RESTS ON A CLAIM DISPROVED
+-- ABOVE. The comment excludes it because it "already has zero real CRUD
+-- for service_role today." Correction A shows SELECT works live, three
+-- consecutive 200s. So the exclusion does not protect anything -- it just
+-- leaves one table's excess baseline in place, and Section 3 will then
+-- correctly report a leftover row that looks like a failure. Do not
+-- silently delete the exclusion either: read network_insights' actual row
+-- in Section 1's live output first, and drop the exclusion only if that
+-- row shows real CRUD to preserve. The license_keys exclusion is
+-- UNAFFECTED by this and remains well-reasoned -- no tracked schema,
+-- platform-wide blast radius, exclude it and hand-check after.
+--
+-- (R4) COLUMN-LEVEL GRANTS AND GRANT OPTION WOULD BE DESTROYED SILENTLY.
+-- `REVOKE ALL ON <table>` strips column-level privileges too, and the
+-- re-GRANT only restores TABLE-level ones; likewise `WITH GRANT OPTION`
+-- is not carried across. Neither is visible in role_table_grants -- the
+-- first lives in role_column_grants, the second in that view's
+-- is_grantable column, and Section 1 selects neither. The repo is clean
+-- on both (`grep` finds zero column grants and zero `with grant option`
+-- in sql/*.sql), but the repo is not the database -- this file already
+-- documents five real tables with no tracked CREATE TABLE, and a table
+-- on the same Supabase project from outside this repo cannot be ruled
+-- out. Cheap pre-flight, expect zero rows:
+--     select * from information_schema.role_column_grants
+--     where table_schema='public' and grantee='service_role';
+--     select table_name, privilege_type from information_schema.role_table_grants
+--     where table_schema='public' and grantee='service_role' and is_grantable='YES';
+--
+-- (R5) THE WHOLE LOOP IS ONE TRANSACTION HOLDING A LOCK PER TABLE. A DO
+-- block is a single statement, so all ~150 REVOKE/GRANT pairs commit
+-- together -- good, because a partial application is the one outcome
+-- nobody could reason about afterwards, and it means no window exists
+-- where a table has been revoked but not re-granted. The cost is that
+-- every relation it touches is locked until the block commits, against
+-- live API traffic. It is catalog-only work and should be fast, but
+-- "should be" is not a measurement. Run it in a quiet window, the same
+-- way the .gitattributes row demands one. Not a defect -- a scheduling
+-- constraint that is currently written down nowhere.
+--
+-- (R6) PRECONDITION NEVER STATED: THIS MUST RUN AS THE TABLE OWNER.
+-- information_schema.role_table_grants only shows grants where the
+-- current user is grantor, grantee, or a member of one of them, and
+-- REVOKE only removes grants the executing role has authority over. Run
+-- as postgres in the Supabase SQL editor both hold. Run as anything less
+-- and the loop silently iterates a SHORT list, changes less than it
+-- claims, and Section 3 reports clean because it is filtered by the same
+-- blind spot. Add `select current_user;` as the first line of the run and
+-- confirm it says postgres before executing anything.
+--
+-- ALSO CHECKED AND CLEAN, so nobody re-derives them: no partitioned
+-- tables anywhere in sql/*.sql (REVOKE on a parent would not cascade to
+-- partitions), and zero explicit REFERENCES/TRIGGER/MAINTAIN grants
+-- anywhere in the repo, which is what makes stripping them unconditionally
+-- safe rather than a per-table judgment.
+--
 -- ── SECTION 2: DRAFT FIX -- NOT RUN. Review Section 1's real output first. ──
 -- For every table service_role holds TRUNCATE on, strips
 -- TRUNCATE/REFERENCES/TRIGGER/MAINTAIN and re-grants exactly whichever of
@@ -298,6 +467,16 @@ order by t.table_name;
 
 -- ── SECTION 3: VERIFY, after Section 2 is actually run ───────────────────
 -- Re-run Section 1. Expect zero rows.
+--
+-- INSUFFICIENT AS WRITTEN -- see R1 and R2 in the review block above.
+-- Re-running Section 1 proves only that TRUNCATE is gone. It does not
+-- prove that SELECT/INSERT/UPDATE/DELETE survived, which is the property
+-- this whole file rests on, and with the TRUNCATE-only filter it does not
+-- prove REFERENCES or TRIGGER are gone either. The real verification is
+-- the Section 0 baseline diff described in R1, expecting zero rows on
+-- both sides of a full outer join. Left as-is rather than rewritten,
+-- because Section 2 is not mine to change and a verification step should
+-- be agreed before it is relied on, not slipped in.
 
 -- ── WHAT THIS DOES NOT COVER ──────────────────────────────────────────────
 -- Same ownership caveat as every other grant file tonight: postgres owns
