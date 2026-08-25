@@ -80,8 +80,14 @@ create policy "svc only wex_rate_limit_log"    on public.wex_rate_limit_log    f
 create policy "svc only fcl_rate_limit_log"    on public.fcl_rate_limit_log    for all using (false) with check (false);
 create policy "svc only canlii_rate_limit_log" on public.canlii_rate_limit_log for all using (false) with check (false);
 
-grant select, insert, delete on public.wex_rate_limit_log    to service_role;
-grant select, insert, delete on public.fcl_rate_limit_log    to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert on public.wex_rate_limit_log    to service_role;
+grant select, insert on public.fcl_rate_limit_log    to service_role;
 grant select, insert, delete on public.canlii_rate_limit_log to service_role;
 grant usage, select on sequence public.wex_rate_limit_log_id_seq    to service_role;
 grant usage, select on sequence public.fcl_rate_limit_log_id_seq    to service_role;

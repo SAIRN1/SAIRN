@@ -106,9 +106,15 @@ create policy "svc only law_deadlines"      on public.law_deadlines      for all
 create policy "svc only law_deadline_rules" on public.law_deadline_rules for all using (false) with check (false);
 create policy "svc only law_holidays"       on public.law_holidays       for all using (false) with check (false);
 
-grant select, insert, update, delete on public.law_deadlines      to service_role;
-grant select, insert, update, delete on public.law_deadline_rules to service_role;
-grant select, insert, update, delete on public.law_holidays       to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert, update on public.law_deadlines      to service_role;
+grant select, insert, update on public.law_deadline_rules to service_role;
+grant select, insert, update on public.law_holidays       to service_role;
 
 revoke all on public.law_deadlines      from anon, authenticated;
 revoke all on public.law_deadline_rules from anon, authenticated;

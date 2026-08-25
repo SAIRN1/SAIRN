@@ -43,7 +43,13 @@ drop policy if exists "svc only sairn_ai_rate_limit_log" on public.sairn_ai_rate
 create policy "svc only sairn_ai_rate_limit_log" on public.sairn_ai_rate_limit_log
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
-grant select, insert, delete on public.sairn_ai_rate_limit_log to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert on public.sairn_ai_rate_limit_log to service_role;
 revoke all on public.sairn_ai_rate_limit_log from anon, authenticated;
 
 -- Rows older than ~25 hours have no further use for a daily window. Prune

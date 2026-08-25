@@ -101,9 +101,15 @@ create policy "svc only sd_bundles" on public.sd_bundles for all using (false) w
 drop policy if exists "svc only sd_slab_history" on public.sd_slab_history;
 create policy "svc only sd_slab_history" on public.sd_slab_history for all using (false) with check (false);
 
-grant select, insert, update, delete on public.sd_blocks       to service_role;
-grant select, insert, update, delete on public.sd_bundles      to service_role;
-grant select, insert, update, delete on public.sd_slab_history to service_role;
+-- DELETE removed 2026-08-25 -- these lines previously granted it. The live
+-- grant was revoked platform-wide by sql/unused_delete_grant_revoke_2026-08-24.sql
+-- (134 tables, verified 134 LOST / 0 GAINED). This file is `create table if not
+-- exists` and safe to re-run, so leaving `delete` here would silently restore it.
+-- The platform's ONLY reachable delete path is api/sd-data.js's SC_RESOURCES
+-- (SAIRNcode) branch; do NOT re-add `delete` here when fixing a missing grant.
+grant select, insert, update on public.sd_blocks       to service_role;
+grant select, insert, update on public.sd_bundles      to service_role;
+grant select, insert, update on public.sd_slab_history to service_role;
 
 revoke all on public.sd_blocks       from anon, authenticated;
 revoke all on public.sd_bundles      from anon, authenticated;
