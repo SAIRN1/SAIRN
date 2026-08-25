@@ -30,6 +30,40 @@
 //     does not decide these; the contractor asserts them, and the engine's job
 //     is to REQUIRE a photo citation and total them, never to opine that they
 //     belong.
+//
+// ── CLOSED DECISION (2026-08-25): THE PUBLIC-ADJUSTER BOUNDARY ───────────
+// Recorded here, in the source, the way SAIRNcash's Bridge exclusion is -- so
+// it cannot quietly reappear as a "feature request" later.
+//
+// Tex. Ins. Code 4102.163: "A roofing contractor may not act as a public
+// adjuster or advertise to adjust claims for any property for which the
+// contractor is providing or may provide roofing services, regardless of
+// whether the contractor holds a license under this chapter." The Texas
+// Department of Insurance lists the prohibited conduct as offering to negotiate
+// settlements, promising recovery of funds, or representing the policyholder in
+// coverage discussions. Violations carry administrative, criminal and civil
+// penalties. Florida (Fla. Stat. 626.854) and other states draw a similar line.
+//
+// THIS ENGINE IS ON THE RIGHT SIDE OF THAT LINE BY CONSTRUCTION, and it is
+// worth being precise about why, because the property is fragile:
+//   - It compares line items arithmetically against a measurement the
+//     contractor took. It states a quantity difference; it does not argue for a
+//     payment.
+//   - It never asserts what the adjuster "should" have included. The two
+//     supplement classes exist precisely so the computed ones stay factual and
+//     the judgement ones stay attributed to the contractor.
+//   - The contractor files the worksheet themselves. The app transmits nothing
+//     to a carrier and holds no relationship with one -- see also the scope
+//     doc's Xactimate decision (5.4), which stays out of v1 for its own
+//     reasons.
+//
+// WHAT IS THEREFORE OUT OF SCOPE, permanently, absent counsel: negotiation
+// scripts or talking points, "what should I ask the adjuster for" generation,
+// carrier-specific settlement guidance, any LLM opinion on coverage, and any
+// UI language that promises recovery, maximisation or negotiation on the
+// owner's behalf. The panel copy was audited against this on 2026-08-25 and the
+// operations assistant's system prompt now declines claim-strategy questions
+// outright rather than answering them from general knowledge.
 
 'use strict';
 

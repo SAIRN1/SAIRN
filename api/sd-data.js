@@ -40,6 +40,7 @@ const dentalCreds = require('./_lib/dental-credentials');
 const roofingCreds = require('./_lib/roofing-credentials');
 const roofingClaims = require('./_lib/roofing-claims');
 const roofingSupplement = require('./_lib/roofing-supplement');
+const roofingAgreements = require('./_lib/roofing-agreements');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -3087,6 +3088,209 @@ module.exports = async (req, res) => {
         measured_from_job: measured, has_measurement: history.length > 0,
         worksheet: worksheet
       });
+      return;
+    }
+
+    // ── SAIRNROOFING: the claim assignment gate, factored out ────────────────────────────────
+    // Phase 5 adds three more branches that all need the SAME check the claim
+    // read, the photo branches and `reconcile` already perform: load the claim
+    // server-side and refuse a narrow-tier caller who is not its assignee.
+    // Written once here rather than a fourth, fifth and sixth hand-copy --
+    // api/rf-auth.js's own header names duplicated role lists as SAIRNsenior's
+    // root cause, and three more copies is how that recurs.
+    //
+    // DELIBERATELY NOT retrofitted onto the existing 3b/3c branches in this
+    // commit. Those are live and verified; rewriting them is a separate change
+    // with its own verification, not something to fold into a feature commit.
+    // Logged as open work instead.
+    //
+    // Returns { ok: true, claim } or { ok: false } having ALREADY sent the
+    // response, so every caller can simply `if (!gate.ok) return;`.
+    const rfClaimGate = async (lh, hdrs, claimId, session, response) => {
+      const cr = await fetch(rest('rf_claims?license_hash=eq.' + enc(lh) + '&claim_id=eq.' + enc(claimId) + '&select=claim_id,assigned_employee_id,data'), { headers: hdrs });
+      if (cr.status === 404 || cr.status === 400) {
+        response.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } });
+        return { ok: false };
+      }
+      const rows = await cr.json();
+      const claim = Array.isArray(rows) && rows[0];
+      if (!claim) {
+        response.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim' } });
+        return { ok: false };
+      }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+        response.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only work on a claim assigned to you' } });
+        return { ok: false };
+      }
+      return { ok: true, claim: claim };
+    };
+
+    // ── SAIRNROOFING: contingency agreement + rescission rules (2026-08-25, Phase 5) ─────────
+    // The last piece of §5.3. rf_contingency_rules is the per-state rule store
+    // (read by anyone signed in -- a foreman standing on a roof needs to know
+    // the cancellation window; write is management-only, because a rescission
+    // rule is a compliance assertion, not job data).
+    if (resource === 'rf_contingency_rules' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('rf_contingency_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,trigger_event,count,unit,business_day_basis,status,data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: rows || [], provisioned: true });
+      return;
+    }
+    if (resource === 'rf_contingency_rules' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can set a contingency rule' } }); return; }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'rf_contingency_rules payload.id is required' } }); return; }
+      // The engine refuses to compute from a rule with no citation; refuse to
+      // STORE one too, so a bad row never reaches a contractor's screen.
+      const ruleProblems = roofingAgreements.validateRule({
+        trigger: payload.trigger_event, count: Number(payload.count), unit: payload.unit,
+        authority: payload.data && payload.data.authority
+      });
+      if (ruleProblems.length) { res.status(400).json({ error: { message: 'rf_contingency_rules: ' + ruleProblems.join('; ') } }); return; }
+      const r = await fetch(rest('rf_contingency_rules?on_conflict=license_hash,rule_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', rule_id: String(payload.id),
+          state: String(payload.state || '').toUpperCase(), trigger_event: payload.trigger_event,
+          count: Number(payload.count), unit: payload.unit,
+          business_day_basis: payload.business_day_basis || null,
+          effective_from: payload.effective_from || nowISO().slice(0, 10),
+          effective_to: payload.effective_to || null,
+          status: payload.status || 'active', data: payload.data || {},
+          verified_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        const bt = await r.text();
+        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Contingency rules are not set up yet — run sql/sairnroofing_agreements_schema.sql in Supabase first.' } }); return; }
+        res.status(400).json({ error: { message: 'Data store rejected the rule', detail: bt } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Array.isArray(rows) && rows[0] });
+      return;
+    }
+    // rf_claim_agreements: APPEND-ONLY. There is no update verb and no update
+    // grant -- a rescission is a NEW row naming the executed one it supersedes.
+    if (resource === 'rf_claim_agreements' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const claimId = payload && payload.claim_id;
+      if (!claimId) { res.status(400).json({ error: { message: 'rf_claim_agreements read requires payload.claim_id' } }); return; }
+      const gate = await rfClaimGate(licHash, headers, claimId, session, res);
+      if (!gate.ok) return;
+      const r = await fetch(rest('rf_claim_agreements?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=agreement_id,claim_id,event_type,supersedes,recorded_by,data,created_at'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      // The signature image is up to 1.5MB and NOTHING in the panel renders it
+      // -- the record table shows who signed and when. Shipping it on every
+      // claim open would be a megabyte per agreement for nothing, so it is
+      // stripped unless a caller explicitly asks (payload.include_signature),
+      // which is what a future "show me the signed copy" view would pass.
+      const withSig = payload && payload.include_signature === true;
+      const data = (rows || []).map((x) => {
+        const blob = Object.assign({}, x.data || {});
+        if (!withSig) { delete blob.signature_data; blob.has_signature = !!(x.data && x.data.signature_data); }
+        return Object.assign(blob, {
+          agreement_id: x.agreement_id, claim_id: x.claim_id, event_type: x.event_type,
+          supersedes: x.supersedes, recorded_by: x.recorded_by, created_at: x.created_at
+        });
+      });
+      res.status(200).json({ ok: true, data, provisioned: true });
+      return;
+    }
+    if (resource === 'rf_claim_agreements' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const problems = roofingAgreements.validateAgreement(payload);
+      if (problems.length) { res.status(400).json({ error: { message: 'rf_claim_agreements: ' + problems.join('; ') } }); return; }
+      const gate = await rfClaimGate(licHash, headers, payload.claim_id, session, res);
+      if (!gate.ok) return;
+      // A rescission must name a real executed row on THIS claim. Checked
+      // server-side against the stored chain, never trusted from the caller --
+      // otherwise a stray supersedes value could void an agreement on a claim
+      // the caller cannot even see.
+      if (payload.event_type === 'rescinded') {
+        const pr = await fetch(rest('rf_claim_agreements?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(payload.claim_id) + '&agreement_id=eq.' + enc(payload.supersedes) + '&event_type=eq.executed&select=agreement_id'), { headers });
+        const pRows = (pr.status === 404 || pr.status === 400) ? [] : await pr.json();
+        if (!Array.isArray(pRows) || !pRows.length) {
+          res.status(400).json({ error: { code: 'NO_SUCH_AGREEMENT', message: 'That claim has no executed agreement with the id being superseded' } });
+          return;
+        }
+      }
+      const dataBlob = Object.assign({}, payload);
+      delete dataBlob.id; delete dataBlob.claim_id; delete dataBlob.event_type; delete dataBlob.supersedes;
+      const r = await fetch(rest('rf_claim_agreements'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', agreement_id: String(payload.id),
+          claim_id: String(payload.claim_id), event_type: payload.event_type,
+          supersedes: payload.supersedes || null,
+          recorded_by: session.employee_id,   // server-stamped, never client-supplied
+          data: dataBlob
+        })
+      });
+      if (r.status === 404 || r.status === 400 || r.status === 409) {
+        const bt = await r.text();
+        if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Contingency agreements are not set up yet — run sql/sairnroofing_agreements_schema.sql in Supabase first.' } }); return; }
+        if (/duplicate key|rfagr_license_hash_agreement_id_key|unique/i.test(bt)) { res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'An agreement with that id already exists — append-only, ids are never reused' } }); return; }
+        res.status(400).json({ error: { message: 'Data store rejected the agreement', detail: bt } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { agreement_id: saved.agreement_id, event_type: saved.event_type, recorded_by: saved.recorded_by }) : payload });
+      return;
+    }
+    // Compute-only: the rescission clock. Reads the claim's agreement chain and
+    // the state rule server-side, runs the deterministic engine, writes nothing
+    // -- the same discipline as 'reconcile' and money_summary. No LLM.
+    if (resource === 'rf_claim_agreements' && action === 'agreement_status') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const claimId = payload && payload.claim_id;
+      if (!claimId) { res.status(400).json({ error: { message: 'agreement_status requires payload.claim_id' } }); return; }
+      const gate = await rfClaimGate(licHash, headers, claimId, session, res);
+      if (!gate.ok) return;
+      const ar = await fetch(rest('rf_claim_agreements?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=agreement_id,event_type,supersedes,data'), { headers });
+      const aRows = (ar.status === 404 || ar.status === 400) ? [] : await ar.json();
+      const events = (Array.isArray(aRows) ? aRows : []).map((x) => Object.assign({}, x.data || {}, {
+        agreement_id: x.agreement_id, event_type: x.event_type, supersedes: x.supersedes
+      }));
+      // The state comes from the SIGNED AGREEMENT, not from the caller -- the
+      // rule that governs is the one for the state the contract was signed in.
+      const latestExec = events.filter((e) => e.event_type === 'executed').sort((a, b) => new Date(a.executed_at || 0) - new Date(b.executed_at || 0)).pop();
+      const state = latestExec ? String(latestExec.state || '').toUpperCase() : null;
+      let rule = null;
+      if (state) {
+        const rr = await fetch(rest('rf_contingency_rules?license_hash=eq.' + enc(licHash) + '&state=eq.' + enc(state) + '&status=eq.active&select=rule_id,state,trigger_event,count,unit,business_day_basis,data'), { headers });
+        const rRows = (rr.status === 404 || rr.status === 400) ? [] : await rr.json();
+        const row = Array.isArray(rRows) && rRows[0];
+        if (row) {
+          rule = Object.assign({}, row.data || {}, {
+            rule_id: row.rule_id, state: row.state, trigger: row.trigger_event,
+            count: Number(row.count), unit: row.unit, business_day_basis: row.business_day_basis
+          });
+        }
+      }
+      // The Colorado-shaped trigger needs the insurer's written-denial date,
+      // which lives on the claim record, not on the agreement.
+      const status = roofingAgreements.evaluateAgreement({
+        rule: rule, events: events,
+        denial_at: (gate.claim.data && gate.claim.data.insurer_denial_at) || null,
+        now: nowISO()
+      });
+      res.status(200).json({ ok: true, provisioned: true, claim_id: claimId, state: state, agreement_status: status });
       return;
     }
 
