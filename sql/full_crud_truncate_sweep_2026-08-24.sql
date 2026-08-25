@@ -344,6 +344,111 @@
 -- or `trigger` or `maintain` grants anywhere in sql/*.sql) -- so stripping
 -- them is safe everywhere, unconditionally, without per-table judgment.
 
+-- ── SECTION 1 HAS NOW BEEN RUN. REAL OUTPUT ANALYSED 2026-08-25. ─────────
+-- Received as a single jsonb_agg cell, which cannot be row-capped the way
+-- the two earlier exports were. Measured facts, counted not eyeballed
+-- (the artifact is small enough to check by machine and was):
+--
+--   214 rows, NOT 227. The 227 figure elsewhere in this file and in the
+--   open-work index describes something else -- most plausibly the count
+--   of public tables overall -- and the two must stop being used
+--   interchangeably. 214 is the number of tables where service_role holds
+--   TRUNCATE, which is the only number this sweep acts on.
+--
+--   MAINTAIN appears NOWHERE in the output. Only DELETE, INSERT,
+--   REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE are ever present. This
+--   Postgres predates the MAINTAIN privilege (PG18) or never grants it.
+--   Every mention of MAINTAIN in this file is therefore harmless but
+--   moot -- REVOKE ALL covers it if it ever appears, and nothing needs
+--   changing.
+--
+--   REFERENCES and TRIGGER are present on ALL 214 rows, always alongside
+--   TRUNCATE. That does NOT retire finding R2 below: this query filters on
+--   TRUNCATE, so a REFERENCES-only table is invisible to it BY
+--   CONSTRUCTION and could not have shown up here however many exist.
+--   Section 1b was added to look for exactly that; it has not been run.
+--
+--   FIVE distinct privilege shapes, which is a tighter spread than the
+--   "~150 hand-written lines" framing implied:
+--     158  DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+--      32  INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+--      20  REFERENCES, TRIGGER, TRUNCATE                  <- zero CRUD
+--       3  DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE
+--       1  INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE
+--
+--   THE 20 ZERO-CRUD TABLES ARE EXACTLY THE PREDICTED SET, name for name:
+--   conversations, customers, demo_calls, gl_entries, intake_submissions,
+--   invoices, jobs, licenses, messages, parts, payments, profiles,
+--   projects, shop_users, shops, slabs, subscriptions, usage_logs,
+--   user_storage, webhook_events. Section 2 leaves each with NO grants,
+--   which is correct: 19 are reachable by no code path, and
+--   intake_submissions is reached only by the browser on the ANON key,
+--   so its service_role grants are dead weight even though the table is
+--   live. The dashboard check block (1) asks for still stands.
+--
+--   network_insights: "INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE".
+--   It has real SELECT and real INSERT. This is the third independent
+--   confirmation, after the live curl and the endpoint's own error
+--   surface, that it was never grant-broken -- and it is the decisive one,
+--   because it is the grant table itself. Correction A is settled and the
+--   Section 2 exclusion built on the opposite claim is REMOVED below.
+--
+-- SECTION 2 SIMULATED AGAINST THIS REAL OUTPUT, offline, before any run:
+-- applying the loop's own logic to all 214 rows preserves the CRUD subset
+-- EXACTLY on 214 of 214, strips only TRUNCATE/REFERENCES/TRIGGER, and
+-- leaves precisely the 20 zero-CRUD tables with nothing. That is a
+-- verified property of this real data, not a restatement of the comment's
+-- claim -- but it validates the LOGIC against a SNAPSHOT, which is not
+-- the same as verifying the RUN. R1 still applies and Sections 0 and 3
+-- below are what close it.
+--
+-- NOT RUN BY THIS SESSION, AND IT CANNOT BE: there is no database
+-- credential in this clone, and service_role could not do it anyway --
+-- REVOKE requires the object owner, which is postgres. Section 2 is
+-- prepared, hardened and simulated; executing it needs a Supabase SQL
+-- editor session as postgres.
+--
+-- ── RUN ORDER ────────────────────────────────────────────────────────────
+--   Section R6  -> confirm you are postgres
+--   Section R4  -> pre-flight, expect zero rows from both queries
+--   Section 0   -> capture the baseline (creates a real table on purpose)
+--   Section 1   -> the discovery query, already run once
+--   Section 1b  -> the R2 gap: REFERENCES/TRIGGER without TRUNCATE
+--   Section 2   -> the fix (uncomment deliberately; nothing else in this
+--                  file mutates anything)
+--   Section 3   -> the diff that proves nothing was lost
+--   Section 4   -> drop the baseline table once Section 3 is clean
+
+-- ── SECTION R6: PRECONDITION. Must print `postgres`. ─────────────────────
+select current_user, session_user;
+
+-- ── SECTION R4: PRE-FLIGHT. Both queries must return ZERO rows. ──────────
+-- If either returns anything, STOP: Section 2's REVOKE ALL would destroy
+-- a column-level grant or a WITH GRANT OPTION that its re-GRANT cannot
+-- restore. The repo has neither, but the repo is not the database.
+select table_name, column_name, privilege_type
+from information_schema.role_column_grants
+where table_schema = 'public' and grantee = 'service_role';
+
+select table_name, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public' and grantee = 'service_role'
+  and is_grantable = 'YES';
+
+-- ── SECTION 0: BASELINE CAPTURE -- closes R1. Run BEFORE Section 2. ──────
+-- A REAL table, deliberately, not a temp one. The Supabase SQL editor does
+-- not guarantee that two "Run" clicks share a session, and a temp table
+-- would silently vanish between them -- taking the only proof with it and
+-- leaving Section 3 to compare against nothing. Section 4 drops it.
+-- Writes no application data and touches no application table.
+drop table if exists public._grant_baseline_2026_08_25;
+create table public._grant_baseline_2026_08_25 as
+select table_name, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public'
+  and grantee = 'service_role'
+  and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE');
+
 -- ── SECTION 1: DISCOVERY -- run this first, read the output before Section 2 ──
 -- Every public table where service_role holds TRUNCATE, with its full
 -- current privilege set alongside. List-free: does not depend on the
@@ -363,6 +468,24 @@ join information_schema.role_table_grants g
 where t.table_schema = 'public' and g.grantee = 'service_role'
 group by t.table_name
 having bool_or(g.privilege_type = 'TRUNCATE')
+order by t.table_name;
+
+-- ── SECTION 1b: THE R2 GAP -- REFERENCES/TRIGGER WITHOUT TRUNCATE ────────
+-- Section 1 filters on TRUNCATE, so it can never surface a table that
+-- carries REFERENCES or TRIGGER but had TRUNCATE revoked separately. The
+-- 214-row output cannot confirm or refute that such tables exist; only
+-- this query can. Run it once. If it returns rows, widen Section 2's
+-- HAVING (it is already widened below) and expect Section 3 to cover them.
+select
+  t.table_name,
+  string_agg(distinct g.privilege_type, ', ' order by g.privilege_type) as current_privs
+from information_schema.tables t
+join information_schema.role_table_grants g
+  on g.table_name = t.table_name and g.table_schema = t.table_schema
+where t.table_schema = 'public' and g.grantee = 'service_role'
+group by t.table_name
+having bool_or(g.privilege_type in ('REFERENCES', 'TRIGGER', 'MAINTAIN'))
+   and not bool_or(g.privilege_type = 'TRUNCATE')
 order by t.table_name;
 
 -- ── SECTION 2 REVIEW, 2026-08-25 -- 6 FINDINGS, NOTHING CHANGED YET ──────
@@ -486,15 +609,26 @@ order by t.table_name;
 --     JOIN information_schema.role_table_grants g
 --       ON g.table_name = t.table_name AND g.table_schema = t.table_schema
 --     WHERE t.table_schema = 'public' AND g.grantee = 'service_role'
---       -- Excluded per the findings above, not silently swept in:
---       -- license_keys has no tracked schema to verify Section 2's output
---       -- against and carries outsized blast radius (every license check
---       -- on the platform); network_insights already has zero real CRUD
---       -- for service_role today (a separate, unfixed grant bug, not
---       -- something this sweep should touch or appear to "fix").
---       AND t.table_name NOT IN ('license_keys', 'network_insights')
+--       -- EXCLUSION LIST, 2026-08-25. network_insights was REMOVED from
+--       -- it: the exclusion rested on "already has zero real CRUD", and
+--       -- the live grant table says INSERT, REFERENCES, SELECT, TRIGGER,
+--       -- TRUNCATE. Keeping it excluded would have left TRUNCATE standing
+--       -- on a working table for no reason, and made Section 3 report a
+--       -- leftover row that looks like a failure.
+--       -- license_keys STAYS excluded, unchanged and for its own reasons:
+--       -- no tracked CREATE TABLE to verify the result against, and every
+--       -- license check on the platform depends on it. The simulation says
+--       -- it would come through intact (DELETE, INSERT, SELECT, UPDATE
+--       -- before and after), so this is caution, not a known risk -- drop
+--       -- the exclusion by choice if you would rather sweep it too.
+--       AND t.table_name NOT IN ('license_keys')
 --     GROUP BY t.table_name
---     HAVING bool_or(g.privilege_type = 'TRUNCATE')
+--     -- R2: widened from `= 'TRUNCATE'`. A table holding REFERENCES or
+--     -- TRIGGER without TRUNCATE was previously invisible to the fix AND
+--     -- to its verification. Section 1b is what tells you whether any
+--     -- exist; this clause makes the fix cover them either way.
+--     HAVING bool_or(g.privilege_type in
+--            ('TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'))
 --   LOOP
 --     SELECT string_agg(priv, ', ') INTO keep_privs
 --     FROM unnest(string_to_array(r.all_privs, ', ')) AS priv
@@ -510,17 +644,67 @@ order by t.table_name;
 -- END $$;
 
 -- ── SECTION 3: VERIFY, after Section 2 is actually run ───────────────────
--- Re-run Section 1. Expect zero rows.
---
--- INSUFFICIENT AS WRITTEN -- see R1 and R2 in the review block above.
--- Re-running Section 1 proves only that TRUNCATE is gone. It does not
--- prove that SELECT/INSERT/UPDATE/DELETE survived, which is the property
--- this whole file rests on, and with the TRUNCATE-only filter it does not
--- prove REFERENCES or TRIGGER are gone either. The real verification is
--- the Section 0 baseline diff described in R1, expecting zero rows on
--- both sides of a full outer join. Left as-is rather than rewritten,
--- because Section 2 is not mine to change and a verification step should
--- be agreed before it is relied on, not slipped in.
+-- Three checks. ALL THREE must pass. The old instruction -- "re-run
+-- Section 1, expect zero rows" -- was only check 3a, and 3a alone proves
+-- the excess is gone while saying nothing about whether the real
+-- privileges survived. 3b is the one that matters (R1).
+
+-- 3a. NOTHING EXCESS REMAINS. Expect zero rows, except license_keys if it
+--     is still excluded from Section 2. Widened per R2, so this now also
+--     catches REFERENCES/TRIGGER left behind without TRUNCATE.
+select
+  t.table_name,
+  string_agg(distinct g.privilege_type, ', ' order by g.privilege_type) as leftover
+from information_schema.tables t
+join information_schema.role_table_grants g
+  on g.table_name = t.table_name and g.table_schema = t.table_schema
+where t.table_schema = 'public' and g.grantee = 'service_role'
+group by t.table_name
+having bool_or(g.privilege_type in
+       ('TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN'))
+order by t.table_name;
+
+-- 3b. NOTHING FUNCTIONAL WAS LOST OR GAINED. Expect ZERO rows.
+--     A full outer join of the Section 0 baseline against the current
+--     state. `side` names which direction any discrepancy went, so a
+--     failure is legible without a second query: LOST means a real
+--     privilege disappeared, GAINED means the fix granted something that
+--     was not there before. Either is a bug and both are silent under 3a.
+select
+  coalesce(b.table_name, a.table_name) as table_name,
+  coalesce(b.privilege_type, a.privilege_type) as privilege_type,
+  case when a.table_name is null then 'LOST' else 'GAINED' end as side
+from public._grant_baseline_2026_08_25 b
+full outer join (
+  select table_name, privilege_type
+  from information_schema.role_table_grants
+  where table_schema = 'public'
+    and grantee = 'service_role'
+    and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE')
+) a
+  on a.table_name = b.table_name and a.privilege_type = b.privilege_type
+where a.table_name is null or b.table_name is null
+order by 1, 2;
+
+-- 3c. THE BASELINE ITSELF WAS REAL. If Section 0 ran against an empty or
+--     partial catalog read, 3b compares against nothing and passes
+--     vacuously -- the one way 3b can lie. This is the guard against that.
+--     EXPECTED: a LOWER BOUND of 739 rows across 194 tables. That is the
+--     exact CRUD contribution of the 214 tables in the 2026-08-25 export
+--     (158*4 + 32*3 + 3*3 + 1*2 = 739; the 20 zero-CRUD tables contribute
+--     nothing, so 214 - 20 = 194). The real figure MUST be higher, because
+--     Section 0 captures every table service_role has CRUD on, while
+--     Section 1 only listed those that also hold TRUNCATE -- the ~15
+--     already-clean tables (the append_only_grant_audit.sql set, the two
+--     audit logs, the rf_* family) contribute rows here and appeared in
+--     neither. Anything AT or BELOW 739 means Section 0 under-read; treat
+--     it as a failed capture and do not trust 3b.
+select count(*) as baseline_rows,
+       count(distinct table_name) as baseline_tables
+from public._grant_baseline_2026_08_25;
+
+-- ── SECTION 4: CLEANUP -- only after Section 3 passes all three ──────────
+-- drop table public._grant_baseline_2026_08_25;
 
 -- ── WHAT THIS DOES NOT COVER ──────────────────────────────────────────────
 -- Same ownership caveat as every other grant file tonight: postgres owns
