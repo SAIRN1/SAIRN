@@ -68,23 +68,52 @@ delete from public.rf_contingency_rules
  where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
    and rule_id like 'RFCON-VERIFY-%';
 
--- The three disposable accounts (the 3a admin + the 3b foremen). This also
--- supersedes the cleanup line in sql/sairnroofing_verify_admin_seed.sql --
--- delete all three here in one pass.
-delete from public.sairnroofing_employee_auth
+-- Phase 4a: scheduled crew days, then the branch registry. Order matters only
+-- for readability -- there is no FK between them -- but a branch is deleted
+-- last so a half-run leaves days pointing at a real branch rather than a
+-- missing one.
+delete from public.rf_schedule
  where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
-   and employee_id in ('rf-verify-admin', 'rf-verify-fmA', 'rf-verify-fmB');
+   and schedule_id like 'RFSCH-VERIFY-%';
+
+delete from public.rf_locations
+ where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
+   and location_id like 'LOC-VERIFY-%';
+
+-- ── THE ACCOUNTS MOVED OUT OF THIS FILE, 2026-08-25 ─────────────────────
+-- The three disposable accounts used to be deleted here, in the same pass as
+-- the rows. That coupling had a real cost, hit twice in one session: running
+-- this file after a phase also destroyed the only credentials any later live
+-- round trip could use, so the next phase opened with three 401s and a
+-- re-seed before any verification could start.
+--
+-- Row cleanup and account cleanup are now two DELIBERATE, SEPARATE acts, per
+-- Michael's decision 2026-08-25:
+--   THIS FILE  -- the verification ROWS. Run after every phase. RF-PINNACLE-2026
+--                 could be shown to a prospect at any point and must not carry
+--                 visible test junk.
+--   sql/sairnroofing_verify_accounts_cleanup.sql
+--              -- the three accounts. Run ONCE, when Phase 4 (4a/4d/4b/4c) is
+--                 fully done. They are invisible to a demo and scoped to this
+--                 one license, so persisting them costs nothing; re-seeding
+--                 them before every phase is pure churn.
 
 -- Verify after (expect 0 for all four):
 --   select count(*) from public.rf_claim_photos where photo_id like 'RFCPH-VERIFY-%';
 --   select count(*) from public.rf_claims where claim_id like 'RFCLM-VERIFY-%';
 --   select count(*) from public.rf_jobs where job_id like 'RFJOB-VERIFY-%';
---   select count(*) from public.sairnroofing_employee_auth
---    where employee_id in ('rf-verify-admin','rf-verify-fmA','rf-verify-fmB');
 --   select count(*) from public.rf_claim_agreements where agreement_id like 'RFAGR-VERIFY-%';
 --   select count(*) from public.rf_contingency_rules where rule_id like 'RFCON-VERIFY-%';
+--   select count(*) from public.rf_schedule where schedule_id like 'RFSCH-VERIFY-%';
+--   select count(*) from public.rf_locations where location_id like 'LOC-VERIFY-%';
+-- Jobs that pointed at a deleted verify branch keep that location_id string.
+-- That is correct -- the id is attribution, not a foreign key, and rewriting
+-- history to hide a deleted branch would be worse. Expect 0 here anyway, since
+-- the verify JOBS are deleted above:
+--   select job_id, location_id from public.rf_jobs where location_id like 'LOC-VERIFY-%';
 --
--- NOTE: the RFCERT-VERIFY-* rows and rf-verify-admin from the 3a round trip are
--- covered by sql/sairnroofing_verify_cleanup.sql. If that has not been run yet,
--- run it too (or run this one, which removes rf-verify-admin as well -- the
--- rf_certifications rows still need that other file).
+-- NOTE: the RFCERT-VERIFY-* rows from the 3a round trip are covered by
+-- sql/sairnroofing_verify_cleanup.sql. That file ALSO deletes rf-verify-admin,
+-- which is now the wrong coupling for the same reason described above -- if you
+-- run it before Phase 4 is finished, re-seed the admin afterwards. A header
+-- note has been added there saying so.

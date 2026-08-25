@@ -39,6 +39,13 @@ delete from public.rf_certifications
    and entry_id like 'RFCERT-VERIFY-%';
 
 -- 2. The disposable admin account.
+--    NOTE 2026-08-25: this delete is now the WRONG COUPLING while Phase 4 is
+--    still in progress -- it destroys credentials the next live round trip
+--    needs, which cost real time twice in one session. Account cleanup moved to
+--    sql/sairnroofing_verify_accounts_cleanup.sql, to be run ONCE when Phase 4
+--    is finished. If you run this file before then, re-seed the admin with
+--    sql/sairnroofing_verify_admin_seed.sql afterwards, or comment out the
+--    statement below and let the dedicated file handle it.
 delete from public.sairnroofing_employee_auth
  where license_hash = '47540a2aeaa094a99cf6d7ecf3bed062568bc07b62f60fd15f7616f97d5ff32b'
    and employee_id  = 'rf-verify-admin';
