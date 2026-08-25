@@ -13,16 +13,29 @@
 -- ~150 tables that already existed before that fix ran.
 --
 -- ── SCALE, MEASURED NOT GUESSED ──────────────────────────────────────────
+-- RE-MEASURED 2026-08-25 -- the numbers below were 6 files / 7 tables /
+-- 158 total / 151 candidates when this header was written at 3d48403.
+-- They drifted the same night: SAIRNroofing Phase 3b (148bd80) and 3c
+-- (c27f5a2) added more schema files carrying the sound pattern. Re-derived
+-- with the same commands rather than trusted, which is the whole point of
+-- this file's method.
+--
 -- grep -n "^grant\|^revoke" across every sql/*.sql file (the same
 -- structural technique that found the original 9 append-only tables,
 -- extended to the whole platform rather than files tagged "append-only")
 -- shows the SOUND `revoke all ... from service_role` pattern in exactly
--- 6 real schema files: sairncode_audit_log, stonedesk_audit_log, and this
--- session's own four SAIRNroofing schema files (already fixed tonight,
--- confirmed via `grep -l "revoke all.*from service_role" sql/*.sql`).
--- Every other schema file on the platform -- 151 of 158 total granted
--- tables, counted directly (`grep -rhE "^grant select" sql/*.sql | ...
--- sort -u | wc -l` = 158; the 6 sound files account for 7 of them) --
+-- 7 real schema files: sairncode_audit_log, stonedesk_audit_log, and FIVE
+-- SAIRNroofing schema files (certifications, claims, employee_auth, jobs,
+-- photos -- already fixed, confirmed via
+-- `grep -l "revoke all.*from service_role" sql/*.sql`, excluding this file
+-- and append_only_grant_audit.sql which are audit/fix files, not schema).
+-- Those 7 files cover 9 tables: rf_cert_rules, rf_certifications,
+-- rf_claim_photos, rf_claims, rf_jobs, rf_photos,
+-- sairnroofing_employee_auth, sairncode_audit_log, stonedesk_audit_log.
+-- Every other schema file on the platform -- 154 of 163 total granted
+-- tables, counted directly (`grep -rhoiE "^grant [a-z, ]+ on
+-- (public\.)?[a-z_]+" sql/*.sql | grep -oE "[a-z_]+$" | sort -u | wc -l`
+-- = 163; the 7 sound files account for 9 of them) --
 -- across StoneDesk, SAIRNcode, SAIRNcare, SAIRNdesign, SAIRNgrounds/MSB,
 -- SAIRNscape, SAIRNlaw, SAIRNsenior, SAIRNbuild, SAIRNlegacy, SAIRNdental,
 -- SAIRNcash -- only ever GRANTs, never revokes-all-first, and is
@@ -54,6 +67,82 @@
 --   change, not just removing dead default baggage. DELIBERATELY NOT
 --   BUNDLED into the fix below -- flagged as its own decision, not
 --   silently folded in.
+--
+-- ── 19 BARE-NAMED TABLES ARE UNREACHABLE FROM ANY CODE PATH (2026-08-25) ──
+-- Twenty un-prefixed table names carry the excess baseline and were
+-- suspected dead. Checked from code, not from the grant export, because
+-- the export is a claim like any other (see the caveat block below).
+--
+-- METHOD -- the reachable-table set was enumerated exhaustively from
+-- api/, not sampled. Three and only three ways a table name can reach
+-- PostgREST in this codebase, all three enumerated:
+--   1. `rest('literal')` string constants        -- extracted, 107 names
+--   2. `const TABLE = '...'` / `*_TABLE` consts  -- 21 sites, all prefixed
+--   3. `rest(resource + ...)` dynamic sites      -- 12 sites, every one of
+--      them keyed on an explicit map of PREFIXED names (SD_LINEAGE,
+--      SDN_RESOURCES, the 28-name SC_RESOURCES, etc.), so `resource` can
+--      never be a bare name at those call sites
+--
+-- RESULT: 19 of the 20 are reachable by nothing.
+--   conversations, demo_calls, gl_entries, licenses, messages, parts,
+--   payments, profiles, projects, shop_users, shops, subscriptions,
+--   usage_logs, user_storage, webhook_events  -- absent from api/ entirely
+--   and with no `create table` anywhere in sql/.
+--   customers, invoices, jobs, slabs -- these four ARE registered resource
+--   keys, which is the trap. Every branch that handles them maps to a
+--   PREFIXED table: 'customers' -> scp_customers (sd-data.js:1356),
+--   'invoices' -> scp_invoices (:1440), 'jobs' -> grd_jobs (:690),
+--   'slabs' -> sd_slabs (:508). The bare tables of the same name are
+--   never addressed. sd-data.js's own comment at :1355 records that the
+--   prefixed resource names were chosen "specifically to avoid the
+--   collision", so this is by design, not coincidence.
+--
+-- THE ONE EXCEPTION, and it corrects the claim that put it on the list:
+-- network_insights is LIVE, not dead -- real schema (sql/network_schema.sql),
+-- real endpoint (api/network.js), real caller (stonedesk.html:24833). It was
+-- carried as having zero SELECT/INSERT/UPDATE/DELETE grants. That is wrong,
+-- and it was disproved without any credential:
+--     curl -s "https://sairn.vercel.app/api/network?app=stonedesk"
+--     -> HTTP 200 {"ok":true,"insights":[]}
+-- A missing grant returns Postgres 42501, which api/network.js:121 turns
+-- into 503 PERMISSION_DENIED by name. A 200 is therefore a successful
+-- SELECT against network_insights, so service_role holds SELECT on it.
+-- Same lesson as 6776f99: the derived list was wrong, the per-table
+-- confirmation was right. Prefer the confirmation.
+--
+-- WHAT THIS DOES AND DOES NOT LICENCE: nothing here changes Section 2,
+-- which reads each table's OWN live grants and never consults this list.
+-- That is exactly why the wrong zero-grant claim could not have caused
+-- harm -- had Section 2 been driven by the derived list it would have
+-- stripped network_insights' real SELECT and silently killed StoneDesk's
+-- Intelligence Network panel. Recorded because the near-miss is the
+-- argument for the list-free design, not a footnote to it.
+--
+-- ── THE 227-TABLE EXPORT IS NOT COMPLETE -- DO NOT DRIVE ANYTHING OFF IT ──
+-- Two independent problems, both found by checking rather than trusting:
+--   COUNT: the export is labelled 227 tables. Enumerating it, including
+--   the families given in shorthand at their stated sizes (leg_* 34,
+--   msb_* 9, sc_* 29, scp_* 14, sdn_* 17), totals 215. 12 short of its
+--   own label.
+--   CONTENT: 11 tables that are code-reachable, have a real schema file,
+--   and use the UNSOUND grant pattern -- so they MUST carry the excess
+--   baseline and MUST appear in a TRUNCATE-filtered list -- are absent
+--   from it: alf_claim_routes, alf_signals, alf_staff_credentials,
+--   dnt_cred_rules, dnt_credentials, sen_caregivers, sen_claims,
+--   sen_clients, sen_portal_links, sen_visits, sairnsenior_employee_auth.
+--   Their schema files do carry a `revoke all`, but it reads
+--   `revoke all on public.X from anon, authenticated` -- NOT from
+--   service_role (sairnsenior_visits_schema.sql:51-52 is the pattern), so
+--   the default-ACL baseline survives untouched and absence is unexplained.
+-- Two readings, not resolved here: either those migrations were never run
+-- (the exact class 6776f99 found for sairnscape_org_intel and
+-- sairncash_waitlist), or the export is truncated. 11 unexplained
+-- absences against a 12-table count shortfall is suggestive of the
+-- latter, and is not proof of either.
+-- CONSEQUENCE: run Section 1 live and read its real output before
+-- Section 2. Section 2 itself is unaffected -- it queries
+-- information_schema directly and never reads the export -- but anyone
+-- predicting what Section 2 will touch from that paste will be wrong.
 --
 -- ── WHY THE FIX BELOW IS DYNAMIC, NOT 150 HAND-WRITTEN LINES ─────────────
 -- Hand-enumerating ~150 REVOKE/GRANT pairs is exactly the kind of manual
