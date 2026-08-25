@@ -39,7 +39,20 @@ create table if not exists public.rf_claims (
   status               text not null default 'loss_reported',
   data                 jsonb not null default '{}'::jsonb,  -- carrier, claim_number, adjuster,
                                                               -- peril, policy_type, the 7 money fields,
-                                                              -- waiting_on_carrier flag, contingency sig
+                                                              -- waiting_on_carrier flag, insurer_denial_at
+  -- CORRECTED 2026-08-25: this line previously ended "...waiting_on_carrier
+  -- flag, contingency sig", anticipating the signed contingency agreement
+  -- living in this blob. That was wrong and Phase 5 does not do it. The
+  -- signature moved to its own APPEND-ONLY table in
+  -- sql/sairnroofing_agreements_schema.sql, for three reasons this same file
+  -- already argues elsewhere: rf_claims is a mutable upsert and an executed
+  -- agreement is evidence ("evidence that can be edited after the fact is not
+  -- evidence" -- see rf_claim_photos above); rfclm_data_size caps this column
+  -- at 64KB and a captured signature is an image; and a rescission needs a
+  -- second, later record, which one mutable field cannot express.
+  -- What DOES belong here is insurer_denial_at -- the date of the carrier's
+  -- written denial. It is claim history, not agreement evidence, and Colorado's
+  -- rescission clock (C.R.S. 6-22-104) starts from it.
   created_at           timestamptz not null default now(),
   updated_at           timestamptz not null default now(),
   unique (license_hash, claim_id),

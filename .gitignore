@@ -13,3 +13,4 @@ node_modules
 # multi-MB generated graph. Any graphify-out* directory is generated output.
 graphify-out/
 graphify-out*/
+__pycache__/

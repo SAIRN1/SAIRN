@@ -283,6 +283,35 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           </div>
           <div id="supp-worksheet" style="margin-top:16px;"></div>
         </div></div>
+        <div class="card" id="clm-agr-card" style="display:none;"><div class="ch"><div class="ct">Contingency Agreement</div></div><div class="cb">
+          <div class="note">The signed agreement is a record, not a field &mdash; once executed it is never edited. A cancellation is recorded as its own entry alongside it.</div>
+          <div id="agr-status" style="margin-top:12px;"></div>
+          <div id="agr-sign-form" style="margin-top:16px;">
+            <div class="ch" style="padding-left:0;"><div class="ct">Record a signed agreement</div></div>
+            <div class="fg"><label>Signer (property owner)</label><input type="text" id="agr-signer" placeholder="name as signed"></div>
+            <div class="fg"><label>Date signed</label><input type="date" id="agr-date"></div>
+            <div class="fg"><label>State</label><input type="text" id="agr-state" placeholder="OH" maxlength="2" style="text-transform:uppercase;"></div>
+            <div class="fg"><label>Where was it signed?</label><select id="agr-venue">
+              <option value="buyer_residence">At the property owner's residence</option>
+              <option value="seller_place_of_business">At our place of business</option>
+              <option value="other">Somewhere else</option>
+            </select></div>
+            <div class="note" style="margin:8px 0;">Where it was signed decides whether Ohio's Home Solicitation Sales Act reaches this contract at all. It cannot be worked out later &mdash; record it now.</div>
+            <div class="fg"><label><input type="checkbox" id="agr-notice"> Written notice of the right to cancel was given</label></div>
+            <div class="fg"><label><input type="checkbox" id="agr-form"> A separate, detachable cancellation form was given</label></div>
+            <div class="fg"><label>Notice wording used (paste the text your contract carries)</label><textarea id="agr-notice-text" rows="3" placeholder="paste verbatim -- this is stored with the record so you can show what the owner was given"></textarea></div>
+            <div class="fg"><label>Source for that wording</label><input type="text" id="agr-notice-src" placeholder="e.g. our attorney, 2026 contract template rev. C"></div>
+            <div class="fg"><label>Signature</label></div>
+            <canvas id="agr-sig" width="600" height="160" style="border:1px solid var(--bd);border-radius:6px;width:100%;touch-action:none;background:#fff;"></canvas>
+            <button class="btn bo bs" onclick="rfSigClear()">Clear signature</button>
+            <div style="margin-top:14px;"><button class="btn bp" onclick="rfRecordAgreement()">Record Signed Agreement</button></div>
+          </div>
+          <div id="agr-rescind-form" style="margin-top:16px;display:none;">
+            <div class="fg"><label>Reason for cancellation</label><input type="text" id="agr-rescind-reason" placeholder="recorded with the cancellation"></div>
+            <button class="btn bo" onclick="rfRescindAgreement()">Record Cancellation</button>
+          </div>
+          <div id="agr-chain" style="margin-top:16px;"></div>
+        </div></div>
       </div>
 
       <div class="panel" id="panel-assistant">
@@ -839,6 +868,9 @@ function rfEditClaim(claimId){
   rfLoadClaimPhotos(claimId);
   if($('clm-supp-card'))$('clm-supp-card').style.display=rfClaimCanEdit()?'':'none';
   rfSuppLoadFromClaim(c);
+  if($('clm-agr-card'))$('clm-agr-card').style.display='';
+  rfSigInit();
+  rfAgreementRefresh(claimId);
 }
 
 function rfShowAcvNote(summary){
@@ -861,6 +893,7 @@ function rfClearClaimForm(){
   if($('clm-acv-note'))$('clm-acv-note').style.display='none';
   if($('clm-evidence-card'))$('clm-evidence-card').style.display='none';
   if($('clm-supp-card'))$('clm-supp-card').style.display='none';
+  if($('clm-agr-card'))$('clm-agr-card').style.display='none';
 }
 
 function rfNumOrUndef(id){var v=$(id).value;return v===''?undefined:Number(v);}
@@ -1079,6 +1112,145 @@ function rfRenderWorksheet(d){
     probs+
     '<div style="margin-top:10px;font-weight:600;">Computed from '+w.totals.quantity_short_count+' quantity correction(s) + '+w.totals.omitted_count+' omitted item(s)'+(w.totals.asserted_invalid_count?' &middot; '+w.totals.asserted_invalid_count+' asserted line(s) not counted (no evidence)':'')+
     '<br>Derived '+rfCurrency(w.totals.derived_supplement)+' + Asserted '+rfCurrency(w.totals.asserted_supplement)+' = <span style="font-size:1.1em;">Total supplement '+rfCurrency(w.totals.total_supplement)+'</span></div>';
+}
+
+// ── CONTINGENCY AGREEMENT (Phase 5) ───────────────────────────────────────
+// The signed document, its rescission clock, and the cancellation record.
+// The panel never computes a deadline itself -- every date on screen comes from
+// the server's agreement_status verb, which runs the deterministic engine
+// against the state rule. A client-side date here would be a second source of
+// truth that could drift from the one a court would check.
+var rfSigCtx=null,rfSigDrawn=false;
+function rfSigInit(){
+  var cv=$('agr-sig');if(!cv)return;
+  rfSigCtx=cv.getContext('2d');
+  rfSigCtx.lineWidth=2;rfSigCtx.lineCap='round';rfSigCtx.strokeStyle='#111';
+  var drawing=false;
+  function pos(e){
+    var r=cv.getBoundingClientRect();
+    var t=(e.touches&&e.touches[0])||e;
+    return {x:(t.clientX-r.left)*(cv.width/r.width), y:(t.clientY-r.top)*(cv.height/r.height)};
+  }
+  function start(e){e.preventDefault();drawing=true;rfSigDrawn=true;var p=pos(e);rfSigCtx.beginPath();rfSigCtx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;e.preventDefault();var p=pos(e);rfSigCtx.lineTo(p.x,p.y);rfSigCtx.stroke();}
+  function end(){drawing=false;}
+  cv.addEventListener('mousedown',start);cv.addEventListener('mousemove',move);
+  cv.addEventListener('mouseup',end);cv.addEventListener('mouseleave',end);
+  cv.addEventListener('touchstart',start,{passive:false});
+  cv.addEventListener('touchmove',move,{passive:false});
+  cv.addEventListener('touchend',end);
+}
+function rfSigClear(){
+  var cv=$('agr-sig');if(!cv||!rfSigCtx)return;
+  rfSigCtx.clearRect(0,0,cv.width,cv.height);rfSigDrawn=false;
+}
+
+function rfAgreementRefresh(claimId){
+  if(!claimId)return;
+  rfDataRaw('agreement_status','rf_claim_agreements',{claim_id:claimId}).then(function(r){
+    if(!r.ok){$('agr-status').innerHTML='<div class="note">Could not read the agreement status.</div>';return;}
+    rfRenderAgreementStatus(r.data);
+  });
+  rfDataRaw('read','rf_claim_agreements',{claim_id:claimId}).then(function(r){
+    var el=$('agr-chain');if(!el)return;
+    var rows=(r.ok&&r.data&&r.data.data)||[];
+    if(!rows.length){el.innerHTML='';return;}
+    el.innerHTML='<div class="ch" style="padding-left:0;"><div class="ct">Record</div></div><div class="tw"><table><thead><tr><th>Entry</th><th>What</th><th>Recorded by</th><th>When</th></tr></thead><tbody>'+
+      rows.map(function(a){
+        return '<tr><td>'+rfEsc(a.agreement_id)+'</td><td>'+(a.event_type==='executed'?'Signed by '+rfEsc(a.signer_name||''):'Cancelled'+(a.rescission_reason?' &mdash; '+rfEsc(a.rescission_reason):''))+'</td><td>'+rfEsc(a.recorded_by||'')+'</td><td>'+rfEsc(String(a.created_at||'').slice(0,10))+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+
+function rfRenderAgreementStatus(d){
+  var el=$('agr-status');if(!el)return;
+  var s=d&&d.agreement_status;
+  if(!s){el.innerHTML='<div class="note">No agreement status.</div>';return;}
+  var signForm=$('agr-sign-form'),rescindForm=$('agr-rescind-form');
+  if(signForm)signForm.style.display=(s.status==='unsigned')?'':'none';
+  if(rescindForm)rescindForm.style.display=(s.signed&&s.status!=='rescinded')?'':'none';
+  if(s.status==='unsigned'){
+    el.innerHTML='<div class="note">No contingency agreement recorded for this claim yet.</div>';
+    return;
+  }
+  var badge,body='';
+  if(s.status==='rescinded'){
+    badge='<span class="badge br">cancelled</span>';
+    body='<div class="note">This agreement was cancelled on '+rfEsc(String((s.rescission&&s.rescission.rescinded_at)||'').slice(0,10))+'. The signed record is kept alongside it.</div>';
+  }else if(s.status==='indefinite'){
+    badge='<span class="badge br">cancellation window OPEN INDEFINITELY</span>';
+    body='<div class="note" style="color:#B91C1C;">'+rfEsc(s.disclosures.note||'')+'</div>';
+  }else if(s.status==='open'){
+    badge='<span class="badge bw">cancellation window open</span>';
+    body='<div class="note">Runs to '+rfEsc(String(s.deadline_at||'').replace('T',' ').slice(0,16))+' UTC &mdash; about '+Math.max(0,Math.round(s.hours_remaining))+' hours left. Clock started on '+(s.trigger==='insurer_denial'?'the insurer’s written denial':'the date signed')+'.</div>';
+  }else if(s.status==='expired'){
+    badge='<span class="badge bg">cancellation window closed</span>';
+    body='<div class="note">Closed '+rfEsc(String(s.deadline_at||'').replace('T',' ').slice(0,16))+' UTC.</div>';
+  }else if(s.status==='not_triggered'){
+    badge='<span class="badge bx">clock not started</span>';
+    body='<div class="note">'+rfEsc(s.disclosures.note||'')+'</div>';
+  }else if(s.status==='rule_not_applicable'){
+    badge='<span class="badge bx">rule does not apply</span>';
+    body='<div class="note">'+rfEsc(s.disclosures.note||'')+'</div>';
+  }else if(s.status==='no_rule'){
+    badge='<span class="badge bx">no rule on file</span>';
+    body='<div class="note">'+rfEsc(s.disclosures.note||'')+' This is not the same as saying the state gives no right to cancel &mdash; nobody has entered the rule yet.</div>';
+  }else{
+    badge='<span class="badge br">rule unusable</span>';
+    body='<div class="note" style="color:#B91C1C;">'+(s.problems||[]).map(rfEsc).join('<br>')+'</div>';
+  }
+  var cite=s.disclosures&&s.disclosures.authority?'<div class="note" style="margin-top:6px;">Under '+rfEsc(s.disclosures.authority)+'.</div>':'';
+  var basis=(s.disclosures&&s.disclosures.note&&s.status!=='indefinite'&&s.status!=='no_rule'&&s.status!=='rule_not_applicable'&&s.status!=='not_triggered')
+    ?'<div class="note" style="margin-top:6px;">'+rfEsc(s.disclosures.note)+'</div>':'';
+  el.innerHTML='<div style="margin-bottom:6px;">'+badge+'</div>'+body+cite+basis;
+}
+
+function rfRecordAgreement(){
+  if(!rfActiveClaimId){toast('Open a claim first');return;}
+  var signer=$('agr-signer').value.trim();
+  var date=$('agr-date').value;
+  var state=$('agr-state').value.trim().toUpperCase();
+  if(!signer){toast('Enter the signer’s name');return;}
+  if(!date){toast('Enter the date it was signed');return;}
+  if(!state){toast('Enter the state it was signed in');return;}
+  if(!rfSigDrawn){toast('Capture the signature before recording');return;}
+  var rec={
+    id:'RFAGR-'+Date.now(), claim_id:rfActiveClaimId, event_type:'executed',
+    signer_name:signer, executed_at:new Date(date+'T12:00:00Z').toISOString(),
+    state:state, signing_venue:$('agr-venue').value,
+    signature_data:$('agr-sig').toDataURL('image/png'),
+    notice_given:$('agr-notice').checked,
+    cancellation_form_given:$('agr-form').checked,
+    notice_text_shown:$('agr-notice-text').value.trim(),
+    notice_source:$('agr-notice-src').value.trim()
+  };
+  rfDataRaw('write','rf_claim_agreements',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not record the agreement',5000);return;}
+    toast('Agreement recorded');
+    rfSigClear();$('agr-signer').value='';
+    rfAgreementRefresh(rfActiveClaimId);
+  });
+}
+
+function rfRescindAgreement(){
+  if(!rfActiveClaimId){toast('Open a claim first');return;}
+  // The id being superseded is taken from the server's own status, not from
+  // anything the page is holding -- the server re-checks it regardless.
+  rfDataRaw('agreement_status','rf_claim_agreements',{claim_id:rfActiveClaimId}).then(function(r){
+    var s=r.ok&&r.data&&r.data.agreement_status;
+    if(!s||!s.executed){toast('Nothing to cancel');return;}
+    var rec={
+      id:'RFAGR-'+Date.now(), claim_id:rfActiveClaimId, event_type:'rescinded',
+      supersedes:s.executed.agreement_id, rescinded_at:new Date().toISOString(),
+      rescission_reason:$('agr-rescind-reason').value.trim()
+    };
+    rfDataRaw('write','rf_claim_agreements',rec).then(function(w){
+      if(!w.ok){toast(w.msg||'Could not record the cancellation',5000);return;}
+      toast('Cancellation recorded');
+      $('agr-rescind-reason').value='';
+      rfAgreementRefresh(rfActiveClaimId);
+    });
+  });
 }
 
 
@@ -1404,7 +1576,16 @@ function aiSend(){
   var jobLines=currentJobs.map(function(j){
     return '- '+(j.name||'(untitled)')+' | '+(j.address||'no address')+' | '+(j.job_class||'residential')+' | '+(j.status||'lead')+' | assigned:'+(j.assigned_employee_id||'unassigned');
   }).join('\n')||'(no jobs visible to you yet)';
-  var sysPrompt='You are SAIRNroofing\'s operations assistant. Answer only from the job list provided below, which is already scoped to what this employee is allowed to see -- never claim knowledge of a job not listed here.\n\nVisible jobs:\n'+jobLines;
+  // The claim-strategy refusal is not decoration. Tex. Ins. Code 4102.163 bars
+  // a roofing contractor from acting as, or advertising as, a public adjuster,
+  // and the Texas DOI lists "offering to negotiate settlements, promising
+  // recovery of funds, or representing the policyholder in coverage
+  // discussions" as prohibited conduct. This assistant is never given claim
+  // data -- only jobs -- but nothing stopped it answering a negotiation
+  // question from general knowledge, and an app-branded answer of that shape is
+  // the exposure. It declines and points at the deterministic worksheet, which
+  // is the defensible artifact.
+  var sysPrompt='You are SAIRNroofing\'s operations assistant. Answer only from the job list provided below, which is already scoped to what this employee is allowed to see -- never claim knowledge of a job not listed here.\n\nYou must NOT advise on insurance claim strategy, negotiation with an adjuster, what a carrier "should" pay, or how to increase a settlement. If asked, say that is outside what this assistant does and point the user to the Supplement Worksheet, which compares the adjuster\'s line items against the measured scope arithmetically.\n\nVisible jobs:\n'+jobLines;
   fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({app_id:APP_ID,is_demo:true,system:sysPrompt,messages:[{role:'user',content:q}]})})
     .then(function(r){return r.json();})
