@@ -1,4 +1,71 @@
 -- sql/full_crud_truncate_sweep_2026-08-24.sql
+--
+-- ══ SECTION 2 WAS RUN 2026-08-25. CLEAN PASS. ═══════════════════════════
+-- The "nothing has been run" status below is HISTORICAL from here down;
+-- it described this file up to the moment of the run and is left intact
+-- because the reasoning was built under it.
+--
+-- 3a -- ONE row: license_keys, full TRUNCATE family. That is the
+-- deliberate exclusion and nothing else. All 213 other tables from the
+-- 214-row Section 1 list are clean, INCLUDING the 20 zero-CRUD tables --
+-- their outcome is confirmed HERE, not in 3b, because having contributed
+-- no baseline rows they are silent in the diff by construction.
+-- network_insights was swept (its exclusion having been removed) and does
+-- not appear, so its excess is gone and, per 3b, its INSERT and SELECT
+-- survived -- the end of that correction chain.
+--
+-- 3b -- FIVE rows, ALL 'GAINED', ZERO 'LOST'. Zero LOST is the whole
+-- claim of this sweep: across 774 baseline privilege rows on 209 tables,
+-- not one pre-existing privilege disappeared. Section 2 removed no
+-- functional capability, verified against a real before-state rather than
+-- argued from the loop's shape.
+--   THE FIVE ARE rf_contingency_rules (INSERT, SELECT, UPDATE) and
+--   rf_claim_agreements (INSERT, SELECT) -- the two SAIRNroofing Phase 5
+--   tables, created by CC's migration AFTER Section 0 captured.
+--   WHY THIS IS NOT A SECTION 2 BUG, and the structural argument is
+--   stronger than the attribution: SECTION 2 CANNOT PRODUCE A 'GAINED'
+--   ROW AT ALL. Its GRANT list is keep_privs, filtered out of all_privs,
+--   which is that same table's own existing grants -- so it can only ever
+--   restore a SUBSET of what a table already held. It has no mechanism to
+--   invent a privilege. Any GAINED row therefore originates outside this
+--   script, whatever its source turns out to be.
+--   THE ATTRIBUTION THEN CONFIRMS IT INDEPENDENTLY: both tables are
+--   ABSENT from the 214-row Section 1 export (they did not exist), the
+--   privilege counts match sairnroofing_agreements_schema.sql:149 and :151
+--   exactly (3 + 2 = 5), and neither appears in 3a -- so both arrived
+--   already clean and Section 2's loop never selected them.
+--   HONEST NOTE ON THE EARLIER PREDICTION: P2 flagged these two tables and
+--   called them safe, and that conclusion held -- but it named the wrong
+--   mechanism. P2 reasoned they would be created BEFORE Section 0 and so
+--   would push the BASELINE count up. They were created AFTER it, so they
+--   touched the baseline not at all and surfaced as GAINED instead. Right
+--   tables, right verdict, wrong route. Recorded rather than smoothed
+--   over, because "that is the case I predicted" is exactly the kind of
+--   near-miss this file has already corrected twice.
+--
+-- 3c -- 774 rows / 209 tables, UNCHANGED from capture. Confirms Section 2
+-- did not touch the baseline table, so 3b's comparison is against the
+-- real before-state and not a mutated copy of the after-state.
+--
+-- VERDICT: clean pass. The baseline table is safe to drop (Section 4).
+--
+-- THE SOURCE OF THIS EXCESS IS ALREADY FIXED, so it cannot return: no
+-- schema file on this platform ever explicitly granted
+-- TRUNCATE/REFERENCES/TRIGGER/MAINTAIN (confirmed by grep), the baseline
+-- came from the default ACL, and append_only_grant_audit.sql:192-193
+-- applied `alter default privileges for role postgres in schema public
+-- revoke truncate, references, trigger, maintain on tables from
+-- service_role` -- which is why the Phase 5 tables arrived clean without
+-- anyone doing anything. Re-running a `create table if not exists` file
+-- cannot reintroduce it. This is NOT the `delete` case, where a source
+-- grant line would put the privilege straight back.
+--
+-- NEXT SWEEP MUST CAPTURE ITS OWN BASELINE. unused_delete_grant_revoke
+-- _2026-08-24.sql cannot reuse _grant_baseline_2026_08_25: that snapshot
+-- predates this run and predates the Phase 5 tables. One sweep, one
+-- window, one baseline.
+-- ════════════════════════════════════════════════════════════════════════
+--
 -- DIAGNOSTIC + DRAFT FIX ONLY. Nothing in this file has been run.
 --
 -- ── FULL EXPORT RECEIVED, 227 TABLES -- FINDINGS BEFORE SECTION 2 RUNS ────
