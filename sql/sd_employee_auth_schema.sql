@@ -59,3 +59,44 @@ create index if not exists idx_sd_employee_auth_license
 -- ---------------------------------------------------------------------------
 alter table sd_employee_auth add column if not exists failed_attempts integer not null default 0;
 alter table sd_employee_auth add column if not exists locked_until timestamptz;
+
+-- ---------------------------------------------------------------------------
+-- GRANT, BACKFILLED 2026-08-25 -- WHERE THE LIVE GRANT ACTUALLY CAME FROM
+-- ---------------------------------------------------------------------------
+-- Until today this file had NO grant statement of any kind, while all eight
+-- sibling *_employee_auth schema files have one. That looked like a live
+-- break. It is not. Confirmed live 2026-08-25, service_role holds:
+--   INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE  (no DELETE)
+-- which matches every sibling exactly.
+--
+-- ORIGIN, found rather than guessed: the grant was applied BY HAND in the
+-- Supabase SQL editor and never backfilled into this file. That is not an
+-- inference -- it is recorded contemporaneously in a different file,
+-- sql/sd_render_usage_schema.sql (2026-08-04), whose own header says:
+--   "Same failure class as an earlier real incident on sd_employee_auth
+--    ... where the fix was applied manually in the Supabase SQL editor and
+--    never backfilled into that migration file -- a gap worth knowing about
+--    if that table is ever re-provisioned from scratch."
+-- That note predicted exactly the confusion this comment now closes. The
+-- underlying incident is the same 42501 `permission denied for table` class
+-- that hit sd_render_usage on its first live run: on this Supabase project,
+-- CREATE TABLE alone does not grant service_role access.
+--
+-- Of the six live privileges, only SELECT/INSERT/UPDATE come from that
+-- manual grant. REFERENCES/TRIGGER/TRUNCATE arrive from the platform default
+-- ACL for tables created by postgres -- confirmed live via pg_default_acl and
+-- documented in sql/append_only_grant_audit.sql, which is also where the fix
+-- for that baseline lives. Do not try to fix them here.
+--
+-- Restated explicitly so it is not re-litigated: NO DELETE, on purpose.
+-- sql/stonedesk_audit_license_credential_reset.sql does contain a real
+-- `delete from public.sd_employee_auth`, but that script runs as the OWNER
+-- role in the Supabase SQL editor, exactly like every other cleanup script
+-- on this platform -- it does NOT need service_role to hold DELETE. Do not
+-- add a DELETE grant to make that script work as service_role.
+--
+-- The grant is folded in below so a fresh run of this migration is
+-- self-sufficient, matching the convention sd_render_usage_schema.sql
+-- established for the same situation. Idempotent, and it re-asserts what is
+-- already live rather than changing it.
+grant select, insert, update on sd_employee_auth to service_role;
