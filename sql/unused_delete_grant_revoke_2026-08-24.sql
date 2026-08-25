@@ -216,9 +216,155 @@
 -- hard-delete. Revoking forces the decision to be made deliberately rather
 -- than inherited from a copied grant.
 
+-- ══ HARDENING PASS 2026-08-25 -- R1/R4/R6 ADDED, SECTION 3 REBUILT ══════
+-- Same pass applied to sql/full_crud_truncate_sweep_2026-08-24.sql, which
+-- has since run clean (923a31c). What this file already had, kept: the
+-- revoke-then-grant loop preserving SELECT/INSERT/UPDATE exactly, both
+-- exclusions with real reasons and a do-not-fold-back warning, and the
+-- source-line reintroduction vector (scp_employee_auth fixed separately,
+-- sairnscape_data_schema.sql's six flagged and deliberately left).
+--
+-- WHAT WAS MISSING, checked against the file rather than assumed:
+--   R1  NO BASELINE OF ANY KIND. Before this pass the only executable
+--       statement in all 358 lines was Section 1's discovery query.
+--       Section 3 was prose plus a commented sc_* check plus manual app
+--       smoke tests -- nothing to diff against, so a loop bug that dropped
+--       UPDATE would have passed every check it had.
+--   R4  No column-ACL or WITH GRANT OPTION pre-flight, though this file
+--       uses REVOKE ALL and carries the identical hazard.
+--   R6  No owner gate.
+--   R5  No quiet-window note.
+--   R2  NOT APPLICABLE, and checked rather than skipped: this file targets
+--       ONE privilege and filters on that same privilege, so there is no
+--       un-co-occurring sibling for the filter to miss. `not like 'sc\_%'`
+--       was also verified -- it escapes to a literal `sc_` prefix and does
+--       NOT exclude scp_* (SAIRNscape), which is the intended behaviour.
+--   R3  ALREADY SATISFIED, better than the truncate file's first draft.
+--       One addition: license_keys' real current row was re-read as R3
+--       requires. Post-truncate-sweep it holds DELETE, INSERT, REFERENCES,
+--       SELECT, TRIGGER, TRUNCATE, UPDATE -- and is now the ONLY table in
+--       public still holding TRUNCATE/REFERENCES/TRIGGER, because it was
+--       excluded from that sweep too. Its exclusion here stands.
+--
+-- ══ THE VERIFICATION SHAPE IS INVERTED. DO NOT COPY THE TRUNCATE FILE. ══
+-- That sweep stripped a privilege NOTHING was allowed to lose, so its
+-- Section 3b expected ZERO rows on both sides and any LOST row was a bug.
+-- THIS sweep exists to remove DELETE, so LOST rows are the whole point.
+-- Copying "expect zero on both sides" here would fail 134 times on
+-- success. The assertion is instead:
+--     EXACTLY 134 LOST, every one privilege_type = 'DELETE',
+--     ZERO GAINED, and ZERO LOST of any other privilege type.
+-- The last clause is the one doing real work -- it is what catches a loop
+-- bug that dropped SELECT or UPDATE along the way, which is invisible to
+-- "the DELETE grants are gone".
+--
+-- ══ EXPECTED NUMBERS, DERIVED NOT GUESSED ══════════════════════════════
+-- All from the real 214-row truncate-sweep export cross-checked against
+-- that sweep's confirmed run, so 3c is a genuine guard rather than a
+-- plausible-looking number:
+--   161 tables in public hold DELETE; 135 of them are non-sc_*, which
+--       MATCHES this file's live Section 1 count of 135 exactly. The
+--       export therefore fully contains this sweep's scope -- no untracked
+--       table is hiding outside it.
+--   134 in scope = 135 minus license_keys.
+--     0 tables hold DELETE without also holding SELECT/INSERT/UPDATE, so
+--       Section 2's "held ONLY DELETE" branch never fires and NO table is
+--       left with zero grants. The loop anticipates the case; it does not
+--       occur.
+--   779 rows / 211 tables is the expected fresh baseline: the truncate
+--       sweep captured 774/209, lost nothing (zero LOST), and the two
+--       Phase 5 tables added 5 rows / 2 tables after it.
+--   645 rows / 211 tables expected after Section 2 -- 779 minus 134 DELETE
+--       rows, with the TABLE count unchanged because none is emptied.
+--
+-- ══ PRECONDITIONS THAT ARE NOT QUERY RESULTS ═══════════════════════════
+-- (P1) SEQUENCING -- CLEAR. The truncate sweep is fully closed: run,
+-- verified 3a/3b/3c, baseline table _grant_baseline_2026_08_25 DROPPED.
+-- No other grant change is open. This sweep may take the window.
+-- IT MUST STILL TAKE IT ALONE: capture, fix and verify with no other
+-- grant script running in between, or this file's own 3b starts reporting
+-- another script's intended changes as its failures.
+-- (P2) THIS SWEEP CANNOT REUSE _grant_baseline_2026_08_25. It is dropped,
+-- and it predated both the truncate run and the Phase 5 tables. Section 0
+-- below captures its own, under its own name.
+-- (P5) QUIET WINDOW, UNSCHEDULED. 134 tables, one DO block, one
+-- transaction: GRANT/REVOKE takes an AccessExclusiveLock per relation and
+-- the FIRST table locked stays locked until the whole loop commits.
+-- Catalog-only work should be fast; "should be" is not a measurement.
+--
+-- ══ RUN ORDER ══════════════════════════════════════════════════════════
+--   R6 -> R4 -> Section 0 -> Section 1 -> Section 2 (uncomment) -> 3a/3b/3c -> Section 4
+
+-- ── SECTION R6: PRECONDITION. Must print `postgres`. ─────────────────────
+-- role_table_grants only shows grants where the current user is grantor,
+-- grantee or a member, and REVOKE only removes what the executing role has
+-- authority over. As anything less, the loop iterates a SHORT list, changes
+-- less than it claims, and Section 3 reports clean through the same blind
+-- spot. service_role cannot run this sweep at all.
+select current_user, session_user;
+
+-- ── SECTION R4: PRE-FLIGHT. Both must return ZERO rows. ──────────────────
+-- REVOKE ALL on a table cascades to that table's COLUMN-level privileges,
+-- while Section 2's re-GRANT restores table-level ones only; WITH GRANT
+-- OPTION is likewise not carried across. Neither is visible in
+-- role_table_grants.
+--
+-- USE THIS QUERY, NOT information_schema.role_column_grants. That view
+-- reports a row per column whenever the privilege is held INCLUDING via a
+-- table-level grant, so it can never return zero on any database -- it
+-- returned hundreds during the truncate sweep and read as a false stop.
+-- pg_attribute.attacl is NULL unless a genuine column-specific GRANT was
+-- issued, and has no table-level echo. Zero rows = pass in substance.
+select
+  c.relname                   as table_name,
+  a.attname                   as column_name,
+  acl.grantee::regrole::text  as grantee,
+  acl.privilege_type
+from pg_attribute a
+join pg_class c     on c.oid = a.attrelid
+join pg_namespace n on n.oid = c.relnamespace
+cross join lateral aclexplode(a.attacl) as acl
+where n.nspname = 'public'
+  and c.relkind in ('r', 'p')
+  and a.attacl is not null
+  and not a.attisdropped
+order by 1, 2, 3;
+
+select table_name, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public' and grantee = 'service_role'
+  and is_grantable = 'YES';
+
+-- ── SECTION 0: BASELINE CAPTURE -- closes R1. Run BEFORE Section 2. ──────
+-- A REAL table, deliberately, not a temp one: the Supabase SQL editor does
+-- not guarantee two Run clicks share a session, and a temp table that
+-- vanishes between them takes the only proof with it, leaving a mutation
+-- applied and nothing to check it against.
+--
+-- Its own name, NOT the truncate sweep's. Captures every table
+-- service_role holds CRUD on -- not just the DELETE holders -- which is
+-- what lets 3b detect collateral loss on a table outside this sweep's
+-- scope. Section 4 drops it.
+drop table if exists public._delete_grant_baseline_2026_08_25;
+create table public._delete_grant_baseline_2026_08_25 as
+select table_name, privilege_type
+from information_schema.role_table_grants
+where table_schema = 'public'
+  and grantee = 'service_role'
+  and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE');
+
+-- Expect 779 rows / 211 tables (see derivation above). More is possible if
+-- a migration ran since; ANY LOWER means Section 0 under-read and 3b would
+-- pass vacuously -- treat that as a failed capture, not a pass.
+select count(*) as baseline_rows,
+       count(distinct table_name) as baseline_tables
+from public._delete_grant_baseline_2026_08_25;
+
 -- ── SECTION 1: DISCOVER -- run this first, review the real output ─────────
 -- Every table service_role can DELETE from that is NOT SAIRNcode's.
 -- These are the rows Section 2 will change.
+-- Expect 135 rows: the 134 in scope plus license_keys, which Section 2
+-- excludes. Anything else means the picture moved -- stop and re-report.
 
 select
   t.table_name,
@@ -298,28 +444,119 @@ order by t.table_name;
 -- END $$;
 
 -- ── SECTION 3: VERIFY, after Section 2 is actually run ───────────────────
--- Re-run SECTION 1. Expect EXACTLY ONE row: license_keys, still holding
--- DELETE, because Section 2 deliberately excludes it (see the exclusion
--- comment there and the license_keys row in the open-work index). Anything
--- ELSE still listed is a real miss and needs investigating.
---
--- NOT "expect zero rows" -- that was this file's wording before license_keys
--- was excluded on 2026-08-25, and leaving it would have made the deliberate
--- exclusion look like a failed revoke.
---
--- And confirm SAIRNcode was untouched -- expect its full family back,
--- every row still showing DELETE:
---
--- select t.table_name,
---        string_agg(distinct g.privilege_type, ', ' order by g.privilege_type) as privs
--- from information_schema.tables t
--- join information_schema.role_table_grants g
---   on g.table_name = t.table_name and g.table_schema = t.table_schema
--- where t.table_schema = 'public' and g.grantee = 'service_role'
---   and t.table_name like 'sc\_%'
--- group by t.table_name
--- having bool_or(g.privilege_type = 'DELETE')
--- order by t.table_name;
+-- FOUR checks, ALL must pass. The old Section 3 was 3a alone, in prose,
+-- and 3a on its own proves only that a privilege went away -- it says
+-- nothing about whether the others survived, which is the property the
+-- revoke-then-grant loop actually rests on. 3b is the one that matters.
+
+-- 3a. DELETE IS GONE OUTSIDE SAIRNcode. Expect EXACTLY ONE row:
+--     license_keys, still holding DELETE, because Section 2 deliberately
+--     excludes it. NOT "expect zero" -- that wording predates the
+--     exclusion and would make a deliberate decision look like a failed
+--     revoke. Any OTHER row is a real miss.
+select
+  t.table_name,
+  string_agg(distinct g.privilege_type, ', ' order by g.privilege_type) as current_privs
+from information_schema.tables t
+join information_schema.role_table_grants g
+  on g.table_name = t.table_name and g.table_schema = t.table_schema
+where t.table_schema = 'public'
+  and g.grantee = 'service_role'
+  and t.table_name not like 'sc\_%'
+group by t.table_name
+having bool_or(g.privilege_type = 'DELETE')
+order by t.table_name;
+
+-- 3b. NOTHING BUT DELETE CHANGED. THE INVERTED CHECK -- read the shape
+--     note at the top of this file before interpreting it. Unlike the
+--     truncate sweep, LOST rows here are the OBJECTIVE, not a failure.
+--     EXPECT EXACTLY ONE SUMMARY ROW:
+--         delta = 'LOST' | privilege_type = 'DELETE' | n = 134
+--     ANY other row fails the sweep:
+--       * a LOST row with any other privilege_type -> the loop dropped a
+--         privilege it was supposed to re-grant. This is the failure that
+--         3a cannot see and that this whole section exists for.
+--       * ANY GAINED row -> either something outside this script created
+--         grants inside the window (check the table name against recent
+--         migrations before assuming a bug -- that is exactly what the
+--         truncate sweep's five GAINED rows turned out to be), or the loop
+--         granted something it should not have. Note Section 2 is
+--         structurally incapable of the latter: its GRANT list is
+--         keep_privs, filtered from that same table's existing grants, so
+--         it can only ever restore a subset.
+--       * n <> 134 with delta/privilege otherwise correct -> scope moved
+--         between Section 0 and Section 2. Reconcile before proceeding.
+select
+  case when a.table_name is null then 'LOST' else 'GAINED' end as delta,
+  coalesce(b.privilege_type, a.privilege_type) as privilege_type,
+  count(*) as n
+from public._delete_grant_baseline_2026_08_25 b
+full outer join (
+  select table_name, privilege_type
+  from information_schema.role_table_grants
+  where table_schema = 'public'
+    and grantee = 'service_role'
+    and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE')
+) a
+  on a.table_name = b.table_name and a.privilege_type = b.privilege_type
+where a.table_name is null or b.table_name is null
+group by 1, 2
+order by 1, 2;
+
+--     Detail query -- run ONLY if the summary above is not the single
+--     expected row. Names every discrepancy individually.
+-- select
+--   coalesce(b.table_name, a.table_name) as table_name,
+--   coalesce(b.privilege_type, a.privilege_type) as privilege_type,
+--   case when a.table_name is null then 'LOST' else 'GAINED' end as delta
+-- from public._delete_grant_baseline_2026_08_25 b
+-- full outer join (
+--   select table_name, privilege_type
+--   from information_schema.role_table_grants
+--   where table_schema = 'public' and grantee = 'service_role'
+--     and privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE')
+-- ) a on a.table_name = b.table_name and a.privilege_type = b.privilege_type
+-- where a.table_name is null or b.table_name is null
+-- order by 3, 1, 2;
+
+-- 3c. THE ARITHMETIC CLOSES, AND THE BASELINE WAS REAL. If Section 0
+--     under-read, 3b compares against a short baseline and passes
+--     vacuously -- the one way 3b can lie. Expect:
+--       baseline_rows   779   (or higher if a migration ran since)
+--       baseline_tables 211
+--       live_rows       baseline_rows - 134
+--       live_tables     baseline_tables  (UNCHANGED -- no table is emptied,
+--                       because zero tables hold DELETE without also
+--                       holding SELECT/INSERT/UPDATE)
+--     baseline_rows at or below 774 means the capture predates the Phase 5
+--     tables or under-read; do not trust 3b in that case.
+select
+  (select count(*) from public._delete_grant_baseline_2026_08_25)                    as baseline_rows,
+  (select count(distinct table_name) from public._delete_grant_baseline_2026_08_25)  as baseline_tables,
+  (select count(*) from information_schema.role_table_grants
+     where table_schema = 'public' and grantee = 'service_role'
+       and privilege_type in ('SELECT','INSERT','UPDATE','DELETE'))                  as live_rows,
+  (select count(distinct table_name) from information_schema.role_table_grants
+     where table_schema = 'public' and grantee = 'service_role'
+       and privilege_type in ('SELECT','INSERT','UPDATE','DELETE'))                  as live_tables;
+
+-- 3d. SAIRNcode UNTOUCHED. Expect the full sc_* family back, every row
+--     still showing DELETE -- this is the one place DELETE is reachable by
+--     real code (api/sd-data.js, SC_RESOURCES branch, admin-session gated).
+select
+  t.table_name,
+  string_agg(distinct g.privilege_type, ', ' order by g.privilege_type) as privs
+from information_schema.tables t
+join information_schema.role_table_grants g
+  on g.table_name = t.table_name and g.table_schema = t.table_schema
+where t.table_schema = 'public' and g.grantee = 'service_role'
+  and t.table_name like 'sc\_%'
+group by t.table_name
+having bool_or(g.privilege_type = 'DELETE')
+order by t.table_name;
+
+-- ── SECTION 4: CLEANUP -- only after 3a/3b/3c/3d all pass ────────────────
+-- drop table public._delete_grant_baseline_2026_08_25;
 --
 -- Then confirm the app still works where it must: SAIRNcode's delete path
 -- (api/sd-data.js SC_RESOURCES branch, admin session) must still succeed,
