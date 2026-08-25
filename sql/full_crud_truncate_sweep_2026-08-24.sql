@@ -472,13 +472,49 @@
 -- ── SECTION R6: PRECONDITION. Must print `postgres`. ─────────────────────
 select current_user, session_user;
 
--- ── SECTION R4: PRE-FLIGHT. Both queries must return ZERO rows. ──────────
--- If either returns anything, STOP: Section 2's REVOKE ALL would destroy
--- a column-level grant or a WITH GRANT OPTION that its re-GRANT cannot
--- restore. The repo has neither, but the repo is not the database.
-select table_name, column_name, privilege_type
-from information_schema.role_column_grants
-where table_schema = 'public' and grantee = 'service_role';
+-- ── SECTION R4: PRE-FLIGHT ───────────────────────────────────────────────
+-- The concern is real: REVOKE ALL on a table cascades to that table's
+-- COLUMN-level privileges, while the re-GRANT below restores table-level
+-- ones only. So a genuine column grant would be destroyed silently.
+-- WITH GRANT OPTION is likewise not carried across.
+--
+-- R4a WAS WRITTEN WRONG AND IS CORRECTED HERE, 2026-08-25. It originally
+-- queried information_schema.role_column_grants and said "expect zero
+-- rows". That test CANNOT pass on any normal database and would have sent
+-- every reader into a false stop. The SQL standard requires
+-- column_privileges (which role_column_grants sits on) to report a row per
+-- column whenever the privilege is held, INCLUDING when it is held via a
+-- table-level grant -- Postgres expands relacl across every column. So a
+-- plain `grant select on t to service_role` yields one row per column of
+-- t, and the view cannot distinguish that from a real narrower grant.
+-- Caught on the first live run: it returned hundreds of rows, covering
+-- exactly SELECT/INSERT/UPDATE/REFERENCES -- which are precisely the four
+-- privileges Postgres allows at column level -- on tables already holding
+-- them at table level. That is the standard's echo, not a finding.
+--
+-- THE REAL TEST IS pg_attribute.attacl, which is NULL unless a genuine
+-- column-specific GRANT/REVOKE was issued against that column. It has no
+-- table-level echo. aclexplode decodes it, so a hit names the exact
+-- column, grantee and privilege rather than leaving an aclitem[] to read
+-- by eye. relkind is filtered so only real and partitioned tables count.
+-- ZERO ROWS = no column ACL exists anywhere in public; R4a passes in
+-- substance and REVOKE ALL loses nothing.
+-- ANY ROWS = genuine column-level restrictions narrower than the table
+-- grant. STOP, and report which columns.
+select
+  c.relname                   as table_name,
+  a.attname                   as column_name,
+  acl.grantee::regrole::text  as grantee,
+  acl.privilege_type
+from pg_attribute a
+join pg_class c     on c.oid = a.attrelid
+join pg_namespace n on n.oid = c.relnamespace
+cross join lateral aclexplode(a.attacl) as acl
+where n.nspname = 'public'
+  and c.relkind in ('r', 'p')
+  and a.attacl is not null
+  and not a.attisdropped
+order by 1, 2, 3;
 
 select table_name, privilege_type
 from information_schema.role_table_grants
