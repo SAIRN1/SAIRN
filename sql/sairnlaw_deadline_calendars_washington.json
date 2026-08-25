@@ -1,0 +1,507 @@
+{
+  "_readme": [
+    "SAIRNlaw deadline engine -- Washington holiday calendars, 2026-2031. Loaded",
+    "through add_holidays alongside sql/sairnlaw_deadline_seed_washington.json.",
+    "",
+    "== WASHINGTON IS THE ONE STATE THAT ANSWERS THE HOLIDAY QUESTION OUTRIGHT ==",
+    "Every other jurisdiction seeded so far has needed a judgment call about which",
+    "list of holidays a court rule means. Washington does not. CR 6(a) says it, in",
+    "six words, in the middle of the computation rule: \"Legal holidays are",
+    "prescribed in RCW 1.16.050.\"",
+    "",
+    "That is an EXPRESS cross-reference, not an inference. Contrast:",
+    "  Texas       Tex. R. Civ. P. 4 says \"legal holiday\" and never cites",
+    "              Gov't Code 662.021; the link is settled reading only.",
+    "  Kentucky    RAP 6(A) and KRS 446.030 both say it and neither defines it,",
+    "              and the candidate statute is not even titled \"legal holidays\".",
+    "  N. Carolina Rule 6(a) asks a different question entirely -- whether the",
+    "              COURTHOUSE IS CLOSED -- so its statute is the wrong source.",
+    "  W. Virginia two rules define it two different ways inside one state.",
+    "Washington needed none of that reasoning. The rule names the statute.",
+    "",
+    "== AND THE STATUTE EXCLUDES ITS OWN DECOYS, EXPRESSLY ======================",
+    "READ THIS BEFORE ADDING ANY DATE BELOW. RCW 1.16.050 contains TWO lists. Only",
+    "the first is legal holidays.",
+    "",
+    "  1.16.050(1)  \"The following are state legal holidays\" -- the eleven days",
+    "               encoded here, plus Sunday (see below).",
+    "  1.16.050(7)  \"The legislature declares that the following days are",
+    "               recognized as provided in this subsection, BUT MAY NOT BE",
+    "               CONSIDERED LEGAL HOLIDAYS FOR ANY PURPOSE.\"",
+    "",
+    "Subsection (7) is where Columbus Day, Pearl Harbor Day, Purple Heart",
+    "Recipient Recognition Day, Marcus Whitman Day, Public Lands Day, Washington",
+    "State Children's Day and a dozen more live. They are in the same statute CR",
+    "6(a) points at, and encoding them would roll deadlines LATER than the truth --",
+    "the direction that misses a filing. The statute forecloses that itself, in the",
+    "words \"for any purpose\", so this is not even a judgment call. It is only a",
+    "trap for anyone who regenerates the calendar from the section as a whole",
+    "rather than from subsection (1).",
+    "",
+    "== SUNDAY IS A LEGAL HOLIDAY IN WASHINGTON, AND IS DELIBERATELY NOT LISTED ==",
+    "RCW 1.16.050(1)(a) is, in its entirety, \"Sunday\". Every Sunday of the year is",
+    "a state legal holiday. No Sunday appears below, for two reasons and neither is",
+    "an oversight: the engine already excludes Saturdays and Sundays through",
+    "isWeekend() before it ever consults a calendar, so listing 52 Sundays a year",
+    "would change no computed date; and CR 6(a) itself names \"a Saturday, a Sunday",
+    "or a legal holiday\" as three separate things, so the rule does not rely on",
+    "(1)(a) either. Note the drafting detail this explains: 1.16.050(5)(a) shifts a",
+    "holiday falling on a Sunday to the following Monday \"OTHER THAN SUNDAY\" --",
+    "the carve-out exists precisely because Sunday is itself on the list, and",
+    "without it every Sunday would shift itself onto every Monday.",
+    "",
+    "== THE WEEKEND SHIFT RUNS BOTH WAYS ========================================",
+    "RCW 1.16.050(5), verbatim: \"Whenever any state legal holiday: (a) Other than",
+    "Sunday, falls upon a Sunday, the following Monday is the legal holiday; or",
+    "(b) Falls upon a Saturday, the preceding Friday is the legal holiday.\" Only",
+    "the fixed-date holidays can shift at all: 1 January, 19 June, 4 July,",
+    "11 November and 25 December.",
+    "",
+    "THE BACKWARD SHIFT PUTS A HOLIDAY IN THE PREVIOUS YEAR. When 1 January falls",
+    "on a Saturday the legal holiday is Friday 31 December, which belongs to the",
+    "earlier year's calendar. 2027-12-31 is filed under 2027 here for that reason,",
+    "and deliberately NOT also under 2028 -- the engine resolves a holiday by the",
+    "year of the DATE and the endpoint rejects a date whose year does not match its",
+    "calendar, so a 2028-filed entry would be silently unreachable. That is why",
+    "2028 has ten entries below and the other years have eleven or twelve.",
+    "",
+    "== NATIVE AMERICAN HERITAGE DAY IS A REAL LEGAL HOLIDAY HERE ===============",
+    "1.16.050(1)(k), \"The Friday immediately following the fourth Thursday in",
+    "November, to be known as Native American Heritage Day.\" The day after",
+    "Thanksgiving is a statutory legal holiday in Washington. It is NOT one in",
+    "several states already seeded -- Illinois's M.R. 5272 adds it as a court",
+    "closure while the statute omits it, and Pennsylvania's calendars exclude it",
+    "outright -- so this is a real per-state difference, not a pattern.",
+    "",
+    "JUNETEENTH IS A LEGAL HOLIDAY HERE, unlike in West Virginia's civil rules",
+    "where it is absent from both the rule and the code. 1.16.050(1)(f) names it.",
+    "",
+    "== NOT MODELLED ===========================================================",
+    "1.16.050(2)'s one additional paid holiday per employee, and (3)'s two unpaid",
+    "holidays for reasons of faith or conscience: both are EMPLOYEE entitlements",
+    "chosen individually, not days the courts close, and neither is a legal holiday",
+    "under (1). Nothing is encoded for them.",
+    "",
+    "Local court closures. CR 6(a) reaches time prescribed \"by the local rules of",
+    "any superior court\", and a county courthouse closed for weather or emergency",
+    "is not enumerable in advance. Same treatment as Michigan and North Carolina; a",
+    "deadline computed across such a closure is EARLY, never late."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "wa",
+      "year": 2026,
+      "authority": {
+        "citation": "RCW 1.16.050(1) (state legal holidays), applied to civil time computation by Wash. Super. Ct. Civ. R. 6(a)",
+        "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=1.16.050",
+        "computation_url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_06_00_00.pdf",
+        "note": "Generated 2026-08-25 from RCW 1.16.050(1), read verbatim from the Washington State Legislature's own site, and applied to civil time computation by CR 6(a), which says expressly \"Legal holidays are prescribed in RCW 1.16.050\" -- an express cross-reference, not an inference. ONLY SUBSECTION (1) IS ENCODED. Subsection (7) of the same section lists Columbus Day, Pearl Harbor Day, Purple Heart Recipient Recognition Day, Marcus Whitman Day, Public Lands Day, Washington State Children's Day and others as days that are \"recognized ... but may not be considered legal holidays FOR ANY PURPOSE\"; encoding them would roll deadlines LATE. Sunday is a legal holiday under (1)(a) and is deliberately absent -- the engine excludes weekends before consulting a calendar, so listing it would change no date, and 1.16.050(5)(a)'s \"other than Sunday\" carve-out exists for exactly that reason. Weekend shift is both-way per 1.16.050(5): Sunday -> following Monday, Saturday -> preceding Friday. Native American Heritage Day (the Friday after Thanksgiving) and Juneteenth are BOTH real statutory legal holidays here, which is not true of every state already seeded. Local superior court closures are not enumerable and are not included; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day",
+          "kind": "declared",
+          "note": "observed (Saturday -> preceding Friday, RCW 1.16.050(5)(b))"
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-11-27",
+          "name": "Native American Heritage Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wa",
+      "year": 2027,
+      "authority": {
+        "citation": "RCW 1.16.050(1) (state legal holidays), applied to civil time computation by Wash. Super. Ct. Civ. R. 6(a)",
+        "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=1.16.050",
+        "computation_url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_06_00_00.pdf",
+        "note": "Generated 2026-08-25 from RCW 1.16.050(1), read verbatim from the Washington State Legislature's own site, and applied to civil time computation by CR 6(a), which says expressly \"Legal holidays are prescribed in RCW 1.16.050\" -- an express cross-reference, not an inference. ONLY SUBSECTION (1) IS ENCODED. Subsection (7) of the same section lists Columbus Day, Pearl Harbor Day, Purple Heart Recipient Recognition Day, Marcus Whitman Day, Public Lands Day, Washington State Children's Day and others as days that are \"recognized ... but may not be considered legal holidays FOR ANY PURPOSE\"; encoding them would roll deadlines LATE. Sunday is a legal holiday under (1)(a) and is deliberately absent -- the engine excludes weekends before consulting a calendar, so listing it would change no date, and 1.16.050(5)(a)'s \"other than Sunday\" carve-out exists for exactly that reason. Weekend shift is both-way per 1.16.050(5): Sunday -> following Monday, Saturday -> preceding Friday. Native American Heritage Day (the Friday after Thanksgiving) and Juneteenth are BOTH real statutory legal holidays here, which is not true of every state already seeded. Local superior court closures are not enumerable and are not included; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-06-18",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "note": "observed (Saturday -> preceding Friday, RCW 1.16.050(5)(b))"
+        },
+        {
+          "date": "2027-07-05",
+          "name": "Independence Day",
+          "kind": "declared",
+          "note": "observed (Sunday -> following Monday, RCW 1.16.050(5)(a))"
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-25",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-11-26",
+          "name": "Native American Heritage Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2027-12-24",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "note": "observed (Saturday -> preceding Friday, RCW 1.16.050(5)(b))"
+        },
+        {
+          "date": "2027-12-31",
+          "name": "New Year's Day (2028)",
+          "kind": "declared",
+          "note": "observed in 2027: 1 January 2028 falls on a Saturday, so RCW 1.16.050(5)(b) sets the preceding Friday, 31 December 2027"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wa",
+      "year": 2028,
+      "authority": {
+        "citation": "RCW 1.16.050(1) (state legal holidays), applied to civil time computation by Wash. Super. Ct. Civ. R. 6(a)",
+        "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=1.16.050",
+        "computation_url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_06_00_00.pdf",
+        "note": "Generated 2026-08-25 from RCW 1.16.050(1), read verbatim from the Washington State Legislature's own site, and applied to civil time computation by CR 6(a), which says expressly \"Legal holidays are prescribed in RCW 1.16.050\" -- an express cross-reference, not an inference. ONLY SUBSECTION (1) IS ENCODED. Subsection (7) of the same section lists Columbus Day, Pearl Harbor Day, Purple Heart Recipient Recognition Day, Marcus Whitman Day, Public Lands Day, Washington State Children's Day and others as days that are \"recognized ... but may not be considered legal holidays FOR ANY PURPOSE\"; encoding them would roll deadlines LATE. Sunday is a legal holiday under (1)(a) and is deliberately absent -- the engine excludes weekends before consulting a calendar, so listing it would change no date, and 1.16.050(5)(a)'s \"other than Sunday\" carve-out exists for exactly that reason. Weekend shift is both-way per 1.16.050(5): Sunday -> following Monday, Saturday -> preceding Friday. Native American Heritage Day (the Friday after Thanksgiving) and Juneteenth are BOTH real statutory legal holidays here, which is not true of every state already seeded. Local superior court closures are not enumerable and are not included; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2028-01-17",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-02-21",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-05-29",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-09-04",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-10",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "note": "observed (Saturday -> preceding Friday, RCW 1.16.050(5)(b))"
+        },
+        {
+          "date": "2028-11-23",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-11-24",
+          "name": "Native American Heritage Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2028-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wa",
+      "year": 2029,
+      "authority": {
+        "citation": "RCW 1.16.050(1) (state legal holidays), applied to civil time computation by Wash. Super. Ct. Civ. R. 6(a)",
+        "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=1.16.050",
+        "computation_url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_06_00_00.pdf",
+        "note": "Generated 2026-08-25 from RCW 1.16.050(1), read verbatim from the Washington State Legislature's own site, and applied to civil time computation by CR 6(a), which says expressly \"Legal holidays are prescribed in RCW 1.16.050\" -- an express cross-reference, not an inference. ONLY SUBSECTION (1) IS ENCODED. Subsection (7) of the same section lists Columbus Day, Pearl Harbor Day, Purple Heart Recipient Recognition Day, Marcus Whitman Day, Public Lands Day, Washington State Children's Day and others as days that are \"recognized ... but may not be considered legal holidays FOR ANY PURPOSE\"; encoding them would roll deadlines LATE. Sunday is a legal holiday under (1)(a) and is deliberately absent -- the engine excludes weekends before consulting a calendar, so listing it would change no date, and 1.16.050(5)(a)'s \"other than Sunday\" carve-out exists for exactly that reason. Weekend shift is both-way per 1.16.050(5): Sunday -> following Monday, Saturday -> preceding Friday. Native American Heritage Day (the Friday after Thanksgiving) and Juneteenth are BOTH real statutory legal holidays here, which is not true of every state already seeded. Local superior court closures are not enumerable and are not included; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2029-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-01-15",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-02-19",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-05-28",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-09-03",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-12",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "note": "observed (Sunday -> following Monday, RCW 1.16.050(5)(a))"
+        },
+        {
+          "date": "2029-11-22",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-11-23",
+          "name": "Native American Heritage Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2029-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wa",
+      "year": 2030,
+      "authority": {
+        "citation": "RCW 1.16.050(1) (state legal holidays), applied to civil time computation by Wash. Super. Ct. Civ. R. 6(a)",
+        "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=1.16.050",
+        "computation_url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_06_00_00.pdf",
+        "note": "Generated 2026-08-25 from RCW 1.16.050(1), read verbatim from the Washington State Legislature's own site, and applied to civil time computation by CR 6(a), which says expressly \"Legal holidays are prescribed in RCW 1.16.050\" -- an express cross-reference, not an inference. ONLY SUBSECTION (1) IS ENCODED. Subsection (7) of the same section lists Columbus Day, Pearl Harbor Day, Purple Heart Recipient Recognition Day, Marcus Whitman Day, Public Lands Day, Washington State Children's Day and others as days that are \"recognized ... but may not be considered legal holidays FOR ANY PURPOSE\"; encoding them would roll deadlines LATE. Sunday is a legal holiday under (1)(a) and is deliberately absent -- the engine excludes weekends before consulting a calendar, so listing it would change no date, and 1.16.050(5)(a)'s \"other than Sunday\" carve-out exists for exactly that reason. Weekend shift is both-way per 1.16.050(5): Sunday -> following Monday, Saturday -> preceding Friday. Native American Heritage Day (the Friday after Thanksgiving) and Juneteenth are BOTH real statutory legal holidays here, which is not true of every state already seeded. Local superior court closures are not enumerable and are not included; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2030-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-01-21",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-02-18",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-05-27",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-09-02",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-28",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-11-29",
+          "name": "Native American Heritage Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2030-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    },
+    {
+      "jurisdiction": "wa",
+      "year": 2031,
+      "authority": {
+        "citation": "RCW 1.16.050(1) (state legal holidays), applied to civil time computation by Wash. Super. Ct. Civ. R. 6(a)",
+        "url": "https://app.leg.wa.gov/RCW/default.aspx?cite=1.16.050",
+        "computation_url": "https://www.courts.wa.gov/court_rules/pdf/CR/SUP_CR_06_00_00.pdf",
+        "note": "Generated 2026-08-25 from RCW 1.16.050(1), read verbatim from the Washington State Legislature's own site, and applied to civil time computation by CR 6(a), which says expressly \"Legal holidays are prescribed in RCW 1.16.050\" -- an express cross-reference, not an inference. ONLY SUBSECTION (1) IS ENCODED. Subsection (7) of the same section lists Columbus Day, Pearl Harbor Day, Purple Heart Recipient Recognition Day, Marcus Whitman Day, Public Lands Day, Washington State Children's Day and others as days that are \"recognized ... but may not be considered legal holidays FOR ANY PURPOSE\"; encoding them would roll deadlines LATE. Sunday is a legal holiday under (1)(a) and is deliberately absent -- the engine excludes weekends before consulting a calendar, so listing it would change no date, and 1.16.050(5)(a)'s \"other than Sunday\" carve-out exists for exactly that reason. Weekend shift is both-way per 1.16.050(5): Sunday -> following Monday, Saturday -> preceding Friday. Native American Heritage Day (the Friday after Thanksgiving) and Juneteenth are BOTH real statutory legal holidays here, which is not true of every state already seeded. Local superior court closures are not enumerable and are not included; a deadline computed across one is EARLY, never late.",
+        "retrieved_at": "2026-08-25"
+      },
+      "dates": [
+        {
+          "date": "2031-01-01",
+          "name": "New Year's Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-01-20",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-02-17",
+          "name": "Presidents' Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-05-26",
+          "name": "Memorial Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-06-19",
+          "name": "Juneteenth",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-07-04",
+          "name": "Independence Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-09-01",
+          "name": "Labor Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-11",
+          "name": "Veterans Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-27",
+          "name": "Thanksgiving Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-11-28",
+          "name": "Native American Heritage Day",
+          "kind": "declared"
+        },
+        {
+          "date": "2031-12-25",
+          "name": "Christmas Day",
+          "kind": "declared"
+        }
+      ]
+    }
+  ]
+}
