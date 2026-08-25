@@ -458,6 +458,41 @@
 -- prepared, hardened and simulated; executing it needs a Supabase SQL
 -- editor session as postgres.
 --
+-- ── PRECONDITION STATUS, 2026-08-25: ALL QUERY CHECKS GREEN ──────────────
+--   R6  current_user = postgres                           CONFIRMED
+--   R4a pg_attribute.attacl via aclexplode -> 0 rows       CONFIRMED
+--   R4b is_grantable = 'YES' -> 0 rows                     CONFIRMED
+--   R2  Section 1b -> 0 rows                               CONFIRMED
+--   R1  Section 0 baseline -> 774 rows / 209 tables        CONFIRMED
+--   Section 1 re-run -> still 214 rows, no drift           CONFIRMED
+--
+-- R2 IS CLOSED, NOT MERELY UNTESTED. Section 1b returning empty means no
+-- table anywhere in public holds REFERENCES, TRIGGER or MAINTAIN without
+-- also holding TRUNCATE. The 214-row Section 1 list is therefore the
+-- COMPLETE set of affected tables -- nothing is hiding outside the
+-- TRUNCATE filter. That was the one thing the 214-row export could not
+-- tell us about itself, by construction, and now a query has.
+--
+-- THE BASELINE RECONCILES EXACTLY, WHICH IS STRONGER THAN THE TEST ASKED
+-- FOR. Section 3c only required a lower bound of 739 rows / 194 tables.
+-- The real figures are 774 / 209, and the difference is fully accounted
+-- for -- derived independently from this repo's own grant lines, not
+-- reverse-engineered to fit:
+--   194 tables + 15 = 209   and   739 rows + 35 = 774
+-- The 15 are precisely the tables that hold CRUD but NOT TRUNCATE, so they
+-- appear in Section 0 and could never appear in Section 1 -- the nine from
+-- append_only_grant_audit.sql (alf_claim_routes 2, alf_signals 2,
+-- alf_staff_credentials 2, dnt_cred_rules 3, dnt_credentials 2,
+-- sairnlaw_audit_log 2, rf_jobs 3, rf_photos 2,
+-- sairnroofing_employee_auth 3), the two audit logs (sairncode_audit_log 2,
+-- stonedesk_audit_log 2), and the four remaining rf_* (rf_cert_rules 3,
+-- rf_certifications 2, rf_claims 3, rf_claim_photos 2). 35 rows, 15 tables,
+-- zero left over.
+-- WHAT THAT BUYS: not just "Section 0 did not under-read". It means the
+-- live CRUD grant state matches what this repo says it should be, table
+-- for table and privilege for privilege, with nothing unexplained. 3b's
+-- diff is now anchored to a baseline whose every row is accounted for.
+--
 -- ── THREE PRECONDITIONS THAT ARE NOT QUERY RESULTS -- READ BEFORE RUNNING ──
 --
 -- (P1) NO OTHER GRANT SCRIPT MAY RUN INSIDE THIS ONE'S WINDOW. This is
