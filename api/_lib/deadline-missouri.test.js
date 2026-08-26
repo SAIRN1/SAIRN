@@ -270,8 +270,8 @@ check('a year outside the loaded calendars refuses',
   compute('mo-r-55-25a-answer-after-personal-service', '2033-05-01').code, 'NOT_PROVISIONED');
 
 // ── Blast radius ─────────────────────────────────────────────────────────
-check('three jurisdictions declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ma', 'mo', 'va']);
+check('four jurisdictions declare a coverage gap',
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ma', 'mn', 'mo', 'va']);
 // A pre-existing jurisdiction must compute exactly what it did before the
 // completion mechanism was inserted into the pipeline.
 {
