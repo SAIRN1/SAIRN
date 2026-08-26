@@ -1058,6 +1058,48 @@ var COMPUTATION_STANDARDS = {
   ma_rcp_6a: { label: 'Mass. R. Civ. P. 6(a)', impl: 'ohio_civ_r_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── MISSOURI: THE HOLIDAY BASIS IS BY CONVERGENCE, NOT CROSS-REFERENCE ──
+  // Mo. R. Civ. P. 44.01(a), verbatim:
+  //
+  //   "In computing any period of time prescribed or allowed by these rules, by
+  //    order of court, or by any applicable statute, the day of the act, event,
+  //    or default after which the designated period of time begins to run is not
+  //    to be included. The last day of the period so computed is to be included,
+  //    unless it is a Saturday, Sunday or a legal holiday, in which event the
+  //    period runs until the end of the next day which is neither a Saturday,
+  //    Sunday nor a legal holiday. When the period of time prescribed or allowed
+  //    is less than seven days, intermediate Saturdays, Sundays and legal
+  //    holidays shall be excluded in the computation."
+  //
+  // THE RULE SAYS "legal holiday" AND NAMES NO STATUTE, and RSMo 9.010 is titled
+  // "Public holidays" and never uses the phrase. That is the IDENTICAL lexical
+  // gap that helped refuse Kentucky, so it was checked the same way and came out
+  // the opposite way:
+  //   KENTUCKY  KRS 2.110 lists four days its courts do NOT close for and OMITS
+  //             Thanksgiving, so encoding it rolls deadlines LATE. Fatal.
+  //   MISSOURI  RSMo 9.010's thirteen days match the State of Missouri's own
+  //             published holiday schedule day for day, Thanksgiving included,
+  //             with no listed day the state stays open for.
+  // Both readings therefore converge on the same thirteen days and neither can
+  // roll LATE. The wording gap is a real question of law and belongs in the
+  // bundled lawyer's question; it is not a safety problem. See
+  // JURISDICTION_COVERAGE, which discloses the basis rather than hiding it.
+  //
+  // SHORT-PERIOD EXCLUSION AT SEVEN, READ NOT ASSUMED. "less than seven days" is
+  // the rule's own wording, and this field is compared with a strict less-than,
+  // so 7 is both the literal number in the rule and the right value here. Same
+  // as New Jersey, North Carolina, Washington, Massachusetts and West Virginia's
+  // appellate rule -- and NOT Tennessee's or Arizona's eleven, which is the
+  // number a neighbouring-state analogy would have supplied.
+  //
+  // BACKWARD IS LEFT BLANK. 44.01(a) speaks only of a period that "begins to
+  // run" after an act, event or default and says nothing about counting backward
+  // from a hearing. No backward row is seeded and none may be added without a
+  // rule that actually defines the direction.
+  mo_rule_44_01_a: { label: 'Mo. R. Civ. P. 44.01(a)', impl: 'ohio_civ_r_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
@@ -1803,6 +1845,37 @@ var SERVICE_EXTENSION_STANDARDS = {
     qualifies: function (method) {
       return ({ mail: 1, email: 1, electronic: 1, efiling_service_provider: 1 })[method] === 1;
     }
+  },
+  // ── MISSOURI: MAIL AND ONLY MAIL, BECAUSE THE OTHER METHODS ARE HANDLED
+  //    BY A COMPLETION RULE INSTEAD ─────────────────────────────────────────
+  // Mo. R. Civ. P. 44.01(d), verbatim in full:
+  //
+  //   "Whenever a party has the right or is required to do some act or take some
+  //    proceedings within a prescribed period after the service of a notice or
+  //    other paper upon the party and the notice or paper is served by mail,
+  //    three days shall be added to the prescribed period."
+  //
+  // MAIL-ONLY ON ITS FACE, AND UNLIKE TENNESSEE THAT READING IS CORRECT -- but
+  // it is only correct once the SERVICE rule has been read. Tenn. R. Civ. P.
+  // 6.05 is worded almost identically and IS wrong read alone, because Tenn.
+  // R. 5.02(2)(c) and (3)(e) deem e-mail and E-service to be mail. Missouri's
+  // R. 43.01(d) contains no such deeming provision; it moves WHEN SERVICE IS
+  // COMPLETE instead. So electronic service in Missouri collects NO days here
+  // and is governed by SERVICE_COMPLETION_STANDARDS.mo_rule_43_01_d.
+  //
+  // DO NOT WIDEN qualifies() TO ELECTRONIC METHODS. Doing so would add three
+  // days the rule does not give AND double up with the completion shift, which
+  // is why the endpoint validator refuses any row listing one method under both
+  // mechanisms.
+  //
+  // "ADDED TO THE PRESCRIBED PERIOD" -- period-lengthening, one rollover at the
+  // end, like New Jersey, North Carolina, Washington, New York, Virginia and
+  // Massachusetts, and NOT the federal after-expiry order.
+  mo_rule_44_01_d: {
+    label: 'Mo. R. Civ. P. 44.01(d)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
   }
 };
 
