@@ -1,0 +1,484 @@
+{
+ "_readme": [
+  "MISSOURI CIVIL DEADLINE RULES -- 14 rows, Rules 55.25, 57.01, 58.01 and 59.01.",
+  "",
+  "== SOURCE ==============================================================",
+  "Read verbatim on 2026-08-26 from the Missouri Supreme Court Rules,",
+  "published free and in full by the Missouri courts. No paywall, no terms",
+  "gate, no redirect to a commercial publisher -- the failure modes that",
+  "blocked Kentucky and Tennessee and gated Arizona are all absent.",
+  "",
+  "ACCESS: courts.mo.gov/page.jsp is behind a Cloudflare bot challenge that",
+  "neither curl nor headless Playwright clears. The underlying",
+  "ClerkHandbooksP2RulesOnly.nsf/<id> document URLs are NOT challenged. A",
+  "challenge on page.jsp means 'wrong URL shape', not 'rule unavailable'.",
+  "",
+  "The STATUTE side is the best of any state seeded: revisor.mo.gov is the",
+  "official Revisor, free, HTTP 200 to plain curl, with per-section version",
+  "history and effective dates.",
+  "",
+  "== effective_from IS REAL ON EVERY ROW =================================",
+  "  R. 55.25 -> 1994-01-01   R. 57.01 -> 2021-12-01",
+  "  R. 58.01 -> 2021-09-02   R. 59.01 -> 2022-07-01",
+  "",
+  "== MISSOURI SPLITS SERVICE BY METHOD, WHICH NO OTHER SEEDED STATE DOES ==",
+  "MAIL                    -> R. 44.01(d) adds THREE DAYS to the period.",
+  "FAX / E-MAIL / E-FILING -> R. 43.01(d) and R. 103.08(a) add NOTHING and",
+  "                           instead move WHEN SERVICE WAS COMPLETE, which",
+  "                           moves the date the period runs from.",
+  "So the three plain discovery rows carry BOTH a service_extension and a",
+  "service_completion, and no method appears under both. That is correct and",
+  "not a duplicate; the endpoint validator refuses any row where a method",
+  "does appear under both.",
+  "",
+  "A service_time (HH:MM, 24-hour) is REQUIRED for fax, e-mail and e-filing",
+  "service, and the engine REFUSES OUTRIGHT without one -- a harder refusal",
+  "than Virginia's, because an unknown completion date means an unknown",
+  "period START, so there is no date to return at all.",
+  "",
+  "== THE NUMBERS ARE NOT INTERNALLY CONSISTENT ===========================",
+  "Interrogatories and production give a defendant a 45-day floor.",
+  "Admissions give SIXTY. Reading 45 onto the admissions row would compute",
+  "EARLY, and silence ADMITS under R. 59.01, so that is the single most",
+  "consequential error available in this seed.",
+  "",
+  "== THE DEFENDANT FLOOR RUNS FROM 'THE EARLIER OF' TWO EVENTS ===========",
+  "All three discovery rules measure the floor from the earlier of the",
+  "defendant's appearance and service of process. A resolve_periods limb",
+  "takes one event, so the caller supplies the EARLIER date and the event is",
+  "named unmissably. Supplying the later date computes LATE.",
+  "",
+  "== WHAT IS DELIBERATELY NOT SEEDED =====================================",
+  "No appellate rows. No backward rows -- R. 44.01(a) defines only a period",
+  "that begins to run AFTER an act. No R. 44.01(c) motion-notice rows yet,",
+  "though its five-day and one-day periods are the ones that would actually",
+  "exercise the 'less than seven days' exclusion and are the obvious next",
+  "addition. R. 55.25(c)'s 'no less than remains of the time' floor is not",
+  "modelled and is disclosed on both rows it governs; it runs EARLY."
+ ],
+ "rules": [
+  {
+   "rule_id": "mo-r-55-25a-answer-after-personal-service",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Answer after personal service of the summons and petition (Missouri)",
+   "trigger_event": "service_of_summons_and_petition",
+   "count": {
+    "value": 30,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 55.25(a)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/9f17d15f671cda9386256ca600521542?OpenDocument=",
+    "quote": "A defendant shall file an answer within thirty days after the service of the summons and petition, except where service by mail is had, in which event a defendant shall file an answer within thirty days after the acknowledgment of receipt of summons and petition or return registered or certified mail receipt is filed in the case or within forty-five days after the first publication of notice if neither personal service nor service by mail is had.",
+    "note": "THIRTY DAYS, the middle of the seeded range (Washington and Massachusetts 20, federal and Virginia 21, New Jersey 35) and read from the rule rather than inferred. R. 55.25(a) HAS THREE BRANCHES WITH THREE DIFFERENT TRIGGERS and they are three rows here, because the engine must never guess which manner of service was used. This is the personal-service branch.  NO SERVICE EXTENSION AND NO COMPLETION RULE. R. 44.01(d) extends a period run after \"the service of a notice or other paper\"; the summons and petition are served under Rule 54, not Rule 43, so neither mechanism reaches this row. Same scope route as West Virginia, North Carolina, Washington, New Jersey, Virginia and Massachusetts.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "1994-01-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-55-25a-answer-after-service-by-mail",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Answer where service was by mail, running from the filing of the receipt (Missouri)",
+   "trigger_event": "filing_of_acknowledgment_or_return_receipt_of_summons_and_petition",
+   "count": {
+    "value": 30,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 55.25(a)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/9f17d15f671cda9386256ca600521542?OpenDocument=",
+    "quote": "A defendant shall file an answer within thirty days after the service of the summons and petition, except where service by mail is had, in which event a defendant shall file an answer within thirty days after the acknowledgment of receipt of summons and petition or return registered or certified mail receipt is filed in the case or within forty-five days after the first publication of notice if neither personal service nor service by mail is had.",
+    "note": "THIRTY DAYS, BUT THE CLOCK RUNS FROM A FILING, NOT FROM SERVICE. The rule's words are \"within thirty days after the acknowledgment of receipt of summons and petition or return registered or certified mail receipt IS FILED IN THE CASE\". The trigger is named for the FILING so a caller cannot supply the mailing date or the receipt date by accident -- either would compute EARLY. NOTE THE TRAP THIS ROW EXISTS TO AVOID: this is the branch where service WAS by mail, and it still takes NO three-day extension under R. 44.01(d), because the period does not run after service of a paper -- it runs after a filing. A row that carried the extension here would add three days the rule does not give and compute LATE.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "1994-01-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-55-25a-answer-after-publication",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Answer where neither personal service nor service by mail was had (Missouri)",
+   "trigger_event": "first_publication_of_notice",
+   "count": {
+    "value": 45,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 55.25(a)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/9f17d15f671cda9386256ca600521542?OpenDocument=",
+    "quote": "A defendant shall file an answer within thirty days after the service of the summons and petition, except where service by mail is had, in which event a defendant shall file an answer within thirty days after the acknowledgment of receipt of summons and petition or return registered or certified mail receipt is filed in the case or within forty-five days after the first publication of notice if neither personal service nor service by mail is had.",
+    "note": "FORTY-FIVE DAYS, fifteen more than the other two branches, and it runs from the FIRST publication -- not the last, and not the completion of publication. The rule reaches this branch only \"if neither personal service nor service by mail is had\", a condition the engine cannot verify, so it is a separate row rather than a variant.  NO SERVICE EXTENSION AND NO COMPLETION RULE. R. 44.01(d) extends a period run after \"the service of a notice or other paper\"; this period runs from a FILING or from the court's own action, neither of which is service of a paper by a party.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "1994-01-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-55-25b-answer-to-crossclaim",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Answer to a cross-claim (Missouri)",
+   "trigger_event": "filing_of_crossclaim",
+   "count": {
+    "value": 30,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 55.25(b)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/9f17d15f671cda9386256ca600521542?OpenDocument=",
+    "quote": "If a cross-claim is filed against a party, the party shall file answer thereto within thirty days after the same is filed. A reply shall be filed within thirty days after the filing of the pleading to which it is directed. If a reply is ordered by the court, it shall be filed within twenty days after the entry of the order unless the order otherwise directs.",
+    "note": "THIRTY DAYS AFTER THE CROSS-CLAIM IS FILED -- \"within thirty days after the same is FILED\". Missouri measures this from filing where most seeded states measure it from service: North Carolina's Rule 12(a)(1) says \"within 30 days after service upon him\", and Massachusetts' R. 12(a)(1) says \"after service upon him of any pleading\". The difference is not cosmetic -- it decides whether the three-day mail extension can ever apply, and here it cannot. NO SERVICE EXTENSION AND NO COMPLETION RULE. R. 44.01(d) extends a period run after \"the service of a notice or other paper\"; this period runs from a FILING or from the court's own action, neither of which is service of a paper by a party.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "1994-01-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-55-25b-reply-to-pleading",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Reply to a pleading requiring one (Missouri)",
+   "trigger_event": "filing_of_pleading_to_which_reply_is_directed",
+   "count": {
+    "value": 30,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 55.25(b)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/9f17d15f671cda9386256ca600521542?OpenDocument=",
+    "quote": "If a cross-claim is filed against a party, the party shall file answer thereto within thirty days after the same is filed. A reply shall be filed within thirty days after the filing of the pleading to which it is directed. If a reply is ordered by the court, it shall be filed within twenty days after the entry of the order unless the order otherwise directs.",
+    "note": "THIRTY DAYS AFTER THE FILING of the pleading the reply answers. Same filing-not-service measurement as the cross-claim row, and the same consequence. NO SERVICE EXTENSION AND NO COMPLETION RULE. R. 44.01(d) extends a period run after \"the service of a notice or other paper\"; this period runs from a FILING or from the court's own action, neither of which is service of a paper by a party.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "1994-01-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-55-25b-reply-ordered-by-court",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Reply ordered by the court (Missouri)",
+   "trigger_event": "entry_of_order_requiring_reply",
+   "count": {
+    "value": 20,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 55.25(b)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/9f17d15f671cda9386256ca600521542?OpenDocument=",
+    "quote": "If a cross-claim is filed against a party, the party shall file answer thereto within thirty days after the same is filed. A reply shall be filed within thirty days after the filing of the pleading to which it is directed. If a reply is ordered by the court, it shall be filed within twenty days after the entry of the order unless the order otherwise directs.",
+    "note": "TWENTY DAYS, AND IT IS THE ONLY TWENTY-DAY PERIOD IN THE MISSOURI SEED. It runs from ENTRY of the order, not from notice of it -- the opposite of R. 55.25(c)'s limbs, which run from NOTICE of the court's action. Both distinctions sit in the same rule and are recorded rather than flattened. \"UNLESS THE ORDER OTHERWISE DIRECTS\" -- an order the engine cannot see displaces this row. NO SERVICE EXTENSION AND NO COMPLETION RULE. R. 44.01(d) extends a period run after \"the service of a notice or other paper\"; this period runs from a FILING or from the court's own action, neither of which is service of a paper by a party.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "1994-01-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-55-25c-responsive-pleading-after-motion-denied",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Responsive pleading after the court denies a Rule 55.27 motion or postpones it to trial (Missouri)",
+   "trigger_event": "notice_of_court_action_denying_or_postponing_rule_55_27_motion",
+   "count": {
+    "value": 10,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 55.25(c)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/9f17d15f671cda9386256ca600521542?OpenDocument=",
+    "quote": "The filing of any motion provided for in Rule 55.27 alters the time fixed for filing any required responsive pleadings as follows, unless a different time is fixed by order of the court: If the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be filed within ten days after notice of the court's action; if the court grants a motion for a more definite statement the responsive pleading shall be filed within ten days after the filing of the more definite statement. In either case the time for filing of the responsive pleading shall be no less than remains of the time which would have been allowed under this Rule if the motion had not been made.",
+    "note": "TEN DAYS FROM NOTICE OF THE COURT'S ACTION -- not from entry of the order. Its sibling in R. 55.25(b) runs from ENTRY; this one runs from NOTICE. The triggers are named accordingly. TEN DAYS IS NOT SHORT ENOUGH FOR THE EXCLUSION: R. 44.01(a) excludes intermediate weekends and holidays only when the period is \"less than seven days\", so all ten days count. NO SERVICE EXTENSION AND NO COMPLETION RULE. R. 44.01(d) extends a period run after \"the service of a notice or other paper\"; this period runs from a FILING or from the court's own action, neither of which is service of a paper by a party. NOT MODELLED, AND THE OMISSION RUNS EARLY: the subsection ends \"In either case the time for filing of the responsive pleading shall be no less than remains of the time which would have been allowed under this Rule if the motion had not been made.\" That is a floor measured against how much of the ORIGINAL 30-day period was left when the motion was filed -- a quantity this engine cannot see, because it depends on a date (when the motion was filed) that is not this rule's trigger. Since the rule takes whichever is LONGER, the ten-day date computed here is a FLOOR: the true deadline is this date or later, never earlier. So the omission reports EARLY, which is the safe direction. A caller must not read this date as proof the right to plead has expired.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "1994-01-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-55-25c-responsive-pleading-after-more-definite-statement",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Responsive pleading after the filing of a more definite statement (Missouri)",
+   "trigger_event": "filing_of_more_definite_statement",
+   "count": {
+    "value": 10,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 55.25(c)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/9f17d15f671cda9386256ca600521542?OpenDocument=",
+    "quote": "The filing of any motion provided for in Rule 55.27 alters the time fixed for filing any required responsive pleadings as follows, unless a different time is fixed by order of the court: If the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be filed within ten days after notice of the court's action; if the court grants a motion for a more definite statement the responsive pleading shall be filed within ten days after the filing of the more definite statement. In either case the time for filing of the responsive pleading shall be no less than remains of the time which would have been allowed under this Rule if the motion had not been made.",
+    "note": "TEN DAYS AFTER THE MORE DEFINITE STATEMENT IS FILED. Massachusetts' equivalent limb runs from SERVICE of the more definite statement and therefore DOES take that state's extension; Missouri's runs from the FILING and takes nothing. Two neighbouring rules, same sentence structure, opposite result on the extension -- read per state. NO SERVICE EXTENSION AND NO COMPLETION RULE. R. 44.01(d) extends a period run after \"the service of a notice or other paper\"; this period runs from a FILING or from the court's own action, neither of which is service of a paper by a party. NOT MODELLED, AND THE OMISSION RUNS EARLY: the subsection ends \"In either case the time for filing of the responsive pleading shall be no less than remains of the time which would have been allowed under this Rule if the motion had not been made.\" That is a floor measured against how much of the ORIGINAL 30-day period was left when the motion was filed -- a quantity this engine cannot see, because it depends on a date (when the motion was filed) that is not this rule's trigger. Since the rule takes whichever is LONGER, the ten-day date computed here is a FLOOR: the true deadline is this date or later, never earlier. So the omission reports EARLY, which is the safe direction. A caller must not read this date as proof the right to plead has expired.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "1994-01-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-57-01-c1-interrogatory-answers",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Answers and objections to interrogatories (Missouri)",
+   "trigger_event": "service_of_interrogatories",
+   "count": {
+    "value": 30,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 57.01(c)(1)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/ccbd32559d4a216986256ca60052134f?OpenDocument=",
+    "quote": "Responses shall be served within 30 days after the service of the interrogatories. A defendant, however, shall not be required to respond to interrogatories before the expiration of 45 days after the earlier of: (A) The date the defendant enters an appearance, or (B) The date the defendant is served with process. The court may allow a shorter or longer time.",
+    "note": "THIRTY DAYS. This row is the PLAIN limb, for a party who is not a defendant taking the 45-day floor -- see the -defendant-later-of-periods row. THIS ROW CARRIES BOTH SERVICE MECHANISMS AND THAT IS CORRECT, NOT A DUPLICATE. Missouri splits by method: service by MAIL adds three days under R. 44.01(d), while service by FACSIMILE, ELECTRONIC MAIL or the E-FILING SYSTEM adds nothing and instead moves the date service was COMPLETE under R. 43.01(d) and R. 103.08(a). No method appears under both, and the endpoint validator refuses any row where one does. \"THE COURT MAY ALLOW A SHORTER OR LONGER TIME\" -- an order the engine cannot see.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "2021-12-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null,
+   "service_extension": {
+    "standard": "mo_rule_44_01_d",
+    "add": 3,
+    "unit": "calendar_days",
+    "applies_when": [
+     "mail"
+    ],
+    "note": "Mo. R. Civ. P. 44.01(d) adds three days for service BY MAIL ONLY: \"the notice or paper is served by mail three days shall be added to the prescribed period\". \"Added to the prescribed period\", so the days lengthen the period and one rollover runs at the end -- NOT the federal after-expiry order. ELECTRONIC SERVICE GETS NOTHING HERE, and that is not an omission: it is handled by the separate service_completion standard on this row, which moves the date the period runs from instead. Do not widen applies_when to email or e-filing by analogy to Massachusetts or Tennessee -- Missouri deliberately does the opposite."
+   },
+   "service_completion": {
+    "standard": "mo_rule_43_01_d",
+    "note": "Mo. R. Civ. P. 43.01(d): \"Service by facsimile transmission or electronic mail is complete upon transmission, except that a transmission made on a Saturday, Sunday, or legal holiday, or after 5:00 p.m. shall be complete on the next day that is not a Saturday, Sunday, or legal holiday.\" R. 103.08(a) states the same for service through the electronic filing system, expressly \"for the purposes of calculating the time for filing a response\". This moves the TRIGGER DATE, not the amount added, so a service_time is REQUIRED for these methods and the engine refuses outright without one -- unlike Virginia's R. 1:7 refusal, which can still return a date computed without an extension. Mail is deliberately NOT governed: R. 43.01(d) says \"Service by mail is complete upon mailing\", full stop."
+   }
+  },
+  {
+   "rule_id": "mo-r-57-01-c1-interrogatory-answers-defendant-later-of-periods",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Answers and objections to interrogatories served on a defendant (Missouri)",
+   "trigger_event": {
+    "id": "interrogatories_on_defendant",
+    "resolve_periods": "later_of",
+    "limbs": [
+     {
+      "event": "service_of_interrogatories_on_defendant",
+      "count": {
+       "value": 30,
+       "unit": "calendar_days"
+      },
+      "label": "30 days after service of the interrogatories"
+     },
+     {
+      "event": "earlier_of_defendant_appearance_or_service_of_process_for_interrogatories",
+      "count": {
+       "value": 45,
+       "unit": "calendar_days"
+      },
+      "label": "45 days after the earlier of the defendant's appearance and service of process"
+     }
+    ]
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 57.01(c)(1)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/ccbd32559d4a216986256ca60052134f?OpenDocument=",
+    "quote": "Responses shall be served within 30 days after the service of the interrogatories. A defendant, however, shall not be required to respond to interrogatories before the expiration of 45 days after the earlier of: (A) The date the defendant enters an appearance, or (B) The date the defendant is served with process. The court may allow a shorter or longer time.",
+    "note": "A DEFENDANT GETS THE LATER OF THE TWO PERIODS. \"A defendant, however, shall not be required to respond to interrogatories before the expiration of 45 days\" is a floor under the 30-day period, not a replacement for it. FORTY-FIVE HERE AND SIXTY ON ADMISSIONS -- MISSOURI IS NOT INTERNALLY CONSISTENT, and carrying one across to the other would be wrong. R. 57.01 and R. 58.01 both give 45; R. 59.01 gives 60. Each was read on its own. THE DEFENDANT LIMB RUNS FROM \"THE EARLIER OF\" TWO EVENTS AND THE ENGINE CANNOT RESOLVE THAT ITSELF. The rule measures the floor from the earlier of the date the defendant entered an appearance and the date the defendant was served with process. A resolve_periods limb takes one event, so the limb is named \"earlier_of_defendant_appearance_or_service_of_process\" and the CALLER must supply the EARLIER of the two dates. THE ERROR DIRECTION IF THE LATER DATE IS SUPPLIED IS LATE, which is the direction that misses a filing -- so the event name is deliberately unmissable rather than a generic one. Compare Virginia's sending_of_request_to_waive_service, named on the same reasoning. NO SERVICE EXTENSION OR COMPLETION RULE ON THIS ROW. The plain limb carries both and this one deliberately carries neither: no seeded rule combines resolve_periods with either mechanism, the engine has never been exercised on that combination, and inventing the interaction -- does an extension lengthen one limb or both, and does a completion shift move one trigger or the comparison itself -- would be guessing at an order no rule text settles. Compute the plain limb and compare by hand.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "2021-12-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-58-01-c1-production-response",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Written response to a request for production (Missouri)",
+   "trigger_event": "service_of_request_for_production",
+   "count": {
+    "value": 30,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 58.01(c)(1)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/eaf6abbe82915a0586256ca600521350?OpenDocument=",
+    "quote": "Responses shall be served within 30 days after the service of the request. A defendant, however, shall not be required to respond to the request before the expiration of 45 days after the earlier of: (A) The date the defendant enters an appearance; or (B) The date the defendant is served with process. The court may allow a shorter or longer time.",
+    "note": "THIRTY DAYS, with the same 45-day defendant floor as interrogatories -- the two discovery rules genuinely match here, verified rule by rule rather than assumed from the first. Both service mechanisms apply, split by method, as on the interrogatory row. \"THE COURT MAY ALLOW A SHORTER OR LONGER TIME\" -- an order the engine cannot see.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "2021-09-02",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null,
+   "service_extension": {
+    "standard": "mo_rule_44_01_d",
+    "add": 3,
+    "unit": "calendar_days",
+    "applies_when": [
+     "mail"
+    ],
+    "note": "Mo. R. Civ. P. 44.01(d) adds three days for service BY MAIL ONLY: \"the notice or paper is served by mail three days shall be added to the prescribed period\". \"Added to the prescribed period\", so the days lengthen the period and one rollover runs at the end -- NOT the federal after-expiry order. ELECTRONIC SERVICE GETS NOTHING HERE, and that is not an omission: it is handled by the separate service_completion standard on this row, which moves the date the period runs from instead. Do not widen applies_when to email or e-filing by analogy to Massachusetts or Tennessee -- Missouri deliberately does the opposite."
+   },
+   "service_completion": {
+    "standard": "mo_rule_43_01_d",
+    "note": "Mo. R. Civ. P. 43.01(d): \"Service by facsimile transmission or electronic mail is complete upon transmission, except that a transmission made on a Saturday, Sunday, or legal holiday, or after 5:00 p.m. shall be complete on the next day that is not a Saturday, Sunday, or legal holiday.\" R. 103.08(a) states the same for service through the electronic filing system, expressly \"for the purposes of calculating the time for filing a response\". This moves the TRIGGER DATE, not the amount added, so a service_time is REQUIRED for these methods and the engine refuses outright without one -- unlike Virginia's R. 1:7 refusal, which can still return a date computed without an extension. Mail is deliberately NOT governed: R. 43.01(d) says \"Service by mail is complete upon mailing\", full stop."
+   }
+  },
+  {
+   "rule_id": "mo-r-58-01-c1-production-response-defendant-later-of-periods",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Written response to a request for production served on a defendant (Missouri)",
+   "trigger_event": {
+    "id": "production_request_on_defendant",
+    "resolve_periods": "later_of",
+    "limbs": [
+     {
+      "event": "service_of_request_for_production_on_defendant",
+      "count": {
+       "value": 30,
+       "unit": "calendar_days"
+      },
+      "label": "30 days after service of the request"
+     },
+     {
+      "event": "earlier_of_defendant_appearance_or_service_of_process_for_production",
+      "count": {
+       "value": 45,
+       "unit": "calendar_days"
+      },
+      "label": "45 days after the earlier of the defendant's appearance and service of process"
+     }
+    ]
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 58.01(c)(1)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/eaf6abbe82915a0586256ca600521350?OpenDocument=",
+    "quote": "Responses shall be served within 30 days after the service of the request. A defendant, however, shall not be required to respond to the request before the expiration of 45 days after the earlier of: (A) The date the defendant enters an appearance; or (B) The date the defendant is served with process. The court may allow a shorter or longer time.",
+    "note": "A DEFENDANT GETS THE LATER OF THE TWO PERIODS, on the same 30/45 pair as interrogatories and NOT the 30/60 pair admissions uses. THE DEFENDANT LIMB RUNS FROM \"THE EARLIER OF\" TWO EVENTS AND THE ENGINE CANNOT RESOLVE THAT ITSELF. The rule measures the floor from the earlier of the date the defendant entered an appearance and the date the defendant was served with process. A resolve_periods limb takes one event, so the limb is named \"earlier_of_defendant_appearance_or_service_of_process\" and the CALLER must supply the EARLIER of the two dates. THE ERROR DIRECTION IF THE LATER DATE IS SUPPLIED IS LATE, which is the direction that misses a filing -- so the event name is deliberately unmissable rather than a generic one. Compare Virginia's sending_of_request_to_waive_service, named on the same reasoning. NO SERVICE EXTENSION OR COMPLETION RULE ON THIS ROW, for the reason given on the interrogatory sibling.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "2021-09-02",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  },
+  {
+   "rule_id": "mo-r-59-01-d1-admission-response",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Answer or objection to a request for admission (Missouri — unanswered matters are ADMITTED)",
+   "trigger_event": "service_of_request_for_admission",
+   "count": {
+    "value": 30,
+    "unit": "calendar_days",
+    "direction": "forward"
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 59.01(d)(1)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/599c2f573b62fd0086256ca600521354",
+    "quote": "Responses shall be served within 30 days after the service of the requests for admissions. A defendant or respondent, however, shall not be required to respond to requests for admissions before the expiration of 60 days after the earlier of the defendant: (A) Entering an appearance, or (B) Being served with process. The court may allow a shorter or longer time.",
+    "note": "THIRTY DAYS, AND SILENCE ADMITS: R. 59.01(a)(2) provides that \"a failure to timely respond to requests for admissions in compliance with this Rule 59.01 shall result in each matter being admitted\", and R. 59.01(a)(1) requires the request itself to carry that warning in boldface capitals. Same self-executing structure as Ohio Civ.R. 36(A)(1), Va. R. 4:11(a) and Mass. R. 36(a), and the reason this label says so out loud. A CARVE-OUT THE ENGINE CANNOT SEE: in cases under Chapter 517 RSMo the automatic admission does NOT apply -- the court may instead grant more time or order the requests re-served. This row computes the date either way; what changes is the consequence of missing it, which is a question of law and not of arithmetic. Both service mechanisms apply, split by method.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "2022-07-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null,
+   "service_extension": {
+    "standard": "mo_rule_44_01_d",
+    "add": 3,
+    "unit": "calendar_days",
+    "applies_when": [
+     "mail"
+    ],
+    "note": "Mo. R. Civ. P. 44.01(d) adds three days for service BY MAIL ONLY: \"the notice or paper is served by mail three days shall be added to the prescribed period\". \"Added to the prescribed period\", so the days lengthen the period and one rollover runs at the end -- NOT the federal after-expiry order. ELECTRONIC SERVICE GETS NOTHING HERE, and that is not an omission: it is handled by the separate service_completion standard on this row, which moves the date the period runs from instead. Do not widen applies_when to email or e-filing by analogy to Massachusetts or Tennessee -- Missouri deliberately does the opposite."
+   },
+   "service_completion": {
+    "standard": "mo_rule_43_01_d",
+    "note": "Mo. R. Civ. P. 43.01(d): \"Service by facsimile transmission or electronic mail is complete upon transmission, except that a transmission made on a Saturday, Sunday, or legal holiday, or after 5:00 p.m. shall be complete on the next day that is not a Saturday, Sunday, or legal holiday.\" R. 103.08(a) states the same for service through the electronic filing system, expressly \"for the purposes of calculating the time for filing a response\". This moves the TRIGGER DATE, not the amount added, so a service_time is REQUIRED for these methods and the engine refuses outright without one -- unlike Virginia's R. 1:7 refusal, which can still return a date computed without an extension. Mail is deliberately NOT governed: R. 43.01(d) says \"Service by mail is complete upon mailing\", full stop."
+   }
+  },
+  {
+   "rule_id": "mo-r-59-01-d1-admission-response-defendant-later-of-periods",
+   "jurisdiction": "mo",
+   "domain": "civil-litigation",
+   "label": "Answer or objection to a request for admission served on a defendant (Missouri)",
+   "trigger_event": {
+    "id": "admission_request_on_defendant",
+    "resolve_periods": "later_of",
+    "limbs": [
+     {
+      "event": "service_of_request_for_admission_on_defendant",
+      "count": {
+       "value": 30,
+       "unit": "calendar_days"
+      },
+      "label": "30 days after service of the requests"
+     },
+     {
+      "event": "earlier_of_defendant_appearance_or_service_of_process_for_admission",
+      "count": {
+       "value": 60,
+       "unit": "calendar_days"
+      },
+      "label": "60 days after the earlier of the defendant's appearance and service of process"
+     }
+    ]
+   },
+   "computation": "mo_rule_44_01_a",
+   "authority": {
+    "citation": "Mo. R. Civ. P. 59.01(d)(1)",
+    "url": "https://www.courts.mo.gov/courts/ClerkHandbooksP2RulesOnly.nsf/c0c6ffa99df4993f86256ba50057dcb8/599c2f573b62fd0086256ca600521354",
+    "quote": "Responses shall be served within 30 days after the service of the requests for admissions. A defendant or respondent, however, shall not be required to respond to requests for admissions before the expiration of 60 days after the earlier of the defendant: (A) Entering an appearance, or (B) Being served with process. The court may allow a shorter or longer time.",
+    "note": "SIXTY DAYS, NOT FORTY-FIVE, AND THIS IS THE ROW MOST LIKELY TO BE GOT WRONG BY ANALOGY. Interrogatories and production both give a defendant 45 days; admissions give 60. Reading 45 here would compute EARLY on the floor limb -- and because silence ADMITS under this rule, an early date on an admissions deadline is the most consequential error in the Missouri seed. Each number was read from its own rule. THE DEFENDANT LIMB RUNS FROM \"THE EARLIER OF\" TWO EVENTS AND THE ENGINE CANNOT RESOLVE THAT ITSELF. The rule measures the floor from the earlier of the date the defendant entered an appearance and the date the defendant was served with process. A resolve_periods limb takes one event, so the limb is named \"earlier_of_defendant_appearance_or_service_of_process\" and the CALLER must supply the EARLIER of the two dates. THE ERROR DIRECTION IF THE LATER DATE IS SUPPLIED IS LATE, which is the direction that misses a filing -- so the event name is deliberately unmissable rather than a generic one. Compare Virginia's sending_of_request_to_waive_service, named on the same reasoning. NO SERVICE EXTENSION OR COMPLETION RULE ON THIS ROW, for the reason given on the interrogatory sibling.",
+    "retrieved_at": "2026-08-26"
+   },
+   "effective_from": "2022-07-01",
+   "effective_to": null,
+   "version": 1,
+   "supersedes": null
+  }
+ ]
+}
