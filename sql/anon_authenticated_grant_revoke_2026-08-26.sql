@@ -5,8 +5,11 @@
 -- worked: R6 -> R4 -> Section 0 -> Section 1 -> Section 2 -> Section 3 -> 4.
 --
 -- ONLY SECTION 2 MUTATES, AND IT IS COMMENTED OUT. Everything else reads.
--- Run order: R6 -> R4 -> Section 0 -> Section 1 -> (review) -> Section 2
---            (uncomment) -> 3a/3b/3c/3d -> Section 4.
+-- Run order: R6 -> R4 -> Section 0 -> 0b -> 0c -> Section 1 -> 1b -> (review)
+--            -> Section 2 STAGE A (uncomment) -> 3a/3b/3c/3d/3e -> Section 4.
+--
+-- STAGE B (`revoke usage on schema public`) IS NOT IN THIS FILE. It runs
+-- separately, after Stage A verifies clean. 3f records its before-state.
 --
 -- ══ WHY THIS EXISTS, AND WHY IT IS NOT A FOLLOW-ON TO ANYTHING ═════════════
 -- Found 2026-08-26. `anon` and `authenticated` each hold
@@ -265,6 +268,45 @@ where table_schema = 'public'
 group by grantee
 order by grantee;
 
+-- ── SECTION 0c: BASELINE FOR THE NON-TABLE OBJECTS -- added for Stage A ──
+-- Section 0 captures table grants only. Stage A also revokes on SEQUENCES and
+-- ROUTINES, and a revoke you cannot diff is a revoke you cannot verify, so
+-- those need their own before-state. 3e checks against this.
+--
+-- Sequences via aclexplode on pg_class rather than an information_schema view:
+-- sequence privileges are USAGE/SELECT/UPDATE and no single IS view reports
+-- all three cleanly per grantee. aclexplode reads the real ACL.
+drop table if exists public._anon_nontable_baseline_2026_08_26;
+create table public._anon_nontable_baseline_2026_08_26 as
+select 'SEQUENCE'                  as obj_type,
+       c.relname                   as obj_name,
+       acl.grantee::regrole::text  as grantee,
+       acl.privilege_type
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+cross join lateral aclexplode(c.relacl) as acl
+where n.nspname = 'public'
+  and c.relkind = 'S'
+  and c.relacl is not null
+  and acl.grantee::regrole::text in ('anon', 'authenticated')
+union all
+select 'ROUTINE',
+       routine_name,
+       grantee,
+       privilege_type
+from information_schema.role_routine_grants
+where routine_schema = 'public'
+  and grantee in ('anon', 'authenticated');
+
+-- Record this. Zero rows is a perfectly good answer and would mean Stage A's
+-- sequence and routine statements are no-ops -- which is worth KNOWING rather
+-- than assuming, because "probably nothing there" is what left anon holding
+-- TRUNCATE on 159 tables in the first place.
+select obj_type, grantee, count(*) as rows_held
+from public._anon_nontable_baseline_2026_08_26
+group by obj_type, grantee
+order by obj_type, grantee;
+
 -- ── SECTION 1: DISCOVER -- run this, review the real output ──────────────
 -- List-free: the set is computed from the catalog, never pasted. Expect ~158
 -- tables per role. Report the real numbers; do not carry the ~158 forward as
@@ -294,28 +336,82 @@ where table_schema = 'public'
 group by table_name, grantee
 order by table_name, grantee;
 
--- ── SECTION 2: THE FIX -- NOT RUN. Uncomment only after reviewing 1 and 1b ──
--- Two statements, both list-free.
+-- ══ SECTION 2 -- STAGE A. NOT RUN. Uncomment only after 1 and 1b reviewed ══
 --
--- The first fixes the STATE on tables that exist now. `on all tables in
--- schema public` resolves at execution time from the catalog, so it cannot
--- drift from a list the way an enumerated file would, and it cannot miss the
--- undeclared tables that started this whole thread.
+-- ── WHY THIS IS STAGE A AND NOT THE WHOLE THING ──────────────────────────
+-- Approved 2026-08-26 as the first of two stages. Stage B -- the single
+-- statement `revoke usage on schema public from anon, authenticated` -- is
+-- NOT in this file and must be run separately, in its own window, after Stage
+-- A verifies clean.
 --
--- The second fixes the SOURCE. Without it every table created from here on
--- re-acquires the baseline and this sweep has to be re-run forever. It mirrors
--- append_only_grant_audit.sql:192-193 exactly, for the two roles that line
--- omitted. NOTE: `maintain` is included there and is included here for
--- symmetry, even though Section 1 shows only three verbs actually held -- a
--- deliberate choice, flagged rather than silent, so the two default-privilege
--- lines cannot drift apart later.
+-- The split is not caution for its own sake. Every statement in Stage A is
+-- verifiable from the catalog: 3b/3c/3e diff it against a captured baseline
+-- and can say exactly what moved. Stage B's blast radius is NOT knowable from
+-- this repo -- Supabase internals (Studio, Realtime, PostgREST schema-cache
+-- reload) may touch `public` as these roles in ways no file here describes.
+-- Run together, a failure would be unattributable: nobody could say which half
+-- caused it. Run apart, the answer is free.
+--
+-- ── WHAT CHANGED FROM THE THREE-VERB DRAFT, AND WHY IT IS NOT BIGGER ─────
+-- Section 1b came back EMPTY. TRUNCATE/REFERENCES/TRIGGER are ALL either role
+-- holds on any table. So `revoke all on all tables` and
+-- `revoke truncate, references, trigger on all tables` reach the SAME end
+-- state today -- zero. The wider verb list is not a wider blast radius on
+-- tables; it is the same change, stated so it stays correct if someone grants
+-- one of these roles something before this runs.
+--
+-- The genuinely new surface in Stage A is SEQUENCES and ROUTINES, plus
+-- widening ALTER DEFAULT PRIVILEGES past tables-only.
+--
+-- ── ONE STATEMENT WORTH READING TWICE: `ALL ROUTINES` ────────────────────
+-- `public` is not only SAIRN's schema. Extensions install functions here too
+-- -- `gen_random_uuid()`, which three migrations written tonight use as a
+-- column default, lives in `public` via pgcrypto. `revoke all on all routines
+-- in schema public` therefore touches extension functions, not just the five
+-- SAIRN ones.
+--
+-- Checked before including it: this is safe, and here is the reasoning rather
+-- than the conclusion. Revoking EXECUTE from `anon`/`authenticated` does not
+-- touch `service_role`, which is the role that actually performs every insert
+-- on this platform, so the `gen_random_uuid()` defaults keep working. The five
+-- SAIRN functions already carry `revoke all ... from public` plus
+-- `grant execute ... to service_role`, so they are unaffected either way.
+-- Section 0c records the real before-state; if it comes back empty, both
+-- routine and sequence statements are no-ops and 3e will say so.
+--
+-- The known cost, stated rather than discovered later: if `anon` is ever
+-- legitimately granted INSERT on a table whose default calls a `public`
+-- function, it will also need EXECUTE on that function. That is one extra
+-- GRANT at that time, not a surprise.
+--
+-- All statements are list-free: `all tables` / `all sequences` / `all
+-- routines in schema public` resolve from the catalog at execution time, so
+-- they cannot drift from an enumerated list and cannot miss the
+-- live-but-undeclared tables that started this whole thread.
 
--- revoke truncate, references, trigger
---   on all tables in schema public
---   from anon, authenticated;
+-- ── 2a. STATE: existing objects ─────────────────────────────────────────
+-- revoke all on all tables    in schema public from anon, authenticated;
+-- revoke all on all sequences in schema public from anon, authenticated;
+-- revoke all on all routines  in schema public from anon, authenticated;
 
+-- ── 2b. SOURCE: objects created from here on ────────────────────────────
+-- Without this, every new table re-acquires the baseline and this sweep has to
+-- be re-run forever. It is the half that makes the fix durable, and it is the
+-- half append_only_grant_audit.sql:192-193 got right for service_role and
+-- omitted for these two roles -- which is the entire reason this file exists.
 -- alter default privileges for role postgres in schema public
---   revoke truncate, references, trigger, maintain on tables from anon, authenticated;
+--   revoke all on tables    from anon, authenticated;
+-- alter default privileges for role postgres in schema public
+--   revoke all on sequences from anon, authenticated;
+-- alter default privileges for role postgres in schema public
+--   revoke all on routines  from anon, authenticated;
+
+-- ── NOT IN STAGE A. Do not uncomment this here. ─────────────────────────
+-- revoke usage on schema public from anon, authenticated;
+--   ^ STAGE B. Separate run, separate window, separate verification, only
+--     after Stage A's 3a/3b/3c/3d/3e all pass. Reversal is one GRANT, but the
+--     failure mode may surface somewhere nobody is watching, which is exactly
+--     why it does not share a run with statements that are fully verifiable.
 
 -- ── SECTION 3: VERIFY -- only after Section 2 has actually run ───────────
 -- 3a. AFTER-STATE ON intake_submissions -- EXPECTATION INVERTED 2026-08-26.
@@ -400,8 +496,46 @@ join pg_namespace n on n.oid = d.defaclnamespace
 where n.nspname = 'public'
 order by 1, 2;
 
--- ── SECTION 4: CLEANUP -- only after 3a/3b/3c/3d all pass ───────────────
--- Leave the baseline table in place if ANY of them did not. It is the only
--- record of the before-state, and dropping it on a failed run destroys the
--- evidence needed to work out what happened.
+-- 3e. NON-TABLE OBJECTS -- the Stage A half Section 3b cannot see. 3b diffs
+-- table grants only, so without this the sequence and routine statements would
+-- be unverified and would still read as "swept".
+--
+-- EXPECT ZERO ROWS. Any row here is a sequence or routine privilege that
+-- survived the revoke.
+select 'SEQUENCE' as obj_type, c.relname as obj_name,
+       acl.grantee::regrole::text as grantee, acl.privilege_type
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+cross join lateral aclexplode(c.relacl) as acl
+where n.nspname = 'public'
+  and c.relkind = 'S'
+  and c.relacl is not null
+  and acl.grantee::regrole::text in ('anon', 'authenticated')
+union all
+select 'ROUTINE', routine_name, grantee, privilege_type
+from information_schema.role_routine_grants
+where routine_schema = 'public'
+  and grantee in ('anon', 'authenticated')
+order by 1, 2, 3;
+
+-- 3f. STAGE B PRECONDITION, not a Stage A check. Records whether schema USAGE
+-- is still held, so the Stage B decision starts from a measured state rather
+-- than an assumed one. Stage A does NOT change this -- if it reads differently
+-- after Stage A than before, something outside this file ran.
+select n.nspname as schema, acl.grantee::regrole::text as grantee,
+       acl.privilege_type
+from pg_namespace n
+cross join lateral aclexplode(n.nspacl) as acl
+where n.nspname = 'public'
+  and acl.grantee::regrole::text in ('anon', 'authenticated')
+order by 2, 3;
+
+-- ── SECTION 4: CLEANUP -- only after 3a/3b/3c/3d/3e all pass ───────────
+-- Leave BOTH baseline tables in place if ANY of them did not. They are the
+-- only record of the before-state, and dropping them on a failed run destroys
+-- the evidence needed to work out what happened.
+--
+-- Keep them until STAGE B has also run and verified, not just Stage A -- Stage
+-- B has no baseline of its own and 3f above is its only before-reading.
 -- drop table if exists public._anon_grant_baseline_2026_08_26;
+-- drop table if exists public._anon_nontable_baseline_2026_08_26;
