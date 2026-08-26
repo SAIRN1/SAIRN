@@ -1,7 +1,7 @@
 # SAIRN Skills
 
 A small, free Claude Code plugin marketplace from
-[SAIRN Technologies LLC](https://sairn.com). One skill so far.
+[SAIRN Technologies LLC](https://sairntech.com). One skill so far.
 
 ```
 /plugin marketplace add sairn-tech/sairn-skills
