@@ -236,3 +236,72 @@ test('the vocabularies are closed', () => {
   assert.deepStrictEqual(b.INVOICE_STATUSES, ['draft', 'issued', 'paid', 'void']);
   assert.ok(b.ACCEPTANCE_METHODS.indexOf('signature') !== -1);
 });
+
+// ── Tax provenance across a write/read round trip (open-work row 141) ───────
+// The bug was never in computeTotals -- it is in what the write PERSISTS. The
+// write stored the derived `tax` alongside `tax_rate`, and every read fed both
+// back into computeTotals, so a figure the app worked out became an input the
+// user never supplied. These replay the real round trip: compute, store via
+// taxFieldsToStore, then summarize the stored row exactly as a read does.
+
+function roundTrip(taxRate, taxAmount) {
+  const totals = b.computeTotals(LINES, taxRate, taxAmount);
+  // Mirrors api/sd-data.js's invoice and proposal write branches.
+  const stored = Object.assign(
+    { line_items: totals.line_items, subtotal: totals.subtotal, total: totals.total },
+    b.taxFieldsToStore(taxRate, taxAmount)
+  );
+  return { atWrite: totals, stored: stored, onRead: b.summarizeInvoice(Object.assign({}, stored, { payments: [] })) };
+}
+
+test('tax: a rate-priced invoice still reads as rate-based, not as an amount', () => {
+  // 16002.50 @ 7.5% = 1200.19 (banker-free, money() rounds to cents)
+  const r = roundTrip(7.5, null);
+  assert.strictEqual(r.atWrite.tax_basis, 'rate');
+  assert.strictEqual(r.onRead.tax_basis, 'rate', 'row 141: read reported "amount" for a rate-only invoice');
+  // The derived figure is NOT persisted -- that was the whole defect.
+  assert.strictEqual(r.stored.tax, undefined);
+  assert.strictEqual(r.stored.tax_rate, 7.5);
+  // ...and no warning is invented about input the user never gave.
+  assert.deepStrictEqual(r.onRead.problems, []);
+  assert.strictEqual(r.onRead.tax, r.atWrite.tax);
+});
+
+test('tax: an invoice with no tax reads as basis "none", not an explicit zero', () => {
+  const r = roundTrip(null, null);
+  assert.strictEqual(r.atWrite.tax_basis, 'none');
+  assert.strictEqual(r.onRead.tax_basis, 'none', 'a taxless invoice claimed an explicit tax amount of 0');
+  assert.strictEqual(r.stored.tax, undefined);
+  assert.strictEqual(r.stored.tax_rate, undefined);
+  assert.strictEqual(r.onRead.tax, 0);
+});
+
+test('tax: a genuine explicit amount keeps reading as an amount', () => {
+  const r = roundTrip(null, 800);
+  assert.strictEqual(r.onRead.tax_basis, 'amount');
+  assert.strictEqual(r.stored.tax, 800);
+  assert.strictEqual(r.stored.tax_rate, undefined);
+  assert.strictEqual(r.onRead.tax, 800);
+});
+
+test('tax: a REAL rate-and-amount conflict keeps its warning on every read', () => {
+  // The case that mattered most: the write warned, and the warning used to be
+  // dropped after the first read -- the one time it was true.
+  const r = roundTrip(7.5, 800);
+  assert.strictEqual(r.atWrite.tax_basis, 'amount');
+  assert.strictEqual(r.onRead.tax_basis, 'amount');
+  assert.strictEqual(r.stored.tax_rate, 7.5, 'both were expressed, so both must survive');
+  assert.strictEqual(r.stored.tax, 800);
+  assert.match(r.onRead.problems[0], /both a tax rate and a tax amount/);
+  assert.strictEqual(r.onRead.tax, 800);
+});
+
+test('tax: the stored shape carries no derived tax figure in any case', () => {
+  // The invariant behind all four: a persisted blob records the question the
+  // user asked, never the answer computeTotals gave.
+  [[7.5, null], [null, null], [null, 800], [7.5, 800]].forEach(([rate, amt]) => {
+    const s = b.taxFieldsToStore(rate, amt);
+    if (rate === null) assert.strictEqual('tax_rate' in s, false);
+    if (amt === null) assert.strictEqual('tax' in s, false, 'a derived tax was persisted for rate=' + rate);
+  });
+});

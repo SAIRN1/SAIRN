@@ -2280,11 +2280,20 @@ function toggleTeslaCert(employeeId,checked){
 // export that re-implements a filter is one refactor away from disagreeing
 // with the panel it claims to mirror.
 //
-// PROPOSALS ARE DEFERRED, ON PURPOSE. rf_proposals is the one resource whose
-// read is per-job (it requires payload.job_id), so a cross-job proposals report
-// would need either N calls fanned out from here or a new server branch --
-// exactly the shape this design avoids. Logged as its own item rather than
-// bent into v1.
+// PROPOSALS, ADDED 2026-08-26, CLOSING THE ONE REPORT 4c DEFERRED.
+// rf_proposals is the only resource whose read is per-job (it requires
+// payload.job_id, because rfJobGate has to gate against a specific job). It is
+// built by FANNING OUT over the jobs this session can already see: one
+// rf_jobs read, then one rf_proposals read per returned job. Both halves are
+// ordinary gated reads, so the gate is still inherited twice over -- a job the
+// caller cannot see never enters the loop, and rfJobGate refuses it server-side
+// even if it somehow did.
+//
+// A server-side cross-job branch was still not written, for the same reason as
+// the other five: it would be a second read path with the gate re-asserted.
+// The cost is N+1 requests instead of 1, which is why the fan-out is BOUNDED
+// (see rfLoadProposalsAcrossJobs) and why any job that fails is reported by
+// name rather than silently dropped from the file.
 var RF_REPORTS=[
   {
     key:'jobs', label:'Jobs', resource:'rf_jobs', action:'read', payload:{},
@@ -2337,6 +2346,28 @@ var RF_REPORTS=[
       ['entry_id','entry_id'],['employee_id','employee_id'],['record_type','record_type'],
       ['credential','credential'],['issuer','issuer'],['jurisdiction','jurisdiction'],
       ['expires_on','expires_on'],['has_expiry','has_expiry'],['recorded_at','recorded_at']
+    ]
+  },
+  {
+    key:'proposals', label:'Proposals', resource:'rf_proposals', action:'read', payload:{},
+    // The only report with its own loader, because its read is per-job.
+    load:function(){return rfLoadProposalsAcrossJobs();},
+    gate:'Proposals follow job visibility. Management and estimators export every job’s chain; a foreman or crew member exports only the jobs assigned to them.',
+    columns:[
+      ['proposal_id','proposal_id'],['job_id','job_id'],['event_type','event_type'],
+      ['supersedes','supersedes'],['issued_on','issued_on'],['decided_on','decided_on'],
+      ['acceptance_method','acceptance_method'],['accepted_by','accepted_by'],
+      // The acceptance signature is up to 1.5MB of base64 and is stripped by
+      // the read unless explicitly asked for. It is NOT requested here and
+      // must never be -- a CSV is the last place a signature image belongs.
+      // The server's own boolean is exported instead.
+      ['has_signature','has_signature'],
+      ['subtotal','subtotal'],['tax_rate','tax_rate'],['tax','tax'],['total','total'],
+      // Per-JOB, not per-event: the server's own proposalState() verdict for
+      // the chain this row belongs to, repeated on each of that job's rows.
+      // Not recomputed here -- the panel never decides a state.
+      ['job_proposal_state','job_proposal_state'],
+      ['recorded_by','recorded_by'],['created_at','created_at']
     ]
   },
   {
@@ -2397,6 +2428,56 @@ function rfToCsv(rows,columns){
   return '﻿'+[head].concat(body).join('\r\n')+'\r\n';
 }
 
+// The Proposals fan-out. Returns the same {ok,data:{data,provisioned},msg}
+// shape rfDataRaw does, so rfExportReport handles it identically.
+//
+// BOUNDED, and the bound is disclosed rather than silent: at most
+// RF_FANOUT_WIDTH requests are in flight at once. An unbounded Promise.all
+// over a real contractor's job list would fire hundreds of POSTs from one
+// click. Nothing is truncated -- every visible job is asked about, just not
+// all at the same instant.
+var RF_FANOUT_WIDTH=6;
+
+function rfLoadProposalsAcrossJobs(){
+  return rfDataRaw('read','rf_jobs',{}).then(function(jr){
+    if(!jr.ok)return jr;
+    var body=jr.data||{};
+    if(body.provisioned===false)return {ok:true,data:{data:[],provisioned:false}};
+    var jobs=(body.data||[]).map(function(j){return j.id;}).filter(Boolean);
+    if(!jobs.length)return {ok:true,data:{data:[],provisioned:true}};
+
+    var rows=[],failed=[],i=0;
+    function next(){
+      if(i>=jobs.length)return Promise.resolve();
+      var jobId=jobs[i++];
+      return rfDataRaw('read','rf_proposals',{job_id:jobId}).then(function(pr){
+        if(!pr.ok){
+          // A job that refuses is NAMED, not quietly missing from the file.
+          // A partial export that looks complete is the failure mode this
+          // whole phase exists to avoid.
+          failed.push(jobId+' ('+(pr.code||pr.status)+')');
+          return next();
+        }
+        var pb=pr.data||{};
+        var state=(pb.state&&pb.state.status)||'none';
+        (pb.data||[]).forEach(function(ev){
+          rows.push(Object.assign({},ev,{job_proposal_state:state}));
+        });
+        return next();
+      });
+    }
+    var lanes=[];
+    for(var w=0;w<Math.min(RF_FANOUT_WIDTH,jobs.length);w++)lanes.push(next());
+    return Promise.all(lanes).then(function(){
+      return {
+        ok:true,
+        data:{data:rows,provisioned:true},
+        fanout:{jobs:jobs.length,failed:failed}
+      };
+    });
+  });
+}
+
 function rfReportCanSee(rep){
   if(!rep.managementOnly)return true;
   return !!(MANAGEMENT_ROLES[rfSession&&rfSession.role]||BROAD_READ_ROLES[rfSession&&rfSession.role]);
@@ -2434,7 +2515,10 @@ function rfExportReport(key){
   if(btn){btn.disabled=true;btn.textContent='Exporting…';}
   var done=function(){if(btn){btn.disabled=false;btn.textContent='Export CSV';}};
 
-  rfDataRaw(rep.action,rep.resource,rep.payload).then(function(r){
+  // Five reports are a single gated read; Proposals supplies its own loader
+  // because its read is per-job. Both return the same shape.
+  var loading=rep.load?rep.load():rfDataRaw(rep.action,rep.resource,rep.payload);
+  loading.then(function(r){
     done();
     if(!r.ok){
       // A refusal is reported as a refusal. The failure this whole phase came
@@ -2453,8 +2537,19 @@ function rfExportReport(key){
       toast(rep.label+' is not set up yet');
       return;
     }
+    // Any job the fan-out could not read is named here, before the empty
+    // check, so it is stated whether or not a file ends up being written.
+    var fan=r.fanout;
+    var fanNote='';
+    if(fan){
+      fanNote=' Asked the server about <strong>'+fan.jobs+'</strong> job'+(fan.jobs===1?'':'s')+' you can see.';
+      if(fan.failed.length){
+        fanNote+=' <span style="color:#B91C1C;">'+fan.failed.length+' could not be read and are NOT in this file: '+
+          rfEsc(fan.failed.join(', '))+'.</span>';
+      }
+    }
     if(!rows.length){
-      if(out)out.innerHTML='No '+rfEsc(rep.label.toLowerCase())+' are visible to your role — nothing to export. No file was written, rather than an empty one that would look like a completed export.';
+      if(out)out.innerHTML='No '+rfEsc(rep.label.toLowerCase())+' are visible to your role — nothing to export. No file was written, rather than an empty one that would look like a completed export.'+fanNote;
       toast('Nothing visible to export');
       return;
     }
@@ -2463,7 +2558,7 @@ function rfExportReport(key){
     rfDownload(name,csv);
     if(out){
       out.innerHTML='Exported <strong>'+rows.length+'</strong> '+rfEsc(rep.label.toLowerCase())+
-        ' to <code>'+rfEsc(name)+'</code> — '+rep.columns.length+' columns, scoped to what your role can see.';
+        ' to <code>'+rfEsc(name)+'</code> — '+rep.columns.length+' columns, scoped to what your role can see.'+fanNote;
     }
     toast('Exported '+rows.length+' row'+(rows.length===1?'':'s'));
   });

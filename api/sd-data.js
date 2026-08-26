@@ -3194,9 +3194,13 @@ module.exports = async (req, res) => {
         const totals = roofingBilling.computeTotals(payload.line_items, payload.tax_rate, payload.tax);
         blob.line_items = totals.line_items;
         blob.subtotal = totals.subtotal;
-        blob.tax_rate = totals.tax_rate;
-        blob.tax = totals.tax;
         blob.total = totals.total;
+        // Tax is stored as the user EXPRESSED it, not as computeTotals worked
+        // it out -- see taxFieldsToStore's header. Writing the derived figure
+        // back made it an input on the next read, which is what made a
+        // rate-priced proposal report tax_basis 'amount' forever after.
+        delete blob.tax_rate; delete blob.tax;
+        Object.assign(blob, roofingBilling.taxFieldsToStore(payload.tax_rate, payload.tax));
       }
       const r = await fetch(rest('rf_proposals'), {
         method: 'POST',
@@ -3278,9 +3282,11 @@ module.exports = async (req, res) => {
         ['id', 'job_id', 'location_id', 'claim_id', 'status', 'issue_date', 'due_date', 'payments', 'invoice_number', 'invoice_seq'].forEach((k) => { delete blob[k]; });
         blob.line_items = totals.line_items;
         blob.subtotal = totals.subtotal;
-        blob.tax_rate = totals.tax_rate;
-        blob.tax = totals.tax;
         blob.total = totals.total;
+        // Same rule as the proposal branch above: persist the question, not
+        // the answer. See taxFieldsToStore in api/_lib/roofing-billing.js.
+        delete blob.tax_rate; delete blob.tax;
+        Object.assign(blob, roofingBilling.taxFieldsToStore(payload.tax_rate, payload.tax));
         const body = {
           license_hash: licHash, app_id: 'sairnroofing', invoice_id: String(payload.id),
           job_id: String(payload.job_id),
