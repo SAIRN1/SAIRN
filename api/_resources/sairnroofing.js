@@ -59,6 +59,16 @@ module.exports = {
   // no balance column anywhere -- it is derived on read.
     'rf_proposals',
     'rf_invoices',
+  // Company-level settings (2026-08-26) -- see sql/sairnroofing_settings_schema.sql.
+  // Keyed rows, one per setting, so this is the last settings migration this
+  // app needs. Currently holds 'damage_threshold' for the repair-vs-replace
+  // engine. REGISTERED DELIBERATELY, not as an afterthought: a table with no
+  // registered resource is invisible to the cheap no-credentials provisioning
+  // probe (api/sd-data.js maps a PostgREST 404 to provisioned:false on read),
+  // and 41 declared tables are already blind to it for exactly that reason --
+  // see docs/SAIRN-OPEN-WORK-INDEX.md. Registering it on day one keeps this
+  // one out of that list.
+    'rf_settings',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -69,7 +79,14 @@ module.exports = {
     // 'reconcile' (Phase 3c) computes the supplement worksheet -- a
     // DETERMINISTIC comparison of the adjuster's estimate against the measured
     // scope. Reads the claim and its job, writes nothing. Never an LLM opinion.
-    rf_claims: ['reconcile'],
+    // 'assess_damage' (2026-08-26) computes the per-slope repair-vs-replace
+    // EVIDENCE assessment from slope rows on the claim, against the company's
+    // configured threshold in rf_settings. Reads only -- looking at whether a
+    // slope meets a threshold must never record that it does. The snapshot of
+    // the threshold used is written by the ordinary rf_claims WRITE, not here,
+    // for exactly that reason. It never says a roof should be replaced; see
+    // the boundary note at the top of api/_lib/roofing-damage-assessment.js.
+    rf_claims: ['reconcile', 'assess_damage'],
     // 'agreement_status' (Phase 5) computes the rescission clock from the
     // claim's append-only agreement chain and the state rule. Reads only.
     // Looking at whether a cancellation window is open must never advance,
