@@ -107,9 +107,12 @@ const REJECTED = 400;      // the gate refused the verb
     assert.deepStrictEqual(grants('evaluate').sort(),
       ['alf_compliance_rules', 'dnt_credentials', 'rf_certifications', 'rf_company_programs']);
     assert.deepStrictEqual(grants('derive_charges'), ['alf_billing']);
-    // 'reconcile' (SAIRNroofing 3c) is owned by rf_claims alone.
-    assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_claims, ['reconcile']);
+    // 'reconcile' (SAIRNroofing 3c) and 'assess_damage' (2026-08-26) are both
+    // owned by rf_claims alone, and both are compute-only: neither may ever
+    // write, which roofing-damage-assessment-endpoint.test.js asserts directly.
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_claims, ['reconcile', 'assess_damage']);
     assert.deepStrictEqual(grants('reconcile'), ['rf_claims']);
+    assert.deepStrictEqual(grants('assess_damage'), ['rf_claims']);
     // Phase 4a/4d single-owner verbs.
     assert.deepStrictEqual(grants('set_status'), ['rf_schedule']);
     assert.deepStrictEqual(grants('agreement_status'), ['rf_claim_agreements']);
@@ -135,6 +138,7 @@ const REJECTED = 400;      // the gate refused the verb
     assert.deepStrictEqual([...all].sort(), [
       'add_payment',
       'agreement_status',
+      'assess_damage',
       'delete',
       'derive_charges',
       'evaluate',
