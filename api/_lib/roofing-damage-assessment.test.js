@@ -101,16 +101,96 @@ test('a partially-recorded roof reports the gap at the summary level', () => {
     ]
   });
   assert.deepStrictEqual(r.summary, {
-    slopes_total: 3, meets_threshold: 1, below_threshold: 1, insufficient_evidence: 1, unassessed_slopes_remain: true
+    slopes_total: 3, meets_threshold: 1, below_threshold: 1, material_unavailable: 0,
+    insufficient_evidence: 1, unassessed_slopes_remain: true
   });
 });
 
 console.log('Hard replace trigger -- a fact about availability, not a count:');
-test('discontinued material meets the threshold with no count at all', () => {
+test('discontinued material gets its OWN outcome, never meets_threshold', () => {
+  // CHANGED 2026-08-26 (Michael's call). This previously returned
+  // meets_threshold, which made a supply fact read as "this slope met your hail
+  // threshold" -- nothing was measured against the threshold at all.
   const r = d.assess({ peril: 'hail', threshold: TH, slopes: [{ slope_label: 'N', discontinued_material: true }] });
-  assert.strictEqual(r.slopes[0].outcome, 'meets_threshold');
+  assert.strictEqual(r.slopes[0].outcome, 'material_unavailable');
   assert.strictEqual(r.slopes[0].basis, 'discontinued_material');
   assert.strictEqual(r.slopes[0].counted, null);
+  assert.match(r.slopes[0].reason, /NOT measured against the damage threshold/);
+  // It must not be counted as a threshold hit anywhere in the summary either.
+  assert.strictEqual(r.summary.meets_threshold, 0);
+  assert.strictEqual(r.summary.material_unavailable, 1);
+});
+test('discontinued material is EXEMPT from the strict photo rule, and says why', () => {
+  // A discontinued shingle is evidenced by a supplier letter, not a roof photo.
+  const r = d.assess({
+    peril: 'hail', threshold: TH, claim_photo_ids: [],
+    slopes: [{ slope_label: 'N', discontinued_material: true }]
+  });
+  assert.strictEqual(r.slopes[0].outcome, 'material_unavailable');
+  assert.match(r.slopes[0].evidence_gap, /supplier or manufacturer letter/);
+});
+
+console.log('THE STRICT PHOTO RULE -- a count with no evidence is not a finding:');
+test('a met threshold with NO photo does not reach meets_threshold', () => {
+  const r = d.assess({
+    peril: 'hail', threshold: TH, claim_photo_ids: ['REAL1'],
+    slopes: [{ slope_label: 'N', test_squares: 1, hits: 40, photo_ids: [] }]
+  });
+  assert.strictEqual(r.slopes[0].outcome, 'insufficient_evidence');
+  assert.strictEqual(r.slopes[0].photo_verified, false);
+  // The count is REPORTED in full -- suppressing it would hide real field work.
+  assert.strictEqual(r.slopes[0].counted, 40);
+  assert.strictEqual(r.slopes[0].per_test_square, 40);
+  assert.match(r.slopes[0].reason, /met by the numbers/);
+});
+test('a photo id NOT on this claim does not evidence the slope, and is named', () => {
+  const r = d.assess({
+    peril: 'hail', threshold: TH, claim_photo_ids: ['REAL1'],
+    slopes: [{ slope_label: 'N', test_squares: 1, hits: 40, photo_ids: ['GHOST', 'REAL1'] }]
+  });
+  // REAL1 resolves, so the slope IS evidenced and the threshold stands.
+  assert.strictEqual(r.slopes[0].outcome, 'meets_threshold');
+  assert.deepStrictEqual(r.slopes[0].photo_ids, ['REAL1']);
+  assert.deepStrictEqual(r.slopes[0].unresolved_photo_ids, ['GHOST']);
+});
+test('ONLY ghost ids means unverified -- the ids are named, not silently dropped', () => {
+  const r = d.assess({
+    peril: 'hail', threshold: TH, claim_photo_ids: ['REAL1'],
+    slopes: [{ slope_label: 'N', test_squares: 1, hits: 40, photo_ids: ['GHOST1', 'GHOST2'] }]
+  });
+  assert.strictEqual(r.slopes[0].outcome, 'insufficient_evidence');
+  assert.deepStrictEqual(r.slopes[0].unresolved_photo_ids, ['GHOST1', 'GHOST2']);
+  assert.match(r.slopes[0].evidence_gap, /not on this claim: GHOST1, GHOST2/);
+});
+test('the strict rule binds meets_threshold ONLY -- below_threshold still reports', () => {
+  const r = d.assess({
+    peril: 'hail', threshold: TH, claim_photo_ids: [],
+    slopes: [{ slope_label: 'N', test_squares: 1, hits: 2, photo_ids: [] }]
+  });
+  assert.strictEqual(r.slopes[0].outcome, 'below_threshold');
+});
+test('an unverifiable caller is told so rather than failing every slope', () => {
+  // No claim_photo_ids supplied at all: photo_verified is null, not false, and
+  // the cited ids are taken at face value.
+  const r = d.assess({
+    peril: 'hail', threshold: TH,
+    slopes: [{ slope_label: 'N', test_squares: 1, hits: 40, photo_ids: ['P1'] }]
+  });
+  assert.strictEqual(r.slopes[0].outcome, 'meets_threshold');
+  assert.strictEqual(r.slopes[0].photo_verified, null);
+  assert.strictEqual(r.photo_verification, 'not_verified');
+});
+test('a verifying caller is recorded as having verified', () => {
+  const r = d.assess({
+    peril: 'hail', threshold: TH, claim_photo_ids: ['P1'],
+    slopes: [{ slope_label: 'N', test_squares: 1, hits: 40, photo_ids: ['P1'] }]
+  });
+  assert.strictEqual(r.photo_verification, 'server_verified');
+  assert.strictEqual(r.slopes[0].photo_verified, true);
+});
+test('the outcome vocabulary is closed and has exactly four members', () => {
+  assert.deepStrictEqual(d.OUTCOMES,
+    ['meets_threshold', 'below_threshold', 'material_unavailable', 'insufficient_evidence']);
 });
 
 console.log('Photo traceability and the boundary the output must not cross:');

@@ -3183,11 +3183,25 @@ module.exports = async (req, res) => {
           : 'This claim has no peril recorded, so no threshold can be selected.';
       }
 
+      // THE PHOTO IDS COME FROM THE SERVER, NOT THE PAYLOAD (2026-08-26).
+      // A slope only counts as evidenced if it cites a photo that really
+      // exists on THIS claim, so a caller cannot evidence a slope -- and
+      // therefore cannot reach meets_threshold -- by inventing an id. Same
+      // discipline Phase 3c established for the measured scope. A cited id
+      // that resolves to nothing comes back named, not silently dropped.
+      const phr = await fetch(rest('rf_claim_photos?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=photo_id'), { headers });
+      // An absent photos table means "cannot verify", NOT "nothing verifies".
+      // Passing [] there would fail every slope on a licence whose photo table
+      // has not been provisioned -- the engine reports not_verified instead.
+      const phRows = (phr.status === 404 || phr.status === 400) ? null : await phr.json();
+      const claimPhotoIds = Array.isArray(phRows) ? phRows.map((x) => x.photo_id) : undefined;
+
       const result = roofingDamage.assess({
         slopes: assessInput.slopes,
         threshold: threshold,
         peril: peril,
-        threshold_is_override: isOverride
+        threshold_is_override: isOverride,
+        claim_photo_ids: claimPhotoIds
       });
       res.status(200).json({
         ok: true, provisioned: true, claim_id: claimId,

@@ -238,15 +238,15 @@ check('wv_rcp_6e is still the only contested standard',
 // jurisdiction, so an accidental or copy-pasted entry shows up here as a
 // failure. Add a jurisdiction to this list only when its gap was actually
 // reasoned about, never to make the test pass.
-check('exactly Massachusetts, Missouri and Virginia declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ma', 'mo', 'va']);
+check('exactly Massachusetts, Minnesota, Missouri and Virginia declare a coverage gap',
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ma', 'mn', 'mo', 'va']);
 // Each entry must be its OWN text, not another state's copied across -- the
 // failure mode this pins down is a disclosure that names the wrong state.
 check('each coverage summary names its own jurisdiction',
-  ['ma', 'mo', 'va'].filter(k => {
+  ['ma', 'mn', 'mo', 'va'].filter(k => {
     const s = engine.JURISDICTION_COVERAGE[k].summary;
-    return { ma: /Massachusetts|Suffolk/, mo: /Missouri/, va: /Virginia/ }[k].test(s);
-  }), ['ma', 'mo', 'va']);
+    return { ma: /Massachusetts|Suffolk/, mn: /Minnesota|Indigenous/, mo: /Missouri/, va: /Virginia/ }[k].test(s);
+  }), ['ma', 'mn', 'mo', 'va']);
 // A pre-existing jurisdiction still computes what it computed, through the
 // same standards table the two new entries were added to.
 {

@@ -30,11 +30,19 @@
 // threshold is a required, per-company setting carrying its own `source`
 // string, and this engine REFUSES to assess rather than assume one.
 //
-// ── THREE OUTCOMES. THE THIRD IS NOT OPTIONAL ────────────────────────────
-//   meets_threshold      -- recorded hits >= threshold, or a hard replace
-//                           trigger fired (see below)
-//   below_threshold      -- recorded hits < threshold, and no trigger fired
-//   insufficient_evidence -- the inputs needed to answer were not recorded
+// ── FOUR OUTCOMES. THE LAST TWO ARE NOT OPTIONAL ─────────────────────────
+//   meets_threshold      -- recorded density >= threshold, AND a photo that
+//                           really exists on this claim backs the slope
+//   below_threshold      -- recorded density < threshold
+//   material_unavailable -- the shingle cannot be bought (see HARD TRIGGERS).
+//                           Its OWN outcome as of 2026-08-26, no longer folded
+//                           into meets_threshold: it is a fact about
+//                           purchasability, not a measurement against the
+//                           damage threshold. Collapsing the two made a supply
+//                           fact read as "this slope met your hail threshold"
+//                           -- which it did not, and which nobody measured.
+//   insufficient_evidence -- the inputs needed to answer were not recorded, OR
+//                           a count is not backed by a photo on this claim
 //
 // A missing test-square count is NOT a below_threshold. Silently treating
 // "nobody measured this slope" as "this slope is fine" is the exact
@@ -44,15 +52,47 @@
 // ── HARD REPLACE TRIGGERS, SEPARATE FROM THE COUNT ───────────────────────
 // Two conditions total a slope regardless of hit count, and both are facts
 // rather than judgements:
-//   discontinued_material -- the shingle cannot be bought, so a spot repair is
-//                            not physically possible. Recorded by the
-//                            contractor, cited like any other evidence.
+//   discontinued_material -- the shingle cannot be bought, so a matching spot
+//                            repair is not physically possible. Recorded by the
+//                            contractor, cited like any other evidence. As of
+//                            2026-08-26 this returns its OWN outcome,
+//                            material_unavailable, NOT meets_threshold -- see
+//                            the outcome list above. It is also EXEMPT from the
+//                            strict photo rule, because a discontinued shingle
+//                            is normally evidenced by a supplier or
+//                            manufacturer letter rather than by a roof photo,
+//                            and demanding the wrong artefact would push people
+//                            to cite an unrelated one. Its evidence_gap still
+//                            says when nothing is cited.
 //   count-based wind damage on creased/missing shingles, against the same
 //                            configured threshold, when the peril is wind --
 //                            hail hits and wind creases are different physical
 //                            evidence and are never summed together.
 
-const OUTCOMES = ['meets_threshold', 'below_threshold', 'insufficient_evidence'];
+// ── THE PHOTO RULE IS STRICT, ADDED 2026-08-26 (Michael's call) ──────────
+// A count only reaches meets_threshold if a photo THAT REALLY EXISTS ON THIS
+// CLAIM backs the slope. Before this, `evidence_gap` was a string annotation
+// and nothing more: a slope with 40 hits and zero photos still returned
+// meets_threshold with a note beside it. A carrier does not read the note.
+//
+// The check is not "did the caller type some ids". The cited ids are matched
+// against the real rf_claim_photos rows for this claim, read SERVER-SIDE by
+// api/sd-data.js and passed in as `claim_photo_ids`. An id resolving to
+// nothing comes back BY NAME in `unresolved_photo_ids` rather than being
+// silently dropped -- same discipline Phase 3c established for the measured
+// scope: a caller cannot supply their own evidence for a server-side finding.
+//
+// THE RULE BINDS meets_threshold ONLY, deliberately. below_threshold and
+// insufficient_evidence do not support a claim, so an unbacked one costs
+// nobody anything, and demanding a photo to say "we found little damage here"
+// would only suppress honest reporting. material_unavailable is exempt for a
+// different reason, stated at the trigger itself.
+//
+// BACKWARD COMPATIBILITY: when `claim_photo_ids` is not supplied at all, the
+// cited ids are taken at face value and `photo_verified` is reported as null
+// rather than false. A caller that cannot verify is told it did not, instead
+// of every slope silently failing the new rule.
+const OUTCOMES = ['meets_threshold', 'below_threshold', 'material_unavailable', 'insufficient_evidence'];
 const PERILS = ['hail', 'wind'];
 
 // A test square is the industry's unit of measure for hail density: a 10x10 ft
@@ -98,24 +138,36 @@ function validateSlope(s, i) {
 
 // Per-slope assessment. `peril` selects WHICH recorded count is compared --
 // never both, never their sum.
-function assessSlope(slope, threshold, peril) {
-  const cited = Array.isArray(slope.photo_ids)
-    ? slope.photo_ids.filter(function (p) { return p && String(p).trim(); })
+function assessSlope(slope, threshold, peril, claimPhotoIds) {
+  const raw = Array.isArray(slope.photo_ids)
+    ? slope.photo_ids.filter(function (p) { return p && String(p).trim(); }).map(function (p) { return String(p).trim(); })
     : [];
+  // claimPhotoIds is the SERVER's list of photos really on this claim. When it
+  // is absent the caller could not verify, which is reported rather than
+  // treated as a failure -- see BACKWARD COMPATIBILITY above.
+  const canVerify = Array.isArray(claimPhotoIds);
+  const real = canVerify ? claimPhotoIds.map(function (p) { return String(p).trim(); }) : null;
+  const cited = canVerify ? raw.filter(function (p) { return real.indexOf(p) !== -1; }) : raw;
+  const unresolved = canVerify ? raw.filter(function (p) { return real.indexOf(p) === -1; }) : [];
+  const photoVerified = canVerify ? cited.length > 0 : null;
 
   // A hard trigger is a physical fact about availability, not a damage count,
   // so it is evaluated first and does not need a test square to be recorded.
   if (slope.discontinued_material === true) {
     return {
       slope_label: slope.slope_label,
-      outcome: 'meets_threshold',
+      // NOT meets_threshold. Nothing here was measured against the damage
+      // threshold, and saying it was would overstate what is known.
+      outcome: 'material_unavailable',
       basis: 'discontinued_material',
-      reason: 'Recorded as discontinued material -- a matching spot repair is not purchasable.',
+      reason: 'Recorded as discontinued material -- a matching spot repair is not purchasable. This is a supply fact and was NOT measured against the damage threshold.',
       counted: null,
       threshold: threshold.hits_per_test_square,
       threshold_source: threshold.source,
       photo_ids: cited,
-      evidence_gap: cited.length ? null : 'No photo cited for this slope.'
+      unresolved_photo_ids: unresolved,
+      photo_verified: photoVerified,
+      evidence_gap: cited.length ? null : 'No evidence cited for this slope -- a supplier or manufacturer letter is the usual proof that a shingle is discontinued.'
     };
   }
 
@@ -137,6 +189,8 @@ function assessSlope(slope, threshold, peril) {
       threshold: threshold.hits_per_test_square,
       threshold_source: threshold.source,
       photo_ids: cited,
+      unresolved_photo_ids: unresolved,
+      photo_verified: photoVerified,
       evidence_gap: 'This slope has not been assessed. It is not a finding of low damage.'
     };
   }
@@ -146,18 +200,47 @@ function assessSlope(slope, threshold, peril) {
   // rounding 7.5 up to 8 would manufacture a total slope out of arithmetic.
   const perSquare = counted / slope.test_squares;
   const meets = perSquare >= threshold.hits_per_test_square;
+  const density = Math.round(perSquare * 100) / 100;
+  const arithmetic = counted + ' over ' + slope.test_squares + ' test square' +
+    (slope.test_squares === 1 ? '' : 's') + ' = ' + density +
+    ' per square, against a configured threshold of ' + threshold.hits_per_test_square + '.';
+
+  // THE STRICT RULE. A count that clears the threshold but has no verified
+  // photo behind it does NOT reach meets_threshold -- it is reported in full,
+  // arithmetic and all, as insufficient_evidence. Suppressing the count would
+  // hide real field work; scoring it would assert evidence this app cannot
+  // show. Neither, so: state it and withhold the verdict.
+  if (meets && photoVerified === false) {
+    return {
+      slope_label: slope.slope_label,
+      outcome: 'insufficient_evidence',
+      basis: null,
+      reason: arithmetic + ' The threshold is met by the numbers, but no photo on this claim backs this slope, so it is not recorded as met.',
+      counted: counted,
+      per_test_square: density,
+      threshold: threshold.hits_per_test_square,
+      threshold_source: threshold.source,
+      photo_ids: cited,
+      unresolved_photo_ids: unresolved,
+      photo_verified: false,
+      evidence_gap: unresolved.length
+        ? 'The photo ids cited are not on this claim: ' + unresolved.join(', ') + '.'
+        : 'No photo cited for this slope -- a count with no evidence behind it is not recorded as meeting the threshold.'
+    };
+  }
+
   return {
     slope_label: slope.slope_label,
     outcome: meets ? 'meets_threshold' : 'below_threshold',
     basis: peril === 'wind' ? 'creased_or_missing_per_test_square' : 'hits_per_test_square',
-    reason: counted + ' over ' + slope.test_squares + ' test square' + (slope.test_squares === 1 ? '' : 's') +
-      ' = ' + (Math.round(perSquare * 100) / 100) + ' per square, against a configured threshold of ' +
-      threshold.hits_per_test_square + '.',
+    reason: arithmetic,
     counted: counted,
-    per_test_square: Math.round(perSquare * 100) / 100,
+    per_test_square: density,
     threshold: threshold.hits_per_test_square,
     threshold_source: threshold.source,
     photo_ids: cited,
+    unresolved_photo_ids: unresolved,
+    photo_verified: photoVerified,
     evidence_gap: cited.length ? null : 'No photo cited for this slope -- the count is unsupported by evidence in this app.'
   };
 }
@@ -181,8 +264,8 @@ function assess(input) {
     return { ok: false, problems: problems, slopes: [], summary: null };
   }
 
-  const assessed = slopes.map(function (s) { return assessSlope(s, input.threshold, peril); });
-  const counts = { meets_threshold: 0, below_threshold: 0, insufficient_evidence: 0 };
+  const assessed = slopes.map(function (s) { return assessSlope(s, input.threshold, peril, input.claim_photo_ids); });
+  const counts = { meets_threshold: 0, below_threshold: 0, material_unavailable: 0, insufficient_evidence: 0 };
   assessed.forEach(function (a) { counts[a.outcome]++; });
 
   return {
@@ -192,10 +275,12 @@ function assess(input) {
     threshold: { hits_per_test_square: input.threshold.hits_per_test_square, source: input.threshold.source },
     threshold_is_override: !!(input && input.threshold_is_override),
     slopes: assessed,
+    photo_verification: Array.isArray(input.claim_photo_ids) ? 'server_verified' : 'not_verified',
     summary: {
       slopes_total: assessed.length,
       meets_threshold: counts.meets_threshold,
       below_threshold: counts.below_threshold,
+      material_unavailable: counts.material_unavailable,
       insufficient_evidence: counts.insufficient_evidence,
       // Deliberately NOT a roof-level verdict. There is no "this roof is
       // totalled" field and there must not be one -- carriers total slopes,

@@ -1100,7 +1100,56 @@ var COMPUTATION_STANDARDS = {
   mo_rule_44_01_a: { label: 'Mo. R. Civ. P. 44.01(a)', impl: 'ohio_civ_r_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '', months_years_suffix: '',
-    rollover_suffix_forward: '', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // ── MINNESOTA: DAYS ARE DAYS, AND THE EXCLUSION IS OPT-IN PER RULE ───────
+  // Minn. R. Civ. P. 6.01(a), verbatim on the parts that decide these fields:
+  //
+  //   "(1) Period Stated in Days or a Longer Unit of Time. When the period is
+  //    stated in days or a longer unit of time: (A) exclude the day of the event
+  //    that triggers the period; (B) COUNT EVERY DAY, INCLUDING INTERMEDIATE
+  //    SATURDAYS, SUNDAYS, AND LEGAL HOLIDAYS; and (C) include the last day of
+  //    the period, but if the last day is a Saturday, Sunday, or legal holiday,
+  //    the period continues to run until the end of the next day that is not a
+  //    Saturday, Sunday, or legal holiday.
+  //    (2) Periods Shorter than 7 Days. ONLY IF EXPRESSLY SO PROVIDED by any
+  //    other rule or statute, a time period that is less than 7 days may exclude
+  //    intermediate Saturdays, Sundays, and legal holidays."
+  //
+  // NO short_period_exclusion_days FIELD AT ALL, AND THAT IS THE READ. Minnesota
+  // took the 2009-federal "days are days" approach, so the default is to count
+  // every intermediate day -- like the FRCP family and unlike Ohio, Indiana,
+  // Florida, NJ, NC, WA, MA, MO (7), Tennessee and Arizona (11). Setting 7 here
+  // because most neighbours use 7 would exclude weekends from every short
+  // Minnesota period and push those deadlines LATER than the rule provides.
+  //
+  // AND THE SHAPE IS DIFFERENT FROM EVERY OTHER SEEDED STATE, which is worth
+  // more than the value. 6.01(a)(2) does not set a threshold at all -- it makes
+  // the exclusion an OPT-IN that an individual rule or statute may grant. This
+  // field is standard-level, so it cannot express "off by default, on for these
+  // particular rules". No seeded Minnesota row expressly provides the exclusion,
+  // so the absence is correct today; a row that did would need a ROW-LEVEL
+  // mechanism that does not exist yet. Do not solve that by setting 7 here.
+  //
+  // BACKWARD IS EXPRESSLY DEFINED, unlike NJ, NC, WA, MA, MO and WI. 6.01(c):
+  // "The 'next day' is determined by continuing to count forward when the period
+  // is measured after an event and BACKWARD WHEN MEASURED BEFORE AN EVENT." So
+  // the backward suffix is real. No backward row is seeded in this batch even
+  // so; the standard is honest about the rule rather than about the row set.
+  //
+  // THE ROLLOVER KEYS ON THE HOLIDAY LIST, not on courthouse closure. That is
+  // what separates Minnesota from Wisconsin, whose 801.15(1)(b) rolls on "a day
+  // the clerk of courts office is closed" and uses its holiday list only for the
+  // intermediate-day exclusion. Minnesota has a closure limb too -- 6.01(a)(4),
+  // inaccessibility of the Court Administrator's office -- but it is ADDITIONAL
+  // to the Saturday/Sunday/holiday rollover rather than a replacement for it,
+  // which is why omitting it can only ever report EARLY. See JURISDICTION_COVERAGE.
+  //
+  // NOT MODELLED: 6.01(a)(3) periods stated in HOURS. This engine has no hours
+  // unit (calendar_days, business_days, months, years). No hours-based row is
+  // seeded; one would be a real addition, not a config change.
+  mn_rcp_6_01: { label: 'Minn. R. Civ. P. 6.01', impl: 'frcp_6a',
+    base_period_suffix: '(a)(1)', months_years_suffix: '(a)(1)',
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(c)' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1146,6 +1195,18 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'Missouri court closures beyond the statutory list in RSMo 9.010 are NOT modelled, including the substitute days the state observes when a holiday falls on a Saturday. This date may be EARLIER than the true deadline, never later.',
     detail: 'The calendar encodes Saturdays, Sundays and the thirteen public holidays in RSMo 9.010. Two things it does NOT encode, both of which can only ever make this date EARLIER than the true deadline: (1) ADMINISTRATIVELY OBSERVED SUBSTITUTE DAYS. RSMo 9.010 shifts a holiday only "when any of such holidays falls upon Sunday" and says nothing about Saturday, but the State of Missouri observes a substitute weekday anyway — for example Friday 3 July 2026 for a Saturday 4 July 2026. The statute creates no such substitute, so it is not encoded; if the courthouse is in fact shut on that observed day, the true deadline rolls to the next open day and is LATER than shown. (2) THE BASIS ITSELF IS BY CONVERGENCE, NOT BY CROSS-REFERENCE. Mo. R. Civ. P. 44.01(a) rolls off "a legal holiday" and names no statute, while RSMo 9.010 is titled "Public holidays". The two are treated as the same list because the days in 9.010 match the holiday schedule published by the State of Missouri day for day, with Thanksgiving included and no listed day the state stays open for — so both readings of "legal holiday" produce the same thirteen days and neither can roll a deadline LATE. That convergence was checked, not assumed, precisely because the identical wording gap in Kentucky (KRS 2.110, also titled "Public holidays") DIVERGES from what its courts do and fails in the LATE direction. If a computed date falls on or just after the observed substitute for a Saturday holiday, confirm the closure schedule of the local court before relying on it.'
+  },
+  // MINNESOTA. Three gaps, all EARLY -- and one INFERENCE whose error direction
+  // is LATE, which is disclosed as an inference rather than presented as fact.
+  // That last part is why this entry reads differently from the other three:
+  // Virginia, Massachusetts and Missouri all disclose things the engine does not
+  // model, whereas Minnesota also discloses something the engine DOES model on a
+  // reading that a lawyer has not confirmed.
+  mn: {
+    complete: false,
+    direction: 'early',
+    summary: 'Three Minnesota closure categories are NOT modelled and can only make this date EARLIER, never later. Separately, Indigenous Peoples Day IS counted on a reading of Rule 6.01(d) that has not been confirmed by counsel — if that reading is wrong, a date landing near the second Monday in October could be LATE.',
+    detail: 'The calendar encodes Saturdays, Sundays and the eleven holidays in Minn. Stat. 645.44 subd. 5, which Minn. R. Civ. P. 6.01(d) incorporates by name. THREE THINGS ARE NOT ENCODED, ALL OF WHICH CAN ONLY REPORT EARLY: (1) THE FRIDAY AFTER THANKSGIVING. 645.44 subd. 5(a) gives non-executive branches, including the judiciary, the OPTION whether to observe it, and Rule 6.01(d) second limb does not reach it because the U.S. mail operates that day. Omitting it is the safe default; if the Judiciary does observe it, a deadline landing there rolls later than shown. (2) ONE-OFF DAYS THE U.S. MAIL DOES NOT OPERATE for reasons other than a federal holiday, which Rule 6.01(d) counts but which are not knowable in advance. (3) DAYS THE COURT ADMINISTRATOR OFFICE IS INACCESSIBLE under Rule 6.01(a)(4), which extends filing to the first accessible day. Note that limb is ADDITIONAL to the Saturday/Sunday/holiday rollover rather than a replacement for it, which is exactly why omitting it is safe here and why Minnesota does not have the problem Wisconsin does. AND ONE INFERENCE, DISCLOSED AS SUCH: INDIGENOUS PEOPLES DAY, the second Monday in October, IS encoded. The judiciary merely has the OPTION to observe it under 645.44 subd. 5(a), but Rule 6.01(d) independently counts any day that the U.S. mail does not operate, and that Monday is the federal Columbus Day on which mail does not run. This engine therefore treats it as a legal holiday regardless of the branch option. THAT IS A READING OF THE RULE AND NOT A QUOTED HOLDING. It is the only place in this jurisdiction where the engine could be LATE rather than early, and it is the one item here worth confirming with counsel. If a computed date falls on or just after the second Monday in October, or near the Friday after Thanksgiving, check it by hand.'
   }
 };
 
@@ -1876,6 +1937,76 @@ var SERVICE_EXTENSION_STANDARDS = {
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── MINNESOTA: MAIL GETS THREE, EVERYTHING ELSE GETS THE CLOCK ──────────
+  // Minn. R. Civ. P. 6.01(e), verbatim in full:
+  //
+  //   "Whenever a party has the right or is required to do some act or take some
+  //    proceedings within a prescribed period after the service of a notice or
+  //    other document upon the party, and the notice or document is served upon
+  //    the party by United States Mail, THREE DAYS shall be added to the
+  //    prescribed period. If service is made BY ANY MEANS OTHER THAN UNITED
+  //    STATES MAIL and accomplished AFTER 5:00 P.M. local Minnesota time on the
+  //    day of service, ONE ADDITIONAL DAY shall be added to the prescribed
+  //    period."
+  //
+  // THE SECOND LIMB IS A NEGATIVE CONDITION, NOT AN ALLOWLIST, and that is the
+  // thing most likely to be got wrong by copying a neighbour. It reaches "any
+  // means other than United States Mail" -- facsimile, e-mail, the e-filing
+  // system, personal delivery, leaving it at an office, anything. Every other
+  // state with a clock rule ENUMERATES the methods it covers: Virginia names
+  // four, Wisconsin names three, Missouri names three. Minnesota names none and
+  // catches the complement. A qualifies() copied from any of them would silently
+  // give 0 days to a method Minnesota does extend for -- EARLY, and wrong.
+  //
+  // SO qualifies() RETURNS TRUE FOR EVERYTHING, and amount() does the work. A
+  // non-mail method served before 5:00 p.m. legitimately yields {add: 0}, which
+  // reports as `applied` with 0 days -- the same honest shape Virginia uses for
+  // its at-or-before-5:00-p.m. case, and deliberately NOT `not_qualifying`,
+  // which would mean the rule grants nothing for that method at all.
+  //
+  // THE BOUNDARY IS CLEAN, UNLIKE WISCONSIN'S. "after 5:00 p.m." means 17:00
+  // exactly is NOT after -- the same reading Va. R. 1:7's "no later than 5:00
+  // p.m." compels. Wisconsin's "completed between 5 p.m. and midnight" is
+  // genuinely ambiguous at 17:00 and is recorded as such in its gate.
+  //
+  // AND THERE IS NO MIDNIGHT CEILING. The limb turns only on "after 5:00 p.m.
+  // ... on the day of service". Missouri's and Virginia's both stop at midnight;
+  // Minnesota's does not need to, because it is measured against the day of
+  // service rather than against a window.
+  //
+  // A service_time IS REQUIRED for any non-mail method and the engine REFUSES
+  // rather than guessing, because 0 and 1 are both available and only the caller
+  // knows which. Soft refusal, like Virginia: the date is still computable
+  // without the extension, so it is returned with the refusal attached. Contrast
+  // Missouri's HARD refusal, which is a different mechanism entirely -- there an
+  // unknown time means an unknown period START.
+  mn_rcp_6_01_e: {
+    label: 'Minn. R. Civ. P. 6.01(e)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'negative_condition_with_per_method_amount',
+    qualifies: function () { return true; },
+    amount: function (method, ctx) {
+      if (method === 'mail' || method === 'us_mail') return { add: 3, unit: 'calendar_days' };
+      var t = ctx && ctx.service_time;
+      if (!t || !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(t))) {
+        return { refuse: {
+          code: 'SERVICE_TIME_REQUIRED',
+          message: 'Minn. R. Civ. P. 6.01(e) adds NOTHING for service by ' + String(method).replace(/_/g, ' ') +
+            ' accomplished at or before 5:00 p.m. local Minnesota time, and ONE day for the same service ' +
+            'accomplished after 5:00 p.m. on the day of service. ' +
+            (t ? 'The service_time supplied ("' + t + '") is not a 24-hour HH:MM time. '
+               : 'No service_time was supplied. ') +
+            'The engine will not choose between the two: guessing 0 days would report a date EARLIER than the true deadline and guessing 1 day LATER. Supply service_time as HH:MM in 24-hour form (for example "16:45" or "17:30") and the extension will be computed. The date below is computed WITHOUT any extension.'
+        } };
+      }
+      var parts = String(t).split(':');
+      var minutes = (Number(parts[0]) * 60) + Number(parts[1]);
+      // "after 5:00 p.m." begins at 17:01; 17:00 exactly is not after it.
+      return (minutes <= 17 * 60)
+        ? { add: 0, unit: 'calendar_days' }
+        : { add: 1, unit: 'calendar_days' };
+    }
   }
 };
 

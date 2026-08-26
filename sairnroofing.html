@@ -1486,14 +1486,29 @@ function rfRenderDamage(d){
     return;
   }
   var rows=a.slopes.map(function(s){
+    // Four outcomes since 2026-08-26. material_unavailable is its own badge and
+    // deliberately NOT the same one as meets_threshold: nothing about that
+    // slope was measured against the damage threshold, and a shared badge said
+    // it was.
     var badge=s.outcome==='meets_threshold'?'<span class="badge br">meets threshold</span>'
       :s.outcome==='below_threshold'?'<span class="badge bg">below threshold</span>'
+      :s.outcome==='material_unavailable'?'<span class="badge bx">material unavailable</span>'
       :'<span class="badge bw">not assessed</span>';
     var gap=s.evidence_gap?'<div class="note" style="margin:4px 0 0;">'+rfEsc(s.evidence_gap)+'</div>':'';
+    // A cited id that does not resolve to a photo on this claim is named, not
+    // silently dropped -- otherwise the row reads as though it had evidence.
+    var ghosts=(s.unresolved_photo_ids&&s.unresolved_photo_ids.length)
+      ? '<div class="note" style="margin:4px 0 0;color:#B91C1C;">not on this claim: '+rfEsc(s.unresolved_photo_ids.join(', '))+'</div>'
+      : '';
     return '<tr><td>'+rfEsc(s.slope_label)+'</td><td>'+badge+'</td><td>'+rfEsc(s.reason)+gap+'</td><td>'+
-      (s.photo_ids&&s.photo_ids.length?rfEsc(s.photo_ids.join(', ')):'<em>none cited</em>')+'</td></tr>';
+      (s.photo_ids&&s.photo_ids.length?rfEsc(s.photo_ids.join(', ')):'<em>none cited</em>')+ghosts+'</td></tr>';
   }).join('');
   var sm=a.summary;
+  // Whether the photo ids were checked against the real claim photos is a fact
+  // about how much this result is worth, so it is stated rather than assumed.
+  var verifyNote=a.photo_verification==='server_verified'
+    ? 'Cited photos were checked against the photos actually on this claim. '
+    : '<span style="color:#B91C1C;">Cited photos could NOT be checked against this claim, so a citation here proves only that somebody typed it. </span>';
   var gapNote=sm.unassessed_slopes_remain
     ? '<div class="note" style="color:#B91C1C;">'+sm.insufficient_evidence+' slope(s) have not been assessed. That is missing evidence, not a finding of low damage &mdash; record test squares and a count before relying on this.</div>'
     : '';
@@ -1503,7 +1518,9 @@ function rfRenderDamage(d){
       '.<br>Source: '+rfEsc(a.threshold.source)+'</div>'+
     gapNote+
     '<div class="tw"><table><thead><tr><th>Slope</th><th>Evidence</th><th>Basis</th><th>Photos</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '<div class="note">'+sm.slopes_total+' slope(s): '+sm.meets_threshold+' meet the threshold, '+sm.below_threshold+' below, '+sm.insufficient_evidence+' not assessed. '+
+    '<div class="note">'+sm.slopes_total+' slope(s): '+sm.meets_threshold+' meet the threshold, '+sm.below_threshold+' below, '+
+      (sm.material_unavailable?sm.material_unavailable+' with unavailable material, ':'')+sm.insufficient_evidence+' not assessed. '+
+      verifyNote+
       '<strong>This is a record of your evidence against your configured threshold. It is not a carrier decision and not a prediction of one.</strong></div>';
 }
 
