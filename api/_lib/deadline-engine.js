@@ -1095,6 +1095,15 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'SUFFOLK COUNTY (Boston) has two legal holidays no other Massachusetts county has, and they are NOT modelled. In Suffolk County this date may be EARLIER than the true deadline, never later. Everywhere else in the Commonwealth this calendar is complete.',
     detail: 'The calendar encodes Saturdays, Sundays and the statewide legal holidays in Mass. G.L. c. 4, § 7, Cl. 18, which Mass. R. Civ. P. 6(a) incorporates by name. Clause 18 additionally makes Evacuation Day (17 March) and Bunker Hill Day (17 June) legal holidays "with respect to Suffolk county only". A holiday calendar here is keyed by jurisdiction and year and has no notion of county, so those two days are omitted. THE OMISSION IS SAFE IN BOTH DIRECTIONS OF THE OPEN QUESTION: if a Rule 6(a) period does roll off them in Suffolk, this date is EARLY by one day when it lands on or just after 17 March or 17 June; if it does not — and the same clause requires all state and municipal offices in Suffolk to "be open for business and appropriately staffed" on both days, which is a real argument that it does not — then this date is simply correct. It is never late. Outside Suffolk County the two days are not legal holidays at all and nothing is missing. Rule 6(a) also reaches "any other day appointed as a holiday by the President or the Congress of the United States", which is ad hoc and not knowable in advance; that limb is likewise not encoded and fails in the same EARLY direction. If your matter is in Suffolk County and this date falls on or shortly after 17 March or 17 June, confirm it by hand.'
+  },
+  // MISSOURI. Two gaps, both EARLY, and one of them is a divergence between a
+  // statute and what the state administratively observes -- a shape no other
+  // jurisdiction in this table has yet.
+  mo: {
+    complete: false,
+    direction: 'early',
+    summary: 'Missouri court closures beyond the statutory list in RSMo 9.010 are NOT modelled, including the substitute days the state observes when a holiday falls on a Saturday. This date may be EARLIER than the true deadline, never later.',
+    detail: 'The calendar encodes Saturdays, Sundays and the thirteen public holidays in RSMo 9.010. Two things it does NOT encode, both of which can only ever make this date EARLIER than the true deadline: (1) ADMINISTRATIVELY OBSERVED SUBSTITUTE DAYS. RSMo 9.010 shifts a holiday only "when any of such holidays falls upon Sunday" and says nothing about Saturday, but the State of Missouri observes a substitute weekday anyway — for example Friday 3 July 2026 for a Saturday 4 July 2026. The statute creates no such substitute, so it is not encoded; if the courthouse is in fact shut on that observed day, the true deadline rolls to the next open day and is LATER than shown. (2) THE BASIS ITSELF IS BY CONVERGENCE, NOT BY CROSS-REFERENCE. Mo. R. Civ. P. 44.01(a) rolls off "a legal holiday" and names no statute, while RSMo 9.010 is titled "Public holidays". The two are treated as the same list because the days in 9.010 match the holiday schedule published by the State of Missouri day for day, with Thanksgiving included and no listed day the state stays open for — so both readings of "legal holiday" produce the same thirteen days and neither can roll a deadline LATE. That convergence was checked, not assumed, precisely because the identical wording gap in Kentucky (KRS 2.110, also titled "Public holidays") DIVERGES from what its courts do and fails in the LATE direction. If a computed date falls on or just after the observed substitute for a Saturday holiday, confirm the closure schedule of the local court before relying on it.'
   }
 };
 
@@ -1797,6 +1806,126 @@ var SERVICE_EXTENSION_STANDARDS = {
   }
 };
 
+// ── Service-COMPLETION standards ──────────────────────────────────────────
+// A THIRD MECHANISM, AND IT IS NOT THE OTHER TWO. Everything in
+// SERVICE_EXTENSION_STANDARDS above answers "how many days are ADDED to the
+// period". This table answers a different question entirely: "on what date was
+// service COMPLETE", which decides the date the period RUNS FROM. It is applied
+// BEFORE the base period is computed, not after.
+//
+// WHY IT EXISTS. Three states were read in a row and gave three different
+// answers about electronic service, none of which could be inferred from the
+// others:
+//
+//   MASSACHUSETTS  R. 6(d) grants three days for e-mail and other electronic
+//                  service in the TIME RULE ITSELF.
+//   TENNESSEE      R. 6.05 says "by mail" and nothing else -- but R. 5.02(2)(c)
+//                  and (3)(e) DEEM an emailed or E-served document "a document
+//                  that was mailed for purposes of computation of time under
+//                  Rule 6", so it collects the same three days by a deeming
+//                  provision in the SERVICE rule.
+//   MISSOURI       R. 44.01(d) says "by mail" and the service rule does NOT
+//                  deem. Instead R. 43.01(d) and R. 103.08(a) move WHEN SERVICE
+//                  IS COMPLETE. Electronic service gets NO added days at all,
+//                  and the period simply starts later.
+//
+// Reading any one of those three time rules alone produces a wrong answer for
+// the other two. That is the standing habit this table encodes: READ THE
+// SERVICE RULE BEFORE CONCLUDING WHAT A TIME RULE REACHES.
+//
+// NOT THE SAME AS Va. Sup. Ct. R. 1:7, which also turns on 5:00 p.m. Virginia's
+// cutoff decides the AMOUNT ADDED (0 days or 1); Missouri's decides the TRIGGER
+// DATE. Virginia ignores weekends in that decision; Missouri's rule pushes off
+// Saturdays, Sundays and legal holidays as well. They share a clock and nothing
+// else, and `service_time` is deliberately reused as the input for both.
+//
+// A MISSING service_time IS A HARD REFUSAL HERE, UNLIKE VIRGINIA'S. Virginia
+// can still return a real date computed without an extension, so its refusal is
+// soft (ok:true, extension refused). This one cannot: if the completion date is
+// unknown then the period's START is unknown, so there is no date to return at
+// all. Refusing outright is the only honest option, and the message says what
+// to supply.
+var SERVICE_COMPLETION_STANDARDS = {
+  // Mo. R. Civ. P. 43.01(d), verbatim on the limb this implements:
+  //   "Service by facsimile transmission or electronic mail is complete upon
+  //    transmission, except that a transmission made on a Saturday, Sunday, or
+  //    legal holiday, or after 5:00 p.m. shall be complete on the next day that
+  //    is not a Saturday, Sunday, or legal holiday."
+  //
+  // Mo. R. Civ. P. 103.08(a) states the same rule for service through the
+  // electronic filing system, expressly "for the purposes of calculating the
+  // time for filing a response".
+  //
+  // MAIL IS DELIBERATELY NOT GOVERNED. The same subsection says "Service by
+  // mail is complete upon mailing", full stop -- no cutoff, no weekend shift.
+  // Mail instead collects three days under R. 44.01(d). The two mechanisms are
+  // mutually exclusive in Missouri and a method must never be in both.
+  mo_rule_43_01_d: {
+    label: 'Mo. R. Civ. P. 43.01(d)',
+    // "after 5:00 p.m." begins at 17:01; a transmission AT 17:00 is not after
+    // it. Same boundary reading as Va. R. 1:7's "no later than 5:00 p.m.", and
+    // the boundary minute gets its own test.
+    cutoff_minutes: 17 * 60,
+    governs: function (method) {
+      return ({ facsimile: 1, email: 1, efiling_service: 1 })[method] === 1;
+    }
+  }
+};
+
+// Applies a completion standard to the date service was transmitted, returning
+// the date service was COMPLETE. Pure: no calendar mutation, and it refuses
+// through the same NOT_PROVISIONED path rollOff already uses when the year is
+// not loaded.
+function applyServiceCompletion(cstd, txDate, serviceTime, calendars, jurisdiction) {
+  var t = serviceTime;
+  if (!t || !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(t))) {
+    return { ok: false, code: 'SERVICE_COMPLETION_TIME_REQUIRED',
+      message: 'Under ' + cstd.label + ' this service method is complete on transmission ONLY if the transmission was made before ' +
+        '5:00 p.m. on a day that is not a Saturday, Sunday or legal holiday; otherwise it is complete on the next such day. ' +
+        (t ? 'The service_time supplied ("' + t + '") is not a 24-hour HH:MM time. ' : 'No service_time was supplied. ') +
+        'That decides the date the period RUNS FROM, not merely how many days are added, so no deadline is computed without it: ' +
+        'guessing a time before 5:00 p.m. would report a period starting EARLIER than it truly did and guessing after would report it LATER. ' +
+        'Supply service_time as HH:MM in 24-hour form (for example "16:45" or "17:30").' };
+  }
+  var parts = String(t).split(':');
+  var minutes = (Number(parts[0]) * 60) + Number(parts[1]);
+
+  // Is the transmission day itself a Saturday, Sunday or legal holiday? Asked
+  // through holidayFor so an unloaded year refuses rather than reading as "not
+  // a holiday", which would silently skip the shift.
+  var h = holidayFor(calendars, jurisdiction, txDate, 'forward');
+  if (!h.known) {
+    return { ok: false, code: 'NOT_PROVISIONED',
+      message: 'No holiday calendar is loaded for ' + jurisdiction +
+        (h.missingYear ? ' for ' + h.missingYear : '') +
+        '. Whether service was complete on the day of transmission cannot be determined, so no deadline is computed.',
+      missing: { jurisdiction: jurisdiction, year: h.missingYear || null } };
+  }
+  var badDay = isWeekend(txDate) || h.hit;
+  var afterCutoff = minutes > cstd.cutoff_minutes;
+
+  if (!badDay && !afterCutoff) {
+    return { ok: true, date: txDate, shifted: false,
+      detail: 'Service by this method is complete upon transmission. The transmission was made at ' + t +
+        ', before 5:00 p.m., on a day that is not a Saturday, Sunday or legal holiday, so service was complete on ' +
+        txDate + ' and the period runs from that date.' };
+  }
+  // "shall be complete on the NEXT day that is not a Saturday, Sunday, or legal
+  // holiday" -- strictly after the transmission date, hence the +1 before the
+  // roll. rollOff alone would return the transmission date itself whenever that
+  // date is already a good day, which is wrong for the after-5:00-p.m. limb.
+  var rolled = rollOff(addDays(txDate, 1), calendars, jurisdiction, 'forward');
+  if (!rolled.ok) return rolled;
+  return { ok: true, date: rolled.date, shifted: true,
+    detail: 'The transmission was made ' +
+      (badDay && afterCutoff ? 'after 5:00 p.m. and on a Saturday, Sunday or legal holiday'
+        : badDay ? 'on a Saturday, Sunday or legal holiday'
+        : 'at ' + t + ', after 5:00 p.m.') +
+      ', so under ' + cstd.label + ' service was not complete on ' + txDate +
+      ' but on the next day that is not a Saturday, Sunday or legal holiday, ' + rolled.date +
+      '. The period runs from that date.' };
+}
+
 // Retained as a read-only description of the FRCP set for callers and tests.
 // NO LONGER used as a gate -- gating is per-standard above.
 var SERVICE_METHODS_EXTENDING = { mail: true, left_with_clerk: true, other_consented_means: true };
@@ -2268,6 +2397,52 @@ function computeDeadline(input) {
   var direction = count.direction === 'backward' ? 'backward' : 'forward';
   var sign = direction === 'backward' ? -1 : 1;
   var steps = [];
+
+  // ── SERVICE COMPLETION: adjust the date the period RUNS FROM ─────────────
+  // Applied HERE, before any counting, because it changes the period's START
+  // rather than its length. See SERVICE_COMPLETION_STANDARDS for why this is a
+  // third mechanism and not a variant of the service extension.
+  //
+  // Ordering matters and is deliberate: completion is resolved AFTER trigger
+  // resolution and retriggering (so it applies to the date the period really
+  // runs from) and BEFORE the base period, the cap and the service extension.
+  // A rule may in principle carry both a completion standard and an extension
+  // standard -- in Missouri they are mutually exclusive by method, because mail
+  // takes the extension and never the completion rule, and fax/e-mail/e-filing
+  // take the completion rule and never the extension.
+  var completion = null;
+  if (rule.service_completion && input.service_method) {
+    var cKey = rule.service_completion.standard;
+    var cstd = SERVICE_COMPLETION_STANDARDS[cKey];
+    if (!cstd) {
+      // Refused HARD, not silently skipped. An unknown completion standard
+      // means the period's start is unverified, and a date computed from an
+      // unverified start is exactly the quiet wrongness this engine exists to
+      // avoid. The validator also rejects such a row at write time.
+      return { ok: false, code: 'UNKNOWN_COMPLETION_STANDARD',
+        message: 'Rule ' + rule.rule_id + ' names service-completion standard "' + cKey +
+          '", which this engine does not implement. The date the period runs from cannot be verified, so no deadline is computed.' };
+    }
+    if (cstd.governs(input.service_method)) {
+      var comp = applyServiceCompletion(cstd, triggerDate, input.service_time, input.calendars, input.jurisdiction);
+      if (!comp.ok) return comp;
+      completion = { state: comp.shifted ? 'shifted' : 'complete_on_transmission',
+        standard: cKey, transmitted: triggerDate, complete_on: comp.date, detail: comp.detail };
+      if (comp.shifted) {
+        steps.push({ step: 'service_completion', detail: comp.detail,
+          authority: cstd.label, date: comp.date });
+      }
+      triggerDate = comp.date;
+    } else {
+      // The method is real but this standard does not reach it -- in Missouri,
+      // mail. Reported distinctly from "no completion rule exists" so a reader
+      // can tell the rule was considered and correctly declined.
+      completion = { state: 'not_governed', standard: cKey, transmitted: triggerDate,
+        complete_on: triggerDate,
+        detail: 'Service by ' + String(input.service_method).replace(/_/g, ' ') + ' is not governed by ' +
+          cstd.label + ', so the period runs from the date supplied.' };
+    }
+  }
 
   // ── DESIGNATED-PERIOD RULES (Phase 6) ────────────────────────────────────
   // Some rules do not set a deadline at all. They set a FLOOR on a period that
@@ -2760,6 +2935,13 @@ function computeDeadline(input) {
     // state they need to distinguish a refusal from an absence.
     service_extension_applied: extension.state === 'applied',
     service_extension: extension,
+    // Present only for rules that declare a service-completion standard. This
+    // reports a change to the date the period RAN FROM, which is a different
+    // fact from any extension and must not be collapsed into one -- a caller
+    // reading only `trigger_date` would otherwise see the date they supplied
+    // and have no way to learn the period actually started later. Null for
+    // every rule with no completion standard.
+    service_completion: completion,
     // Present only for a jurisdiction whose calendar is knowably incomplete in
     // a way that can only ever report EARLY. Top level, not inside rule.authority,
     // because a caller must not have to read a rule note to learn that the
@@ -2791,5 +2973,6 @@ module.exports = {
   holidayFor, rollOff, countExcludingWeekendsAndHolidays, computeDeadline,
   resolveTrigger, resolvePeriods, computeBasePeriod, applyRetrigger,
   COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS,
+  SERVICE_COMPLETION_STANDARDS, applyServiceCompletion,
   JURISDICTION_COVERAGE
 };

@@ -21,7 +21,8 @@ const { validateLicenseKey } = require('./_lib/license');
 const { tokenFromRequest, verifySessionToken } = require('./_lib/auth');
 const { writeAuditLog } = require('./_lib/audit');
 const { sbClient } = require('./_lib/courtlistener');
-const { computeDeadline, COMPUTATION_STANDARDS, SERVICE_EXTENSION_STANDARDS } = require('./_lib/deadline-engine');
+const { computeDeadline, COMPUTATION_STANDARDS, SERVICE_EXTENSION_STANDARDS,
+  SERVICE_COMPLETION_STANDARDS } = require('./_lib/deadline-engine');
 
 const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
 
@@ -233,6 +234,47 @@ function validateRulePayload(p) {
         && SERVICE_EXTENSION_STANDARDS[se.standard].sequence === 'add_to_period_then_roll') {
       return 'A rule cannot declare a cap together with a service-extension standard whose days are added to the period rather than after it expires (' + se.standard +
         '). The interaction between a party-fixed cap date and a re-derived period end has not been read from any rule text, so it must not be stored.';
+    }
+  }
+
+  // A service-COMPLETION standard changes the date the period RUNS FROM, which
+  // is a different mechanism from a service extension and is validated
+  // separately for that reason.
+  //
+  // VALIDATED HERE AND NOT ONLY IN THE ENGINE, deliberately, because this file
+  // has already been the wrong half of a two-file change once: California's
+  // per-method service amount was taught to the engine and not to this
+  // validator, and all seven California rows were rejected by the live loader
+  // while 84 isolation tests stayed green. That failure ran the SAFE way
+  // (nothing was stored). This one would run the OTHER way -- service_completion
+  // is not in the required-field list and nothing here rejects unknown fields,
+  // so a row naming a misspelled standard would be STORED happily and then
+  // refuse at compute time in front of a user. Same reasoning as
+  // terminal_day_rule below.
+  if (p.service_completion) {
+    const sc = p.service_completion;
+    if (!sc.standard) {
+      return 'service_completion.standard is required (e.g. mo_rule_43_01_d).';
+    }
+    if (!SERVICE_COMPLETION_STANDARDS[sc.standard]) {
+      return 'service_completion.standard must be one of: ' + Object.keys(SERVICE_COMPLETION_STANDARDS).join(', ') +
+        '. A completion standard decides the DATE THE PERIOD RUNS FROM, not how many days are added, so an unimplemented one cannot be evaluated and must not be stored.';
+    }
+    if (sc.add !== undefined || sc.days !== undefined || sc.unit !== undefined) {
+      return 'service_completion must not specify days to add or a unit. It moves the date service was COMPLETE; use service_extension if days are genuinely added. A rule needing both declares them separately.';
+    }
+    // Mutual exclusion is checked per METHOD, not per rule. Missouri really does
+    // carry both mechanisms on one rule -- mail takes the extension, fax/e-mail/
+    // e-filing take the completion rule -- so a rule declaring both is legal.
+    // What is NOT legal is one METHOD appearing under both, which would add days
+    // AND move the start for the same service.
+    if (p.service_extension && (p.service_extension.applies_when || []).length) {
+      const overlap = p.service_extension.applies_when.filter(
+        (m) => SERVICE_COMPLETION_STANDARDS[sc.standard].governs(m));
+      if (overlap.length) {
+        return 'Service method(s) "' + overlap.join('", "') + '" appear in service_extension.applies_when AND are governed by service_completion standard "' +
+          sc.standard + '". A method must not both add days to the period and move the date the period runs from — no rule read so far does both for one method, and applying both would compound two adjustments the rule text authorises only once.';
+      }
     }
   }
 
@@ -505,6 +547,10 @@ module.exports = async (req, res) => {
         trigger_event: body.trigger_event, trigger_date: body.trigger_date,
         ok: !!result.ok, code: result.code || null, due_date: result.due_date || null,
         service_extension_state: (result.service_extension && result.service_extension.state) || null,
+        // Audited separately from the extension state because it records a
+        // different fact: that the period ran from a LATER date than the one
+        // supplied. A reader of the audit log must be able to tell those apart.
+        service_completion_state: (result.service_completion && result.service_completion.state) || null,
         retriggered: !!(result.steps || []).some((st) => st.step === 'trigger_substitution') });
       // A refusal is a 200-level *answer* only when it is a data-coverage
       // statement the user can act on; genuine gaps are 503 so a caller cannot
