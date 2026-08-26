@@ -179,15 +179,27 @@ schema file deliberately adds no constraint and says why.
   code. Guardian Check 23's retirement stands; the variable is dead config to
   retire deliberately.
 
-### 4.7 — `sairn-contract-drafter` — I HAVE NO RECORD OF THIS
-Named to me as a loose thread at session close. **I did not work on it and can
-find no trace of it**: no `~/.claude/skills/*contract*`, no
-`.claude/skills/*contract*`, and no case-insensitive hit for
-`contract-drafter` / `contract_drafter` / `contract drafter` in any `.md` or
-`.json` in this clone. Recording it as **unverified and unlocated** rather than
-inventing a status — this project has already been burned once by a handoff
-claiming a skill was built when it was not (`sairn-app-scaffold`). Whoever picks
-this up: start by establishing whether it exists at all, and in which clone.
+### 4.7 — `sairn-contract-drafter` — ~~unlocated~~ **RESOLVED, not an open item**
+**Closed 2026-08-26 before this session ended — corrected here so the next
+reader does not chase a thread that is already finished.** When first named to
+me I could find no trace of it anywhere in this clone (no
+`~/.claude/skills/*contract*`, no `.claude/skills/*contract*`, no
+case-insensitive hit in any `.md`/`.json`), and recorded it as unverified and
+unlocated rather than inventing a status.
+
+That was the right call on the evidence available **and the wrong conclusion
+about where to look.** The real master documents were never in the repo at all
+— they are in the user's `Downloads` folder, outside every clone, which is why
+a repo-wide search returned nothing and would have returned nothing no matter
+how thorough it was. Cody has extracted the skill from them; `sairn-contract-
+drafter` now exists and is loadable, covering per-app service agreements built
+from the four real master documents rather than invented.
+
+**Kept rather than deleted, for the transferable lesson:** a clean search
+proves the thing is not *where you searched* — never that it does not exist.
+The search was exhaustive within the repo and the repo was the wrong universe.
+Same shape as the `anon` correction in §3: right about the artefact examined,
+wrong about the world it sat in.
 
 ---
 
