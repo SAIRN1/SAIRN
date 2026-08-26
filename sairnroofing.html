@@ -1969,9 +1969,17 @@ function rfBaseFieldsPayload(){
 // This app already supplies 1-3. The QUANTITY_FIELDS below are element 1 --
 // claim 3 expressly lists building facet pitch and facet area, and
 // `waste_factor_pct` is element 3's waste amount, by name. Element 2 is the
-// Phase 5 per-claim damage photos. Element 4 was supplied DELIBERATELY on
-// 2026-08-26 (Michael's decision, made with this analysis in hand) by adding
-// the repair-vs-replace determination.
+// Phase 5 per-claim damage photos.
+//
+// Element 4 is being supplied DELIBERATELY, by a decision taken 2026-08-26
+// with this analysis in hand and with the consequence stated plainly first:
+// it takes the app from clear of claim 1 on TWO independent elements to clear
+// on ONE. The engine is built and unit-tested at
+// api/_lib/roofing-damage-assessment.js; the server action and the UI that
+// make it reachable are in progress as of this comment. Treat element 4 as
+// supplied either way -- the decision is what matters here, not the wiring
+// date, and a future reader must not conclude there is slack because one leg
+// had not landed yet when this was written.
 //
 // ELEMENT 5 IS THEREFORE THE ONLY ELEMENT THIS APP DOES NOT MEET. It is the
 // entire reason there is no infringement of claim 1: an AND fails on one
