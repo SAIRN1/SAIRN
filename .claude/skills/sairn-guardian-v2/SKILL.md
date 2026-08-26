@@ -637,6 +637,57 @@ to what just changed, not a standing background monitor — running it
 constantly would slow real work down for no added confidence beyond the
 first check.
 
+**A CLEANUP OR MIGRATION IS NOT DONE WHEN IT IS RUN. It is done when its
+result is queried back. Added 2026-08-26 after two independent failures the
+same night.**
+
+The paragraph above covers verifying a *fix* after a *push*. It says nothing
+about verifying a *cleanup* or a *migration* after a *run*, and that gap bit
+twice on 2026-08-26:
+
+- **`sairncash_waitlist`.** The table was created and reported provisioned.
+  Every public signup then returned 502 for hours. The create had landed; the
+  `grant` had not been exercised in the way the code needed (the endpoint used
+  `ON CONFLICT DO UPDATE`, which requires UPDATE privilege at PLAN time, and
+  the grant was `select, insert`). A privilege check that asked only "is
+  INSERT present?" came back clean.
+- **The SAIRNroofing damage-verification cleanup.** Reported run and clean.
+  Both `rf_claims` rows and the `rf_jobs` row were still live — the
+  multi-statement paste had applied only partway. **The Supabase SQL editor
+  returns success for the statements it did run.** A partial apply is
+  indistinguishable from a full one from the outside.
+
+**Why this is its own rule and not covered by anything above.** Nothing in the
+round trip surfaces it. The editor reports success. The session that wrote the
+file has no DB access to check. And "confirmed run" from a human is a true
+statement *about the paste*, not about what landed. So the failure is silent in
+exactly the way `sairn-silent-failure-sweep` describes, wearing a different
+disguise — and both times, the thing that caught it was a query, not a report.
+
+**The rule, mechanically:**
+
+1. **Every cleanup or migration file ends with a per-statement confirm query**,
+   with the expected answer written next to it —
+   `select count(*) from public.x where id = 'Y';  -- expect 0`. One per
+   statement, not one for the file: a single count at the end cannot tell a
+   full apply from a partial one.
+2. **Ask for those counts back.** Do not accept "it ran." The counts are the
+   evidence; the confirmation is not.
+3. **Where an API path exists, prefer the live endpoint over a re-select** —
+   it proves the *app* can see the change, which a `select` as owner does not.
+   `sairncash_waitlist` re-selected fine as owner the whole time it was 502ing
+   for every real user.
+4. **A grant check must name the verbs the CODE calls**, not just the ones the
+   schema file granted. Read the endpoint first: `merge-duplicates` means
+   `ON CONFLICT DO UPDATE` means UPDATE is required even when no conflict ever
+   occurs. See `sairn-grant-sweep` for the sweep discipline; this is the
+   opposite direction — a grant that is MISSING relative to what the code does.
+5. **Do not report a cleanup or migration as closed on the strength of the run
+   alone**, in a handoff, an index row, or to a human. Say which query you ran
+   and what it returned, the same standard the Verification Discipline section
+   of `CLAUDE.md` already applies to migrations — extended here to deletes,
+   which had no rule at all.
+
 **Automated deploy-mismatch check, added 2026-07-29:** a `PostToolUse` hook
 (`tools/deploy_verify_notify.py`, wired in `.claude/settings.json`, filtered
 to `git push*`) now runs automatically after every push — waits ~60s, hashes

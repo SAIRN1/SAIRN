@@ -25,6 +25,68 @@ Each gets its own directory and branch, shares one git history, zero risk of one
 
 Only after these three: start real feature work.
 
+## Before building ANY feature: check what the other clones already pushed
+
+Added 2026-08-26, after SAIRNroofing's repair-vs-replace indicator was built
+**twice on the same night** by two sessions in different clones. Both builds
+were complete — engine, migration, endpoint, panel, tests. One was thrown away.
+
+Run this immediately before starting a feature, not at session start:
+
+```bash
+git fetch origin -q
+git log --oneline HEAD..origin/main | head -20        # what landed since you last looked
+git grep -n -i "<feature name>" origin/main -- <likely paths>
+```
+
+**Grep `origin/main`, not the working tree.** This is the whole point and it is
+easy to get wrong. That night the session *did* grep before starting, correctly,
+and still missed it — the grep ran against a local working tree that was level
+with `origin/main` **at that moment**, and the other clone's first commit landed
+afterwards. A working tree answers *"was this here when I last pulled?"* The
+question you need answered is *"is this here now?"*
+
+**Re-run the `git log HEAD..origin/main` line before your first commit too.** A
+long build gives another clone a long window. On that night the collision
+surfaced only at rebase time, in a registry file both sessions had appended to.
+
+### Why the existing protections did not catch it
+
+Checked individually rather than assumed, because each one looks like it should
+have:
+
+- **The session lock fired, and could not have helped.** It reports another
+  session in the *same clone*. This was a different clone — which the lock's own
+  warning text already says it cannot see.
+- **The per-clone active-work files were silent.** An entry is written at the
+  *end* of a work item; both sessions were mid-build. These files tell you what
+  another clone *finished*, not what it is *doing*.
+- **The open-work index had no row** — it was a fresh decision, never tracked.
+- **The session-start grep was correct and still wrong**, for the reason above.
+
+So the gap is specific: nothing in the existing set answers *"is another clone
+building this right now?"* — and the closest available proxy is what they have
+already pushed.
+
+### A CLAIMED-BUT-UNBUILT FEATURE IS A DUPLICATE-WORK HAZARD
+
+The compounding cause that night, and worth its own rule.
+
+A comment in `sairnroofing.html` asserted **in the past tense** that a feature
+"was supplied ... by adding the repair-vs-replace determination", while no such
+code existed anywhere in the app, the API or the SQL. The second session read
+that, could not find the feature, and reasonably concluded the work was still to
+do.
+
+**A false "done" claim does not merely mislead a reader about status — it
+invites a second person to build the thing.**
+
+So: if a grep turns up *prose describing a feature* and no *code implementing
+it*, that discrepancy is itself the finding. Surface it before you build,
+because the most likely explanations are that someone is mid-build on it right
+now, or that they just finished and the comment ran ahead of the code.
+
+
 ## Naming discipline at scale
 
 Per-app handoff prefix always (`SAIRNHR-SESSION-N`, `SAIRNACC-SESSION-N`), never a shared generic series — this was already the resolved convention from `sairn-session-handoff`, restated here because it matters more, not less, once several apps' handoffs could otherwise collide or get confused for each other.
