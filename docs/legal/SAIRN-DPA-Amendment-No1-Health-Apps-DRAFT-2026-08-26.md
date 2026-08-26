@@ -8,9 +8,9 @@ Effective Date: [DATE] · Amends the SAIRN Data Processing Addendum dated [DATE]
 
 ## Plain-Language Summary
 
-- This amendment adds **SAIRNdental** to the parts of the DPA that already cover SAIRNcare and SAIRNvet.
+- This amendment adds **SAIRNdental** and **SAIRNsenior** to the parts of the DPA that already cover SAIRNcare and SAIRNvet.
 - Nothing else in the DPA changes. Every other section stays exactly as it is.
-- The effect is that patient data in SAIRNdental is treated as health data under the DPA, and the same Business Associate Agreement requirement applies before any patient data goes in.
+- The effect is that patient and client health data in SAIRNdental and SAIRNsenior is treated as health data under the DPA, and the same Business Associate Agreement requirement applies before any of it goes in.
 - This amendment **does not** create a BAA and is not a substitute for one. The BAA is still a separate document that has to be signed.
 
 ---
@@ -19,13 +19,15 @@ Effective Date: [DATE] · Amends the SAIRN Data Processing Addendum dated [DATE]
 
 This Amendment No. 1 ("Amendment") amends the SAIRN Data Processing Addendum ("DPA") between Customer ("Controller") and SAIRN Technologies LLC ("Processor," "SAIRN"). Capitalized terms not defined here have the meaning given in the DPA.
 
-The DPA's health-data provisions currently name SAIRNcare and SAIRNvet only. SAIRNdental processes patient records, appointments, treatment and procedure records, charges, payments, and clinical photographs, and therefore requires the same framework. This Amendment adds SAIRNdental to those provisions and makes no other change.
+The DPA's health-data provisions currently name SAIRNcare and SAIRNvet only.
+
+SAIRNdental processes patient records, appointments, treatment and procedure records, charges, payments, and clinical photographs. SAIRNsenior processes home-care client records, caregiver assignments, scheduled visits with electronic visit verification, and billing claims. Both therefore require the same framework. This Amendment adds SAIRNdental and SAIRNsenior to those provisions and makes no other change.
 
 ## 2. Amendment to Section 3 (Categories of Data Processed)
 
 The second bullet of DPA Section 3 is deleted in its entirety and replaced with the following:
 
-> For SAIRNcare, SAIRNvet, and SAIRNdental: patient, animal health-related, or dental patient records — see Section 9 for the additional HIPAA framework that applies.
+> For SAIRNcare, SAIRNvet, SAIRNdental, and SAIRNsenior: patient, animal health-related, dental patient, or home-care client health records — see Section 9 for the additional HIPAA framework that applies.
 
 ## 3. Amendment to Section 9 (Healthcare Data — HIPAA Addendum Trigger)
 
@@ -33,9 +35,9 @@ DPA Section 9 is deleted in its entirety and replaced with the following:
 
 > **9. Healthcare Data — HIPAA Addendum Trigger**
 >
-> SAIRNcare, SAIRNvet, and SAIRNdental may involve protected health information (PHI) or animal-health-equivalent records.
+> SAIRNcare, SAIRNvet, SAIRNdental, and SAIRNsenior may involve protected health information (PHI) or animal-health-equivalent records.
 >
-> Before onboarding a HIPAA-covered-entity workflow into SAIRNcare, SAIRNvet, or SAIRNdental, Customer and SAIRN must execute a separate Business Associate Agreement (BAA). SAIRN must also have an executed BAA with Anthropic covering any PHI processed through AI features before offering these Apps to covered entities. Contact SAIRN before beginning this workflow.
+> Before onboarding a HIPAA-covered-entity workflow into SAIRNcare, SAIRNvet, SAIRNdental, or SAIRNsenior, Customer and SAIRN must execute a separate Business Associate Agreement (BAA). SAIRN must also have an executed BAA with Anthropic covering any PHI processed through AI features before offering these Apps to covered entities. Contact SAIRN before beginning this workflow.
 
 ## 4. No Other Changes
 
@@ -87,27 +89,27 @@ sentence is carried through UNCHANGED from the original section 9 -- it is not
 this amendment's business to alter it, and altering it silently would be the
 worst possible edit to make while that BAA is being pursued separately.
 
-TWO GAPS THIS AMENDMENT DOES NOT CLOSE, both flagged rather than folded in
-because neither was authorised and both change documents this was not asked to
-touch:
+SCOPE WIDENED 2026-08-26, deliberately and on instruction. This file was first
+drafted for SAIRNdental alone and named accordingly; SAIRNsenior was then added
+in the SAME amendment rather than a later one, so there is never a window in
+which one health app is covered and the other is not, and so it costs one
+signature instead of two. File renamed via git mv rather than re-created, so
+the history of the narrower draft survives.
 
-1. ToS section 9 ("Healthcare-Adjacent Apps (SAIRNcare, SAIRNvet)") and AUP
-   section 5 ("Healthcare and Animal-Health Data (SAIRNcare, SAIRNvet)") carry
-   the SAME two-app limitation, including their headings. Amending only the
-   DPA leaves the master ToS and the AUP still silent on SAIRNdental. If the
-   intent is that SAIRNdental is fully covered, all three need amending --
-   this file is one of three, not the whole job. The ToS and AUP amendments
-   are small and structurally identical; say the word.
+SAIRNsenior belongs here on the same evidence as SAIRNdental: it is a home-care
+application whose own source carries a section headed "SAIRNSENIOR: sen_clients
+HIPAA MINIMUM-NECESSARY PRIVACY GATE" (api/sd-data.js:2004). The code has
+treated that data as PHI since 2026-08-20; only the paperwork lagged.
 
-2. SAIRNsenior has the same exposure and is not mentioned anywhere in any of
-   the three master documents. It is a home-care application whose own source
-   carries a section headed "SAIRNSENIOR: sen_clients HIPAA MINIMUM-NECESSARY
-   PRIVACY GATE" (api/sd-data.js:2004) -- the code already treats that data as
-   PHI. Adding SAIRNdental while leaving SAIRNsenior out would produce a
-   document that looks complete and is not. Deliberately NOT added here,
-   because it was not asked for and quietly widening a legal amendment beyond
-   its instruction is exactly the wrong instinct -- but it should almost
-   certainly be in the same amendment rather than a later one.
+COMPANION AMENDMENTS, both required for this to be complete:
+  docs/legal/SAIRN-ToS-Amendment-No1-Health-Apps-DRAFT-2026-08-26.md
+  docs/legal/SAIRN-AUP-Revision-No1-Health-Apps-DRAFT-2026-08-26.md
+ToS section 9 and AUP section 5 carry the same two-app limitation in their
+headings as well as their text, and both plain-language summaries name the two
+apps too. Amending the DPA alone would leave the other two silent.
+
+The DPA's own Plain-Language Summary needed NO change -- checked rather than
+assumed. It never names the healthcare apps; only sections 3 and 9 do.
 
 TEMPLATE ONLY. Attorney review required before execution.
 -->
