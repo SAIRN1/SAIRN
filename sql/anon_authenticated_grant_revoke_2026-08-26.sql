@@ -27,14 +27,38 @@
 -- and names no other role. `anon` and `authenticated` were never in scope for
 -- any of it, on any table.
 --
--- ══ SEVERITY, ASSESSED BEFORE SCOPING -- read this before deciding urgency ══
--- `anon` is NOT unused, and assuming it was would have been wrong. The
--- browsers ship a Supabase publishable key (`sb_publishable_...` at
--- stonedesk.html:24668 and :34319, sairnbiz.html:835) and talk to PostgREST
--- directly as `anon`, reading, updating and DELETING `intake_submissions`
--- (stonedesk.html:31984, :32119, :32130). Recorded previously at
--- sql/full_crud_truncate_sweep_2026-08-24.sql:351 and :502. The
--- everything-goes-through-the-proxy model is not universal.
+-- ══ SEVERITY -- CORRECTED 2026-08-26 BY SECTION 0b's OWN OUTPUT ════════════
+-- This block previously said "`anon` is NOT unused, and assuming it was would
+-- have been wrong", on the strength of browser code that calls PostgREST
+-- directly as `anon`. That was right about the CODE and wrong about the
+-- DATABASE, and the difference is the whole point.
+--
+-- What is true: the browsers do ship a Supabase publishable key
+-- (`sb_publishable_...` at stonedesk.html:24668 and :34319, sairnbiz.html:835)
+-- and the code does call `sb.from('intake_submissions').select/update/delete`
+-- (stonedesk.html:31984, :32119, :32130).
+--
+-- What is ALSO true, and was not checked before that claim was made: those
+-- calls FAIL. Section 0b returned `anon` holding only REFERENCES, TRIGGER and
+-- TRUNCATE on `intake_submissions` -- no SELECT, UPDATE or DELETE -- and a
+-- direct request with the real shipped key confirms it live:
+--
+--     GET /rest/v1/intake_submissions -> 401
+--     {"code":"42501","message":"permission denied for table intake_submissions",
+--      "hint":"Grant the required privileges to the current role with:
+--              GRANT SELECT ON public.intake_submissions TO anon;"}
+--
+-- A 42501 is a Postgres AUTHORIZATION failure, which means the key
+-- authenticated fine and resolved to `anon`; the role simply holds nothing.
+-- The same probe returns 401 for `business_profiles`, `employees`, `sd_slabs`
+-- and the PostgREST root itself. Corroborated from the repo side: there is
+-- **no `grant ... to anon` statement anywhere in sql/**, on any table, ever.
+--
+-- So `anon` authenticates but is authorised for nothing reachable. It holds
+-- only the default-ACL baseline this file removes. Two consequences:
+--   * Severity DROPS further. There is no legitimate `anon` usage to protect,
+--     so this sweep has no carve-out to get wrong.
+--   * A REAL, SEPARATE BUG surfaces -- StoneDesk's intake panel. See below.
 --
 -- But the three verbs this file revokes have no invocation path today:
 --   * PostgREST exposes no TRUNCATE verb and no DDL verb at all.
@@ -92,21 +116,46 @@
 -- intended removal from a collateral one. One sweep, one verb-set, one
 -- assertion shape. Log the `authenticated`-to-zero question separately.
 --
--- ══ THE CARVE-OUT -- the one thing this sweep could break silently ═════════
--- `intake_submissions` must keep `anon`'s SELECT, UPDATE and DELETE, or
--- StoneDesk's intake panel stops working WITHOUT AN ERROR -- the browser calls
--- are wrapped in `try{}catch(e){}` (stonedesk.html:32119, :32130), so a
--- permission failure is swallowed and the panel simply shows nothing.
+-- ══ THE CARVE-OUT -- RETIRED 2026-08-26. There is nothing to carve out. ════
+-- This file was built expecting `intake_submissions` to be the one thing the
+-- sweep could break: `anon` needed to keep SELECT/UPDATE/DELETE there or
+-- StoneDesk's intake panel would stop working silently. Section 0b was written
+-- specifically to assert that BEFORE the sweep rather than only after.
 --
--- The carve-out is protected STRUCTURALLY, not by a filter: Section 2 revokes
--- three named verbs, and `intake_submissions` keeps everything else because
--- nothing in this file touches S/I/U/D. That is deliberate -- a `revoke all`
--- + selective re-grant would put the carve-out at the mercy of a correctly
--- written re-grant list, and this does not.
+-- It asserted it, and the assertion FAILED -- which is the assertion doing its
+-- job. `anon` holds no SELECT, UPDATE or DELETE on that table, so this sweep
+-- cannot take them away. Removing the three baseline verbs leaves `anon` with
+-- nothing on `intake_submissions`, which is already its effective state.
 --
--- It is still asserted BEFORE (Section 0b) and AFTER (Section 3a), because
--- "structurally safe" is a claim about the code and the assertion is a claim
--- about the database, and tonight has repeatedly shown those two diverging.
+-- The 0b and 3a queries are KEPT, with their expectations inverted rather than
+-- deleted. 0b now records the real before-state; 3a asserts the after-state is
+-- empty. Deleting them would remove the only check that would catch this sweep
+-- doing something unexpected on the one table anyone had a reason to watch.
+--
+-- The structural protection still stands and still matters for every OTHER
+-- table: Section 2 revokes three named verbs, so nothing holding S/I/U/D loses
+-- it, because nothing in this file touches those verbs. A `revoke all` +
+-- selective re-grant would have put that at the mercy of a correctly written
+-- re-grant list. This does not.
+--
+-- ══ SEPARATE, REAL BUG FOUND BY THAT FAILED ASSERTION -- NOT this sweep's ══
+-- ══ to fix, and NOT caused by it ═══════════════════════════════════════════
+-- StoneDesk's intake panel is broken in production right now, and has been
+-- failing silently. `stonedesk.html:31984` reads `intake_submissions` through
+-- the anon key inside a `try{}catch(e){}`; on failure it falls back to
+-- `localStorage.getItem('sd_intake')` and renders that instead. The catch
+-- swallows a 42501, so the panel shows device-local data with no error --
+-- while the line directly above it comments *"Supabase is the real source of
+-- truth here"*, which is exactly backwards in practice.
+--
+-- `intake_submissions` is also declared in NO schema file, so it is one of the
+-- live-but-not-declared tables, and nothing in the repo has ever granted
+-- `anon` anything on it. Whether it ever worked -- a hand-grant in the SQL
+-- editor later removed, as happened to `sd_employee_auth` -- or never worked at
+-- all is not answerable from the repo. Tracked as its own row in
+-- docs/SAIRN-OPEN-WORK-INDEX.md. **Do not "fix" it by granting `anon` SELECT
+-- while this sweep is in flight** -- decide the access path first; the proxy
+-- (api/sd-data.js) is how every other table on the platform is reached.
 
 -- ── SECTION R6: PRECONDITION. Must print `postgres`. ─────────────────────
 -- `role_table_grants` only shows grants where the current user is grantor,
@@ -190,11 +239,23 @@ from public._anon_grant_baseline_2026_08_26
 group by grantee
 order by grantee;
 
--- ── SECTION 0b: THE CARVE-OUT, ASSERTED BEFORE ──────────────────────────
--- Expect `anon` holding at least SELECT, UPDATE and DELETE on
--- `intake_submissions`. If this does NOT come back before the sweep, then the
--- browser intake panel is already broken for some other reason and 3a would
--- otherwise "confirm" a state this sweep did not cause. Record the output.
+-- ── SECTION 0b: BEFORE-STATE ON intake_submissions -- EXPECTATION ═══════
+-- ──                CORRECTED 2026-08-26 AFTER IT RAN ────────────────────
+-- This asked for `anon` holding at least SELECT, UPDATE and DELETE, and said
+-- that if it did not come back, the intake panel was already broken for some
+-- other reason. IT DID NOT COME BACK. Real output 2026-08-26:
+--
+--     anon | REFERENCES, TRIGGER, TRUNCATE
+--
+-- No SELECT, no UPDATE, no DELETE -- the default-ACL baseline and nothing
+-- else. Confirmed independently against the live API with the real shipped
+-- publishable key: 42501 permission denied. The panel IS already broken, and
+-- this sweep did not cause it. See the SEPARATE, REAL BUG block above.
+--
+-- The query is kept, re-run it anyway: it is the before-half of the only pair
+-- of assertions aimed at the one table anyone had reason to watch, and a
+-- CHANGED answer here between now and Section 2 would mean someone granted
+-- `anon` something in the window.
 select grantee,
        string_agg(privilege_type, ', ' order by privilege_type) as privileges
 from information_schema.role_table_grants
@@ -257,11 +318,18 @@ order by table_name, grantee;
 --   revoke truncate, references, trigger, maintain on tables from anon, authenticated;
 
 -- ── SECTION 3: VERIFY -- only after Section 2 has actually run ───────────
--- 3a. THE CARVE-OUT, ASSERTED AFTER. Must match Section 0b exactly: `anon`
--- still holding SELECT, UPDATE, DELETE on intake_submissions. If SELECT,
--- UPDATE or DELETE is missing here, STOP -- StoneDesk's intake panel is broken
--- and it will not report an error, because the browser calls are inside
--- `try{}catch(e){}`.
+-- 3a. AFTER-STATE ON intake_submissions -- EXPECTATION INVERTED 2026-08-26.
+-- Originally: must still show anon holding SELECT/UPDATE/DELETE. That was
+-- written before 0b revealed anon never had them.
+--
+-- NOW EXPECT: ZERO ROWS for `anon`. The three baseline verbs are what this
+-- sweep removes, and they were all it had here.
+--
+-- STOP CONDITIONS, both of which mean something other than this sweep ran:
+--   * a SELECT, UPDATE or DELETE row appears for `anon` -- this file grants
+--     nothing, so someone else granted it in the window;
+--   * REFERENCES, TRIGGER or TRUNCATE survives -- the revoke did not take on
+--     this table, and 3b should be showing that too.
 select grantee,
        string_agg(privilege_type, ', ' order by privilege_type) as privileges
 from information_schema.role_table_grants
