@@ -117,6 +117,44 @@ function computeTotals(lineItems, taxRate, taxAmount) {
   };
 }
 
+// What to PERSIST for tax -- as opposed to what computeTotals works out for
+// display. These are different questions and conflating them was open-work
+// row 141.
+//
+// A stored blob must record the QUESTION the user asked, never the ANSWER.
+// Every read re-runs computeTotals over the stored fields, so any derived
+// figure written back becomes an input on the next read that the user never
+// supplied. Storing both `tax_rate` and the computed `tax` produced three
+// distinct misreports, all with the money correct and only the provenance
+// wrong:
+//   1. Priced from a 7.5% rate: stored tax_rate 7.5 AND tax 787.5, so every
+//      read saw an explicit amount -- tax_basis 'amount', tax_rate null, plus
+//      a "both a tax rate and a tax amount were given" warning the user never
+//      caused. This is the case row 141 describes.
+//   2. NO tax at all: stored tax 0, which is a number, so every read reported
+//      tax_basis 'amount' -- an invoice claiming it was handed an explicit
+//      tax of zero. Surfaced by the Phase 4c CSV export.
+//   3. A GENUINE conflict (rate and amount both given): the write warned, but
+//      only the winning amount survived, so the warning was silently dropped
+//      on every later read. The one case where it was true is the one case it
+//      vanished.
+//
+// Same principle the schema header already states for `balance`: derived
+// figures are not persisted. Only the keys the caller actually expressed are
+// returned, so a rate-only invoice stores no `tax` key at all, and a taxless
+// one stores neither.
+function taxFieldsToStore(taxRate, taxAmount) {
+  const rate = num(taxRate);
+  const explicit = num(taxAmount);
+  const out = {};
+  // When both are present that is a real disagreement the USER expressed, so
+  // both are kept deliberately -- that is what lets computeTotals regenerate
+  // the warning on every read instead of losing it after the first write.
+  if (rate !== null) out.tax_rate = rate;
+  if (explicit !== null) out.tax = explicit;
+  return out;
+}
+
 function validateProposal(payload) {
   const problems = [];
   if (!payload || typeof payload !== 'object') return ['no proposal supplied'];
@@ -312,6 +350,7 @@ module.exports = {
   PAYMENT_METHODS,
   normalizeLineItems,
   computeTotals,
+  taxFieldsToStore,
   validateProposal,
   validateInvoice,
   validatePayment,
