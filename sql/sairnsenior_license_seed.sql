@@ -1,0 +1,75 @@
+-- sql/sairnsenior_license_seed.sql
+-- Provisions the SAIRNsenior demo license row. NOT RUN by this session (no DB
+-- access). Run once in the Supabase SQL editor, then tell the session to
+-- proceed with the end-to-end verification.
+--
+-- WHY THIS IS THE LAST BLOCKER: the 2026-08-25 unprovisioned-migration sweep
+-- found six SAIRNsenior tables missing (sen_caregivers, sen_claims,
+-- sen_clients, sen_portal_links, sen_visits, sairnsenior_employee_auth) and
+-- Michael has since run all six -- confirmed live, sen_portal_links answers
+-- 404 INVALID_LINK rather than 503 NOT_PROVISIONED. But the app is still
+-- entirely untestable, because no license_keys row exists for it:
+--   SEN-PINNACLE-2026 -> 401 INVALID_LICENSE
+--   SEN-DEMO-2026     -> 401 INVALID_LICENSE
+-- Every SAIRNsenior endpoint validates the license BEFORE it touches any
+-- table, so bootstrap/login/client/caregiver/visit/claim and all the
+-- assignment gates are unreachable until this row exists. The migrations ran;
+-- the license seed never did. That was always the second half of the blocker
+-- docs/SAIRN-OPEN-WORK-INDEX.md already named ("needs Supabase SQL editor +
+-- a provisioned SEN- license").
+--
+-- KEY NAME: SEN-PINNACLE-2026, matching the convention every other app uses
+-- (SC-PINNACLE-2026, BLD-PINNACLE-2026, RF-PINNACLE-2026, DNT-PINNACLE-2026)
+-- and matching what sairnsenior.html's own gate already tells the user to try
+-- -- "Invalid key format. Try SEN-PINNACLE-2026" (sairnsenior.html:584). The
+-- client-side prefix allowlist at :529 is VALID=['SEN-','DEMO-','SAIRN-'], so
+-- this key is accepted with no code change.
+--
+-- COLUMN LIST is copied verbatim from sql/demo_license_keys_seed.sql, which
+-- established it the hard way: its first run failed 42703 because the column
+-- list had been taken from api/_lib/license.js's output shape, which is
+-- aspirational for trial_ends_at. The real columns were then re-derived
+-- against the live table by zero-write probing. Do not add trial_ends_at here.
+--
+-- WHERE NOT EXISTS rather than ON CONFLICT, for the same reason that file
+-- gives: this repo has no tracked CREATE TABLE for license_keys, so a UNIQUE
+-- constraint on `key` cannot be confirmed from source, and ON CONFLICT against
+-- a column with no matching constraint fails 42P10. That is not hypothetical
+-- here -- an ON CONFLICT assumption is exactly what broke
+-- api/sairncash/waitlist.js earlier tonight. NOT EXISTS is safe to re-run.
+--
+-- status must be the literal 'active': api/_lib/license.js:95 lowercases and
+-- compares to 'active', and anything else yields 403 LICENSE_INACTIVE rather
+-- than a clean 401, which is a different and more confusing failure.
+
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+select 'SEN-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnsenior', 'demo', null
+where not exists (select 1 from public.license_keys where key = 'SEN-PINNACLE-2026');
+
+-- Verify after running -- against the deployed endpoint, not by re-selecting
+-- the row, per this project's standing rule that a push/insert succeeding is
+-- not proof the live app sees it:
+--
+--   curl -s -X POST https://sairn.vercel.app/api/sd-data \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer SEN-PINNACLE-2026' \
+--     -d '{"action":"read","resource":"sen_clients","app_id":"sairnsenior"}'
+--
+--   401 INVALID_LICENSE   -> row still absent
+--   403 LICENSE_INACTIVE  -> status is not 'active'
+--   200 {"data":[]}       -> provisioned correctly, app is now testable
+--
+-- NOTE ON app_id: it is set to 'sairnsenior' because that is what the key is
+-- issued for, but be aware it is NOT enforced as a gate by api/sd-data.js --
+-- the Fourth session confirmed licence-independence live (leg_memorials
+-- returns provisioned:true under both LEG- and DNT- keys). Setting it right
+-- is correctness and documentation, not a security boundary. The real
+-- app-scoping control is verifySessionToken(token, license_hash, expectedApp)
+-- (Guardian Check 28), which api/sen-auth.js:54 passes APP to correctly.
+--
+-- NO CLEANUP BLOCK, deliberately, unlike the disposable-credential seeds in
+-- this directory: this is a real demo license meant to persist, the same as
+-- SB-PINNACLE-2026 and the others in demo_license_keys_seed.sql. The employee
+-- credentials created against it during verification are a separate matter --
+-- SAIRNsenior's bootstrap creates the first 'owner' account, and that one is
+-- real and should be kept, not thrown away.
