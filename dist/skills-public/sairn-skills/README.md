@@ -4,7 +4,7 @@ A small, free Claude Code plugin marketplace from
 [SAIRN Technologies LLC](https://sairn.com). One skill so far.
 
 ```
-/plugin marketplace add <owner>/<repo>
+/plugin marketplace add sairn-tech/sairn-skills
 /plugin install postgres-grant-sweep@sairn-skills
 ```
 
