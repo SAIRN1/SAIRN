@@ -1,0 +1,7 @@
+{
+  "name": "postgres-grant-sweep",
+  "version": "0.1.0",
+  "description": "Audit and narrow excess Postgres/Supabase privileges without breaking the database. Extracted from three real production sweeps.",
+  "author": { "name": "SAIRN Technologies LLC" },
+  "license": "MIT"
+}
