@@ -333,6 +333,30 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           </div>
           <div id="supp-worksheet" style="margin-top:16px;"></div>
         </div></div>
+        <div class="card" id="clm-thr-card" style="display:none;"><div class="ch"><div class="ct">Company Damage Thresholds</div></div><div class="cb">
+          <div class="note">Nothing is pre-filled here on purpose. The often-quoted &ldquo;8 hits in a 10&times;10 test square&rdquo; is a trade convention, not a law &mdash; it varies by carrier, state and policy. Enter the number <em>your</em> company works to and say where it comes from. Without one, an assessment refuses rather than assume.</div>
+          <div class="fg"><label>Hail &mdash; hits per test square</label><input type="number" id="thr-hail-count" min="1" step="1"></div>
+          <div class="fg"><label>Hail &mdash; source</label><input type="text" id="thr-hail-source" placeholder="carrier bulletin, state guidance or company standard"></div>
+          <div class="fg"><label>Wind &mdash; creased or missing per test square</label><input type="number" id="thr-wind-count" min="1" step="1"></div>
+          <div class="fg"><label>Wind &mdash; source</label><input type="text" id="thr-wind-source" placeholder="carrier bulletin, state guidance or company standard"></div>
+          <button class="btn bp" onclick="rfSaveThresholds()">Save Thresholds</button>
+        </div></div>
+        <div class="card" id="clm-dmg-card" style="display:none;"><div class="ch"><div class="ct">Slope Damage Evidence</div></div><div class="cb">
+          <div class="note"><strong>This does not decide whether the roof gets replaced &mdash; the carrier decides that.</strong> It reports, slope by slope, whether the evidence you recorded meets the threshold your company configured, and shows that threshold and its source beside every result. Carriers total individual slopes, so there is no whole-roof verdict here and there will not be one.</div>
+          <div id="dmg-threshold-note" style="margin-top:10px;"></div>
+          <div class="ch" style="padding-left:0;"><div class="ct">Test squares, per slope</div></div>
+          <div id="dmg-slopes"></div>
+          <button class="btn bo bs" onclick="rfDmgAddSlope()">+ Slope</button>
+          <div class="fg" style="margin-top:14px;"><label>Threshold override for this claim only (optional)</label>
+            <input type="number" id="dmg-ov-count" min="1" step="1" placeholder="hits per test square"></div>
+          <div class="fg"><label>Override source &mdash; required if you set one</label>
+            <input type="text" id="dmg-ov-source" placeholder="e.g. Carrier bulletin 2026-03"></div>
+          <div style="margin-top:14px;">
+            <button class="btn bp" onclick="rfSaveDamage()">Save Evidence</button>
+            <button class="btn bo" onclick="rfAssessDamage()">Assess</button>
+          </div>
+          <div id="dmg-result" style="margin-top:16px;"></div>
+        </div></div>
         <div class="card" id="clm-agr-card" style="display:none;"><div class="ch"><div class="ct">Contingency Agreement</div></div><div class="cb">
           <div class="note">The signed agreement is a record, not a field &mdash; once executed it is never edited. A cancellation is recorded as its own entry alongside it.</div>
           <div id="agr-status" style="margin-top:12px;"></div>
@@ -1059,6 +1083,9 @@ function rfEditClaim(claimId){
   rfLoadClaimPhotos(claimId);
   if($('clm-supp-card'))$('clm-supp-card').style.display=rfClaimCanEdit()?'':'none';
   rfSuppLoadFromClaim(c);
+  if($('clm-dmg-card'))$('clm-dmg-card').style.display=rfClaimCanEdit()?'':'none';
+  rfDmgLoadFromClaim(c);
+  rfLoadThresholds();
   if($('clm-agr-card'))$('clm-agr-card').style.display='';
   rfSigInit();
   rfAgreementRefresh(claimId);
@@ -1084,6 +1111,8 @@ function rfClearClaimForm(){
   if($('clm-acv-note'))$('clm-acv-note').style.display='none';
   if($('clm-evidence-card'))$('clm-evidence-card').style.display='none';
   if($('clm-supp-card'))$('clm-supp-card').style.display='none';
+  if($('clm-dmg-card'))$('clm-dmg-card').style.display='none';
+  if($('clm-thr-card'))$('clm-thr-card').style.display='none';
   if($('clm-agr-card'))$('clm-agr-card').style.display='none';
 }
 
@@ -1250,6 +1279,232 @@ function rfSuppBuildPayload(){
     adjuster_lines:rfSuppAdjuster.map(function(a){return {item_key:a.item_key.trim(),description:a.description.trim(),quantity:rfSuppNum(a.quantity),unit_price:rfSuppNum(a.unit_price)};}),
     asserted_lines:rfSuppAsserted.map(function(a){return {reason_code:a.reason_code,description:a.description.trim(),quantity:rfSuppNum(a.quantity),unit:a.unit,unit_price:rfSuppNum(a.unit_price),photo_ids:String(a.photo_ids||'').split(',').map(function(s){return s.trim();}).filter(Boolean),note:a.note||''};})
   };
+}
+
+// ── SLOPE DAMAGE EVIDENCE (rf_claims assess_damage, 2026-08-26) ──────────
+// Same discipline as the supplement worksheet directly above: this panel
+// COLLECTS inputs and asks the server to compute. It never decides an outcome
+// itself, and it never states a whole-roof verdict -- carriers total slopes,
+// and "this roof should be replaced" is the sentence the public-adjuster rules
+// (Tex. Ins. Code 4102.163, Fla. Stat. 626.854) put out of bounds for a
+// contractor servicing the property. See api/_lib/roofing-damage-assessment.js.
+var rfDmgSlopes=[];
+// The last computed assessment, held so Save Evidence can SNAPSHOT the
+// threshold that was actually used. Without the snapshot, editing the company
+// threshold in March would silently re-answer every claim assessed in January
+// -- the same reasoning that keeps RCV/depreciation/ACV as separate stored
+// fields instead of one collapsed amount. Assess computes; Save persists. A
+// compute never writes, so a snapshot is always a deliberate act.
+var rfDmgLastAssessment=null;
+
+// Management-only. The server enforces this independently -- a hidden card is
+// a convenience, never the boundary (Guardian Check 28's standing rule).
+function rfDmgIsManagement(){return !!(rfSession&&(rfSession.role==='owner'||rfSession.role==='admin'));}
+
+function rfLoadThresholds(){
+  if($('clm-thr-card'))$('clm-thr-card').style.display=rfDmgIsManagement()?'':'none';
+  if(!rfDmgIsManagement())return;
+  rfDataRaw('read','rf_settings',{}).then(function(r){
+    if(!r.ok)return;
+    var rows=(r.data&&r.data.data)||r.data||[];
+    var row=(Array.isArray(rows)?rows:[]).filter(function(x){return x.setting_key==='damage_threshold';})[0];
+    var v=(row&&row.value)||{};
+    if($('thr-hail-count'))$('thr-hail-count').value=v.hail?v.hail.hits_per_test_square:'';
+    if($('thr-hail-source'))$('thr-hail-source').value=v.hail?(v.hail.source||''):'';
+    if($('thr-wind-count'))$('thr-wind-count').value=v.wind?v.wind.hits_per_test_square:'';
+    if($('thr-wind-source'))$('thr-wind-source').value=v.wind?(v.wind.source||''):'';
+  });
+}
+
+function rfSaveThresholds(){
+  if(!rfDmgIsManagement()){toast('Only an owner or admin can change a company threshold');return;}
+  var value={};
+  var hc=rfDmgNum($('thr-hail-count').value), hs=$('thr-hail-source').value.trim();
+  var wc=rfDmgNum($('thr-wind-count').value), ws=$('thr-wind-source').value.trim();
+  // A count without a source is refused HERE as well as server-side. Both
+  // checks exist deliberately: the server one is the boundary, this one is so
+  // the person typing finds out immediately instead of via a 400.
+  if(hc!==undefined&&!hs){toast('The hail threshold needs a source',5000);return;}
+  if(wc!==undefined&&!ws){toast('The wind threshold needs a source',5000);return;}
+  if(hc!==undefined)value.hail={hits_per_test_square:hc,source:hs};
+  if(wc!==undefined)value.wind={hits_per_test_square:wc,source:ws};
+  if(!Object.keys(value).length){toast('Set at least one threshold, with its source',5000);return;}
+  rfDataRaw('write','rf_settings',{setting_key:'damage_threshold',value:value}).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not save the thresholds',5000);return;}
+    toast('Company thresholds saved');
+    rfDmgShowThreshold();
+  });
+}
+
+function rfDmgLoadFromClaim(claim){
+  var da=(claim&&claim.damage_assessment)||{};
+  rfDmgSlopes=(da.slopes||[]).map(function(s){
+    return {slope_label:s.slope_label||'',test_squares:s.test_squares==null?'':s.test_squares,
+      hits:s.hits==null?'':s.hits,creased_or_missing:s.creased_or_missing==null?'':s.creased_or_missing,
+      discontinued_material:!!s.discontinued_material,photo_ids:(s.photo_ids||[]).join(', ')};
+  });
+  var ov=da.threshold_override||{};
+  if($('dmg-ov-count'))$('dmg-ov-count').value=ov.hits_per_test_square==null?'':ov.hits_per_test_square;
+  if($('dmg-ov-source'))$('dmg-ov-source').value=ov.source||'';
+  rfDmgRenderSlopes();
+  // The stored assessment SNAPSHOT, if this claim has been assessed before.
+  // Shown rather than silently recomputed, because the company threshold may
+  // have changed since -- a January claim must not quietly re-answer under a
+  // March number. Press Assess to compute against today's threshold on purpose.
+  var el=$('dmg-result');
+  if(el){
+    var snap=da.assessed_snapshot;
+    el.innerHTML=snap
+      ? '<div class="note">Last assessed '+rfEsc(snap.assessed_at||'previously')+' against '+rfEsc(String(snap.threshold&&snap.threshold.hits_per_test_square))+
+        ' per test square (source: '+rfEsc((snap.threshold&&snap.threshold.source)||'--')+')'+
+        (snap.threshold_is_override?', a per-claim override':'')+
+        '. Press <strong>Assess</strong> to recompute against the threshold configured today.</div>'
+      : '';
+  }
+  if($('dmg-threshold-note'))rfDmgShowThreshold();
+}
+
+// Shows the company threshold the assessment will use, before it is run, so
+// the number on the result is never the first time anyone sees it.
+function rfDmgShowThreshold(){
+  var el=$('dmg-threshold-note');if(!el)return;
+  rfDataRaw('read','rf_settings',{}).then(function(r){
+    if(!r.ok){el.innerHTML='<div class="note">Could not read company settings.</div>';return;}
+    var rows=(r.data&&r.data.data)||r.data||[];
+    var row=(Array.isArray(rows)?rows:[]).filter(function(x){return x.setting_key==='damage_threshold';})[0];
+    var v=row&&row.value;
+    if(!v){el.innerHTML='<div class="note" style="color:#B91C1C;">No company damage threshold is configured yet. An assessment will refuse rather than assume one &mdash; management sets it in Company Settings, citing its source.</div>';return;}
+    el.innerHTML='<div class="note">Company thresholds: '+Object.keys(v).map(function(p){
+      return rfEsc(p)+' &mdash; '+rfEsc(String(v[p].hits_per_test_square))+' per test square (source: '+rfEsc(v[p].source||'--')+')';
+    }).join('<br>')+'</div>';
+  });
+}
+
+function rfDmgAddSlope(row){
+  rfDmgSlopes.push(row||{slope_label:'',test_squares:'',hits:'',creased_or_missing:'',discontinued_material:false,photo_ids:''});
+  rfDmgRenderSlopes();
+}
+function rfDmgRemoveSlope(i){rfDmgSlopes.splice(i,1);rfDmgRenderSlopes();}
+
+function rfDmgRenderSlopes(){
+  var el=$('dmg-slopes');if(!el)return;
+  if(!rfDmgSlopes.length){el.innerHTML='<div class="note">No slopes recorded yet. A slope with nothing recorded is reported as <em>not assessed</em> &mdash; never as undamaged.</div>';return;}
+  el.innerHTML=rfDmgSlopes.map(function(s,i){
+    return '<div class="fg" style="border:1px solid var(--bd);border-radius:8px;padding:10px;margin-bottom:8px;">'+
+      '<input placeholder="Slope (North, South Rear...)" value="'+rfEsc(s.slope_label)+'" onchange="rfDmgSlopes['+i+'].slope_label=this.value">'+
+      '<input type="number" min="0" step="1" placeholder="test squares inspected" value="'+rfEsc(s.test_squares)+'" onchange="rfDmgSlopes['+i+'].test_squares=this.value">'+
+      '<input type="number" min="0" step="1" placeholder="hail hits counted" value="'+rfEsc(s.hits)+'" onchange="rfDmgSlopes['+i+'].hits=this.value">'+
+      '<input type="number" min="0" step="1" placeholder="creased / missing (wind)" value="'+rfEsc(s.creased_or_missing)+'" onchange="rfDmgSlopes['+i+'].creased_or_missing=this.value">'+
+      '<input placeholder="photo ids, comma separated" value="'+rfEsc(s.photo_ids)+'" onchange="rfDmgSlopes['+i+'].photo_ids=this.value">'+
+      '<label style="font-weight:400;"><input type="checkbox" '+(s.discontinued_material?'checked':'')+' onchange="rfDmgSlopes['+i+'].discontinued_material=this.checked"> Material discontinued &mdash; a matching repair cannot be bought</label>'+
+      '<button class="btn bo bs" onclick="rfDmgRemoveSlope('+i+')">Remove slope</button>'+
+      '</div>';
+  }).join('');
+}
+
+function rfDmgNum(v){var n=Number(v);return (v===''||v===null||v===undefined||isNaN(n))?undefined:n;}
+
+function rfDmgBuildPayload(){
+  var claim=rfClaims.find(function(c){return c.claim_id===rfActiveClaimId;});
+  var ov=rfDmgNum($('dmg-ov-count')?$('dmg-ov-count').value:'');
+  var ovSrc=$('dmg-ov-source')?$('dmg-ov-source').value.trim():'';
+  var out={
+    peril:(claim&&claim.peril)||undefined,
+    slopes:rfDmgSlopes.map(function(s){
+      return {
+        slope_label:String(s.slope_label||'').trim(),
+        test_squares:rfDmgNum(s.test_squares),
+        hits:rfDmgNum(s.hits),
+        creased_or_missing:rfDmgNum(s.creased_or_missing),
+        discontinued_material:!!s.discontinued_material,
+        photo_ids:String(s.photo_ids||'').split(',').map(function(x){return x.trim();}).filter(Boolean)
+      };
+    })
+  };
+  // An override is only ever sent WITH its source. A number on its own would
+  // be exactly the unsourced threshold the engine refuses to compute from.
+  if(ov!==undefined&&ovSrc)out.threshold_override={hits_per_test_square:ov,source:ovSrc};
+  return out;
+}
+
+function rfSaveDamage(){
+  if(!rfActiveClaimId){toast('Open a claim first');return;}
+  var claim=rfClaims.find(function(c){return c.claim_id===rfActiveClaimId;});
+  if(!claim){toast('Reload the claim first');return;}
+  var ov=rfDmgNum($('dmg-ov-count')?$('dmg-ov-count').value:'');
+  var ovSrc=$('dmg-ov-source')?$('dmg-ov-source').value.trim():'';
+  if(ov!==undefined&&!ovSrc){toast('An override needs a source -- name the bulletin or standard it comes from',5000);return;}
+  var da=rfDmgBuildPayload();
+  if(rfDmgLastAssessment){
+    // Snapshot only what makes the stored result re-readable later: the
+    // threshold used, whether it was an override, the summary counts, and
+    // when. Deliberately NOT a verdict field -- there is none to store.
+    da.assessed_snapshot={
+      assessed_at:new Date().toISOString(),
+      threshold:rfDmgLastAssessment.threshold,
+      threshold_is_override:rfDmgLastAssessment.threshold_is_override,
+      peril:rfDmgLastAssessment.peril,
+      summary:rfDmgLastAssessment.summary
+    };
+  }
+  var rec={id:claim.claim_id,job_id:claim.job_id,carrier:claim.carrier,claim_number:claim.claim_number,status:claim.status,damage_assessment:da};
+  rfDataRaw('write','rf_claims',rec).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not save the evidence',5000);return;}
+    toast(rfDmgLastAssessment?'Evidence and assessment snapshot saved':'Slope evidence saved (not yet assessed)');
+    rfLoadClaimsFull();
+  });
+}
+
+function rfAssessDamage(){
+  if(!rfActiveClaimId){toast('Open a claim first');return;}
+  var lic=rfLicenseKey();
+  if(!lic||!rfSession||!rfSession.token)return;
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':rfSession.token};
+  var body={action:'assess_damage',resource:'rf_claims',app_id:APP_ID,payload:{claim_id:rfActiveClaimId,assessment:rfDmgBuildPayload()}};
+  fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify(body)})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      if(!r.ok||!d||!d.ok){toast((d&&d.error&&d.error.message)||'Assessment failed',5000);return;}
+      rfDmgLastAssessment=(d.assessment&&d.assessment.ok)?d.assessment:null;
+      rfRenderDamage(d);
+      if(rfDmgLastAssessment)toast('Assessed. Press Save Evidence to record the threshold this used.',6000);
+    });})
+    .catch(function(){toast('Assessment network error',5000);});
+}
+
+function rfRenderDamage(d){
+  var el=$('dmg-result');if(!el)return;
+  var a=d.assessment;
+  if(d.threshold_missing){
+    el.innerHTML='<div class="note" style="color:#B91C1C;">'+rfEsc(d.threshold_missing)+'</div>';
+    return;
+  }
+  if(!a||!a.ok){
+    // A refusal is shown as a refusal, with its reasons -- never as an empty
+    // result that reads like "nothing wrong here".
+    var probs=(a&&a.problems&&a.problems.length)?a.problems.map(rfEsc).join('<br>'):'Not enough was recorded to assess this claim.';
+    el.innerHTML='<div class="note" style="color:#B91C1C;"><strong>Not assessed.</strong><br>'+probs+'</div>';
+    return;
+  }
+  var rows=a.slopes.map(function(s){
+    var badge=s.outcome==='meets_threshold'?'<span class="badge br">meets threshold</span>'
+      :s.outcome==='below_threshold'?'<span class="badge bg">below threshold</span>'
+      :'<span class="badge bw">not assessed</span>';
+    var gap=s.evidence_gap?'<div class="note" style="margin:4px 0 0;">'+rfEsc(s.evidence_gap)+'</div>':'';
+    return '<tr><td>'+rfEsc(s.slope_label)+'</td><td>'+badge+'</td><td>'+rfEsc(s.reason)+gap+'</td><td>'+
+      (s.photo_ids&&s.photo_ids.length?rfEsc(s.photo_ids.join(', ')):'<em>none cited</em>')+'</td></tr>';
+  }).join('');
+  var sm=a.summary;
+  var gapNote=sm.unassessed_slopes_remain
+    ? '<div class="note" style="color:#B91C1C;">'+sm.insufficient_evidence+' slope(s) have not been assessed. That is missing evidence, not a finding of low damage &mdash; record test squares and a count before relying on this.</div>'
+    : '';
+  el.innerHTML=
+    '<div class="note">Measured against <strong>'+rfEsc(String(a.threshold.hits_per_test_square))+' per test square</strong> ('+rfEsc(a.peril)+')'+
+      (a.threshold_is_override?' &mdash; <strong>per-claim override</strong>, not your company setting':'')+
+      '.<br>Source: '+rfEsc(a.threshold.source)+'</div>'+
+    gapNote+
+    '<div class="tw"><table><thead><tr><th>Slope</th><th>Evidence</th><th>Basis</th><th>Photos</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="note">'+sm.slopes_total+' slope(s): '+sm.meets_threshold+' meet the threshold, '+sm.below_threshold+' below, '+sm.insufficient_evidence+' not assessed. '+
+      '<strong>This is a record of your evidence against your configured threshold. It is not a carrier decision and not a prediction of one.</strong></div>';
 }
 
 function rfSaveSupplement(){

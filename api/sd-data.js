@@ -44,6 +44,7 @@ const roofingAgreements = require('./_lib/roofing-agreements');
 const roofingLocations = require('./_lib/roofing-locations');
 const roofingPrograms = require('./_lib/roofing-programs');
 const roofingBilling = require('./_lib/roofing-billing');
+const roofingDamage = require('./_lib/roofing-damage-assessment');
 
 // Resource registry (2026-08-21). Previously one shared object literal in
 // this file that every SAIRN app appended to, alongside a separately
@@ -3060,6 +3061,142 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { photo_id: saved.photo_id, captured_by: saved.captured_by }) : payload });
       return;
     }
+    // ── SAIRNROOFING: rf_settings, company-level configuration (2026-08-26) ─────────────────
+    // Keyed rows, one per setting. Currently holds 'damage_threshold' for the
+    // repair-vs-replace engine. READ is open to any authenticated employee (a
+    // foreman needs to see the threshold their assessment was measured
+    // against, or the number on screen is unexplainable); WRITE is
+    // management-only, matching rf_contingency_rules -- a threshold that
+    // decides whether a slope is called total is not one coder's preference.
+    if (resource === 'rf_settings' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('rf_settings?license_hash=eq.' + enc(licHash) + '&select=setting_key,data,updated_by,updated_at'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({
+        ok: true, provisioned: true,
+        data: (rows || []).map((x) => ({ setting_key: x.setting_key, value: x.data, updated_by: x.updated_by, updated_at: x.updated_at }))
+      });
+      return;
+    }
+    if (resource === 'rf_settings' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change a company setting' } }); return; }
+      const key = payload && payload.setting_key;
+      if (!key || typeof key !== 'string') { res.status(400).json({ error: { message: 'rf_settings: setting_key is required' } }); return; }
+      const value = (payload && payload.value) || {};
+      // Validate KNOWN keys before storing. The engine refuses to compute from
+      // a threshold with no source; refuse to STORE one too, so a bad row never
+      // reaches a contractor's screen -- the same rule rf_contingency_rules
+      // applies to its citations, for the same reason.
+      if (key === 'damage_threshold') {
+        const problems = [];
+        const perils = roofingDamage.PERILS;
+        const present = perils.filter((p) => value[p]);
+        if (!present.length) problems.push('at least one of ' + perils.join('/') + ' must be configured');
+        present.forEach((p) => {
+          roofingDamage.validateThreshold(value[p]).forEach((m) => problems.push(p + ': ' + m));
+        });
+        if (problems.length) { res.status(400).json({ error: { code: 'INVALID_SETTING', message: 'rf_settings damage_threshold: ' + problems.join('; ') } }); return; }
+      }
+      const r = await fetch(rest('rf_settings?on_conflict=license_hash,setting_key'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        // updated_by comes from the VERIFIED session, never from the payload --
+        // a forged name in the body must not end up on the record of who
+        // changed a threshold.
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnroofing', setting_key: String(key),
+          data: value, updated_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        const bt = await r.text();
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Company settings are not set up yet — run sql/sairnroofing_settings_schema.sql in Supabase first.' } }); return; }
+        console.error('rf_settings write error (status ' + r.status + '):', bt);
+        res.status(502).json({ error: { message: 'Data store error — try again' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({ ok: true, data: { setting_key: key, value: saved ? saved.data : value, updated_by: session.employee_id } });
+      return;
+    }
+
+    // ── SAIRNROOFING: repair-vs-replace evidence assessment (2026-08-26) ────────────────────
+    // Compute-only, same shape as 'reconcile' above. Reads the slope evidence
+    // rows stored on the claim and the company's configured threshold, runs the
+    // deterministic engine in api/_lib/roofing-damage-assessment.js, returns the
+    // per-slope result. Writes nothing -- looking at whether a slope meets a
+    // threshold must never record that it does.
+    //
+    // IT DOES NOT SAY A ROOF SHOULD BE REPLACED. The carrier decides that; this
+    // reports whether recorded evidence meets a configured number, with the
+    // number and its source attached. That is the public-adjuster boundary
+    // documented at length in api/_lib/roofing-supplement.js and again at the
+    // top of the damage-assessment engine. No LLM anywhere in this path.
+    if (resource === 'rf_claims' && action === 'assess_damage') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const claimId = payload && payload.claim_id;
+      if (!claimId) { res.status(400).json({ error: { message: 'assess_damage requires payload.claim_id' } }); return; }
+      const cr = await fetch(rest('rf_claims?license_hash=eq.' + enc(licHash) + '&claim_id=eq.' + enc(claimId) + '&select=claim_id,assigned_employee_id,data'), { headers });
+      if (cr.status === 404 || cr.status === 400) { res.status(200).json({ ok: true, provisioned: false, assessment: null }); return; }
+      const cRows = await cr.json();
+      const claim = Array.isArray(cRows) && cRows[0];
+      if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim' } }); return; }
+      // Same assignment gate as reading the claim: you must be able to see it.
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only assess a claim assigned to you' } });
+        return;
+      }
+      const claimData = claim.data || {};
+      const assessInput = (payload && payload.assessment) || claimData.damage_assessment || {};
+      const peril = assessInput.peril || claimData.peril || null;
+
+      // THRESHOLD RESOLUTION, and the order matters. A per-claim override wins,
+      // and is reported AS an override so it is never mistaken for the company
+      // number. Otherwise the company setting for this peril is used. If
+      // neither exists the engine refuses -- it never falls back to a
+      // convention, because a convention on screen with nothing behind it is
+      // the fabricated-authority pattern Check 0b exists for.
+      let threshold = null, isOverride = false, thresholdMissing = null;
+      if (assessInput.threshold_override && assessInput.threshold_override.hits_per_test_square !== undefined) {
+        threshold = assessInput.threshold_override;
+        isOverride = true;
+      } else {
+        const sr = await fetch(rest('rf_settings?license_hash=eq.' + enc(licHash) + '&setting_key=eq.damage_threshold&select=data'), { headers });
+        if (sr.status === 404 || sr.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Company settings are not set up yet — run sql/sairnroofing_settings_schema.sql in Supabase first.' } });
+          return;
+        }
+        const sRows = await sr.json();
+        if (!sr.ok) return upstream(res, sRows);
+        const stored = (Array.isArray(sRows) && sRows[0] && sRows[0].data) || {};
+        threshold = peril ? stored[peril] : null;
+        if (!threshold) thresholdMissing = peril
+          ? 'No damage threshold is configured for peril "' + peril + '". Set one in Company Settings, citing its source.'
+          : 'This claim has no peril recorded, so no threshold can be selected.';
+      }
+
+      const result = roofingDamage.assess({
+        slopes: assessInput.slopes,
+        threshold: threshold,
+        peril: peril,
+        threshold_is_override: isOverride
+      });
+      res.status(200).json({
+        ok: true, provisioned: true, claim_id: claimId,
+        threshold_missing: thresholdMissing,
+        assessment: result
+      });
+      return;
+    }
+
     // ── SAIRNROOFING: supplement reconciliation (2026-08-24, Phase 3c) ───────────────────────
     // Compute-only. Reads the claim's stored supplement inputs and the linked
     // job's measured quantities, runs the DETERMINISTIC engine in
