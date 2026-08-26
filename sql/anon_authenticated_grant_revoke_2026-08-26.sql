@@ -322,6 +322,31 @@ where table_schema = 'public'
 group by grantee, privilege_type
 order by grantee, privilege_type;
 
+-- ── THE COUNT DRIFT IS THIS FILE'S OWN SCAFFOLDING -- read before Section 2 ──
+-- Section 1 has now been read three times and climbed each time: ~158 at the
+-- discovery query, 159, then 160. That is not tables appearing on the
+-- platform. It is almost certainly THIS FILE.
+--
+-- Section 0 and Section 0c each `create table` in `public`, and by the very
+-- default ACL this sweep exists to remove, each one acquires the
+-- anon/authenticated baseline the moment it is created. Section 0 runs BEFORE
+-- Section 1, so the baselines are inside the number Section 1 reports:
+--
+--     158 real + 1 baseline (_anon_grant_baseline)          = 159
+--     158 real + 2 baselines (+ _anon_nontable_baseline)     = 160
+--
+-- The arithmetic fits exactly, which is suggestive and not proof -- it is a
+-- PREDICTION, and it is falsifiable: after Section 4 drops both baseline
+-- tables, the count must fall by exactly 2. If it does not, something else is
+-- creating tables and that is worth knowing.
+--
+-- CONSEQUENCES FOR READING SECTION 3, so they are not mistaken for defects:
+--   * 3b will report LOST rows for the two baseline tables themselves. That is
+--     correct and expected -- 2a revokes on `all tables`, and they are tables.
+--   * 3c's `live_tables` includes them, so it will not match a count taken
+--     before Section 0 ran or after Section 4 drops them.
+-- Neither is a problem. Both would look like one to a reader who did not know.
+
 -- 1b: anything OTHER than the three verbs -- i.e. what these roles legitimately
 -- (or illegitimately) hold that this sweep will NOT touch. `intake_submissions`
 -- should be the interesting row. Anything else here is worth a look before
@@ -471,7 +496,10 @@ group by g.grantee, g.privilege_type
 order by 1 desc, 2, 3;
 
 -- 3c. TOTALS. Compare against Section 0's recorded output, not against any
--- number written in this file. `remaining_rows` should equal
+-- number written in this file. NOTE the two baseline tables are included in
+-- `live_tables` here and are dropped by Section 4 -- see the count-drift note
+-- above Section 1b. Take this reading BEFORE Section 4, and expect the number
+-- to fall by exactly 2 afterwards. `remaining_rows` should equal
 -- baseline_rows minus the LOST count from 3b, per role, and the table count in
 -- `public` must be UNCHANGED -- a revoke cannot drop a table, so a changed
 -- count means something else ran in the window.
