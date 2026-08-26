@@ -232,8 +232,21 @@ check('ma_rcp_6a reuses the ohio_civ_r_6a impl but keeps its own label',
 check('wv_rcp_6e is still the only contested standard',
   Object.keys(engine.SERVICE_EXTENSION_STANDARDS)
     .filter(k => typeof engine.SERVICE_EXTENSION_STANDARDS[k].contested === 'function'), ['wv_rcp_6e']);
-check('only Virginia and Massachusetts declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ma', 'va']);
+// UPDATED 2026-08-26 when Missouri was seeded and declared its own gap. The
+// assertion is kept rather than deleted because the property it guards has not
+// changed: a coverage disclosure must be declared DELIBERATELY, per
+// jurisdiction, so an accidental or copy-pasted entry shows up here as a
+// failure. Add a jurisdiction to this list only when its gap was actually
+// reasoned about, never to make the test pass.
+check('exactly Massachusetts, Missouri and Virginia declare a coverage gap',
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['ma', 'mo', 'va']);
+// Each entry must be its OWN text, not another state's copied across -- the
+// failure mode this pins down is a disclosure that names the wrong state.
+check('each coverage summary names its own jurisdiction',
+  ['ma', 'mo', 'va'].filter(k => {
+    const s = engine.JURISDICTION_COVERAGE[k].summary;
+    return { ma: /Massachusetts|Suffolk/, mo: /Missouri/, va: /Virginia/ }[k].test(s);
+  }), ['ma', 'mo', 'va']);
 // A pre-existing jurisdiction still computes what it computed, through the
 // same standards table the two new entries were added to.
 {
