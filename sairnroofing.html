@@ -151,6 +151,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-schedule" onclick="nav('schedule')">Schedule</button>
       <button class="sb" id="sb-claims" onclick="nav('claims')">Insurance Claims</button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
+      <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
     </aside>
     <main>
@@ -258,6 +259,41 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           </div>
           <button class="btn bp" onclick="rfAddRequirement()">Add Requirement</button>
         </div></div>
+      </div>
+
+      <!-- ACCESS / CREDENTIAL LIFECYCLE (2026-08-27) ─────────────────────
+           The first client anywhere on the platform for set_active. Five apps
+           shipped the server action (dnt/mech/rf/sc/sd) and NONE shipped a UI,
+           so deactivating a departing employee meant a hand-written SQL edit --
+           which is how three StoneDesk licences were lost (api/sd-auth.js:304).
+           Owner-only, matching PROVISIONING_ROLES in api/rf-auth.js. -->
+      <div class="panel" id="panel-access">
+        <div class="ph">
+          <div><div class="ptitle">Access</div>
+          <div class="psub">Who can sign in to this company</div></div>
+        </div>
+        <div class="card"><div class="cb">
+          <div class="note">Deactivating removes someone's ability to sign in. Their record and history are kept &mdash; nothing is deleted. A deactivated person can be reactivated at any time.</div>
+          <div class="note"><strong>A signed-in session can outlive a deactivation by up to 12 hours.</strong> If someone must lose access immediately, deactivate them here and then confirm they are signed out.</div>
+          <div id="acc-list">Loading&hellip;</div>
+        </div></div>
+      </div>
+
+      <div class="modal" id="accmodal">
+        <div class="mbox">
+          <div class="mtitle" id="acc-modal-title">Deactivate</div>
+          <div id="acc-modal-body"></div>
+          <div class="fg" id="acc-reason-wrap">
+            <label>Reason <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="acc-reason" maxlength="500" placeholder="e.g. Left the company 2026-08-27">
+            <div class="note" style="margin-top:6px">Required when deactivating. Someone reconstructing this months from now will only have what you write here.</div>
+          </div>
+          <div class="perr" id="acc-err"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn bp" id="acc-confirm" onclick="rfConfirmSetActive()">Confirm</button>
+            <button class="btn bo" onclick="rfCloseAccessModal()">Cancel</button>
+          </div>
+        </div>
       </div>
 
       <div class="panel" id="panel-claims">
@@ -694,6 +730,11 @@ function rfEnterApp(d){
   $('hbadge').textContent=d.role.toUpperCase();
   rfLoginErr('');
   var p=$('l-pin');if(p)p.value='';
+  // Access is owner-only, matching PROVISIONING_ROLES in api/rf-auth.js.
+  // Cosmetic: the server refuses a non-owner regardless. This just stops
+  // offering a tab that would always 403.
+  var ab=$('sb-access');
+  if(ab)ab.style.display=(d.role==='owner')?'':'none';
   rfRenderScopeNote();
   rfLoadJobs();
 }
@@ -738,6 +779,7 @@ function nav(id){
   }
   if(id==='claims'){rfLoadClaims();}
   if(id==='reports'){rfRenderReports();}
+  if(id==='access'){rfLoadAccess();}
   if(id==='schedule'){
     // Management-only affordances match the server rule exactly (staffing a
     // crew is an assignment decision) rather than being hidden decoration --
@@ -978,6 +1020,117 @@ function rfFillCertEmployees(){
     sel.innerHTML=rows.length
       ? rows.map(function(e){return '<option value="'+rfEsc(e.employee_id)+'">'+rfEsc(e.name||e.employee_id)+'</option>';}).join('')
       : '<option value="">No employees on the roster yet</option>';
+  });
+}
+
+// ── ACCESS / CREDENTIAL LIFECYCLE (2026-08-27) ────────────────────────────
+// The first client on the platform for set_active. Everything shown here is
+// SERVER-COMPUTED: the roster comes from api/rf-auth.js's roster action, and
+// every decision about whether a change is allowed is the server's. This panel
+// never predicts an outcome -- it asks, then reports what came back.
+//
+// TWO REFUSALS ARE DELIBERATELY NOT PRE-EMPTED IN THE CLIENT, because guessing
+// them here would drift from the server's own rules: last-owner and
+// caller-still-active. The button is offered, the server refuses with
+// LAST_OWNER or CREDENTIAL_INACTIVE, and the real message is shown. A client
+// that hid the button would be asserting a rule it does not own.
+var rfRoster=[];
+var rfAccTarget=null;   // {employee_id, name, nextActive}
+
+function rfLoadAccess(){
+  var el=$('acc-list');
+  if(el)el.innerHTML='Loading&hellip;';
+  rfAuth('roster',{},true).then(function(r){
+    if(!r.ok){
+      if(el)el.innerHTML='<div class="note">'+rfEsc(r.msg||'Could not load the roster.')+'</div>';
+      return;
+    }
+    rfRoster=(r.data&&r.data.employees)||[];
+    rfRenderAccess();
+  });
+}
+
+function rfRenderAccess(){
+  var el=$('acc-list');
+  if(!el)return;
+  if(!rfRoster.length){el.innerHTML='<div class="note">No employees on the roster yet.</div>';return;}
+  var me=(rfSession&&rfSession.employee_id)||'';
+  // Active owners are counted so the panel can WARN before the server refuses.
+  // This is a warning, never a gate -- the server's count is authoritative and
+  // is recomputed there on every call.
+  var activeOwners=rfRoster.filter(function(e){return e.active===true&&e.role==='owner';}).length;
+  el.innerHTML='<table><thead><tr><th>Employee</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>'+
+    rfRoster.map(function(e){
+      var isSelf=e.employee_id===me;
+      var isActive=e.active===true;
+      var lastOwner=isActive&&e.role==='owner'&&activeOwners<=1;
+      var label=isActive?'Deactivate':'Reactivate';
+      var why=isSelf?'You cannot deactivate your own account'
+             :(lastOwner?'This is the only active Owner':'');
+      return '<tr>'+
+        '<td>'+rfEsc(e.name||e.employee_id)+'<div style="font-size:11px;color:var(--muted)">'+rfEsc(e.employee_id)+'</div></td>'+
+        '<td>'+rfEsc(e.role||'--')+'</td>'+
+        '<td>'+(isActive?'<span style="color:var(--ok)">Active</span>':'<span style="color:var(--muted)">Deactivated</span>')+'</td>'+
+        '<td style="text-align:right">'+
+          (isSelf
+            ? '<span style="font-size:11px;color:var(--muted)">'+rfEsc(why)+'</span>'
+            : '<button class="btn '+(isActive?'bo':'bp')+' bs" onclick="rfOpenAccessModal(\''+rfEsc(e.employee_id)+'\','+(isActive?'false':'true')+')">'+label+'</button>'
+              +(why?'<div style="font-size:11px;color:var(--muted);margin-top:4px">'+rfEsc(why)+'</div>':''))+
+        '</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+function rfOpenAccessModal(employee_id,nextActive){
+  var e=rfRoster.filter(function(x){return x.employee_id===employee_id;})[0];
+  if(!e)return;
+  rfAccTarget={employee_id:employee_id,name:e.name||employee_id,nextActive:nextActive};
+  $('acc-modal-title').textContent=nextActive?'Reactivate access':'Deactivate access';
+  $('acc-modal-body').innerHTML='<div class="note">'+
+    (nextActive
+      ? 'Restore sign-in for <strong>'+rfEsc(rfAccTarget.name)+'</strong>.'
+      : '<strong>'+rfEsc(rfAccTarget.name)+'</strong> will no longer be able to sign in. Their record and history are kept.')+
+    '</div>';
+  // Reason is required ONLY to deactivate, matching the server. Reactivating is
+  // self-explanatory and always safe; a deactivation is the thing someone will
+  // be trying to reconstruct months later.
+  $('acc-reason-wrap').style.display=nextActive?'none':'';
+  $('acc-reason').value='';
+  $('acc-err').textContent='';
+  $('acc-confirm').disabled=false;
+  $('acc-confirm').textContent=nextActive?'Reactivate':'Deactivate';
+  $('accmodal').classList.add('on');
+}
+function rfCloseAccessModal(){$('accmodal').classList.remove('on');rfAccTarget=null;}
+
+function rfConfirmSetActive(){
+  if(!rfAccTarget)return;
+  var reason=($('acc-reason').value||'').trim();
+  if(!rfAccTarget.nextActive&&!reason){
+    $('acc-err').textContent='A reason is required to deactivate.';
+    return;
+  }
+  $('acc-confirm').disabled=true;
+  $('acc-err').textContent='';
+  var payload={employee_id:rfAccTarget.employee_id,active:rfAccTarget.nextActive};
+  if(!rfAccTarget.nextActive)payload.reason=reason;
+  rfAuth('set_active',payload,true).then(function(r){
+    if(!r.ok){
+      // Show the SERVER's message, never a locally-invented one. LAST_OWNER,
+      // SELF_DEACTIVATE, CREDENTIAL_INACTIVE and NOT_FOUND all arrive here and
+      // all say something the user needs to read.
+      $('acc-err').textContent=r.msg||'That change was refused.';
+      $('acc-confirm').disabled=false;
+      return;
+    }
+    var d=r.data||{};
+    rfCloseAccessModal();
+    // unchanged:true is a real server answer (the row already had that state),
+    // and it is reported honestly rather than as a fresh success.
+    toast(d.unchanged
+      ? 'No change — that account was already '+(rfAccTarget&&rfAccTarget.nextActive?'active':'deactivated')
+      : (payload.active?'Access restored':'Access removed')+
+        (typeof d.remaining_owners==='number'?' · '+d.remaining_owners+' active owner'+(d.remaining_owners===1?'':'s'):''));
+    rfLoadAccess();
   });
 }
 
