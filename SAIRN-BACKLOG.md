@@ -1211,3 +1211,76 @@ than a second implementation, and a decision on whether assignment is
 would be needed already exist — the `active` flag on the roster and the
 single assignment path at `subxAssign` — so the gate has one place to live,
 not several.
+
+## A repo file can be written, reported as delivered, and never committed — the 2026-08-25 entry documented this failure mode without closing it
+
+**Logged:** 2026-08-27, after it recurred. **This is a flag about a gap in our
+own process, not about any app.**
+
+**What happened, twice:**
+
+1. **2026-08-21 → discovered 2026-08-25.** A 35 KB research spec existed only
+   as an untracked file in the (now retired) `C:\Users\marsh\` checkout. It was
+   invisible to all four clones and to a retirement plan whose Step 3 verified
+   only *tracked* files against `origin/main` and reported a clean zero. Found
+   by accident during an empty-directory pass, not by the plan.
+2. **2026-08-27.** `docs/superpowers/specs/2026-08-27-sairnmechanical-shared-platform-competitive-research.md`
+   — 1,259 lines, three research passes, reported to Michael as the deliverable
+   and sent as a file — sat `??` untracked in `Documents\SAIRN-cc` through
+   several turns. `SAIRN-BACKLOG.md`'s own StoneDesk row was ` M` uncommitted
+   alongside it. **Caught only because Michael fetched the path himself and got
+   a 404.** Nothing in the workflow raised it. Same directory, same class of
+   file, six days later.
+
+**Why the existing fix does not cover it — checked directly, not assumed:**
+
+- `CLAUDE.md:58` — *"are **not written until committed in the same action** — a
+  local-only handoff is invisible to every other clone."* The subject of that
+  sentence is **handoffs**. A research spec is not a handoff.
+- `sairn-session-handoff/SKILL.md:49,58,75` — the fullest statement of the rule,
+  and every clause is handoff-scoped. Line 58 comes closest (*"Do not leave a
+  local-only handoff and describe the handoff as written"*) and still says
+  *handoff*.
+- `sairn-guardian-v2/SKILL.md:1032` — the same sentence again, as a pointer into
+  the handoff skill. Third restatement, same narrow scope.
+- `sairn-precommit-gate` — triggers **"before every commit."** Structurally
+  incapable of catching this: its trigger is the commit, and the commit is
+  exactly what never happened.
+- **Hooks (5 configured, all present at `C:/SAIRN/tools/`):**
+  `html_script_check.py` (PostToolUse Write|Edit, HTML syntax),
+  `redaction_check.py` (PreToolUse Write|Edit, secrets),
+  `git_push_master_guard.py` (PreToolUse Bash),
+  `deploy_verify_notify.py` (PostToolUse Bash),
+  `session_lock_check.py` (SessionStart/UserPromptSubmit).
+  **None of them looks at whether a file written into the repo ever reached a
+  commit.**
+
+**The precise shape of the gap:** the 2026-08-25 lesson was recorded in the
+*deletion-safety* direction — "any future 'is it safe to delete this tree' check
+must cover untracked paths too, not just `git ls-files`." That is the **read**
+side. This recurrence was on the **write** side: authoring a deliverable and
+never committing it. The write side was only ever addressed for one file type.
+
+**A related third exposure, noted so it is not discovered separately later:**
+the memory files written this session
+(`~/.claude/projects/C--Users-marsh-Documents-SAIRN-cc/memory/`) live **outside
+every clone** and are not version-controlled at all. The SAIRNmechanical
+one-platform decision, the multi-trade contract/billing requirement and the
+amended PE consolidator thesis currently exist only on this machine. That is by
+design for the memory store, but it means "on the record" means two different
+things depending on where a fact landed, and nobody has decided which facts
+belong in which.
+
+**Why deferred:** the fix is a mechanism decision, not a patch, and it should be
+made deliberately rather than bolted on at the end of a research session. There
+is more than one reasonable shape and they have different costs.
+
+**Done looks like:** a decision between (at least) — (a) a `Stop`/session-end
+hook that runs `git status --porcelain` in the clone and surfaces any untracked
+or modified tracked-repo path before the session closes, which is cheap and
+catches both directions; (b) widening the existing rule from "a handoff is not
+written until committed" to "**any** repo deliverable is not delivered until
+committed," and stating it in `CLAUDE.md` rather than only inside the handoff
+skill; (c) both. Whichever is chosen, the test is that it would have fired on
+2026-08-27 before Michael's 404 — a documented failure mode that can still recur
+is not fixed.
