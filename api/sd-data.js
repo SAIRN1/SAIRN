@@ -36,6 +36,15 @@ const complianceRules = require('./_lib/compliance-rules');
 const careCharges = require('./_lib/care-charges');
 const opAudit = require('./_lib/op-audit');
 const rfAuth = require('./rf-auth');
+const senAuth = require('./sen-auth');
+// SAIRNsenior EVV aggregators (2026-08-27). Must stay in sync with the selector in
+// sairnsenior.html's Settings panel -- these are the four real state EVV aggregators
+// plus an honest 'other', because several states run their own and forcing a wrong
+// choice from the four would store a false compliance declaration. Storing one of
+// these records WHICH aggregator the agency must submit to; it does NOT transmit
+// anything. See sql/sairnsenior_settings_schema.sql for why that distinction is
+// written down rather than assumed.
+const SEN_EVV_AGGREGATORS = ['sandata', 'hhaexchange', 'tellus', 'carebridge', 'other'];
 const dentalCreds = require('./_lib/dental-credentials');
 const roofingCreds = require('./_lib/roofing-credentials');
 const roofingClaims = require('./_lib/roofing-claims');
@@ -2264,6 +2273,100 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, claimData) });
+      return;
+    }
+
+    // ── SAIRNSENIOR: sen_settings AGENCY CONFIGURATION (2026-08-27) ──────────────────────────
+    // Keyed rows, one per setting -- same shape as rf_settings (2026-08-26), copied
+    // deliberately rather than re-derived. Holds 'agency_profile' and 'evv_config'.
+    //
+    // WHY THIS EXISTS: both previously lived ONLY in localStorage
+    // (sairnsenior.html :1452/:1461/:1470/:1476). EVV is federally mandated by the
+    // 21st Century Cures Act and the state/aggregator pair decides where a visit record
+    // is supposed to go -- holding it device-local meant it did not survive a browser-data
+    // clear, did not follow the user to a second machine, and was invisible to everyone
+    // else at the agency, while the Settings panel reported it as saved. Found by the
+    // 2026-08-26 competitive-gap audit, section 5.1.
+    //
+    // READ is open to any authenticated employee -- a caregiver who can see WHICH state
+    // and aggregator the agency operates under can make sense of the EVV rules applied to
+    // their own visits; hiding it buys nothing and makes the visit screen unexplainable.
+    // WRITE is management-only: the operating state is a compliance declaration, not a
+    // preference. MANAGEMENT_ROLES is IMPORTED from api/sen-auth.js rather than re-listed
+    // -- see that file's export note for why.
+    if (resource === 'sen_settings' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const r = await fetch(rest('sen_settings?license_hash=eq.' + enc(licHash) + '&select=setting_key,data,updated_by,updated_at'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({
+        ok: true, provisioned: true,
+        data: (rows || []).map((x) => ({ setting_key: x.setting_key, value: x.data, updated_by: x.updated_by, updated_at: x.updated_at }))
+      });
+      return;
+    }
+    if (resource === 'sen_settings' && action === 'write') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!senAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change an agency setting' } }); return; }
+      const key = payload && payload.setting_key;
+      if (!key || typeof key !== 'string') { res.status(400).json({ error: { message: 'sen_settings: setting_key is required' } }); return; }
+      const value = (payload && payload.value) || {};
+      // Validate KNOWN keys before storing, so a malformed compliance declaration never
+      // reaches an agency's screen looking authoritative. Unknown keys are stored as-is --
+      // this is a settings store, not a schema registry -- but the two that exist today
+      // decide real behaviour and are checked.
+      if (key === 'evv_config') {
+        const problems = [];
+        const st = typeof value.state === 'string' ? value.state.trim().toUpperCase() : '';
+        // Two letters only. A free-text state is what makes a per-state EVV rule
+        // unmatchable later, and it is cheaper to refuse now than to reconcile it once
+        // a transmission path exists.
+        if (!/^[A-Z]{2}$/.test(st)) problems.push('state must be a 2-letter code (e.g. OH)');
+        // The allowlist matches the selector in sairnsenior.html exactly. 'other' is a
+        // real, honest option -- several states run their own aggregator -- and is kept
+        // rather than forcing a wrong choice from the four named ones.
+        if (SEN_EVV_AGGREGATORS.indexOf(value.aggregator) === -1) {
+          problems.push('aggregator must be one of: ' + SEN_EVV_AGGREGATORS.join(', '));
+        }
+        if (problems.length) { res.status(400).json({ error: { code: 'INVALID_SETTING', message: 'sen_settings evv_config: ' + problems.join('; ') } }); return; }
+        value.state = st;
+      }
+      if (key === 'agency_profile') {
+        if (typeof value.agency_name !== 'string' || !value.agency_name.trim()) {
+          res.status(400).json({ error: { code: 'INVALID_SETTING', message: 'sen_settings agency_profile: agency_name is required' } }); return;
+        }
+        if (value.agency_name.length > 200) {
+          res.status(400).json({ error: { code: 'INVALID_SETTING', message: 'sen_settings agency_profile: agency_name is too long (max 200)' } }); return;
+        }
+      }
+      const r = await fetch(rest('sen_settings?on_conflict=license_hash,setting_key'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        // updated_by comes from the VERIFIED session, never from the payload -- a forged
+        // name in the body must not end up on the record of who changed the agency's
+        // declared operating state.
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'sairnsenior', setting_key: String(key),
+          data: value, updated_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        const bt = await r.text();
+        if (/relation .* does not exist|PGRST205|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Agency settings are not set up yet — run sql/sairnsenior_settings_schema.sql in Supabase first.' } }); return; }
+        console.error('sen_settings write error (status ' + r.status + '):', bt);
+        res.status(502).json({ error: { message: 'Data store error — try again' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const saved = Array.isArray(rows) && rows[0];
+      res.status(200).json({
+        ok: true,
+        data: { setting_key: key, value: (saved && saved.data) || value, updated_by: session.employee_id, updated_at: (saved && saved.updated_at) || nowISO() }
+      });
       return;
     }
 

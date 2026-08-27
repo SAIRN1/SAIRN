@@ -53,5 +53,18 @@ module.exports = {
   // references a completed EVV-verified visit, matching the app's own
   // real SOP User Guide's Ready-to-Bill workflow. Bespoke branch below.
     'sen_claims',
+  // SAIRNsenior agency-level settings (2026-08-27) -- see
+  // sql/sairnsenior_settings_schema.sql. Keyed rows, one per setting, same
+  // shape as rf_settings. Holds 'agency_profile' and 'evv_config', both of
+  // which previously lived ONLY in localStorage -- a federally-mandated EVV
+  // configuration that did not survive a browser-data clear and was invisible
+  // to everyone else at the agency, while the panel reported it as saved.
+  // READ is open to any authenticated employee; WRITE is management-only.
+  // REGISTERED DELIBERATELY, not as an afterthought: a table with no registered
+  // resource is invisible to the no-credentials provisioning probe (a
+  // PostgREST 404 maps to provisioned:false on read), which is how 41 declared
+  // tables ended up unmeasurable -- see docs/SAIRN-OPEN-WORK-INDEX.md.
+  // Bespoke branch below.
+    'sen_settings',
   ],
 };

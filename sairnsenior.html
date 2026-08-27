@@ -489,6 +489,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="note">Electronic Visit Verification is federally mandated (21st Century Cures Act) but each state chooses its own aggregator and format -- set this per your operating state(s), not hardcoded to one national standard.</div>
     <div class="fg"><label>State</label><input id="set-evv-state" placeholder="OH"></div>
     <div class="fg"><label>EVV Aggregator</label><select id="set-evv-aggregator"><option value="sandata">Sandata</option><option value="hhaexchange">HHAeXchange</option><option value="tellus">Tellus</option><option value="carebridge">CareBridge</option><option value="other">Other / State-Specific</option></select></div>
+    <div class="note"><strong>This records which aggregator you are required to submit to. It does not submit anything.</strong> SAIRNsenior has no transmission path to Sandata, HHAeXchange, Tellus or CareBridge yet — visits are recorded here and still have to be submitted through your aggregator's own portal.</div>
+    <div id="set-evv-status"></div>
     <button class="btn bp bs" onclick="saveEvvConfig()">Save EVV Config</button>
   </div></div>
 </div>
@@ -699,7 +701,11 @@ function nav(id){
   if(id==='billing')blRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
-  if(id==='settings')rSettings();
+  // Settings reads from the server every time the panel is opened rather than
+  // once at init -- another manager may have changed the agency's EVV state on
+  // a different machine, and a stale local render is precisely the failure this
+  // whole change exists to remove.
+  if(id==='settings')senLoadSettings().then(rSettings);
 }
 
 // ── ROSTER ────────────────────────────────────────────────────────────────
@@ -1449,32 +1455,102 @@ function exportCsv(type){
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────
-function senAgency(){return ld('sen_agency',{agency_name:'SAIRNsenior',demo_company:'Lakeshore Home Care'});}
+// SERVER-BACKED as of 2026-08-27 (sen_settings). Both of these previously lived
+// ONLY in localStorage, which meant a federally-mandated EVV configuration did
+// not survive a browser-data clear, did not follow the user to a second machine,
+// and was invisible to everyone else at the agency -- while this panel reported
+// it as saved. Found by the 2026-08-26 competitive-gap audit, section 5.1.
+//
+// The old ld()/st() keys are kept as a READ-ONLY migration source, never written
+// to again. A device that configured EVV before this change still holds the only
+// copy of it, so silently ignoring those keys would lose real configuration and
+// silently UPLOADING them would be a write nobody asked for. Instead the form is
+// pre-filled from them and the panel says plainly that the value is device-local
+// until saved -- the user presses Save once and it becomes real.
+var SEN_AGENCY_DEFAULT={agency_name:'SAIRNsenior',demo_company:'Lakeshore Home Care'};
+var senSettings={agency_profile:null,evv_config:null,provisioned:null,migrated:{agency:false,evv:false}};
+
+function senAgency(){return senSettings.agency_profile||ld('sen_agency',SEN_AGENCY_DEFAULT);}
+
+// Server is the source of truth. Falls back to the legacy localStorage keys ONLY
+// when the server has no row for that key, and flags each fallback so the panel
+// can say so rather than presenting device-local data as saved.
+function senLoadSettings(){
+  return senData('read','sen_settings',{},true).then(function(rows){
+    senSettings.agency_profile=null;senSettings.evv_config=null;
+    senSettings.migrated={agency:false,evv:false};
+    if(rows===null){senSettings.provisioned=null;return null;}
+    senSettings.provisioned=true;
+    (rows||[]).forEach(function(r){
+      if(r.setting_key==='agency_profile')senSettings.agency_profile=r.value;
+      if(r.setting_key==='evv_config')senSettings.evv_config=r.value;
+    });
+    if(!senSettings.agency_profile){
+      var la=ld('sen_agency',null);
+      if(la&&la.agency_name){senSettings.agency_profile=la;senSettings.migrated.agency=true;}
+    }
+    if(!senSettings.evv_config){
+      var le=ld('sen_evv_config',null);
+      if(le&&(le.state||le.aggregator)){senSettings.evv_config=le;senSettings.migrated.evv=true;}
+    }
+    return rows;
+  });
+}
 function openAgencyModal(){
   var a=senAgency();
-  $('ag-name').value=a.agency_name;$('ag-company').value=a.demo_company;
+  $('ag-name').value=a.agency_name||'';$('ag-company').value=a.demo_company||'';
   $('agencymodal').classList.add('on');
 }
 function closeAgencyModal(){$('agencymodal').classList.remove('on');}
 function saveAgency(){
   var a={agency_name:$('ag-name').value.trim()||'SAIRNsenior',demo_company:$('ag-company').value.trim()||'Lakeshore Home Care'};
-  st('sen_agency',a);
-  closeAgencyModal();rSettings();
-  toast('Agency profile saved');
+  // SERVER-FIRST, no optimistic local write. Same reasoning as SAIRNcare's
+  // change-level-of-care path: an optimistic write the server then rejected
+  // (a caregiver hitting the management-only gate) would leave the panel
+  // showing a value the agency does not actually have.
+  senData('write','sen_settings',{setting_key:'agency_profile',value:a},true).then(function(d){
+    if(!d){toast('Could not save agency profile — check your connection or your role');return;}
+    senSettings.agency_profile=d.value||a;senSettings.migrated.agency=false;
+    closeAgencyModal();rSettings();
+    toast('Agency profile saved');
+  });
 }
 function rSettings(){
   var a=senAgency();
-  $('set-agency').innerHTML=
-    '<div class="srow"><span class="slbl">Agency Name</span><span class="sval">'+H(a.agency_name)+'</span></div>'+
-    '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(a.demo_company)+'</span></div>';
-  var evv=ld('sen_evv_config',{});
+  var noteAgency=senSettings.migrated.agency
+    ? '<div class="note">This profile is still saved on THIS DEVICE ONLY. Press Edit then Save to store it for the agency.</div>' : '';
+  $('set-agency').innerHTML=noteAgency+
+    '<div class="srow"><span class="slbl">Agency Name</span><span class="sval">'+H(a.agency_name||'--')+'</span></div>'+
+    '<div class="srow"><span class="slbl">Demo Company</span><span class="sval">'+H(a.demo_company||'--')+'</span></div>';
+  var evv=senSettings.evv_config||{};
   if(evv.state)$('set-evv-state').value=evv.state;
   if(evv.aggregator)$('set-evv-aggregator').value=evv.aggregator;
+  // NOT named `st` -- that is the global localStorage setter at :518, and
+  // shadowing it inside the one function whose whole purpose is to STOP using
+  // localStorage would be the exact collision sairn-code-scrubber flags.
+  var evvStatusEl=$('set-evv-status');
+  if(evvStatusEl){
+    if(senSettings.provisioned===null){
+      evvStatusEl.innerHTML='<div class="note">Could not reach the server — this is what is on this device, not necessarily what the agency has saved.</div>';
+    }else if(senSettings.migrated.evv){
+      evvStatusEl.innerHTML='<div class="note"><strong>Not saved for the agency yet.</strong> This EVV configuration exists only on this device. Press Save EVV Config to store it.</div>';
+    }else if(senSettings.evv_config){
+      evvStatusEl.innerHTML='<div class="srow"><span class="slbl">Saved for the agency</span><span class="sval">'
+        +H((senSettings.evv_config.state||'--')+' · '+(senSettings.evv_config.aggregator||'--'))+'</span></div>';
+    }else{
+      evvStatusEl.innerHTML='<div class="note">No EVV configuration saved for this agency yet.</div>';
+    }
+  }
 }
 function saveEvvConfig(){
   var cfg={state:($('set-evv-state').value||'').trim().toUpperCase(),aggregator:$('set-evv-aggregator').value};
-  st('sen_evv_config',cfg);
-  toast('EVV configuration saved');
+  if(!/^[A-Z]{2}$/.test(cfg.state)){toast('State must be a 2-letter code (e.g. OH)');return;}
+  senData('write','sen_settings',{setting_key:'evv_config',value:cfg},true).then(function(d){
+    if(!d){toast('Could not save EVV configuration — check your connection or your role');return;}
+    senSettings.evv_config=d.value||cfg;senSettings.migrated.evv=false;
+    rSettings();
+    toast('EVV configuration saved for the agency');
+  });
 }
 
 // ── AI ASSISTANT ─────────────────────────────────────────────────────────
@@ -1618,7 +1694,13 @@ async function aiAsk(){
 
 // ── WIRE EVERYTHING ON DOM READY ────────────────────────────────────────
 function init(){
-  rDash();rClients();rCaregivers();rSettings();
+  rDash();rClients();rCaregivers();
+  // senLoadSettings() needs a session token, so it can only run after login --
+  // init() is called from senEnterApp(), which is past that point. If the read
+  // fails, rSettings() still renders from the legacy localStorage keys and says
+  // on screen that it could not reach the server, rather than showing device
+  // data as though it were the agency's.
+  senLoadSettings().then(rSettings).catch(function(){rSettings();});
 }
 
 // ── FAMILY/CLIENT PORTAL RENDER PATH (2026-08-20) ────────────────────────

@@ -301,3 +301,12 @@ function upstream(res, detail) {
   }
   res.status(502).json({ error: { message: 'Data store error — try again' } });
 }
+
+// Exported so gates elsewhere (api/sd-data.js's sen_settings branch) import this
+// rather than re-listing role names. SAIRNsenior already paid for that drift
+// once -- 2026-08-20, one function used senIsManagement() where the rest used
+// senIsBroadRead(). Same reason api/rf-auth.js exports its tier constants.
+// NOTE: three EXISTING re-listed copies remain in api/sd-data.js (:2019, :2151
+// and the sen_claims gate). Retrofitting them is a separate change with its own
+// blast radius and is deliberately NOT bundled here -- logged instead.
+module.exports.MANAGEMENT_ROLES = MANAGEMENT_ROLES;
