@@ -1197,7 +1197,18 @@ var COMPUTATION_STANDARDS = {
   // on any listed day a clerk's office is in fact open -- exactly what left
   // Wisconsin gated. The operative artifact is the Judicial Branch's published
   // court-closure schedule, which makes Connecticut ingest-not-derive like NC,
-  // NJ, MD and OK. DO NOT ADD A `ct` CALENDAR FROM THE STATUTORY LIST.
+  // NJ, MD and OK.
+  //
+  // DO NOT ADD A `ct` CALENDAR UNTIL THE FIRST-DAY-CONVENTION SOURCING
+  // QUESTION IS ANSWERED -- DOING SO WOULD SILENTLY COMPUTE LATE. That is TWO
+  // blockers, not one, and they are independent: (1) does Sec. 63-2 reach
+  // Superior Court pleadings at all (the paragraph above this one), and
+  // (2) is the calendar built from the Judicial Branch closure schedule
+  // rather than the Sec. 1-4 statutory list. Both fail in the LATE direction.
+  // Fixing only the second one and shipping a calendar is the specific
+  // mistake this comment exists to prevent -- it would look like the hazard
+  // had been dealt with while the first-day convention was still assumed.
+  // Hard block confirmed on Michael's direction 2026-08-27.
   ct_pb_63_2: { label: 'Conn. Practice Book Sec. 63-2', impl: 'frcp_6a',
     base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: ' with Sec. 7-17', rollover_suffix_backward: '' }
