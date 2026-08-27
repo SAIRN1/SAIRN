@@ -41,7 +41,8 @@ const JURISDICTION_LABELS = {
   // exists, so every ct computation refuses NOT_PROVISIONED by design. The
   // label is here so the refusal names the state rather than the bare code.
   ct: 'Connecticut',
-  ut: 'Utah'
+  ut: 'Utah',
+  nv: 'Nevada'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

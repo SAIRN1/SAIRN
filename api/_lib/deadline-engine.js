@@ -1260,6 +1260,37 @@ var COMPUTATION_STANDARDS = {
   // by itself. See tools/gen_ut_calendar.py before extending it.
   ut_urcp_6: { label: 'Utah R. Civ. P. 6', impl: 'frcp_6a',
     base_period_suffix: '(a)(1)', months_years_suffix: '(a)(1)',
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(a)(5)' },
+
+  // NEVADA. Restyled onto the federal model effective 1 March 2019, and the
+  // SECOND jurisdiction whose rollover clause names both weekend days itself,
+  // after Utah. 6(a)(1)(C): "if the last day is a Saturday, Sunday, or legal
+  // holiday, the period continues to run until the end of the next day that is
+  // not a Saturday, Sunday, or legal holiday." The standing weekend-coverage
+  // check stops at step one; no holiday statute is consulted for it.
+  //
+  // NO SHORT-PERIOD EXCLUSION. 6(a)(1)(B) counts "every day, including
+  // intermediate Saturdays, Sundays, and legal holidays" -- the 2009-federal
+  // rule. ABSENT, not zero.
+  //
+  // BACKWARD IS EXPRESSLY DEFINED by 6(a)(5), so the backward suffix is real
+  // rather than the blank NJ/NC/WA/MA/MO/WI carry.
+  //
+  // THE HOLIDAY DEFINITION IS A SINGLE CLEAN POINTER, and that is worth more
+  // than it sounds. 6(a)(6): "'Legal holiday' means any day set aside as a
+  // legal holiday by NRS 236.015." There is no in-rule list to reconcile
+  // against the statute -- which is exactly what made Utah's Juneteenth
+  // question messy, where URCP 6(a)(6)(E) restates the statute in its own words
+  // and the 2027 amendment breaks the restatement. Nevada cannot drift that way.
+  //
+  // NOT MODELLED: 6(a)(2) states periods in HOURS with its own hour-granular
+  // rollover, and this engine has no hours unit. 6(a)(4)(A) ends the last day
+  // at 11:59 p.m. for electronic filing -- a filing cutoff, not a date shift.
+  // 6(a)(3)'s clerk-inaccessibility limb is ADDITIONAL to the rollover rather
+  // than a replacement for it (Minnesota's 6.01(a)(4) shape, NOT Wisconsin's),
+  // so omitting it can only report EARLY.
+  nv_nrcp_6: { label: 'Nev. R. Civ. P. 6', impl: 'frcp_6a',
+    base_period_suffix: '(a)(1)', months_years_suffix: '(a)(1)',
     rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(a)(5)' }
 };
 
@@ -2117,6 +2148,48 @@ var SERVICE_EXTENSION_STANDARDS = {
       return (minutes <= 17 * 60)
         ? { add: 0, unit: 'calendar_days' }
         : { add: 1, unit: 'calendar_days' };
+    }
+  },
+
+  // NEVADA. Textually the federal rule, and it gets its own entry rather than
+  // being mapped onto frcp_6d so the audit trail cites Nevada to a Nevada
+  // practitioner. NRCP 6(d): "When a party may or must act within a specified
+  // time after being served and service is made under Rule 5(b)(2)(C) (mail),
+  // (D) (leaving with the clerk), or (F) (other means consented to), 3 days are
+  // added after the period would otherwise expire under Rule 6(a)."
+  //
+  // "ADDED AFTER THE PERIOD WOULD OTHERWISE EXPIRE" is the federal sequencing,
+  // so roll_then_add_then_roll -- not the add_to_period_then_roll that Texas,
+  // New York, Georgia, North Carolina, Washington, New Jersey, Virginia,
+  // Massachusetts, Missouri and Minnesota use. Read from the words, not assumed
+  // from the number being three.
+  //
+  // WEST VIRGINIA'S DEFECT WAS CHECKED FOR HERE AND IS ABSENT. WV's 6(e) points
+  // at Rule 5(b)(2)(F) while labelling it "(other means consented to)", which is
+  // the text of its (G) -- the pointer and the parenthetical name different
+  // subparagraphs, and this engine refuses both contested methods rather than
+  // choosing a reading. Nevada is worded identically, so NRCP 5(b)(2) was read
+  // directly: (A) handing, (B) leaving at office/dwelling, (C) MAILING,
+  // (D) LEAVING WITH THE COURT CLERK, (E) electronic, (F) DELIVERING BY ANY
+  // OTHER MEANS CONSENTED TO IN WRITING. Every pointer matches its
+  // parenthetical. Nothing to refuse. Recorded as a CHECKED negative rather
+  // than an unexamined one, because the check is the only thing that separates
+  // this from West Virginia.
+  //
+  // ELECTRONIC SERVICE UNDER (E) TAKES NOTHING, because 6(d) does not list it.
+  // That is the available mistake in Nevada practice for the same reason it is
+  // in West Virginia and New York -- e-service feels like it should behave like
+  // mail. It is not an omission here; it is the rule.
+  //
+  // NO EXCLUSIVITY CONDITION, unlike Utah's URCP 6(c), whose seven days apply
+  // only to service made "exclusively by mail" and which this engine therefore
+  // cannot express. Nevada's is a plain method allowlist and seeds normally.
+  nv_nrcp_6_d: {
+    label: 'Nev. R. Civ. P. 6(d)',
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail' || method === 'left_with_clerk' || method === 'other_consented_means';
     }
   }
 };
