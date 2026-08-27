@@ -272,10 +272,28 @@ on conflict (license_hash, appointment_id) do nothing;
 --
 -- THE PATTERN, which is the durable part: I found orphaned appointments, so I
 -- cleaned appointments. The symptom appeared in ONE table and I scoped the
--- remedy to that table. But the residue came from the PUBLIC endpoints, and
--- api/sairndental/public-book.js can write dnt_patients, dnt_appointments,
--- dnt_operatories and dnt_procedure_types -- so debris was always going to be
--- spread across every table those endpoints can reach.
+-- remedy to that table, when debris was always going to be spread across every
+-- table any write path can reach.
+--
+-- MECHANISM CORRECTED 2026-08-28 -- the sentence that stood here was WRONG and
+-- is replaced rather than quietly reworded, because I got it wrong while
+-- writing the note about not getting things wrong.
+--   WHAT IT SAID: the residue came from the public endpoints, and
+--   public-book.js can write dnt_patients, dnt_appointments, dnt_operatories
+--   and dnt_procedure_types.
+--   WHAT IS TRUE, read directly from the file: public-book.js writes exactly
+--   TWO tables -- dnt_patients (:104) and dnt_appointments (:122). It only
+--   READS dnt_procedure_types (:79) and dnt_providers (:86), and never touches
+--   dnt_operatories at all. No server file anywhere mints an OP- or PC- id.
+--   Those two rows were minted CLIENT-side by addOperatory()
+--   (sairndental.html:1378) and addProcedureType() (:1437) and synced through
+--   the ordinary authenticated sd-data.js write path -- which, before the
+--   session gate landed on 2026-08-27, a licence key alone was enough to reach.
+--
+-- So the rule is BROADER than "check what the public endpoints write", which
+-- would have missed both rows Michael found: check every table ANY write path
+-- can reach, authenticated ones included. Naming the public endpoint as the
+-- mechanism made the check look complete while leaving the actual source out.
 --
 -- SO: a debris check on a demo licence must enumerate every table the
 -- public-facing endpoints can write to, and check each one, rather than
