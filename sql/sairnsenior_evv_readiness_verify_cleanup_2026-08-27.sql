@@ -1,18 +1,44 @@
 -- sql/sairnsenior_evv_readiness_verify_cleanup_2026-08-27.sql
 -- Cleanup for the EVV submission-readiness live round trip, 2026-08-27.
 --
--- NOT RUN by the session that wrote this file -- it has no DB access. Every row
--- named below was created through the real deployed API against
--- SEN-PINNACLE-2026 during verification, and is real production data until this
--- runs.
+-- ╔════════════════════════════════════════════════════════════════════════╗
+-- ║ STATUS: **RUN 2026-08-27 by Michael**, WITH ONE DELIBERATE DEVIATION.   ║
+-- ╚════════════════════════════════════════════════════════════════════════╝
 --
--- ── READ THIS BEFORE TRUSTING THE "NOT RUN" LABEL ────────────────────────
--- On 2026-08-26 a spot-check of eight named probe rows across five other
--- cleanup files found six of the eight measurable ones GONE despite their files
--- still being labelled NOT RUN. "NOT RUN" is a claim about the FILE, and it
--- stops describing the database the moment anyone runs part of it by hand.
--- Verify with the SELECTs at the bottom before assuming anything here is still
--- present. See docs/SAIRN-OPEN-WORK-INDEX.md.
+-- REMOVED as written: VS-EVVRDY-A, VS-EVVRDY-B, VS-EVVRDY-C, CL-EVVRDY-1,
+-- CG-EVVRDY-1, and BOTH credentials (sen-evvready-verify-20260827, CG-EVVRDY-1).
+--
+-- KEPT BY DESIGN, section 3 deliberately not executed: the two sen_settings rows
+-- (evv_config = OH / sandata, and agency_profile). Michael's call, so that
+-- SEN-PINNACLE-2026 continues to read as a CONFIGURED demo agency rather than an
+-- empty one. Section 3 already flagged this as a judgment call rather than
+-- deciding it -- the decision landed on keep. Those rows are real configuration,
+-- not probe data, and they are the live proof that the storage half of the EVV
+-- fix works. Section 3 is left in the file, unexecuted, so the choice stays
+-- visible and reversible.
+--
+-- CONSEQUENCE, stated so nobody re-derives it: both credential rows are gone, so
+-- action:bootstrap is RE-ARMED for this licence. That is the intended end state.
+-- A real customer creates their own owner; nobody inherits a throwaway.
+--
+-- ── WHY THIS HEADER WAS CORRECTED RATHER THAN LEFT SAYING "NOT RUN" ──────
+-- This file originally said NOT RUN, which was true when it was written and
+-- false about ninety minutes later. Leaving it would have recreated the exact
+-- trap it warns about below -- and that trap had already been sprung twice on
+-- this very licence: the predecessor file
+-- (sairnsenior_verify_cleanup_2026-08-25.sql) still says NOT RUN, and the
+-- verification above proved it HAD run, because bootstrap succeeded on a licence
+-- its label implied still held a credential. A NOT RUN label is a claim about
+-- the FILE; the moment someone runs it, the label is a claim about the DATABASE
+-- and it is wrong.
+--
+-- ── THE ORIGINAL WARNING STILL APPLIES, TO THIS FILE TOO ─────────────────
+-- On 2026-08-26 a spot-check of eight named probe rows across five cleanup files
+-- found six of the eight measurable ones GONE despite their files still being
+-- labelled NOT RUN. Do not trust THIS header either just because it is more
+-- recent -- the state above was reported by the person who ran it, not observed
+-- by the session that wrote it down. Verify with the SELECTs at the bottom
+-- before acting on any of it. See docs/SAIRN-OPEN-WORK-INDEX.md.
 --
 -- ── WHAT WAS CREATED AND WHY ─────────────────────────────────────────────
 -- The readiness engine had nothing to prove against: the previous SAIRNsenior
@@ -76,15 +102,25 @@ delete from public.sen_caregivers
  where license_hash = encode(digest('SEN-PINNACLE-2026', 'sha256'), 'hex')
    and caregiver_id = 'CG-EVVRDY-1';
 
--- 3. The two settings rows.
---    JUDGMENT CALL, FLAGGED RATHER THAN DECIDED HERE: if SEN-PINNACLE-2026 is
---    kept as a live demo, leaving evv_config (OH / sandata) is arguably better
---    than removing it -- it makes the Settings panel show a configured agency
---    instead of an empty one. Both rows are real configuration, not probe data.
---    Remove them if you want the licence back to a true blank slate.
-delete from public.sen_settings
- where license_hash = encode(digest('SEN-PINNACLE-2026', 'sha256'), 'hex')
-   and setting_key in ('evv_config', 'agency_profile');
+-- 3. The two settings rows -- **NOT EXECUTED. DECIDED: KEEP.**
+--    This was flagged as a judgment call rather than decided, and on 2026-08-27
+--    Michael decided to KEEP both rows so SEN-PINNACLE-2026 reads as a
+--    configured demo agency rather than an empty one. They are real
+--    configuration, not probe data, and evv_config is the live evidence that
+--    the storage half of the EVV fix works.
+--
+--    COMMENTED OUT RATHER THAN DELETED FROM THE FILE, for a specific reason:
+--    everything else here is a plain DELETE and this file is otherwise safe to
+--    re-run. Leaving section 3 executable would mean a re-run silently removes
+--    configuration that was deliberately kept -- no error, no signal, exactly
+--    the "safe to re-run quietly undoes a decision" shape that the
+--    execute-format grant loops had in sairndental/sairnlegacy on 2026-08-25.
+--    Uncomment ONLY if the decision is reversed and the licence should go back
+--    to a true blank slate.
+--
+-- delete from public.sen_settings
+--  where license_hash = encode(digest('SEN-PINNACLE-2026', 'sha256'), 'hex')
+--    and setting_key in ('evv_config', 'agency_profile');
 
 -- 4. Both credentials. See the trapdoor note above -- delete, never deactivate.
 delete from public.sairnsenior_employee_auth
@@ -93,12 +129,19 @@ delete from public.sairnsenior_employee_auth
 
 commit;
 
--- ── VERIFY AFTER RUNNING (each should return 0) ──────────────────────────
+-- ── VERIFY (each should return 0) ────────────────────────────────────────
 --   select count(*) from public.sen_visits     where visit_id like 'VS-EVVRDY-%';
 --   select count(*) from public.sen_clients    where client_id = 'CL-EVVRDY-1';
 --   select count(*) from public.sen_caregivers where caregiver_id = 'CG-EVVRDY-1';
 --   select count(*) from public.sairnsenior_employee_auth
 --     where employee_id in ('sen-evvready-verify-20260827','CG-EVVRDY-1');
+--
+-- And this should return **2**, NOT 0 -- the settings rows were kept on purpose
+-- (section 3). A 0 here means someone uncommented section 3 and the demo
+-- licence has silently lost its EVV configuration:
+--   select count(*) from public.sen_settings
+--    where license_hash = encode(digest('SEN-PINNACLE-2026','sha256'),'hex')
+--      and setting_key in ('evv_config','agency_profile');
 --
 -- And this should still return 1 -- the licence itself is NOT being removed:
 --   select count(*) from public.license_keys where key = 'SEN-PINNACLE-2026';
