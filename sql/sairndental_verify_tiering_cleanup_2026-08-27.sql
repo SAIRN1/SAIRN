@@ -11,7 +11,7 @@
 --
 -- ── RUN THIS PROMPTLY. ONE ROW IS A REAL MISTAKE OF MINE. ────────────────
 -- `probe-only-not-created` is an OWNER credential on a PHI-holding licence with
--- the PIN 000000. I created it by accident: I sent a bootstrap call intending
+-- a trivial six-digit PIN. I created it by accident: I sent a bootstrap call intending
 -- it to be REFUSED (I expected the prior run's credentials to still exist and
 -- for bootstrap to be disarmed), named the employee_id to say so, and bootstrap
 -- was in fact armed -- the earlier cleanup had already been run. The call
@@ -106,8 +106,15 @@ delete from public.dnt_patients
 --   select appointment_id from public.dnt_appointments
 --    where appointment_id like 'AP-VERIFY-%';        -- expect 0 rows
 --
--- Then confirm LIVE, which is the real proof:
---   POST /api/dnt-auth {"action":"login","employee_id":"probe-only-not-created","pin":"000000"}
---     -> must be 401 INVALID_CREDENTIALS
+-- Then confirm LIVE. Deliberately WITHOUT a PIN -- a login probe would require
+-- writing the credential's PIN down somewhere, which is the thing this file is
+-- avoiding, and a wrong PIN returns INVALID_CREDENTIALS whether the row exists
+-- or not, so it proves nothing anyway. These two do prove it:
+--   POST /api/dnt-auth {"action":"roster"}    (licence only, no session)
+--     -> 403 FORBIDDEN either way; NOT a proof, listed only so it is not mistaken for one
 --   POST /api/sd-data  {"action":"read","resource":"dnt_patients"}   (licence only)
 --     -> must remain 401 NO_SESSION
+-- The real proof is the SELECT above returning 0 credential rows. If you want a
+-- live one, a fresh `bootstrap` succeeding is conclusive (it refuses while ANY
+-- row exists) -- but it mints a new owner, so only do that if you intend to keep
+-- it, and never with a trivial PIN.
