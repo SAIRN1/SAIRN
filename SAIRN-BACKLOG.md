@@ -1284,3 +1284,46 @@ committed," and stating it in `CLAUDE.md` rather than only inside the handoff
 skill; (c) both. Whichever is chosen, the test is that it would have fired on
 2026-08-27 before Michael's 404 — a documented failure mode that can still recur
 is not fixed.
+
+## SAIRNmechanical platform spec — see `docs/superpowers/specs/2026-08-27-sairnmechanical-platform-spec.md`
+
+**Logged:** 2026-08-27. **Pointer row — the spec itself is the document, this
+exists so a future session finds it without already knowing to look.**
+
+The operative spec for SAIRNmechanical. Not a research doc: it states
+requirements and verdicts, and it is what a build or a review gets checked
+against.
+
+Carries: the **binding** multi-trade agreement/billing requirement (one
+agreement spans multiple trades, per-trade line items, **trade on the line item
+and never on the agreement header** — this fails *silently*, since a header-level
+trade field looks correct for every single-trade customer and only surfaces on
+the first multi-trade renewal, by which point it is a data migration); the
+**trade-entitlement requirement** (unlock in place — no migration, no second
+login, no new tenant — which must exist in the data model from the first table,
+because retrofitting entitlement rewrites the authorisation surface rather than
+adding a feature); the full A1–A7 / B1–B8 / Tier C pattern table with a
+shared-vs-trade-gated verdict for each; all 21 gap rows with trade and region
+frequency; and a prioritised **capability** list.
+
+**The capability list is capability priority, NOT trade build order.** Build
+order across the three trades stays deferred. The list also carries its own
+caveat: gap frequency measures where competitors are weak, not what customers
+need first, so table-stakes items are ranked in explicitly despite scoring low.
+
+**Evidence and sourcing are deliberately NOT in the spec.** Every citation lives
+in `docs/superpowers/specs/2026-08-27-sairnmechanical-shared-platform-competitive-research.md`,
+and the spec points into it by section. If the two ever disagree, the research
+doc holds the evidence and the spec holds the decision — reconcile explicitly
+rather than silently picking one.
+
+**§6 is written for a Guardian pass against a recovered `sairnmechanical.html`.**
+Note before relying on it: as of 2026-08-27 that file exists on **neither** this
+clone's working tree nor `origin/main`, while `sairn-guardian-v2`'s App File Map
+asserts it and `api/claude.js` allowlists the `sairnmechanical` app_id. Any
+recovered copy is local to whichever clone recovered it until pushed — confirm
+which artefact is under review before trusting a finding about it.
+
+**Done looks like:** nothing here — this row is a signpost. The spec's own change
+discipline applies: amendments are decisions, recorded in the commit message, and
+superseded requirements get marked superseded in place rather than deleted.
