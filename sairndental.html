@@ -175,15 +175,25 @@ label.chk input{width:auto;}
 <div id="pin">
   <div class="pbox">
     <div class="plogo">SAIRNdental</div>
-    <div class="prole">Enter your 4-digit PIN</div>
-    <div class="pdots"><div class="pdot" id="pd0"></div><div class="pdot" id="pd1"></div><div class="pdot" id="pd2"></div><div class="pdot" id="pd3"></div></div>
-    <div class="ppad">
-      <button class="pkey" onclick="pk('1')">1</button><button class="pkey" onclick="pk('2')">2</button><button class="pkey" onclick="pk('3')">3</button>
-      <button class="pkey" onclick="pk('4')">4</button><button class="pkey" onclick="pk('5')">5</button><button class="pkey" onclick="pk('6')">6</button>
-      <button class="pkey" onclick="pk('7')">7</button><button class="pkey" onclick="pk('8')">8</button><button class="pkey" onclick="pk('9')">9</button>
-      <button class="pkey" onclick="pk('C')">C</button><button class="pkey" onclick="pk('0')">0</button><button class="pkey" onclick="pk('X')">&larr;</button>
-    </div>
+    <div class="prole">Sign in</div>
+    <div class="fg"><label for="au-emp">Employee ID</label><input id="au-emp" autocomplete="username" onkeydown="if(event.key==='Enter')dntLogin()"></div>
+    <div class="fg"><label for="au-pin">PIN</label><input id="au-pin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="6-8 digits" onkeydown="if(event.key==='Enter')dntLogin()"></div>
+    <button class="gbtn" onclick="dntLogin()">Sign In</button>
     <div class="perr" id="perr" role="alert" aria-live="polite"></div>
+    <div style="margin-top:14px;font-size:12px;">First time setting up this practice? <a href="#" onclick="dntShowBootstrap();return false;">Create the owner account</a></div>
+  </div>
+</div>
+
+<div id="bootstrap" style="display:none;">
+  <div class="pbox">
+    <div class="plogo">SAIRNdental</div>
+    <div class="prole">First-time setup &mdash; create the Owner account</div>
+    <div class="fg"><label for="bs-emp">Employee ID</label><input id="bs-emp" placeholder="e.g. dr-smith"></div>
+    <div class="fg"><label for="bs-name">Display name</label><input id="bs-name" placeholder="Dr. Smith"></div>
+    <div class="fg"><label for="bs-pin">PIN (6-8 digits)</label><input id="bs-pin" type="password" inputmode="numeric"></div>
+    <button class="gbtn" onclick="dntBootstrap()">Create Owner</button>
+    <div class="perr" id="bserr" role="alert" aria-live="polite"></div>
+    <div style="margin-top:14px;font-size:12px;"><a href="#" onclick="dntShowLogin();return false;">Back to sign in</a></div>
   </div>
 </div>
 
@@ -675,10 +685,17 @@ function dntLocalToday(){
 // Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
 // validation is server-side in api/_lib/license.js against license_keys.
 var VALID=['DNT-','DEMO-','SAIRN-'];
-var DEFAULT_PINS={owner:'1234',frontdesk:'2345',provider:'3456'};
-var PINS=ld('dnt_pins',null)||DEFAULT_PINS;
-
-var pbuf='',prole='owner';
+// REMOVED 2026-08-27: `DEFAULT_PINS={owner:'1234',frontdesk:'2345',provider:'3456'}`
+// and the `PINS` object beside it. One shared, hardcoded, identical-for-every-
+// practice PIN per role, baked into this PUBLIC repo's client source, compared
+// in the BROWSER by chkPin(), with the resulting role stored in localStorage --
+// so any role was self-assertable by editing the DOM, and the server never knew
+// who was acting. Real credentials now live in sairndental_employee_auth and are
+// verified by api/dnt-auth.js against a scrypt hash.
+// DO NOT REINTRODUCE A CLIENT-SIDE PIN COMPARISON HERE.
+var AUTH_API='https://sairn.vercel.app/api/dnt-auth';
+var dntSession=null;          // { token, role, employee_id }
+var prole='owner';            // DISPLAY ONLY -- the server is the boundary
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
@@ -696,7 +713,10 @@ function sdnData(action,resource,payload){
   if(!lic)return Promise.resolve(null);
   return fetch(DATA_API,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    // TWO secrets, TWO headers, deliberately: the licence identifies the
+    // practice, the session identifies the employee. Every dnt_* branch in
+    // api/sd-data.js refuses without the second one as of 2026-08-27.
+    headers:dntHeaders(),
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
@@ -711,14 +731,89 @@ function gateGo(){
   var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
   if(!ok){$('gerr').textContent='Invalid key format. Try DNT-PINNACLE-2026';return;}
   localStorage.setItem('dnt_license_key',k);
-  $('gate').style.display='none';$('pin').classList.add('on');
+  $('gate').style.display='none';
+  if(dntRestoreSession()){dntEnterApp();return;}
+  $('pin').classList.add('on');
 }
-function pk(k){$('perr').textContent='';
-  if(k==='C'){pbuf='';dots();return;}
-  if(k==='X'){pbuf=pbuf.slice(0,-1);dots();return;}
-  if(pbuf.length>=4)return;pbuf+=k;dots();if(pbuf.length===4)setTimeout(chkPin,120);
+// ── REAL EMPLOYEE AUTH (2026-08-27) ──────────────────────────────────────
+// Replaces pk()/dots()/chkPin(), which drove a 4-digit keypad compared against
+// a hardcoded object in this file. Shape copied from sairnroofing.html /
+// sairnsenior.html, which are the current generation.
+//
+// TWO SECRETS, TWO HEADERS: the licence key rides as Authorization: Bearer and
+// identifies the PRACTICE; the session token rides as X-SD-Auth and identifies
+// the EMPLOYEE. api/sd-data.js's dental branches refuse without the second.
+function dntHeaders(){
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+dntLicenseKey()};
+  if(dntSession&&dntSession.token)h['X-SD-Auth']=dntSession.token;
+  return h;
 }
-function dots(){for(var i=0;i<4;i++){var d=$('pd'+i);if(d)d.className='pdot'+(i<pbuf.length?' on':'');}}
+function dntAuth(action,payload,withSession){
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+dntLicenseKey()};
+  if(withSession&&dntSession&&dntSession.token)h['X-SD-Auth']=dntSession.token;
+  var body={action:action};for(var k in (payload||{}))body[k]=payload[k];
+  return fetch(AUTH_API,{method:'POST',headers:h,body:JSON.stringify(body)})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){return {status:r.status,body:d};});});
+}
+function dntShowBootstrap(){$('pin').classList.remove('on');$('bootstrap').style.display='';}
+function dntShowLogin(){$('bootstrap').style.display='none';$('pin').classList.add('on');}
+
+function dntEnterApp(){
+  prole=dntSession.role;
+  st('dnt_session',dntSession);
+  if(!checkTrialGate())return;
+  $('pin').classList.remove('on');$('bootstrap').style.display='none';$('app').classList.add('on');
+  $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
+  init();
+}
+
+function dntLogin(){
+  var emp=($('au-emp').value||'').trim(), pin=($('au-pin').value||'').trim();
+  $('perr').textContent='';
+  if(!emp||!pin){$('perr').textContent='Employee ID and PIN are both required';return;}
+  dntAuth('login',{employee_id:emp,pin:pin}).then(function(r){
+    if(r.status===200&&r.body&&r.body.ok){
+      dntSession={token:r.body.token,role:r.body.role,employee_id:r.body.employee_id};
+      $('au-pin').value='';dntEnterApp();return;
+    }
+    // One generic message on bad credentials -- never say which half was wrong.
+    $('perr').textContent=(r.body&&r.body.error&&r.body.error.message)||'Sign-in failed';
+  }).catch(function(){$('perr').textContent='Network error signing in';});
+}
+
+function dntBootstrap(){
+  var emp=($('bs-emp').value||'').trim(), nm=($('bs-name').value||'').trim(), pin=($('bs-pin').value||'').trim();
+  $('bserr').textContent='';
+  if(!emp||!pin){$('bserr').textContent='Employee ID and a 6-8 digit PIN are required';return;}
+  // NO client-side first-run probe. The server is the sole arbiter and answers
+  // 409 ALREADY_PROVISIONED -- a "does an owner exist?" check here would be an
+  // unauthenticated existence oracle.
+  dntAuth('bootstrap',{employee_id:emp,display_name:nm||emp,pin:pin}).then(function(r){
+    if(r.status===200&&r.body&&r.body.ok){
+      dntSession={token:r.body.token,role:r.body.role,employee_id:r.body.employee_id};
+      $('bs-pin').value='';dntEnterApp();return;
+    }
+    $('bserr').textContent=(r.body&&r.body.error&&r.body.error.message)||'Setup failed';
+  }).catch(function(){$('bserr').textContent='Network error during setup';});
+}
+
+// Session restore: decode, check expiry and app, enter, THEN confirm with a
+// non-blocking whoami. Without that round-trip a revoked account renders as
+// logged in until the token expires -- the real 2026-08-18 SAIRNlaw finding.
+function dntRestoreSession(){
+  var s=ld('dnt_session',null);
+  if(!s||!s.token)return false;
+  try{
+    var pl=JSON.parse(atob(s.token.split('.')[1]));
+    if(!pl||pl.app!=='sairndental'||!pl.exp||pl.exp<=Date.now())return false;
+  }catch(e){return false;}
+  dntSession=s;
+  dntAuth('whoami',{},true).then(function(r){
+    if(r.status!==200||!r.body||!r.body.ok){dntLogout();return;}
+    if(r.body.role&&r.body.role!==dntSession.role){dntSession.role=r.body.role;st('dnt_session',dntSession);}
+  }).catch(function(){});
+  return true;
+}
 // 30-day trial gate, keyed off a real timestamp written on first-ever
 // login (never a fabricated countdown). Same proven pattern as every
 // other SAIRN app's checkTrialGate().
@@ -743,18 +838,16 @@ function checkTrialGate(){
 }
 window.checkTrialGate=checkTrialGate;
 
-function chkPin(){
-  var match=null;
-  Object.keys(PINS).forEach(function(r){if(PINS[r]===pbuf)match=r;});
-  if(match){
-    prole=match;st('dnt_role',prole);
-    if(!checkTrialGate())return;
-    $('pin').classList.remove('on');$('app').classList.add('on');
-    $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
-    init();
-  }else{$('perr').textContent='Incorrect PIN';pbuf='';dots();}
+// Local only. No server call and no revocation -- the token stays valid until
+// it expires. A real revoke is set_active, which is an owner action.
+function dntLogout(){
+  dntSession=null;
+  try{localStorage.removeItem('dnt_session');localStorage.removeItem('dnt_role');}catch(e){}
+  $('app').classList.remove('on');$('bootstrap').style.display='none';$('pin').classList.add('on');
+  if($('au-pin'))$('au-pin').value='';
+  toast('Logged out');
 }
-function doLogout(){$('app').classList.remove('on');$('pin').classList.add('on');pbuf='';dots();toast('Logged out');}
+function doLogout(){dntLogout();}
 
 function toggleNav(){
   var a=$('aside');if(!a)return;
@@ -971,7 +1064,9 @@ function sdnEvaluateCredentials(today){
   if(!lic)return Promise.resolve(null);
   return fetch(DATA_API,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    // dntHeaders() so the session rides along -- this endpoint is session-gated
+    // as of 2026-08-27 like every other dnt_* branch.
+    headers:dntHeaders(),
     body:JSON.stringify({action:'evaluate',resource:'dnt_credentials',app_id:APP_ID,payload:{today:today||dntLocalToday()}})
   }).then(function(r){return r.json().then(function(d){
     if(!r.ok||!d||!d.ok){console.warn('credential evaluate failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
@@ -1267,7 +1362,7 @@ async function saveBookingSettings(){
   var lic=dntLicenseKey();
   if(!lic){toast('Saved on this device only -- server sync not yet enabled for this app',5000);return;}
   try{
-    var r=await fetch(DATA_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    var r=await fetch(DATA_API,{method:'POST',headers:dntHeaders(),
       body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
     var d=await r.json().catch(function(){return null;});
     if(r.status===409&&d&&d.error&&d.error.code==='SLUG_TAKEN'){

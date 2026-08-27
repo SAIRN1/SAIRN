@@ -75,6 +75,16 @@ const ROLES_BY_APP = {
   // per-employee credential). 'admin' is the bootstrap/top role, matching
   // requireAdminForDelete()'s existing "Compliance Admin" framing in the UI.
   sairncode: ['admin', 'coder', 'biller', 'auditor'],
+  // SAIRNdental (2026-08-27, EMERGENCY auth build). Matches sairndental.html's
+  // existing role vocabulary EXACTLY -- owner/frontdesk/provider -- because
+  // those three names were already in the app's old client-only PIN object
+  // (`DEFAULT_PINS={owner:'1234',frontdesk:'2345',provider:'3456'}`, hardcoded
+  // in a PUBLIC repo, compared in the browser, role stored in localStorage).
+  // No fourth role invented: the app has no billing-only screen, and adding a
+  // role nobody uses would be a permission surface with no feature behind it.
+  // 'owner' is the bootstrap/provisioning role. This app holds PHI, so the
+  // stakes on this list are higher than any other app's on the platform.
+  sairndental: ['owner', 'frontdesk', 'provider'],
   // SAIRNlegacy (2026-08-19, real employee auth for the shared-knowledge
   // permission gate): matches sairnlegacy.html's existing role vocabulary
   // exactly (its old client-only PIN gate already had these 3 names --

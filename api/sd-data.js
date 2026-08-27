@@ -5307,6 +5307,34 @@ module.exports = async (req, res) => {
     // separate namespace, not a shared table with SAIRNcode's own sc_
     // resources (checked for collision against every existing resource
     // string in this file before being added; none found). ──
+    // ── SAIRNDENTAL SESSION GATE (2026-08-27, EMERGENCY) ────────────────────────────────────
+    // Until today EVERY dnt_* branch below ran with NO session check at all --
+    // a caller holding only the licence key could read dnt_patients and get
+    // names and dates of birth back. Proven live before the fix, 8 rows, 200 OK.
+    // The app's "auth" was `DEFAULT_PINS={owner:'1234',...}` compared in the
+    // browser (sairndental.html:678), so the server never knew who was acting.
+    //
+    // This gate is the minimum that closes that: a VALID, app-scoped, unexpired
+    // session for THIS licence. The third argument is not optional -- without it
+    // a valid session for another SAIRN app would pass, because role names like
+    // 'owner' exist in several apps' vocabularies (Guardian Check 28).
+    //
+    // DELIBERATELY NOT ROLE-TIERED YET. All three dental roles have a real
+    // reason to touch patient records, and a wrong minimum-necessary split
+    // shipped under emergency conditions would be worse than an honest
+    // authenticated-only gate. Narrowing is an open item, not a finished one --
+    // see api/dnt-auth.js's role-model header.
+    //
+    // The PUBLIC dental paths are unaffected and were checked before this went
+    // in: api/sairndental/public-book.js, public-availability.js and
+    // public-complaint-submit.js talk to Supabase directly and never route
+    // through this file, so patient self-booking still works with no session.
+    const dntGate = (response) => {
+      const s = verifySessionToken(tokenFromRequest(req), licHash, 'sairndental');
+      if (!s) { response.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return null; }
+      return s;
+    };
+
     const DNT_RESOURCES = {
       dnt_patients: 'patient_id', dnt_providers: 'provider_id', dnt_operatories: 'operatory_id',
       dnt_provider_hours: 'provider_hour_id', dnt_procedure_types: 'procedure_type_id',
@@ -5315,6 +5343,7 @@ module.exports = async (req, res) => {
       dnt_referrals: 'referral_id'
     };
     if (DNT_RESOURCES[resource] && action === 'read') {
+      if (!dntGate(res)) return;
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
@@ -5323,6 +5352,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (DNT_RESOURCES[resource] && action === 'write') {
+      if (!dntGate(res)) return;
       const idCol = DNT_RESOURCES[resource];
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
@@ -5352,6 +5382,7 @@ module.exports = async (req, res) => {
     // that the generic block's payload doesn't populate. See
     // docs/superpowers/specs/2026-08-10-sairndental-availability-booking-design.md §1.
     if (resource === 'dnt_settings' && action === 'read') {
+      if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_settings?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
@@ -5360,6 +5391,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'dnt_settings' && action === 'write') {
+      if (!dntGate(res)) return;
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'dnt_settings payload.id is required' } }); return; }
       // The minimal locations registry lives on this row as
       // data.locations[] -- see api/_lib/dnt-location.js for why it is here
@@ -5402,6 +5434,7 @@ module.exports = async (req, res) => {
     // this staff app's read and its write, silently dropped). See
     // docs/superpowers/specs/2026-08-12-sairndental-complaint-design.md §0/§1.
     if (resource === 'dnt_complaints' && action === 'read') {
+      if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_complaints?license_hash=eq.' + enc(licHash) + '&select=data,updated_at&order=updated_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
@@ -5410,6 +5443,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'dnt_complaints' && action === 'write') {
+      if (!dntGate(res)) return;
       res.status(400).json({ error: { code: 'READ_ONLY_RESOURCE', message: 'dnt_complaints cannot be written via this generic endpoint -- use api/sairndental/complaint-respond.js instead.' } });
       return;
     }
@@ -5425,6 +5459,7 @@ module.exports = async (req, res) => {
     // through this same handler, so the double-booking protection covers
     // both paths, not just the public one.
     if (resource === 'dnt_appointments' && action === 'read') {
+      if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
@@ -5433,6 +5468,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'dnt_appointments' && action === 'write') {
+      if (!dntGate(res)) return;
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'dnt_appointments payload.id is required' } }); return; }
       // Security fix (2026-08-12): public-book.js already validates payload.photos
       // via validatePhotosPayload() before it ever reaches this table -- but this
@@ -5508,6 +5544,7 @@ module.exports = async (req, res) => {
     // is no session to check it against. Recorded in the schema header too, so
     // whoever adds employee auth to SAIRNdental knows to re-gate this.
     if (resource === 'dnt_cred_rules' && action === 'read') {
+      if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_cred_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data,verified_by'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { covered_states: [], uncovered_states: [], detail: [] } }); return; }
       const rows = await r.json();
@@ -5524,6 +5561,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'dnt_cred_rules' && action === 'write') {
+      if (!dntGate(res)) return;
       if (!payload || !payload.rule_id || !payload.state || !payload.requirement_type || !payload.effective_from) {
         res.status(400).json({ error: { message: 'dnt_cred_rules requires rule_id, state, requirement_type, and effective_from' } });
         return;
@@ -5554,6 +5592,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'dnt_credentials' && action === 'read') {
+      if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,provider_id,record_type,data,recorded_at&order=recorded_at.asc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
@@ -5568,6 +5607,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'dnt_credentials' && action === 'write') {
+      if (!dntGate(res)) return;
       if (!payload || !payload.id || !payload.provider_id || !payload.record_type) {
         res.status(400).json({ error: { message: 'dnt_credentials requires payload.id, payload.provider_id, and payload.record_type' } });
         return;
@@ -5610,6 +5650,7 @@ module.exports = async (req, res) => {
     // Compute-only. Reads both tables, writes nothing — see the verb note in
     // api/_resources/sairndental.js.
     if (resource === 'dnt_credentials' && action === 'evaluate') {
+      if (!dntGate(res)) return;
       const today = (payload && payload.today) || nowISO().slice(0, 10);
       const rr = await fetch(rest('dnt_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,provider_id,record_type,data,recorded_at'), { headers });
       if (rr.status === 404 || rr.status === 400) { res.status(200).json({ ok: true, provisioned: false, board: null }); return; }
