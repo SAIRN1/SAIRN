@@ -51,6 +51,10 @@
       "dest": "/sairndental.html"
     },
     {
+      "src": "/sairnmechanical$",
+      "dest": "/sairnmechanical.html"
+    },
+    {
       "src": "/sairndental-book$",
       "dest": "/sairndental-book.html"
     },

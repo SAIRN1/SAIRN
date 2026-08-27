@@ -85,6 +85,17 @@ const ROLES_BY_APP = {
   // 'owner' is the bootstrap/provisioning role. This app holds PHI, so the
   // stakes on this list are higher than any other app's on the platform.
   sairndental: ['owner', 'frontdesk', 'provider'],
+  // SAIRNmechanical (2026-08-27, recovery build). The app was written
+  // 2026-06-14 on a branch that never merged, and is being brought onto main
+  // only after real auth exists -- it shipped with
+  // `DEFAULT_PINS={"owner":"1234","tech":"2345","sales":"3456","admin":"4567"}`
+  // compared in the browser, the same client-only pattern StoneDesk, SAIRNcode
+  // and SAIRNdental were each remediated for. Roles are the app's OWN four,
+  // taken from that PIN object rather than invented, so nothing in the UI has
+  // to be relearned. 'owner' provisions; 'admin' runs the office without
+  // minting identities, matching SAIRNroofing's narrower split rather than
+  // StoneDesk's.
+  sairnmechanical: ['owner', 'admin', 'sales', 'tech'],
   // SAIRNlegacy (2026-08-19, real employee auth for the shared-knowledge
   // permission gate): matches sairnlegacy.html's existing role vocabulary
   // exactly (its old client-only PIN gate already had these 3 names --
