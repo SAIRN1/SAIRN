@@ -1211,7 +1211,56 @@ var COMPUTATION_STANDARDS = {
   // Hard block confirmed on Michael's direction 2026-08-27.
   ct_pb_63_2: { label: 'Conn. Practice Book Sec. 63-2', impl: 'frcp_6a',
     base_period_suffix: '', months_years_suffix: '',
-    rollover_suffix_forward: ' with Sec. 7-17', rollover_suffix_backward: '' }
+    rollover_suffix_forward: ' with Sec. 7-17', rollover_suffix_backward: '' },
+
+  // UTAH. The first jurisdiction seeded whose ROLLOVER CLAUSE NAMES BOTH
+  // WEEKEND DAYS ITSELF, so the standing weekend-coverage check stops at step
+  // one and no holiday statute has to be consulted for it. 6(a)(1)(C): "if the
+  // last day is a Saturday, Sunday, or legal holiday, the period continues to
+  // run until the end of the next day that is not a Saturday, Sunday or legal
+  // holiday." Compare Louisiana, where the same shape is affirmatively WRONG.
+  //
+  // NO SHORT-PERIOD EXCLUSION, STATED AFFIRMATIVELY. 6(a)(1)(B) counts "every
+  // day, including intermediate Saturdays, Sundays, and legal holidays" -- the
+  // 2009-federal "days are days", like Minnesota. So the field is ABSENT, not
+  // zero: six seeded states use 7 and three use 11, and copying either would
+  // push every short Utah deadline later than the rule provides.
+  //
+  // BACKWARD IS EXPRESSLY DEFINED, so the backward suffix is real rather than
+  // blank. 6(a)(5): the "next day" is found by "continuing to count forward
+  // when the period is measured after an event and BACKWARD WHEN MEASURED
+  // BEFORE AN EVENT." Real, like Minnesota's 6.01(c), unlike NJ/NC/WA/MA/MO/WI
+  // where it had to be left empty. No backward ROW is seeded in this batch even
+  // so -- the standard is honest about the rule, not about the row set.
+  //
+  // NO SERVICE-EXTENSION STANDARD IS DECLARED, AND THAT IS THE POINT.
+  // URCP 6(c) adds SEVEN days -- not three -- but only when service is made
+  // "exclusively by mail under Rule 5(b)(3)(C)(i)". This engine carries ONE
+  // `service_method` field and cannot express "by mail AND BY NOTHING ELSE",
+  // so a caller who says `mail` for a party also served by e-mail would get +7
+  // and a LATE date. Seven days is a large overshoot in the direction that
+  // loses a filing. NO ROW IN THE UTAH SEED CARRIES A service_extension, and
+  // none may until the engine can express exclusive-vs-combined service --
+  // tracked as its own engine change, the same way the service-COMPLETION
+  // mechanism was, rather than worked around per row. Held on Michael's
+  // direction 2026-08-27.
+  //
+  // NO SERVICE-COMPLETION STANDARD EITHER, for the opposite reason: URCP
+  // 5(b)(4) says service by mail or electronic means is "complete upon
+  // sending", with no time-of-day condition. That makes the completion date
+  // the date the caller already supplies, so a standard here would be a
+  // mechanism that never moves anything -- dormant by construction. Missouri's
+  // exists because its 5 p.m. rule genuinely shifts the trigger date.
+  //
+  // THE CALENDAR STOPS AT 2026-12-31 ON PURPOSE. Utah Code 63G-1-301 is
+  // superseded 1/1/2027 and the successor moves Juneteenth, breaking URCP
+  // 6(a)(6)(E)'s own "third Monday of June" shorthand in eight of the next
+  // nine years -- three days apart in 2027. holidayFor returns known:false for
+  // an unlisted year, so every 2027+ Utah computation refuses NOT_PROVISIONED
+  // by itself. See tools/gen_ut_calendar.py before extending it.
+  ut_urcp_6: { label: 'Utah R. Civ. P. 6', impl: 'frcp_6a',
+    base_period_suffix: '(a)(1)', months_years_suffix: '(a)(1)',
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(a)(5)' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
