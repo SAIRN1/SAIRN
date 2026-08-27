@@ -1139,3 +1139,75 @@ add a real "savings" computation (catalog price vs. effective price,
 summed across order history) or to formally drop it from the design
 spec's own stated scope. Item 4 — hoist `var all=vAllProducts();` once
 before the `productOverrides` filter callback.
+
+## StoneDesk Subcontractor Portal has no compliance layer — no COI, no insurance, no licence, no expiry
+
+**Logged:** 2026-08-27, from the SAIRNmechanical worldwide competitive
+research pass (`docs/superpowers/specs/2026-08-27-sairnmechanical-shared-platform-competitive-research.md`,
+§5 Row 1). **Michael's call the same day: leave it alone for now** — real
+gap, but StoneDesk is an existing shipped app and this was not that task's
+scope. Logged as its own row rather than folded into the research
+recommendation.
+
+**Verified state, read directly from the file — not inferred:**
+`stonedesk.html:28823-28827`, the entire subcontractor roster write payload is
+
+```
+sub_id, name, trade, phone, email, active
+```
+
+Plus ID+PIN portal login (`:31260`), job assignment (`:28913`), and the AI
+field-progress photo inspector with a `sub` mode (`:34734`). A grep of the
+whole file for insurance / COI / W-9 / licence / expiry fields **on the
+subcontractor record returns nothing** — the four `insurance` hits in
+`stonedesk.html` are SAIRNbiz cost inputs (`:4809`, `:20441`) and
+SAIRNcare/senior document-reading prompts (`:16408`, `:18707`), all
+unrelated to subcontractors.
+
+**Why it matters:** subcontractor insurance-compliance tracking is a mature
+external category — Certificial, MyCOI, TrustLayer, Jones, Billy,
+SmartCompliance, CertFocus, BCS, Constrafor — where real-time expiry
+monitoring and automated renewal alerts are table stakes, and BCS syncs with
+Procore so tracking starts the moment a sub is added to a project.
+
+**The honest nuance, which is why this is deferred and not urgent:** this is
+a category-wide gap, not a StoneDesk-specific lapse. Fieldpoint — a real
+commercial FSM product with a dedicated subcontractor-management page —
+covers scheduling-board visibility, GPS, T&M/expense entry and payment
+vouchers, and covers insurance/licence/compliance-document tracking **not at
+all** (verified by fetching the page directly). Field Ascend's subcontractor
+page likewise says nothing about certificates, licence tracking, expiry or
+portals. So StoneDesk is not behind the field-service field here; it is
+behind the *construction* field, which is where its subs actually come from.
+
+**Contrast on record — SAIRNbuild is the reference implementation, and is
+confirmed sound, no action needed:** `sairnbuild.html` subcontractor records
+already carry `w9_on_file`, `coi_expiry`, `licence_no`, `licence_expiry`,
+`prequal_status`, `financial_capacity`, `safety_record`,
+`references_checked`, `bonding_capacity`, `current_backlog_pct`
+(`:2455-2459`), plus company-level `insurance_carrier`,
+`insurance_policy_no`, `insurance_expiry`. And it **enforces**, which is the
+part the market only claims: `subComplianceIssue()` (`:6229`) flags COI or
+licence within 30 days, the dashboard attention feed surfaces it on the
+first screen after login (`:4400-4406`), "Eligible to Bid" requires **both**
+prequalified **and** compliant (`:5139`), and award is hard-blocked at
+`:3864` — *"Cannot award to … — not eligible to bid (…). Fix on the
+Subcontractors panel first."*
+
+**Why deferred:** whether compliance fields belong on a
+countertop-fabrication sub roster is a product judgment call, not a research
+finding. StoneDesk's subs are installers and fabricators, not licensed
+trades pulling permits — the case for COI is strong, the case for licence
+tracking is weaker, and nobody has made that call. Building it against a
+guess risks the wrong shape.
+
+**Done looks like:** an explicit decision, first — which of
+{COI expiry, general-liability carrier/policy, W-9 on file, licence number
+and expiry} StoneDesk's sub roster should actually carry. Then, if any are
+adopted: the fields on the roster write payload, an expiry computation and
+"Expiring Soon / Expired" badge reusing SAIRNbuild's 30-day shape rather
+than a second implementation, and a decision on whether assignment is
+**gated** on compliance the way SAIRNbuild gates award. The two hooks that
+would be needed already exist — the `active` flag on the roster and the
+single assignment path at `subxAssign` — so the gate has one place to live,
+not several.
