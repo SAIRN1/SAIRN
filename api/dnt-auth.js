@@ -38,12 +38,16 @@
 // permit. If a billing role is wanted later it goes in ROLES_BY_APP and into
 // one tier below -- the gates key on TIER, not on literal role strings.
 //
-// VISIBILITY TIERS
-//   MANAGEMENT  owner  -- the only provisioning tier
-//   AUTHENTICATED  all three -- see below, and read the warning
+// VISIBILITY TIERS -- three now, not two (2026-08-27)
+//   MANAGEMENT   owner              -- provisioning, AND the provider roster
+//   FINANCIAL    owner, frontdesk   -- charges, payments, denial, A/R, revenue,
+//                                      coverage rules (READ; write not yet)
+//   PATIENT      owner, frontdesk   -- practice-wide patient visibility;
+//                                      a provider is scoped to their own
+//                                      patients, and sees none until linked
 //
-// MINIMUM-NECESSARY TIERING -- PARTIALLY CLOSED 2026-08-27. Read this whole
-// note before assuming either half.
+// MINIMUM-NECESSARY TIERING -- BOTH HALVES CLOSED 2026-08-27, with one honest
+// residual (write). Read this whole note before assuming any of it.
 //
 // The emergency build made every DNT_RESOURCES call require a VALID SESSION,
 // which closed the exploitable gap, but did not narrow what each role may see.
@@ -55,10 +59,30 @@
 //      Write is unchanged and still open to all three roles -- a deliberate,
 //      disclosed asymmetry, not an oversight. See that file's own comment.
 //
-//   ⛔ PROVIDER-SCOPED PATIENT READ -- BLOCKED ON A MISSING LINK, not deferred
-//      by choice. The decision taken was "a provider sees only their linked
-//      patients," resolved through dnt_appointments.provider_id. THAT CANNOT BE
-//      IMPLEMENTED TODAY and must not be faked:
+//   ✅ PROVIDER-SCOPED PATIENT READ -- DONE, same day, once the missing link
+//      was built. A provider now reads only patients they have an appointment
+//      with; dnt_referrals is scoped the same way (it carries patient_id and a
+//      clinical reason); dnt_appointments filters in the database on the
+//      promoted provider_id column. An UNLINKED provider gets 403
+//      PROVIDER_NOT_LINKED -- see-nothing, never see-everything -- with a
+//      message naming the Providers panel and the owner as the fix.
+//      THE LINK: `linked_employee_id` on the dnt_providers DATA BLOB. No
+//      migration; dnt_providers is (license_hash, provider_id, data jsonb).
+//      Enforced one-to-one server-side (409 EMPLOYEE_ALREADY_LINKED), because
+//      two rows carrying the same link would make scoping depend on row order.
+//      THE ROSTER IS NOW AN ACCESS-CONTROL TABLE, so dnt_providers WRITE is
+//      owner-only (403 ROLE_NOT_PERMITTED). Read stays open to every
+//      authenticated role -- provider NAMES render throughout the app.
+//      Providers are DEACTIVATED, never deleted: the old client-side remove was
+//      local-only and the next sync merged the row back, so "remove and re-add
+//      to fix the link" would have restored the stale row AND minted a duplicate
+//      PV- id, orphaning appointment history.
+//
+//   HISTORICAL, kept because it explains why the link had to be built first and
+//   why the obvious filter would have been a silent failure rather than a bug:
+//      The decision taken was "a provider sees only their linked patients,"
+//      resolved through dnt_appointments.provider_id. That could NOT be
+//      implemented directly, and must never be faked:
 //        - dnt_providers rows are created client-side as `newId('PV')` ->
 //          "PV-xxxxx" (sairndental.html:1022), carrying only name, clinical
 //          role and operatory.
@@ -70,12 +94,15 @@
 //      match zero rows and hand every provider an empty patient list with a
 //      200 OK -- a permission check manufacturing a false empty state, which is
 //      worse than the honest authenticated-only read it replaced.
-//      WHAT IT NEEDS FIRST: a link field on the dnt_providers record (a plain
-//      data-blob field, no migration -- dnt_providers is `data jsonb`), set by
-//      the owner as "which login is this provider," plus a decided fallback for
-//      a provider with no link yet. Both are open questions, and the fallback
-//      is a real one: see-nothing is safe but breaks the app, see-everything is
-//      the status quo. Not guessed here.
+//      WHAT IT NEEDED FIRST, all of which now exists: the link field; a
+//      provider EDIT path (this app had none at all -- every roster was
+//      add-or-remove only, so an existing provider could not be linked without
+//      deleting and re-adding them); an owner-gated link control populated from
+//      the `roster` action above; and a fix for the local-only delete. The
+//      fallback question was decided by Michael on 2026-08-27: SEE-NOTHING when
+//      unlinked, paired with a visible fix path, because an unlinked provider
+//      defaulting to practice-wide read is the same shape of gap the tiering
+//      pass existed to close.
 //
 // SAIRNsenior's sen_clients gate is often cited as the worked example. It is
 // the right SHAPE and the wrong MECHANISM for this app: it filters on a

@@ -5539,10 +5539,68 @@ module.exports = async (req, res) => {
     // redaction have to be designed together or the redacted half gets wiped on
     // the next save -- exactly the hazard alf_facility's own comment documents
     // at :4645, where redaction is only safe BECAUSE write is management-only.
+    // Mirrors api/dnt-auth.js's MANAGEMENT_ROLES. Declared here rather than
+    // imported because sd-data.js does not require dnt-auth.js (that file is a
+    // request handler, not a lib) -- if the two ever diverge, dnt-auth.js is the
+    // source of truth and this is the copy to correct.
+    const DNT_MANAGEMENT_ROLES = { owner: true };
     const DNT_FINANCIAL_ROLES = { owner: true, frontdesk: true };
     const DNT_FINANCIAL_RESOURCES = {
       dnt_charges: true, dnt_payments: true, dnt_denial: true,
       dnt_ar: true, dnt_revenue: true, dnt_coverage_rules: true
+    };
+
+    // ── SAIRNDENTAL: PROVIDER-SCOPED PATIENT READ (2026-08-27, scope extended) ──
+    // The second half of minimum-necessary tiering. Michael's decisions:
+    //   - a provider reads ONLY patients they are linked to, never practice-wide;
+    //   - an UNLINKED provider sees NOTHING (see-nothing, not see-everything) --
+    //     an unlinked provider defaulting to full read is the same shape of gap
+    //     this whole pass exists to close;
+    //   - but the block must be a "not set up yet" state with an obvious fix
+    //     path, never a dead end.
+    //
+    // THE LINK THAT MAKES THIS POSSIBLE, and why it had to be built first.
+    // dnt_appointments.provider_id references a dnt_providers row id ("PV-…",
+    // minted client-side). An auth employee_id is a free-text string chosen at
+    // bootstrap. NOTHING joined them, so the obvious filter
+    // (provider_id === session.employee_id) would have matched zero rows and
+    // handed every provider an empty patient list with a 200 OK -- a permission
+    // check manufacturing a false empty state. The link is now an explicit
+    // `linked_employee_id` field on the dnt_providers DATA BLOB: no migration,
+    // because dnt_providers is (license_hash, provider_id, data jsonb).
+    //
+    // WHY THE UNLINKED CASE IS A 403 AND NOT AN EMPTY 200: same reasoning as the
+    // financial tier above. "No patients" and "you are not linked yet" are
+    // completely different facts, and only one of them is worth showing a
+    // clinician. A distinct code lets the client say which, and point at the fix.
+    const DNT_PATIENT_BROAD_READ_ROLES = { owner: true, frontdesk: true };
+
+    // Resolves the caller to their dnt_providers row. Returns:
+    //   { provisioned:false }              -> registry table not set up yet
+    //   { provisioned:true, providerId:null } -> authenticated, but no link set
+    //   { provisioned:true, providerId:'PV-…' }
+    const dntLinkedProvider = async (session) => {
+      const pr = await fetch(rest('dnt_providers?license_hash=eq.' + enc(licHash) + '&select=provider_id,data'), { headers });
+      if (pr.status === 404 || pr.status === 400) return { provisioned: false, providerId: null };
+      const prows = await pr.json();
+      if (!pr.ok || !Array.isArray(prows)) return { provisioned: false, providerId: null };
+      const match = prows.filter((x) => x && x.data && x.data.linked_employee_id === session.employee_id)[0];
+      return { provisioned: true, providerId: match ? (match.data.id || match.provider_id) : null };
+    };
+
+    // The patient set a linked provider may see: every patient they have an
+    // appointment with. Uses the PROMOTED provider_id column, so the filter runs
+    // in the database rather than over a full table read. patient_id lives in the
+    // appointment's data blob (it was never promoted), so it is read out here.
+    const dntPatientIdsForProvider = async (providerId) => {
+      const ar = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(licHash) +
+        '&provider_id=eq.' + enc(providerId) + '&select=data'), { headers });
+      if (!ar.ok) return null;
+      const arows = await ar.json();
+      if (!Array.isArray(arows)) return null;
+      const ids = {};
+      arows.forEach((x) => { if (x && x.data && x.data.patient_id) ids[String(x.data.patient_id)] = true; });
+      return ids;
     };
 
     const DNT_RESOURCES = {
@@ -5552,6 +5610,11 @@ module.exports = async (req, res) => {
       dnt_payments: 'payment_id', dnt_denial: 'denial_id', dnt_ar: 'ar_id', dnt_revenue: 'revenue_id',
       dnt_referrals: 'referral_id'
     };
+    // Patient-scoped resources: the record itself is about a specific patient.
+    // dnt_referrals is here deliberately -- it carries patient_id and a clinical
+    // reason, so leaving it practice-wide would have leaked exactly what scoping
+    // dnt_patients was meant to stop.
+    const DNT_PATIENT_SCOPED_RESOURCES = { dnt_patients: 'id', dnt_referrals: 'patient_id' };
     if (DNT_RESOURCES[resource] && action === 'read') {
       const dntSess = dntGate(res);
       if (!dntSess) return;
@@ -5563,15 +5626,71 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'ROLE_NOT_PERMITTED', message: 'Financial records are limited to the practice owner and front desk' } });
         return;
       }
+      // Provider-scoped patient read. Owner and front desk keep practice-wide
+      // visibility -- the front desk has to be able to find any patient to book
+      // or check one in, which is the job.
+      let dntScopeIds = null;
+      if (DNT_PATIENT_SCOPED_RESOURCES[resource] && !DNT_PATIENT_BROAD_READ_ROLES[dntSess.role]) {
+        const link = await dntLinkedProvider(dntSess);
+        if (!link.provisioned) {
+          res.status(200).json({ ok: true, data: [], provisioned: false });
+          return;
+        }
+        if (!link.providerId) {
+          res.status(403).json({
+            error: {
+              code: 'PROVIDER_NOT_LINKED',
+              message: 'Your sign-in is not linked to a provider yet, so no patient records are shown. Ask the practice owner to open the Providers panel and link your login to your provider record.'
+            }
+          });
+          return;
+        }
+        dntScopeIds = await dntPatientIdsForProvider(link.providerId);
+        if (!dntScopeIds) { res.status(502).json({ error: { code: 'SCOPE_LOOKUP_FAILED', message: 'Could not determine your patient list. Try again.' } }); return; }
+      }
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      let dntOut = (rows || []).map((x) => x.data);
+      if (dntScopeIds) {
+        const key = DNT_PATIENT_SCOPED_RESOURCES[resource];
+        dntOut = dntOut.filter((d) => d && d[key] != null && dntScopeIds[String(d[key])] === true);
+      }
+      res.status(200).json({ ok: true, data: dntOut, provisioned: true });
       return;
     }
     if (DNT_RESOURCES[resource] && action === 'write') {
-      if (!dntGate(res)) return;
+      const dntWSess = dntGate(res);
+      if (!dntWSess) return;
+      // PROVIDER REGISTRY IS OWNER-ONLY TO WRITE (2026-08-27). Found while
+      // building the link: rProviders/addProvider had no role check at all, so
+      // any authenticated role could add or alter the practice's provider roster
+      // -- and once linked_employee_id exists on that record, that roster IS the
+      // access-control table for patient scoping. Anyone who can edit it can
+      // grant themselves a patient list. READ stays open to every authenticated
+      // role on purpose: provider NAMES are rendered all over this app
+      // (appointments, hours, credentials), and hiding them would break it.
+      if (resource === 'dnt_providers' && !DNT_MANAGEMENT_ROLES[dntWSess.role]) {
+        res.status(403).json({ error: { code: 'ROLE_NOT_PERMITTED', message: 'Only the practice owner can change the provider roster' } });
+        return;
+      }
+      // One login links to at most ONE provider. Without this, two provider rows
+      // could carry the same linked_employee_id and dntLinkedProvider() would
+      // silently pick whichever sorted first -- a scoping decision made by row
+      // order. Refused explicitly instead.
+      if (resource === 'dnt_providers' && payload && payload.linked_employee_id) {
+        const dupR = await fetch(rest('dnt_providers?license_hash=eq.' + enc(licHash) + '&select=provider_id,data'), { headers });
+        if (dupR.ok) {
+          const dupRows = await dupR.json();
+          const clash = (Array.isArray(dupRows) ? dupRows : []).filter((x) =>
+            x && x.data && x.data.linked_employee_id === payload.linked_employee_id && String(x.provider_id) !== String(payload.id))[0];
+          if (clash) {
+            res.status(409).json({ error: { code: 'EMPLOYEE_ALREADY_LINKED', message: 'That login is already linked to another provider. Unlink it there first.' } });
+            return;
+          }
+        }
+      }
       const idCol = DNT_RESOURCES[resource];
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
@@ -5678,8 +5797,30 @@ module.exports = async (req, res) => {
     // through this same handler, so the double-booking protection covers
     // both paths, not just the public one.
     if (resource === 'dnt_appointments' && action === 'read') {
-      if (!dntGate(res)) return;
-      const r = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      const dntASess = dntGate(res);
+      if (!dntASess) return;
+      // Provider-scoped, same rule as dnt_patients: a provider sees only their
+      // own appointments. This one filters in the DATABASE on the promoted
+      // provider_id column rather than reading everything and discarding --
+      // appointment rows carry patient photos and are up to ~1.26 MB each
+      // (dntap_data_size), so a practice-wide read to throw most of it away
+      // would be both a privacy and a payload problem.
+      let dntApptFilter = '';
+      if (!DNT_PATIENT_BROAD_READ_ROLES[dntASess.role]) {
+        const link = await dntLinkedProvider(dntASess);
+        if (!link.provisioned) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        if (!link.providerId) {
+          res.status(403).json({
+            error: {
+              code: 'PROVIDER_NOT_LINKED',
+              message: 'Your sign-in is not linked to a provider yet, so no appointments are shown. Ask the practice owner to open the Providers panel and link your login to your provider record.'
+            }
+          });
+          return;
+        }
+        dntApptFilter = '&provider_id=eq.' + enc(link.providerId);
+      }
+      const r = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(licHash) + dntApptFilter + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);

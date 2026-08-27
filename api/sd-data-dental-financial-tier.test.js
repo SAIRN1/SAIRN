@@ -56,7 +56,15 @@ function loadHandler(fetchImpl) {
 }
 
 const FINANCIAL = ['dnt_charges', 'dnt_payments', 'dnt_denial', 'dnt_ar', 'dnt_revenue', 'dnt_coverage_rules'];
-const CLINICAL_AND_CONFIG = ['dnt_patients', 'dnt_providers', 'dnt_operatories', 'dnt_provider_hours', 'dnt_procedure_types', 'dnt_referrals'];
+// UPDATED DELIBERATELY 2026-08-27 when provider-scoped patient read shipped.
+// dnt_patients and dnt_referrals MOVED OUT of this list -- they are now
+// patient-scoped, so a provider no longer gets a flat 200 on them. They are
+// covered by sd-data-dental-provider-scope.test.js instead, and by the
+// tier-separation test below, which asserts the two gates stay distinguishable.
+// The rest are practice CONFIG (no patient in them) and must keep returning 200
+// to every authenticated role -- a gate that swept these up would break the app
+// for providers without protecting anything.
+const CONFIG_ONLY = ['dnt_providers', 'dnt_operatories', 'dnt_provider_hours', 'dnt_procedure_types'];
 
 let passed = 0;
 let total = 0;
@@ -114,9 +122,9 @@ async function main() {
     }
   }
 
-  // --- 3. clinical/config resources are NOT swept into the financial tier ---
-  for (const resource of CLINICAL_AND_CONFIG) {
-    await test('provider reading ' + resource + ' -> still 200 (not caught by the financial tier)', async () => {
+  // --- 3. config resources are NOT swept into either gate ---
+  for (const resource of CONFIG_ONLY) {
+    await test('provider reading ' + resource + ' -> still 200 (caught by neither gate)', async () => {
       const handler = loadHandler(async function () {
         return { ok: true, status: 200, json: async () => [{ data: { id: 'P1' } }] };
       });
@@ -126,6 +134,27 @@ async function main() {
       assert.strictEqual(res.body.ok, true);
     });
   }
+
+  // --- 3b. the two gates stay DISTINGUISHABLE ---
+  // Both refuse a provider with a 403, and they must never collapse into one
+  // undifferentiated "denied". The error code is the only thing the client can
+  // use to decide between "ask the owner to link you" and "this is not yours to
+  // see" -- if these ever return the same code, the UI cannot tell a fixable
+  // setup state from a permanent permission boundary.
+  await test('the financial gate and the patient gate return DIFFERENT codes', async () => {
+    const handler = loadHandler(async function () {
+      return { ok: true, status: 200, json: async () => [] };
+    });
+    const fin = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_revenue' }, tokenFor('provider')), fin);
+    const pat = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_patients' }, tokenFor('provider')), pat);
+    assert.strictEqual(fin.statusCode, 403);
+    assert.strictEqual(pat.statusCode, 403);
+    assert.strictEqual(fin.body.error.code, 'ROLE_NOT_PERMITTED');
+    assert.strictEqual(pat.body.error.code, 'PROVIDER_NOT_LINKED');
+    assert.notStrictEqual(fin.body.error.code, pat.body.error.code);
+  });
 
   // --- 4. the session floor still applies underneath the tier ---
   await test('no session on a financial resource -> 401 NO_SESSION, not 403', async () => {

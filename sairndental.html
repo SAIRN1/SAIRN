@@ -361,18 +361,54 @@ label.chk input{width:auto;}
       </div>
 
       <div class="panel" id="panel-providers">
-        <div class="ph"><div><div class="ptitle">Providers</div><div class="psub">Dentists and hygienists</div></div></div>
-        <div class="card"><div class="ch"><div class="ct">Add Provider</div></div><div class="cb">
-          <div class="fr">
-            <div class="fg"><label>Name</label><input type="text" id="pv-add-name" placeholder="Dr. Jane Smith"></div>
-            <div class="fg"><label>Role</label><select id="pv-add-role"><option>Dentist</option><option>Hygienist</option></select></div>
-          </div>
-          <div class="fg"><label>Default Operatory</label><select id="pv-add-operatory"></select></div>
-          <button class="btn bp" onclick="addProvider()">Add Provider</button>
+        <div class="ph"><div><div class="ptitle">Providers</div><div class="psub">Dentists and hygienists &mdash; and which sign-in belongs to each one</div></div></div>
+        <!-- Owner-only. `prole` is DISPLAY ONLY (see the auth header): this hides
+             the controls so the panel reads correctly, and api/sd-data.js refuses
+             a dnt_providers write from anyone but the owner regardless. -->
+        <div id="pv-not-owner" style="display:none" class="card"><div class="cb">
+          <div style="font-weight:600;margin-bottom:4px">Provider roster is managed by the practice owner</div>
+          <div style="color:var(--muted);font-size:13px">You can see who is on file, but only the owner can add a provider or change which sign-in is linked to one.</div>
         </div></div>
+        <div id="pv-owner-tools">
+          <div class="card"><div class="ch"><div class="ct">Add Provider</div></div><div class="cb">
+            <div class="fr">
+              <div class="fg"><label>Name</label><input type="text" id="pv-add-name" placeholder="Dr. Jane Smith"></div>
+              <div class="fg"><label>Role</label><select id="pv-add-role"><option>Dentist</option><option>Hygienist</option></select></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><label>Default Operatory</label><select id="pv-add-operatory"></select></div>
+              <div class="fg"><label>Linked Sign-In</label><select id="pv-add-login"></select></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px">A provider only sees the patients they have appointments with. Until their sign-in is linked here, they see none &mdash; and are told to ask you to link it.</div>
+            <button class="btn bp" onclick="addProvider()">Add Provider</button>
+          </div></div>
+        </div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
-          <table id="providers-table"><thead><tr><th>Name</th><th>Role</th><th>Operatory</th><th></th></tr></thead><tbody id="providers-tbody"></tbody></table>
+          <table id="providers-table"><thead><tr><th>Name</th><th>Role</th><th>Operatory</th><th>Linked Sign-In</th><th>Status</th><th></th></tr></thead><tbody id="providers-tbody"></tbody></table>
         </div></div>
+      </div>
+
+      <!-- Provider edit. The FIRST edit path in this app: before 2026-08-27 every
+           roster here was add-or-remove only, which made an existing provider
+           impossible to link without deleting and re-adding them. -->
+      <div class="modal" id="pv-edit-modal">
+        <div class="mbox">
+          <div class="mtitle">Edit Provider</div>
+          <input type="hidden" id="pv-edit-id">
+          <div class="fr">
+            <div class="fg"><label>Name</label><input type="text" id="pv-edit-name"></div>
+            <div class="fg"><label>Role</label><select id="pv-edit-role"><option>Dentist</option><option>Hygienist</option></select></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Default Operatory</label><select id="pv-edit-operatory"></select></div>
+            <div class="fg"><label>Linked Sign-In</label><select id="pv-edit-login"></select></div>
+          </div>
+          <div id="pv-edit-err" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:10px"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn bp" onclick="saveProviderEdit()">Save</button>
+            <button class="btn bo" onclick="closeProviderEdit()">Cancel</button>
+          </div>
+        </div>
       </div>
 
       <div class="panel" id="panel-credentials">
@@ -720,11 +756,23 @@ function sdnData(action,resource,payload){
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
-      if(!r.ok||!d||!d.ok){console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      if(!r.ok||!d||!d.ok){
+        // Remember WHY, per resource. sdnData returns null on every failure, so
+        // without this the caller cannot tell "you are not linked to a provider
+        // yet" (fixable, and the owner can fix it) from "the network is down".
+        // Both used to render as the same silent nothing.
+        dntLastErr[resource]={code:(d&&d.error&&d.error.code)||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||''};
+        console.warn('sdnData '+resource+' failed ('+r.status+'):',dntLastErr[resource].code);
+        return null;
+      }
+      delete dntLastErr[resource];
       return d.data;
     });
-  }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
+  }).catch(function(e){dntLastErr[resource]={code:'NETWORK',message:e.message};console.warn('sdnData network error:',e.message);return null;});
 }
+var dntLastErr={};
+function dntLastErrCode(resource){return dntLastErr[resource]?dntLastErr[resource].code:'';}
+function dntLastErrText(resource){return dntLastErr[resource]?dntLastErr[resource].message:'';}
 
 function gateGo(){
   var k=($('gkey').value||'').trim().toUpperCase();
@@ -917,7 +965,10 @@ function procedureTypes(){return ld('dnt_procedures_list',[]);}
 function coverageRules(){return ld('dnt_coverage_list',[]);}
 
 function fillDentalSelects(){
-  var provOpts=providers().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+'</option>';}).join('');
+  // activeProviders(), not providers(): a deactivated provider must stay
+  // resolvable by name in history (appointments, credentials, referrals already
+  // written against them) but must never be offered for NEW assignment.
+  var provOpts=activeProviders().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+'</option>';}).join('');
   var opOpts=operatories().map(function(o){return '<option value="'+o.id+'">'+H(o.name)+'</option>';}).join('');
   var pcOpts=procedureTypes().map(function(p){return '<option value="'+p.id+'">'+H(p.cdt_code)+' -- '+H(p.description)+'</option>';}).join('');
   var ptOpts=patients().map(function(p){return '<option value="'+p.id+'">'+H(p.name)+'</option>';}).join('');
@@ -930,6 +981,21 @@ function fillDentalSelects(){
   if($('cd-add-provider'))$('cd-add-provider').innerHTML=provOpts||'<option value="">Add a provider first</option>';
 }
 
+// An empty table is a CLAIM, and after 2026-08-27 it can be a false one. If the
+// last read of this resource was refused because the signed-in provider is not
+// linked to a provider record, "No patients on file yet" is a lie the app would
+// be telling a clinician about their own practice. Say the true thing instead,
+// and name who fixes it -- the server sends that sentence, so the two can never
+// drift apart.
+function dntEmptyRow(resource,cols,normalText){
+  if(dntLastErrCode(resource)==='PROVIDER_NOT_LINKED'){
+    return '<tr><td colspan="'+cols+'" style="color:var(--danger);text-align:center;padding:18px;line-height:1.5">'+
+      H(dntLastErrText(resource)||'Your sign-in is not linked to a provider record yet.')+
+      '</td></tr>';
+  }
+  return '<tr><td colspan="'+cols+'" style="color:var(--muted);text-align:center">'+H(normalText)+'</td></tr>';
+}
+
 // ── PATIENTS ──────────────────────────────────────────────────────
 function rPatients(){
   var list=patients();
@@ -938,7 +1004,7 @@ function rPatients(){
     return '<tr><td>'+H(p.name)+'</td><td>'+H(p.dob||'--')+'</td><td>'+H(p.phone||'--')+'</td><td>'+H(p.insurance_payer||'--')+'</td><td>'+H(p.insurance_member_id||'--')+'</td>'+
       '<td>'+H(p.guardian_name?p.guardian_name+(p.guardian_relationship?' ('+p.guardian_relationship+')':''):'--')+'</td>'+
       '<td><button class="btn bo bs" onclick="removePatient(\''+p.id+'\')">Remove</button></td></tr>';
-  }).join('')||'<tr><td colspan="7" style="color:var(--muted);text-align:center">No patients on file yet</td></tr>';
+  }).join('')||dntEmptyRow('dnt_patients',7,'No patients on file yet');
   fillDentalSelects();
 }
 // Pediatric fields (2026-08-13): single source of truth for minor status,
@@ -1006,31 +1072,118 @@ function removePatient(id){
 }
 
 // ── PROVIDERS ─────────────────────────────────────────────────────
+// THIS PANEL IS THE ACCESS-CONTROL TABLE AS OF 2026-08-27. A provider only sees
+// the patients they have appointments with, and `linked_employee_id` on the
+// provider record is what joins a sign-in to a provider row. Anyone who can edit
+// this roster can grant themselves a patient list, which is why writes are
+// owner-only server-side (api/sd-data.js) and the controls are hidden here.
+//
+// Provider rows are DEACTIVATED, never deleted. The old removeProvider() was
+// local-only -- it filtered localStorage and the next sync merged the row
+// straight back, so "remove then re-add to fix the link" would have restored the
+// stale row AND created a duplicate with a new PV- id, orphaning appointment
+// history. There is no delete verb on api/sd-data.js for any app, so soft
+// deactivation through the normal write path is the honest fix, not a workaround.
+var dntRoster=[];                 // [{employee_id, display_name, role, active}]
+function activeProviders(){return providers().filter(function(p){return p.active!==false;});}
+function dntLoginOptions(selected){
+  var opts='<option value="">(not linked)</option>';
+  dntRoster.forEach(function(e){
+    if(e.active===false)return;
+    opts+='<option value="'+H(e.employee_id)+'"'+(e.employee_id===selected?' selected':'')+'>'+
+      H(e.display_name||e.employee_id)+' ('+H(e.employee_id)+')</option>';
+  });
+  return opts;
+}
+async function dntLoadRoster(){
+  if(prole!=='owner')return;
+  var r=await dntAuth('roster',{},true);
+  if(r&&r.status===200&&r.body&&Array.isArray(r.body.employees)){
+    dntRoster=r.body.employees;
+    if($('pv-add-login'))$('pv-add-login').innerHTML=dntLoginOptions('');
+  }
+}
 function rProviders(){
+  var isOwnerNow=prole==='owner';
+  if($('pv-owner-tools'))$('pv-owner-tools').style.display=isOwnerNow?'':'none';
+  if($('pv-not-owner'))$('pv-not-owner').style.display=isOwnerNow?'none':'';
   var list=providers(),ops=operatories();
   var tbody=$('providers-tbody');
   tbody.innerHTML=list.map(function(p){
     var op=ops.find(function(o){return o.id===p.operatory_id;});
+    var linked=p.linked_employee_id
+      ? H(p.linked_employee_id)
+      : '<span style="color:var(--danger)">Not linked</span>';
+    var inactive=p.active===false;
+    var status=inactive?'<span style="color:var(--muted)">Inactive</span>':'<span style="color:var(--ok)">Active</span>';
+    var actions=isOwnerNow
+      ? '<button class="btn bo bs" onclick="openProviderEdit(\''+p.id+'\')">Edit</button> '+
+        '<button class="btn bo bs" onclick="setProviderActive(\''+p.id+'\','+(inactive?'true':'false')+')">'+(inactive?'Reactivate':'Deactivate')+'</button>'
+      : '';
     return '<tr><td>'+H(p.name)+'</td><td>'+H(p.role)+'</td><td>'+H(op?op.name:'--')+'</td>'+
-      '<td><button class="btn bo bs" onclick="removeProvider(\''+p.id+'\')">Remove</button></td></tr>';
-  }).join('')||'<tr><td colspan="4" style="color:var(--muted);text-align:center">No providers on file yet</td></tr>';
+      '<td>'+linked+'</td><td>'+status+'</td><td>'+actions+'</td></tr>';
+  }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center">No providers on file yet</td></tr>';
   fillDentalSelects();
+  if(isOwnerNow&&!dntRoster.length)dntLoadRoster();
 }
 async function addProvider(){
   var name=$('pv-add-name').value.trim();
   if(!name){toast('Provider name required');return;}
-  var rec={id:newId('PV'),name:name,role:$('pv-add-role').value,operatory_id:$('pv-add-operatory').value||'',created_at:dntLocalToday()};
+  var rec={id:newId('PV'),name:name,role:$('pv-add-role').value,operatory_id:$('pv-add-operatory').value||'',
+    linked_employee_id:($('pv-add-login')?$('pv-add-login').value:'')||'',active:true,created_at:dntLocalToday()};
+  var syncResult=await sdnData('write','dnt_providers',rec);
+  // Server FIRST, local second -- the opposite of this app's older handlers.
+  // A linked_employee_id can be refused (409 EMPLOYEE_ALREADY_LINKED, or 403 if
+  // the caller is not the owner), and writing to localStorage before knowing
+  // that would leave the device believing in a link the server rejected.
+  if(!syncResult){toast(dntLastErrText('dnt_providers')||'Could not save the provider -- nothing was changed',5000);return;}
   var list=providers();list.push(rec);st('dnt_providers_list',list);
   rProviders();
   $('pv-add-name').value='';
-  var syncResult=await sdnData('write','dnt_providers',rec);
-  toast(syncResult?'Provider added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  if($('pv-add-login'))$('pv-add-login').value='';
+  toast('Provider added');
 }
-function removeProvider(id){
-  // Local-only -- see removePatient()'s comment for why.
-  var list=providers().filter(function(p){return p.id!==id;});
+function openProviderEdit(id){
+  var p=providers().find(function(x){return x.id===id;});
+  if(!p)return;
+  $('pv-edit-id').value=p.id;
+  $('pv-edit-name').value=p.name||'';
+  $('pv-edit-role').value=p.role||'Dentist';
+  $('pv-edit-operatory').innerHTML='<option value="">(none)</option>'+
+    operatories().map(function(o){return '<option value="'+o.id+'"'+(o.id===p.operatory_id?' selected':'')+'>'+H(o.name)+'</option>';}).join('');
+  $('pv-edit-login').innerHTML=dntLoginOptions(p.linked_employee_id||'');
+  $('pv-edit-err').textContent='';
+  $('pv-edit-modal').classList.add('on');
+}
+function closeProviderEdit(){$('pv-edit-modal').classList.remove('on');}
+async function saveProviderEdit(){
+  var id=$('pv-edit-id').value;
+  var p=providers().find(function(x){return x.id===id;});
+  if(!p){closeProviderEdit();return;}
+  var name=$('pv-edit-name').value.trim();
+  if(!name){$('pv-edit-err').textContent='Provider name required';return;}
+  var updated={};for(var k in p)updated[k]=p[k];
+  updated.name=name;
+  updated.role=$('pv-edit-role').value;
+  updated.operatory_id=$('pv-edit-operatory').value||'';
+  updated.linked_employee_id=$('pv-edit-login').value||'';
+  var syncResult=await sdnData('write','dnt_providers',updated);
+  if(!syncResult){$('pv-edit-err').textContent=dntLastErrText('dnt_providers')||'Could not save -- nothing was changed';return;}
+  var list=providers().map(function(x){return x.id===id?updated:x;});
+  st('dnt_providers_list',list);
+  closeProviderEdit();rProviders();
+  toast('Provider updated');
+}
+async function setProviderActive(id,active){
+  var p=providers().find(function(x){return x.id===id;});
+  if(!p)return;
+  var updated={};for(var k in p)updated[k]=p[k];
+  updated.active=!!active;
+  var syncResult=await sdnData('write','dnt_providers',updated);
+  if(!syncResult){toast(dntLastErrText('dnt_providers')||'Could not change this provider -- nothing was changed',5000);return;}
+  var list=providers().map(function(x){return x.id===id?updated:x;});
   st('dnt_providers_list',list);rProviders();
-  toast('Provider removed on this device');
+  toast(active?'Provider reactivated':'Provider deactivated -- their history is kept');
 }
 
 // ── LICENSING / CREDENTIALING (2026-08-24) ────────────────────────
@@ -1440,7 +1593,7 @@ function rAppointments(){
       '<td>'+H(a.start_time?new Date(a.start_time).toLocaleString():'--')+'</td><td>'+H(pc?(pc.cdt_code+' -- '+pc.description):'(unknown procedure)')+'</td>'+
       '<td>'+(noEmail?'<span style="color:var(--danger);font-size:12px">No email on file</span>':'<span style="color:var(--muted);font-size:12px">--</span>')+'</td>'+
       '<td><button class="btn bp bs" onclick="openCompleteVisitModal(\''+a.id+'\')">Complete Visit</button></td></tr>';
-  }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center">No confirmed appointments</td></tr>';
+  }).join('')||dntEmptyRow('dnt_appointments',6,'No confirmed appointments');
 }
 
 var cvAppointmentId=null;
@@ -1724,7 +1877,7 @@ function rReferrals(){
     return '<tr><td>'+H(r.direction==='incoming'?'Incoming':'Outgoing')+'</td><td>'+H(r.patient_name)+'</td>'+
       '<td>'+H(r.external_party)+'</td><td>'+H(prov?prov.name:'--')+'</td><td>'+H(r.date)+'</td><td>'+H(r.reason)+'</td>'+
       '<td><select onchange="setReferralStatus(\''+r.id+'\',this.value)">'+statusOpts+'</select></td></tr>';
-  }).join('')||'<tr><td colspan="7" style="color:var(--muted);text-align:center">No referrals on file yet</td></tr>';
+  }).join('')||dntEmptyRow('dnt_referrals',7,'No referrals on file yet');
 }
 
 function cpBadgeCount(){return complaints().filter(function(c){return c.status==='New';}).length;}
