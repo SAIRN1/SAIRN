@@ -168,10 +168,33 @@ check('an empty completed visit reports all six elements, each exactly once', ()
 });
 
 // ── the honesty contract ────────────────────────────────────────────────
-check('the federal floor is reported as UNVERIFIED on every single result', () => {
+// Updated 2026-08-27. These three previously asserted `verified: false`, which
+// was correct when written and became false the moment the six items were
+// confirmed against 42 U.S.C. 1396b(l)(5)(A). They are rewritten to assert the
+// NEW contract rather than relaxed -- the point was never "always say
+// unverified", it was "never let a green result look like settled compliance",
+// and that property is what is still being tested below.
+check('the federal floor is reported as VERIFIED, with a real statutory citation', () => {
   const r = m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, { state: 'OH' });
-  assertEq(r.federal_source.verified, false);
-  assertTrue(/NOT been checked against primary text/.test(r.federal_source.note));
+  assertEq(r.federal_source.verified, true);
+  assertTrue(/1396b/.test(r.federal_source.authority), 'authority must carry the U.S.C. citation');
+  assertTrue(/DEFINITION/.test(r.federal_source.note), 'note must state these are a definition, not a field list');
+});
+
+check('the statute is NOT described as requiring data elements to be captured', () => {
+  // The specific false-precision this module shipped and had to correct.
+  const r = m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, {});
+  const blob = JSON.stringify(r.federal_source).toLowerCase();
+  assertFalse(/requires six data elements/.test(blob), 'the corrected phrasing must not come back');
+});
+
+check('residual gaps are carried on every result -- verified is NARROWED, not dropped', () => {
+  const r = m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, { state: 'OH' });
+  assertTrue(Array.isArray(r.federal_source.residual_gaps), 'residual_gaps must be present');
+  assertEq(r.federal_source.residual_gaps.length, 2);
+  const joined = r.federal_source.residual_gaps.join(' ');
+  assertTrue(/CMS/.test(joined), 'the unread-CMS-guidance gap must be stated');
+  assertTrue(/inference from statutory silence/.test(joined), 'the states-may-add inference must be stated as an inference');
 });
 
 check('a configured state is never reported as compliant -- only as not_verified', () => {
@@ -179,11 +202,14 @@ check('a configured state is never reported as compliant -- only as not_verified
   assertEq(m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, {}).state_rules, 'none_configured');
 });
 
-check('a READY visit still carries the unverified disclosure -- ready never means compliant', () => {
+check('a READY visit still carries what is NOT known -- ready never means compliant', () => {
+  // This is the property that must survive the floor becoming verified: a green
+  // result still has to disclose the two things this module does not know, and
+  // still has to say the state rules are unverified.
   const r = m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, { state: 'OH' });
   assertTrue(r.ready);
-  assertFalse(r.federal_source.verified, 'a green result must still say the floor is unverified');
-  assertEq(r.state_rules, 'not_verified');
+  assertEq(r.state_rules, 'not_verified', 'a configured state is never reported compliant');
+  assertEq(r.federal_source.residual_gaps.length, 2, 'a green result must still carry the residual gaps');
 });
 
 // ── the engine PERSISTS NOTHING and MUTATES NOTHING ─────────────────────
@@ -234,9 +260,12 @@ check('summarize tolerates junk input without throwing', () => {
   assertEq(s.checkable, 0, 'a null row is not checkable');
 });
 
-check('summarize carries the same unverified disclosure as checkVisit', () => {
+check('summarize carries the SAME federal_source object as checkVisit -- one source of truth', () => {
   const s = m.summarize([fullVisit()], { 'CL-1': FULL_CLIENT }, { 'EMP-1': FULL_CG }, { state: 'OH' });
-  assertEq(s.federal_source.verified, false);
+  const r = m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, { state: 'OH' });
+  assertEq(s.federal_source, r.federal_source, 'roll-up and per-visit must never disagree about provenance');
+  assertEq(s.federal_source.verified, true);
+  assertEq(s.federal_source.residual_gaps.length, 2);
   assertEq(s.state_rules, 'not_verified');
   assertEq(s.elements.length, 6);
 });

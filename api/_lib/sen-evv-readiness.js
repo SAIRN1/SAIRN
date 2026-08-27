@@ -21,31 +21,57 @@
 // It also builds exactly the data model transmission will consume later, which
 // is why it is worth doing first rather than instead.
 //
-// ── THE FEDERAL FLOOR, AND AN HONEST LIMIT ON IT ─────────────────────────
-// The 21st Century Cures Act sec.12006 requires six data elements per EVV
-// visit. They are listed in FEDERAL_ELEMENTS below.
+// ── THE FEDERAL FLOOR — VERIFIED 2026-08-27, AND WHAT IT ACTUALLY SAYS ───
+// The six items in FEDERAL_ELEMENTS below are PRIMARY-VERIFIED, word for word,
+// against 42 U.S.C. sec. 1396b(l)(5)(A)(i)-(vi) -- read from two independent
+// official hosts (uscode.house.gov and govinfo.gov) that returned identical
+// text. Citation: SSA sec. 1903(l), added by Pub. L. 114-255, div. B, title XII,
+// sec. 12006(a), Dec. 13, 2016.
 //
-// STATED PLAINLY BECAUSE IT MATTERS: these six were gathered during the
-// 2026-08-26 competitive-gap research pass and could NOT be verified against
-// primary CMS text -- cms.gov, dol.gov and the Federal Register all returned 403
-// to automated fetch throughout that pass, and the WebSearch budget was
-// exhausted before a substitute primary source could be reached. They are
-// widely and consistently reported, which is corroboration, not verification.
-// Anything this module reports is therefore "missing against the federal floor
-// AS WE UNDERSTAND IT", and the report says so in its own output rather than
-// only in this comment. Verifying them is tracked as its own open item.
+// A CORRECTION THIS MODULE PREVIOUSLY GOT WRONG, kept visible rather than
+// quietly overwritten: this header used to say the statute "requires six data
+// elements per EVV visit". IT DOES NOT. The six are the statutory DEFINITION of
+// the term "electronic visit verification system" -- things a qualifying system
+// "electronically verifie[s]". The operative requirement, at sec. 1396b(l)(1),
+// is that a State REQUIRE THE USE of such a system for personal care and home
+// health services "requiring an in-home visit by a provider". Practically the
+// same effect, but "data element" is CMS/vendor vocabulary and was being
+// attributed to the statute, which is exactly the kind of small false precision
+// a compliance module should not ship.
+//
+// TWO RESIDUAL GAPS, AND THEY ARE WHY `verified` IS NOT SIMPLY `true`:
+//   1. CMS's own EVV guidance has NOT been read -- medicaid.gov and cms.gov
+//      return 403 to automated fetch. That matters more than it sounds: a full
+//      Federal Register sweep confirms there is NO EVV rulemaking at all, so
+//      every operational detail CMS has published lives in sub-regulatory
+//      guidance nobody here has seen.
+//   2. See the per-state note below.
 //
 // ── PER-STATE RULES ARE NOT ENCODED, AND THAT IS A REFUSAL, NOT A GAP ────
-// States add their own required elements on top of the federal floor and the
-// additions genuinely differ. NOTHING is seeded. A state with no verified rule
-// set is reported as `state_rules: 'not_verified'` with the federal floor
-// applied alone -- never as "compliant". Inventing a state's requirements would
-// put a green tick on a screen with nothing real behind it, which is exactly
-// what Guardian Check 0b exists to catch.
+// NOTHING is seeded. A state with no verified rule set is reported as
+// `state_rules: 'not_verified'` with the federal floor applied alone -- never as
+// "compliant". Inventing a state's requirements would put a green tick on a
+// screen with nothing real behind it, which is exactly what Guardian Check 0b
+// exists to catch.
+//
+// PRECISION ON WHY, because the earlier wording overstated it: this module used
+// to assert that "states add their own required elements on top of the federal
+// floor". That is an INFERENCE FROM STATUTORY SILENCE, not a quoted rule. The
+// statute contains no "at a minimum" language and no preemption clause; the six
+// appear only inside a definitional "means ... verified with respect to--"
+// clause. The inference is defensible and uncontradicted -- sec. 1396b(l)(2)(A)
+// requires each State to consult providers so its system is "minimally
+// burdensome" and reflects "existing best practices ... in the State", which
+// points toward variation rather than uniformity. But the honest phrasing is
+// "the statute specifies six verification points and does not preempt
+// additional State requirements", and it must NEVER be written as "CMS states
+// these are minimum requirements" until that CMS guidance is actually read.
 
 'use strict';
 
-// The six data elements required per visit by 21st Century Cures Act sec.12006.
+// The six things a qualifying EVV system must electronically verify per visit,
+// quoted from 42 U.S.C. sec. 1396b(l)(5)(A)(i)-(vi). NOT a captured-field list
+// -- see the header correction.
 // `key` is stable and is what the UI groups on; `label` is what a user reads.
 const FEDERAL_ELEMENTS = [
   { key: 'service_type', label: 'Type of service performed' },
@@ -57,11 +83,23 @@ const FEDERAL_ELEMENTS = [
 ];
 
 // Reported alongside every result so a caller cannot present this as settled
-// law without also carrying the limitation. See the header.
+// law without also carrying what is still open. See the header.
+//
+// `verified` refers to THE SIX ITEMS ONLY, which are now confirmed against
+// primary statutory text. It is deliberately NOT a claim that this module knows
+// everything required of an EVV submission -- `residual_gaps` carries what it
+// does not know, and a caller showing a green result is expected to show that
+// too. Narrowing an honest disclosure is not the same as dropping it.
 const FEDERAL_SOURCE = {
-  authority: '21st Century Cures Act sec. 12006',
-  verified: false,
-  note: 'Six required elements gathered from secondary sources on 2026-08-26; cms.gov was unreachable to automated fetch and this has NOT been checked against primary text.'
+  authority: '42 U.S.C. § 1396b(l)(5)(A)(i)–(vi) (Social Security Act § 1903(l), added by Pub. L. 114-255 § 12006(a), Dec. 13, 2016)',
+  verified: true,
+  verified_on: '2026-08-27',
+  verified_against: ['uscode.house.gov', 'govinfo.gov'],
+  note: 'The six items are the statutory DEFINITION of a qualifying electronic visit verification system — not a required-field list. The operative requirement (§ 1396b(l)(1)) is that a State require the USE of such a system.',
+  residual_gaps: [
+    'CMS sub-regulatory EVV guidance has not been read (medicaid.gov and cms.gov return 403 to automated fetch). There is no EVV rulemaking, so that guidance is where CMS operational detail lives.',
+    'That States may impose requirements beyond these six is an inference from statutory silence, not a quoted rule. The statute neither sets a minimum nor preempts additional State requirements.'
+  ]
 };
 
 // A visit is only worth checking once it is finished. An in-progress or

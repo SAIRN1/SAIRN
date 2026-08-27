@@ -41,11 +41,27 @@
 -- like an integration and is not one: storing 'sandata' here records WHICH
 -- aggregator this agency is required to submit to. It does not submit anything.
 -- SAIRNsenior has no transmission path to Sandata, HHAeXchange, Tellus or
--- CareBridge, and the formats differ per aggregator (Sandata JSON over
--- SFTP/REST, HHAeXchange flat-file, Tellus/Netsmart XML -- vendor-documented,
--- not verified against primary state-Medicaid text). Building that is a
--- separate, scoped feature. Until it exists, this row is a stated intent, and
--- the UI must say so rather than implying a live connection.
+-- CareBridge. Building that is a separate, scoped feature. Until it exists, this
+-- row is a stated intent, and the UI must say so rather than implying a live
+-- connection.
+--
+-- FORMAT NOTE CORRECTED 2026-08-27 (comment only -- no DDL changed; this file has
+-- already been run). The original said "Sandata JSON over SFTP/REST,
+-- HHAeXchange flat-file, Tellus/Netsmart XML -- vendor-documented, not verified
+-- against primary state-Medicaid text". All three parts were wrong or imprecise:
+--   * Sandata altEVV is REST/JSON ONLY for third-party visit submission. SFTP
+--     exists elsewhere in the OpenEVV family but not for this.
+--   * HHAeXchange is not one format but THREE live interfaces -- REST/JSON,
+--     a V5 CSV flat file over SFTP, and SOAP for Texas -- split by state.
+--   * The formats are NOT merely vendor-documented. Eight of nine families have
+--     public specifications, most published by state Medicaid agencies.
+-- Full verified picture, with per-claim source labels:
+-- docs/superpowers/specs/2026-08-27-evv-transmission-groundwork.md
+--
+-- One finding there matters more than any format detail and should be read
+-- before transmission is designed: WASHINGTON HAS NO AGGREGATOR. EVV elements
+-- ride on the claim into ProviderOne. A model assuming every state has an
+-- endpoint to POST to needs surgery, not configuration, to serve it.
 --
 -- ── GRANTS: NO DELETE, DELIBERATELY ──────────────────────────────────────
 -- A setting is overwritten, never removed. `revoke all` first then grant, per

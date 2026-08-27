@@ -324,6 +324,24 @@ audit — see §5.3 for why the enforcement posture makes it worse.
 
 ### 5.4 Market-structure finding that should inform any EVV work
 
+> **CORRECTED 2026-08-27.** Two claims in the paragraph below were checked
+> against primary sources during the EVV transmission groundwork pass and did not
+> survive. **(1) The acquisition closed 2024-10-03, not September 2024** — per
+> [HHAeXchange's own press release](https://www.hhaexchange.com/press-releases/hhaexchange-acquires-sandata-technologies).
+> **(2) The state counts below ("~10 directly", "~25 more") are secondary-sourced
+> and should not be relied on.** HHAeXchange's own Provider Info Hub lists 15
+> states; Indiana — which a secondary source placed under HHAeXchange — is
+> **Sandata**, verified against
+> [in.gov](https://www.in.gov/medicaid/providers/business-transactions/electronic-visit-verification/).
+> Georgia, Kansas, Tennessee and Arkansas are unconfirmed either way.
+> **(3) The "one company, therefore a consolidated map" implication is also
+> wrong**: the two formats have NOT converged. Different auth models, different
+> field casing, different batch limits, and states were still publishing
+> Sandata-branded specs under 2026 paths. See
+> `docs/superpowers/specs/2026-08-27-evv-transmission-groundwork.md` §6.
+> The original paragraph is kept below unedited, as the record of what was
+> claimed and on what basis.
+
 **HHAeXchange acquired Sandata in September 2024**, on top of Cashé and
 Generations. That means one company is simultaneously **(a)** a state EVV
 aggregator covering ~10 states directly *and*, via Sandata, the dominant

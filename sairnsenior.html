@@ -1192,7 +1192,18 @@ function renderReadinessView(){
       '<div class="card"><div class="ch"><span class="ct">EVV Submission Readiness</span></div><div class="cb">'+
         '<div class="note"><strong>This is a report. It submits nothing.</strong> SAIRNsenior has no transmission path to any aggregator yet — this shows which completed visits carry the data a submission would need, so the real cost of closing the gap is visible per visit.</div>'+
         '<div class="note">'+H(stateNote)+'</div>'+
-        '<div class="note"><strong>The federal requirement list itself is unverified.</strong> '+H(s.federal_source.note)+' Authority cited: '+H(s.federal_source.authority)+'.</div>'+
+        // Was "The federal requirement list itself is unverified." Corrected
+        // 2026-08-27: the six items ARE verified against primary statutory text.
+        // What remains unknown is narrower and is rendered from residual_gaps,
+        // so the screen narrows with the module instead of drifting from it.
+        '<div class="note"><strong>Federal basis:</strong> '+H(s.federal_source.authority)+
+          (s.federal_source.verified_on?' — verified '+H(s.federal_source.verified_on)+' against '+H((s.federal_source.verified_against||[]).join(' and ')):'')+
+          '. '+H(s.federal_source.note)+'</div>'+
+        ((s.federal_source.residual_gaps||[]).length
+          ? '<div class="note"><strong>What this check does NOT know:</strong><ul style="margin:6px 0 0 18px">'
+            +(s.federal_source.residual_gaps||[]).map(function(g){return '<li>'+H(g)+'</li>';}).join('')
+            +'</ul></div>'
+          : '')+
         '<div class="krow">'+
           '<div class="kpi"><div class="klbl">Completed visits checked</div><div class="kval">'+s.checkable+'</div><div class="kt">of '+s.total_visits+' total</div></div>'+
           '<div class="kpi"><div class="klbl">Would submit</div><div class="kval">'+s.ready+'</div><div class="kt">all six elements present</div></div>'+
