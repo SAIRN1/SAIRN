@@ -63,21 +63,11 @@
         "direction": "forward"
       },
       "computation": "frcp_6a",
-      "service_extension": {
-        "standard": "frcp_6d",
-        "add": 3,
-        "unit": "calendar_days",
-        "applies_when": [
-          "mail",
-          "left_with_clerk",
-          "other_consented_means"
-        ],
-        "order": "after_base_period"
-      },
       "authority": {
         "citation": "Fed. R. Civ. P. 12(a)(1)(A)(i)",
         "url": "https://www.law.cornell.edu/rules/frcp/rule_12",
         "quote": "within 21 days after being served with the summons and complaint",
+        "note": "NO SERVICE EXTENSION, AND THIS ROW USED TO CARRY ONE WRONGLY. Corrected 2026-08-27 on Michael's direction after the defect was found while seeding Nevada; until then this row attached frcp_6d with NO reasoning recorded either way, and it reported a date THREE DAYS LATE on every mailed answer -- the direction that loses a filing. THE READING: Rule 6(d) adds three days only when 'service is made under RULE 5(b)(2)(C), (D), or (F)'. A summons and complaint are served under RULE 4, which is a different rule for a different stage of the case, and 6(d) does not reach it. Rule 4 has its own mechanism for the burden of mailed process -- the waiver of service in Rule 4(d), which is why 12(a)(1)(A)(ii) gives 60 days instead of 21 -- so reading 6(d) into Rule 4 service would compensate twice for the same thing. Minnesota's seed already recorded the identical reasoning for its own 21-day row ('the summons is served under Rule 4, not Rule 5'), and Nevada and Utah follow it; this row was the outlier. Supplying service_method: mail here now correctly adds nothing.",
         "retrieved_at": "2026-08-21"
       },
       "effective_from": "2009-12-01",
@@ -160,6 +150,7 @@
         "citation": "Fed. R. Civ. P. 12(a)(1)(B)",
         "url": "https://www.law.cornell.edu/rules/frcp/rule_12",
         "quote": "A party must serve an answer to a counterclaim or crossclaim within 21 days after being served with the pleading that states the counterclaim or crossclaim",
+        "note": "THIS ROW DOES CARRY THE EXTENSION, AND THAT IS CORRECT — said here because its two neighbours had theirs removed on 2026-08-27, and an unexplained difference between adjacent rows invites a future session to 'fix' the wrong one. Rule 6(d) reaches service made under Rule 5(b)(2), and a pleading stating a counterclaim or crossclaim is served between parties under RULE 5. The distinction is which rule effected service, not how important the pleading is: 12(a)(1)(A)(i) and 12(a)(2) run from RULE 4 process and take nothing; this row runs from a RULE 5 paper and takes three days.",
         "retrieved_at": "2026-08-21"
       },
       "effective_from": "2009-12-01",
@@ -179,21 +170,11 @@
         "direction": "forward"
       },
       "computation": "frcp_6a",
-      "service_extension": {
-        "standard": "frcp_6d",
-        "add": 3,
-        "unit": "calendar_days",
-        "applies_when": [
-          "mail",
-          "left_with_clerk",
-          "other_consented_means"
-        ],
-        "order": "after_base_period"
-      },
       "authority": {
         "citation": "Fed. R. Civ. P. 12(a)(2)",
         "url": "https://www.law.cornell.edu/rules/frcp/rule_12",
         "quote": "must serve an answer to a complaint, counterclaim, or crossclaim within 60 days after service on the United States attorney",
+        "note": "NO SERVICE EXTENSION, AND THIS ROW USED TO CARRY ONE WRONGLY. Corrected 2026-08-27 alongside the 12(a)(1)(A)(i) row and for the same reason: Rule 6(d) adds three days only for service made under RULE 5(b)(2)(C), (D) or (F), and service on the United States attorney is service of PROCESS under RULE 4(i), not a paper served between parties under Rule 5. The row previously attached frcp_6d with no reasoning recorded, and reported a date THREE DAYS LATE whenever a caller supplied a mailed service method. NOTE THAT 4(i)(1)(A)(ii) EXPRESSLY CONTEMPLATES MAILING to the civil-process clerk, so a caller with a mailed service date here is the ordinary case rather than an odd one -- which is exactly why the wrong extension would have been reached often. The 60 days already reflects the government's position; it is not a 21-day period needing a mail allowance. Sibling row frcp-12a3-us-officer-individual-capacity never carried an extension and is unchanged.",
         "retrieved_at": "2026-08-21"
       },
       "effective_from": "2009-12-01",
