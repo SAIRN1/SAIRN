@@ -30,14 +30,23 @@
 -- itself in front of a prospect. These stay plausible indefinitely.
 --
 -- ── ONE THING DELIBERATELY NOT TOUCHED, AND IT NEEDS A DECISION ──────────
--- Seven pre-existing patient rows (PT-<timestamp>-<rand>) remain. They came
--- from real public self-bookings and I have never read their contents -- no
--- session exists to read them with, and I am not minting another credential to
--- get one. They may well be junk ("test test", empty insurance), in which case
--- they will sit in the Patients panel next to the five seeded below and undercut
--- the demo. See the query at the end of this file: read them, then decide.
--- Deleting rows I have not read would repeat the inventory mistake that made
--- this file necessary.
+-- CORRECTED 2026-08-27, AFTER THIS FILE RAN. The paragraph below was WRONG and
+-- is kept rather than deleted, because the way it was wrong is the point.
+--
+-- WHAT IT SAID: seven pre-existing patient rows (PT-<timestamp>-<rand>) remain,
+-- possibly junk, read them before deciding.
+-- WHAT IS TRUE: the read query at the end of this file returned ZERO rows.
+-- Those seven patients did not exist. I had inferred them from a live owner
+-- read taken EARLIER in the session, before the credential cleanup ran, and
+-- then carried that stale count forward into a file written afterwards as if it
+-- were current state.
+--
+-- The mistake is not the miscount. It is that a number observed at one point in
+-- time was written into a document describing a later one, with no re-read in
+-- between -- the same shape as the appointment inventory error that made this
+-- file necessary, committed twice in one session about the same table.
+-- A count is only true as of the read that produced it. Re-read, or say when
+-- you looked.
 
 -- ═════════════════════════════════════════════════════════════════════════
 -- 0. CLEAR THE DEBRIS
@@ -240,13 +249,58 @@ on conflict (license_hash, appointment_id) do nothing;
 --        or status      is distinct from data->>'status');
 --   -- expect 0 rows
 --
--- ── THE OPEN DECISION: the seven pre-existing patients ───────────────────
--- Read them before deciding anything. If they are junk from ad-hoc booking
--- tests they should go; if any is deliberate they should stay. I have not read
--- them and this file does not touch them.
+-- ── CLOSED: there were no pre-existing patients ─────────────────────────
+-- This query was run on 2026-08-27 and returned ZERO rows. See the correction
+-- at the top of this file. Kept because it is still the right query to run
+-- against any licence before assuming what is on it.
 --   select patient_id, data->>'name' as name, data->>'email' as email,
 --          data->>'insurance_payer' as payer, created_at
 --     from public.dnt_patients
 --    where license_hash = encode(digest('DNT-PINNACLE-2026','sha256'),'hex')
 --      and patient_id not like 'PT-DEMO-%'
 --    order by created_at;
+
+-- ═════════════════════════════════════════════════════════════════════════
+-- ADDENDUM 2026-08-27, after this file ran: DEBRIS IS NEVER IN ONE TABLE
+-- ═════════════════════════════════════════════════════════════════════════
+-- Two more residue rows were found on this licence AFTER the seed ran, and
+-- this file did not catch either of them:
+--     OP-1786416376492-129   "Operatory 1"   (dnt_operatories)
+--     PC-1786416376504-314   D0120           (dnt_procedure_types)
+-- Both were test-traffic residue predating this session, both duplicated what
+-- section 1 and section 2 seeded, and both had zero references anywhere.
+--
+-- THE PATTERN, which is the durable part: I found orphaned appointments, so I
+-- cleaned appointments. The symptom appeared in ONE table and I scoped the
+-- remedy to that table. But the residue came from the PUBLIC endpoints, and
+-- api/sairndental/public-book.js can write dnt_patients, dnt_appointments,
+-- dnt_operatories and dnt_procedure_types -- so debris was always going to be
+-- spread across every table those endpoints can reach.
+--
+-- SO: a debris check on a demo licence must enumerate every table the
+-- public-facing endpoints can write to, and check each one, rather than
+-- following the symptom. The `<PREFIX>-<13-digit-epoch>-<rand>` id shape is the
+-- tell -- those ids are minted by code, never typed by a person, so anything
+-- matching it on a demo licence is machine-generated traffic and should be
+-- justified before it is kept:
+--
+--   select 'operatories' as tbl, operatory_id as id from public.dnt_operatories
+--    where license_hash = encode(digest('DNT-PINNACLE-2026','sha256'),'hex')
+--      and operatory_id ~ '^[A-Z]+-[0-9]{13}-'
+--   union all
+--   select 'procedure_types', procedure_type_id from public.dnt_procedure_types
+--    where license_hash = encode(digest('DNT-PINNACLE-2026','sha256'),'hex')
+--      and procedure_type_id ~ '^[A-Z]+-[0-9]{13}-'
+--   union all
+--   select 'patients', patient_id from public.dnt_patients
+--    where license_hash = encode(digest('DNT-PINNACLE-2026','sha256'),'hex')
+--      and patient_id ~ '^[A-Z]+-[0-9]{13}-'
+--   union all
+--   select 'appointments', appointment_id from public.dnt_appointments
+--    where license_hash = encode(digest('DNT-PINNACLE-2026','sha256'),'hex')
+--      and appointment_id ~ '^[A-Z]+-[0-9]{13}-'
+--   union all
+--   select 'providers', provider_id from public.dnt_providers
+--    where license_hash = encode(digest('DNT-PINNACLE-2026','sha256'),'hex')
+--      and provider_id ~ '^[A-Z]+-[0-9]{13}-';
+--   -- expect 0 rows on a clean demo licence
