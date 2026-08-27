@@ -390,8 +390,8 @@ module.exports = async (req, res) => {
       if (!existingR.ok) return upstream(res, existingRows);
       if (!Array.isArray(existingRows) || !existingRows[0]) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such employee on this license' } }); return; }
       const patchR = await patchEmployee(target_id, { certifications: cleaned });
-      const patched = await patchR.json();
-      if (!patchR.ok) return upstream(res, patched);
+      // Same 204-No-Content trap as set_active below -- see the note there.
+      if (!patchR.ok) { const detail = await patchR.json().catch(function () { return null; }); return upstream(res, detail); }
       res.status(200).json({ ok: true, employee_id: target_id, certifications: cleaned });
       return;
     }
@@ -479,8 +479,14 @@ module.exports = async (req, res) => {
       }
 
       const patchR = await patchEmployee(target_id, { active: nextActive });
-      const patched = await patchR.json();
-      if (!patchR.ok) return upstream(res, patched);
+      // PostgREST answers a PATCH with 204 No Content unless Prefer:
+      // return=representation is set, and patchEmployee deliberately does not
+      // set it. Parsing the body unconditionally therefore THREW on success,
+      // the outer catch turned it into a 502, and the caller saw a failure
+      // for a mutation that had already landed. Proven live 2026-08-27: both
+      // deactivate and reactivate returned 502 while the row changed
+      // correctly underneath. Only parse when there is an error to read.
+      if (!patchR.ok) { const detail = await patchR.json().catch(function () { return null; }); return upstream(res, detail); }
 
       const remaining = rowsAll.filter(function (x) {
         var isActive = (x.employee_id === target_id) ? nextActive : x.active === true;

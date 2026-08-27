@@ -417,8 +417,14 @@ module.exports = async (req, res) => {
       }
 
       const patchR = await patchEmployee(target_id, { active: nextActive });
-      const patched = await patchR.json();
-      if (!patchR.ok) return upstream(res, patched);
+      // PostgREST answers a PATCH with 204 No Content unless Prefer:
+      // return=representation is set, and patchEmployee deliberately does not
+      // set it. Parsing the body unconditionally therefore THREW on success,
+      // the outer catch turned it into a 502, and the caller saw a failure
+      // for a mutation that had already landed. Proven live 2026-08-27: both
+      // deactivate and reactivate returned 502 while the row changed
+      // correctly underneath. Only parse when there is an error to read.
+      if (!patchR.ok) { const detail = await patchR.json().catch(function () { return null; }); return upstream(res, detail); }
 
       const remaining = rowsAll.filter(function (x) {
         var isActive = (x.employee_id === target_id) ? nextActive : x.active === true;
