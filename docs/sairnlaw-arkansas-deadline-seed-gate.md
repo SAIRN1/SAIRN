@@ -69,6 +69,98 @@ scripted fetch checking only status and non-zero length passes it.
 primary-sourced.** It is recorded so the work is not repeated, not so it can be
 seeded from.
 
+## 1a. UPDATE 2026-08-27 — two official sources found, and the block is NARROWED, NOT CLEARED
+
+Michael supplied two leads after the first pass. Both paid off, neither is the
+statute, and **Arkansas stays gated.** What changed is what is left to find.
+
+### The GIF is a path problem, not a domain problem — confirmed
+
+`arkleg.state.ar.us` **does** serve documents through `/Home/FTPDocument`. Acts
+come back as real PDFs. It is the **ACA** that is not published there, under any
+path shape tried, and **pre-2017 Acts** are not either:
+
+| `/ACTS/<biennium>/Public/ACT1.pdf` | result |
+|---|---|
+| 2001R, 2005R, 2011R, 2015R | **200, 42-byte 1×1 GIF** |
+| 2017R, 2019R, 2021R, 2023R, 2025R | **200, real PDF (150–235 KB)** |
+
+So the GIF is a *"not published at this path"* placeholder with a clean cut-off
+at **2017**. Separately, `/Home/ArkansasCode`, `/ACA` and the code search all
+return **HTTP 500**, and the site's own **Arkansas Law** portal links to Acts,
+Bills and the administrative-rules site but **NOT to the Code** — consistent
+with Arkansas licensing the ACA to a commercial publisher rather than serving
+it. **The Arkansas Code does not appear to be published free by the State.**
+
+### PRIMARY SOURCE 1 — Act 561 of 2017 (arkleg, official publisher)
+
+`/Home/FTPDocument?path=/ACTS/2017R/Public/ACT561.pdf` — 191,122 B, 4pp, real
+text. **SECTION 4** amends the very subsection in question:
+
+> SECTION 4. Arkansas Code § 1-5-101(a)(2), concerning official state holidays,
+> is amended to read as follows: (2) Dr. Martin Luther King, Jr.'s Birthday
+> ~~and Robert E. Lee's Birthday~~ — the third Monday in January;
+
+(The PDF's header states *"Stricken language would be deleted from and
+underlined language would be added to present law"*; the strike does not survive
+text extraction, so the deleted words are marked here by hand.) **SECTION 5**
+moves Robert E. Lee Day to § 1-5-106 — gubernatorial-proclamation memorial days,
+**second Saturday in October** — which is **NOT an official holiday** and must
+not enter a calendar.
+
+**This confirms from primary law that (a)(2) is MLK only.** It does not give the
+rest of § 1-5-101.
+
+### PRIMARY SOURCE 2 — the Treasurer of State's holiday sheet
+
+`media.ark.org/artreasury/holidays_2025.pdf` — 585,660 B, on the State's own
+CDN. Headed **"2025 State Holidays — Legal holidays by authority of Act 304 of
+2001 and Amended by Act 561 of 2017."** Those two citations match Justia's
+history line exactly, and the sheet enumerates **ten** dated days: New Year's;
+MLK; **George Washington's Birthday and Daisy Gatson Bates Day**; Memorial;
+Independence; Labor; Veterans; Thanksgiving; **Christmas Eve, December 24**;
+Christmas.
+
+**It corroborates §4's list on every dated day, from an official state source,
+and it independently confirms Christmas Eve** — the entry no other seeded state
+has. It also **omits "an employee's birthday"**, which supports reading that
+limb as personal leave rather than a calendar holiday.
+
+Only `holidays_2025.pdf` exists; 2026 and 2027 both **403**.
+
+### WHAT IS STILL MISSING, AND WHY IT STILL BLOCKS
+
+**§ 1-5-101(b) — THE OBSERVATION SHIFT — IS STILL UNSOURCED FROM PRIMARY.**
+Justia alone has *"A holiday falling on a Saturday will be observed on the
+preceding Friday. A holiday falling on a Sunday will be observed on the
+succeeding Monday."* The Treasury sheet cannot corroborate it: **no fixed-date
+Arkansas holiday fell on a weekend in 2025** — 1 January was a Wednesday, 4 July
+a Friday, 11 November a Tuesday, 24 and 25 December a Wednesday and Thursday.
+The sheet never had to apply the shift, so it demonstrates nothing about it.
+
+That is the load-bearing piece, not a detail. The shift is what makes the
+Christmas Eve / Christmas pair behave, and they straddle a weekend in **2027**
+(24th Friday, 25th Saturday) and **2028** (24th Sunday, 25th Monday) — inside
+any calendar range that would be generated.
+
+Also still open: **whether any act after 2017 amended § 1-5-101.** Every
+biennium from 2017R is fetchable, but arkleg's act search is JS-driven and
+returns nothing in static HTML, so the amendment history could not be swept.
+Justia's history line stops at 2017, and Justia is the source being checked.
+
+### Verdict on the update
+
+**Two official Arkansas sources now corroborate the holiday LIST, and one
+confirms from primary law the only subsection amended this century.** That is
+real progress: the remaining gap is no longer "find the statute" but
+**"source § 1-5-101(b)'s observation shift, and confirm nothing amended the
+section after 2017."**
+
+It is still a block. A calendar built now would take its most delicate mechanic
+— the both-ways weekend shift, in the years where Christmas Eve and Christmas
+straddle a weekend — from a secondary source that disclaims itself, and would be
+**wrong in whichever direction the shift actually runs**.
+
 ## 2. THE WEEKEND-COVERAGE STANDING CHECK — step one
 
 **ARCP Rule 6(a)**, verbatim on the operative part:
