@@ -1,8 +1,8 @@
 -- sql/sairnmechanical_employee_auth_schema.sql
--- SAIRNdental per-employee RBAC credentials -- Supabase schema.
+-- SAIRNmechanical per-employee RBAC credentials -- Supabase schema.
 -- 2026-08-27.
 --
--- Run this once in the Supabase SQL editor before api/dnt-auth.js's
+-- Run this once in the Supabase SQL editor before api/mech-auth.js's
 -- bootstrap/login/setup actions will work. Until it runs they return a clear
 -- 503 NOT_PROVISIONED rather than a generic 500.
 --
@@ -35,7 +35,7 @@
 -- every other *_employee_auth table's convention.
 --
 -- Design note: no RLS policy beyond deny-all is needed -- read/write happens
--- exclusively via api/dnt-auth.js using SUPABASE_SERVICE_ROLE_KEY, which
+-- exclusively via api/mech-auth.js using SUPABASE_SERVICE_ROLE_KEY, which
 -- bypasses RLS regardless. The anon key never touches this table.
 
 create table if not exists public.sairnmechanical_employee_auth (
@@ -67,7 +67,7 @@ create policy "svc only sairnmechanical_employee_auth" on public.sairnmechanical
 -- not reliably auto-grant to service_role for tables created in the SQL
 -- editor, which is the real 502 StoneDesk hit in fe730e2.
 --
--- NO DELETE, deliberately: nothing in api/dnt-auth.js deletes a credential
+-- NO DELETE, deliberately: nothing in api/mech-auth.js deletes a credential
 -- row -- deactivation is active=false -- so withholding it costs nothing and
 -- removes a way to lose an audit subject. Do NOT re-add `delete` here when
 -- fixing a missing grant.
@@ -92,5 +92,5 @@ revoke all on public.sairnmechanical_employee_auth from anon, authenticated;
 --
 -- Then confirm LIVE, which is the real proof -- a clean SQL run is not
 -- evidence the app can reach it:
---   POST /api/dnt-auth {"action":"bootstrap","employee_id":"...","pin":"123456"}
---   with a valid DNT- licence. 503 NOT_PROVISIONED means this file has not run.
+--   POST /api/mech-auth {"action":"bootstrap","employee_id":"...","pin":"123456"}
+--   with a valid MECH- licence. 503 NOT_PROVISIONED means this file has not run.

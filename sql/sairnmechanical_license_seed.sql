@@ -1,0 +1,54 @@
+-- sql/sairnmechanical_license_seed.sql
+-- Provisions the SAIRNmechanical demo license row. NOT RUN by this session (no
+-- DB access). Run once in the Supabase SQL editor, then tell the session to
+-- proceed with the live verification sequence.
+--
+-- ── WHY THIS IS NEEDED ──────────────────────────────────────────────────
+-- The employee_auth migration has been run and the app is live at
+-- /sairnmechanical, but MECH-PINNACLE-2026 returns 401 INVALID_LICENSE --
+-- confirmed live 2026-08-27, the row does not exist. api/mech-auth.js
+-- validates the licence BEFORE it touches the credentials table, so bootstrap,
+-- login and every other action are unreachable until this runs. Same second-
+-- half-of-the-blocker shape SAIRNsenior hit on 2026-08-26: migrations run,
+-- licence seed never did.
+--
+-- KEY NAME: MECH-PINNACLE-2026, matching the platform convention
+-- (SC-PINNACLE-2026, BLD-PINNACLE-2026, RF-PINNACLE-2026, DNT-PINNACLE-2026,
+-- SEN-PINNACLE-2026).
+--
+-- COLUMN LIST copied verbatim from sql/demo_license_keys_seed.sql, which
+-- established it the hard way -- its first run failed 42703 because the columns
+-- had been taken from api/_lib/license.js's output shape, which is aspirational
+-- for trial_ends_at. Do not add trial_ends_at here.
+--
+-- WHERE NOT EXISTS rather than ON CONFLICT, for the reason that file gives:
+-- this repo has no tracked CREATE TABLE for license_keys, so a UNIQUE
+-- constraint on `key` cannot be confirmed from source, and ON CONFLICT against
+-- a column with no matching constraint fails 42P10. That is not hypothetical --
+-- an unexamined ON CONFLICT assumption is what broke api/sairncash/waitlist.js
+-- on 2026-08-25.
+--
+-- status must be the literal 'active': api/_lib/license.js lowercases and
+-- compares to 'active', and anything else yields 403 LICENSE_INACTIVE rather
+-- than a clean 401, which is a different and more confusing failure.
+
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+select 'MECH-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnmechanical', 'demo', null
+where not exists (select 1 from public.license_keys where key = 'MECH-PINNACLE-2026');
+
+-- Verify after running -- against the deployed endpoint, not by re-selecting
+-- the row. A clean insert is not evidence the app can reach it:
+--
+--   curl -s -X POST https://sairn.vercel.app/api/mech-auth \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer MECH-PINNACLE-2026' \
+--     -d '{"action":"check_license"}'
+--
+--   401 INVALID_LICENSE   -> row still absent
+--   403 LICENSE_INACTIVE  -> status is not 'active'
+--   200 {"ok":true,...}   -> provisioned correctly
+--
+-- NO CLEANUP BLOCK, deliberately: this is a real demo licence meant to persist,
+-- like SB-PINNACLE-2026 and the others. The employee credentials created
+-- against it during verification are a separate matter and get their own
+-- scoped cleanup file once their ids are known.
