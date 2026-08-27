@@ -4,6 +4,31 @@
 models. Connecticut's primary pleading rule is a self-perpetuating CHAIN, not a
 deadline from a trigger, and its rollover has no holiday basis at all.**
 
+> ## UPDATE 2026-08-27 — PARTIALLY SEEDED, DELIBERATELY UNPROVISIONED
+>
+> The chain row is now seeded as
+> `sql/sairnlaw_deadline_seed_connecticut.json` (one row, Sec. 10-8, trigger
+> `filing_of_preceding_pleading`) with standard `ct_pb_63_2` in the engine.
+> **No `ct` holiday calendar was created, so every Connecticut computation
+> refuses `NOT_PROVISIONED` — on every date, not only on weekends, because
+> `rollOff()` consults the calendar before it looks at the weekday.** That
+> refusal is the hold on the rollover basis, enforced mechanically rather than
+> by convention, and it is locked by `api/_lib/deadline-connecticut.test.js`
+> (26 assertions) which **breaks if anyone loads a `ct` calendar**.
+>
+> Re-verifying this document against the PDF turned up **three things it did
+> not record**, one of which cuts the other way from everything else here:
+>
+> 1. **§3 needs a caveat: the counting rule is in the APPELLATE chapter, and
+>    that is a LATE-direction risk.** See §3a below. This is the only known
+>    Connecticut exposure that fails in the unsafe direction.
+> 2. **§5 is stronger than reported — it is now affirmative, not an absence.**
+>    Sec. 10-13 states *"Service by mail is complete upon mailing."* See §5a.
+> 3. **§4 missed a second early-direction limb** in Sec. 7-17: an e-filing
+>    **system-outage** tolling provision. See §4a.
+>
+> §7's open items are unchanged and still block the calendar.
+
 Connecticut (~3.6M). Rules of court are the **Practice Book**, adopted by the
 judges of the Superior Court.
 
@@ -95,6 +120,40 @@ be a caller-supplied input, and a seed must not silently equate the two.
   rather than by inference.
 - The first-day/last-day rule is the standard one, stated in reverse order.
 
+## 3a. ADDED 2026-08-27 — that counting rule is in the APPELLATE chapter
+
+**Sec. 63-2 sits under `RULES OF APPELLATE PROCEDURE`** (confirmed from the
+running page header). §3 above quoted it as though it were the Practice Book's
+general counting rule. It is the **only** counting rule in the book, which is a
+different thing.
+
+Measured on the extracted text, **de-hyphenated and whitespace-flattened** so
+that `calen-\ndar` cannot hide a hit:
+
+| Search | Hits in 699 pages |
+|---|---|
+| `first day shall` | **1** — Sec. 63-2, and nowhere else |
+| `computation of time` | 0 |
+| `computing any period` | 0 |
+| `period of time prescribed` | 0 |
+| `intermediate Saturdays` | **0** — confirms §3's no-exclusion finding |
+
+**There is no trial-court day-counting provision in the Connecticut Practice
+Book.** Two textual points argue Sec. 63-2 reaches a Superior Court filing
+anyway: it governs *"any documents … under these rules or an order of the
+court"*, and its own rollover sentence expressly names *"the office of the clerk
+of the **trial court** or of the appellate clerk"*. **Neither is conclusive.**
+
+**Why this matters more than the other open items:** if Sec. 63-2 does not
+reach trial-court pleadings, the first-day/last-day convention applied to a
+Sec. 10-8 deadline is **assumed rather than sourced**, and a wrong assumption
+there computes **LATE** — the direction that loses a filing. Every other
+disclosed Connecticut gap fails EARLY.
+
+It is tolerable today **only because nothing computes**. It must be resolved
+before a `ct` calendar is loaded, and it belongs alongside the closure schedule
+as a calendar blocker rather than below it.
+
 ## 4. THE ROLLOVER HAS NO HOLIDAY BASIS — it is pure clerk's-office closure
 
 Applying the standing weekend-coverage check from the Oklahoma gate — *if the
@@ -136,6 +195,26 @@ office is closed."** Not a holiday list. Not Saturday and Sunday by name.
   authorization by the administrative judge … due to the existence of special
   circumstances" — unknowable in advance, **EARLY**, disclosable.
 
+## 4a. ADDED 2026-08-27 — a SECOND early-direction limb in Sec. 7-17
+
+§4 caught the discretionary-closure limb and missed this one. Sec. 7-17,
+continuing past the passage quoted above, verbatim:
+
+> If a party is unable to electronically file a document because the court's
+> electronic filing system is **nonoperational for thirty consecutive minutes
+> from 9 a.m. to 3 p.m. or for any period of time from 3 to 5 p.m.** of the day
+> on which the electronic filing is attempted, and such day is the last day for
+> filing the document, the document **shall be deemed to be timely filed if
+> received by the clerk's office on the next business day** the electronic
+> system is operational.
+
+Unknowable in advance, like the discretionary closure. It can only ever make a
+real deadline **later** than a computed one, so omitting it reports **EARLY** —
+safe, disclosable, not modelled.
+
+Sec. 7-17 was last **amended June 12, 2025, to take effect Jan. 1, 2026**, and
+carries a `HISTORY—2026` note; the text above is current-year, not inherited.
+
 ## 5. NO SERVICE EXTENSION FOUND ANYWHERE IN THE PRACTICE BOOK
 
 Searched the full extracted text for `"days shall be added"`, `"shall be added to
@@ -149,6 +228,40 @@ of service (delivery or mail) and says nothing about extending time.
 General Statutes were not searched for an equivalent, and that must be done
 before seeding — because "no extension" is exactly the kind of assumption that,
 if wrong, computes **EARLY** on every mailed period. Safe direction, but wrong.
+
+## 5a. ADDED 2026-08-27 — §5 upgraded from an absence to an affirmative rule
+
+Two things changed here.
+
+**First, the search was re-run on de-hyphenated, whitespace-flattened text.**
+§5's original search ran on the raw extraction, where a line-broken
+`add-\ned` could have produced a false negative. It did not: `days shall be
+added`, `shall be added to the prescribed`, `additional time after service`,
+`three days shall be added` and `additional (three|five) days` all return
+**zero hits** on the flattened text as well. §5's finding survives.
+
+**Second, and better — Sec. 10-13 states the positive rule.** §5 said Sec.
+10-13 "says nothing about extending time," which is true but sells it short.
+Sec. 10-13, under `SUPERIOR COURT—PROCEDURE IN CIVIL MATTERS`, says:
+
+> **Service by mail is complete upon mailing.** Service by electronic delivery
+> is complete upon sending the electronic notice **unless the party making
+> service learns that the attempted service did not reach the electronic
+> address** of the person to be served.
+
+So Connecticut does not merely fail to extend for mail — it **completes on
+mailing**, mechanically Missouri's `service_completion` shape rather than a
+missing `service_extension`. That is affirmative evidence, and it materially
+lowers the risk that §5's absence is wrong.
+
+The electronic limb's **negative condition** ("unless the party … learns that
+the attempted service did not reach") is not knowable to an engine, and would
+push completion — and therefore the deadline — **later**. Another **EARLY**,
+disclosable gap.
+
+**Still not closed:** the General Statutes were still not searched. But the
+seeded row runs from the **filing** of the preceding pleading, not from service
+of anything, so no service mechanism applies to it either way.
 
 ## 6. An e-filing cutoff that moves the FILING, not the deadline
 
@@ -200,3 +313,47 @@ which is a source problem:
 
 **Before any seeding**, resolve §7's first three items — especially whether a
 service extension exists anywhere in the General Statutes.
+
+## 9. ADDED 2026-08-27 — what was seeded, and what each open item now blocks
+
+§8's "before any seeding" line was written as one gate. It is really **three
+gates with different scopes**, and separating them is what made the chain row
+seedable today without touching any of them.
+
+**Seeded** — `sql/sairnlaw_deadline_seed_connecticut.json`, one row:
+
+| | |
+|---|---|
+| `rule_id` | `ct-pb-10-8-advance-from-preceding-pleading` |
+| `trigger_event` | `filing_of_preceding_pleading` — named at length so it cannot be read as `return_day` |
+| `count` | 30 calendar days, forward |
+| `computation` | `ct_pb_63_2` (new; `impl: frcp_6a`, **no** `short_period_exclusion_days`) |
+| `effective_from` | `2014-01-01` — Sec. 10-8's own amendment line, a real per-rule date |
+
+**Not seeded, and why:** the **return-day first step** (needs Gen. Stat.
+§ 52-48, and the return day is not derivable from a service date); the
+**summary-process 3-day and foreclosure 15-day variants** (real and quoted, but
+this engine's `DOMAIN_LABELS` knows only `civil-litigation` and `appellate` —
+held on a domain decision, not on any doubt about the text); discovery rows;
+appellate rows; any backward row.
+
+**No `JURISDICTION_COVERAGE` entry.** That table's text rides on *successful*
+computations. Connecticut has none, so an entry would be unreachable — a
+Guardian 0d dormant-code violation. It goes in the same change as the calendar.
+
+**Which open item blocks what:**
+
+| Open item | Blocks |
+|---|---|
+| §3a — does Sec. 63-2's counting reach trial-court filings? **(LATE risk)** | the `ct` calendar |
+| §4 — the Judicial Branch court-closure schedule as the calendar's basis | the `ct` calendar |
+| §7 — Gen. Stat. § 52-48, how the return day is fixed | the return-day row only |
+| §5/§5a — a service extension in the General Statutes | **nothing seeded** — this row runs from a filing |
+| domain vocabulary for summary process / foreclosure | the two variant rows only |
+
+**The hold is mechanical, not documentary.** With no `ct` calendar,
+`rollOff()` returns `NOT_PROVISIONED` before it ever checks the weekday, so
+Connecticut refuses on **every** date. `api/_lib/deadline-connecticut.test.js`
+asserts that on a Tuesday landing as well as a weekend one, and **fails if a
+`ct` calendar is loaded** — so the Wisconsin hazard in §4 cannot be walked into
+quietly by a future session.

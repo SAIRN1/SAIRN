@@ -36,7 +36,11 @@ const JURISDICTION_LABELS = {
   'us-federal': 'United States (Federal)',
   oh: 'Ohio', in: 'Indiana', mi: 'Michigan', pa: 'Pennsylvania', il: 'Illinois', fl: 'Florida', ca: 'California',
   tx: 'Texas', ny: 'New York', ga: 'Georgia', wv: 'West Virginia', nc: 'North Carolina', wa: 'Washington', nj: 'New Jersey',
-  va: 'Virginia', ma: 'Massachusetts', mo: 'Missouri', mn: 'Minnesota'
+  va: 'Virginia', ma: 'Massachusetts', mo: 'Missouri', mn: 'Minnesota',
+  // Connecticut is seeded but NOT provisioned -- no `ct` holiday calendar
+  // exists, so every ct computation refuses NOT_PROVISIONED by design. The
+  // label is here so the refusal names the state rather than the bare code.
+  ct: 'Connecticut'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

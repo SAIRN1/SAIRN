@@ -1149,7 +1149,58 @@ var COMPUTATION_STANDARDS = {
   // seeded; one would be a real addition, not a config change.
   mn_rcp_6_01: { label: 'Minn. R. Civ. P. 6.01', impl: 'frcp_6a',
     base_period_suffix: '(a)(1)', months_years_suffix: '(a)(1)',
-    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(c)' }
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(c)' },
+
+  // CONNECTICUT. Declared so its one seeded rule resolves to a named standard
+  // rather than UNKNOWN_STANDARD. IT DOES NOT COMPUTE TODAY AND IS NOT MEANT
+  // TO: no `ct` holiday calendar is loaded, so rollOff returns NOT_PROVISIONED
+  // on EVERY date -- it consults the calendar before it looks at the weekday --
+  // and no Connecticut deadline is produced at all. That refusal IS the hold on
+  // the rollover basis (see below); it is enforced by the missing calendar, not
+  // by anyone remembering to leave it out.
+  //
+  // NO SHORT-PERIOD EXCLUSION, AND FOR ONCE IT IS ON THE RECORD RATHER THAN
+  // INFERRED. Sec. 63-2: "Time shall be counted by calendar, not working,
+  // days." The phrase "intermediate Saturdays" appears ZERO times in the whole
+  // 699-page Practice Book. So no short_period_exclusion_days -- not 7
+  // (NJ/NC/WA/MA/MO), not 11 (TN/AZ/WI). This matters more here than usual
+  // because Sec. 10-8's summary-process limb is THREE days.
+  //
+  // THE COUNTING RULE LIVES IN THE APPELLATE CHAPTER, AND THAT IS A DISCLOSED
+  // WEAKNESS, NOT A TIDY CITATION. Sec. 63-2 sits under RULES OF APPELLATE
+  // PROCEDURE, yet it is the ONLY day-counting provision in the book: the
+  // string "first day shall" occurs exactly ONCE, there, and there is no
+  // trial-court equivalent under any phrasing searched. Two things argue it
+  // still reaches a trial-court filing -- it governs "any documents ... under
+  // these rules or an order of the court", and its own rollover sentence names
+  // "the office of the clerk of the TRIAL COURT or of the appellate clerk".
+  // Neither is conclusive. If 63-2 does NOT reach trial-court pleadings, the
+  // first-day/last-day convention here is assumed rather than sourced, and a
+  // wrong assumption there computes LATE -- the direction that loses a filing.
+  // It is tolerable ONLY because nothing computes: see the refusal above.
+  //
+  // THE ROLLOVER SUFFIX NAMES BOTH SECTIONS BECAUSE THE RULE IS IN BOTH.
+  // 63-2 supplies the counting; Sec. 7-17, under SUPERIOR COURT -- GENERAL
+  // PROVISIONS, supplies the trial-court rollover: "If the last day for filing
+  // any matter in the clerk's office falls on a day on which such office is not
+  // open ... then the last day for filing shall be the next business day upon
+  // which such office is open." Citing only 63-2 on the rollover step of a
+  // trial-court deadline would send an attorney to the appellate rules for a
+  // Superior Court answer.
+  //
+  // AND THE ROLLOVER KEYS ON CLERK'S-OFFICE CLOSURE, NOT ON A HOLIDAY LIST --
+  // THIS IS THE WISCONSIN HAZARD. Neither section names Saturday or Sunday.
+  // "Holiday" appears five times in the Practice Book and not once as a
+  // definition or a computation rule. Weekends come out right only by accident
+  // of fact (clerks' offices are shut then). Encoding Conn. Gen. Stat. Sec. 1-4's
+  // statutory holiday list as the calendar would be WRONG IN THE LATE DIRECTION
+  // on any listed day a clerk's office is in fact open -- exactly what left
+  // Wisconsin gated. The operative artifact is the Judicial Branch's published
+  // court-closure schedule, which makes Connecticut ingest-not-derive like NC,
+  // NJ, MD and OK. DO NOT ADD A `ct` CALENDAR FROM THE STATUTORY LIST.
+  ct_pb_63_2: { label: 'Conn. Practice Book Sec. 63-2', impl: 'frcp_6a',
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: ' with Sec. 7-17', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
