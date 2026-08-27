@@ -67,4 +67,13 @@ module.exports = {
   // Bespoke branch below.
     'sen_settings',
   ],
+  // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
+  // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the
+  // same reason: a verb reaches exactly the resource whose app granted it.
+  // It PERSISTS NOTHING. Checking whether a visit could be submitted must never
+  // itself modify the visit, which is why it is a separate verb rather than a
+  // flag on 'read'.
+  extraActions: {
+    sen_visits: ['readiness'],
+  },
 };

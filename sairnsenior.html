@@ -357,9 +357,11 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="card"><div class="cb" style="display:flex;gap:10px;flex-wrap:wrap">
     <button class="btn bp bs" id="vs-tab-schedule" onclick="vsShowTab('schedule')">Schedule</button>
     <button class="btn bo bs" id="vs-tab-clock" onclick="vsShowTab('clock')">Clock In / Out</button>
+    <button class="btn bo bs" id="vs-tab-readiness" onclick="vsShowTab('readiness')" style="display:none">EVV Readiness</button>
   </div></div>
   <div id="vs-view-schedule"></div>
   <div id="vs-view-clock" style="display:none"></div>
+  <div id="vs-view-readiness" style="display:none"></div>
 </div>
 <div class="modal" id="visitmodal">
   <div class="mbox">
@@ -1127,6 +1129,11 @@ function vsRenderKpis(){
 function vsRender(){
   vsHydrateAndRoster(function(){
     vsRenderKpis();
+    // Cosmetic only -- the server gate in sd-data.js's 'readiness' branch is the
+    // real boundary and refuses a caregiver regardless. This just stops offering
+    // a tab that would always 403.
+    var rb=$('vs-tab-readiness');
+    if(rb)rb.style.display=senIsScheduler()?'':'none';
     vsShowTab(_vsTab);
   });
 }
@@ -1136,14 +1143,88 @@ function vsHydrateAndRoster(cb){
   });
 }
 function vsShowTab(tab){
+  // The readiness tab is management/coordinator only. Gating here as well as on
+  // the button's own visibility is deliberate -- hiding a button is cosmetic and
+  // vsShowTab is reachable from _vsTab on re-render, so a role that lost access
+  // between renders must not land back on it.
+  if(tab==='readiness'&&!senIsScheduler())tab='schedule';
   _vsTab=tab;
-  ['schedule','clock'].forEach(function(t){
+  ['schedule','clock','readiness'].forEach(function(t){
     var v=$('vs-view-'+t),b=$('vs-tab-'+t);
     if(v)v.style.display=(t===tab?'block':'none');
-    if(b)b.className='btn '+(t===tab?'bp':'bo')+' bs';
+    if(b&&b.style.display!=='none')b.className='btn '+(t===tab?'bp':'bo')+' bs';
   });
   if(tab==='schedule')renderScheduleView();
   if(tab==='clock')renderClockView();
+  if(tab==='readiness')renderReadinessView();
+}
+
+// ── EVV SUBMISSION READINESS (2026-08-27) ────────────────────────────────
+// READ-ONLY. Calls the compute-only 'readiness' verb, which persists nothing.
+// The numbers on screen are all computed server-side from real rows by
+// api/_lib/sen-evv-readiness.js -- there is no client-side estimate, no
+// hardcoded total and no percentage with an invented denominator anywhere here.
+var SEN_FIXABLE_LABEL={visit:'on the visit',client:'on the client record',caregiver:'on the caregiver record'};
+function renderReadinessView(){
+  var el=$('vs-view-readiness');
+  if(!el)return;
+  el.innerHTML='<div class="card"><div class="cb">Checking visits…</div></div>';
+  senData('readiness','sen_visits',{},true).then(function(d){
+    if(!d){
+      el.innerHTML='<div class="card"><div class="cb"><div class="note">Could not run the readiness check — check your connection, or your role may not allow it.</div></div></div>';
+      return;
+    }
+    if(d.provisioned===false||!d.data){
+      el.innerHTML='<div class="card"><div class="cb"><div class="note">Visit tracking is not set up yet, so there is nothing to check.</div></div></div>';
+      return;
+    }
+    var s=d.data;
+    // Ranked worst-blocker first. This is the number that turns a compliance
+    // gap into a prioritised piece of work -- "which single missing field is
+    // blocking the most visits".
+    var blockers=(s.elements||[]).map(function(e){return{key:e.key,label:e.label,n:(s.by_element||{})[e.key]||0};})
+      .filter(function(x){return x.n>0;})
+      .sort(function(a,b){return b.n-a.n;});
+    var stateNote=s.state_rules==='none_configured'
+      ? 'No operating state is configured, so only the federal floor is applied. Set one in Settings.'
+      : 'State-specific rules for your operating state are NOT encoded — only the federal floor is applied below. States add their own requirements on top.';
+    el.innerHTML=
+      '<div class="card"><div class="ch"><span class="ct">EVV Submission Readiness</span></div><div class="cb">'+
+        '<div class="note"><strong>This is a report. It submits nothing.</strong> SAIRNsenior has no transmission path to any aggregator yet — this shows which completed visits carry the data a submission would need, so the real cost of closing the gap is visible per visit.</div>'+
+        '<div class="note">'+H(stateNote)+'</div>'+
+        '<div class="note"><strong>The federal requirement list itself is unverified.</strong> '+H(s.federal_source.note)+' Authority cited: '+H(s.federal_source.authority)+'.</div>'+
+        '<div class="krow">'+
+          '<div class="kpi"><div class="klbl">Completed visits checked</div><div class="kval">'+s.checkable+'</div><div class="kt">of '+s.total_visits+' total</div></div>'+
+          '<div class="kpi"><div class="klbl">Would submit</div><div class="kval">'+s.ready+'</div><div class="kt">all six elements present</div></div>'+
+          '<div class="kpi"><div class="klbl">Blocked</div><div class="kval">'+s.not_ready+'</div><div class="kt d">missing at least one element</div></div>'+
+          '<div class="kpi"><div class="klbl">With warnings</div><div class="kval">'+s.with_warnings+'</div><div class="kt">partial GPS</div></div>'+
+        '</div>'+
+      '</div></div>'+
+      '<div class="card"><div class="ch"><span class="ct">What is blocking the most visits</span></div><div class="cb">'+
+        (blockers.length
+          ? blockers.map(function(b){
+              return '<div class="srow"><span class="slbl">'+H(b.label)+'</span><span class="sval">'+b.n+' visit'+(b.n===1?'':'s')+'</span></div>';
+            }).join('')
+          : '<div class="note">Nothing is blocking a completed visit right now.</div>')+
+      '</div></div>'+
+      '<div class="card"><div class="ch"><span class="ct">Blocked visits</span></div><div class="cb">'+
+        renderReadinessRows(s.results||[])+
+      '</div></div>';
+  });
+}
+function renderReadinessRows(results){
+  var blocked=results.filter(function(r){return r.checkable&&!r.ready;});
+  if(!blocked.length)return '<div class="note">No completed visit is missing anything.</div>';
+  return blocked.map(function(r){
+    var reasons=r.missing.map(function(mi){
+      return '<div class="srow"><span class="slbl">'+H(mi.label)+'</span><span class="sval">'+H(mi.reason)
+        +' <em>('+H(SEN_FIXABLE_LABEL[mi.fixable_in]||mi.fixable_in)+')</em></span></div>';
+    }).join('');
+    var warns=(r.warnings||[]).map(function(w){
+      return '<div class="srow"><span class="slbl">'+H(w.label)+' (warning)</span><span class="sval">'+H(w.reason)+'</span></div>';
+    }).join('');
+    return '<div style="margin-bottom:14px"><strong>'+H(r.visit_id||'(no id)')+'</strong>'+reasons+warns+'</div>';
+  }).join('');
 }
 function renderScheduleView(){
   var isSched=senIsScheduler();

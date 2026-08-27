@@ -37,6 +37,7 @@ const careCharges = require('./_lib/care-charges');
 const opAudit = require('./_lib/op-audit');
 const rfAuth = require('./rf-auth');
 const senAuth = require('./sen-auth');
+const senEvvReadiness = require('./_lib/sen-evv-readiness');
 // SAIRNsenior EVV aggregators (2026-08-27). Must stay in sync with the selector in
 // sairnsenior.html's Settings panel -- these are the four real state EVV aggregators
 // plus an honest 'other', because several states run their own and forcing a wrong
@@ -2273,6 +2274,65 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, claimData) });
+      return;
+    }
+
+    // ── SAIRNSENIOR: sen_visits EVV SUBMISSION READINESS (2026-08-27) ────────────────────────
+    // COMPUTE-ONLY. Reads visits, clients and caregivers, runs the pure engine in
+    // api/_lib/sen-evv-readiness.js, and WRITES NOTHING -- no row created, none updated,
+    // no submission recorded. There is deliberately no submission log yet, because there
+    // is no transmission yet and an empty table would imply otherwise.
+    //
+    // WHY THIS EXISTS: SAIRNsenior cannot currently produce a compliant EVV record for any
+    // visit, and it is four separate gaps across three tables (no service type anywhere, no
+    // client member ID, no state caregiver ID, and GPS that is optional by design at
+    // sairnsenior.html:1195/:1209). This reports them per visit so the real cost of
+    // compliance is visible BEFORE anyone commits to the field work. It adds no schema and
+    // captures no new field -- report-only, on purpose.
+    //
+    // Management + coordinator/scheduler. A caregiver seeing their own visit flagged
+    // non-compliant is a supervisory conversation, not a field notification.
+    if (resource === 'sen_visits' && action === 'readiness') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const SEN_READINESS_ROLES = { owner: true, billing: true, coordinator: true, scheduler: true };
+      if (!SEN_READINESS_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'EVV readiness is available to management, coordinators and schedulers' } }); return; }
+
+      const vr = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&select=visit_id,assigned_employee_id,data'), { headers });
+      if (vr.status === 404 || vr.status === 400) { res.status(200).json({ ok: true, provisioned: false, data: null }); return; }
+      const vrows = await vr.json();
+      if (!vr.ok) return upstream(res, vrows);
+      const visitList = (vrows || []).map((x) => Object.assign(
+        { id: x.visit_id, assigned_employee_id: x.assigned_employee_id || '' }, x.data));
+
+      // Clients and caregivers are read for their identifiers only. If either table is
+      // unprovisioned the engine still runs and reports the reference as unresolved --
+      // an honest "could not be found" beats refusing the whole report.
+      const cr = await fetch(rest('sen_clients?license_hash=eq.' + enc(licHash) + '&select=client_id,data'), { headers });
+      const clientsById = {};
+      if (cr.ok) {
+        (await cr.json() || []).forEach((x) => { clientsById[x.client_id] = Object.assign({ id: x.client_id }, x.data); });
+      }
+      const gr = await fetch(rest('sen_caregivers?license_hash=eq.' + enc(licHash) + '&select=caregiver_id,data'), { headers });
+      const caregiversById = {};
+      if (gr.ok) {
+        (await gr.json() || []).forEach((x) => { caregiversById[x.caregiver_id] = Object.assign({ id: x.caregiver_id }, x.data); });
+      }
+
+      // The configured operating state comes from sen_settings, never the caller's payload
+      // -- readiness must describe the agency's real declared state, not one a client
+      // asked for. Absent settings is a real answer ('none_configured'), not an error.
+      let evvState = null;
+      const sr = await fetch(rest('sen_settings?license_hash=eq.' + enc(licHash) + '&setting_key=eq.evv_config&select=data'), { headers });
+      if (sr.ok) {
+        const srows = await sr.json();
+        if (Array.isArray(srows) && srows[0] && srows[0].data) evvState = srows[0].data.state || null;
+      }
+
+      res.status(200).json({
+        ok: true, provisioned: true,
+        data: senEvvReadiness.summarize(visitList, clientsById, caregiversById, { state: evvState })
+      });
       return;
     }
 
