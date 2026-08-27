@@ -329,14 +329,19 @@ async function callClaude(system, messages, maxTokens) {
     <div style="font-size:11px;color:#6B7280">Crew go/no-go</div>
   </div>
 </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">9</div><div class="sd">4 in progress</div></div>
-<div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">127</div><div class="sd">↑ 8 this month</div></div>
-<div class="sc"><div class="sl">Revenue This Week</div><div class="sv">$28,400</div><div class="sd">On target</div></div>
-<div class="sc"><div class="sl">Pending Proposals</div><div class="sv">$94K</div><div class="sd">6 open</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><!-- Every .sv KPI on this page was a hardcoded literal with NO backing
+     function -- 9 jobs, 127 contracts, $28,400 revenue, $94K pipeline and
+     19 more, invented and presented as live figures. Guardian Check 0b:
+     compute from real data or show --. There is no data layer yet, so they
+     show --. Do NOT re-fabricate a replacement number. -->
+        <div class="sv">--</div><div class="sd">4 in progress</div></div>
+<div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">--</div><div class="sd">↑ 8 this month</div></div>
+<div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">On target</div></div>
+<div class="sc"><div class="sl">Pending Proposals</div><div class="sv">--</div><div class="sd">6 open</div></div></div>
   <div class="card">
     <div class="ch"><div class="ct">🤖 Claude SAIRNmechanical Intelligence</div>
       <button class="btn bo bsm" onclick="runIntel()">Refresh</button></div>
-    <div class="ai-bub" id="intel-out">Tech alert: Unit 4412 (Martinez Residence) -- R-410A low, potential leak. EPA 608 refrigerant log required before refill. Schedule: two AC replacements tomorrow morning -- confirm equipment delivery with supplier. Proposal follow-up: Henderson Commercial (sent 8 days, $22K system) -- good close probability.</div>
+    <div class="ai-bub" id="intel-out">No operations data yet &mdash; nothing to analyse.</div>
   </div>
   <div class="suite-wrap">
     <div class="suite-hdr">
@@ -575,15 +580,18 @@ async function callClaude(system, messages, maxTokens) {
     <div><div class="ptitle">🔧 Jobs</div><div class="psub">All active and scheduled service calls</div></div>
     <div class="pacts"><button class="btn bp">+ New Job</button></div>
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">9</div><div class="sd">4 in progress</div></div><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">$28,400</div><div class="sd">On target</div></div><div class="sc"><div class="sl">Pending Estimates</div><div class="sv">$94K</div><div class="sd">6 open</div></div><div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">127</div><div class="sd">↑ 8 this month</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">--</div><div class="sd">4 in progress</div></div><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">On target</div></div><div class="sc"><div class="sl">Pending Estimates</div><div class="sv">--</div><div class="sd">6 open</div></div><div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">--</div><div class="sd">↑ 8 this month</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Job #</th><th>Customer</th><th>Address</th><th>Type</th><th>Tech</th><th>Priority</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>JOB-4041</td><td>Henderson Residence</td><td>142 Oak Dr</td><td>AC Replacement</td><td>Mike R.</td><td><span class="badge br">Urgent</span></td><td><span class="badge ba">In Progress</span></td></tr>
-        <tr><td>JOB-4040</td><td>Martinez Commercial</td><td>800 Center Rd</td><td>Ductwork</td><td>Dave K.</td><td><span class="badge bgr">Normal</span></td><td><span class="badge bg">Complete</span></td></tr>
-        <tr><td>JOB-4039</td><td>Park Residence</td><td>55 Elm St</td><td>Furnace Install</td><td>Tom S.</td><td><span class="badge bgr">Normal</span></td><td><span class="badge bgr">Scheduled</span></td></tr>
-        <tr><td>JOB-4038</td><td>Chen Office Bldg</td><td>400 Main St</td><td>Maintenance</td><td>Mike R.</td><td><span class="badge bgr">Routine</span></td><td><span class="badge bgr">Scheduled</span></td></tr>
+        <!-- 4 hardcoded demo row(s) removed 2026-08-27. Same fabrication as
+             the commissions and certifications panels: invented customers,
+             addresses, equipment and dollar figures presented as a live board.
+             This panel has no backend; building one is separate scoped work. -->
+        <tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
+          Dispatch board is not live yet &mdash; nothing recorded.
+        </td></tr>
       </tbody>
     </table></div>
   </div>
@@ -597,10 +605,13 @@ async function callClaude(system, messages, maxTokens) {
     <div class="tw"><table>
       <thead><tr><th>Time</th><th>Job</th><th>Customer</th><th>Tech</th><th>Type</th><th>ETA</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>8:00 AM</td><td>JOB-4041</td><td>Henderson</td><td>Mike R.</td><td>AC Replacement</td><td>4 hrs</td><td><span class="badge ba">In Progress</span></td></tr>
-        <tr><td>10:00 AM</td><td>JOB-4044</td><td>Smith Residence</td><td>Dave K.</td><td>Water Heater</td><td>2 hrs</td><td><span class="badge bgr">En Route</span></td></tr>
-        <tr><td>1:00 PM</td><td>JOB-4039</td><td>Park Residence</td><td>Tom S.</td><td>Furnace Install</td><td>5 hrs</td><td><span class="badge bgr">Scheduled</span></td></tr>
-        <tr><td>2:00 PM</td><td>JOB-4038</td><td>Chen Office</td><td>Mike R.</td><td>Maintenance</td><td>2 hrs</td><td><span class="badge bgr">Scheduled</span></td></tr>
+        <!-- 4 hardcoded demo row(s) removed 2026-08-27. Same fabrication as
+             the commissions and certifications panels: invented customers,
+             addresses, equipment and dollar figures presented as a live board.
+             This panel has no backend; building one is separate scoped work. -->
+        <tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
+          Today's schedule is not live yet &mdash; nothing recorded.
+        </td></tr>
       </tbody>
     </table></div>
     <div class="ai-bub" id="dispatch-out" style="display:none;margin-top:12px"></div>
@@ -618,7 +629,16 @@ async function callClaude(system, messages, maxTokens) {
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Name</th><th>Certs</th><th>EPA 608</th><th>Specialties</th><th>Jobs/Wk</th><th>Revenue</th><th>Status</th></tr></thead>
-      <tbody><tr><td>Mike Rodriguez</td><td>NATE, EPA 608</td><td>Universal</td><td>AC, Furnace, Heat Pump</td><td>12</td><td>$18,400</td><td><span class="badge bg">Active</span></td></tr><tr><td>Dave Kim</td><td>NATE, EPA 608</td><td>Universal</td><td>Ductwork, Commercial</td><td>9</td><td>$14,200</td><td><span class="badge bg">Active</span></td></tr><tr><td>Tom Santos</td><td>EPA 608</td><td>Type II</td><td>Residential AC, Water Heaters</td><td>8</td><td>$11,800</td><td><span class="badge bg">Active</span></td></tr></tbody>
+      <!-- Hardcoded technician roster removed 2026-08-27. Same fabrication as
+           the commissions panel and found the same way -- by chasing a scanner
+           hit to its line number instead of trusting the earlier fix. Invented
+           people, invented certifications (NATE, EPA 608 Universal), invented
+           jobs-per-week and revenue, presented as a live roster. Certification
+           tracking has no backend in this app; building one is separate scoped
+           work, not this pass. -->
+      <tbody><tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
+        Technician certification tracking is not live yet &mdash; no technicians are recorded.
+      </td></tr></tbody>
     </table></div>
   </div>
 </div>
@@ -631,9 +651,13 @@ async function callClaude(system, messages, maxTokens) {
     <div class="tw"><table>
       <thead><tr><th>Customer</th><th>Unit Type</th><th>Brand/Model</th><th>Serial #</th><th>Installed</th><th>Last Service</th><th>Next PM</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>Henderson Res.</td><td>AC 3-ton</td><td>Carrier 24ACC</td><td>4919CXX41</td><td>06/14/26</td><td>Today</td><td>12/14/26</td><td><span class="badge bg">New Install</span></td></tr>
-        <tr><td>Martinez Comm.</td><td>RTU 10-ton</td><td>Trane M-Series</td><td>TRN8822B</td><td>03/10/22</td><td>03/10/26</td><td>09/10/26</td><td><span class="badge bg">Good</span></td></tr>
-        <tr><td>Chen Office</td><td>Furnace 100k</td><td>Lennox EL296V</td><td>LEN9941C</td><td>11/15/21</td><td>11/15/25</td><td>11/15/26</td><td><span class="badge ba">PM Due Soon</span></td></tr>
+        <!-- 3 hardcoded demo row(s) removed 2026-08-27. Same fabrication as
+             the commissions and certifications panels: invented customers,
+             addresses, equipment and dollar figures presented as a live board.
+             This panel has no backend; building one is separate scoped work. -->
+        <tr><td colspan="8" style="text-align:center;padding:18px;color:var(--g400)">
+          Equipment records is not live yet &mdash; nothing recorded.
+        </td></tr>
       </tbody>
     </table></div>
   </div>
@@ -643,14 +667,18 @@ async function callClaude(system, messages, maxTokens) {
     <div><div class="ptitle">🔩 Maintenance Contracts</div><div class="psub">Recurring service agreements — your steady revenue</div></div>
     <div class="pacts"><button class="btn bp">+ New Contract</button></div>
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Active Contracts</div><div class="sv">127</div><div class="sd">$37,973/yr recurring</div></div><div class="sc"><div class="sl">Renewals Due</div><div class="sv">8</div><div class="sd">This month</div></div><div class="sc"><div class="sl">PM Visits Scheduled</div><div class="sv">14</div><div class="sd">This month</div></div><div class="sc"><div class="sl">Avg Contract Value</div><div class="sv">$299/yr</div><div class="sd">Annual</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Active Contracts</div><div class="sv">--</div><div class="sd">$37,973/yr recurring</div></div><div class="sc"><div class="sl">Renewals Due</div><div class="sv">--</div><div class="sd">This month</div></div><div class="sc"><div class="sl">PM Visits Scheduled</div><div class="sv">--</div><div class="sd">This month</div></div><div class="sc"><div class="sl">Avg Contract Value</div><div class="sv">--</div><div class="sd">Annual</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Customer</th><th>Plan</th><th>Units</th><th>Annual Fee</th><th>Next Visit</th><th>Auto-Renew</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>Henderson Res.</td><td>Standard</td><td>1 AC + 1 Furnace</td><td>$299</td><td>12/14/26</td><td>✅</td><td><span class="badge bg">Active</span></td></tr>
-        <tr><td>Martinez Comm.</td><td>Commercial</td><td>3 RTUs</td><td>$1,200</td><td>09/10/26</td><td>✅</td><td><span class="badge bg">Active</span></td></tr>
-        <tr><td>Smith Residence</td><td>Standard</td><td>1 AC</td><td>$199</td><td>07/01/26</td><td>❌</td><td><span class="badge br">Renewal Due</span></td></tr>
+        <!-- 3 hardcoded demo row(s) removed 2026-08-27. Same fabrication as
+             the commissions and certifications panels: invented customers,
+             addresses, equipment and dollar figures presented as a live board.
+             This panel has no backend; building one is separate scoped work. -->
+        <tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
+          Maintenance contracts is not live yet &mdash; nothing recorded.
+        </td></tr>
       </tbody>
     </table></div>
   </div>
@@ -663,14 +691,18 @@ async function callClaude(system, messages, maxTokens) {
       <button class="btn bp" onclick="openFQ()">📷 Field Quote</button>
     </div>
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Open Proposals</div><div class="sv">6</div><div class="sd">$94K pipeline</div></div><div class="sc"><div class="sl">Avg Close Rate</div><div class="sv">38%</div><div class="sd">Industry avg 25%</div></div><div class="sc"><div class="sl">Pending 7+ Days</div><div class="sv">3</div><div class="sd">Follow up today</div></div><div class="sc"><div class="sl">Won This Month</div><div class="sv">$28,400</div><div class="sd">4 proposals</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Open Proposals</div><div class="sv">--</div><div class="sd">$94K pipeline</div></div><div class="sc"><div class="sl">Avg Close Rate</div><div class="sv">--</div><div class="sd">Industry avg 25%</div></div><div class="sc"><div class="sl">Pending 7+ Days</div><div class="sv">--</div><div class="sd">Follow up today</div></div><div class="sc"><div class="sl">Won This Month</div><div class="sv">--</div><div class="sd">4 proposals</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Customer</th><th>System</th><th>Amount</th><th>Sent</th><th>Follow-Up</th><th>Status</th><th>Action</th></tr></thead>
       <tbody>
-        <tr><td>Henderson Comm.</td><td>Full HVAC System</td><td>$22,000</td><td>06/07</td><td>Today</td><td><span class="badge ba">Open</span></td><td><button class="btn bp bsm" onclick="aiFollowUp()">🤖 Follow Up</button></td></tr>
-        <tr><td>Park Residence</td><td>AC + Furnace</td><td>$8,400</td><td>06/10</td><td>06/17</td><td><span class="badge ba">Open</span></td><td><button class="btn bo bsm">Call</button></td></tr>
-        <tr><td>Chen Office</td><td>RTU Replacement</td><td>$18,000</td><td>06/12</td><td>06/19</td><td><span class="badge bgr">Viewed</span></td><td><button class="btn bp bsm" onclick="aiFollowUp()">🤖 Follow Up</button></td></tr>
+        <!-- 3 hardcoded demo row(s) removed 2026-08-27. Same fabrication as
+             the commissions and certifications panels: invented customers,
+             addresses, equipment and dollar figures presented as a live board.
+             This panel has no backend; building one is separate scoped work. -->
+        <tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
+          Proposals is not live yet &mdash; nothing recorded.
+        </td></tr>
       </tbody>
     </table></div>
     <div class="ai-bub" id="proposal-ai-out" style="display:none;margin-top:12px"></div>
@@ -684,14 +716,18 @@ async function callClaude(system, messages, maxTokens) {
       <button class="btn bp">+ New Invoice</button>
     </div>
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">$28,400</div><div class="sd">9 jobs</div></div><div class="sc"><div class="sl">Outstanding</div><div class="sv">$14,200</div><div class="sd">6 invoices</div></div><div class="sc"><div class="sl">Overdue 30+</div><div class="sv">$3,800</div><div class="sd">2 invoices</div></div><div class="sc"><div class="sl">Avg Job Value</div><div class="sv">$3,156</div><div class="sd">This month</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">9 jobs</div></div><div class="sc"><div class="sl">Outstanding</div><div class="sv">--</div><div class="sd">6 invoices</div></div><div class="sc"><div class="sl">Overdue 30+</div><div class="sv">--</div><div class="sd">2 invoices</div></div><div class="sc"><div class="sl">Avg Job Value</div><div class="sv">--</div><div class="sd">This month</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Invoice#</th><th>Customer</th><th>Job</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead>
       <tbody>
-        <tr><td>INV-8041</td><td>Henderson Res.</td><td>AC Replacement</td><td>$4,800</td><td>07/14</td><td><span class="badge ba">Sent</span></td></tr>
-        <tr><td>INV-8040</td><td>Martinez Comm.</td><td>Ductwork</td><td>$3,200</td><td>07/10</td><td><span class="badge bg">Paid</span></td></tr>
-        <tr><td>INV-8039</td><td>Smith Residence</td><td>Water Heater</td><td>$1,400</td><td>06/10</td><td><span class="badge br">Overdue</span></td></tr>
+        <!-- 3 hardcoded demo row(s) removed 2026-08-27. Same fabrication as
+             the commissions and certifications panels: invented customers,
+             addresses, equipment and dollar figures presented as a live board.
+             This panel has no backend; building one is separate scoped work. -->
+        <tr><td colspan="6" style="text-align:center;padding:18px;color:var(--g400)">
+          Invoices is not live yet &mdash; nothing recorded.
+        </td></tr>
       </tbody>
     </table></div>
   </div>
@@ -703,7 +739,7 @@ async function callClaude(system, messages, maxTokens) {
   <div style="background:var(--t);border:1.5px solid var(--a);border-radius:8px;padding:11px 16px;margin-bottom:14px;font-size:13px;color:var(--d);font-weight:600">
     🔒 Owner and Admin access only
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Total Commissions</div><div class="sv">--</div><div class="sd">This period</div></div><div class="sc"><div class="sl">Pending Approval</div><div class="sv">2</div><div class="sd">Review needed</div></div><div class="sc"><div class="sl">Paid This Period</div><div class="sv">$12,400</div><div class="sd">5 techs</div></div><div class="sc"><div class="sl">Disputes</div><div class="sv">0</div><div class="sd">Clean</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Total Commissions</div><div class="sv">--</div><div class="sd">This period</div></div><div class="sc"><div class="sl">Pending Approval</div><div class="sv">--</div><div class="sd">Review needed</div></div><div class="sc"><div class="sl">Paid This Period</div><div class="sv">--</div><div class="sd">5 techs</div></div><div class="sc"><div class="sl">Disputes</div><div class="sv">--</div><div class="sd">Clean</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Tech</th><th>Structure</th><th>Jobs</th><th>Revenue</th><th>Commission</th><th>Status</th><th>Action</th></tr></thead>
@@ -956,13 +992,16 @@ function loadLastSync(){try{const ts=localStorage.getItem(APP_ID+'_last_sync');i
 // caller list is what decides, never a guess.
 
 async function runIntel(){
-  const el=document.getElementById('intel-out');
-  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Analyzing...';
-  try{
-    const r=await callClaude('You are the SAIRNmechanical HVAC and Mechanical Intelligence Engine. You assist with load calculations, equipment sizing, proposal writing, maintenance scheduling, refrigerant compliance (EPA 608), and field diagnostics. Apply Manual J principles for sizing. Flag EPA refrigerant handling requirements. Support technicians in the field with diagnostic reasoning.\n\nAnalyze the current status of this HVAC & Mechanical business and provide: top 3 immediate action items, 1 risk to address, and 1 revenue opportunity. Be specific and direct.',
-      [{role:'user',content:'Current status: Tech alert: Unit 4412 (Martinez Residence) -- R-410A low, potential leak. EPA 608 refrigerant log required before refill. Schedule: two AC replacements tomorrow morning -- confirm equipment delivery with supplier. Proposal follow-up: Henderson Commercial (sent 8 days, $22K system) -- good close probability.'}]);
-    el.textContent=r;
-  }catch(e){el.textContent='Analysis unavailable. Check connection.';}
+  // FABRICATED PROMPT REMOVED 2026-08-27. This used to send Claude a hardcoded
+  // fixture -- invented customers, units, times and dollar figures -- and render
+  // the answer as if the model had analysed this company's real operations. The
+  // output was plausible, specific, and about people who do not exist. That is
+  // Check 0b in its most convincing form: not a fabricated NUMBER but fabricated
+  // ANALYSIS. There is no data layer for this app yet, so the honest behaviour
+  // is to refuse. Do NOT restore a fixture prompt -- wire it to real records.
+  var el=document.getElementById('intel-out');if(!el)return;
+  el.style.display='block';
+  el.textContent='Operations intelligence needs real job and equipment records. This app has no data layer yet, so there is nothing to analyse -- no request was sent.';
 }
 async function runReportIntel(){
   const el=document.getElementById('report-intel');
@@ -1063,24 +1102,28 @@ document.addEventListener('DOMContentLoaded',function(){
 
 <script>
 async function aiDispatch(){
-  const el=document.getElementById('dispatch-out');el.style.display='block';
-  el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Optimizing routes...';
-  try{
-    const r=await callClaude('You are the SAIRNmechanical Dispatch Intelligence Engine. Analyze this schedule and optimize: route efficiency, tech specialization matching, equipment/parts staging, and identify any EPA 608 refrigerant handling requirements. Be specific with recommendations.',
-      [{role:'user',content:'Schedule: Mike (AC replacement Henderson 8am 4hrs, Maintenance Chen 2pm 2hrs), Dave (Water heater Smith 10am 2hrs), Tom (Furnace install Park 1pm 5hrs). Note: Henderson AC job requires R-410A — EPA log required.'}]);
-    el.textContent=r;
-  }catch(e){el.textContent='Dispatch failed.';}
+  // FABRICATED PROMPT REMOVED 2026-08-27. This used to send Claude a hardcoded
+  // fixture -- invented customers, units, times and dollar figures -- and render
+  // the answer as if the model had analysed this company's real operations. The
+  // output was plausible, specific, and about people who do not exist. That is
+  // Check 0b in its most convincing form: not a fabricated NUMBER but fabricated
+  // ANALYSIS. There is no data layer for this app yet, so the honest behaviour
+  // is to refuse. Do NOT restore a fixture prompt -- wire it to real records.
+  var el=document.getElementById('dispatch-out');if(!el)return;
+  el.style.display='block';
+  el.textContent='Dispatch optimisation needs real job and equipment records. This app has no data layer yet, so there is nothing to analyse -- no request was sent.';
 }
 async function aiFollowUp(){
   const el=document.getElementById('proposal-ai-out');el.style.display='block';
   el.innerHTML='<div class="thinking"><span></span><span></span><span></span></div>&nbsp;Writing follow-up...';
-  try{
-    const r=await callClaude('Write a professional, brief HVAC proposal follow-up message. Warm but direct. 3 sentences max. Reference the efficiency savings and financing options. Sign as SAIRN Mechanical Team.',
-      [{role:'user',content:'Follow up on $22,000 commercial HVAC proposal sent 8 days ago to Henderson Commercial. No response yet. Good close probability.'}]);
-    el.textContent=r;
-    if(navigator.share)navigator.share({title:'Follow-Up',text:r}).catch(()=>{});
-    else{navigator.clipboard.writeText(r);showToast('Follow-up copied!');}
-  }catch(e){el.textContent='Draft failed.';}
+  // FABRICATED PROMPT REMOVED 2026-08-27. This used to send Claude a hardcoded
+  // fixture -- invented customers, units, times and dollar figures -- and render
+  // the answer as if the model had analysed this company's real operations. The
+  // output was plausible, specific, and about people who do not exist. That is
+  // Check 0b in its most convincing form: not a fabricated NUMBER but fabricated
+  // ANALYSIS. There is no data layer for this app yet, so the honest behaviour
+  // is to refuse. Do NOT restore a fixture prompt -- wire it to real records.
+    el.textContent='Follow-up drafting needs a real proposal record. This app has no data layer yet, so there is nothing to follow up on -- no request was sent.';
 }
 async function runBlueprintAI(input){
   const file=input.files[0];if(!file)return;
