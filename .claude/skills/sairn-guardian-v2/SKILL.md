@@ -637,9 +637,52 @@ to what just changed, not a standing background monitor — running it
 constantly would slow real work down for no added confidence beyond the
 first check.
 
-**A CLEANUP OR MIGRATION IS NOT DONE WHEN IT IS RUN. It is done when its
-result is queried back. Added 2026-08-26 after two independent failures the
-same night.**
+**A CLEANUP, MIGRATION OR PUSH IS NOT DONE WHEN THE COMMAND EXITS CLEAN. It is
+done when the destination is queried back. Added 2026-08-26 after two
+independent failures the same night; widened 2026-08-27 to cover pushes after
+two more.**
+
+**The push case, added 2026-08-27.** The paragraph above already required
+live-verifying a *fix* after a *push* — but it assumed the push itself landed.
+Twice in one night it had not, and both times the report was given in good
+faith:
+
+- **A push to a brand-new remote reported as succeeded, byte-identical, all
+  files present.** `GET /repos/<owner>/<repo>/commits` returned
+  **409 `Git Repository is empty`**, zero branches, and `pushed_at` identical
+  to `created_at` — GitHub stamping repo creation, not a push. Every file
+  404'd on `main` and `master`.
+- **The same push reported as fixed and landed a second time.** Same three
+  queries, same empty result, `pushed_at` unchanged from the previous check.
+  Root cause was a Windows credential-manager collision between two GitHub
+  accounts plus a `cp` that never ran — neither visible from the pushing end.
+
+**Why a push hides this better than a cleanup does.** `git push` to the wrong
+remote, or from a directory that was never populated, can exit 0. A credential
+manager can serve a *different* account's token and fail in a way that scrolls
+past. And unlike a migration, there is no obvious downstream symptom — the
+repo simply stays empty while everyone believes it is live.
+
+**The rule for pushes:**
+
+1. **Query the remote, not the command.** For GitHub:
+   `GET /repos/<owner>/<repo>/commits` → the expected SHA must be there.
+   `409 Git Repository is empty` and an empty `/branches` array are the two
+   signals that catch a total non-arrival.
+2. **`pushed_at == created_at` means nothing has ever been pushed.** It is the
+   single cheapest tell and it is not obvious.
+3. **Fetch a real file over `raw.githubusercontent.com` and compare bytes** —
+   not just an HTTP 200 on the repo. Normalise line endings before calling a
+   hash mismatch a content mismatch: a Windows checkout adds one CR per line,
+   so a file with 239 lines differs by exactly 239 bytes for a completely
+   benign reason.
+4. **When a push targets a NEW remote or a different account**, check
+   `git remote -v` and `git status -sb` *before* believing the push, and expect
+   the credential helper to offer the wrong identity. On Windows,
+   `git config credential.https://github.com.username <account>` or
+   `git -c credential.helper= push` bypasses the cached one.
+5. **"Pushed" is a claim about a command. "Present on the remote" is a fact.**
+   Report the second, and say which query produced it.
 
 The paragraph above covers verifying a *fix* after a *push*. It says nothing
 about verifying a *cleanup* or a *migration* after a *run*, and that gap bit
