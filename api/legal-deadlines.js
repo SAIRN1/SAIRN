@@ -236,6 +236,25 @@ function validateRulePayload(p) {
     // day, which would discard that. The engine refuses this combination at
     // compute time; rejecting it here stops the row being written at all.
     // No rule declares both today -- this is a guard, not a fix.
+    // EXCLUSIVITY, added 2026-08-27. Two rules extend only where the qualifying
+    // method was the ONLY one used -- Utah URCP 6(c) ("exclusively by mail") and
+    // Fla. R. Gen. Prac. & Jud. Admin. 2.514(b) ("by only mail"). The engine
+    // reads requires_exclusive and on_unknown_exclusivity; validated here for
+    // the same reason terminal_day_rule is, and it is the sharper case of the
+    // two: nothing rejects unknown fields, so a MISSPELLED on_unknown_exclusivity
+    // would be stored happily and silently fall back to assuming exclusivity --
+    // the LATE direction, and invisible.
+    if (se.requires_exclusive !== undefined && se.requires_exclusive !== true) {
+      return 'service_extension.requires_exclusive, when present, must be exactly true. It is not a tri-state: a rule either conditions its extension on the method being the only one used, or it says nothing about exclusivity and the field is absent.';
+    }
+    if (se.on_unknown_exclusivity !== undefined) {
+      if (!se.requires_exclusive) {
+        return 'service_extension.on_unknown_exclusivity has no meaning without requires_exclusive: true — it decides what to do when exclusivity cannot be determined, and a rule with no exclusivity condition never asks.';
+      }
+      if (se.on_unknown_exclusivity !== 'assume_exclusive' && se.on_unknown_exclusivity !== 'refuse') {
+        return 'service_extension.on_unknown_exclusivity must be "assume_exclusive" or "refuse". "assume_exclusive" applies the days and discloses that exclusivity was assumed (correct where exclusive service is the ordinary case, as in Florida); "refuse" adds nothing and says why (correct where the overshoot is large, as with Utah\'s seven days). A misspelling here would silently fall back to assuming — the LATE direction.';
+      }
+    }
     if (p.cap && SERVICE_EXTENSION_STANDARDS[se.standard]
         && SERVICE_EXTENSION_STANDARDS[se.standard].sequence === 'add_to_period_then_roll') {
       return 'A rule cannot declare a cap together with a service-extension standard whose days are added to the period rather than after it expires (' + se.standard +

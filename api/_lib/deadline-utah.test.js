@@ -70,11 +70,30 @@ check('every row cites a real quote and url',
 check('every row counts calendar days forward',
   seed.rules.every(r => r.count.unit === 'calendar_days' && r.count.direction === 'forward'), true);
 
-// THE HELD ROW. This is the assertion that keeps the hold honest: if someone
-// adds the seven-day mail extension without building exclusive-vs-combined
-// service into the engine, this fails.
-check('NO row carries a service_extension -- URCP 6(c) is deliberately held',
-  seed.rules.some(r => r.service_extension), false);
+// THE HOLD IS LIFTED. Until 2026-08-27 this asserted that NO row carried an
+// extension, because URCP 6(c)'s seven days apply only to service made
+// "exclusively by mail" and one service_method field could not express that.
+// The exclusive-vs-combined mechanism was built that day and the row is now
+// seeded, so the assertion becomes its opposite -- with the Rule 4 / Rule 5
+// split guarded, which is the part that could still go wrong.
+check('the seven Rule 5 rows carry URCP 6(c)',
+  seed.rules.filter(r => r.service_extension).map(r => r.rule_id).sort(),
+  ['ut-r-12-a-1-A-responsive-pleading-after-motion-resolved',
+   'ut-r-12-a-1-B-responsive-pleading-after-more-definite-statement',
+   'ut-r-12-a-1-answer-to-counterclaim',
+   'ut-r-12-a-1-answer-to-crossclaim',
+   'ut-r-33-b-interrogatory-response',
+   'ut-r-34-b-2-production-response',
+   'ut-r-36-c-1-admission-response']);
+// 6(c) points at Rule 5(b)(3)(C)(i); a Utah summons goes out under Rule 4.
+check('NEITHER answer-to-summons row carries it -- Rule 4 service',
+  seed.rules.filter(r => /answer-(in|out-of)-state$/.test(r.rule_id)).some(r => r.service_extension), false);
+check('every extension row declares exclusivity and REFUSES rather than assuming',
+  seed.rules.filter(r => r.service_extension)
+    .every(r => r.service_extension.requires_exclusive === true
+             && r.service_extension.on_unknown_exclusivity === 'refuse'), true);
+check('and it is SEVEN days, not a neighbour\'s three',
+  [...new Set(seed.rules.filter(r => r.service_extension).map(r => r.service_extension.add))], [7]);
 check('NO row carries a service_completion -- 5(b)(4) completes on sending, so it would never move anything',
   seed.rules.some(r => r.service_completion), false);
 check('no row declares a designated_period -- Utah discovery has no defendant floor',
@@ -95,8 +114,38 @@ check('it maps onto the frcp_6a implementation', std.impl, 'frcp_6a');
 check('the forward rollover cites 6(a)(1)(C)', std.label + std.rollover_suffix_forward, 'Utah R. Civ. P. 6(a)(1)(C)');
 // 6(a)(5) defines backward outright, unlike NJ/NC/WA/MA/MO/WI where it is blank.
 check('backward is a REAL citation, not blank', std.rollover_suffix_backward, '(a)(5)');
-check('Utah adds no service-extension standard',
-  Object.keys(engine.SERVICE_EXTENSION_STANDARDS).some(k => /^ut_/.test(k)), false);
+const uext = engine.SERVICE_EXTENSION_STANDARDS.ut_urcp_6_c;
+check('ut_urcp_6_c is registered', !!uext, true);
+check('it is mail-only and uses the after-expiry sequencing',
+  [uext.qualifies('mail'), uext.qualifies('email'), uext.sequence],
+  [true, false, 'roll_then_add_then_roll']);
+
+// ── EXCLUSIVITY, the whole reason this row waited ─────────────────────────
+// A bare service_method cannot say whether mail was the ONLY method used, and
+// seven days is far too large an overshoot to assume -- so Utah refuses where
+// Florida (five days, already live, exclusive service the ordinary case)
+// assumes and discloses. The two differ deliberately; see ut_urcp_6_c's note.
+check('bare service_method REFUSES the extension and returns the date without it',
+  [dateOf(compute('ut-r-33-b-interrogatory-response', '2026-06-01', { service_method: 'mail' })),
+   compute('ut-r-33-b-interrogatory-response', '2026-06-01', { service_method: 'mail' }).service_extension.state],
+  ['2026-06-29', 'refused_unverified_exclusivity']);
+check('an EXCLUSIVE set applies all seven days',
+  [dateOf(compute('ut-r-33-b-interrogatory-response', '2026-06-01', { service_method: 'mail', service_methods: ['mail'] })),
+   compute('ut-r-33-b-interrogatory-response', '2026-06-01', { service_method: 'mail', service_methods: ['mail'] }).service_extension.days_added],
+  ['2026-07-06', 7]);
+check('a COMBINED set adds nothing, and says so distinctly from not_qualifying',
+  [dateOf(compute('ut-r-33-b-interrogatory-response', '2026-06-01', { service_method: 'mail', service_methods: ['mail', 'email'] })),
+   compute('ut-r-33-b-interrogatory-response', '2026-06-01', { service_method: 'mail', service_methods: ['mail', 'email'] }).service_extension.state],
+  ['2026-06-29', 'not_exclusive']);
+check('e-mail never qualifies in the first place',
+  compute('ut-r-33-b-interrogatory-response', '2026-06-01', { service_method: 'email' }).service_extension.state,
+  'not_qualifying');
+// The refusal must not be silent -- that was the defect this engine already
+// fixed once for West Virginia's contested methods.
+check('the refusal explains itself and names the input that would resolve it',
+  /service_methods/.test(compute('ut-r-33-b-interrogatory-response', '2026-06-01', { service_method: 'mail' }).service_extension.detail), true);
+check('supplying mail on an ANSWER row still adds nothing -- no extension seeded there',
+  dateOf(compute('ut-r-12-a-1-answer-in-state', '2026-06-01', { service_method: 'mail', service_methods: ['mail'] })), '2026-06-22');
 
 // ── The calendar ──────────────────────────────────────────────────────────
 check('the calendar covers 2026 AND NOTHING ELSE', Object.keys(calendars.ut), ['2026']);

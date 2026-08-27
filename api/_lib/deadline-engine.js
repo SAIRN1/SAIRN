@@ -154,6 +154,37 @@ function holidayFor(calendars, jurisdiction, iso, direction) {
   return { known: true, hit: null };
 }
 
+// Was service made by ONE method only, by several, or is it not stated?
+//
+// EXCLUSIVITY IS NOT A METHOD. Every service-extension standard before this
+// asked only WHICH method was used, which `service_method` answers on its own.
+// Two rules ask something the singular field cannot express -- whether that
+// method was the ONLY one used:
+//
+//   Utah URCP 6(c)                      "service is made EXCLUSIVELY BY MAIL"
+//   Fla. R. Gen. Prac. & Jud. Admin.
+//     2.514(b)                          "service is made BY ONLY MAIL"
+//
+// So `service_methods` is a SEPARATE, OPTIONAL input holding the full set the
+// caller actually used. It is consulted ONLY for this test; qualification still
+// runs on `service_method` exactly as before, so no existing jurisdiction's
+// behaviour moves and no existing row needs editing.
+//
+// Returns:
+//   'exclusive' -- the set is exactly the one qualifying method
+//   'combined'  -- the set holds that method AND at least one other
+//   'unknown'   -- no set was supplied, so the question cannot be answered
+//
+// A set that does NOT contain service_method at all is 'combined' rather than
+// an error: the caller has contradicted themselves, and the safe reading of a
+// contradiction is the one that adds no days.
+function exclusivityOf(input) {
+  var set = input && input.service_methods;
+  if (!Array.isArray(set) || set.length === 0) return 'unknown';
+  if (set.length === 1 && set[0] === input.service_method) return 'exclusive';
+  return 'combined';
+}
+
 // Rolls a landing date off a Saturday, Sunday or legal holiday. Forward
 // periods roll forward; backward periods roll backward (Rule 6(a)(5)).
 // Returns a refusal if a year's calendar is missing rather than treating an
@@ -2191,6 +2222,48 @@ var SERVICE_EXTENSION_STANDARDS = {
     qualifies: function (method) {
       return method === 'mail' || method === 'left_with_clerk' || method === 'other_consented_means';
     }
+  },
+
+  // UTAH. HELD OUT OF THE SEED FROM 2026-08-27 UNTIL THE EXCLUSIVITY MECHANISM
+  // EXISTED, which is the whole reason that mechanism was built. URCP 6(c):
+  //
+  //   "When a party may or must act within a specified time after service and
+  //    service is made EXCLUSIVELY BY MAIL under Rule 5(b)(3)(C)(i), 7 days are
+  //    added after the period would otherwise expire under paragraph (a)."
+  //
+  // SEVEN, not three. Every seeded jurisdiction except California adds three or
+  // five; copying a neighbour's three here computes FOUR DAYS EARLY on every
+  // mailed Utah period. The number is the easy part.
+  //
+  // THE HARD PART IS "EXCLUSIVELY", and it is why this row waited. Until the
+  // engine could be told the whole SET of methods used, applying seven days on
+  // a bare service_method of `mail` meant guessing that mail was the only
+  // method -- and being wrong by a WEEK in the LATE direction whenever it was
+  // not. Seeding it with a disclosure would have been the wrong trade: seven
+  // days is far too large an overshoot to assume.
+  //
+  // SO THIS ROW SETS on_unknown_exclusivity: 'refuse', WHERE FLORIDA'S SETS
+  // 'assume_exclusive'. The two differ deliberately and the reasons are
+  // different, not arbitrary:
+  //   - Florida (2.514(b), five days) was ALREADY LIVE and answering, and its
+  //     assumption is usually right -- a Florida party served by mail is
+  //     typically one for whom portal e-service is unavailable, so "only mail"
+  //     is usually literally true. Refusing would report EARLY on most mailed
+  //     Florida answers, trading a rare late error for a frequent early one.
+  //   - Utah has no existing arithmetic to preserve, and 5(b)(3)(C) permits
+  //     mail only where the party "does not have an electronic filing account
+  //     OR EMAIL" -- so a Utah party served by mail may well also have been
+  //     served another way. Seven days is too much to assume on that.
+  //
+  // SCOPE: 6(c) points at Rule 5(b)(3)(C)(i) specifically, so like FRCP 6(d)
+  // and Nev. R. Civ. P. 6(d) it reaches only papers served between parties.
+  // Utah's summons goes out under Rule 4, so NEITHER answer-to-summons row
+  // carries this -- the same reading that corrected the two federal rows.
+  ut_urcp_6_c: {
+    label: 'Utah R. Civ. P. 6(c)',
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
   }
 };
 
@@ -3155,6 +3228,42 @@ function computeDeadline(input) {
     } else if (!extStd.qualifies(input.service_method)) {
       extension = { state: 'not_qualifying', standard: stdKey, days_added: 0,
         detail: 'Service by ' + String(input.service_method).replace(/_/g, ' ') + ' does not qualify for an extension under ' + extLabel + ' (' + extStd.shape.replace(/_/g, ' ') + ').' };
+    } else if (ext.requires_exclusive && exclusivityOf(input) === 'combined') {
+      // EXCLUSIVITY IS NOT A METHOD -- it is a statement about the WHOLE SET of
+      // methods used, and until 2026-08-27 this engine could not express it.
+      //
+      // Two rules need it. Utah URCP 6(c): 7 days "when ... service is made
+      // EXCLUSIVELY BY MAIL under Rule 5(b)(3)(C)(i)". Florida R. Gen. Prac. &
+      // Jud. Admin. 2.514(b): 5 days "when ... service is made BY ONLY MAIL".
+      // Same condition, different words. Every other seeded extension asks only
+      // WHICH method was used, which one field answers.
+      //
+      // The caller states the full set in `service_methods`. When it holds the
+      // qualifying method AND something else, the condition FAILS and no days
+      // are added -- reported distinctly from not_qualifying, because the two
+      // mean different things: not_qualifying says this method never extends,
+      // this says it would have but service was not exclusive.
+      extension = { state: 'not_exclusive', standard: stdKey, days_added: 0,
+        detail: extLabel + ' extends only where service was made by ' + String(input.service_method).replace(/_/g, ' ') +
+          ' AND BY NOTHING ELSE. The methods supplied were ' + (input.service_methods || []).join(', ').replace(/_/g, ' ') +
+          ', so the exclusivity condition is not met and no days were added.' };
+      steps.push({ step: 'service_extension_refused',
+        detail: 'The rule extends only for exclusive service by this method, and more than one method was used. No days were added.',
+        authority: extLabel, date: result });
+    } else if (ext.requires_exclusive && exclusivityOf(input) === 'unknown' && ext.on_unknown_exclusivity === 'refuse') {
+      // REFUSED VISIBLY, the Virginia-missing-service_time pattern: the engine
+      // will not guess a fact the caller can simply state. Chosen per rule
+      // rather than globally, because the two jurisdictions differ in what is
+      // at stake -- see on_unknown_exclusivity in the rule shape notes.
+      extension = { state: 'refused_unverified_exclusivity', standard: stdKey, days_added: 0,
+        detail: extLabel + ' adds days only where service was made by ' + String(input.service_method).replace(/_/g, ' ') +
+          ' AND BY NOTHING ELSE, and only one method was supplied — which does not say whether it was the only one used. ' +
+          'The engine will not assume exclusivity here: doing so would report a date LATER than the true deadline whenever ' +
+          'another method was also used. Supply service_methods as the full list of methods actually used (for example ' +
+          '["mail"] or ["mail","email"]) and the extension will be computed. The date below is computed WITHOUT it.' };
+      steps.push({ step: 'service_extension_refused',
+        detail: 'Whether service was exclusive is not known, and this rule refuses rather than assuming it. No days were added.',
+        authority: extLabel, date: result });
     } else if ((ext.applies_when || []).length && (ext.applies_when || []).indexOf(input.service_method) === -1) {
       // The standard would extend, but THIS RULE's own applies_when does not
       // list the method. Reported distinctly from the standard declining it,
@@ -3305,8 +3414,31 @@ function computeDeadline(input) {
         steps.push({ step: 'rollover_after_extension', detail: 'The added day fell on a Saturday, Sunday or legal holiday, so the last day to act is the next day that is not.', authority: extLabel + (stdKey === 'frcp_6d' ? ', 2005 Advisory Committee Note' : ''), date: rolled2.date });
       }
       result = rolled2.date;
-      extension = { state: 'applied', standard: stdKey, days_added: addN, unit: addUnit,
-        detail: addN + ' ' + addUnit.replace(/_/g, ' ') + ' added under ' + extLabel + '.' };
+      // APPLIED, but say so DIFFERENTLY when an exclusivity condition had to be
+      // ASSUMED rather than checked. The arithmetic is identical -- deliberately,
+      // on Michael's direction 2026-08-27 -- because for Florida the assumption
+      // is usually right: a party served by mail is typically one for whom
+      // portal e-service is unavailable, so "only mail" is usually literally
+      // true, and refusing here would report EARLY on most mailed Florida
+      // answers. But an assumption that can only fail LATE must never be
+      // invisible, which is what it was before this state existed.
+      var assumedExclusive = !!(ext.requires_exclusive && exclusivityOf(input) === 'unknown');
+      extension = assumedExclusive
+        ? { state: 'applied_exclusivity_assumed', standard: stdKey, days_added: addN, unit: addUnit,
+            detail: addN + ' ' + addUnit.replace(/_/g, ' ') + ' added under ' + extLabel + ' — BUT ' + extLabel +
+              ' adds them only where service was made by ' + String(input.service_method).replace(/_/g, ' ') +
+              ' AND BY NOTHING ELSE, and only one method was supplied. Exclusivity was ASSUMED, not verified. ' +
+              'If the same paper was also served by another method the true deadline is ' + addN + ' ' +
+              addUnit.replace(/_/g, ' ') + ' EARLIER than the date below. Supply service_methods as the full list ' +
+              'actually used to have this checked.' }
+        : { state: 'applied', standard: stdKey, days_added: addN, unit: addUnit,
+            detail: addN + ' ' + addUnit.replace(/_/g, ' ') + ' added under ' + extLabel + '.' };
+      if (assumedExclusive) {
+        steps.push({ step: 'service_extension_exclusivity_assumed',
+          detail: 'This rule extends only for exclusive service by this method. Only one method was supplied, so exclusivity was assumed. The date is LATE by ' +
+            addN + ' if another method was also used.',
+          authority: extLabel, date: result });
+      }
       }
     }
   } else if (input.service_method) {
