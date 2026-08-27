@@ -42,16 +42,46 @@
 //   MANAGEMENT  owner  -- the only provisioning tier
 //   AUTHENTICATED  all three -- see below, and read the warning
 //
-// ⚠ MINIMUM-NECESSARY TIERING IS **DEFERRED, NOT DECIDED**. This build makes
-// every DNT_RESOURCES call require a VALID SESSION, which is the exploitable
-// gap it exists to close. It does NOT yet narrow what each role may see within
-// the practice. In a dental practice all three roles have some legitimate
-// reason to touch patient records -- front desk schedules them, providers treat
-// them -- so a wrong split shipped in an emergency would be worse than an
-// honest "authenticated only" for now. HIPAA minimum-necessary almost certainly
-// wants narrower than this (SAIRNsenior's sen_clients gate is the worked
-// example on this platform). Recorded as an open item rather than quietly
-// treated as finished.
+// MINIMUM-NECESSARY TIERING -- PARTIALLY CLOSED 2026-08-27. Read this whole
+// note before assuming either half.
+//
+// The emergency build made every DNT_RESOURCES call require a VALID SESSION,
+// which closed the exploitable gap, but did not narrow what each role may see.
+// That was recorded as deferred rather than finished. Since then:
+//
+//   ✅ FINANCIAL TIER -- DONE (read side). api/sd-data.js DNT_FINANCIAL_ROLES
+//      = {owner, frontdesk}; dnt_charges, dnt_payments, dnt_denial, dnt_ar,
+//      dnt_revenue and dnt_coverage_rules now 403 for a provider on READ.
+//      Write is unchanged and still open to all three roles -- a deliberate,
+//      disclosed asymmetry, not an oversight. See that file's own comment.
+//
+//   ⛔ PROVIDER-SCOPED PATIENT READ -- BLOCKED ON A MISSING LINK, not deferred
+//      by choice. The decision taken was "a provider sees only their linked
+//      patients," resolved through dnt_appointments.provider_id. THAT CANNOT BE
+//      IMPLEMENTED TODAY and must not be faked:
+//        - dnt_providers rows are created client-side as `newId('PV')` ->
+//          "PV-xxxxx" (sairndental.html:1022), carrying only name, clinical
+//          role and operatory.
+//        - An auth employee's `employee_id` is a free-text string chosen at
+//          bootstrap/setup, living in sairndental_employee_auth.
+//        - NOTHING joins them. dnt_appointments.provider_id references the PV-
+//          id, and the client never writes employee_id into any dnt_* record.
+//      So a server-side filter of `provider_id === session.employee_id` would
+//      match zero rows and hand every provider an empty patient list with a
+//      200 OK -- a permission check manufacturing a false empty state, which is
+//      worse than the honest authenticated-only read it replaced.
+//      WHAT IT NEEDS FIRST: a link field on the dnt_providers record (a plain
+//      data-blob field, no migration -- dnt_providers is `data jsonb`), set by
+//      the owner as "which login is this provider," plus a decided fallback for
+//      a provider with no link yet. Both are open questions, and the fallback
+//      is a real one: see-nothing is safe but breaks the app, see-everything is
+//      the status quo. Not guessed here.
+//
+// SAIRNsenior's sen_clients gate is often cited as the worked example. It is
+// the right SHAPE and the wrong MECHANISM for this app: it filters on a
+// PROMOTED assigned_employee_id column, and dnt_patients has no promoted
+// columns at all -- it is (license_hash, patient_id, data jsonb). Do not try to
+// port it directly.
 //
 // All actions are POST, license key via Authorization: Bearer, employee session
 // via X-SD-Auth:

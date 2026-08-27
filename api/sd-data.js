@@ -5482,11 +5482,13 @@ module.exports = async (req, res) => {
     // a valid session for another SAIRN app would pass, because role names like
     // 'owner' exist in several apps' vocabularies (Guardian Check 28).
     //
-    // DELIBERATELY NOT ROLE-TIERED YET. All three dental roles have a real
-    // reason to touch patient records, and a wrong minimum-necessary split
-    // shipped under emergency conditions would be worse than an honest
-    // authenticated-only gate. Narrowing is an open item, not a finished one --
-    // see api/dnt-auth.js's role-model header.
+    // PARTIALLY ROLE-TIERED AS OF 2026-08-27. This gate is still the floor --
+    // every dnt_* call needs a valid session -- but it is no longer the whole
+    // story. The FINANCIAL tier is layered on top of it in the read branch
+    // below. Provider-scoped PATIENT read is still open and is BLOCKED on a
+    // missing employee_id <-> provider_id link, not merely deferred; the full
+    // reasoning is in api/dnt-auth.js's role-model header and must be read
+    // before anyone attempts it.
     //
     // The PUBLIC dental paths are unaffected and were checked before this went
     // in: api/sairndental/public-book.js, public-availability.js and
@@ -5498,6 +5500,51 @@ module.exports = async (req, res) => {
       return s;
     };
 
+    // ── SAIRNDENTAL MINIMUM-NECESSARY TIERING, FINANCIAL TIER (2026-08-27) ──
+    // Closes the FIRST half of the open item recorded in api/dnt-auth.js's role
+    // header. That header said tiering was "deferred, not decided" because all
+    // three dental roles have a real reason to touch PATIENT records. That is
+    // true of patients. It is NOT true of practice financials, and this is the
+    // half that could be settled without guessing.
+    //
+    // Michael's decision, 2026-08-27: financial data gets its OWN tier, separate
+    // from clinical access. Read-scope only this pass -- write is deliberately
+    // left exactly as it was (see the asymmetry note below).
+    //
+    // WHY frontdesk IS IN THE FINANCIAL TIER AND provider IS NOT: the front desk
+    // takes payment at checkout, posts charges, and verifies benefits -- that is
+    // the job. A treating clinician has no minimum-necessary reason to read what
+    // the practice collected, what is in A/R, or which claims a payer denied.
+    // Same reasoning that keeps sen_claims (:2241) and alf_billing (:2454)
+    // management-only in their apps, adjusted for the fact that this app has no
+    // billing role: the nearest real equivalent is frontdesk, so the tier is
+    // {owner, frontdesk} rather than {owner} alone. Making it owner-only would
+    // have locked the front desk out of taking a payment, which is not a
+    // privacy improvement, it is a broken practice.
+    //
+    // dnt_coverage_rules is in this tier deliberately. It looks clinical because
+    // it names procedures, but its content is what a PLAN PAYS -- benefit and
+    // reimbursement rules, read by whoever is verifying coverage. That is front
+    // desk work, not chair-side work.
+    //
+    // ⚠ READ-SIDE ONLY, AND THAT ASYMMETRY IS DELIBERATE, NOT AN OVERSIGHT.
+    // Write for these resources is unchanged and still open to all three roles.
+    // So a provider can still WRITE dnt_revenue even though they can no longer
+    // READ it. That is a narrowing of DISCLOSURE, which is what HIPAA
+    // minimum-necessary is actually about, and it is a real improvement over
+    // "any authenticated employee sees everything." It is NOT a complete
+    // authorisation model, and nothing here should be described as one.
+    // Narrowing write is a separate, larger pass: this client reads a record and
+    // writes the whole object back, so write rules and any future FIELD-level
+    // redaction have to be designed together or the redacted half gets wiped on
+    // the next save -- exactly the hazard alf_facility's own comment documents
+    // at :4645, where redaction is only safe BECAUSE write is management-only.
+    const DNT_FINANCIAL_ROLES = { owner: true, frontdesk: true };
+    const DNT_FINANCIAL_RESOURCES = {
+      dnt_charges: true, dnt_payments: true, dnt_denial: true,
+      dnt_ar: true, dnt_revenue: true, dnt_coverage_rules: true
+    };
+
     const DNT_RESOURCES = {
       dnt_patients: 'patient_id', dnt_providers: 'provider_id', dnt_operatories: 'operatory_id',
       dnt_provider_hours: 'provider_hour_id', dnt_procedure_types: 'procedure_type_id',
@@ -5506,7 +5553,16 @@ module.exports = async (req, res) => {
       dnt_referrals: 'referral_id'
     };
     if (DNT_RESOURCES[resource] && action === 'read') {
-      if (!dntGate(res)) return;
+      const dntSess = dntGate(res);
+      if (!dntSess) return;
+      // 403, not an empty 200. An empty list would be indistinguishable from a
+      // practice that has taken no payments yet, and the client would render a
+      // real zero -- a fabricated figure produced by a permission check, which
+      // is the exact silent-failure shape Guardian Check 0b exists to catch.
+      if (DNT_FINANCIAL_RESOURCES[resource] && !DNT_FINANCIAL_ROLES[dntSess.role]) {
+        res.status(403).json({ error: { code: 'ROLE_NOT_PERMITTED', message: 'Financial records are limited to the practice owner and front desk' } });
+        return;
+      }
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
