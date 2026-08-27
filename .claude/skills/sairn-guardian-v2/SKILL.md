@@ -478,7 +478,7 @@ drifts exactly like any other unverified claim in this skill set.
 | SAIRNcare | sairncare.html | #0D9488 | sairncare |
 | SAIRNvet | sairnvet.html | #7C3AED | sairnvet |
 | SAIRNlegacy | sairnlegacy.html | #6B7280 | sairnlegacy |
-| SAIRNmechanical | sairnmechanical.html | #84CC16 | sairnmechanical |
+| ~~SAIRNmechanical~~ | **NOT ON `main` — see note below** | #84CC16 | sairnmechanical |
 | SAIRNcash | sairncash.html | #7C6FFF | sairncash |
 | SAIRNgrounds | sairngrounds.html | #16A34A | sairngrounds |
 
@@ -493,6 +493,33 @@ SAIRNcare/SAIRNacc `#0D9488` color collision by elimination — SAIRNcare's
 above. If SAIRNhr or SAIRNacc becomes a real planned app later, treat that
 as a fresh addition with its own color decision, not a restoration of
 these rows.
+
+**Corrected 2026-08-27 — SAIRNmechanical is NOT a live app and its file has
+never been on `main`.** The row above claimed `sairnmechanical.html`; that file
+does not exist in `main`'s tree, is on disk in no clone, and `vercel.json`
+carries no route for it. `https://sairn.vercel.app/sairnmechanical` returns
+**404**, correctly — there is nothing to serve.
+
+The file is real and finished (84 KB, "16 pages, dispatch+agreements") but lives
+**only on the unmerged branch `origin/claude/lucid-ptolemy-b73vu0`**, added
+2026-06-14 (`c12e8b1`) and last touched 2026-06-19 (`77979be`). Three real fixes
+to it are stranded there too, including `eb4a17e` — a cross-script-tag
+`APP_ID`/`PROXY` redeclaration that was *a hard SyntaxError in real browsers,
+crashing the whole page at parse time*. **That is the commit Guardian Check 13
+came from.** The check survived; the app it was found on did not.
+
+**Do not treat this row as coverage.** Every Guardian pass that reported "all 13
+apps" was reporting on twelve. Found 2026-08-27 by curling every app route
+during a click-through audit — nothing in this file or any prior pass had ever
+checked that the mapped filenames exist, which is the same *"the map is a claim
+about the repo, not derived from it"* failure this table has now corrected four
+times about itself. **Derive it: `git ls-files | grep -i <app>` before trusting
+any row here.**
+
+Recovery is a separate, authorised task and is not a merge — an 84 KB file last
+touched in June predates this platform's auth, grant-sweep and
+silent-failure discipline entirely, so it needs a real review pass, not a
+cherry-pick and a route.
 
 **Corrected 2026-08-19** — added SAIRNcash and SAIRNgrounds, both real,
 live, deployed apps with substantial work already done this session (a
