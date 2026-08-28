@@ -2682,6 +2682,18 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                     </div>
                     <div style="font-size:12px;color:#666;">No live status is claimed here, because this panel does not test the connection. Every AI request authenticates, is screened for prompt injection, and is written to the audit log by that endpoint; if one fails, the real reason is surfaced on the feature that made the call rather than as a status light on this page.</div>
                 </div>
+
+                <!-- SIGN-IN ACCESS (2026-08-28). Fourth set_active client,
+                     after SAIRNroofing, SAIRNmechanical and SAIRNdental. This
+                     app needed a transport fix first: scAuthCall never sent
+                     X-SD-Auth, so roster/setup/set_active were unreachable
+                     from this client regardless of server support. -->
+                <div class="card">
+                    <h3>Sign-In Access</h3>
+                    <div style="font-size:12px;color:#666;margin-bottom:10px">Who can sign in to this practice. Deactivating removes sign-in only &mdash; the credential row is kept, never deleted, so the person stays auditable. A signed-in session can outlive a deactivation by up to 12 hours; if someone must lose access immediately, deactivate them here and then confirm they are signed out.</div>
+                    <div id="sc-acc-list">Sign in as a Compliance Admin to manage access.</div>
+                    <div id="sc-acc-confirm" style="margin-top:10px"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -2852,14 +2864,28 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
         // only as a comment trail -- see requireAdminForDelete()'s own
         // updated comment). Calls api/sc-auth.js, same shape as every other
         // app's real auth endpoint.
-        async function scAuthCall(action, body) {
+        // withSession added 2026-08-28. Until now this transport sent ONLY the
+        // licence Bearer and never X-SD-Auth, which meant every session-gated
+        // auth action -- roster, setup, set_active -- was unreachable from this
+        // client no matter what the server supported. OPT-IN on purpose: the
+        // only two pre-existing callers are `login` and `bootstrap`, both
+        // pre-session, and both keep their exact previous behaviour by passing
+        // nothing. Matches the withSession convention already used by
+        // rfAuth/dntAuth/mechAuth.
+        async function scAuthCall(action, body, withSession) {
             var lic = null;
             try { lic = localStorage.getItem('sc_license_key'); } catch (e) {}
             if (!lic) return { ok: false, error: { message: 'No license key on file' } };
+            var hdrs = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic };
+            if (withSession) {
+                var st = null;
+                try { st = localStorage.getItem('sc_session_token'); } catch (e) {}
+                if (st) hdrs['X-SD-Auth'] = st;
+            }
             try {
                 var res = await fetch('https://sairn.vercel.app/api/sc-auth', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+                    headers: hdrs,
                     body: JSON.stringify(Object.assign({ action: action }, body))
                 });
                 var data = await res.json().catch(function () { return null; });
@@ -3211,6 +3237,12 @@ How to answer:
             // re-rendered on every visit rather than once at load.
             if (panelName === 'settings' && typeof renderSettings === 'function') {
                 renderSettings();
+            }
+            // Same reasoning as renderSettings above: another admin may have
+            // changed who can sign in from a different device, so the roster is
+            // re-read on every visit rather than cached from load.
+            if (panelName === 'settings' && typeof scLoadAccess === 'function') {
+                scLoadAccess();
             }
 
             window.scrollTo(0, 0);
@@ -4999,6 +5031,116 @@ How to answer:
         // re-verifies the session's own role and would reject the write even
         // if this UI were edited in devtools.
         function scCanWriteSettings(){ return currentRole === 'admin'; }
+
+        // ── SIGN-IN ACCESS / CREDENTIAL LIFECYCLE (2026-08-28) ─────────────
+        // Fourth set_active client. This app is the OTHER contract family:
+        // api/sc-auth.js returns LAST_ADMIN and remaining_admins (not
+        // LAST_OWNER/remaining_owners), and PROVISIONING_ROLES is ['admin'],
+        // not ['owner']. The client reads what THIS server returns rather than
+        // what the three previous apps returned -- that divergence is exactly
+        // what sairn-employee-auth-scaffold records as client-breaking.
+        //
+        // The panel PREDICTS NOTHING. Last-admin and caller-still-active
+        // refusals are deliberately NOT pre-empted here; the button is offered,
+        // the server refuses, and the SERVER's message is shown verbatim.
+        var scRoster = [];
+        function scEsc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+        async function scLoadAccess() {
+            var el = document.getElementById('sc-acc-list');
+            if (!el) return;
+            // Cosmetic only -- api/sc-auth.js refuses a non-admin regardless.
+            if (currentRole !== 'admin') {
+                el.innerHTML = '<div style="font-size:12px;color:#666">Only a Compliance Admin can manage sign-in access.</div>';
+                return;
+            }
+            el.innerHTML = 'Loading…';
+            var r = await scAuthCall('roster', {}, true);
+            if (!r || !r.ok || !Array.isArray(r.employees)) {
+                el.innerHTML = '<div style="font-size:12px;color:#666">' +
+                    scEsc((r && r.error && r.error.message) || 'Could not load the roster.') + '</div>';
+                return;
+            }
+            scRoster = r.employees;
+            scRenderAccess();
+        }
+
+        function scRenderAccess() {
+            var el = document.getElementById('sc-acc-list');
+            if (!el) return;
+            if (!scRoster.length) { el.innerHTML = '<div style="font-size:12px;color:#666">No sign-in credentials yet.</div>'; return; }
+            var me = null;
+            try { me = localStorage.getItem('sc_employee_id'); } catch (e) {}
+            // Warning only, never a gate -- the server recomputes and is the
+            // authority. NOTE the role tested is 'admin', this app's
+            // provisioning role, not 'owner'.
+            var activeAdmins = scRoster.filter(function (e) { return e.active === true && e.role === 'admin'; }).length;
+            el.innerHTML = '<div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table>' +
+                '<thead><tr><th>Employee</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>' +
+                scRoster.map(function (e) {
+                    var isSelf = e.employee_id === me, isActive = e.active === true;
+                    var lastAdmin = isActive && e.role === 'admin' && activeAdmins <= 1;
+                    var why = isSelf ? 'You cannot deactivate your own account'
+                            : (lastAdmin ? 'This is the only active Compliance Admin' : '');
+                    return '<tr><td>' + scEsc(e.display_name || e.employee_id) +
+                            '<div style="font-size:11px;color:#666">' + scEsc(e.employee_id) + '</div></td>' +
+                        '<td>' + scEsc(e.role || '--') + '</td>' +
+                        '<td>' + (isActive ? 'Active' : 'Deactivated') + '</td>' +
+                        '<td style="text-align:right">' +
+                            (isSelf
+                                ? '<span style="font-size:11px;color:#666">' + scEsc(why) + '</span>'
+                                : '<button class="btn" onclick="scAskSetActive(\'' + scEsc(e.employee_id) + '\',' + (isActive ? 'false' : 'true') + ')">' +
+                                    (isActive ? 'Deactivate' : 'Reactivate') + '</button>' +
+                                  (why ? '<div style="font-size:11px;color:#666;margin-top:3px">' + scEsc(why) + '</div>' : '')) +
+                        '</td></tr>';
+                }).join('') + '</tbody></table></div>';
+        }
+
+        function scAskSetActive(employee_id, nextActive) {
+            var e = scRoster.filter(function (x) { return x.employee_id === employee_id; })[0];
+            if (!e) return;
+            var box = document.getElementById('sc-acc-confirm');
+            if (!box) return;
+            box.innerHTML = '<div class="card">' +
+                '<div style="margin-bottom:8px">' + (nextActive
+                    ? 'Restore sign-in for <strong>' + scEsc(e.display_name || employee_id) + '</strong>?'
+                    : '<strong>' + scEsc(e.display_name || employee_id) + '</strong> will no longer be able to sign in. Their record and history are kept.') + '</div>' +
+                // Reason required ONLY to deactivate, matching the server.
+                (nextActive ? '' : '<div class="form-group"><label>Reason (required)</label>' +
+                    '<input type="text" id="sc-acc-reason" maxlength="500" placeholder="e.g. Left the practice 2026-08-28"></div>') +
+                '<div id="sc-acc-err" style="color:#b91c1c;font-size:12px;margin-bottom:8px"></div>' +
+                '<button class="btn btn-primary" id="sc-acc-go" onclick="scDoSetActive(\'' + scEsc(employee_id) + '\',' + nextActive + ')">Confirm</button> ' +
+                '<button class="btn" onclick="document.getElementById(\'sc-acc-confirm\').innerHTML=\'\'">Cancel</button>' +
+                '</div>';
+        }
+
+        async function scDoSetActive(employee_id, nextActive) {
+            var errEl = document.getElementById('sc-acc-err');
+            var reasonEl = document.getElementById('sc-acc-reason');
+            var reason = ((reasonEl || {}).value || '').trim();
+            if (!nextActive && !reason) { if (errEl) errEl.textContent = 'A reason is required to deactivate.'; return; }
+            var go = document.getElementById('sc-acc-go'); if (go) go.disabled = true;
+            if (errEl) errEl.textContent = '';
+            var payload = { employee_id: employee_id, active: nextActive };
+            if (!nextActive) payload.reason = reason;
+            var r = await scAuthCall('set_active', payload, true);
+            if (!r || !r.ok) {
+                // The SERVER's message. LAST_ADMIN, SELF_DEACTIVATE,
+                // CREDENTIAL_INACTIVE and NOT_FOUND all arrive here.
+                if (errEl) errEl.textContent = (r && r.error && r.error.message) || 'That change was refused.';
+                if (go) go.disabled = false;
+                return;
+            }
+            document.getElementById('sc-acc-confirm').innerHTML = '';
+            // unchanged:true is a real server answer and is reported as such.
+            // remaining_admins, not remaining_owners -- this app's field name.
+            showToast(r.unchanged
+                ? 'No change — that account was already ' + (nextActive ? 'active' : 'deactivated')
+                : (nextActive ? 'Sign-in restored' : 'Sign-in removed') +
+                  (typeof r.remaining_admins === 'number' ? ' · ' + r.remaining_admins + ' active admin' + (r.remaining_admins === 1 ? '' : 's') : ''));
+            await scLoadAccess();
+        }
         // Applied to every practice-level control, so a role that cannot write
         // sees read-only values plus one plain explanation rather than live
         // buttons that will fail.
