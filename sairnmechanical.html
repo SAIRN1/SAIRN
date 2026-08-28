@@ -565,12 +565,12 @@ async function callClaude(system, messages, maxTokens) {
     <div class="note">PINs are no longer set here. Each employee has their own
     credential, stored as a scrypt hash server-side and never in this page.
     An Owner provisions them through <code>api/mech-auth.js</code>
-    (<code>setup</code>), and deactivates a departing employee with
-    <code>set_active</code> &mdash; the credential row is kept, never deleted,
-    so the person stays auditable.</div>
-    <div class="note"><strong>No UI for this yet.</strong> Stated rather than
-    implied: no SAIRN app ships a client for <code>set_active</code>, so today
-    it is a server call. Building that UI is the remaining piece.</div>
+    (<code>setup</code>). Deactivating keeps the credential row &mdash; it is
+    never deleted, so the person stays auditable.</div>
+    <div class="note"><strong>A signed-in session can outlive a deactivation by
+    up to 12 hours.</strong> If someone must lose access immediately, deactivate
+    them here and then confirm they are signed out.</div>
+    <div id="mech-acc-list">Sign in as an Owner to manage access.</div>
   </div>
 </div>
 
@@ -1209,7 +1209,122 @@ async function runBlueprintAI(input){
     try{localStorage.setItem(APP_ID+'_session',JSON.stringify(mechSession));}catch(e){}
     var b=document.getElementById('mech-bootstrap');if(b)b.style.display='none';
     showApp();
+    mechLoadAccess();
   }
+
+  // ── ACCESS / CREDENTIAL LIFECYCLE (2026-08-28) ─────────────────────────
+  // Client for set_active. Ports the SAIRNroofing Access panel (ce8193e) to
+  // this app's own conventions: no modal class exists here, so the confirm is
+  // inline; mechAuth returns {status, body} rather than rf's {ok, data, msg}.
+  //
+  // The panel PREDICTS NOTHING. Every authorisation decision is the server's --
+  // last-owner and caller-still-active refusals are deliberately not pre-empted
+  // here, because guessing them in the client would drift from rules it does
+  // not own. The button is offered, the server refuses, and the SERVER's
+  // message is displayed verbatim.
+  var mechRoster=[];
+  function mechEsc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+  function mechLoadAccess(){
+    var el=document.getElementById('mech-acc-list');
+    if(!el)return;
+    // Owner-only. Cosmetic: api/mech-auth.js refuses a non-owner regardless.
+    if(!mechSession||mechSession.role!=='owner'){
+      el.innerHTML='<div class="note">Only an Owner can manage access.</div>';
+      return;
+    }
+    el.innerHTML='Loading&hellip;';
+    mechAuth('roster',{},true).then(function(r){
+      if(r.status!==200||!r.body||!r.body.ok){
+        var m=(r.body&&r.body.error&&r.body.error.message)||'Could not load the roster.';
+        el.innerHTML='<div class="note">'+mechEsc(m)+'</div>';
+        return;
+      }
+      mechRoster=r.body.employees||[];
+      mechRenderAccess();
+    });
+  }
+
+  function mechRenderAccess(){
+    var el=document.getElementById('mech-acc-list');
+    if(!el)return;
+    if(!mechRoster.length){el.innerHTML='<div class="note">No employees on the roster yet.</div>';return;}
+    var me=(mechSession&&mechSession.employee_id)||'';
+    // Warning only, never a gate -- the server recomputes this and is the
+    // authority. Shown so an Owner is not surprised by a refusal.
+    var activeOwners=mechRoster.filter(function(e){return e.active===true&&e.role==='owner';}).length;
+    el.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+      '<thead><tr><th style="text-align:left">Employee</th><th style="text-align:left">Role</th>'+
+      '<th style="text-align:left">Status</th><th></th></tr></thead><tbody>'+
+      mechRoster.map(function(e){
+        var isSelf=e.employee_id===me, isActive=e.active===true;
+        var lastOwner=isActive&&e.role==='owner'&&activeOwners<=1;
+        var why=isSelf?'You cannot deactivate your own account'
+               :(lastOwner?'This is the only active Owner':'');
+        return '<tr style="border-top:1px solid #e5e7eb">'+
+          '<td style="padding:6px 4px">'+mechEsc(e.display_name||e.employee_id)+
+            '<div style="font-size:11px;opacity:.6">'+mechEsc(e.employee_id)+'</div></td>'+
+          '<td style="padding:6px 4px">'+mechEsc(e.role||'--')+'</td>'+
+          '<td style="padding:6px 4px">'+(isActive?'Active':'Deactivated')+'</td>'+
+          '<td style="padding:6px 4px;text-align:right">'+
+            (isSelf
+              ? '<span style="font-size:11px;opacity:.6">'+mechEsc(why)+'</span>'
+              : '<button class="btn bsm" onclick="mechAskSetActive(\''+mechEsc(e.employee_id)+'\','+(isActive?'false':'true')+')">'+
+                  (isActive?'Deactivate':'Reactivate')+'</button>'+
+                (why?'<div style="font-size:11px;opacity:.6;margin-top:3px">'+mechEsc(why)+'</div>':''))+
+          '</td></tr>';
+      }).join('')+'</tbody></table><div id="mech-acc-confirm" style="margin-top:10px"></div>';
+  }
+
+  // Inline confirm rather than a modal -- this app has no modal component and
+  // inventing one for a single control would be a worse fit than matching it.
+  function mechAskSetActive(employee_id,nextActive){
+    var e=mechRoster.filter(function(x){return x.employee_id===employee_id;})[0];
+    if(!e)return;
+    var box=document.getElementById('mech-acc-confirm');
+    if(!box)return;
+    box.innerHTML='<div class="card" style="padding:12px">'+
+      '<div style="margin-bottom:8px">'+(nextActive
+        ? 'Restore sign-in for <strong>'+mechEsc(e.display_name||employee_id)+'</strong>?'
+        : '<strong>'+mechEsc(e.display_name||employee_id)+'</strong> will no longer be able to sign in. Their record and history are kept.')+'</div>'+
+      // Reason is required ONLY to deactivate, matching the server exactly.
+      (nextActive?'':'<input class="fi" id="mech-acc-reason" maxlength="500" placeholder="Reason (required) — e.g. Left the company 2026-08-28" style="margin-bottom:8px">')+
+      '<div id="mech-acc-err" style="color:#b91c1c;font-size:12px;margin-bottom:8px"></div>'+
+      '<button class="btn bp bsm" id="mech-acc-go" onclick="mechDoSetActive(\''+mechEsc(employee_id)+'\','+nextActive+')">Confirm</button> '+
+      '<button class="btn bsm" onclick="document.getElementById(\'mech-acc-confirm\').innerHTML=\'\'">Cancel</button>'+
+      '</div>';
+  }
+
+  function mechDoSetActive(employee_id,nextActive){
+    var errEl=document.getElementById('mech-acc-err');
+    var reason=((document.getElementById('mech-acc-reason')||{}).value||'').trim();
+    if(!nextActive&&!reason){if(errEl)errEl.textContent='A reason is required to deactivate.';return;}
+    var go=document.getElementById('mech-acc-go');if(go)go.disabled=true;
+    if(errEl)errEl.textContent='';
+    var payload={employee_id:employee_id,active:nextActive};
+    if(!nextActive)payload.reason=reason;
+    mechAuth('set_active',payload,true).then(function(r){
+      if(r.status!==200||!r.body||!r.body.ok){
+        // Show the SERVER's message. LAST_OWNER, SELF_DEACTIVATE,
+        // CREDENTIAL_INACTIVE and NOT_FOUND all arrive here.
+        if(errEl)errEl.textContent=(r.body&&r.body.error&&r.body.error.message)||'That change was refused.';
+        if(go)go.disabled=false;
+        return;
+      }
+      var d=r.body;
+      document.getElementById('mech-acc-confirm').innerHTML='';
+      // unchanged:true is a real server answer and is reported as such.
+      showToast(d.unchanged
+        ? 'No change — that account was already '+(nextActive?'active':'deactivated')
+        : (nextActive?'Access restored':'Access removed')+
+          (typeof d.remaining_owners==='number'?' · '+d.remaining_owners+' active owner'+(d.remaining_owners===1?'':'s'):''));
+      mechLoadAccess();
+    });
+  }
+  window.mechAskSetActive=mechAskSetActive;
+  window.mechDoSetActive=mechDoSetActive;
+  window.mechLoadAccess=mechLoadAccess;
 
   function doLogin() {
     var errEl=document.getElementById('lerr');
