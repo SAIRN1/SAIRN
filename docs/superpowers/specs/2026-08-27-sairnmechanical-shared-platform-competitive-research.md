@@ -856,7 +856,16 @@ Vendor-blog claim with no methodology and no sample. The underlying observation 
 incumbent ships membership/agreement management as a core feature across all three trades — stands
 on its own without the number. Do not use the figure in any proposal or pitch.
 
-**C7. Guardian's app map claims a SAIRNmechanical file that does not exist.**
+**C7. Guardian's app map claimed a SAIRNmechanical file that did not exist — RESOLVED 2026-08-28, and the resolution went the other way.**
+The finding below was correct when written and is now closed: `sairnmechanical.html`
+**exists on `origin/main`** (88,781 bytes), recovered from an unmerged branch in
+`bb9dbb3` and de-fabricated in `4114e22`. Guardian's map was not drifting — it
+was describing an app that existed on a branch nobody had merged. Kept as
+written, because "the map is wrong" and "the file is missing" were
+indistinguishable from where I stood, and the correct move at the time was still
+to state what the read showed rather than to guess which.
+
+Original finding, as recorded 2026-08-27:
 Not a research claim, but found while verifying §9 and worth recording here because it is the same
 class of error: `sairn-guardian-v2`'s App File Map lists `SAIRNmechanical | sairnmechanical.html |
 #84CC16`, and `api/claude.js` allowlists the `sairnmechanical` app_id. **Neither the working tree
@@ -879,7 +888,7 @@ that plainly rather than confirming against nothing.**
 |---|---|
 | A cross-trade billing requirement already on record | **Not found.** `grep -rin "cross-trade\|multi-trade\|per-trade"` across every `.md` in the repo returns hits in **only two files** — the 2026-08-21 research doc and this one. Nothing in `SAIRN-BACKLOG.md`, `docs/SAIRN-OPEN-WORK-INDEX.md`, any handoff, or any of the four `SAIRN-ACTIVE-WORK-*.md` files. |
 | A current SAIRNmechanical architecture assumption | **Not found.** No design doc, no spec, no schema file, no plan. |
-| A SAIRNmechanical codebase to check it against | **Does not exist.** `sairnmechanical.html` is absent from the working tree **and** from `origin/main` (`git cat-file -e origin/main:sairnmechanical.html` → *path does not exist*). |
+| A SAIRNmechanical codebase to check it against | **Did not exist on 2026-08-27; DOES exist as of 2026-08-28** — `sairnmechanical.html`, 88,781 bytes on `origin/main`, recovered from an unmerged branch (`bb9dbb3`). Everything this section concludes still holds: the spec was written before any code existed, which was the cheap moment. |
 
 What *does* exist, and is the whole of it:
 

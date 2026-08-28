@@ -294,12 +294,20 @@ finding is *where* and *how expensive*.
 3. **§3 Tier A vs Tier C** — is anything in Tier A implemented *per trade* (three credential tables,
    three asset tables, three agreement models)? That is the shape decision (1) rejects.
 
-**A note the reviewer should carry:** as of 2026-08-27, `sairnmechanical.html` exists in **neither
-this clone's working tree nor `origin/main`** (`git cat-file -e origin/main:sairnmechanical.html` →
-*path does not exist*), while `sairn-guardian-v2`'s App File Map asserts it and `api/claude.js`
-allowlists the `sairnmechanical` app_id. If a recovered copy is being reviewed, **it is local to
-whichever clone recovered it and is not visible to any other clone until pushed.** Confirm which
-artefact is under review before trusting any finding about it.
+**UPDATED 2026-08-28 — the file is now real and pushed.** When this section was written,
+`sairnmechanical.html` existed in neither this clone nor `origin/main`, and the note here warned
+that any recovered copy was invisible until pushed. It was pushed: 88,781 bytes on `origin/main`,
+recovered from an unmerged branch in `bb9dbb3` and de-fabricated in `4114e22`. Guardian's App File
+Map was therefore right all along — it described an app living on a branch nobody had merged, not a
+phantom.
+
+**What a reviewer should carry now:** a Guardian scan of that file on 2026-08-28 came back clean on
+every mechanical check — 6/6 script blocks parse, div balance 485/485, 0 duplicate ids, 0 duplicate
+function names, 0 undefined handlers, 0 `console.log`, no box characters in string literals, and its
+single `api.anthropic.com` hit is the comment `// NEVER api.anthropic.com`, i.e. the rule being
+stated rather than broken. **One real finding:** `page-sairnbiz-connector` is an unreachable panel —
+the div exists, and nothing anywhere calls `showPage('sairnbiz-connector')` or otherwise references
+it. That is a live gap in the recovered app, not a scanning artefact.
 
 ---
 
