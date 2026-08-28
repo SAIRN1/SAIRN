@@ -43,7 +43,8 @@ const JURISDICTION_LABELS = {
   ct: 'Connecticut',
   ut: 'Utah',
   nv: 'Nevada',
-  or: 'Oregon'
+  or: 'Oregon',
+  ok: 'Oklahoma'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

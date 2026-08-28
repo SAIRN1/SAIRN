@@ -1355,7 +1355,49 @@ var COMPUTATION_STANDARDS = {
   or_orcp_10: { label: 'Or. R. Civ. P. 10', impl: 'frcp_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: ' A', months_years_suffix: ' A',
-    rollover_suffix_forward: ' A', rollover_suffix_backward: '' }
+    rollover_suffix_forward: ' A', rollover_suffix_backward: '' },
+
+  // OKLAHOMA. Statutory civil procedure -- the Oklahoma Pleading Code, Title
+  // 12 -- so the computation rule is a statute rather than a court rule.
+  //
+  // IT HAS LOUISIANA'S ROLLOVER SHAPE AND ONE CLAUSE SAVES IT. 2006(A)(1)
+  // rolls the last day only if it "is a legal holiday as defined by Section
+  // 82.1 of Title 25 ... or any other day when the office of the court clerk
+  // does not remain open" -- SATURDAY AND SUNDAY ARE NOT NAMED. That is
+  // exactly the structure that BLOCKED Louisiana, where art. 5059 rolls only
+  // on "a legal holiday" and R.S. 1:55 makes Saturday a holiday in some
+  // parishes only. Oklahoma resolves it in the first eight words of its
+  // holiday statute: 25 O.S. 82.1(A) opens "Each Saturday, Sunday", statewide,
+  // with no county qualification. So isWeekend() is correct for Oklahoma -- by
+  // a different textual route than any common-law state, but correct, and only
+  // because of a statute the computation rule points at rather than anything
+  // in the computation rule itself.
+  //
+  // THE SHORT-PERIOD THRESHOLD IS ELEVEN, joining Tennessee, Arizona,
+  // Wisconsin and Alabama, and not the 7 of six other states nor Minnesota's,
+  // Utah's and Nevada's absence.
+  //
+  // AND SIX SECTIONS ARE EXPRESSLY CARVED OUT OF THAT EXCLUSION: "Except for
+  // the times provided in Sections 765, 990.3, 1148.4, 1148.5, 1148.5A, and
+  // 1756 of this title". A row seeded under any of those must count EVERY
+  // intermediate day regardless of period length. This is an ENUMERATED
+  // opt-out -- narrower and more tractable than Louisiana's open-ended
+  // "expressly excluded" and Minnesota's open-ended opt-in -- but a
+  // standard-level flag cannot express it, and none of the six is in this
+  // batch. SEEDING ONE LATER WITHOUT NOTICING WOULD SILENTLY APPLY AN
+  // EXCLUSION THE STATUTE REMOVES, computing LATE.
+  //
+  // THE CLERK-CLOSURE LIMB APPEARS IN BOTH the rollover and the exclusion, and
+  // it is a PARTIAL-closure test -- "does not remain open for public business
+  // until the regularly scheduled closing time" -- broader than a simple
+  // closed/open test and the same breadth as Oregon's. It is ADDITIONAL to the
+  // holiday list rather than a replacement, so omitting it reports EARLY.
+  //
+  // NO BACKWARD PROVISION, so the backward suffix is blank.
+  ok_12_2006: { label: '12 O.S. § 2006', impl: 'frcp_6a',
+    short_period_exclusion_days: 11,
+    base_period_suffix: '(A)(1)', months_years_suffix: '(A)(1)',
+    rollover_suffix_forward: '(A)(1)', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -2333,6 +2375,41 @@ var SERVICE_EXTENSION_STANDARDS = {
     qualifies: function (method) {
       return method === 'mail' || method === 'email' ||
              method === 'facsimile' || method === 'electronic';
+    }
+  },
+
+  // OKLAHOMA. 12 O.S. 2006(D), verbatim on the operative part:
+  //
+  //   "the notice or paper is served upon the party by MAIL, THIRD-PARTY
+  //    COMMERCIAL CARRIER OR ELECTRONIC MEANS, three (3) days shall be ADDED
+  //    TO THE PRESCRIBED PERIOD"
+  //
+  // "Added to the prescribed period" -> add_to_period_then_roll, the
+  // period-lengthening order, not the federal after-expiry one.
+  //
+  // ELECTRONIC MEANS QUALIFIES, as in Oregon, Massachusetts and Arkansas and
+  // unlike Nevada, West Virginia, New York and the federal rule. And Oklahoma
+  // is the ONLY seeded jurisdiction naming THIRD-PARTY COMMERCIAL CARRIER as
+  // its own category -- Texas lists commercial delivery service among its
+  // service methods but extends for mail alone, so the two must not be read
+  // across.
+  //
+  // WHAT THIS STANDARD DOES NOT COVER, AND MUST NOT BE MADE TO: the proviso in
+  // the same subsection. "provided, however, when a summons and petition are
+  // served by mail, a defendant shall serve an answer within twenty (20) days
+  // or thirty-five (35) days ... AFTER THE DATE OF RECEIPT OR IF REFUSED, THE
+  // DATE OF REFUSAL of the summons and petition". That is a DIFFERENT TRIGGER,
+  // not a different amount -- the answer runs from receipt or refusal rather
+  // than from service, and takes NO three days. It is seeded as its own rows
+  // with receipt/refusal trigger names; a caller who supplied a service date
+  // to the ordinary answer row instead would compute EARLY.
+  ok_12_2006_d: {
+    label: '12 O.S. § 2006(D)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail' || method === 'third_party_commercial_carrier' ||
+             method === 'electronic';
     }
   }
 };
