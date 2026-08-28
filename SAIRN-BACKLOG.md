@@ -1494,3 +1494,64 @@ a confident result for rules nobody asked about.
 **Done looks like:** a named data source, confirmed to cover the symbol universe,
 the history depth, and BOTH granularities the rules need — recorded before the
 first backtrader run, not inferred from whatever the first run happened to load.
+
+## Nothing can tell you a live licence is running stale rules — `version` exists on every rule and is never bumped
+
+**Logged:** 2026-08-28 (CC). **This is the general form of the LAW-PINNACLE
+defect Hank is reloading right now**, and it is not specific to SAIRNlaw.
+
+**The confirmed failure mode:** a rule is corrected in a seed file, the commit
+lands, and the live licence keeps serving the old value indefinitely. It was
+found on LAW-PINNACLE-2026 — the federal Rule 6(d) fix (`e1aa3f8`) and the
+Florida exclusivity fix were in the repo but had never been loaded into the live
+licence.
+
+**Why it went undetected, which is the part worth fixing:** there is no way to
+detect it. Every rule row carries a `version` field. **All 270 SAIRNlaw seed
+rules are `version: 1`**, and `e1aa3f8` — which removed a three-day service
+extension and therefore changed a computed legal deadline — **left `version` at
+1**. Verified by diffing the seed at `e1aa3f8^` against the seed today:
+
+```
+frcp-12a1Ai-answer-after-service      version 1 -> 1 | service_extension PRESENT -> absent
+frcp-12a2-united-states-official...   version 1 -> 1 | service_extension PRESENT -> absent
+```
+
+So a stale live row and a corrected seed row are **byte-distinguishable but not
+version-distinguishable**. The only way to find drift is to diff whole jsonb
+blobs across licences, which is precisely the manual exercise this session spent
+the evening on to find two rows.
+
+**The detector is half-built.** The field is already there, on every row, in
+every seed, across every app that uses this pattern. It is simply never
+incremented. Nothing else needs inventing — no new column, no migration, no
+schema change.
+
+**Scope, because it is not a SAIRNlaw problem:** the same seed-file →
+per-licence-table shape covers `alf_compliance_rules`, `alf_payer_rules`
+(SAIRNcare), `dnt_cred_rules` (SAIRNdental), `rf_cert_rules`,
+`rf_contingency_rules` (SAIRNroofing) and `sc_anesthesia_base_units`
+(SAIRNcode) — see `sql/platform_reference_rules_divergence_2026-08-28.sql`.
+38 seed files exist in `sql/`; 13 changed in the three days to 2026-08-28. Every
+one of those is a candidate for the same silent staleness, and no licence
+anywhere records which seed generation it holds.
+
+**Why this outranks reloading PINNACLE:** the reload fixes one licence once.
+Without a staleness signal the same gap reopens the next time any rule is
+corrected, and the next discovery will again be accidental. Tonight it was found
+because someone happened to run a divergence audit; that is not a control.
+
+**Done looks like** — a decision between, at minimum:
+- **(a) bump `version` on every corrective edit**, and add a check comparing the
+  max seed version per jurisdiction against what each licence holds. Cheapest,
+  uses what exists, but relies on discipline: an author who forgets to bump
+  reintroduces the blind spot silently.
+- **(b) a content hash per rule** stored alongside the row, computed at load.
+  No discipline required and it cannot be forgotten, but it needs a load-time
+  step that does not exist today.
+- **(c) fold it into whatever shared-rules redesign follows the scoping work** —
+  if rules stop being per-licence copies, staleness stops being possible for
+  the shared set, and only genuinely per-customer rows keep the risk.
+
+Whichever is chosen, the test is that it would have flagged LAW-PINNACLE before
+a human went looking.
