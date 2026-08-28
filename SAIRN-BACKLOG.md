@@ -1327,3 +1327,55 @@ which artefact is under review before trusting a finding about it.
 **Done looks like:** nothing here — this row is a signpost. The spec's own change
 discipline applies: amendments are decisions, recorded in the commit message, and
 superseded requirements get marked superseded in place rather than deleted.
+
+## SAIRNdental's public forms are live and receiving unsolicited traffic — rate-limited, but is that the right posture for a PHI-adjacent endpoint?
+
+**Logged:** 2026-08-28, surfaced by the platform-wide demo-licence provenance
+audit (`sql/platform_demo_licence_provenance_audit_2026-08-28.sql`). **Not
+urgent. Nothing is broken and nothing leaked.** This is a posture question to
+evaluate before real patients use these forms, not an incident.
+
+**What was found.** One `dnt_complaints` row on `DNT-PINNACLE-2026`, classified
+by Michael from `sql/sairndental_complaint_triage_2026-08-28.sql` as **scanner /
+probe traffic**: no name, no email, no phone, and a zero-length first message
+despite **six message entries** in the thread. Created **2026-08-12** — it
+predates the 2026-08-27 session entirely. Nobody had ever looked at this table.
+
+**The detail worth keeping:** six entries from a probe means the *reply* path
+(`api/sairndental/public-complaint-thread.js`) was exercised repeatedly, not
+just the submit path. So both public write paths have been reached by something
+automated, unprompted, and nobody knew until a provenance audit looked.
+
+**Row left in place** on Michael's call — not worth a delete for one probe entry.
+
+**Current posture, read from the code rather than assumed:**
+- `public-complaint-submit.js:43` — 5 submissions/hour/IP
+- `public-book.js:43` — 5 booking attempts/hour/IP
+- `public-complaint-thread.js` — 20 replies/hour/IP
+- Backed by a real persistent Supabase-backed limiter with a hashed IP
+  (`api/_lib/dental-public.js`), not an in-memory counter that resets per
+  serverless invocation. That part is genuinely sound.
+
+**The question to evaluate, which is not "add more rate limiting":** these
+endpoints are unauthenticated by necessity — a patient self-booking or filing a
+complaint has no credential, and cannot be given one. The limiter caps *volume
+per IP*; it does not establish that a submitter is a real person, and a
+distributed or rotating-IP probe is unaffected by any per-IP number. So the real
+questions are (a) whether an unauthenticated form attached to a practice that
+holds PHI wants a human-presence check at all, (b) whether anything should alert
+when a thread accumulates messages with no matching appointment or patient, and
+(c) whether probe rows should be reaped rather than accumulating unread — this
+one sat for 16 days.
+
+**Why deferred:** no real patients use these forms yet, and the answer is a
+product/security judgment (adding friction to a patient-facing form has a real
+cost), not a patch. Deciding it under time pressure with a prospect waiting
+would be the wrong moment.
+
+**Done looks like:** an explicit decision on (a)/(b)/(c) above, recorded, before
+any real practice's booking page goes live to patients. If the decision is "rate
+limiting is sufficient," that is a fine answer — but it should be a decision
+someone made, not a default nobody examined. Note also that no other app on the
+platform has an unauthenticated *write* endpoint into its own per-licence data
+tables; SAIRNdental is the only one, so whatever is decided here does not
+generalise and does not need to.
