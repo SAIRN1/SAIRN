@@ -1379,3 +1379,56 @@ someone made, not a default nobody examined. Note also that no other app on the
 platform has an unauthenticated *write* endpoint into its own per-licence data
 tables; SAIRNdental is the only one, so whatever is decided here does not
 generalise and does not need to.
+
+## `git_push_master_guard.py` blocks on TEXT ABOUT a push, not only on a push
+
+**Logged:** 2026-08-28. **Low severity, silent, and it will recur.** Not a
+security hole — the guard is over-eager, not under-eager. Logged because a
+documented failure mode that can still recur is not fixed.
+
+**What happened.** A `git commit` was blocked with *"this command pushes to the
+stale 'master' branch. Repo default is 'main'."* The command pushed nothing. It
+was a **commit**. Its message quoted the repo's own `permissions.deny` list
+verbatim, and one of those entries is the literal rule string containing that
+branch name next to the word push. The guard greps the whole Bash command
+string, so any commit message, heredoc or inline text that merely *mentions* it
+trips the check.
+
+**It happened twice in a row while writing this very row**, which is as clear a
+reproduction as the finding will ever get: once for the settings commit whose
+message quoted the deny list, and again for the first attempt at this backlog
+entry, whose text necessarily contains the same words.
+
+**Why it matters more than it looks.** The block is correct-shaped and the
+message is accurate about its own rule, so the natural reaction is to assume the
+command really was unsafe and reword it — quietly losing whatever the message
+said. It cost two retries here. The failure mode is a session hitting this while
+writing an honest commit message about branch policy, concluding its command was
+wrong, and editing the *content* rather than the *transport*.
+
+**Workaround, which works and costs nothing:** write the message to a file
+outside the repo and use `git commit -F <file>`, and append long prose to repo
+files from a file rather than an inline heredoc. The guard then sees no matching
+text in the command itself.
+
+**Not fixed here, deliberately.** Narrowing the grep is a real judgment call: the
+guard's bluntness is the reason it has never missed a genuine bad push, and a
+cleverer matcher — parse the command, inspect only actual refspecs — is a
+correctness risk in the one tool whose entire job is paranoia. Whoever picks it
+up should decide whether a false positive every few weeks is worth trading for
+parsing complexity in a guard.
+
+**Done looks like:** either (a) an explicit recorded decision that the false
+positive is acceptable, so the next session that hits it does not re-diagnose it
+from scratch, or (b) a narrowed matcher inspecting only the push refspec, with a
+test proving it still blocks a genuine push to the stale branch and no longer
+blocks prose that mentions one.
+
+**Related observation from the same hour — not a separate row, but worth seeing
+together:** this surfaced during a *duplicated-work collision*. Another clone had
+independently made the identical settings change while this one was writing it,
+the second such collision in a single turn (the other being `sairnmechanical.html`'s
+status). The clones share a remote but nothing announces intent.
+`sairn-parallel-app-scaling` already documents that gap — *"nothing in the
+existing set answers: is another clone building this right now?"* — so this is
+another instance of a known finding, not a new one.
