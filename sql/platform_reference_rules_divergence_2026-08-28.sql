@@ -41,8 +41,23 @@
 -- table name before reading the number.
 
 -- ═════════════════════════════════════════════════════════════════════════
+-- QUERY 0 -- SELF-TEST. Run this FIRST, once. It costs nothing, and it proves
+-- the mechanism survives the exact case that broke the first version of query 2.
+--
+-- It calls query_to_xml on a query that returns ZERO rows before aggregation.
+-- Expected result: a single row containing the text "(none)".
+-- If it instead raises "could not parse XML document / Document is empty", stop
+-- -- the fix did not take on this server and query 2 will fail the same way.
+-- ═════════════════════════════════════════════════════════════════════════
+select (xpath('/row/c/text()',
+         query_to_xml(
+           $q$ select coalesce(string_agg(x::text, ', '), '(none)') as c
+                 from (select 1 where false) t(x) $q$,
+           false, true, '')))[1]::text as self_test_expect_none;
+
+-- ═════════════════════════════════════════════════════════════════════════
 -- QUERY 1 -- THE COPY COST. How many rows does a licence have to be given?
--- Run first: cheap, and it sizes the problem before you look at content.
+-- Cheap, and it sizes the problem before you look at content.
 -- ═════════════════════════════════════════════════════════════════════════
 with ref_tables as (
   select c.table_name
@@ -73,13 +88,40 @@ where (xpath('/row/c/text()',
 order by rows_held desc, r.table_name, l.app_id;
 
 -- ═════════════════════════════════════════════════════════════════════════
--- QUERY 2 -- THE ONE THAT MATTERS. Same rule id, DIFFERENT content, on two
--- or more licences. Every row returned here is two customers being told
--- different things by the same product.
+-- QUERY 2 -- THE ONE THAT MATTERS. Same rule id, DIFFERENT content, across two
+-- or more licences. Anything flagged here is two customers being told different
+-- things by the same product.
 --
--- Compares a stable hash of the `data` blob per (table, rule id), counting how
--- many DISTINCT versions exist across licences. 1 = every licence that holds it
--- agrees. 2+ = they have already diverged.
+-- ── FIXED 2026-08-28 AFTER IT FAILED ON FIRST RUN ───────────────────────
+-- Reported error: "could not parse XML document / DETAIL: line 1: Document is
+-- empty". TWO separate defects in one call, and the second was hidden behind
+-- the first:
+--
+--   1. EMPTY RESULT SET -> EMPTY DOCUMENT. The inner query ended in
+--      HAVING count(distinct license_hash) > 1, which legitimately matches
+--      NOTHING for most tables. query_to_xml over a zero-row query returns an
+--      empty xml value, and xpath() then tries to parse '' and raises. This was
+--      not bad data -- a table with no shared rule ids is the NORMAL case, so
+--      the query was guaranteed to fail on any realistic database. It could only
+--      have succeeded if every reference table already had divergence, which is
+--      the opposite of what anyone expects to find.
+--
+--   2. WRONG XPATH FOR THE OUTPUT SHAPE. With tableforest = true,
+--      query_to_xml emits bare <row> elements with no wrapper, but the xpath
+--      asked for '/table/row' -- the wrapped shape that tableforest = false
+--      produces. So even on a table WITH divergence it would have matched
+--      nothing and reported a confident zero. Defect 1 made it crash; without
+--      defect 1, defect 2 would have made it lie. The crash was the lucky part.
+--
+-- THE FIX avoids the fragile construct rather than patching it. Every dynamic
+-- call below returns EXACTLY ONE ROW -- an aggregate, wrapped in coalesce --
+-- which is the same single-row shape query 1 uses and which has already run
+-- clean on this platform. A one-row result can never be an empty document, and
+-- there is no row-splitting xpath left to get wrong.
+--
+-- The cost, stated plainly: findings arrive as one line per TABLE with the
+-- offending ids in a list column, rather than one line per rule id. For a
+-- diagnostic whose job is "is anything diverged, and where", that reads better.
 -- ═════════════════════════════════════════════════════════════════════════
 with ref_tables as (
   select c.table_name
@@ -90,10 +132,20 @@ with ref_tables as (
   where c.table_schema = 'public'
     and c.column_name = 'license_hash'
     and c.table_name ~ '(_rules?|_rates?|_codes?|_requirements?|_holidays?|_standards?|_units)$'
+    -- REQUIRE a `data` column. Every reference table on this platform today is
+    -- (license_hash, <x>_id, data jsonb), so this changes nothing now -- it is
+    -- here because the comparison below hashes `data`, and a future reference
+    -- table shaped differently would otherwise fail the whole query with a
+    -- column-does-not-exist error rather than simply not being comparable.
+    -- Same class of unguarded assumption as the empty-document defect above.
+    and exists (select 1 from information_schema.columns d
+                 where d.table_schema = 'public'
+                   and d.table_name = c.table_name
+                   and d.column_name = 'data')
 ),
 idcols as (
   -- identity column = the non-license_hash half of the 2-column unique key,
-  -- read from pg_constraint rather than guessed from the column name
+  -- read from pg_constraint rather than guessed from a *_id column name
   select rel.relname::text as table_name, att.attname::text as id_col
   from pg_constraint con
   join pg_class rel on rel.oid = con.conrelid
@@ -108,57 +160,77 @@ idcols as (
     and exists (select 1 from lateral unnest(con.conkey) as k2(attnum)
                 join pg_attribute a2 on a2.attrelid = rel.oid and a2.attnum = k2.attnum
                 where a2.attname = 'license_hash')
+),
+measured as (
+  select
+    r.table_name,
+    i.id_col,
+    -- ids held by 2+ licences whose content AGREES everywhere
+    (xpath('/row/c/text()',
+       query_to_xml(format(
+         $f$select count(*) as c from (select %I as k from public.%I group by %I
+              having count(distinct license_hash) > 1
+                 and count(distinct md5(data::text)) = 1) s$f$,
+         i.id_col, r.table_name, i.id_col), false, true, '')))[1]::text::bigint
+       as consistent_ids,
+    -- ids held by 2+ licences with 2+ DISTINCT versions of the blob
+    (xpath('/row/c/text()',
+       query_to_xml(format(
+         $f$select count(*) as c from (select %I as k from public.%I group by %I
+              having count(distinct license_hash) > 1
+                 and count(distinct md5(data::text)) > 1) s$f$,
+         i.id_col, r.table_name, i.id_col), false, true, '')))[1]::text::bigint
+       as diverged_ids,
+    -- WHICH ids, as one always-present string. coalesce guarantees a value even
+    -- when the inner set is empty, which is what keeps this from ever producing
+    -- an empty document -- the whole point of the rewrite.
+    (xpath('/row/c/text()',
+       query_to_xml(format(
+         $f$select coalesce(string_agg(k::text, ', ' order by k), '(none)') as c
+              from (select %I as k from public.%I group by %I
+                     having count(distinct license_hash) > 1
+                        and count(distinct md5(data::text)) > 1) s$f$,
+         i.id_col, r.table_name, i.id_col), false, true, '')))[1]::text
+       as diverged_id_list
+  from ref_tables r
+  join idcols i on i.table_name = r.table_name
 )
 select
-  x.table_name,
-  x.entry_id,
-  x.licences_holding_it,
-  x.distinct_versions,
-  case when x.distinct_versions > 1
-       then 'DIVERGED -- licences disagree about this rule'
-       else 'consistent' end as verdict
-from ref_tables r
-join idcols i on i.table_name = r.table_name
-cross join lateral (
-  select
-    (xpath('/row/t/text()', q))[1]::text            as table_name,
-    (xpath('/row/e/text()', q))[1]::text            as entry_id,
-    (xpath('/row/n/text()', q))[1]::text::bigint    as licences_holding_it,
-    (xpath('/row/v/text()', q))[1]::text::bigint    as distinct_versions
-  from unnest(
-    xpath('/table/row',
-      query_to_xml(format(
-        'select %L::text as t, %I as e, count(distinct license_hash) as n,'
-        ' count(distinct md5(data::text)) as v'
-        ' from public.%I group by %I having count(distinct license_hash) > 1',
-        r.table_name, i.id_col, r.table_name, i.id_col), false, true, ''))
-  ) as q
-) x
-order by x.distinct_versions desc, x.licences_holding_it desc, x.table_name, x.entry_id;
+  table_name,
+  id_col,
+  consistent_ids,
+  diverged_ids,
+  case when diverged_ids > 0
+       then 'DIVERGED -- diff these two blobs before calling it a defect'
+       else 'consistent' end as verdict,
+  diverged_id_list
+from measured
+order by diverged_ids desc, table_name;
 
 -- ═════════════════════════════════════════════════════════════════════════
 -- READING THE RESULT
 -- ═════════════════════════════════════════════════════════════════════════
--- ANY row with verdict 'DIVERGED' in a genuinely-shared table (law_deadline_rules,
---   law_holidays, alf_compliance_rules, alf_payer_rules, dnt_cred_rules,
---   rf_cert_rules, rf_contingency_rules, sc_anesthesia_base_units) is a live
---   defect: two customers are being told different things by the same product,
---   and neither is flagged as stale. Fix the data before the schema.
+-- ANY table with diverged_ids > 0 that is genuinely shared content
+--   (law_deadline_rules, law_holidays, alf_compliance_rules, alf_payer_rules,
+--   dnt_cred_rules, rf_cert_rules, rf_contingency_rules,
+--   sc_anesthesia_base_units) is a live defect: two customers are being told
+--   different things and neither copy is flagged as stale. Fix the DATA before
+--   the schema.
 --
--- ZERO diverged rows does NOT mean the design is fine. It means nothing has
---   drifted YET -- most likely because few licences have been seeded at all.
---   The mechanism that allows drift is unchanged, and every rule correction
---   made from now on still has to be applied per licence by hand.
+-- ZERO diverged everywhere does NOT mean the design is fine. It most likely
+--   means few licences have been seeded at all. The mechanism that allows drift
+--   is unchanged, and every rule correction from here still has to be applied
+--   per licence by hand -- including the two deadline fixes made on 2026-08-27.
 --
--- A rule present on ONE licence and absent from another is NOT reported here at
---   all: query 2 only considers ids held by 2+ licences. Query 1 shows that gap
---   as unequal row counts, which for a jurisdiction rule set is usually the more
---   common shape -- customer A has the corrected rule, customer B never got it.
+-- A rule present on ONE licence and absent from another is NOT counted here:
+--   both columns only consider ids held by 2+ licences. Query 1 shows that gap
+--   as unequal row counts, and for a jurisdiction rule set it is usually the
+--   more common shape -- customer A got the corrected rule, customer B never did.
 --
 -- ── LIMIT, stated so it is not assumed away ─────────────────────────────
 -- md5(data::text) is sensitive to JSON key ORDER, so two semantically identical
 -- blobs written by different code paths can hash differently and read as
--- diverged. Treat query 2's output as a candidate list to eyeball, not a verdict:
--- confirm any hit by diffing the two `data` values directly before calling it a
--- defect. A false DIVERGED is cheap; a missed one is not, which is why the
--- comparison errs this way deliberately.
+-- diverged. Treat diverged_id_list as a candidate list to eyeball, not a
+-- verdict: confirm by diffing the two `data` values directly before calling
+-- anything a defect. A false DIVERGED is cheap; a missed one is not, which is
+-- why the comparison errs in this direction deliberately.
