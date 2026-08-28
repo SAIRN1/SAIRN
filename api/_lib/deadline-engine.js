@@ -1397,7 +1397,36 @@ var COMPUTATION_STANDARDS = {
   ok_12_2006: { label: '12 O.S. § 2006', impl: 'frcp_6a',
     short_period_exclusion_days: 11,
     base_period_suffix: '(A)(1)', months_years_suffix: '(A)(1)',
-    rollover_suffix_forward: '(A)(1)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '(A)(1)', rollover_suffix_backward: '' },
+
+  // SOUTH CAROLINA. The rollover names both weekend days AND takes its holiday
+  // basis from TWO lists at once: "unless it is a Saturday, Sunday OR A STATE
+  // OR FEDERAL HOLIDAY". That union is the first in this platform -- every
+  // earlier jurisdiction keys on one list, or on two STATE lists (Wisconsin) --
+  // and it is not optional: Juneteenth and Columbus Day are federal holidays
+  // and are absent from S.C. Code 53-5-10, so a state-only calendar reports
+  // EARLY. The union is built and asserted in tools/gen_sc_calendar.py.
+  //
+  // SHORT-PERIOD EXCLUSION AT SEVEN -- "when the period of time prescribed or
+  // allowed is less than seven days" -- matching NJ, NC, WA, MA, MO and WV
+  // appellate, and not TN/AZ/WI's 11, Oklahoma's 11, or the absence in
+  // Minnesota, Utah and Nevada.
+  //
+  // "A HALF HOLIDAY SHALL BE CONSIDERED AS OTHER DAYS AND NOT AS A HOLIDAY" --
+  // an express carve-out with no analogue in any seeded state. It is INERT
+  // today, because nothing in 53-5-10 is a half holiday, but it is the rule
+  // pre-emptively refusing a category rather than an omission, and it must not
+  // be quietly dropped if 53-5-10 ever gains one.
+  //
+  // NO BACKWARD PROVISION. Rule 6(a) addresses only a period that "begins to
+  // run" after an act, so the backward suffix is blank -- the NJ/NC/WA/MA/MO/WI
+  // position. Rule 6(d)'s ten-day motion notice and two-day affidavit periods
+  // are BACKWARD and are therefore NOT seeded, even though the two-day period
+  // is the one row that would exercise the seven-day exclusion.
+  sc_rcp_6: { label: 'S.C. R. Civ. P. 6', impl: 'frcp_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -2410,6 +2439,41 @@ var SERVICE_EXTENSION_STANDARDS = {
     qualifies: function (method) {
       return method === 'mail' || method === 'third_party_commercial_carrier' ||
              method === 'electronic';
+    }
+  },
+
+  // SOUTH CAROLINA. FIVE days, not three, and the rule's own drafting Note
+  // says why: "This Rule 6(e) is the same as the Federal Rule except that the
+  // additional time to take an act after service is by mail is INCREASED FROM
+  // 3 TO 5 DAYS." Every seeded state adds three except California's and New
+  // York's per-method tables and New Jersey's five. A three-day extension
+  // carried over from a neighbour computes TWO DAYS EARLY on every mailed
+  // South Carolina period.
+  //
+  // IT ALSO REACHES SERVICE UPON A STATUTORY AGENT, which no other seeded rule
+  // does: "served upon him by mail OR UPON A PERSON DESIGNATED BY STATUTE TO
+  // ACCEPT SERVICE". That is its own method here, not a variety of mail.
+  //
+  // E-MAIL IS THE OPEN QUESTION, AND THE DEFAULT IS DELIBERATE. A web search
+  // returns, as Rule 6(e), a sentence extending the five days to e-mail. THAT
+  // SENTENCE IS NOT IN RULE 6(e) -- the rule was read verbatim from
+  // sccourts.org and contains no e-mail language at all. The 2022 Supreme
+  // Court order "RE: Service by E-Mail in the Trial Courts" (Appellate Case
+  // No. 2022-000029, 6 May 2022) was then read end to end: paragraphs (a)
+  // through (f), and NO time-extension provision whatsoever.
+  //
+  // So on the two primary sources actually read, whether the five days reach
+  // e-mail is UNRESOLVED. THE DIRECTION DECIDES THE DEFAULT: if e-mail does
+  // collect them and we omit them, the date is EARLY -- safe. If it does not
+  // and we add them, the date is LATE -- the direction that misses a filing.
+  // So e-mail does NOT qualify here, and the seed discloses the question.
+  // Do not widen this on the strength of a search summary.
+  sc_rcp_6_e: {
+    label: 'S.C. R. Civ. P. 6(e)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail' || method === 'statutory_agent';
     }
   }
 };
