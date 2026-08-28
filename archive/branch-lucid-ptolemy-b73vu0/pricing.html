@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRN — Plans & Pricing</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#080810;color:#fff;font-family:'Inter',sans-serif;min-height:100vh;padding:60px 24px}
+.back{color:#f59e0b;text-decoration:none;font-size:14px;display:inline-block;margin-bottom:40px}
+.back:hover{text-decoration:underline}
+h1{font-size:48px;font-weight:800;text-align:center;margin-bottom:12px}
+h1 em{color:#f59e0b;font-style:normal}
+.sub{color:#a1a1aa;font-size:18px;text-align:center;margin-bottom:60px}
+.group{margin-bottom:56px}
+.group-label{font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#71717a;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.card{background:#0d0d14;border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;position:relative}
+.card.hot{border-color:#f59e0b}
+.badge{background:#f59e0b;color:#000;font-size:10px;font-weight:800;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:12px;letter-spacing:1px}
+.name{font-size:18px;font-weight:700;color:#fff;margin-bottom:6px}
+.price{font-size:36px;font-weight:800;color:#f59e0b;margin-bottom:8px;line-height:1}
+.price span{font-size:14px;color:#71717a;font-weight:400}
+.desc{color:#a1a1aa;font-size:13px;line-height:1.5;margin-bottom:20px}
+.btn{width:100%;padding:12px;background:#f59e0b;color:#000;font-weight:700;font-size:14px;border:none;border-radius:10px;cursor:pointer;transition:background 0.2s}
+.btn:hover{background:#fbbf24}
+.btn-outline{width:100%;padding:12px;background:transparent;color:#f59e0b;font-weight:600;font-size:13px;border:1px solid #f59e0b;border-radius:10px;cursor:pointer;transition:all 0.2s}
+.btn-outline:hover{background:#f59e0b;color:#000}
+.fine{text-align:center;color:#52525b;font-size:12px;margin-top:40px}
+</style>
+</head>
+<body>
+<a class="back" href="/SAIRNnexus">← Back to SAIRN NEXUS</a>
+<h1>Choose Your <em>Plan</em></h1>
+<p class="sub">Every plan includes unlimited Claude AI sessions, session history, and print output. Cancel anytime.</p>
+
+<div class="group">
+  <div class="group-label">NEXUS Consumer Bundle — All 8 Apps</div>
+  <div class="grid">
+    <div class="card hot">
+      <div class="badge">MOST POPULAR</div>
+      <div class="name">Individual</div>
+      <div class="price">$49.99<span>/mo</span></div>
+      <div class="desc">All 8 NEXUS apps for one person.</div>
+      <button class="btn" id="btn-individual">Start Free Trial</button>
+    </div>
+    <div class="card">
+      <div class="name">Family</div>
+      <div class="price">$79.99<span>/mo</span></div>
+      <div class="desc">All 8 NEXUS apps for up to 5 family members.</div>
+      <button class="btn" id="btn-family">Start Free Trial</button>
+    </div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-label">Individual Apps</div>
+  <div class="grid">
+    <div class="card"><div class="name">SAIRNtype</div><div class="price">$9.99<span>/mo</span></div><div class="desc">AI writing, editing, emails</div><button class="btn-outline" id="btn-type">Subscribe</button></div>
+    <div class="card"><div class="name">SAIRNhealth</div><div class="price">$12.99<span>/mo</span></div><div class="desc">Symptoms, medications, doctor prep</div><button class="btn-outline" id="btn-health">Subscribe</button></div>
+    <div class="card"><div class="name">SAIRNmoney</div><div class="price">$12.99<span>/mo</span></div><div class="desc">Budget, debt, investing</div><button class="btn-outline" id="btn-money">Subscribe</button></div>
+    <div class="card"><div class="name">SAIRNstudy</div><div class="price">$9.99<span>/mo</span></div><div class="desc">Learning, tutoring, study guides</div><button class="btn-outline" id="btn-study">Subscribe</button></div>
+    <div class="card"><div class="name">SAIRNlingual</div><div class="price">$9.99<span>/mo</span></div><div class="desc">Language learning, translation</div><button class="btn-outline" id="btn-lingual">Subscribe</button></div>
+    <div class="card"><div class="name">SAIRNsenior</div><div class="price">$12.99<span>/mo</span></div><div class="desc">Medicare, benefits, scam protection</div><button class="btn-outline" id="btn-senior">Subscribe</button></div>
+    <div class="card"><div class="name">SAIRNhome</div><div class="price">$9.99<span>/mo</span></div><div class="desc">Home buying, selling, renovating</div><button class="btn-outline" id="btn-home">Subscribe</button></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-label">Professional & Enterprise</div>
+  <div class="grid">
+    <div class="card"><div class="name">SAIRNlaw</div><div class="price">$299<span>/mo</span></div><div class="desc">AI legal intelligence for law firms</div><button class="btn-outline" id="btn-law">Start Trial</button></div>
+    <div class="card"><div class="name">SAIRNcode</div><div class="price">$199<span>/mo</span></div><div class="desc">Medical coding, claim audit</div><button class="btn-outline" id="btn-code">Start Trial</button></div>
+    <div class="card"><div class="name">SAIRNclinical</div><div class="price">$299<span>/mo</span></div><div class="desc">Hospital & urgent care AI suite</div><button class="btn-outline" id="btn-clinical">Start Trial</button></div>
+    <div class="card"><div class="name">SAIRNhr</div><div class="price">$149<span>/mo</span></div><div class="desc">HR intelligence, compliance</div><button class="btn-outline" id="btn-hr">Start Trial</button></div>
+    <div class="card"><div class="name">SAIRNbiz</div><div class="price">$149<span>/mo</span></div><div class="desc">Business intelligence, benchmarking</div><button class="btn-outline" id="btn-biz">Start Trial</button></div>
+    <div class="card"><div class="name">SAIRNflow</div><div class="price">$99<span>/mo</span></div><div class="desc">Property & landscaping intelligence</div><button class="btn-outline" id="btn-flow">Start Trial</button></div>
+    <div class="card"><div class="name">SAIRNbuild</div><div class="price">$99<span>/mo</span></div><div class="desc">Construction intelligence</div><button class="btn-outline" id="btn-build">Start Trial</button></div>
+    <div class="card hot"><div class="badge">BEST VALUE</div><div class="name">Enterprise Bundle</div><div class="price">$799<span>/mo</span></div><div class="desc">All 7 professional apps — save $500+/mo</div><button class="btn" id="btn-enterprise">Start Trial</button></div>
+  </div>
+</div>
+
+<p class="fine">14-day free trial · No credit card required · Cancel anytime · Powered by Stripe</p>
+
+<script>
+const PLANS = {
+  'btn-individual': {price:'price_1TgM8LA6PfEDlvnagha1T1Fe', name:'NEXUS Individual'},
+  'btn-family':     {price:'price_1TgM8yA6PfEDlvnal5p4j4Ii', name:'NEXUS Family'},
+  'btn-type':       {price:'price_1TgM3vA6PfEDlvnanidb8daR', name:'SAIRNtype'},
+  'btn-health':     {price:'price_1TgM3vA6PfEDlvnanidb8daR', name:'SAIRNhealth'},
+  'btn-money':      {price:'price_1TgM4jA6PfEDlvnaNWIy3eXT', name:'SAIRNmoney'},
+  'btn-study':      {price:'price_1TgM5JA6PfEDlvnaueHw3jqD', name:'SAIRNstudy'},
+  'btn-lingual':    {price:'price_1TgM5zA6PfEDlvnaLfiiW7d1', name:'SAIRNlingual'},
+  'btn-senior':     {price:'price_1TgM6SA6PfEDlvnaD8piavQp', name:'SAIRNsenior'},
+  'btn-home':       {price:'price_1TgM6yA6PfEDlvnaNaAvu6S2', name:'SAIRNhome'},
+  'btn-law':        {price:'price_1TgM9XA6PfEDlvna4osbP7Ba', name:'SAIRNlaw'},
+  'btn-code':       {price:'price_1TgMA6A6PfEDlvnarJokMEIc', name:'SAIRNcode'},
+  'btn-clinical':   {price:'price_1TgMAWA6PfEDlvnaX63bwWmn', name:'SAIRNclinical'},
+  'btn-hr':         {price:'price_1TgMAzA6PfEDlvnaKmgAApeE', name:'SAIRNhr'},
+  'btn-biz':        {price:'price_1TgMBPA6PfEDlvnaIId0RGjM', name:'SAIRNbiz'},
+  'btn-flow':       {price:'price_1TgMBvA6PfEDlvnaRy4je3EO', name:'SAIRNflow'},
+  'btn-build':      {price:'price_1TgMCUA6PfEDlvnaAZWFqWnX', name:'SAIRNbuild'},
+  'btn-enterprise': {price:'price_1TgMD3A6PfEDlvnazQqHRLNh', name:'Enterprise Bundle'}
+};
+
+Object.keys(PLANS).forEach(function(id) {
+  var btn = document.getElementById(id);
+  if (!btn) return;
+  btn.addEventListener('click', async function() {
+    var plan = PLANS[id];
+    btn.textContent = 'Loading...';
+    btn.disabled = true;
+    try {
+      var res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({priceId: plan.price, planName: plan.name})
+      });
+      var data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Could not start checkout. Please try again.');
+        btn.textContent = 'Subscribe';
+        btn.disabled = false;
+      }
+    } catch(e) {
+      alert('Error: ' + e.message);
+      btn.textContent = 'Subscribe';
+      btn.disabled = false;
+    }
+  });
+});
+</script>
+</body>
+</html>

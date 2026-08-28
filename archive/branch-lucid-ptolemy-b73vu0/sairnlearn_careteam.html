@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNlearn Care Team — Student Support Coordination</title>
+<meta name="description" content="Coordinated student support — counselors, parents, and students working together. Secure, private, professional.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#050810;--card:#0C1220;--a:#10B981;--a2:#059669;
+  --grad:linear-gradient(135deg,#10B981,#059669);
+  --ar:rgba(16,185,129,0.12);--ab:rgba(16,185,129,0.28);
+  --glow:rgba(16,185,129,0.25);
+  --w:#EEF8F4;--m:#6B8F7A;--d:#1A2E22;
+  --crisis:#EF4444;--blue:#3B82F6;--purple:#8B5CF6;--amber:#F59E0B
+}
+html{background:var(--bg)}
+body{color:var(--w);font-family:"Inter",system-ui,sans-serif;min-height:100vh}
+
+/* CRISIS BAR */
+.crisis-bar{background:var(--crisis);padding:7px 24px;text-align:center;font-size:12px;font-weight:700;color:#fff}
+
+/* PORTAL SELECTOR */
+.portal-select{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;background:radial-gradient(ellipse at 50% 40%,rgba(16,185,129,0.07) 0%,transparent 65%)}
+.portal-logo{display:flex;align-items:center;gap:12px;margin-bottom:48px}
+.portal-gem{width:48px;height:48px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 24px var(--glow)}
+.portal-brand{font-size:24px;font-weight:800;color:var(--w)}
+.portal-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;color:var(--w);text-align:center;margin-bottom:12px}
+.portal-sub{font-size:16px;color:var(--m);text-align:center;max-width:520px;line-height:1.7;margin-bottom:48px}
+.portal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;width:100%;max-width:780px}
+.portal-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:32px 24px;text-align:center;cursor:pointer;transition:all 0.25s;position:relative;overflow:hidden}
+.portal-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px}
+.portal-card.counselor::before{background:var(--grad)}
+.portal-card.parent::before{background:linear-gradient(90deg,#3B82F6,#2563EB)}
+.portal-card.student::before{background:linear-gradient(90deg,#8B5CF6,#7C3AED)}
+.portal-card:hover{transform:translateY(-3px);border-color:rgba(16,185,129,0.2)}
+.portal-card.counselor:hover{border-color:rgba(16,185,129,0.3)}
+.portal-card.parent:hover{border-color:rgba(59,130,246,0.3)}
+.portal-card.student:hover{border-color:rgba(139,92,246,0.3)}
+.portal-emoji{font-size:44px;margin-bottom:16px}
+.portal-role{font-size:20px;font-weight:800;color:var(--w);margin-bottom:8px}
+.portal-desc{font-size:13px;color:var(--m);line-height:1.6}
+
+/* MAIN APP */
+.app{display:none;height:100vh;flex-direction:column}
+.app.active{display:flex}
+.app-nav{height:56px;padding:0 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;background:rgba(5,8,16,0.95)}
+.nav-left{display:flex;align-items:center;gap:12px}
+.nav-role-badge{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:100px}
+.badge-counselor{background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.badge-parent{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.28);color:#60A5FA}
+.badge-student{background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.28);color:#A78BFA}
+.nav-title{font-size:15px;font-weight:700;color:var(--w)}
+.back-btn{background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit;padding:4px 10px}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;background:rgba(5,8,16,0.8)}
+.tab{padding:12px 20px;font-size:13px;font-weight:600;color:var(--m);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap}
+.tab.active{color:var(--a);border-bottom-color:var(--a)}
+.tab-content{display:none;flex:1;overflow-y:auto;padding:20px}
+.tab-content.active{display:flex;flex-direction:column;gap:16px}
+
+/* CARDS */
+.info-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:20px}
+.card-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:10px}
+.card-title{font-size:16px;font-weight:700;color:var(--w);margin-bottom:6px}
+.card-body{font-size:13px;color:var(--m);line-height:1.7}
+.card-meta{font-size:11px;color:var(--d);margin-top:8px}
+
+/* CONCERN FORM */
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;font-weight:600;color:var(--m);margin-bottom:6px;display:block}
+.form-input,.form-select,.form-textarea{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 14px;color:var(--w);font-size:14px;font-family:inherit;outline:none;transition:border-color 0.2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:rgba(16,185,129,0.4)}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.6}
+.form-select option{background:#0C1220;color:var(--w)}
+
+/* RISK INDICATOR */
+.risk-bar{display:flex;gap:8px;align-items:center;margin-bottom:16px}
+.risk-label{font-size:12px;font-weight:600;color:var(--m);min-width:80px}
+.risk-levels{display:flex;gap:6px;flex:1}
+.risk-level{flex:1;height:8px;border-radius:4px;cursor:pointer;opacity:0.3;transition:opacity 0.2s}
+.risk-level.active{opacity:1}
+.risk-low{background:#10B981}
+.risk-medium{background:#F59E0B}
+.risk-high{background:#EF4444}
+.risk-critical{background:#7C3AED;animation:pulse-risk 1s infinite}
+@keyframes pulse-risk{0%,100%{opacity:1}50%{opacity:0.6}}
+
+/* SIGNAL CHECKLIST */
+.signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.signal-item{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;cursor:pointer;font-size:12px;color:var(--m);transition:all 0.2s}
+.signal-item.checked{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.signal-check{width:16px;height:16px;border-radius:4px;border:1.5px solid rgba(255,255,255,0.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px}
+.signal-item.checked .signal-check{background:var(--a);border-color:var(--a);color:#fff}
+
+/* MESSAGES */
+.msg-thread{display:flex;flex-direction:column;gap:12px}
+.thread-msg{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 16px}
+.thread-msg.from-counselor{border-left:3px solid var(--a)}
+.thread-msg.from-parent{border-left:3px solid #3B82F6}
+.thread-msg.from-student{border-left:3px solid #8B5CF6}
+.thread-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.thread-from{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.from-counselor .thread-from{color:var(--a)}
+.from-parent .thread-from{color:#60A5FA}
+.from-student .thread-from{color:#A78BFA}
+.thread-time{font-size:11px;color:var(--d)}
+.thread-body{font-size:13px;color:var(--m);line-height:1.65}
+
+/* STUDENT SPACE */
+.student-welcome{background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(124,58,237,0.06));border:1px solid rgba(139,92,246,0.2);border-radius:16px;padding:24px;margin-bottom:16px;text-align:center}
+.student-emoji{font-size:48px;margin-bottom:12px}
+.student-title{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.student-sub{font-size:14px;color:var(--m);line-height:1.7;max-width:400px;margin:0 auto}
+
+/* AI PANEL */
+.ai-panel{background:var(--card);border:1px solid rgba(16,185,129,0.15);border-radius:16px;padding:16px;margin-bottom:16px}
+.ai-header{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--a);animation:pulse-ai 2s infinite}
+@keyframes pulse-ai{0%,100%{opacity:1}50%{opacity:0.4}}
+.ai-label{font-size:12px;font-weight:700;color:var(--a);letter-spacing:1px;text-transform:uppercase}
+.ai-response{font-size:13px;color:var(--m);line-height:1.7;min-height:48px}
+.ai-input-row{display:flex;gap:8px;margin-top:12px}
+.ai-input{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:9px 14px;color:var(--w);font-size:13px;font-family:inherit;outline:none}
+.ai-input:focus{border-color:rgba(16,185,129,0.35)}
+.ai-send{padding:9px 18px;border-radius:10px;background:var(--grad);border:none;color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap}
+
+/* SAFETY PLAN */
+.safety-plan{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:16px;padding:16px}
+.sp-title{font-size:13px;font-weight:700;color:#FCA5A5;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.sp-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(239,68,68,0.1);font-size:13px;color:var(--m)}
+.sp-item:last-child{border-bottom:none}
+.sp-label{font-size:11px;font-weight:700;color:#EF4444;min-width:80px;text-transform:uppercase}
+
+/* BUTTONS */
+.btn-primary{padding:11px 24px;border-radius:10px;background:var(--grad);border:none;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all 0.2s}
+.btn-primary:hover{transform:translateY(-1px)}
+.btn-secondary{padding:11px 24px;border-radius:10px;background:transparent;border:1px solid rgba(16,185,129,0.3);color:var(--a);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+
+/* NOTIFY BANNER */
+.notify-banner{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:12px;font-size:13px;color:rgba(245,158,11,0.9)}
+.notify-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0;animation:pulse-ai 1.5s infinite}
+
+.section-head{font-size:13px;font-weight:700;color:var(--w);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.divider{height:1px;background:rgba(255,255,255,0.06);margin:4px 0}
+</style>
+</head>
+<body>
+
+<div class="crisis-bar">
+  🚨 Student in crisis? Call <strong>988</strong> · Text HOME to <strong>741741</strong> · Immediate danger: <strong>911</strong>
+</div>
+
+<!-- PORTAL SELECTOR -->
+<div id="portalSelect" class="portal-select">
+  <div class="portal-logo">
+    <div class="portal-gem">💚</div>
+    <div class="portal-brand">SAIRNlearn Care Team</div>
+  </div>
+  <div class="portal-title">Student Support Network</div>
+  <div class="portal-sub">A coordinated system connecting counselors, parents, and students. Each person has their own secure space. The counselor coordinates everything professionally.</div>
+  <div class="portal-grid">
+    <div class="portal-card counselor" onclick="enterPortal('counselor')">
+      <div class="portal-emoji">🏫</div>
+      <div class="portal-role">Counselor</div>
+      <div class="portal-desc">Document concerns, coordinate care, communicate with parents, and support students. Full professional view.</div>
+    </div>
+    <div class="portal-card parent" onclick="enterPortal('parent')">
+      <div class="portal-emoji">👨‍👩‍👧</div>
+      <div class="portal-role">Parent / Guardian</div>
+      <div class="portal-desc">Stay informed, share what you are seeing at home, and work with the school to support your child.</div>
+    </div>
+    <div class="portal-card student" onclick="enterPortal('student')">
+      <div class="portal-emoji">💜</div>
+      <div class="portal-role">Student</div>
+      <div class="portal-desc">Your own safe space. Share how you are feeling. Know that the people who care about you are working together for you.</div>
+    </div>
+  </div>
+</div>
+
+<!-- COUNSELOR PORTAL -->
+<div id="counselorApp" class="app">
+  <div class="app-nav">
+    <div class="nav-left">
+      <span class="nav-role-badge badge-counselor">Counselor</span>
+      <span class="nav-title">Care Team Coordinator</span>
+    </div>
+    <button class="back-btn" onclick="backToSelect()">← Back</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('counselor','concern')">📋 Document Concern</div>
+    <div class="tab" onclick="switchTab('counselor','coordination')">🤝 Team Coordination</div>
+    <div class="tab" onclick="switchTab('counselor','ai')">🤖 AI Support</div>
+    <div class="tab" onclick="switchTab('counselor','safetyplan')">🛡️ Safety Plan</div>
+  </div>
+  <div id="counselor-concern" class="tab-content active">
+    <div class="notify-banner">
+      <div class="notify-dot"></div>
+      <span>New parent message received · 2 signals flagged by other staff · Review coordination tab</span>
+    </div>
+    <div class="info-card">
+      <div class="card-label">Student Concern Documentation</div>
+      <div class="form-group">
+        <label class="form-label">Student name or ID (keep private)</label>
+        <input class="form-input" type="text" placeholder="Student initials or ID number only">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Concern category</label>
+        <select class="form-select">
+          <option>Select concern type</option>
+          <option>Mental health — depression or anxiety</option>
+          <option>Suicidal ideation or self-harm concern</option>
+          <option>Social withdrawal or isolation</option>
+          <option>Academic decline</option>
+          <option>Behavioral change</option>
+          <option>Peer relationship concern</option>
+          <option>Family situation concern</option>
+          <option>Substance use concern</option>
+          <option>Trauma or abuse concern</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Risk level assessment</div>
+        <div class="risk-bar">
+          <span class="risk-label">Risk Level</span>
+          <div class="risk-levels">
+            <div class="risk-level risk-low active" onclick="setRisk(this,'Low')"></div>
+            <div class="risk-level risk-medium" onclick="setRisk(this,'Medium')"></div>
+            <div class="risk-level risk-high" onclick="setRisk(this,'High')"></div>
+            <div class="risk-level risk-critical" onclick="setRisk(this,'Critical')"></div>
+          </div>
+          <span id="risk-text" style="font-size:12px;font-weight:700;color:#10B981;min-width:60px">Low</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="form-label">Warning signals observed — check all that apply</div>
+        <div class="signal-grid">
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Sudden grade drop</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Social withdrawal</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Changed appearance</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Giving things away</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Talking about hopelessness</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Increased absences</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Sleep or energy changes</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Loss of interest in activities</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Increased irritability</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Expressed self-harm</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">What you observed — be specific</label>
+        <textarea class="form-textarea" placeholder="Describe exactly what you saw, heard, or were told. Include dates, direct quotes where relevant, and context..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Immediate actions taken</label>
+        <textarea class="form-textarea" style="min-height:60px" placeholder="What steps have you already taken..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="notifyParent()">📨 Notify Parent</button>
+        <button class="btn-secondary" onclick="switchTab('counselor','ai')">🤖 Get AI Guidance</button>
+      </div>
+    </div>
+  </div>
+  <div id="counselor-coordination" class="tab-content">
+    <div class="section-head">👥 Care Team Communication</div>
+    <div class="msg-thread">
+      <div class="thread-msg from-parent">
+        <div class="thread-header">
+          <span class="thread-from">Parent / Guardian</span>
+          <span class="thread-time">Today 7:42am</span>
+        </div>
+        <div class="thread-body">I have noticed my child has been coming home very quiet for the past two weeks and not eating dinner. Last night they said they felt like nobody at school liked them anymore. I am really worried. What can I do at home?</div>
+      </div>
+      <div class="thread-msg from-counselor">
+        <div class="thread-header">
+          <span class="thread-from">Counselor</span>
+          <span class="thread-time">Today 8:15am</span>
+        </div>
+        <div class="thread-body">Thank you for sharing this. What you are seeing at home matches what we have observed at school. I am scheduling time to meet with your child today. I will send you a summary of next steps by end of day. You are doing exactly the right thing by reaching out.</div>
+      </div>
+      <div class="thread-msg from-student">
+        <div class="thread-header">
+          <span class="thread-from">Student Check-in</span>
+          <span class="thread-time">Today 9:03am</span>
+        </div>
+        <div class="thread-body">Feeling: 😔 Not great. Said they wanted to talk to someone but were not sure how to start.</div>
+      </div>
+    </div>
+    <div class="divider" style="margin:16px 0"></div>
+    <div class="section-head">📨 Send Message to Parent</div>
+    <textarea class="form-textarea" placeholder="Write a message to the parent. Be warm, specific, and focus on working together for the student..." style="margin-bottom:10px"></textarea>
+    <div class="btn-row">
+      <button class="btn-primary">Send to Parent</button>
+      <button class="btn-secondary">Schedule Meeting</button>
+    </div>
+    <div class="divider" style="margin:16px 0"></div>
+    <div class="section-head">🏫 Staff Signal Log</div>
+    <div class="info-card" style="margin-bottom:0">
+      <div class="card-body">
+        <div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06)"><strong style="color:var(--w)">Ms. Johnson — English</strong> — "Has not turned in last 3 assignments. Seems distracted and avoided eye contact when I asked if she was okay." <span style="font-size:11px;color:var(--d)">Yesterday</span></div>
+        <div style="margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.06)"><strong style="color:var(--w)">Coach Rivera — PE</strong> — "Sat out again. Said she had a headache but looked upset. Normally very engaged." <span style="font-size:11px;color:var(--d)">2 days ago</span></div>
+        <div><strong style="color:var(--w)">Mr. Patel — Math</strong> — "Noticed her eating lunch alone for the past week. Asked if she wanted to join a study group — she declined." <span style="font-size:11px;color:var(--d)">3 days ago</span></div>
+      </div>
+    </div>
+  </div>
+  <div id="counselor-ai" class="tab-content">
+    <div class="ai-panel">
+      <div class="ai-header"><div class="ai-dot"></div><span class="ai-label">SAIRNlearn AI — Counselor Support</span></div>
+      <div class="ai-response" id="counselor-ai-response">Ask me anything about this student concern — risk assessment guidance, evidence-based interventions, how to approach a difficult conversation with a parent, or what to say to the student.</div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="counselor-ai-input" placeholder="Ask for guidance..." onkeydown="if(event.key==='Enter')askAI('counselor')">
+        <button class="ai-send" onclick="askAI('counselor')">Ask</button>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="card-label">Suggested next steps — AI generated</div>
+      <div class="card-body">
+        Based on the signals documented, consider: (1) Schedule a private check-in with the student today — use open questions, not yes/no. (2) Contact parent to share what you are observing and ask what they are seeing at home. (3) Complete a Columbia Suicide Severity Rating Scale if risk level is Medium or above. (4) Loop in the school psychologist if this is High or Critical. (5) Document everything in writing.
+      </div>
+    </div>
+    <div class="safety-plan">
+      <div class="sp-title">🚨 If student is in immediate danger</div>
+      <div class="sp-item"><span class="sp-label">First</span>Do not leave the student alone. Stay calm and present.</div>
+      <div class="sp-item"><span class="sp-label">Second</span>Call 988 with or for the student. They help professionals too.</div>
+      <div class="sp-item"><span class="sp-label">Third</span>Contact parents immediately and notify school administration.</div>
+      <div class="sp-item"><span class="sp-label">Fourth</span>If imminent danger — call 911. Document every step.</div>
+    </div>
+  </div>
+  <div id="counselor-safetyplan" class="tab-content">
+    <div class="info-card">
+      <div class="card-label">Student Safety Plan — Confidential</div>
+      <div class="form-group" style="margin-top:12px">
+        <label class="form-label">Warning signs this student should watch for in themselves</label>
+        <textarea class="form-textarea" placeholder="What thoughts, feelings, or situations signal that this student is heading toward crisis..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Internal coping strategies — things they can do alone</label>
+        <textarea class="form-textarea" style="min-height:60px" placeholder="Specific activities, thoughts, or strategies that help this student..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">People and places that provide distraction</label>
+        <textarea class="form-textarea" style="min-height:60px" placeholder="Specific people to call, places to go, activities that help..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Adults the student can tell if they are in crisis</label>
+        <textarea class="form-textarea" style="min-height:60px" placeholder="Name, relationship, phone number..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Crisis resources</label>
+        <div class="card-body" style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;padding:12px">
+          988 Suicide and Crisis Lifeline — call or text 988<br>
+          Crisis Text Line — text HOME to 741741<br>
+          School counselor direct line: _______________<br>
+          Parent/Guardian: _______________
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary">Save Safety Plan</button>
+        <button class="btn-secondary">Share with Parent</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PARENT PORTAL -->
+<div id="parentApp" class="app">
+  <div class="app-nav">
+    <div class="nav-left">
+      <span class="nav-role-badge badge-parent">Parent</span>
+      <span class="nav-title">Family Support Portal</span>
+    </div>
+    <button class="back-btn" onclick="backToSelect()">← Back</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('parent','home')">💌 Updates</div>
+    <div class="tab" onclick="switchTab('parent','share')">📝 Share Observations</div>
+    <div class="tab" onclick="switchTab('parent','resources')">📚 Parent Resources</div>
+  </div>
+  <div id="parent-home" class="tab-content active">
+    <div class="notify-banner">
+      <div class="notify-dot"></div>
+      <span>New message from your school counselor · Tap to read</span>
+    </div>
+    <div class="student-welcome" style="background:linear-gradient(135deg,rgba(59,130,246,0.1),rgba(37,99,235,0.05));border-color:rgba(59,130,246,0.2)">
+      <div class="student-emoji">👨‍👩‍👧</div>
+      <div class="student-title">You are not alone in this.</div>
+      <div class="student-sub">Your school counselor is working with you to support your child. This is your space to stay informed and share what you are seeing at home.</div>
+    </div>
+    <div class="msg-thread">
+      <div class="thread-msg from-counselor">
+        <div class="thread-header">
+          <span class="thread-from">School Counselor</span>
+          <span class="thread-time">Today 8:15am</span>
+        </div>
+        <div class="thread-body">Thank you for reaching out this morning. What you shared about your child coming home quiet and not eating matches what several of our staff have also noticed. I am meeting with your child today. I want you to know — you did the right thing by reaching out immediately. We are in this together. I will send you a summary by end of day with next steps we can do as a team.</div>
+      </div>
+    </div>
+    <div class="divider" style="margin:16px 0"></div>
+    <div class="section-head">📨 Reply to Counselor</div>
+    <textarea class="form-textarea" placeholder="Share anything else you have noticed at home, questions you have, or how you are feeling about the situation..."></textarea>
+    <div class="btn-row">
+      <button class="btn-primary">Send Message</button>
+    </div>
+  </div>
+  <div id="parent-share" class="tab-content">
+    <div class="info-card">
+      <div class="card-label">What you are observing at home</div>
+      <div class="card-body" style="margin-bottom:16px">Share what you are noticing. Everything you share goes directly to the counselor and helps them support your child more effectively.</div>
+      <div class="form-group">
+        <label class="form-label">Changes you have noticed recently</label>
+        <div class="signal-grid">
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Not eating normally</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Sleep changes</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Withdrawn or quiet</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Avoiding family</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>More irritable</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Giving things away</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Spending more time alone</div>
+          <div class="signal-item" onclick="toggleSignal(this)"><div class="signal-check"></div>Said something worrying</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">In your own words — what are you seeing or concerned about?</label>
+        <textarea class="form-textarea" placeholder="Describe what you have noticed. There is no wrong answer — every detail helps..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Is there anything happening at home the counselor should know about? (Optional)</label>
+        <textarea class="form-textarea" style="min-height:60px" placeholder="Family changes, stressors, anything that might be relevant..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary">Send to Counselor</button>
+      </div>
+    </div>
+  </div>
+  <div id="parent-resources" class="tab-content">
+    <div class="ai-panel">
+      <div class="ai-header"><div class="ai-dot"></div><span class="ai-label">SAIRNlearn — Parent Support</span></div>
+      <div class="ai-response" id="parent-ai-response">Ask me anything — how to talk to your child about mental health, warning signs to watch for, how to support them at home, or what to expect from the school process.</div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="parent-ai-input" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')askAI('parent')">
+        <button class="ai-send" onclick="askAI('parent')">Ask</button>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="card-label">How to talk to your child tonight</div>
+      <div class="card-body">
+        <strong style="color:var(--w)">Do:</strong> Find a calm, private moment. Start with "I have noticed you seem like you are carrying something heavy and I love you and I am here." Ask open questions — "What has been the hardest part lately?" Listen more than you talk. Tell them explicitly that nothing they say will make you love them less.<br><br>
+        <strong style="color:var(--w)">Do not:</strong> Do not start with "what is wrong with you." Do not minimize what they share. Do not immediately try to fix it — sometimes they need to be heard before they are ready for solutions.<br><br>
+        <strong style="color:var(--w)">If they say something scary:</strong> Stay calm. Tell them you are glad they told you. Call 988 together or take them to the nearest emergency room if you are worried about immediate safety.
+      </div>
+    </div>
+    <div class="safety-plan">
+      <div class="sp-title">🚨 Crisis resources — save these now</div>
+      <div class="sp-item"><span class="sp-label">988</span>Suicide and Crisis Lifeline — call or text 988 anytime</div>
+      <div class="sp-item"><span class="sp-label">Text</span>Crisis Text Line — text HOME to 741741</div>
+      <div class="sp-item"><span class="sp-label">LGBTQ+</span>Trevor Project — 1-866-488-7386</div>
+      <div class="sp-item"><span class="sp-label">Danger</span>If your child is in immediate danger — call 911</div>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT PORTAL -->
+<div id="studentApp" class="app">
+  <div class="app-nav">
+    <div class="nav-left">
+      <span class="nav-role-badge badge-student">Your Space</span>
+      <span class="nav-title">Just for you</span>
+    </div>
+    <button class="back-btn" onclick="backToSelect()">← Back</button>
+  </div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('student','checkin')">💜 Check In</div>
+    <div class="tab" onclick="switchTab('student','talk')">💬 Talk to Someone</div>
+    <div class="tab" onclick="switchTab('student','know')">💡 Good to Know</div>
+  </div>
+  <div id="student-checkin" class="tab-content active">
+    <div class="student-welcome">
+      <div class="student-emoji">💜</div>
+      <div class="student-title">This space is yours.</div>
+      <div class="student-sub">The adults who care about you are working together to support you. This is your place to share how you are really doing — and to know you are not alone.</div>
+    </div>
+    <div class="info-card">
+      <div class="card-label">How are you feeling right now?</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 16px">
+        <div onclick="selectMood(this,'😔','Not great')" style="cursor:pointer;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;text-align:center;font-size:24px;transition:all 0.2s">😔</div>
+        <div onclick="selectMood(this,'😰','Anxious')" style="cursor:pointer;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;text-align:center;font-size:24px;transition:all 0.2s">😰</div>
+        <div onclick="selectMood(this,'😤','Frustrated')" style="cursor:pointer;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;text-align:center;font-size:24px;transition:all 0.2s">😤</div>
+        <div onclick="selectMood(this,'😶','Empty')" style="cursor:pointer;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;text-align:center;font-size:24px;transition:all 0.2s">😶</div>
+        <div onclick="selectMood(this,'🙂','Okay')" style="cursor:pointer;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;text-align:center;font-size:24px;transition:all 0.2s">🙂</div>
+        <div onclick="selectMood(this,'😊','Good')" style="cursor:pointer;padding:12px 16px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;text-align:center;font-size:24px;transition:all 0.2s">😊</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Want to say anything else? (Optional — only your counselor sees this)</label>
+        <textarea class="form-textarea" placeholder="You do not have to explain everything. Even just a few words is okay..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="sendCheckin()">Share with my counselor</button>
+      </div>
+      <div style="font-size:11px;color:var(--d);margin-top:10px">Your counselor will see this — not your whole school, not everyone. Just the person who is here to help you.</div>
+    </div>
+    <div class="info-card" style="background:rgba(139,92,246,0.06);border-color:rgba(139,92,246,0.15)">
+      <div class="card-label" style="color:#A78BFA">What the adults working for you want you to know</div>
+      <div class="card-body">Your counselor and your parent are working together because they both care about you. Not to get you in trouble. Not to embarrass you. Because you matter to them and they want you to be okay. You do not have to have everything figured out. You just have to let them try to help.</div>
+    </div>
+  </div>
+  <div id="student-talk" class="tab-content">
+    <div class="ai-panel" style="border-color:rgba(139,92,246,0.2)">
+      <div class="ai-header"><div class="ai-dot" style="background:#8B5CF6"></div><span class="ai-label" style="color:#A78BFA">SAIRNfriend — Here for you</span></div>
+      <div class="ai-response" id="student-ai-response">Hey. Whatever is going on — you can tell me. I am not going to judge you or freak out. I am just here to listen. What is on your mind?</div>
+      <div class="ai-input-row">
+        <input class="ai-input" id="student-ai-input" placeholder="Say anything..." onkeydown="if(event.key==='Enter')askAI('student')">
+        <button class="ai-send" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED)" onclick="askAI('student')">Talk</button>
+      </div>
+    </div>
+    <div class="safety-plan">
+      <div class="sp-title">💜 If things feel really dark right now</div>
+      <div class="sp-item"><span class="sp-label">Call</span>988 — someone is there right now, any time, always. They care about you.</div>
+      <div class="sp-item"><span class="sp-label">Text</span>Text HOME to 741741 — if talking feels too hard, texting works too.</div>
+      <div class="sp-item"><span class="sp-label">Tell</span>Tell an adult near you — your counselor, a parent, any adult you trust.</div>
+      <div class="sp-item"><span class="sp-label">911</span>If you are in immediate danger — call 911. Your life matters.</div>
+    </div>
+  </div>
+  <div id="student-know" class="tab-content">
+    <div class="info-card">
+      <div class="card-label">Things that are true — even when it does not feel like it</div>
+      <div class="card-body">
+        <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06)">💜 What you are feeling right now is real. And it will not feel this way forever.</div>
+        <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06)">💜 Asking for help is not weak. It is one of the bravest things a person can do.</div>
+        <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06)">💜 The adults working with you — your counselor and your parent — are not against you. They are for you.</div>
+        <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.06)">💜 You are not a burden. The people who love you want to know when you are struggling.</div>
+        <div>💜 There is no feeling so dark that it cannot get better. But you have to let someone help.</div>
+      </div>
+    </div>
+    <div class="info-card">
+      <div class="card-label">What your counselor can and cannot share</div>
+      <div class="card-body">Your counselor keeps most of what you share private. They will only tell your parent or another adult if they are worried you might hurt yourself or someone else — and even then, they will tell you first whenever possible. Their job is to support you, not report you.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+
+const SYSTEMS = {
+  counselor: "You are SAIRNlearn Care Team AI, supporting a school counselor coordinating student mental health support. You provide evidence-based guidance on risk assessment, intervention strategies, parent communication, and crisis response. You know QPR, Columbia Suicide Severity Rating Scale, MTSS frameworks, and trauma-informed care. Always recommend 988 and professional supervision for high-risk situations. Be direct, specific, and clinically grounded. The counselor is a professional — give them real guidance.",
+  parent: "You are SAIRNlearn Care Team AI, supporting a parent whose child is struggling. You are warm, honest, and practical. You help parents understand what is happening, how to talk to their child, what warning signs to watch for, and how to work with the school. Always remind parents that 988 is available if they are worried about immediate safety. Never minimize their concerns — a worried parent is usually right to be worried.",
+  student: "You are SAIRNfriend inside SAIRNlearn Care Team. You are a safe, caring presence for a young person who is going through something hard. You listen without judgment. You never tell them their feelings are wrong. You always point toward real people who care about them. CRITICAL: If they express suicidal thoughts or self-harm, immediately provide 988 and encourage them to tell a trusted adult right now. You are warm, real, and never clinical. You are their friend."
+};
+
+let aiLoading = {counselor:false, parent:false, student:false};
+
+function enterPortal(role) {
+  document.getElementById("portalSelect").style.display = "none";
+  const app = document.getElementById(role + "App");
+  app.classList.add("active");
+}
+
+function backToSelect() {
+  ["counselor","parent","student"].forEach(function(r) {
+    document.getElementById(r+"App").classList.remove("active");
+  });
+  document.getElementById("portalSelect").style.display = "flex";
+}
+
+function switchTab(portal, tab) {
+  const app = document.getElementById(portal + "App");
+  app.querySelectorAll(".tab").forEach(function(t) { t.classList.remove("active"); });
+  app.querySelectorAll(".tab-content").forEach(function(t) { t.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById(portal + "-" + tab).classList.add("active");
+}
+
+function setRisk(el, level) {
+  document.querySelectorAll(".risk-level").forEach(function(r) { r.classList.remove("active"); });
+  el.classList.add("active");
+  const colors = {Low:"#10B981", Medium:"#F59E0B", High:"#EF4444", Critical:"#7C3AED"};
+  document.getElementById("risk-text").textContent = level;
+  document.getElementById("risk-text").style.color = colors[level];
+}
+
+function toggleSignal(el) {
+  el.classList.toggle("checked");
+  const check = el.querySelector(".signal-check");
+  check.textContent = el.classList.contains("checked") ? "✓" : "";
+}
+
+function selectMood(el, emoji, label) {
+  document.querySelectorAll(".tab-content.active > div > div[onclick]").forEach(function(m) {
+    m.style.background = "rgba(255,255,255,0.04)";
+    m.style.borderColor = "rgba(255,255,255,0.08)";
+  });
+  el.style.background = "rgba(139,92,246,0.15)";
+  el.style.borderColor = "rgba(139,92,246,0.4)";
+}
+
+function notifyParent() {
+  alert("Parent notification sent. They will receive a message in their Family Support Portal.");
+}
+
+function sendCheckin() {
+  const msg = document.querySelector("#student-checkin textarea").value;
+  alert("Your check-in has been shared with your counselor. They care about you and will follow up.");
+}
+
+async function askAI(role) {
+  if(aiLoading[role]) return;
+  const input = document.getElementById(role + "-ai-input");
+  const responseEl = document.getElementById(role + "-ai-response");
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = "";
+  aiLoading[role] = true;
+  responseEl.textContent = "...";
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        max_tokens: 800,
+        system: SYSTEMS[role],
+        messages: [{role:"user", content:text}],
+        app_id: "mind",
+        is_demo: true
+      })
+    });
+    const data = await res.json();
+    if(res.status === 429) {
+      responseEl.textContent = "Daily limit reached. If this is urgent — call 988 or contact your school counselor directly.";
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || "Please try again.";
+      responseEl.textContent = reply;
+      // If crisis keywords detected for student — add 988 link
+      if(role === "student" && (reply.toLowerCase().includes("988") || text.toLowerCase().includes("hurt") || text.toLowerCase().includes("die") || text.toLowerCase().includes("suicide"))) {
+        const link = document.createElement("a");
+        link.href = "tel:988";
+        link.style.cssText = "display:inline-block;margin-top:10px;padding:8px 16px;background:#EF4444;border-radius:8px;color:#fff;font-size:13px;font-weight:700;text-decoration:none";
+        link.textContent = "📞 Call or Text 988 Now";
+        responseEl.appendChild(link);
+      }
+    }
+  } catch(e) {
+    responseEl.textContent = role === "student"
+      ? "I am still here. If things feel urgent right now, please call or text 988."
+      : "Connection issue. Please try again.";
+  }
+  aiLoading[role] = false;
+}
+
+// Particles
+(function(){
+  const c = document.getElementById("particles");
+  if(!c) return;
+  for(let i=0;i<16;i++){
+    const p=document.createElement("div");p.className="particle";
+    const s=2+Math.random()*5;
+    p.style.cssText="width:"+s+"px;height:"+s+"px;left:"+(Math.random()*100)+"%;top:"+(Math.random()*100)+"%;background:rgba(16,185,129,0.4);--d:"+(8+Math.random()*10)+"s;--del:"+(Math.random()*7)+"s;--o:"+(0.03+Math.random()*0.07)";
+    c.appendChild(p);
+  }
+})();
+</script>
+</body>
+</html>

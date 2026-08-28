@@ -1,0 +1,1304 @@
+<!-- StoneDesk SESSION 19 NEW PANELS — panels 19-30 -->
+<!-- 12 new panels expanding StoneDesk from 18 to 30 panels -->
+<!-- Color: Money Green #16C762 | SAIRN API proxy only | No box chars in JS -->
+
+<!-- ============================================================
+     PANEL 19: AI SLAB NESTING
+============================================================ -->
+<div id="panel-nesting" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">AI Slab Nesting</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Optimize cut layouts • Minimize waste • Save $3K-8K per month</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#f0fef4;border:1px solid #a7f3c0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16C762" id="nest-pct">0%</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Material Yield</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#d97706" id="nest-waste">0 sq ft</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Waste Area</div>
+      </div>
+      <div style="background:#f0fef4;border:1px solid #a7f3c0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16C762" id="nest-saved">$0</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Material Saved</div>
+      </div>
+      <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#374151" id="nest-slabs">0</div>
+        <div style="font-size:.78rem;color:#6b7280;margin-top:2px">Slabs Needed</div>
+      </div>
+    </div>
+
+    <!-- Slab dimensions -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:16px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Slab Dimensions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Slab Width (in)</label><input id="nest-sw" type="number" value="62" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Slab Length (in)</label><input id="nest-sl" type="number" value="120" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Material</label><input id="nest-mat" type="text" value="Calacatta Gold" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Cost per Slab ($)</label><input id="nest-cost" type="number" value="850" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+      </div>
+    </div>
+
+    <!-- Job pieces -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div style="font-weight:700;color:#111827;font-size:.95rem">Cut Pieces Required</div>
+        <button onclick="addNestPiece()" style="background:#16C762;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer">+ Add Piece</button>
+      </div>
+      <div id="nest-pieces" style="display:flex;flex-direction:column;gap:8px">
+        <!-- Dynamic rows -->
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button onclick="runNestingAI()" style="background:#16C762;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer">Run AI Nesting</button>
+      <button onclick="exportNestingDXF()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:11px 20px;border-radius:8px;font-size:.9rem;cursor:pointer">Export DXF</button>
+    </div>
+
+    <!-- Nesting output -->
+    <div id="nest-output" style="display:none;background:#f0fef4;border:1px solid #a7f3c0;border-radius:10px;padding:18px">
+      <div style="font-weight:700;color:#16C762;margin-bottom:10px;font-size:.95rem">AI Nesting Layout Recommendation</div>
+      <div id="nest-ai-result" style="font-size:.9rem;color:#1f2937;line-height:1.7;white-space:pre-wrap"></div>
+
+      <!-- Visual nesting grid -->
+      <canvas id="nest-canvas" width="600" height="300" style="margin-top:16px;border:2px solid #a7f3c0;border-radius:8px;width:100%;max-width:600px;background:#f9fafb"></canvas>
+    </div>
+    <div id="nest-loading" style="display:none;color:#16C762;font-style:italic;margin-top:8px">AI calculating optimal layout...</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 20: TEMPLATE TRACKER
+============================================================ -->
+<div id="panel-templatetracker" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Template Tracker</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Digital templating log • LT-55 / field measurements • DXF management</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="display:flex;gap:8px">
+        <input type="text" id="tmpl-search" oninput="filterTemplates()" placeholder="Search jobs..." style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px;width:220px">
+        <select id="tmpl-status-filter" onchange="filterTemplates()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:7px">
+          <option value="">All Status</option>
+          <option>Pending Template</option><option>Templated</option><option>In Fabrication</option><option>Ready to Install</option>
+        </select>
+      </div>
+      <button onclick="addTemplateJob()" style="background:#16C762;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">+ Log Template</button>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f0fef4;border-bottom:2px solid #a7f3c0">
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Job #</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Customer</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Address</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Templater</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Template Date</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Method</th>
+          <th style="padding:10px 12px;text-align:center;font-size:.8rem;color:#0a3d1f;font-weight:700">DXF</th>
+          <th style="padding:10px 12px;text-align:center;font-size:.8rem;color:#0a3d1f;font-weight:700">Status</th>
+        </tr></thead>
+        <tbody id="tmpl-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 21: INSTALLATION SCHEDULING BOARD
+============================================================ -->
+<div id="panel-installboard" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Installation Scheduling Board</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Visual crew calendar • Drag-and-drop jobs • Drive time • Conflict detection</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <!-- Week nav -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">
+      <button onclick="changeInstallWeek(-1)" style="background:#f3f4f6;border:1px solid #d1d5db;padding:7px 14px;border-radius:7px;cursor:pointer">&#8592; Prev</button>
+      <span id="install-week-label" style="font-weight:700;font-size:1rem;color:#111827"></span>
+      <button onclick="changeInstallWeek(1)" style="background:#f3f4f6;border:1px solid #d1d5db;padding:7px 14px;border-radius:7px;cursor:pointer">Next &#8594;</button>
+      <button onclick="addInstallJob()" style="margin-left:auto;background:#16C762;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-weight:600;cursor:pointer;font-size:.85rem">+ Schedule Job</button>
+    </div>
+
+    <!-- Crew rows -->
+    <div id="install-board" style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;min-width:700px">
+        <thead><tr id="install-header"></tr></thead>
+        <tbody id="install-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;gap:14px;margin-top:14px;flex-wrap:wrap">
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:5px"><span style="background:#dcfce7;border:1px solid #a7f3c0;width:14px;height:14px;border-radius:3px;display:inline-block"></span>Kitchen</span>
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:5px"><span style="background:#e0e7ff;border:1px solid #a5b4fc;width:14px;height:14px;border-radius:3px;display:inline-block"></span>Bathroom</span>
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:5px"><span style="background:#fef3c7;border:1px solid #fcd34d;width:14px;height:14px;border-radius:3px;display:inline-block"></span>Large Job</span>
+      <span style="font-size:.8rem;display:flex;align-items:center;gap:5px"><span style="background:#fee2e2;border:1px solid #fca5a5;width:14px;height:14px;border-radius:3px;display:inline-block"></span>Rush</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 22: CUSTOMER PORTAL
+============================================================ -->
+<div id="panel-customerportal" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Customer Portal</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Self-service job tracking • Quote approval • Invoice payment • E-signature</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <!-- Portal preview mode -->
+    <div style="background:#f0fef4;border:1px solid #a7f3c0;border-radius:8px;padding:14px 16px;margin-bottom:20px;font-size:.85rem;color:#0a3d1f">
+      <strong>Portal Mode:</strong> This panel simulates the customer-facing view. Generate a unique link per customer to share their job status and documents.
+    </div>
+
+    <!-- Generate portal link -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Generate Customer Portal Link</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Customer Name</label><input id="portal-customer" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Job Number</label><input id="portal-job" type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button onclick="generatePortalLink()" style="background:#16C762;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Generate Link</button>
+        <span id="portal-link" style="font-size:.82rem;color:#16C762;font-family:monospace;word-break:break-all"></span>
+      </div>
+    </div>
+
+    <!-- Customer view simulation -->
+    <div style="border:2px solid #e5e7eb;border-radius:12px;padding:20px">
+      <div style="font-weight:700;color:#16C762;font-size:1.1rem;margin-bottom:4px">StoneDesk Customer Portal</div>
+      <div style="font-size:.83rem;color:#6b7280;margin-bottom:18px">Smith Kitchen Renovation — Job #SD-2026-0847</div>
+
+      <!-- Job progress -->
+      <div style="margin-bottom:18px">
+        <div style="font-weight:600;color:#374151;margin-bottom:10px;font-size:.9rem">Your Job Status</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:24px;height:24px;background:#16C762;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700;flex-shrink:0">1</div><div style="font-size:.88rem;color:#374151;font-weight:600">Quote Approved <span style="color:#16C762;font-size:.78rem">06/08/2026</span></div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:24px;height:24px;background:#16C762;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700;flex-shrink:0">2</div><div style="font-size:.88rem;color:#374151;font-weight:600">Templates Completed <span style="color:#16C762;font-size:.78rem">06/11/2026</span></div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:24px;height:24px;background:#d97706;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.75rem;font-weight:700;flex-shrink:0">3</div><div style="font-size:.88rem;color:#374151;font-weight:600">In Fabrication <span style="color:#d97706;font-size:.78rem">In Progress</span></div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:24px;height:24px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:.75rem;font-weight:700;flex-shrink:0">4</div><div style="font-size:.88rem;color:#9ca3af">Installation Scheduled: June 18, 2026</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:24px;height:24px;background:#e5e7eb;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#9ca3af;font-size:.75rem;font-weight:700;flex-shrink:0">5</div><div style="font-size:.88rem;color:#9ca3af">Complete</div></div>
+        </div>
+      </div>
+
+      <!-- Invoice -->
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:600;font-size:.9rem;color:#374151">Invoice #INV-2026-847</div><div style="font-size:.8rem;color:#6b7280">Balance Due: $1,200.00 (50% deposit paid)</div></div>
+          <button style="background:#16C762;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:.83rem;font-weight:600;cursor:pointer">Pay Now</button>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      <div>
+        <div style="font-weight:600;color:#374151;margin-bottom:8px;font-size:.9rem">Your Documents</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:6px 12px;border-radius:6px;font-size:.78rem;cursor:pointer">Quote PDF</button>
+          <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:6px 12px;border-radius:6px;font-size:.78rem;cursor:pointer">Signed Contract</button>
+          <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:6px 12px;border-radius:6px;font-size:.78rem;cursor:pointer">Care Guide</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 23: QC TRACKER / SPEEDlabel
+============================================================ -->
+<div id="panel-qctracker" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Quality Control / Shop Tracker</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Piece-by-piece job tracking • No missing pieces • Shop floor accountability</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#f0fef4;border:1px solid #a7f3c0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16C762">12</div><div style="font-size:.78rem;color:#6b7280">Jobs Active</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#d97706">3</div><div style="font-size:.78rem;color:#6b7280">Awaiting QC Sign-off</div>
+      </div>
+      <div style="background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16A34A">47</div><div style="font-size:.78rem;color:#6b7280">Pieces Completed Today</div>
+      </div>
+      <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#dc2626">1</div><div style="font-size:.78rem;color:#6b7280">QC Flags</div>
+      </div>
+    </div>
+
+    <!-- Active jobs with piece breakdown -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div style="font-weight:700;color:#111827;font-size:.95rem">Active Jobs — Piece Tracking</div>
+      <button onclick="addQCJob()" style="background:#16C762;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:.83rem;font-weight:600;cursor:pointer">+ Add Job</button>
+    </div>
+
+    <div id="qc-job-list" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 24: SUPPLIER & PO MANAGER
+============================================================ -->
+<div id="panel-supplierpo" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Supplier & Purchase Orders</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Vendor contacts • Material orders • Lead times • PO generation • Delivery tracking</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:flex;gap:4px;margin-bottom:20px;background:#f3f4f6;padding:4px;border-radius:8px;width:fit-content">
+      <button onclick="showPOTab('vendors')" id="po-tab-vendors" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;font-weight:600;background:#16C762;color:#fff">Vendors</button>
+      <button onclick="showPOTab('orders')" id="po-tab-orders" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;color:#374151;background:transparent">Purchase Orders</button>
+      <button onclick="showPOTab('create')" id="po-tab-create" style="padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:.85rem;color:#374151;background:transparent">Create PO</button>
+    </div>
+
+    <!-- Vendors tab -->
+    <div id="po-vendors" class="po-tab">
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#f0fef4;border-bottom:2px solid #a7f3c0">
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Vendor</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Category</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Contact</th>
+            <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Avg Lead Time</th>
+            <th style="padding:10px 12px;text-align:right;font-size:.8rem;color:#0a3d1f;font-weight:700">YTD Spend</th>
+            <th style="padding:10px 12px;text-align:center;font-size:.8rem;color:#0a3d1f;font-weight:700">Rating</th>
+          </tr></thead>
+          <tbody id="vendor-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Purchase Orders tab -->
+    <div id="po-orders" class="po-tab" style="display:none">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#f0fef4;border-bottom:2px solid #a7f3c0">
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">PO #</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Vendor</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Items</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Ordered</th>
+          <th style="padding:10px 12px;text-align:left;font-size:.8rem;color:#0a3d1f;font-weight:700">Expected</th>
+          <th style="padding:10px 12px;text-align:right;font-size:.8rem;color:#0a3d1f;font-weight:700">Amount</th>
+          <th style="padding:10px 12px;text-align:center;font-size:.8rem;color:#0a3d1f;font-weight:700">Status</th>
+        </tr></thead>
+        <tbody id="po-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Create PO tab -->
+    <div id="po-create" class="po-tab" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Vendor</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Job # (link to job)</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+      </div>
+      <div id="po-line-items" style="margin-bottom:14px">
+        <div style="font-size:.8rem;font-weight:600;color:#374151;margin-bottom:8px">Line Items</div>
+        <div id="po-lines" style="display:flex;flex-direction:column;gap:8px"></div>
+        <button onclick="addPOLine()" style="margin-top:8px;background:#f3f4f6;border:1px solid #d1d5db;padding:7px 14px;border-radius:6px;font-size:.82rem;cursor:pointer">+ Add Item</button>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="generatePO()" style="background:#16C762;color:#fff;border:none;padding:10px 22px;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer">Generate PO</button>
+        <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:10px 18px;border-radius:7px;font-size:.88rem;cursor:pointer">Email to Vendor</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 25: QUICKBOOKS SYNC
+============================================================ -->
+<div id="panel-quickbooks" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">QuickBooks Sync</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Export jobs, invoices, and payments to QuickBooks — zero double entry</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <!-- Connection status -->
+    <div style="background:#f0fef4;border:1px solid #a7f3c0;border-radius:8px;padding:14px 16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:10px;height:10px;background:#16C762;border-radius:50%"></div>
+        <span style="font-weight:600;color:#0a3d1f;font-size:.9rem">QuickBooks Online Connected</span>
+        <span style="font-size:.8rem;color:#6b7280">Last sync: 06/13/2026 8:15am</span>
+      </div>
+      <button onclick="runQBSync()" style="background:#16C762;color:#fff;border:none;padding:8px 16px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Sync Now</button>
+    </div>
+
+    <!-- Pending items -->
+    <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Items Pending Sync</div>
+    <div id="qb-pending-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px"></div>
+
+    <!-- Sync log -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.95rem">Sync History</div>
+    <div id="qb-sync-log" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 26: 3D EDGE & SLAB VISUALIZER
+============================================================ -->
+<div id="panel-3dvisualizer" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">3D Edge & Slab Visualizer</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Show edge profiles in room settings • Close sales in the showroom</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <!-- Controls -->
+      <div>
+        <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Customize</div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:4px">Edge Profile</label>
+          <select id="viz-edge" onchange="updateVisualizer()" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px">
+            <option value="eased">Eased Edge</option>
+            <option value="bevel">Bevel</option>
+            <option value="halfbull">Half Bullnose</option>
+            <option value="fullbull">Full Bullnose</option>
+            <option value="ogee">Ogee</option>
+            <option value="mitered">Mitered</option>
+            <option value="dropedge">Drop Edge</option>
+          </select>
+        </div>
+        <div style="margin-bottom:12px">
+          <label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:4px">Material Color</label>
+          <select id="viz-color" onchange="updateVisualizer()" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px">
+            <option value="#e8e4dc">Calacatta White</option>
+            <option value="#b8b4ac">Grigio Ash</option>
+            <option value="#2d2d2d">Absolute Black Granite</option>
+            <option value="#c8a882">Taj Mahal Quartzite</option>
+            <option value="#d4c5a9">Silestone Helix</option>
+            <option value="#7a6a5a">Coffee Brown Granite</option>
+          </select>
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:4px">Room Setting</label>
+          <select id="viz-room" onchange="updateVisualizer()" style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px">
+            <option>Modern Kitchen</option>
+            <option>Farmhouse Kitchen</option>
+            <option>Bathroom Vanity</option>
+            <option>Outdoor Kitchen</option>
+          </select>
+        </div>
+        <button onclick="emailVisualizer()" style="background:#16C762;color:#fff;border:none;padding:10px 20px;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer;width:100%">Email to Customer</button>
+      </div>
+
+      <!-- Canvas preview -->
+      <div>
+        <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Preview</div>
+        <canvas id="viz-canvas" width="380" height="280" style="border:2px solid #e5e7eb;border-radius:10px;width:100%"></canvas>
+        <div id="viz-edge-label" style="text-align:center;font-size:.85rem;color:#374151;margin-top:8px;font-weight:600"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 27: CONTRACT & E-SIGNATURE
+============================================================ -->
+<div id="panel-contractsign" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Contract & E-Signature</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Digital contracts • E-sign • Deposit collection • Change order approval</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
+      <div style="background:#f0fef4;border:1px solid #a7f3c0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16C762">8</div><div style="font-size:.78rem;color:#6b7280">Signed This Month</div>
+      </div>
+      <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#d97706">2</div><div style="font-size:.78rem;color:#6b7280">Awaiting Signature</div>
+      </div>
+      <div style="background:#f0fef4;border:1px solid #a7f3c0;border-radius:8px;padding:14px;text-align:center">
+        <div style="font-size:1.5rem;font-weight:700;color:#16C762">$18,400</div><div style="font-size:.78rem;color:#6b7280">Deposits Collected</div>
+      </div>
+    </div>
+
+    <!-- Contract composer -->
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:20px">
+      <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Send Contract for Signature</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Customer</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Job #</label><input type="text" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Contract Type</label>
+          <select style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box">
+            <option>Standard Countertop Agreement</option>
+            <option>Change Order</option>
+            <option>Deposit Invoice</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="sendForSignature()" style="background:#16C762;color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:.85rem;font-weight:600;cursor:pointer">Send for E-Signature</button>
+        <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:9px 14px;border-radius:7px;font-size:.85rem;cursor:pointer">Preview Contract</button>
+      </div>
+    </div>
+
+    <!-- Pending signatures -->
+    <div style="font-weight:700;color:#111827;margin-bottom:12px;font-size:.95rem">Awaiting Customer Signature</div>
+    <div id="contract-pending-list" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 28: FIELD APP (INSTALLER MOBILE VIEW ENHANCED)
+============================================================ -->
+<div id="panel-fieldapp" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Field App — Installer View</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Mobile-optimized • Site photos • Signature on glass • Completion confirmation</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <!-- Mobile frame simulation -->
+    <div style="max-width:380px;margin:0 auto;border:3px solid #374151;border-radius:24px;padding:20px;background:#f9fafb">
+      <div style="text-align:center;font-size:.7rem;color:#9ca3af;margin-bottom:16px">INSTALLER MOBILE VIEW</div>
+
+      <div style="background:#16C762;color:#fff;border-radius:10px;padding:14px;margin-bottom:12px;text-align:center">
+        <div style="font-size:.85rem;opacity:.8">Today's Job</div>
+        <div style="font-size:1.1rem;font-weight:700;margin-top:2px">Smith Kitchen — 142 Oak Dr</div>
+        <div style="font-size:.8rem;margin-top:4px;opacity:.8">3 pieces | Est. 2.5 hrs</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        <button style="background:#fff;border:2px solid #16C762;color:#16C762;padding:11px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left">View Job Drawings & Dimensions</button>
+        <button onclick="showFieldPhoto()" style="background:#fff;border:2px solid #374151;color:#374151;padding:11px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left">Take Site Photo</button>
+        <button style="background:#fff;border:2px solid #374151;color:#374151;padding:11px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left">Report Issue / Damage</button>
+        <button onclick="collectFieldSig()" style="background:#fff;border:2px solid #374151;color:#374151;padding:11px;border-radius:8px;font-size:.88rem;font-weight:600;cursor:pointer;text-align:left">Collect Customer Signature</button>
+        <button onclick="markJobComplete()" style="background:#16C762;color:#fff;border:none;padding:13px;border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer">Mark Job Complete</button>
+      </div>
+
+      <div id="field-sig-area" style="display:none;background:#fff;border:2px dashed #d1d5db;border-radius:8px;padding:20px;text-align:center;margin-bottom:10px">
+        <canvas id="field-sig-canvas" width="300" height="100" style="border:1px solid #e5e7eb;border-radius:4px;cursor:crosshair;touch-action:none"></canvas>
+        <div style="font-size:.75rem;color:#9ca3af;margin-top:6px">Customer signs above</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button onclick="clearFieldSig()" style="background:#f3f4f6;border:1px solid #d1d5db;padding:5px 12px;border-radius:5px;font-size:.78rem;cursor:pointer">Clear</button>
+          <button onclick="saveFieldSig()" style="background:#16C762;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:.78rem;cursor:pointer">Save Signature</button>
+        </div>
+      </div>
+
+      <div id="field-complete-msg" style="display:none;background:#dcfce7;border:1px solid #86efac;border-radius:8px;padding:12px;text-align:center;font-weight:700;color:#166534;font-size:.9rem">Job marked complete! Office notified.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 29: MATERIAL WASTE CALCULATOR (ENHANCED)
+============================================================ -->
+<div id="panel-wastecalc" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Material Waste Calculator</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Per-job slab usage • Waste % • Cost impact • AI optimization tips</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+      <div>
+        <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Job Inputs</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Total Slab Area (sq ft)</label><input id="wc-slab" type="number" value="62" oninput="calcWaste()" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Countertop Area Needed (sq ft)</label><input id="wc-needed" type="number" value="38" oninput="calcWaste()" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Material Cost per Slab ($)</label><input id="wc-cost" type="number" value="850" oninput="calcWaste()" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+          <div><label style="font-size:.8rem;color:#6b7280;display:block;margin-bottom:3px">Number of Slabs Required</label><input id="wc-slabs" type="number" value="1" oninput="calcWaste()" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box"></div>
+        </div>
+        <button onclick="getWasteAITips()" style="margin-top:14px;background:#16C762;color:#fff;border:none;padding:10px 20px;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer;width:100%">AI Optimization Tips</button>
+      </div>
+      <div>
+        <div style="font-weight:700;color:#111827;margin-bottom:14px;font-size:.95rem">Results</div>
+        <div id="waste-results" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:18px">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;justify-content:space-between"><span style="color:#6b7280;font-size:.88rem">Usable Area</span><span id="wc-usable" style="font-weight:700;color:#111827">-- sq ft</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#6b7280;font-size:.88rem">Waste Area</span><span id="wc-waste-sqft" style="font-weight:700;color:#dc2626">-- sq ft</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#6b7280;font-size:.88rem">Yield %</span><span id="wc-yield" style="font-weight:700;color:#16C762">--%</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#6b7280;font-size:.88rem">Remnant Value</span><span id="wc-remnant-val" style="font-weight:700;color:#16C762">$--</span></div>
+            <div style="border-top:1px solid #e5e7eb;padding-top:12px;display:flex;justify-content:space-between"><span style="color:#374151;font-weight:600;font-size:.9rem">Total Material Cost</span><span id="wc-total" style="font-weight:700;color:#111827;font-size:1rem">$--</span></div>
+          </div>
+          <!-- Waste bar -->
+          <div style="margin-top:14px">
+            <div style="font-size:.78rem;color:#6b7280;margin-bottom:4px">Yield Indicator</div>
+            <div style="background:#e5e7eb;border-radius:4px;height:12px;overflow:hidden">
+              <div id="wc-yield-bar" style="background:#16C762;height:100%;width:0%;transition:width .4s"></div>
+            </div>
+          </div>
+        </div>
+        <div id="waste-ai-tips" style="display:none;margin-top:14px;background:#f0fef4;border:1px solid #a7f3c0;border-radius:8px;padding:14px;font-size:.88rem;color:#1f2937;line-height:1.6;white-space:pre-wrap"></div>
+        <div id="waste-ai-loading" style="display:none;color:#16C762;font-style:italic;margin-top:8px">Getting AI tips...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PANEL 30: SHOWROOM DISPLAY MODE
+============================================================ -->
+<div id="panel-showroomdisplay" class="panel" style="display:none">
+  <div class="panel-header" style="background:#16C762;color:#fff;padding:20px 24px;border-radius:10px 10px 0 0">
+    <h2 style="margin:0;font-size:1.3rem">Showroom Display Mode</h2>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.85rem">Kiosk mode for the showroom floor • Browse materials • Email quote to self</p>
+  </div>
+  <div style="padding:24px;background:#fff;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px">
+    <div style="text-align:center;margin-bottom:22px">
+      <button onclick="launchKioskMode()" style="background:#16C762;color:#fff;border:none;padding:14px 36px;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-right:10px">Launch Kiosk Mode (Full Screen)</button>
+      <button style="background:#f3f4f6;border:1px solid #d1d5db;padding:14px 24px;border-radius:10px;font-size:1rem;cursor:pointer">Preview Below</button>
+    </div>
+
+    <!-- Kiosk preview -->
+    <div style="border:3px solid #374151;border-radius:16px;padding:24px;background:#fff">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-size:1.8rem;font-weight:700;color:#16C762;letter-spacing:-.02em">STONEDESK</div>
+        <div style="font-size:1rem;color:#374151;margin-top:4px">Explore Our Stone Collection</div>
+      </div>
+
+      <!-- Material browser -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px" id="showroom-materials"></div>
+
+      <!-- Selected material info -->
+      <div id="showroom-selected" style="background:#f0fef4;border:2px solid #a7f3c0;border-radius:10px;padding:18px;margin-bottom:16px;display:none">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div id="sr-mat-name" style="font-size:1.2rem;font-weight:700;color:#111827"></div>
+            <div id="sr-mat-type" style="font-size:.85rem;color:#6b7280;margin-top:2px"></div>
+            <div id="sr-mat-price" style="font-size:1rem;font-weight:600;color:#16C762;margin-top:8px"></div>
+            <div id="sr-mat-desc" style="font-size:.85rem;color:#374151;line-height:1.5;margin-top:8px"></div>
+          </div>
+          <div>
+            <div style="background:#e5e7eb;border-radius:8px;height:120px;display:flex;align-items:center;justify-content:center" id="sr-swatch"></div>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px">
+          <input type="email" id="sr-email" placeholder="Enter your email to receive a quote" style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:7px;font-size:.9rem">
+          <button onclick="emailShowroomQuote()" style="background:#16C762;color:#fff;border:none;padding:10px 18px;border-radius:7px;font-size:.88rem;font-weight:600;cursor:pointer">Email Quote</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- StoneDesk SESSION 19 — JavaScript for panels 19-30 -->
+<!-- SAIRN PROXY: https://sairn.vercel.app/api/claude | app_id: stonedesk -->
+<!-- NO box-drawing chars in JS. Regex newlines use \\n not literal newlines -->
+
+<script>
+const SAIRN_SD_API = 'https://sairn.vercel.app/api/claude';
+const SD_APP_ID = 'stonedesk';
+
+async function callSDAPI(prompt) {
+  try {
+    const res = await fetch(SAIRN_SD_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ app_id: SD_APP_ID, is_demo: true, messages: [{ role: 'user', content: prompt }] })
+    });
+    const data = await res.json();
+    if (data && data.content && data.content[0]) return data.content[0].text;
+    return 'AI response unavailable.';
+  } catch(e) { return 'Error: ' + e.message; }
+}
+
+// ========================================================
+// PANEL 19: SLAB NESTING
+// ========================================================
+const nestPieces = [
+  { label:'Kitchen Island', w:72, d:40 },
+  { label:'Kitchen Run 1', w:96, d:25 },
+  { label:'Kitchen Run 2', w:54, d:25 }
+];
+
+function renderNestPieces() {
+  const container = document.getElementById('nest-pieces');
+  if (!container) return;
+  container.innerHTML = '';
+  nestPieces.forEach(function(p, i) {
+    container.innerHTML += '<div style="display:grid;grid-template-columns:1fr 100px 100px 40px;gap:8px;align-items:center">' +
+      '<input type="text" value="' + p.label + '" oninput="nestPieces[' + i + '].label=this.value" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem">' +
+      '<input type="number" value="' + p.w + '" placeholder="Width (in)" oninput="nestPieces[' + i + '].w=+this.value" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem">' +
+      '<input type="number" value="' + p.d + '" placeholder="Depth (in)" oninput="nestPieces[' + i + '].d=+this.value" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem">' +
+      '<button onclick="removeNestPiece(' + i + ')" style="background:#fee2e2;border:none;color:#991b1b;padding:7px 10px;border-radius:5px;cursor:pointer">x</button>' +
+    '</div>';
+  });
+}
+
+function addNestPiece() {
+  nestPieces.push({ label:'Piece ' + (nestPieces.length + 1), w:36, d:25 });
+  renderNestPieces();
+}
+
+function removeNestPiece(i) {
+  nestPieces.splice(i, 1);
+  renderNestPieces();
+}
+
+async function runNestingAI() {
+  const slabW = parseFloat(document.getElementById('nest-sw').value) || 62;
+  const slabL = parseFloat(document.getElementById('nest-sl').value) || 120;
+  const mat = document.getElementById('nest-mat').value;
+  const costPerSlab = parseFloat(document.getElementById('nest-cost').value) || 850;
+  const slabSqFt = (slabW * slabL) / 144;
+
+  if (nestPieces.length === 0) { alert('Add at least one piece.'); return; }
+
+  document.getElementById('nest-loading').style.display = 'block';
+  document.getElementById('nest-output').style.display = 'none';
+
+  const piecesStr = nestPieces.map(function(p) { return p.label + ': ' + p.w + '"W x ' + p.d + '"D (' + ((p.w*p.d)/144).toFixed(1) + ' sq ft)'; }).join('\n');
+  const totalNeeded = nestPieces.reduce(function(s,p) { return s + (p.w*p.d)/144; }, 0);
+  const slabsNeeded = Math.ceil(totalNeeded / (slabSqFt * 0.8));
+
+  const prompt = `You are a stone fabrication nesting expert. Optimize slab layout:
+
+Slab: ${slabW}" x ${slabL}" (${slabSqFt.toFixed(1)} sq ft) — ${mat}
+Cost per slab: $${costPerSlab}
+
+Pieces needed:
+${piecesStr}
+
+Total area needed: ${totalNeeded.toFixed(1)} sq ft
+
+Provide:
+1. Optimal placement order for each piece
+2. Estimated slabs required
+3. Estimated yield % and waste
+4. Any seam recommendations
+5. Vein matching notes for ${mat}
+
+Be specific about placement coordinates (e.g. "Place Kitchen Island at 0,0 to 72,40").`;
+
+  const result = await callSDAPI(prompt);
+
+  document.getElementById('nest-loading').style.display = 'none';
+  document.getElementById('nest-ai-result').textContent = result;
+  document.getElementById('nest-output').style.display = 'block';
+
+  // Update stats
+  const yield_pct = Math.min(95, Math.round((totalNeeded / (slabSqFt * slabsNeeded)) * 100));
+  const wasteArea = (slabSqFt * slabsNeeded) - totalNeeded;
+  const saved = Math.round(wasteArea * (costPerSlab / slabSqFt));
+
+  const nestPctEl = document.getElementById('nest-pct');
+  const nestWasteEl = document.getElementById('nest-waste');
+  const nestSavedEl = document.getElementById('nest-saved');
+  const nestSlabsEl = document.getElementById('nest-slabs');
+  if (nestPctEl) nestPctEl.textContent = yield_pct + '%';
+  if (nestWasteEl) nestWasteEl.textContent = wasteArea.toFixed(1) + ' sq ft';
+  if (nestSavedEl) nestSavedEl.textContent = '$' + saved;
+  if (nestSlabsEl) nestSlabsEl.textContent = slabsNeeded;
+
+  drawNestingCanvas(slabW, slabL, nestPieces);
+}
+
+function drawNestingCanvas(slabW, slabL, pieces) {
+  const canvas = document.getElementById('nest-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const scale = Math.min(canvas.width / slabW, canvas.height / slabL) * 0.9;
+  const offsetX = (canvas.width - slabW * scale) / 2;
+  const offsetY = (canvas.height - slabL * scale) / 2;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#f8f6f0';
+  ctx.fillRect(offsetX, offsetY, slabW * scale, slabL * scale);
+  ctx.strokeStyle = '#16C762';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(offsetX, offsetY, slabW * scale, slabL * scale);
+
+  const colors = ['#dcfce7','#dbeafe','#fef3c7','#fce7f3','#ede9fe'];
+  const borders = ['#16A34A','#2563eb','#d97706','#db2777','#7c3aed'];
+  let x = 0;
+  let y = 0;
+  pieces.forEach(function(p, i) {
+    const pw = Math.min(p.w, slabW - x);
+    const pd = p.d;
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(offsetX + x * scale, offsetY + y * scale, pw * scale, pd * scale);
+    ctx.strokeStyle = borders[i % borders.length];
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(offsetX + x * scale, offsetY + y * scale, pw * scale, pd * scale);
+    ctx.fillStyle = '#374151';
+    ctx.font = '10px sans-serif';
+    ctx.fillText(p.label.substring(0, 12), offsetX + x * scale + 4, offsetY + y * scale + 14);
+    y += pd;
+    if (y + 24 > slabL) { y = 0; x += 30; }
+  });
+}
+
+function exportNestingDXF() {
+  alert('DXF export — sends cut file to CNC machine (demo mode).');
+}
+
+// ========================================================
+// PANEL 20: TEMPLATE TRACKER
+// ========================================================
+const templateJobs = [
+  { job:'SD-2026-0847', customer:'Smith, J.', address:'142 Oak Dr, Westlake', templater:'Mike R.', date:'06/11/2026', method:'LT-55', hasDXF:true, status:'In Fabrication' },
+  { job:'SD-2026-0848', customer:'Garcia, M.', address:'88 Elm St, Avon', templater:'Dave K.', date:'06/12/2026', method:'LT-55', hasDXF:true, status:'Templated' },
+  { job:'SD-2026-0849', customer:'Wilson, T.', address:'204 Pine Ave, Bay Village', templater:'', date:'', method:'', hasDXF:false, status:'Pending Template' }
+];
+
+const TMPL_STATUS_COLORS = {
+  'Pending Template': { bg:'#fee2e2', text:'#991b1b' },
+  'Templated': { bg:'#fef3c7', text:'#92400e' },
+  'In Fabrication': { bg:'#dbeafe', text:'#1e40af' },
+  'Ready to Install': { bg:'#dcfce7', text:'#166534' }
+};
+
+function renderTemplates() {
+  const body = document.getElementById('tmpl-body');
+  if (!body) return;
+  body.innerHTML = '';
+  templateJobs.forEach(function(j) {
+    const sc = TMPL_STATUS_COLORS[j.status] || { bg:'#f3f4f6', text:'#374151' };
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:10px 12px;font-weight:700;color:#16C762;font-size:.88rem">' + j.job + '</td>' +
+      '<td style="padding:10px 12px;font-size:.88rem;color:#111827">' + j.customer + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + j.address + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#374151">' + (j.templater || '--') + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#374151">' + (j.date || '--') + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#374151">' + (j.method || '--') + '</td>' +
+      '<td style="padding:10px 12px;text-align:center">' + (j.hasDXF ? '<span style="color:#16C762;font-weight:700;font-size:.8rem">DXF</span>' : '<span style="color:#9ca3af;font-size:.8rem">--</span>') + '</td>' +
+      '<td style="padding:10px 12px;text-align:center"><span style="background:' + sc.bg + ';color:' + sc.text + ';padding:3px 10px;border-radius:10px;font-size:.75rem;font-weight:700">' + j.status + '</span></td>' +
+    '</tr>';
+  });
+}
+
+function filterTemplates() {
+  const q = (document.getElementById('tmpl-search') ? document.getElementById('tmpl-search').value : '').toLowerCase();
+  const sf = document.getElementById('tmpl-status-filter') ? document.getElementById('tmpl-status-filter').value : '';
+  const rows = document.querySelectorAll('#tmpl-body tr');
+  rows.forEach(function(r) {
+    const text = r.textContent.toLowerCase();
+    r.style.display = (text.includes(q) && (!sf || r.textContent.includes(sf))) ? '' : 'none';
+  });
+}
+
+function addTemplateJob() {
+  const job = prompt('Job number:');
+  if (!job) return;
+  const customer = prompt('Customer name:');
+  templateJobs.push({ job, customer: customer||'Unknown', address:'', templater:'', date:'', method:'', hasDXF:false, status:'Pending Template' });
+  renderTemplates();
+}
+
+// ========================================================
+// PANEL 21: INSTALLATION BOARD
+// ========================================================
+let installWeekOffset = 0;
+const installJobs = [
+  { crew:'Crew Alpha', date:new Date().toISOString().split('T')[0], customer:'Smith Kitchen', type:'Kitchen', hrs:'3h' },
+  { crew:'Crew Beta', date:new Date().toISOString().split('T')[0], customer:'Garcia Bath x2', type:'Bathroom', hrs:'2.5h' }
+];
+
+function renderInstallBoard() {
+  const today = new Date();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - today.getDay() + (installWeekOffset * 7));
+
+  const label = document.getElementById('install-week-label');
+  if (label) label.textContent = weekStart.toLocaleDateString('en-US',{ month:'long', day:'numeric' }) + ' week';
+
+  const header = document.getElementById('install-header');
+  const body = document.getElementById('install-body');
+  if (!header || !body) return;
+
+  const DAYS7 = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  header.innerHTML = '<th style="padding:8px;font-size:.78rem;color:#6b7280;font-weight:600;min-width:80px">Crew</th>';
+  for (let d = 0; d < 7; d++) {
+    const day = new Date(weekStart.getTime() + d*86400000);
+    header.innerHTML += '<th style="padding:8px;font-size:.78rem;font-weight:600;color:#374151;min-width:90px">' + DAYS7[day.getDay()] + ' ' + (day.getMonth()+1) + '/' + day.getDate() + '</th>';
+  }
+
+  const crews = ['Crew Alpha','Crew Beta','Crew Gamma'];
+  const typeColors = { Kitchen:'#dcfce7', Bathroom:'#dbeafe', Large:'#fef3c7', Rush:'#fee2e2' };
+  body.innerHTML = '';
+  crews.forEach(function(crew) {
+    let row = '<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:10px 8px;font-weight:600;font-size:.85rem;color:#374151">' + crew + '</td>';
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(weekStart.getTime() + d*86400000);
+      const dayStr = day.toISOString().split('T')[0];
+      const job = installJobs.find(function(j) { return j.crew === crew && j.date === dayStr; });
+      if (job) {
+        const col = typeColors[job.type] || '#f3f4f6';
+        row += '<td style="padding:4px"><div style="background:' + col + ';border-radius:6px;padding:5px 8px;font-size:.75rem"><div style="font-weight:600">' + job.customer + '</div><div style="color:#6b7280">' + job.hrs + '</div></div></td>';
+      } else {
+        row += '<td style="padding:4px"><div style="background:#f9fafb;border:1px dashed #d1d5db;border-radius:6px;padding:5px 8px;font-size:.75rem;color:#9ca3af;text-align:center;cursor:pointer" onclick="addInstallJob()">+ Job</div></td>';
+      }
+    }
+    row += '</tr>';
+    body.innerHTML += row;
+  });
+}
+
+function changeInstallWeek(dir) { installWeekOffset += dir; renderInstallBoard(); }
+
+function addInstallJob() {
+  const customer = prompt('Customer / Job name:');
+  if (!customer) return;
+  const date = prompt('Install date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
+  const crew = prompt('Crew (Alpha/Beta/Gamma):', 'Crew Alpha');
+  installJobs.push({ crew: crew||'Crew Alpha', date: date||new Date().toISOString().split('T')[0], customer, type:'Kitchen', hrs:'3h' });
+  renderInstallBoard();
+}
+
+// ========================================================
+// PANEL 22: CUSTOMER PORTAL
+// ========================================================
+function generatePortalLink() {
+  const customer = document.getElementById('portal-customer').value;
+  const job = document.getElementById('portal-job').value;
+  if (!customer || !job) { alert('Enter customer and job number.'); return; }
+  const token = Math.random().toString(36).substring(2, 10);
+  document.getElementById('portal-link').textContent = 'stonedesk.io/portal/' + job.toLowerCase().replace(/\s+/g, '-') + '?token=' + token;
+}
+
+// ========================================================
+// PANEL 23: QC TRACKER
+// ========================================================
+const qcJobs = [
+  { job:'SD-2026-0847', customer:'Smith Kitchen', pieces:3, done:2, flagged:0 },
+  { job:'SD-2026-0848', customer:'Garcia Bath', pieces:2, done:2, flagged:0 },
+  { job:'SD-2026-0845', customer:'Davis Island', pieces:1, done:0, flagged:1, flag:'Edge chip on waterfall leg — review before delivery' }
+];
+
+function renderQCJobs() {
+  const list = document.getElementById('qc-job-list');
+  if (!list) return;
+  list.innerHTML = '';
+  qcJobs.forEach(function(j, idx) {
+    const pct = j.pieces > 0 ? Math.round((j.done / j.pieces) * 100) : 0;
+    list.innerHTML += '<div style="background:#f9fafb;border:' + (j.flagged ? '2px solid #fca5a5' : '1px solid #e5e7eb') + ';border-radius:10px;padding:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+        '<div><span style="font-weight:700;color:#16C762;font-size:.9rem">' + j.job + '</span> <span style="color:#374151;font-size:.88rem">' + j.customer + '</span></div>' +
+        '<div style="font-size:.85rem;color:#6b7280">' + j.done + '/' + j.pieces + ' pieces</div>' +
+      '</div>' +
+      '<div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden;margin-bottom:10px"><div style="background:' + (j.flagged ? '#dc2626' : '#16C762') + ';height:100%;width:' + pct + '%"></div></div>' +
+      (j.flag ? '<div style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:8px 12px;font-size:.82rem;margin-bottom:8px"><strong>QC Flag:</strong> ' + j.flag + '</div>' : '') +
+      '<div style="display:flex;gap:8px">' +
+        '<button onclick="markPieceDone(' + idx + ')" style="background:#16C762;color:#fff;border:none;padding:6px 14px;border-radius:6px;font-size:.8rem;cursor:pointer">Mark Piece Done</button>' +
+        '<button onclick="addQCFlag(' + idx + ')" style="background:#fef3c7;border:1px solid #fcd34d;color:#92400e;padding:6px 14px;border-radius:6px;font-size:.8rem;cursor:pointer">Flag Issue</button>' +
+      '</div>' +
+    '</div>';
+  });
+}
+
+function markPieceDone(idx) {
+  if (qcJobs[idx].done < qcJobs[idx].pieces) { qcJobs[idx].done++; renderQCJobs(); }
+  else { alert('All pieces already complete.'); }
+}
+
+function addQCFlag(idx) {
+  const flag = prompt('Describe the QC issue:');
+  if (flag) { qcJobs[idx].flagged = 1; qcJobs[idx].flag = flag; qcJobs[idx].done = Math.max(0, qcJobs[idx].done - 1); renderQCJobs(); }
+}
+
+function addQCJob() {
+  const job = prompt('Job number:');
+  if (!job) return;
+  const customer = prompt('Customer name:');
+  const pieces = parseInt(prompt('Number of pieces:') || '1');
+  qcJobs.push({ job, customer: customer||'Unknown', pieces, done:0, flagged:0 });
+  renderQCJobs();
+}
+
+// ========================================================
+// PANEL 24: SUPPLIER & PO MANAGER
+// ========================================================
+const vendorData = [
+  { name:'Stone Source LLC', cat:'Natural Stone', contact:'Tom Allen - 216-555-0110', lead:'5-7 days', spend:'$24,800', rating:5 },
+  { name:'MSI Surfaces', cat:'Quartz/Porcelain', contact:'Sarah Kim - 216-555-0142', lead:'3-5 days', spend:'$18,200', rating:4 },
+  { name:'Cambria Direct', cat:'Quartz', contact:'Jim Roth - 216-555-0188', lead:'7-10 days', spend:'$12,600', rating:4 },
+  { name:'Prolift Fasteners', cat:'Hardware', contact:'Dan Walsh - 216-555-0131', lead:'1-2 days', spend:'$3,200', rating:5 }
+];
+
+const poData = [
+  { po:'PO-2026-041', vendor:'Stone Source LLC', items:'2 slabs Calacatta Gold', ordered:'06/10/2026', expected:'06/17/2026', amount:'$1,700', status:'Ordered' },
+  { po:'PO-2026-042', vendor:'MSI Surfaces', items:'3 slabs Carrara White Quartz', ordered:'06/12/2026', expected:'06/16/2026', amount:'$2,100', status:'In Transit' },
+  { po:'PO-2026-040', vendor:'Cambria Direct', items:'1 slab Brittanicca Gold', ordered:'06/05/2026', expected:'06/14/2026', amount:'$920', status:'Delivered' }
+];
+
+function showPOTab(tab) {
+  ['vendors','orders','create'].forEach(function(t) {
+    const el = document.getElementById('po-' + t);
+    const btn = document.getElementById('po-tab-' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    if (btn) { btn.style.background = (t === tab) ? '#16C762' : 'transparent'; btn.style.color = (t === tab) ? '#fff' : '#374151'; }
+  });
+  if (tab === 'vendors') renderVendors();
+  if (tab === 'orders') renderPOs();
+  if (tab === 'create') renderPOLines();
+}
+
+function renderVendors() {
+  const body = document.getElementById('vendor-body');
+  if (!body) return;
+  body.innerHTML = '';
+  vendorData.forEach(function(v) {
+    const stars = Array(v.rating).fill('&#9733;').join('') + Array(5-v.rating).fill('&#9734;').join('');
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:10px 12px;font-weight:700;color:#111827;font-size:.88rem">' + v.name + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#374151">' + v.cat + '</td>' +
+      '<td style="padding:10px 12px;font-size:.82rem;color:#374151">' + v.contact + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#374151">' + v.lead + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-weight:700;color:#16C762;font-size:.88rem">' + v.spend + '</td>' +
+      '<td style="padding:10px 12px;text-align:center;color:#d97706;font-size:.85rem">' + stars + '</td>' +
+    '</tr>';
+  });
+}
+
+function renderPOs() {
+  const body = document.getElementById('po-body');
+  if (!body) return;
+  const SC = { 'Ordered':'#fef3c7', 'In Transit':'#dbeafe', 'Delivered':'#dcfce7' };
+  const ST = { 'Ordered':'#92400e', 'In Transit':'#1e40af', 'Delivered':'#166534' };
+  body.innerHTML = '';
+  poData.forEach(function(p) {
+    body.innerHTML += '<tr style="border-bottom:1px solid #f3f4f6">' +
+      '<td style="padding:10px 12px;font-weight:700;color:#16C762;font-size:.85rem">' + p.po + '</td>' +
+      '<td style="padding:10px 12px;font-size:.85rem;color:#111827">' + p.vendor + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + p.items + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + p.ordered + '</td>' +
+      '<td style="padding:10px 12px;font-size:.83rem;color:#374151">' + p.expected + '</td>' +
+      '<td style="padding:10px 12px;text-align:right;font-weight:700;color:#111827;font-size:.88rem">' + p.amount + '</td>' +
+      '<td style="padding:10px 12px;text-align:center"><span style="background:' + (SC[p.status]||'#f3f4f6') + ';color:' + (ST[p.status]||'#374151') + ';padding:3px 10px;border-radius:10px;font-size:.75rem;font-weight:700">' + p.status + '</span></td>' +
+    '</tr>';
+  });
+}
+
+const poLines = [{ item:'', qty:'1', unit:'slab', price:'' }];
+
+function renderPOLines() {
+  const container = document.getElementById('po-lines');
+  if (!container) return;
+  container.innerHTML = '';
+  poLines.forEach(function(l, i) {
+    container.innerHTML += '<div style="display:grid;grid-template-columns:1fr 60px 80px 100px 36px;gap:8px">' +
+      '<input type="text" value="' + l.item + '" placeholder="Item description" oninput="poLines[' + i + '].item=this.value" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem">' +
+      '<input type="number" value="' + l.qty + '" placeholder="Qty" oninput="poLines[' + i + '].qty=this.value" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem">' +
+      '<input type="text" value="' + l.unit + '" placeholder="Unit" oninput="poLines[' + i + '].unit=this.value" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem">' +
+      '<input type="number" value="' + l.price + '" placeholder="Unit price" oninput="poLines[' + i + '].price=this.value" style="padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:.85rem">' +
+      '<button onclick="poLines.splice(' + i + ',1);renderPOLines()" style="background:#fee2e2;border:none;color:#991b1b;border-radius:5px;cursor:pointer">x</button>' +
+    '</div>';
+  });
+}
+
+function addPOLine() { poLines.push({ item:'', qty:'1', unit:'slab', price:'' }); renderPOLines(); }
+
+function generatePO() {
+  const total = poLines.reduce(function(s,l) { return s + ((+l.qty||0)*(+l.price||0)); }, 0);
+  alert('PO generated — Total: $' + total.toFixed(2) + '\nIn full integration, this creates a PDF PO and optionally emails the vendor.');
+}
+
+// ========================================================
+// PANEL 25: QUICKBOOKS SYNC
+// ========================================================
+function renderQBPending() {
+  const list = document.getElementById('qb-pending-list');
+  if (!list) return;
+  const pending = [
+    { type:'Invoice', item:'INV-2026-847 — Smith, J. — $2,400', date:'06/13/2026' },
+    { type:'Payment', item:'PMT-2026-211 — Garcia, M. — $1,800', date:'06/12/2026' },
+    { type:'Job', item:'SD-2026-0849 — Wilson, T. — New Job', date:'06/13/2026' }
+  ];
+  const typeColors = { Invoice:'#dbeafe', Payment:'#dcfce7', Job:'#fef3c7' };
+  list.innerHTML = '';
+  pending.forEach(function(p) {
+    list.innerHTML += '<div style="background:' + (typeColors[p.type]||'#f9fafb') + ';border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><span style="font-size:.75rem;font-weight:700;color:#374151;background:#fff;padding:2px 8px;border-radius:8px;margin-right:8px">' + p.type + '</span><span style="font-size:.88rem;color:#111827">' + p.item + '</span></div>' +
+      '<span style="font-size:.78rem;color:#6b7280">' + p.date + '</span>' +
+    '</div>';
+  });
+}
+
+function renderQBLog() {
+  const list = document.getElementById('qb-sync-log');
+  if (!list) return;
+  const logs = [
+    { time:'06/13/2026 8:15am', result:'14 records synced successfully', status:'ok' },
+    { time:'06/12/2026 6:00pm', result:'11 records synced — 1 duplicate skipped', status:'warn' },
+    { time:'06/11/2026 6:00pm', result:'9 records synced successfully', status:'ok' }
+  ];
+  list.innerHTML = '';
+  logs.forEach(function(l) {
+    list.innerHTML += '<div style="display:flex;gap:12px;align-items:center;padding:9px 12px;background:#f9fafb;border-radius:6px">' +
+      '<div style="width:8px;height:8px;background:' + (l.status === 'ok' ? '#16C762' : '#d97706') + ';border-radius:50%;flex-shrink:0"></div>' +
+      '<span style="font-size:.8rem;color:#6b7280;min-width:140px">' + l.time + '</span>' +
+      '<span style="font-size:.83rem;color:#374151">' + l.result + '</span>' +
+    '</div>';
+  });
+}
+
+function runQBSync() {
+  const btn = event.target;
+  btn.textContent = 'Syncing...';
+  btn.disabled = true;
+  setTimeout(function() {
+    btn.textContent = 'Sync Now';
+    btn.disabled = false;
+    alert('QuickBooks sync complete — 3 new records exported.');
+    renderQBLog();
+    renderQBPending();
+  }, 2000);
+}
+
+// ========================================================
+// PANEL 26: 3D VISUALIZER
+// ========================================================
+const EDGE_PROFILES = {
+  eased: { label:'Eased Edge', desc:'Clean 45-degree chamfer on top edges. Timeless and safe.', path:function(ctx,x,y,w,h){ ctx.beginPath();ctx.moveTo(x+6,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.lineTo(x,y+6);ctx.closePath(); }},
+  bevel: { label:'Bevel Edge', desc:'45-degree cut along top edge. Modern and minimal.', path:function(ctx,x,y,w,h){ ctx.beginPath();ctx.moveTo(x+12,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.lineTo(x,y+12);ctx.closePath(); }},
+  halfbull: { label:'Half Bullnose', desc:'Rounded top, straight bottom. Classic and popular.', path:function(ctx,x,y,w,h){ ctx.beginPath();ctx.moveTo(x,y+8);ctx.arcTo(x,y,x+8,y,8);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.closePath(); }},
+  fullbull: { label:'Full Bullnose', desc:'Fully rounded edge. Soft, family-friendly look.', path:function(ctx,x,y,w,h){ ctx.beginPath();ctx.moveTo(x,y+h/2);ctx.arcTo(x,y,x+w,y,h/2);ctx.lineTo(x+w,y+h);ctx.lineTo(x,y+h);ctx.closePath(); }},
+  ogee: { label:'Ogee', desc:'S-curve profile. Elegant, traditional style.', path:function(ctx,x,y,w,h){ ctx.beginPath();ctx.moveTo(x,y+h);ctx.lineTo(x+w,y+h);ctx.lineTo(x+w,y+4);ctx.bezierCurveTo(x+w,y,x+w-8,y,x+w-8,y+8);ctx.bezierCurveTo(x+w-8,y+16,x,y+12,x,y+h);ctx.closePath(); }},
+  mitered: { label:'Mitered Edge', desc:'Thick slab appearance. High-end, dramatic look.', path:function(ctx,x,y,w,h){ ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h);ctx.lineTo(x+4,y+h);ctx.lineTo(x,y+h-4);ctx.closePath(); }},
+  dropedge: { label:'Drop Edge', desc:'Extended vertical face. Creates premium thick look.', path:function(ctx,x,y,w,h){ ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h+10);ctx.lineTo(x,y+h+10);ctx.closePath(); }}
+};
+
+function updateVisualizer() {
+  const canvas = document.getElementById('viz-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const edgeKey = document.getElementById('viz-edge') ? document.getElementById('viz-edge').value : 'eased';
+  const matColor = document.getElementById('viz-color') ? document.getElementById('viz-color').value : '#e8e4dc';
+  const edge = EDGE_PROFILES[edgeKey] || EDGE_PROFILES.eased;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Draw kitchen background
+  ctx.fillStyle = '#f5f0eb';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Cabinet body
+  ctx.fillStyle = '#c8b89a';
+  ctx.fillRect(40, 160, canvas.width-80, 120);
+
+  // Countertop base
+  ctx.fillStyle = matColor;
+  ctx.fillRect(30, 130, canvas.width-60, 36);
+
+  // Edge profile detail
+  ctx.fillStyle = matColor;
+  ctx.save();
+  edge.path(ctx, 30, 130, canvas.width-60, 36);
+  ctx.fill();
+  ctx.strokeStyle = '#9999';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.restore();
+
+  // Veining simulation
+  if (matColor.includes('e8') || matColor.includes('c8')) {
+    ctx.strokeStyle = 'rgba(160,140,120,0.3)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(30 + i*80, 130);
+      ctx.bezierCurveTo(50 + i*80, 140, 80 + i*80, 132, 100 + i*80, 138);
+      ctx.stroke();
+    }
+  }
+
+  // Label
+  const label = document.getElementById('viz-edge-label');
+  if (label) label.textContent = edge.label + ' — ' + edge.desc;
+}
+
+function emailVisualizer() {
+  const email = prompt('Customer email to send visualizer link:');
+  if (email) alert('Visualizer link sent to ' + email + ' (demo mode).');
+}
+
+// ========================================================
+// PANEL 27: CONTRACT & E-SIGNATURE
+// ========================================================
+function sendForSignature() {
+  const customer = document.querySelector('#panel-contractsign input[type=text]') ? document.querySelector('#panel-contractsign input[type=text]').value : 'Customer';
+  alert('E-signature request sent to ' + (customer||'customer') + '.\nIn full integration, this sends via DocuSign or built-in e-sign link.');
+}
+
+function renderContractPending() {
+  const list = document.getElementById('contract-pending-list');
+  if (!list) return;
+  const pending = [
+    { customer:'Smith, J.', job:'SD-2026-0847', type:'Standard Contract', sent:'06/11/2026', status:'Opened' },
+    { customer:'Davis, C.', job:'SD-2026-0846', type:'Change Order +$450', sent:'06/12/2026', status:'Not Yet Opened' }
+  ];
+  list.innerHTML = '';
+  pending.forEach(function(p) {
+    list.innerHTML += '<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center">' +
+      '<div><div style="font-weight:700;font-size:.9rem;color:#111827">' + p.customer + ' — ' + p.job + '</div><div style="font-size:.8rem;color:#6b7280;margin-top:2px">' + p.type + ' | Sent ' + p.sent + ' | ' + p.status + '</div></div>' +
+      '<button style="background:#16C762;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:.8rem;cursor:pointer">Send Reminder</button>' +
+    '</div>';
+  });
+}
+
+// ========================================================
+// PANEL 28: FIELD APP
+// ========================================================
+let sigCtx = null;
+let sigDrawing = false;
+
+function showFieldPhoto() {
+  alert('Camera launched (demo mode — would open device camera in full mobile app).');
+}
+
+function collectFieldSig() {
+  const area = document.getElementById('field-sig-area');
+  if (area) area.style.display = 'block';
+  const canvas = document.getElementById('field-sig-canvas');
+  if (!canvas) return;
+  sigCtx = canvas.getContext('2d');
+  sigCtx.strokeStyle = '#16C762';
+  sigCtx.lineWidth = 2;
+  sigCtx.lineCap = 'round';
+
+  canvas.addEventListener('mousedown', function(e) { sigDrawing = true; sigCtx.beginPath(); sigCtx.moveTo(e.offsetX, e.offsetY); });
+  canvas.addEventListener('mousemove', function(e) { if (!sigDrawing) return; sigCtx.lineTo(e.offsetX, e.offsetY); sigCtx.stroke(); });
+  canvas.addEventListener('mouseup', function() { sigDrawing = false; });
+}
+
+function clearFieldSig() {
+  const canvas = document.getElementById('field-sig-canvas');
+  if (canvas && sigCtx) sigCtx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function saveFieldSig() {
+  document.getElementById('field-sig-area').style.display = 'none';
+  alert('Signature captured and saved to job record.');
+}
+
+function markJobComplete() {
+  const complete = document.getElementById('field-complete-msg');
+  if (complete) complete.style.display = 'block';
+}
+
+// ========================================================
+// PANEL 29: WASTE CALCULATOR
+// ========================================================
+function calcWaste() {
+  const slabSqFt = parseFloat(document.getElementById('wc-slab').value) || 0;
+  const needed = parseFloat(document.getElementById('wc-needed').value) || 0;
+  const cost = parseFloat(document.getElementById('wc-cost').value) || 0;
+  const slabs = parseInt(document.getElementById('wc-slabs').value) || 1;
+
+  const totalSlab = slabSqFt * slabs;
+  const waste = Math.max(0, totalSlab - needed);
+  const yield_pct = totalSlab > 0 ? Math.round((needed / totalSlab) * 100) : 0;
+  const remnantVal = Math.round((waste / slabSqFt) * cost * 0.4);
+  const totalCost = cost * slabs;
+
+  const usableEl = document.getElementById('wc-usable');
+  const wasteSqFtEl = document.getElementById('wc-waste-sqft');
+  const yieldEl = document.getElementById('wc-yield');
+  const remnantEl = document.getElementById('wc-remnant-val');
+  const totalEl = document.getElementById('wc-total');
+  const barEl = document.getElementById('wc-yield-bar');
+
+  if (usableEl) usableEl.textContent = needed.toFixed(1) + ' sq ft';
+  if (wasteSqFtEl) wasteSqFtEl.textContent = waste.toFixed(1) + ' sq ft';
+  if (yieldEl) yieldEl.textContent = yield_pct + '%';
+  if (remnantEl) remnantEl.textContent = '$' + remnantVal;
+  if (totalEl) totalEl.textContent = '$' + totalCost.toFixed(0);
+  if (barEl) { barEl.style.width = yield_pct + '%'; barEl.style.background = yield_pct >= 80 ? '#16C762' : (yield_pct >= 60 ? '#d97706' : '#dc2626'); }
+}
+
+async function getWasteAITips() {
+  const slab = document.getElementById('wc-slab').value;
+  const needed = document.getElementById('wc-needed').value;
+  const slabs = document.getElementById('wc-slabs').value;
+
+  document.getElementById('waste-ai-loading').style.display = 'block';
+  document.getElementById('waste-ai-tips').style.display = 'none';
+
+  const prompt = `You are a stone fabrication efficiency expert. A countertop shop needs ${needed} sq ft from ${slabs} slab(s) of ${slab} sq ft each.
+
+Give 4-5 specific, actionable tips to:
+1. Maximize slab yield
+2. Reduce waste
+3. Use remnants profitably
+4. Optimize cutting sequence
+Be specific and practical.`;
+
+  const result = await callSDAPI(prompt);
+  document.getElementById('waste-ai-loading').style.display = 'none';
+  document.getElementById('waste-ai-tips').textContent = result;
+  document.getElementById('waste-ai-tips').style.display = 'block';
+}
+
+// ========================================================
+// PANEL 30: SHOWROOM DISPLAY
+// ========================================================
+const showroomMaterials = [
+  { name:'Calacatta Gold', type:'Marble', price:'From $90/sq ft', color:'#e8e4dc', desc:'Dramatic gold veining on bright white. The most sought-after kitchen surface.' },
+  { name:'Absolute Black', type:'Granite', price:'From $45/sq ft', color:'#2d2d2d', desc:'Jet black granite. Timeless, bold, and maintenance-free.' },
+  { name:'Taj Mahal', type:'Quartzite', price:'From $75/sq ft', color:'#c8a882', desc:'Warm creamy tones with subtle veining. Harder than marble.' },
+  { name:'Grigio Ash', type:'Quartz', price:'From $55/sq ft', color:'#b8b4ac', desc:'Cool grey engineered quartz. Consistent pattern, zero maintenance.' },
+  { name:'Silestone Helix', type:'Quartz', price:'From $60/sq ft', color:'#d4c5a9', desc:'Warm beige with subtle movement. Modern farmhouse favorite.' },
+  { name:'Coffee Brown', type:'Granite', price:'From $40/sq ft', color:'#7a6a5a', desc:'Rich espresso tones with cream and rust movement.' },
+  { name:'Super White', type:'Quartzite', price:'From $80/sq ft', color:'#f0ece4', desc:'Crisp white with subtle grey veining. Marble look, quartzite durability.' },
+  { name:'Soapstone Classic', type:'Soapstone', price:'From $50/sq ft', color:'#5a5a6a', desc:'Dark grey-blue stone that develops a rich patina. Unique and durable.' }
+];
+
+let selectedMat = null;
+
+function renderShowroomMaterials() {
+  const container = document.getElementById('showroom-materials');
+  if (!container) return;
+  container.innerHTML = '';
+  showroomMaterials.forEach(function(m, i) {
+    container.innerHTML += '<div onclick="selectShowroomMat(' + i + ')" style="cursor:pointer;border:2px solid ' + (selectedMat === i ? '#16C762' : '#e5e7eb') + ';border-radius:10px;overflow:hidden;transition:border .2s">' +
+      '<div style="height:80px;background:' + m.color + '"></div>' +
+      '<div style="padding:10px"><div style="font-size:.83rem;font-weight:700;color:#111827">' + m.name + '</div><div style="font-size:.75rem;color:#6b7280">' + m.type + '</div><div style="font-size:.78rem;color:#16C762;font-weight:600;margin-top:3px">' + m.price + '</div></div>' +
+    '</div>';
+  });
+}
+
+function selectShowroomMat(i) {
+  selectedMat = i;
+  const m = showroomMaterials[i];
+  const sel = document.getElementById('showroom-selected');
+  if (!sel) return;
+  sel.style.display = 'block';
+  const nameEl = document.getElementById('sr-mat-name');
+  const typeEl = document.getElementById('sr-mat-type');
+  const priceEl = document.getElementById('sr-mat-price');
+  const descEl = document.getElementById('sr-mat-desc');
+  const swatchEl = document.getElementById('sr-swatch');
+  if (nameEl) nameEl.textContent = m.name;
+  if (typeEl) typeEl.textContent = m.type;
+  if (priceEl) priceEl.textContent = m.price;
+  if (descEl) descEl.textContent = m.desc;
+  if (swatchEl) swatchEl.style.background = m.color;
+  renderShowroomMaterials();
+}
+
+function emailShowroomQuote() {
+  const email = document.getElementById('sr-email') ? document.getElementById('sr-email').value : '';
+  if (!email) { alert('Enter your email address.'); return; }
+  const mat = selectedMat !== null ? showroomMaterials[selectedMat].name : 'your selection';
+  alert('Quote for ' + mat + ' sent to ' + email + '! Our team will follow up within 24 hours.');
+}
+
+function launchKioskMode() {
+  alert('Kiosk mode — in production, this launches fullscreen mode locking to the showroom view only.');
+}
+
+// ========================================================
+// STONEDESK PANEL INIT
+// ========================================================
+function initSDPanels() {
+  renderNestPieces();
+  renderTemplates();
+  renderInstallBoard();
+  renderVendors();
+  renderQBPending();
+  renderQBLog();
+  renderQCJobs();
+  renderContractPending();
+  renderShowroomMaterials();
+  updateVisualizer();
+  calcWaste();
+  renderPOLines();
+}
+
+document.addEventListener('DOMContentLoaded', initSDPanels);
+</script>

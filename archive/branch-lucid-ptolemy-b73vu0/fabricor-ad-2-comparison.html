@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap');
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; background: #0D0D0D; font-family: 'Barlow', sans-serif; }
+  .ad { width: 1080px; height: 1080px; position: relative; background: #111111; overflow: hidden; }
+
+  .bg { position: absolute; inset: 0; background: linear-gradient(160deg, #0A0A0A 0%, #161616 50%, #0D0D0D 100%); }
+  .top-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #C9A84C, #E8C86A, #C9A84C); }
+
+  .logo { position: absolute; top: 48px; left: 60px; display: flex; align-items: center; gap: 12px; }
+  .logo-mark { width: 38px; height: 38px; background: #C9A84C; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+  .logo-text { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 4px; color: #FFFFFF; }
+
+  /* Three comparison cards */
+  .cards { position: absolute; top: 140px; left: 60px; right: 60px; display: flex; flex-direction: column; gap: 16px; }
+
+  .card { padding: 28px 36px; border: 1px solid; display: flex; justify-content: space-between; align-items: center; }
+  .card.competitor { background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.07); }
+  .card.fabricor { background: rgba(201,168,76,0.06); border-color: rgba(201,168,76,0.3); }
+
+  .card-left { display: flex; flex-direction: column; gap: 4px; }
+  .card-name { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 3px; }
+  .card-name.dim { color: rgba(255,255,255,0.4); }
+  .card-name.bright { color: #C9A84C; }
+  .card-tag { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.25); }
+  .card-tag.gold { color: rgba(201,168,76,0.6); }
+
+  .card-price { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 1px; }
+  .card-price.dim { color: rgba(255,60,60,0.6); }
+  .card-price.bright { color: #C9A84C; }
+  .card-price-note { font-size: 11px; color: rgba(255,255,255,0.25); text-align: right; margin-top: 2px; letter-spacing: 1px; }
+
+  /* Bottom content */
+  .bottom { position: absolute; bottom: 0; left: 0; right: 0; padding: 48px 60px; background: linear-gradient(to top, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.7) 70%, transparent 100%); padding-top: 160px; }
+
+  .headline { font-family: 'Bebas Neue', sans-serif; font-size: 64px; line-height: 0.92; color: #FFFFFF; letter-spacing: 2px; margin-bottom: 16px; }
+  .headline em { color: #C9A84C; font-style: normal; }
+  .subhead { font-size: 17px; color: rgba(255,255,255,0.55); margin-bottom: 28px; line-height: 1.5; max-width: 700px; }
+
+  .cta-row { display: flex; align-items: center; gap: 24px; }
+  .cta-button { background: #C9A84C; color: #000; font-weight: 700; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; padding: 15px 34px; }
+  .cta-sub { font-size: 13px; color: rgba(255,255,255,0.35); }
+
+  /* VS badge */
+  .vs-badge { position: absolute; right: 60px; top: 48px; width: 64px; height: 64px; border: 2px solid rgba(201,168,76,0.3); display: flex; align-items: center; justify-content: center; }
+  .vs-text { font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: rgba(201,168,76,0.5); letter-spacing: 2px; }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="bg"></div>
+  <div class="top-bar"></div>
+
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">FABRICOR</div>
+  </div>
+
+  <div class="vs-badge"><div class="vs-text">VS</div></div>
+
+  <div class="cards">
+    <div class="card competitor">
+      <div class="card-left">
+        <div class="card-name dim">MORAWARE</div>
+        <div class="card-tag">General contractor software</div>
+      </div>
+      <div>
+        <div class="card-price dim">$499+</div>
+        <div class="card-price-note">per month</div>
+      </div>
+    </div>
+
+    <div class="card competitor">
+      <div class="card-left">
+        <div class="card-name dim">STONE PROFIT SYSTEMS</div>
+        <div class="card-tag">Outdated interface · Limited AI</div>
+      </div>
+      <div>
+        <div class="card-price dim">$350+</div>
+        <div class="card-price-note">per month</div>
+      </div>
+    </div>
+
+    <div class="card fabricor">
+      <div class="card-left">
+        <div class="card-name bright">FABRICOR</div>
+        <div class="card-tag gold">Built exclusively for stone fabricators</div>
+      </div>
+      <div>
+        <div class="card-price bright">$299</div>
+        <div class="card-price-note" style="color:rgba(201,168,76,0.5)">per month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">Pay less.<br>Get <em>more.</em><br>Built for stone.</div>
+    <div class="subhead">Live pricing. AI quote review. Range bar benchmarking. CSV stress testing. Client view that hides your markup. Everything Moraware isn't.</div>
+    <div class="cta-row">
+      <div class="cta-button">Start Free Trial →</div>
+      <div class="cta-sub">30 days free · No credit card</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

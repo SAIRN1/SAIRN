@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRN Mind — Your mental wellness companion. Always here.</title>
+<meta name="description" content="Evidence-based stress, anxiety, and emotional wellness support powered by Claude. Available at 11pm when no therapist is. Part of the SAIRN Technologies SAIRN NEXUS platform.">
+<meta name="theme-color" content="#0A0B14">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   SAIRN Mind · SAIRN NEXUS Cell 19
+   Michael L. Dibert · SAIRN Technologies · 2026
+═══════════════════════════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#060810;--s1:#0D0F1E;--s2:#141628;--card:#1A1C32;
+  --glass:rgba(255,255,255,0.04);--glass-b:rgba(255,255,255,0.08);
+  --a:#A78BFA;--a2:#7C3AED;--grad:linear-gradient(135deg,#A78BFA,#7C3AED);
+  --ar:rgba(139,92,246,0.15);--ab:rgba(139,92,246,0.3);
+  --w:#F0F0FF;--m:#9090B0;--d:#404060;
+}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{color:var(--w);font-family:'Inter',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+#particles{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.particle{position:absolute;border-radius:50%;opacity:0;animation:float var(--d,8s) var(--del,0s) infinite ease-in-out}
+@keyframes float{0%,100%{transform:translateY(0) scale(1);opacity:0}10%{opacity:var(--o,0.15)}90%{opacity:var(--o,0.15)}50%{transform:translateY(-60px) scale(1.3)}}
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:56px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(6,8,16,0.85);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06)}
+.nav-logo{display:flex;align-items:center;gap:10px;cursor:pointer;text-decoration:none}
+.nav-gem{width:32px;height:32px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 20px rgba(139,92,246,0.4);transition:box-shadow 0.3s}
+.nav-logo:hover .nav-gem{box-shadow:0 0 32px rgba(139,92,246,0.7)}
+.nav-brand{font-size:18px;font-weight:700;letter-spacing:-0.3px;color:var(--w)}
+.nav-brand span{color:var(--a)}
+.nav-r{display:flex;align-items:center;gap:10px}
+.nav-pill{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);color:var(--a)}
+.nav-cta{padding:9px 22px;border-radius:100px;font-size:13px;font-weight:600;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 4px 20px rgba(139,92,246,0.35);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(139,92,246,0.5)}
+.page{display:none;min-height:100vh;padding-top:56px;position:relative;z-index:1}
+.page.active{display:block}
+#appPage{display:none;height:100vh;padding-top:56px;flex-direction:column;position:relative;z-index:1}
+#appPage.active{display:flex}
+.hero{min-height:calc(100vh - 56px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;background:var(--ar);border:1px solid var(--ab);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--a);margin-bottom:28px}
+.hero-icon{font-size:64px;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(139,92,246,0.4))}
+.hero-title{font-size:clamp(36px,7vw,72px);font-weight:800;line-height:1.05;letter-spacing:-2px;margin-bottom:20px;background:linear-gradient(135deg,#F0F0FF 0%,#A78BFA 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2.5vw,20px);color:var(--m);max-width:560px;line-height:1.7;margin-bottom:40px}
+.hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.btn-primary{padding:16px 36px;border-radius:100px;font-size:15px;font-weight:600;background:var(--grad);color:#fff;border:none;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 8px 32px rgba(139,92,246,0.4);transition:all 0.2s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(139,92,246,0.55)}
+.btn-secondary{padding:16px 36px;border-radius:100px;font-size:15px;font-weight:600;background:rgba(255,255,255,0.06);color:var(--w);border:1px solid rgba(255,255,255,0.12);cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
+.btn-secondary:hover{background:rgba(255,255,255,0.1)}
+.features{padding:100px 20px;max-width:1100px;margin:0 auto}
+.features-title{font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-1.5px;text-align:center;margin-bottom:60px;background:linear-gradient(135deg,#F0F0FF,#A78BFA);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.feat-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:28px;transition:all 0.3s}
+.feat-card:hover{border-color:rgba(139,92,246,0.3);box-shadow:0 0 40px rgba(139,92,246,0.1);transform:translateY(-2px)}
+.feat-emoji{font-size:32px;margin-bottom:14px}
+.feat-title{font-size:17px;font-weight:600;color:var(--w);margin-bottom:8px}
+.feat-desc{font-size:14px;color:var(--m);line-height:1.65}
+.pricing{padding:100px 20px;text-align:center}
+.price-card{max-width:440px;margin:0 auto;background:var(--card);border:1px solid rgba(139,92,246,0.25);border-radius:28px;padding:48px 36px}
+.price-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--a);margin-bottom:16px}
+.price-amount{font-size:72px;font-weight:800;letter-spacing:-3px;color:var(--w);line-height:1}
+.price-period{font-size:18px;color:var(--m);margin-bottom:8px}
+.price-sub{font-size:13px;color:var(--d);margin-bottom:32px}
+.price-features{text-align:left;margin-bottom:32px}
+.price-feature{display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;color:var(--m);border-bottom:1px solid rgba(255,255,255,0.04)}
+.price-feature:last-child{border-bottom:none}
+.price-feature::before{content:"✓";color:var(--a);font-weight:700;flex-shrink:0}
+.nexus-strip{padding:80px 20px;text-align:center;background:linear-gradient(180deg,transparent,rgba(139,92,246,0.04),transparent)}
+.nexus-label{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--m);margin-bottom:12px}
+.nexus-title{font-size:28px;font-weight:700;color:var(--w);margin-bottom:8px}
+.nexus-sub{font-size:14px;color:var(--m);margin-bottom:28px}
+.nexus-apps{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.nexus-app{padding:6px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-size:12px;color:var(--m)}
+footer{padding:60px 20px;text-align:center;border-top:1px solid rgba(255,255,255,0.06)}
+.footer-logo{font-size:18px;font-weight:700;color:var(--w);margin-bottom:8px}
+.footer-sub{font-size:13px;color:var(--d);margin-bottom:20px}
+.footer-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.footer-link{font-size:12px;color:var(--d);text-decoration:none;transition:color 0.2s}
+.footer-link:hover{color:var(--a)}
+/* ── APP SHELL ── */
+.app-header{padding:14px 20px;background:rgba(6,8,16,0.6);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:14px;font-weight:600;color:var(--w);display:flex;align-items:center;gap:8px}
+.app-title-dot{width:8px;height:8px;border-radius:50%;background:var(--a);box-shadow:0 0 8px var(--a)}
+.mode-bar{display:flex;gap:8px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.04);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:'Inter',sans-serif}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-icon{font-size:14px}
+.chat-area{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent}
+.msg{display:flex;gap:10px;animation:msgIn 0.25s ease-out}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.user{justify-content:flex-end}
+.msg-avatar{width:30px;height:30px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;box-shadow:0 0 10px rgba(139,92,246,0.3)}
+.msg-bubble{max-width:72%;padding:12px 16px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card);border:1px solid rgba(255,255,255,0.07);color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#fff;border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble ul,.msg-bubble ol{padding-left:18px;margin:6px 0}
+.msg-bubble li{margin-bottom:4px}
+.msg-bubble strong{color:var(--a);font-weight:600}
+.msg-bubble code{background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;font-size:12px}
+.typing{display:flex;gap:5px;align-items:center;padding:14px 16px}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--a);animation:bounce 1.2s ease-in-out infinite;opacity:0.7}
+.typing-dot:nth-child(2){animation-delay:0.2s}
+.typing-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-8px)}}
+.input-area{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(6,8,16,0.8)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:12px 16px;color:var(--w);font-size:14px;font-family:'Inter',sans-serif;resize:none;min-height:44px;max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(139,92,246,0.5);background:rgba(255,255,255,0.07)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:44px;height:44px;border-radius:12px;background:var(--grad);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;box-shadow:0 4px 16px rgba(139,92,246,0.35);transition:all 0.2s}
+#sendBtn:hover{transform:scale(1.07);box-shadow:0 6px 24px rgba(139,92,246,0.5)}
+#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.empty-icon{font-size:52px;margin-bottom:16px;filter:drop-shadow(0 0 16px rgba(139,92,246,0.3))}
+.empty-title{font-size:20px;font-weight:600;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:340px;line-height:1.6;margin-bottom:24px}
+.empty-suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px}
+.suggestion{padding:11px 16px;background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;transition:all 0.2s;font-family:'Inter',sans-serif}
+.suggestion:hover{border-color:rgba(139,92,246,0.3);color:var(--w);background:rgba(139,92,246,0.06)}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+</style>
+</head>
+<body>
+<div id="particles"></div>
+<nav class="nav">
+  <a class="nav-logo" href="/" onclick="showPage('home');return false">
+    <div class="nav-gem">🧠</div>
+    <div class="nav-brand">SAIRN<span> Mind</span></div>
+  </a>
+  <div class="nav-r">
+    <div class="nav-pill">SAIRN NEXUS</div>
+    <button class="nav-cta" onclick="showPage('app')">Open App</button>
+  </div>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="homePage" class="page active">
+  <section class="hero">
+    <div class="hero-badge">✦ SAIRN NEXUS · Cell 19</div>
+    <div class="hero-icon">🧠</div>
+    <h1 class="hero-title">SAIRN Mind</h1>
+    <p class="hero-sub">Your mental wellness companion. Always here.</p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="showPage('app')">Try SAIRN Mind Free</button>
+      <button class="btn-secondary" onclick="document.querySelector('.pricing').scrollIntoView({behavior:'smooth'})">See Pricing</button>
+    </div>
+  </section>
+
+  <section class="features">
+    <h2 class="features-title">Everything you need</h2>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-emoji">💭</div><div class="feat-title">Reflect</div><div class="feat-desc">Help me process something on my mind</div></div>
+      <div class="feat-card"><div class="feat-emoji">😮‍💨</div><div class="feat-title">Breathe</div><div class="feat-desc">Guide me through a breathing or grounding exercise</div></div>
+      <div class="feat-card"><div class="feat-emoji">😟</div><div class="feat-title">Anxiety</div><div class="feat-desc">I'm feeling anxious or overwhelmed</div></div>
+      <div class="feat-card"><div class="feat-emoji">😴</div><div class="feat-title">Sleep</div><div class="feat-desc">Help me wind down and sleep better</div></div>
+      <div class="feat-card"><div class="feat-emoji">🌱</div><div class="feat-title">Growth</div><div class="feat-desc">Help me build a healthier mental habit</div></div>
+      <div class="feat-card"><div class="feat-emoji">⚡</div><div class="feat-title">Powered by Claude AI</div><div class="feat-desc">The most capable AI assistant in the world — tuned specifically for Mind. Not a chatbot. Not a search engine. An expert.</div></div>
+    </div>
+  </section>
+
+  <section class="pricing">
+    <div class="price-card">
+      <div class="price-label">SAIRN Mind</div>
+      <div class="price-amount">9.99<span style="font-size:28px;color:var(--m)">/mo</span></div>
+      <div class="price-period" style="margin-top:4px">or $19.99/mo for all 8 SAIRN apps</div>
+      <div class="price-sub">Cancel anytime · Secured by Stripe</div>
+      <div class="price-features">
+        <div class="price-feature">Full Claude AI — every feature, every mode</div>
+        <div class="price-feature">Unlimited conversations</div>
+        <div class="price-feature">Conversation history saved</div>
+        <div class="price-feature">Works on web, mobile, and desktop</div>
+        <div class="price-feature">Part of the SAIRN NEXUS platform</div>
+      </div>
+      <button class="btn-primary" style="width:100%" onclick="showPage('app')">Start Free · No Card Required</button>
+    </div>
+  </section>
+
+  <section class="nexus-strip">
+    <div class="nexus-label">SAIRN NEXUS Platform</div>
+    <div class="nexus-title">One family. One subscription. Eight apps.</div>
+    <div class="nexus-sub">Get all 8 SAIRN apps for $19.99/month — less than one fast food meal.</div>
+    <div class="nexus-apps">
+      <span class="nexus-app">⌨️ SAIRNtype</span>
+      <span class="nexus-app">🌍 Lingual</span>
+      <span class="nexus-app">❤️ Health</span>
+      <span class="nexus-app">💰 Money</span>
+      <span class="nexus-app">⚖️ Legal</span>
+      <span class="nexus-app">📚 Study</span>
+      <span class="nexus-app">✈️ Roam</span>
+      <span class="nexus-app">🤝 Senior</span>
+    </div>
+  </section>
+
+  <footer>
+    <div class="footer-logo">SAIRN Technologies</div>
+    <div class="footer-sub">Powered by Claude · SAIRN NEXUS Platform · © 2026 Michael L. Dibert</div>
+    <div class="footer-links">
+      <a class="footer-link" href="/legal">Legal</a>
+      <a class="footer-link" href="mailto:support@sairntechnologies.com">Support</a>
+      <a class="footer-link" href="/">SAIRN NEXUS</a>
+    </div>
+  </footer>
+</div>
+
+<!-- APP PAGE -->
+<div id="appPage" class="page">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-title-dot"></div>
+      SAIRN Mind <span style="color:var(--m);font-weight:400">· Claude AI</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:'Inter',sans-serif">← Back</button>
+  </div>
+  <div class="mode-bar">
+        <button class="mode-btn" onclick="setMode('Reflect',`Help me process something on my mind`)">
+          <span class="mode-icon">💭</span>
+          <span class="mode-label">Reflect</span>
+        </button>
+        <button class="mode-btn" onclick="setMode('Breathe',`Guide me through a breathing or grounding exercise`)">
+          <span class="mode-icon">😮‍💨</span>
+          <span class="mode-label">Breathe</span>
+        </button>
+        <button class="mode-btn" onclick="setMode('Anxiety',`I'm feeling anxious or overwhelmed`)">
+          <span class="mode-icon">😟</span>
+          <span class="mode-label">Anxiety</span>
+        </button>
+        <button class="mode-btn" onclick="setMode('Sleep',`Help me wind down and sleep better`)">
+          <span class="mode-icon">😴</span>
+          <span class="mode-label">Sleep</span>
+        </button>
+        <button class="mode-btn" onclick="setMode('Growth',`Help me build a healthier mental habit`)">
+          <span class="mode-icon">🌱</span>
+          <span class="mode-label">Growth</span>
+        </button>
+
+        <span style="width:1px;background:rgba(255,255,255,0.08);margin:4px 4px;flex-shrink:0"></span>
+        <span style="font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px">Guided</span>
+        <button class="flow-btn mode-btn" data-flow="anxious" onclick="startFlow('anxious')"><span class="mode-icon">😟</span><span class="mode-label">Work Through Anxiety</span></button>
+        <button class="flow-btn mode-btn" data-flow="breathe" onclick="startFlow('breathe')"><span class="mode-icon">😮‍💨</span><span class="mode-label">Guided Breathing</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🧠</div>
+      <div class="empty-title">Welcome to SAIRN Mind</div>
+      <div class="empty-sub">Your mental wellness companion. Always here.</div>
+      <div class="empty-suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">Help me process something on my mind</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Guide me through a breathing or grounding exercise</button>
+        <button class="suggestion" onclick="useSuggestion(this)">I'm feeling anxious or overwhelmed</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRN Mind anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<script>
+const SYSTEM = `You are SAIRN Mind, a warm and evidence-based mental wellness companion powered by Claude AI. You are part of the SAIRN NEXUS platform built by Michael L. Dibert of SAIRN Technologies.
+
+You provide supportive, evidence-based mental wellness guidance drawing on cognitive behavioral therapy (CBT), mindfulness, acceptance and commitment therapy (ACT), and positive psychology principles.
+
+CRITICAL GUIDELINES:
+- You are NOT a therapist and never claim to be. You are a wellness companion.
+- For any crisis, self-harm, or suicidal thoughts, immediately provide crisis resources (988 Suicide & Crisis Lifeline) and strongly encourage professional help.
+- Be warm, non-judgmental, and genuinely caring — like a trusted friend who happens to know a lot about mental wellness.
+- Use evidence-based techniques: breathing exercises, grounding (5-4-3-2-1), cognitive reframing, gratitude, behavioral activation.
+- Keep responses conversational and human — not clinical or robotic.
+- Always validate feelings before offering any guidance.
+- Never diagnose. Always recommend professional help for serious concerns.
+- Celebrate small wins. Progress matters more than perfection.
+
+You help with: stress management, anxiety coping, sleep hygiene, emotional processing, building healthy habits, mindfulness, and everyday mental wellness.`;
+const APP_NAME = "SAIRNmind";
+const SAIRN_API = 'https://sairn.vercel.app/api/claude';
+const APP_ID = 'mind';
+const APP_ICON = '🧠';
+let messages = [];
+let isLoading = false;
+let currentMode = '';
+
+// Particles
+(function(){
+  const c = document.getElementById('particles');
+  for(let i=0;i<18;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const s=4+Math.random()*10;
+    p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;top:${Math.random()*100}%;background:rgba(139,92,246,0.6);--d:${6+Math.random()*8}s;--del:${Math.random()*5}s;--o:${0.08+Math.random()*0.15}`;
+    c.appendChild(p);
+  }
+})();
+
+function showPage(page) {
+  document.getElementById('homePage').classList.remove('active');
+  document.getElementById('appPage').classList.remove('active');
+  document.getElementById('homePage').style.display='';
+  document.getElementById('appPage').style.display='';
+  if(page==='home'){
+    document.getElementById('homePage').classList.add('active');
+    document.getElementById('appPage').style.display='none';
+  } else {
+    document.getElementById('homePage').style.display='none';
+    document.getElementById('appPage').classList.add('active');
+    document.getElementById('appPage').style.display='flex';
+    setTimeout(()=>document.getElementById('userInput').focus(),100);
+    if(!messages.length) loadFirstMessage();
+    showOILBadge();
+  }
+}
+
+function setMode(label, placeholder) {
+  currentMode = label;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  const inp = document.getElementById('userInput');
+  inp.placeholder = placeholder;
+  inp.focus();
+}
+
+function useSuggestion(el) {
+  document.getElementById('userInput').value = el.textContent;
+  sendMessage();
+}
+
+function addMsg(role, content) {
+  const area = document.getElementById('chatArea');
+  const empty = document.getElementById('emptyState');
+  if(empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  const formatted = content
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    
+    ;
+  if(role==='ai') {
+    div.innerHTML=`<div class="msg-avatar">🧠</div><div class="msg-bubble"><p>${formatted}</p></div>`;
+  } else {
+    div.innerHTML=`<div class="msg-bubble">${content}</div>`;
+  }
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  if(role==='ai'){lastResponse=content;showSaveBar(content);}
+}
+
+function showTyping() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className='msg ai';div.id='typing-indicator';
+  div.innerHTML=`<div class="msg-avatar">🧠</div><div class="msg-bubble"><div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>`;
+  area.appendChild(div);
+  area.scrollTop=area.scrollHeight;
+}
+
+async function sendMessage() {
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim();
+  if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg('user', text);
+    inp.value=''; inp.style.height='';
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg('ai', nxt); messages.push({role:'assistant',content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg('ai', activeFlow.finish); messages.push({role:'assistant',content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else {
+      activeFlow = null;
+    }
+    return;
+  }
+  inp.value='';inp.style.height='';
+  isLoading=true;
+  document.getElementById('sendBtn').disabled=true;
+  addMsg('user', text);
+  messages.push({role:'user',content:text});
+  showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        max_tokens:1000,
+        system: SYSTEM,
+        messages: messages.slice(-20),
+        app_id: APP_ID,
+        is_demo: true
+      })
+    });
+    const data = await res.json();
+    document.getElementById('typing-indicator')?.remove();
+    if(res.status===429) {
+      const msg = data.message || 'Daily demo limit reached. Sign up for unlimited access.';
+      addMsg('ai', msg + '\n\nGet unlimited access at sairn.vercel.app');
+    } else {
+      const reply = data.content?.[0]?.text || 'Sorry, I had trouble with that. Please try again.';
+      messages.push({role:'assistant',content:reply});
+      addMsg('ai', reply);
+    }
+  } catch(e) {
+    document.getElementById('typing-indicator')?.remove();
+    addMsg('ai','Connection issue. Please check your connection and try again.');
+  }
+  isLoading=false;
+  document.getElementById('sendBtn').disabled=false;
+  document.getElementById('userInput').focus();
+}
+
+
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch('https://sairn.vercel.app/api/greeting', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(localStorage.getItem('sairn_token') ? { 'Authorization': 'Bearer ' + localStorage.getItem('sairn_token') } : {})
+      },
+      body: JSON.stringify({
+        app_id: APP_ID,
+        client_hour: now.getHours(),
+        client_day: now.getDay(),
+      })
+    });
+    const data = await res.json();
+    const greeting = data.greeting;
+    if (!greeting) return;
+    const area = document.getElementById('chatArea');
+    const empty = document.getElementById('emptyState');
+    if (empty) empty.remove();
+    const div = document.createElement('div');
+    div.className = 'msg ai';
+    div.innerHTML = `<div class="msg-avatar">🧠</div><div class="msg-bubble"><p>${greeting}</p></div>`;
+    div.style.opacity = '0';
+    div.style.transform = 'translateY(10px)';
+    area.appendChild(div);
+    messages.push({ role: 'assistant', content: greeting });
+    requestAnimationFrame(() => {
+      div.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      div.style.opacity = '1';
+      div.style.transform = 'translateY(0)';
+    });
+  } catch(e) {
+    // Silently fail — app works fine without the greeting
+  }
+}
+
+
+const GUIDED_FLOWS = [
+    {
+      id: 'anxious',
+      label: '😟 Work Through Anxiety',
+      emoji: '😟',
+      intro: `I am here. Let us work through this together. On a scale of 1-10, how anxious are you feeling right now?`,
+      steps: ["Where do you feel it in your body — chest, stomach, shoulders, somewhere else?", "Is there a specific situation or thought that is driving this, or does it feel more general?"],
+      currentStep: 0,
+      finish: `Thank you for sharing that. Let us work through this together — I will guide you step by step.`
+    },
+    {
+      id: 'breathe',
+      label: '😮‍💨 Guided Breathing',
+      emoji: '😮‍💨',
+      intro: `Let us do this together. Find a comfortable position — sitting or lying down, whatever feels right. When you are ready, tell me and we will start.`,
+      steps: ["Good. Close your eyes if that feels comfortable. We are going to do box breathing — inhale for 4 counts, hold for 4, exhale for 4, hold for 4. Ready to begin?", "Inhale slowly... 2... 3... 4. Now hold... 2... 3... 4. Exhale slowly... 2... 3... 4. Hold... 2... 3... 4. How do you feel?", "Let us do two more rounds. You are doing great. Inhale... 2... 3... 4..."],
+      currentStep: 0,
+      finish: `Well done. Take a moment. Notice how your body feels compared to a few minutes ago.`
+    }
+];
+
+let activeFlow = null;
+let flowStep = 0;
+
+function startFlow(flowId) {
+  const flow = GUIDED_FLOWS.find(f => f.id === flowId);
+  if (!flow) return;
+  activeFlow = flow;
+  flowStep = 0;
+  document.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.flow-btn[data-flow="' + flowId + '"]').forEach(b => b.classList.add('active'));
+  const area = document.getElementById('chatArea');
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+  addMsg('ai', flow.intro);
+  messages.push({role:'assistant', content: flow.intro});
+  document.getElementById('userInput').placeholder = 'Reply to continue the guided flow...';
+  document.getElementById('userInput').focus();
+}
+
+
+
+
+
+async function extractMemoryAfterChat() {
+  const token = localStorage.getItem('sairn_token');
+  if (!token || messages.length < 2) return;
+  try {
+    navigator.sendBeacon
+      ? navigator.sendBeacon('/api/memory', new Blob([JSON.stringify({action:'extract',messages:messages.slice(-10),app_id:APP_ID})], {type:'application/json'}))
+      : fetch('https://sairn.vercel.app/api/memory', {method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({action:'extract',messages:messages.slice(-10),app_id:APP_ID})});
+  } catch(e) {}
+}
+window.addEventListener('beforeunload', extractMemoryAfterChat);
+
+
+
+
+let lastResponse = '';
+
+function copyLastResponse() {
+  navigator.clipboard.writeText(lastResponse).then(() => {
+    const btn = document.querySelector('#sairn-save-bar button');
+    if(btn) { btn.textContent = '✓ Copied!'; setTimeout(()=>btn.textContent='📋 Copy',2000); }
+  });
+}
+
+function saveToLibrary() {
+  const saved = JSON.parse(localStorage.getItem('sairn_library') || '[]');
+  saved.unshift({ app: APP_ID, content: lastResponse, date: new Date().toLocaleDateString(), id: Date.now() });
+  localStorage.setItem('sairn_library', JSON.stringify(saved.slice(0, 50)));
+  const btn = document.querySelectorAll('#sairn-save-bar button')[1];
+  if(btn) { btn.textContent = '✓ Saved!'; setTimeout(()=>btn.textContent='💾 Save',2000); }
+}
+
+function shareResponse() {
+  const text = encodeURIComponent(lastResponse.slice(0, 280) + '...\n\nGenerated by SAIRN ' + APP_ID + ' — sairn.vercel.app');
+  window.open('https://twitter.com/intent/tweet?text=' + text, '_blank');
+}
+
+// Auto-resize textarea
+
+// ============================================================
+// SAIRN Universal Intelligence Layer v6.2
+// Cloud Memory · Voice Mode · Outcome Tracking · White Label
+// ============================================================
+
+// White label config — enterprise clients override these
+const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || 'SAIRN';
+const SAIRN_BRAND_COLOR = window.SAIRN_BRAND_COLOR || null;
+
+// User identity — persistent across sessions
+function getSAIRNUserId() {
+  let uid = localStorage.getItem('sairn_uid');
+  if(!uid) {
+    uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('sairn_uid', uid);
+  }
+  return uid;
+}
+const SAIRN_USER_ID = getSAIRNUserId();
+
+// Outcome tracking
+let sessionOutcomes = {queries: 0, saved: 0, startTime: Date.now()};
+
+// ── CLOUD MEMORY ────────────────────────────────────────────
+async function cloudSaveMemory(content) {
+  if(!content || content.length < 20) return;
+  // Save locally first (instant, no latency)
+  try {
+    const key = 'sairn_local_' + APP_ID;
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.unshift({ts: Date.now(), text: content.slice(0, 400)});
+    localStorage.setItem(key, JSON.stringify(existing.slice(0, 100)));
+  } catch(e) {}
+  // Save to cloud (async, best effort)
+  try {
+    await fetch('https://sairn.vercel.app/api/memory-cloud', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-ID': SAIRN_USER_ID,
+        'X-App-ID': APP_ID,
+      },
+      body: JSON.stringify({content: content.slice(0, 400), user_id: SAIRN_USER_ID, app_id: APP_ID}),
+    });
+    sessionOutcomes.saved++;
+  } catch(e) {
+    // Cloud save failed — local backup is enough
+  }
+}
+
+async function cloudLoadMemory() {
+  // Try cloud first, fall back to local
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/memory-cloud?uid=' + SAIRN_USER_ID, {
+      headers: {'X-User-ID': SAIRN_USER_ID, 'X-App-ID': APP_ID}
+    });
+    const data = await res.json();
+    if(data.entries && data.entries.length) {
+      return 'Memory from previous sessions:\n' + data.entries.slice(0, 8).map(function(e) { return e.content; }).join('\n---\n');
+    }
+  } catch(e) {}
+  // Fall back to local
+  try {
+    const key = 'sairn_local_' + APP_ID;
+    const entries = JSON.parse(localStorage.getItem(key) || '[]');
+    if(entries.length) return 'Recent context:\n' + entries.slice(0, 5).map(function(e) { return e.text; }).join('\n---\n');
+  } catch(e) {}
+  return '';
+}
+
+// ── VOICE MODE ──────────────────────────────────────────────
+let isListening = false;
+let voiceRecognition = null;
+
+function initVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition) return false;
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'en-US';
+  voiceRecognition.onresult = function(event) {
+    const transcript = Array.from(event.results).map(function(r) { return r[0].transcript; }).join('');
+    const inp = document.getElementById('userInput');
+    if(inp) inp.value = transcript;
+    if(event.results[event.results.length - 1].isFinal) {
+      stopVoice();
+      sendMessage();
+    }
+  };
+  voiceRecognition.onerror = function() { stopVoice(); };
+  voiceRecognition.onend = function() { stopVoice(); };
+  return true;
+}
+
+function toggleVoice() {
+  if(isListening) { stopVoice(); return; }
+  if(!voiceRecognition && !initVoice()) {
+    alert('Voice input is not supported in this browser. Try Chrome.');
+    return;
+  }
+  isListening = true;
+  voiceRecognition.start();
+  const btn = document.getElementById('voice-btn');
+  if(btn) {
+    btn.style.background = 'var(--grad)';
+    btn.style.animation = 'pulse-voice 1s infinite';
+    btn.title = 'Listening... click to stop';
+  }
+}
+
+function stopVoice() {
+  isListening = false;
+  if(voiceRecognition) try { voiceRecognition.stop(); } catch(e) {}
+  const btn = document.getElementById('voice-btn');
+  if(btn) {
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.animation = '';
+    btn.title = 'Voice input';
+  }
+}
+
+function addVoiceButton() {
+  const inputArea = document.querySelector('.input-area');
+  if(!inputArea || document.getElementById('voice-btn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'voice-btn';
+  btn.innerHTML = '🎤';
+  btn.title = 'Voice input';
+  btn.style.cssText = 'width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit';
+  btn.onclick = toggleVoice;
+  const sendBtn = document.getElementById('sendBtn');
+  if(sendBtn) inputArea.insertBefore(btn, sendBtn);
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.textContent = '@keyframes pulse-voice{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.3)}50%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}';
+  document.head.appendChild(style);
+}
+
+// ── OUTCOME TRACKING ─────────────────────────────────────────
+function trackOutcome() {
+  sessionOutcomes.queries++;
+  updateOutcomeDisplay();
+}
+
+function updateOutcomeDisplay() {
+  const el = document.getElementById('sairn-outcomes');
+  if(!el) return;
+  const mins = Math.round((Date.now() - sessionOutcomes.startTime) / 60000);
+  const saved = Math.round(sessionOutcomes.queries * 4.2); // avg 4.2 min saved per query
+  el.textContent = sessionOutcomes.queries + ' queries · ' + saved + ' min saved this session';
+}
+
+function addOutcomeBar() {
+  if(document.getElementById('sairn-outcomes')) return;
+  const header = document.querySelector('.app-header');
+  if(!header) return;
+  const bar = document.createElement('div');
+  bar.style.cssText = 'padding:5px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0';
+  const dot = document.createElement('span');
+  dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#10B981;display:inline-block;animation:pulse 2s infinite';
+  const label = document.createElement('span');
+  label.id = 'sairn-outcomes';
+  label.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);font-family:inherit';
+  label.textContent = '0 queries · 0 min saved this session';
+  bar.appendChild(dot); bar.appendChild(label);
+  header.after(bar);
+}
+
+// ── ENHANCED SAVE BAR ────────────────────────────────────────
+function showSaveBar() {
+  // Auto-save to cloud silently
+  cloudSaveMemory(lastResponse);
+  trackOutcome();
+  // Show copy bar
+  const existing = document.getElementById('sairn-save-bar'); if(existing) existing.remove();
+  const bar = document.createElement('div'); bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';
+  const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy';
+  copyBtn.style.cssText = 'background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000); }); };
+  const savedBadge = document.createElement('span');
+  savedBadge.textContent = '✓ Saved';
+  savedBadge.style.cssText = 'font-size:11px;color:#10B981;font-weight:600';
+  const closeBtn = document.createElement('button'); closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px';
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 6000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Add voice button and outcome bar after app page loads
+  const observer = new MutationObserver(function() {
+    if(document.getElementById('appPage') && document.getElementById('appPage').style.display !== 'none') {
+      addVoiceButton();
+      addOutcomeBar();
+    }
+  });
+  observer.observe(document.body, {childList: true, subtree: true, attributes: true});
+});
+
+
+// SAIRN OIL
+const SAIRN_ORG_ID = localStorage.getItem('sairn_org_id') || null;
+const SAIRN_ORG_NAME = localStorage.getItem('sairn_location_name') || 'My Organization';
+function getSAIRNContext() {
+  const parts = [];
+  if(SAIRN_ORG_ID) parts.push('Organization: ' + SAIRN_ORG_NAME);
+  const mem = localStorage.getItem('sairn_mem_' + APP_ID);
+  if(mem) parts.push('Context: ' + mem.slice(0,200));
+  return parts.join('\n');
+}
+function showOILBadge() {
+  if(!SAIRN_ORG_ID||document.getElementById('oil-badge')) return;
+  const b=document.createElement('div'); b.id='oil-badge';
+  b.style.cssText='position:fixed;top:68px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px 12px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.5);z-index:998;display:flex;align-items:center;gap:6px;font-family:inherit';
+  b.innerHTML='<span style=\"width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block\"></span>'+SAIRN_ORG_NAME;
+  document.body.appendChild(b);
+}
+
+document.getElementById('userInput').addEventListener('input',function(){
+  this.style.height='';
+  this.style.height=Math.min(this.scrollHeight,140)+'px';
+});
+document.getElementById('userInput').addEventListener('keydown',function(e){
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}
+});
+</script>
+</body>
+</html>

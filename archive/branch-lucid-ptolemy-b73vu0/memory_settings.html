@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRN Memory — Your AI Profile</title>
+<meta name="theme-color" content="#0A0B14">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#060810;--card:#1A1C32;--a:#A78BFA;--w:#F0F0FF;--m:#9090B0;--d:#404060;--grad:linear-gradient(135deg,#A78BFA,#60A5FA)}
+body{background:var(--bg);color:var(--w);font-family:'Inter',sans-serif;min-height:100vh;padding:80px 20px 40px}
+.container{max-width:720px;margin:0 auto}
+.header{margin-bottom:40px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#A78BFA;margin-bottom:10px}
+h1{font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--w);margin-bottom:8px}
+.subtitle{font-size:15px;color:var(--m);line-height:1.6}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px}
+.stat-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:20px;text-align:center}
+.stat-val{font-size:28px;font-weight:700;color:var(--a);margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--m)}
+.section{background:var(--card);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:24px;margin-bottom:20px}
+.section-title{font-size:14px;font-weight:600;color:var(--w);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.section-sub{font-size:12px;color:var(--m);margin-bottom:16px}
+.fact-list{display:flex;flex-direction:column;gap:8px}
+.fact-item{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.05)}
+.fact-cat{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--a);background:rgba(167,139,250,0.15);padding:2px 8px;border-radius:100px;white-space:nowrap;flex-shrink:0;margin-top:1px}
+.fact-text{font-size:13px;color:var(--m);line-height:1.5;flex:1}
+.fact-app{font-size:11px;color:var(--d);margin-top:2px}
+.empty-state{text-align:center;padding:40px 20px;color:var(--m)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:0.5}
+.apps-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.app-tag{font-size:12px;padding:4px 12px;border-radius:100px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);color:var(--m)}
+.danger-zone{background:rgba(244,63,94,0.05);border:1px solid rgba(244,63,94,0.15);border-radius:16px;padding:24px;margin-bottom:20px}
+.danger-title{font-size:14px;font-weight:600;color:#F43F5E;margin-bottom:6px}
+.danger-sub{font-size:13px;color:var(--m);margin-bottom:16px;line-height:1.5}
+.btn-danger{padding:10px 24px;border-radius:10px;background:rgba(244,63,94,0.15);border:1px solid rgba(244,63,94,0.3);color:#F43F5E;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.2s}
+.btn-danger:hover{background:rgba(244,63,94,0.25)}
+.info-box{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);border-radius:12px;padding:16px 20px;margin-bottom:28px;font-size:13px;color:var(--m);line-height:1.65}
+.info-box strong{color:var(--a)}
+.loading{text-align:center;padding:60px;color:var(--m);font-size:14px}
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--m);text-decoration:none;margin-bottom:32px;transition:color 0.2s}
+.back-link:hover{color:var(--a)}
+.cat-colors{PERSONAL:'#60A5FA',HEALTH:'#34D399',FAMILY:'#F97316',CAREER:'#A78BFA',HOME:'#FBBF24',FINANCE:'#34D399',LEGAL:'#F43F5E',MENTAL:'#A78BFA',FOOD:'#F97316',GOALS:'#60A5FA',PREFERENCES:'#9090B0'}
+</style>
+</head>
+<body>
+<div class="container">
+  <a class="back-link" href="/">← Back to SAIRN NEXUS</a>
+
+  <div class="header">
+    <div class="eyebrow">✦ SAIRN NEXUS · Cross-Module Intelligence</div>
+    <h1>Your Memory Profile</h1>
+    <p class="subtitle">Everything SAIRN has learned about you across all 15 apps. This is what makes your AI smarter every day.</p>
+  </div>
+
+  <div class="info-box">
+    <strong>This is the NEXUS intelligence.</strong> As you use SAIRN apps, Claude learns about you — your family, your goals, your preferences. That knowledge flows across every app. SAIRN Kitchen knows your son is lactose intolerant because you mentioned it in SAIRN Family. SAIRN Daily knows about your job interview because you prepped in SAIRN Career. <strong>One conversation. Fifteen apps smarter.</strong>
+  </div>
+
+  <div id="content"><div class="loading">Loading your memory profile...</div></div>
+</div>
+
+<script>
+const SAIRN_URL = 'https://sairn.vercel.app';
+
+const CAT_COLORS = {
+  PERSONAL:'#60A5FA', HEALTH:'#34D399', FAMILY:'#F97316',
+  CAREER:'#A78BFA', HOME:'#FBBF24', FINANCE:'#22D3EE',
+  LEGAL:'#F43F5E', MENTAL:'#A78BFA', FOOD:'#F97316',
+  GOALS:'#60A5FA', PREFERENCES:'#9090B0'
+};
+
+const CAT_ICONS = {
+  PERSONAL:'👤', HEALTH:'❤️', FAMILY:'👨‍👩‍👧', CAREER:'💼',
+  HOME:'🏠', FINANCE:'💰', LEGAL:'⚖️', MENTAL:'🧠',
+  FOOD:'🍽️', GOALS:'🎯', PREFERENCES:'⚙️'
+};
+
+async function loadMemory() {
+  const token = localStorage.getItem('sairn_token');
+  if (!token) {
+    document.getElementById('content').innerHTML = `
+      <div class="section">
+        <div class="empty-state">
+          <div class="empty-icon">🔐</div>
+          <div>Sign in to see your memory profile</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  try {
+    const res = await fetch(`${SAIRN_URL}/api/memory`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const { memory } = await res.json();
+    renderMemory(memory);
+  } catch (err) {
+    document.getElementById('content').innerHTML = `<div class="section"><div class="empty-state"><div class="empty-icon">⚠️</div><div>Could not load memory</div></div></div>`;
+  }
+}
+
+function renderMemory(memory) {
+  if (!memory || !memory.facts?.length) {
+    document.getElementById('content').innerHTML = `
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-val">0</div><div class="stat-lbl">Facts learned</div></div>
+        <div class="stat-card"><div class="stat-val">0</div><div class="stat-lbl">Conversations</div></div>
+        <div class="stat-card"><div class="stat-val">0</div><div class="stat-lbl">Apps used</div></div>
+      </div>
+      <div class="section">
+        <div class="empty-state">
+          <div class="empty-icon">🌱</div>
+          <div style="font-size:16px;font-weight:600;color:var(--w);margin-bottom:8px">Your memory is empty</div>
+          <div>Start using SAIRN apps and your AI will begin learning about you. After a few conversations, Claude will know your family, your goals, and what matters to you — across every app.</div>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Group facts by category
+  const grouped = {};
+  for (const fact of memory.facts) {
+    if (!grouped[fact.category]) grouped[fact.category] = [];
+    grouped[fact.category].push(fact);
+  }
+
+  const appsUsed = memory.apps_used || [];
+  const appNames = {
+    mind:'SAIRN Mind', kitchen:'SAIRN Kitchen', family:'SAIRN Family',
+    career:'SAIRN Career', home:'SAIRN Home', shield:'SAIRN Shield',
+    daily:'SAIRN Daily', health:'SAIRN Health', money:'SAIRN Money',
+    legal:'SAIRN Legal', study:'SAIRN Study', roam:'SAIRN Roam',
+    lingual:'SAIRN Lingual', senior:'SAIRN Senior', sairntype:'SAIRNtype'
+  };
+
+  const html = `
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val">${memory.facts.length}</div><div class="stat-lbl">Facts learned</div></div>
+      <div class="stat-card"><div class="stat-val">${memory.total_conversations || 0}</div><div class="stat-lbl">Conversations</div></div>
+      <div class="stat-card"><div class="stat-val">${appsUsed.length}</div><div class="stat-lbl">Apps used</div></div>
+    </div>
+
+    ${memory.summary ? `
+    <div class="section">
+      <div class="section-title">🤖 AI Summary</div>
+      <div class="section-sub">How Claude sees you</div>
+      <div style="font-size:14px;color:var(--m);line-height:1.7;font-style:italic">"${memory.summary}"</div>
+    </div>` : ''}
+
+    ${Object.entries(grouped).map(([cat, facts]) => `
+    <div class="section">
+      <div class="section-title">${CAT_ICONS[cat]||'•'} ${cat}</div>
+      <div class="section-sub">Learned from: ${[...new Set(facts.map(f=>appNames[f.app_id]||f.app_id))].join(', ')}</div>
+      <div class="fact-list">
+        ${facts.map(f => `
+        <div class="fact-item">
+          <span class="fact-cat" style="background:${CAT_COLORS[cat]||'#A78BFA'}22;color:${CAT_COLORS[cat]||'#A78BFA'}">${cat}</span>
+          <div>
+            <div class="fact-text">${f.fact}</div>
+            <div class="fact-app">from ${appNames[f.app_id]||f.app_id} · ${f.extracted_at ? new Date(f.extracted_at).toLocaleDateString() : ''}</div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`).join('')}
+
+    ${appsUsed.length ? `
+    <div class="section">
+      <div class="section-title">📱 Apps with memory</div>
+      <div class="apps-row">
+        ${appsUsed.map(a => `<span class="app-tag">${appNames[a]||a}</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="danger-zone">
+      <div class="danger-title">🗑️ Reset Memory</div>
+      <div class="danger-sub">This will permanently delete everything SAIRN has learned about you. Your conversations are not deleted — only the extracted memory profile. Claude will start fresh across all apps.</div>
+      <button class="btn-danger" onclick="clearMemory()">Clear All Memory</button>
+    </div>`;
+
+  document.getElementById('content').innerHTML = html;
+}
+
+async function clearMemory() {
+  if (!confirm('Are you sure? This will permanently delete your memory profile across all SAIRN apps. This cannot be undone.')) return;
+
+  const token = localStorage.getItem('sairn_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${SAIRN_URL}/api/memory`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+      body: JSON.stringify({ action: 'clear' })
+    });
+    if (res.ok) {
+      alert('Memory cleared. SAIRN will start learning from scratch.');
+      loadMemory();
+    }
+  } catch { alert('Failed to clear memory. Please try again.'); }
+}
+
+loadMemory();
+</script>
+</body>
+</html>

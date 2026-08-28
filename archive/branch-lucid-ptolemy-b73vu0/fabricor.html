@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoneDesk -- AI Platform for Stone Fabrication</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+:root{
+  --c:#16C762;--cd:#0A3D1F;--cl:#F0FEF6;--cm:#BBF7D0;
+  --text:#1E293B;--muted:#64748B;--border:#E2E8F0;
+  --red:#EF4444;--red-l:#FEF2F2;--green:#22C55E;--green-l:#F0FDF4;
+  --amber:#F59E0B;--amber-l:#FFFBEB;
+  --shadow:0 1px 3px rgba(0,0,0,0.08);--radius:10px;
+  --font:'Segoe UI',system-ui,-apple-system,sans-serif;
+}
+body{font-family:var(--font);background:var(--cl);color:var(--text);font-size:14px;line-height:1.5;}
+#login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0A3D1F 0%,#16C762 60%,#5CFF9D88 100%);display:flex;align-items:center;justify-content:center;z-index:9999;}
+.lcard{background:#fff;border-radius:16px;padding:44px 38px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,.2);text-align:center;}
+.llogo{width:60px;height:60px;background:linear-gradient(135deg,#0A3D1F,#16C762);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:20px;font-weight:900;color:#fff;}
+.ltitle{font-size:21px;font-weight:800;margin-bottom:3px;}
+.lsub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.role-btn{border:2px solid var(--border);background:#fff;border-radius:8px;padding:10px;cursor:pointer;transition:all .15s;}
+.role-btn:hover,.role-btn.sel{border-color:var(--c);background:var(--cl);color:var(--cd);font-weight:600;}
+.ri{font-size:18px;display:block;margin-bottom:3px;} .rl{font-size:12px;font-weight:600;}
+.pin-row{display:flex;gap:8px;justify-content:center;margin-bottom:18px;}
+.pin-d{width:46px;height:54px;border:2px solid var(--border);border-radius:8px;text-align:center;font-size:20px;font-weight:700;outline:none;transition:border-color .15s;}
+.pin-d:focus{border-color:var(--c);}
+.btn-login{background:var(--c);color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;width:100%;}
+.btn-login:hover{background:var(--cd);}
+.lerr{color:var(--red);font-size:13px;margin-top:8px;min-height:18px;}
+.lhint{margin-top:12px;font-size:11px;color:var(--muted);}
+#app{display:none;min-height:100vh;}
+.topbar{background:var(--cd);color:#fff;padding:0 22px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.tl{display:flex;align-items:center;gap:14px;}
+.tlogo{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.5px;}
+.tlogo span{color:#5CFF9D;}
+.tr{display:flex;align-items:center;gap:9px;}
+.uchip{background:rgba(255,255,255,.12);color:#fff;border-radius:6px;padding:4px 10px;font-size:12px;font-weight:600;}
+.tbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;}
+.tbtn:hover{background:rgba(255,255,255,.22);}
+.app-body{display:flex;min-height:calc(100vh - 56px);}
+.sidebar{width:218px;background:#fff;border-right:1px solid var(--border);padding:10px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}
+.sh{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;padding:9px 16px 3px;}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 15px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all .12s;user-select:none;}
+.ni:hover{background:var(--cl);color:var(--text);}
+.ni.active{background:var(--cl);color:var(--cd);font-weight:600;border-left-color:var(--c);}
+.nicon{font-size:14px;width:18px;text-align:center;}
+.main{flex:1;padding:22px;overflow-x:hidden;}
+.page{display:none;}.page.active{display:block;}
+.ptitle{font-size:21px;font-weight:800;margin-bottom:3px;}
+.psub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:13px;margin-bottom:20px;}
+.kcard{background:#fff;border-radius:var(--radius);padding:17px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.klbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;}
+.kval{font-size:25px;font-weight:900;line-height:1;margin-bottom:3px;}
+.kdelta{font-size:12px;color:var(--muted);}
+.kdelta.up{color:var(--green);}.kdelta.down{color:var(--red);}
+.kicon{float:right;font-size:20px;margin-top:-2px;}
+.card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:16px;}
+.ch{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.ct{font-size:14px;font-weight:700;}.cb{padding:17px;}
+.dt{width:100%;border-collapse:collapse;}
+.dt th{text-align:left;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;padding:8px 11px;border-bottom:2px solid var(--border);background:#F8FAFC;}
+.dt td{padding:9px 11px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:var(--cl);}
+.ttr td{font-weight:700;background:var(--cl)!important;color:var(--cd);}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;}
+.bg{background:var(--green-l);color:#15803D;}.br{background:var(--red-l);color:#B91C1C;}
+.ba{background:var(--amber-l);color:#92400E;}.bc{background:var(--cl);color:var(--cd);}
+.fg{display:flex;flex-direction:column;gap:5px;}.fg.full{grid-column:1/-1;}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+label{font-size:12px;font-weight:600;color:var(--muted);}
+input,select,textarea{border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;transition:border-color .15s;background:#fff;width:100%;}
+input:focus,select:focus,textarea:focus{border-color:var(--c);}
+textarea{resize:vertical;min-height:70px;}
+.btn{border:none;border-radius:7px;padding:8px 15px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px;}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px;}
+.btn-c{background:var(--c);color:#fff;}.btn-c:hover{background:var(--cd);}
+.btn-o{background:#fff;border:1px solid var(--border);color:var(--text);}.btn-o:hover{border-color:var(--c);color:var(--c);}
+.btn-r{background:var(--red);color:#fff;}
+.toolbar{display:flex;align-items:center;gap:9px;margin-bottom:13px;flex-wrap:wrap;}
+.sbox{border:1px solid var(--border);border-radius:7px;padding:7px 11px 7px 28px;font-size:13px;width:200px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center;outline:none;}
+.sbox:focus{border-color:var(--c);}
+.rbt{height:6px;background:var(--border);border-radius:3px;position:relative;margin:3px 0;}
+.rbf{height:6px;border-radius:3px;background:var(--c);position:absolute;left:0;top:0;transition:width .4s;}
+.flag{display:flex;align-items:flex-start;gap:8px;padding:10px 13px;border-radius:8px;font-size:13px;margin-bottom:8px;}
+.fi{background:var(--cl);border:1px solid var(--cm);color:var(--cd);}
+.fw{background:var(--amber-l);border:1px solid #FCD34D;color:#92400E;}
+.fe{background:var(--red-l);border:1px solid #FECACA;color:#B91C1C;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:none;align-items:center;justify-content:center;}
+.mo.open{display:flex;}
+.modal{background:#fff;border-radius:14px;width:560px;max-width:95vw;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);}
+.mh{padding:17px 21px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1;}
+.mt{font-size:16px;font-weight:700;}.mc{background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--muted);}
+.mb{padding:21px;}.mf{padding:13px 21px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:9px;}
+#ai-panel{position:fixed;right:0;top:56px;bottom:0;width:355px;background:#fff;border-left:1px solid var(--border);box-shadow:-4px 0 16px rgba(0,0,0,.08);display:none;flex-direction:column;z-index:200;}
+#ai-panel.open{display:flex;}
+.aih{background:var(--cd);color:#fff;padding:13px 17px;display:flex;align-items:center;justify-content:space-between;}
+.ait{font-size:14px;font-weight:700;}.aic{background:transparent;border:none;color:#fff;cursor:pointer;font-size:17px;}
+.aim{flex:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:9px;}
+.amsg{padding:9px 12px;border-radius:10px;font-size:13px;line-height:1.55;max-width:92%;white-space:pre-wrap;}
+.amsg.u{background:var(--c);color:#fff;align-self:flex-end;}
+.amsg.b{background:var(--cl);color:var(--text);align-self:flex-start;border:1px solid var(--cm);}
+.amsg.t{color:var(--muted);font-style:italic;align-self:flex-start;}
+.aiq{padding:0 13px 9px;display:flex;flex-wrap:wrap;gap:5px;}
+.aqb{background:var(--cl);border:1px solid var(--cm);color:var(--cd);border-radius:6px;padding:3px 8px;font-size:11px;font-weight:600;cursor:pointer;}
+.air{padding:11px 13px;border-top:1px solid var(--border);display:flex;gap:7px;}
+.air input{flex:1;}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--cd);color:#fff;padding:10px 17px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+@media print{#login-screen,.topbar,.sidebar,#ai-panel,.toolbar,.mo,.toast{display:none!important;}.main{padding:0;}body{background:#fff;}.sig{margin-top:36px;border-top:1px solid #000;width:250px;padding-top:4px;font-size:11px;color:#64748B;}}
+@media(max-width:768px){.sidebar{display:none;}.fgrid{grid-template-columns:1fr;}.kgrid{grid-template-columns:1fr 1fr;}.two-col{grid-template-columns:1fr;}#ai-panel{width:100%;}}
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="lcard">
+    <div class="llogo">SD</div>
+    <div class="ltitle">StoneDesk</div>
+    <div class="lsub">AI Platform for Stone Fabrication -- Included free with SAIRNbiz</div>
+    <div class="role-grid">
+      <div class="role-btn" onclick="selRole('owner')" id="r-owner"><span class="ri">&#x1F451;</span><span class="rl">Owner</span></div>
+      <div class="role-btn" onclick="selRole('admin')" id="r-admin"><span class="ri">&#x1F6E1;&#xFE0F;</span><span class="rl">Admin</span></div>
+      <div class="role-btn" onclick="selRole('sales')" id="r-sales"><span class="ri">&#x1F4CA;</span><span class="rl">Sales</span></div>
+      <div class="role-btn" onclick="selRole('installer')" id="r-installer"><span class="ri">&#x1F528;</span><span class="rl">Installer</span></div>
+    </div>
+    <div class="pin-row">
+      <input type="password" maxlength="1" class="pin-d" id="p0" oninput="pi(0)" onkeydown="pk(event,0)">
+      <input type="password" maxlength="1" class="pin-d" id="p1" oninput="pi(1)" onkeydown="pk(event,1)">
+      <input type="password" maxlength="1" class="pin-d" id="p2" oninput="pi(2)" onkeydown="pk(event,2)">
+      <input type="password" maxlength="1" class="pin-d" id="p3" oninput="pi(3)" onkeydown="pk(event,3)">
+    </div>
+    <button class="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="lerr" id="lerr"></div>
+    <div class="lhint">Demo: Owner 1234 | Admin 2345 | Sales 3456 | Installer 4567</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="tl"><div class="tlogo">Stone<span>Desk</span></div></div>
+    <div class="tr">
+      <div class="uchip" id="uchip">Owner</div>
+      <button class="tbtn" onclick="toggleAI()">AI Assistant</button>
+      <button class="tbtn" onclick="window.print()">Print</button>
+      <button class="tbtn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+  <div class="app-body">
+    <div class="sidebar">
+      <div class="sh">Overview</div>
+      <div class="ni active" onclick="nav('dash')" data-p="dash"><span class="nicon">&#x1F4CA;</span> Dashboard</div>
+      <div class="sh">Jobs</div>
+      <div class="ni" onclick="nav('jobs')" data-p="jobs"><span class="nicon">&#x1F4CB;</span> All Jobs</div>
+      <div class="ni" onclick="nav('quotes')" data-p="quotes"><span class="nicon">&#x1F4B0;</span> Quotes</div>
+      <div class="ni" onclick="nav('schedule')" data-p="schedule"><span class="nicon">&#x1F4C5;</span> Schedule</div>
+      <div class="ni" onclick="nav('install')" data-p="install"><span class="nicon">&#x1F528;</span> Installation</div>
+      <div class="sh">Materials</div>
+      <div class="ni" onclick="nav('slabs')" data-p="slabs"><span class="nicon">&#x1F9F1;</span> Slab Inventory</div>
+      <div class="ni" onclick="nav('remnants')" data-p="remnants"><span class="nicon">&#x26F0;&#xFE0F;</span> Remnants</div>
+      <div class="ni" onclick="nav('suppliers')" data-p="suppliers"><span class="nicon">&#x1F69A;</span> Suppliers</div>
+      <div class="sh">Customers</div>
+      <div class="ni" onclick="nav('customers')" data-p="customers"><span class="nicon">&#x1F465;</span> Customers</div>
+      <div class="ni" onclick="nav('leads')" data-p="leads"><span class="nicon">&#x1F4E1;</span> Leads</div>
+      <div class="ni" onclick="nav('portal')" data-p="portal"><span class="nicon">&#x1F310;</span> Client Portal</div>
+      <div class="sh">Finance</div>
+      <div class="ni" onclick="nav('invoices')" data-p="invoices"><span class="nicon">&#x1F9FE;</span> Invoices</div>
+      <div class="ni" onclick="nav('costing')" data-p="costing"><span class="nicon">&#x1F4B9;</span> Job Costing</div>
+      <div class="ni" onclick="nav('reports')" data-p="reports"><span class="nicon">&#x1F4C8;</span> Reports</div>
+      <div class="sh">Admin</div>
+      <div class="ni" onclick="nav('formula')" data-p="formula"><span class="nicon">&#x1F527;</span> Formula Editor</div>
+      <div class="ni" onclick="nav('csv')" data-p="csv"><span class="nicon">&#x1F4C1;</span> CSV Tools</div>
+      <div class="ni" onclick="nav('sairnbiz')" data-p="sairnbiz"><span class="nicon">&#x1F517;</span> SAIRNbiz</div>
+    </div>
+
+    <div class="main" id="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="pg-dash">
+  <div class="ptitle">StoneDesk Dashboard</div>
+  <div class="psub">Live shop intelligence -- powered by Claude AI</div>
+  <div class="kgrid">
+    <div class="kcard"><span class="kicon">&#x1F4CB;</span><div class="klbl">Active Jobs</div><div class="kval">24</div><div class="kdelta up">+3 this week</div></div>
+    <div class="kcard"><span class="kicon">&#x1F4B0;</span><div class="klbl">Open Quotes</div><div class="kval">11</div><div class="kdelta">$84K pending</div></div>
+    <div class="kcard"><span class="kicon">&#x1F4C5;</span><div class="klbl">Installs This Week</div><div class="kval">7</div><div class="kdelta up">On schedule</div></div>
+    <div class="kcard"><span class="kicon">&#x1F9F1;</span><div class="klbl">Slabs In Stock</div><div class="kval">143</div><div class="kdelta">12 low stock</div></div>
+    <div class="kcard"><span class="kicon">&#x1F4B5;</span><div class="klbl">Monthly Revenue</div><div class="kval">$187K</div><div class="kdelta up">+12% vs last month</div></div>
+    <div class="kcard"><span class="kicon">&#x1F4CA;</span><div class="klbl">Gross Margin</div><div class="kval">38%</div><div class="kdelta up">Industry avg: 32%</div></div>
+  </div>
+  <div class="flag fi">&#x1F916; AI flagged 3 quotes over 14 days with no follow-up. <a href="#" style="color:var(--cd);font-weight:700;" onclick="askAI('Which quotes are overdue for follow-up and what should I say to each customer?')">Get AI Follow-Up Scripts</a></div>
+  <div class="flag fw">&#x26A0;&#xFE0F; 2 installs scheduled for Friday have no confirmed templating. Action needed.</div>
+  <div class="two-col" style="margin-top:16px;">
+    <div class="card">
+      <div class="ch"><div class="ct">Jobs In Progress</div><button class="btn btn-sm btn-c" onclick="nav('jobs')">View All</button></div>
+      <div class="cb" style="padding:0;">
+        <table class="dt"><thead><tr><th>Job</th><th>Customer</th><th>Material</th><th>Stage</th><th>Due</th></tr></thead><tbody>
+          <tr><td><strong>J-1041</strong></td><td>Martinez Kitchen</td><td>Calacatta Gold</td><td><span class="badge bc">Templating</span></td><td>Jun 18</td></tr>
+          <tr><td><strong>J-1042</strong></td><td>Westlake Builders</td><td>Absolute Black</td><td><span class="badge ba">Fabrication</span></td><td>Jun 20</td></tr>
+          <tr><td><strong>J-1043</strong></td><td>Smith Residence</td><td>White Carrara</td><td><span class="badge bg">Ready</span></td><td>Jun 17</td></tr>
+          <tr><td><strong>J-1044</strong></td><td>ABC Remodel</td><td>Quartz Pearl</td><td><span class="badge br">On Hold</span></td><td>Jun 25</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ch"><div class="ct">Shop Performance</div></div>
+      <div class="cb">
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Capacity Utilization</span><span style="color:var(--c)">82%</span></div><div class="rbt"><div class="rbf" style="width:82%"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>On-Time Delivery</span><span style="color:var(--green)">91%</span></div><div class="rbt"><div class="rbf" style="width:91%;background:var(--green)"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Quote-to-Job Rate</span><span style="color:var(--amber)">64%</span></div><div class="rbt"><div class="rbf" style="width:64%;background:var(--amber)"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px;"><span>Customer Satisfaction</span><span style="color:var(--green)">4.8/5</span></div><div class="rbt"><div class="rbf" style="width:96%;background:var(--green)"></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JOBS -->
+<div class="page" id="pg-jobs">
+  <div class="ptitle">All Jobs</div>
+  <div class="psub">Track every job from lead to final install</div>
+  <div class="toolbar">
+    <input type="text" class="sbox" placeholder="Search jobs..." oninput="ft(this,'jobs-tbl')">
+    <select class="btn btn-o" style="font-weight:400;"><option>All Stages</option><option>Templating</option><option>Fabrication</option><option>Ready</option><option>Installed</option></select>
+    <button class="btn btn-c" onclick="openM('m-new-job')">+ New Job</button>
+    <button class="btn btn-o" onclick="exportCSV('jobs-tbl','stonedesk-jobs')">Export CSV</button>
+    <button class="btn btn-o" onclick="askAI('Analyze my current job pipeline. Which jobs are at risk of delay and why?')">AI Analyze</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt" id="jobs-tbl"><thead><tr><th>Job #</th><th>Customer</th><th>Material</th><th>Sqft</th><th>Revenue</th><th>Stage</th><th>Install Date</th><th>Action</th></tr></thead><tbody>
+      <tr><td><strong>J-1041</strong></td><td>Martinez Kitchen</td><td>Calacatta Gold</td><td>48</td><td>$4,200</td><td><span class="badge bc">Templating</span></td><td>Jun 18</td><td><button class="btn btn-sm btn-c" onclick="openM('m-job-detail')">Open</button></td></tr>
+      <tr><td><strong>J-1042</strong></td><td>Westlake Builders</td><td>Absolute Black</td><td>120</td><td>$9,600</td><td><span class="badge ba">Fabrication</span></td><td>Jun 20</td><td><button class="btn btn-sm btn-c" onclick="openM('m-job-detail')">Open</button></td></tr>
+      <tr><td><strong>J-1043</strong></td><td>Smith Residence</td><td>White Carrara</td><td>62</td><td>$5,580</td><td><span class="badge bg">Ready</span></td><td>Jun 17</td><td><button class="btn btn-sm btn-c" onclick="openM('m-job-detail')">Open</button></td></tr>
+      <tr><td><strong>J-1044</strong></td><td>ABC Remodel</td><td>Quartz Pearl</td><td>35</td><td>$3,150</td><td><span class="badge br">On Hold</span></td><td>Jun 25</td><td><button class="btn btn-sm btn-c" onclick="openM('m-job-detail')">Open</button></td></tr>
+      <tr><td><strong>J-1040</strong></td><td>Johnson Bath</td><td>Nero Marquina</td><td>28</td><td>$3,360</td><td><span class="badge bg">Installed</span></td><td>Jun 12</td><td><button class="btn btn-sm btn-o">View</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- QUOTES -->
+<div class="page" id="pg-quotes">
+  <div class="ptitle">Quotes</div>
+  <div class="psub">Create and manage customer estimates</div>
+  <div class="toolbar">
+    <button class="btn btn-c" onclick="openM('m-new-quote')">+ New Quote</button>
+    <button class="btn btn-o" onclick="askAI('Which of my open quotes are most likely to close? What follow-up should I do?')">AI Score Quotes</button>
+    <button class="btn btn-o" onclick="exportCSV('quotes-tbl','stonedesk-quotes')">Export CSV</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt" id="quotes-tbl"><thead><tr><th>Quote #</th><th>Customer</th><th>Material</th><th>Sqft</th><th>Price</th><th>Margin</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      <tr><td>Q-2041</td><td>Rivera Kitchen</td><td>Fantasy Brown</td><td>55</td><td>$5,225</td><td><div class="rbt" style="width:80px;"><div class="rbf" style="width:72%"></div></div> 72%</td><td><span class="badge bc">Sent</span></td><td><button class="btn btn-sm btn-c" onclick="openM('m-quote-detail')">Open</button></td></tr>
+      <tr><td>Q-2042</td><td>Park Builders</td><td>Statuario</td><td>210</td><td>$21,000</td><td><div class="rbt" style="width:80px;"><div class="rbf" style="width:81%"></div></div> 81%</td><td><span class="badge ba">Draft</span></td><td><button class="btn btn-sm btn-c" onclick="openM('m-quote-detail')">Open</button></td></tr>
+      <tr><td>Q-2040</td><td>Chen Residence</td><td>Calacatta Borghini</td><td>42</td><td>$5,040</td><td><div class="rbt" style="width:80px;"><div class="rbf" style="width:68%"></div></div> 68%</td><td><span class="badge bg">Approved</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- SCHEDULE -->
+<div class="page" id="pg-schedule">
+  <div class="ptitle">Schedule</div>
+  <div class="psub">Template and installation calendar</div>
+  <div class="toolbar">
+    <button class="btn btn-c" onclick="openM('m-schedule')">+ Schedule Job</button>
+    <button class="btn btn-o" onclick="askAI('Optimize my install schedule for this week. Flag any conflicts or crew issues.')">AI Optimize</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt"><thead><tr><th>Date</th><th>Job #</th><th>Customer</th><th>Type</th><th>Crew</th><th>Address</th><th>Status</th></tr></thead><tbody>
+      <tr><td><strong>Jun 17</strong></td><td>J-1043</td><td>Smith Residence</td><td>Install</td><td>Team A</td><td>142 Maple St, Westlake</td><td><span class="badge bg">Confirmed</span></td></tr>
+      <tr><td><strong>Jun 18</strong></td><td>J-1041</td><td>Martinez Kitchen</td><td>Template</td><td>Tom N.</td><td>88 Oak Ave, Bay Village</td><td><span class="badge bc">Scheduled</span></td></tr>
+      <tr><td><strong>Jun 19</strong></td><td>J-1042</td><td>Westlake Builders</td><td>Install</td><td>Team B</td><td>Lot 14, Commerce Park</td><td><span class="badge ba">Pending Confirm</span></td></tr>
+      <tr><td><strong>Jun 20</strong></td><td>J-1044</td><td>ABC Remodel</td><td>Template</td><td>Tom N.</td><td>22 River Rd, Avon</td><td><span class="badge br">On Hold</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- INSTALLATION -->
+<div class="page" id="pg-install">
+  <div class="ptitle">Installation</div>
+  <div class="psub">Mobile-friendly installer view -- job checklist and sign-off</div>
+  <div class="toolbar"><button class="btn btn-c" onclick="openM('m-install-checklist')">Open Checklist</button></div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt"><thead><tr><th>Job</th><th>Customer</th><th>Address</th><th>Material</th><th>Sqft</th><th>Checklist</th><th>Sign-Off</th></tr></thead><tbody>
+      <tr><td>J-1043</td><td>Smith Residence</td><td>142 Maple St</td><td>White Carrara</td><td>62</td><td><span class="badge bg">Complete</span></td><td><button class="btn btn-sm btn-c" onclick="openM('m-signoff')">Get Signature</button></td></tr>
+      <tr><td>J-1042</td><td>Westlake Builders</td><td>Commerce Park</td><td>Absolute Black</td><td>120</td><td><span class="badge ba">In Progress</span></td><td><span class="badge br">Pending</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- SLABS -->
+<div class="page" id="pg-slabs">
+  <div class="ptitle">Slab Inventory</div>
+  <div class="psub">Full slab yard -- search by material, size, or supplier</div>
+  <div class="toolbar">
+    <input type="text" class="sbox" placeholder="Search slabs..." oninput="ft(this,'slabs-tbl')">
+    <button class="btn btn-c" onclick="openM('m-add-slab')">+ Receive Slab</button>
+    <button class="btn btn-o" onclick="askAI('Which slabs are moving slowest? Which materials should I reorder this week?')">AI Inventory Analysis</button>
+    <button class="btn btn-o" onclick="exportCSV('slabs-tbl','stonedesk-slabs')">Export CSV</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt" id="slabs-tbl"><thead><tr><th>Slab ID</th><th>Material</th><th>Supplier</th><th>Size (sqft)</th><th>Thickness</th><th>Cost</th><th>Status</th></tr></thead><tbody>
+      <tr><td>SL-8841</td><td>Calacatta Gold</td><td>MSI Stone</td><td>58</td><td>3cm</td><td>$680</td><td><span class="badge bg">Available</span></td></tr>
+      <tr><td>SL-8842</td><td>Absolute Black</td><td>Dal Tile</td><td>62</td><td>3cm</td><td>$540</td><td><span class="badge bg">Available</span></td></tr>
+      <tr><td>SL-8843</td><td>White Carrara</td><td>MSI Stone</td><td>55</td><td>2cm</td><td>$420</td><td><span class="badge bc">Reserved</span></td></tr>
+      <tr><td>SL-8844</td><td>Fantasy Brown</td><td>Emser</td><td>60</td><td>3cm</td><td>$580</td><td><span class="badge bg">Available</span></td></tr>
+      <tr><td>SL-8845</td><td>Statuario</td><td>MSI Stone</td><td>64</td><td>3cm</td><td>$920</td><td><span class="badge bg">Available</span></td></tr>
+      <tr><td>SL-8846</td><td>Nero Marquina</td><td>Dal Tile</td><td>48</td><td>3cm</td><td>$760</td><td><span class="badge br">Low Stock</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- REMNANTS -->
+<div class="page" id="pg-remnants">
+  <div class="ptitle">Remnant Tracker</div>
+  <div class="psub">Track, price, and sell remnant pieces</div>
+  <div class="toolbar">
+    <button class="btn btn-c" onclick="openM('m-add-remnant')">+ Add Remnant</button>
+    <button class="btn btn-o" onclick="askAI('Which remnants have been sitting longest? Suggest pricing to move them.')">AI Price Remnants</button>
+    <button class="btn btn-o" onclick="exportCSV('rem-tbl','stonedesk-remnants')">Export CSV</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt" id="rem-tbl"><thead><tr><th>Remnant ID</th><th>Material</th><th>Size</th><th>Sqft</th><th>Ask Price</th><th>Days in Yard</th><th>Status</th></tr></thead><tbody>
+      <tr><td>REM-441</td><td>Calacatta Gold</td><td>28x18"</td><td>3.5</td><td>$210</td><td>14</td><td><span class="badge bg">Available</span></td></tr>
+      <tr><td>REM-442</td><td>Absolute Black</td><td>36x24"</td><td>6.0</td><td>$300</td><td>32</td><td><span class="badge ba">Price Reduce</span></td></tr>
+      <tr><td>REM-443</td><td>White Carrara</td><td>22x16"</td><td>2.4</td><td>$120</td><td>7</td><td><span class="badge bg">Available</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- SUPPLIERS -->
+<div class="page" id="pg-suppliers">
+  <div class="ptitle">Suppliers</div>
+  <div class="psub">Manage your stone and material suppliers</div>
+  <div class="toolbar"><button class="btn btn-c" onclick="openM('m-add-supplier')">+ Add Supplier</button></div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt"><thead><tr><th>Supplier</th><th>Contact</th><th>Materials</th><th>Lead Time</th><th>YTD Spend</th><th>Rating</th></tr></thead><tbody>
+      <tr><td><strong>MSI Stone</strong></td><td>Bill Rogers | (800) 555-0101</td><td>Marble, Quartzite, Quartz</td><td>3-5 days</td><td>$48,200</td><td><span class="badge bg">Preferred</span></td></tr>
+      <tr><td><strong>Dal Tile</strong></td><td>Sue Chen | (800) 555-0202</td><td>Granite, Porcelain</td><td>5-7 days</td><td>$31,600</td><td><span class="badge bc">Active</span></td></tr>
+      <tr><td><strong>Emser Tile</strong></td><td>Mark Davis | (800) 555-0303</td><td>Quartz, Porcelain</td><td>7-10 days</td><td>$18,400</td><td><span class="badge bc">Active</span></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- CUSTOMERS -->
+<div class="page" id="pg-customers">
+  <div class="ptitle">Customers</div>
+  <div class="psub">Full customer database and history</div>
+  <div class="toolbar">
+    <input type="text" class="sbox" placeholder="Search customers..." oninput="ft(this,'cust-tbl')">
+    <button class="btn btn-c" onclick="openM('m-add-customer')">+ Add Customer</button>
+    <button class="btn btn-o" onclick="exportCSV('cust-tbl','stonedesk-customers')">Export CSV</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt" id="cust-tbl"><thead><tr><th>Name</th><th>Type</th><th>Phone</th><th>Jobs</th><th>Total Spend</th><th>Last Job</th><th>Action</th></tr></thead><tbody>
+      <tr><td><strong>Martinez Kitchen</strong></td><td>Homeowner</td><td>(440) 555-1001</td><td>3</td><td>$12,400</td><td>Jun 2025</td><td><button class="btn btn-sm btn-o" onclick="askAI('Show full customer profile and history for Martinez Kitchen')">View</button></td></tr>
+      <tr><td><strong>Westlake Builders</strong></td><td>Builder</td><td>(440) 555-1002</td><td>18</td><td>$142,000</td><td>Jun 2025</td><td><button class="btn btn-sm btn-o" onclick="askAI('Show full customer profile and history for Westlake Builders')">View</button></td></tr>
+      <tr><td><strong>ABC Remodel</strong></td><td>Contractor</td><td>(216) 555-1003</td><td>7</td><td>$38,200</td><td>Jun 2025</td><td><button class="btn btn-sm btn-o" onclick="askAI('Show full customer profile for ABC Remodel')">View</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- LEADS -->
+<div class="page" id="pg-leads">
+  <div class="ptitle">Leads</div>
+  <div class="psub">Track new inquiries from first contact to quote</div>
+  <div class="toolbar">
+    <button class="btn btn-c" onclick="openM('m-add-lead')">+ Add Lead</button>
+    <button class="btn btn-o" onclick="askAI('Score my current leads by likelihood to close. Who should I call today?')">AI Score Leads</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt"><thead><tr><th>Name</th><th>Source</th><th>Material Interest</th><th>Est. Value</th><th>AI Score</th><th>Stage</th><th>Action</th></tr></thead><tbody>
+      <tr><td>Kim Family</td><td>Referral</td><td>Quartz Kitchen</td><td>$5,800</td><td><strong style="color:var(--green)">91/100</strong></td><td><span class="badge bc">Quote Ready</span></td><td><button class="btn btn-sm btn-c" onclick="openM('m-new-quote')">Quote</button></td></tr>
+      <tr><td>Park Builders</td><td>Website</td><td>Marble Baths x4</td><td>$22,000</td><td><strong style="color:var(--c)">84/100</strong></td><td><span class="badge ba">Needs Estimate</span></td><td><button class="btn btn-sm btn-c" onclick="openM('m-new-quote')">Quote</button></td></tr>
+      <tr><td>Thompson Bath</td><td>Google</td><td>Granite Kitchen</td><td>$3,200</td><td><strong style="color:var(--amber)">61/100</strong></td><td><span class="badge ba">Follow Up</span></td><td><button class="btn btn-sm btn-o">Call</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- CLIENT PORTAL -->
+<div class="page" id="pg-portal">
+  <div class="ptitle">Client Portal</div>
+  <div class="psub">Clean client-facing view -- hides internal sqft pricing</div>
+  <div class="toolbar"><button class="btn btn-c" onclick="openM('m-client-view')">Preview Client View</button></div>
+  <div class="flag fi">This is the client-facing view. Internal costs and sqft rates are hidden. Customers only see line items and totals.</div>
+  <div class="card" style="margin-top:14px;"><div class="cb" style="padding:0;">
+    <table class="dt"><thead><tr><th>Customer</th><th>Job #</th><th>Status</th><th>Next Step</th><th>Portal Link</th></tr></thead><tbody>
+      <tr><td>Martinez Kitchen</td><td>J-1041</td><td><span class="badge bc">Templating Scheduled</span></td><td>Jun 18 Template</td><td><button class="btn btn-sm btn-o">Send Link</button></td></tr>
+      <tr><td>Smith Residence</td><td>J-1043</td><td><span class="badge bg">Ready for Install</span></td><td>Jun 17 Install</td><td><button class="btn btn-sm btn-o">Send Link</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- INVOICES -->
+<div class="page" id="pg-invoices">
+  <div class="ptitle">Invoices</div>
+  <div class="psub">Create, send, and track customer invoices -- auto-posts to SAIRNbiz GL</div>
+  <div class="toolbar">
+    <button class="btn btn-c" onclick="openM('m-new-invoice')">+ New Invoice</button>
+    <button class="btn btn-o" onclick="askAI('Which invoices are overdue? Draft collection emails for each.')">AI Collections</button>
+    <button class="btn btn-o" onclick="exportCSV('inv-tbl','stonedesk-invoices')">Export CSV</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt" id="inv-tbl"><thead><tr><th>Invoice #</th><th>Customer</th><th>Job #</th><th>Amount</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      <tr><td>INV-0441</td><td>Westlake Builders</td><td>J-1042</td><td>$9,600</td><td>Jun 30</td><td><span class="badge bc">Sent</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr>
+      <tr><td>INV-0440</td><td>ABC Remodel</td><td>J-1038</td><td>$3,800</td><td>Jun 14</td><td><span class="badge br">Overdue</span></td><td><button class="btn btn-sm btn-r">Remind</button></td></tr>
+      <tr><td>INV-0439</td><td>Johnson Bath</td><td>J-1040</td><td>$3,360</td><td>Jun 20</td><td><span class="badge bg">Paid</span></td><td><button class="btn btn-sm btn-o">View</button></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- JOB COSTING -->
+<div class="page" id="pg-costing">
+  <div class="ptitle">Job Costing</div>
+  <div class="psub">Material, labor, and overhead -- live margin per job</div>
+  <div class="toolbar">
+    <button class="btn btn-o" onclick="askAI('Which jobs this month had the lowest margin? What drove the cost overruns?')">AI Margin Analysis</button>
+    <button class="btn btn-o" onclick="exportCSV('cost-tbl','stonedesk-costing')">Export CSV</button>
+  </div>
+  <div class="card"><div class="cb" style="padding:0;">
+    <table class="dt" id="cost-tbl"><thead><tr><th>Job #</th><th>Customer</th><th>Revenue</th><th>Material</th><th>Labor</th><th>Overhead</th><th>Gross Profit</th><th>Margin</th></tr></thead><tbody>
+      <tr><td>J-1043</td><td>Smith Residence</td><td>$5,580</td><td>$1,240</td><td>$840</td><td>$560</td><td>$2,940</td><td><span style="color:var(--green);font-weight:700;">53%</span></td></tr>
+      <tr><td>J-1042</td><td>Westlake Builders</td><td>$9,600</td><td>$2,880</td><td>$1,440</td><td>$960</td><td>$4,320</td><td><span style="color:var(--c);font-weight:700;">45%</span></td></tr>
+      <tr><td>J-1041</td><td>Martinez Kitchen</td><td>$4,200</td><td>$1,260</td><td>$630</td><td>$420</td><td>$1,890</td><td><span style="color:var(--amber);font-weight:700;">45%</span></td></tr>
+      <tr><td>J-1040</td><td>Johnson Bath</td><td>$3,360</td><td>$1,344</td><td>$672</td><td>$336</td><td>$1,008</td><td><span style="color:var(--amber);font-weight:700;">30%</span></td></tr>
+      <tr class="ttr"><td colspan="6"><strong>Totals</strong></td><td><strong>$10,158</strong></td><td><strong>43%</strong></td></tr>
+    </tbody></table>
+  </div></div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="pg-reports">
+  <div class="ptitle">Reports</div>
+  <div class="psub">AI-generated reports -- click any to generate instantly</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:13px;">
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate a full revenue report for June 2025 broken down by job type and material.')"><div class="cb" style="text-align:center;padding:22px;"><div style="font-size:30px;margin-bottom:8px;">&#x1F4CA;</div><div style="font-weight:700;">Revenue Report</div><div style="font-size:12px;color:var(--muted);">By job, material, crew</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate a job profitability report. Rank all jobs by margin and flag any below 30%.')"><div class="cb" style="text-align:center;padding:22px;"><div style="font-size:30px;margin-bottom:8px;">&#x1F4B9;</div><div style="font-weight:700;">Profitability</div><div style="font-size:12px;color:var(--muted);">Margin by job</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate a slab usage and waste report for June 2025.')"><div class="cb" style="text-align:center;padding:22px;"><div style="font-size:30px;margin-bottom:8px;">&#x1F9F1;</div><div style="font-weight:700;">Slab Usage</div><div style="font-size:12px;color:var(--muted);">Material efficiency</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate a customer analysis report. Who are my top customers by revenue and repeat business?')"><div class="cb" style="text-align:center;padding:22px;"><div style="font-size:30px;margin-bottom:8px;">&#x1F465;</div><div style="font-weight:700;">Customer Analysis</div><div style="font-size:12px;color:var(--muted);">Top accounts</div></div></div>
+    <div class="card" style="cursor:pointer;" onclick="askAI('Generate an installer performance report. On-time rate, jobs completed, and any patterns.')"><div class="cb" style="text-align:center;padding:22px;"><div style="font-size:30px;margin-bottom:8px;">&#x1F528;</div><div style="font-weight:700;">Crew Performance</div><div style="font-size:12px;color:var(--muted);">Installer metrics</div></div></div>
+  </div>
+</div>
+
+<!-- FORMULA EDITOR -->
+<div class="page" id="pg-formula">
+  <div class="ptitle">Formula Editor</div>
+  <div class="psub">Admin-only: customize pricing formulas, labor rates, and overhead</div>
+  <div class="card"><div class="ch"><div class="ct">Pricing Formulas</div></div><div class="cb">
+    <div class="fgrid">
+      <div class="fg"><label>Material Markup %</label><input type="number" value="40"></div>
+      <div class="fg"><label>Labor Rate ($/hr)</label><input type="number" value="85"></div>
+      <div class="fg"><label>Overhead %</label><input type="number" value="18"></div>
+      <div class="fg"><label>Edge Profile Upcharge ($/lf)</label><input type="number" value="12"></div>
+      <div class="fg"><label>Sink Cutout Fee</label><input type="number" value="150"></div>
+      <div class="fg"><label>Cooktop Cutout Fee</label><input type="number" value="125"></div>
+      <div class="fg"><label>Template Fee ($/job)</label><input type="number" value="200"></div>
+      <div class="fg"><label>Minimum Job Size ($)</label><input type="number" value="800"></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;">
+      <button class="btn btn-c" onclick="toast('Formulas saved')">Save Formulas</button>
+      <button class="btn btn-o" onclick="askAI('Analyze my current pricing formulas against industry benchmarks. Am I leaving money on the table?')">AI Benchmark</button>
+    </div>
+  </div></div>
+</div>
+
+<!-- CSV TOOLS -->
+<div class="page" id="pg-csv">
+  <div class="ptitle">CSV Tools</div>
+  <div class="psub">Import and export data across all modules</div>
+  <div class="two-col">
+    <div class="card"><div class="ch"><div class="ct">Import</div></div><div class="cb">
+      <div class="fg" style="margin-bottom:12px;"><label>Import Type</label><select><option>Jobs</option><option>Customers</option><option>Slab Inventory</option><option>Quotes</option></select></div>
+      <div style="border:2px dashed var(--border);border-radius:8px;padding:28px;text-align:center;cursor:pointer;" onclick="document.getElementById('csv-up').click()">
+        <div style="font-size:26px;">&#x1F4C2;</div><div style="font-size:13px;color:var(--muted);margin-top:6px;">Drop CSV or click to upload</div>
+      </div>
+      <input type="file" id="csv-up" accept=".csv" style="display:none;" onchange="handleCSV(this)">
+    </div></div>
+    <div class="card"><div class="ch"><div class="ct">Export</div></div><div class="cb" style="display:flex;flex-direction:column;gap:9px;">
+      <button class="btn btn-o" onclick="exportCSV('jobs-tbl','stonedesk-jobs')">Export Jobs CSV</button>
+      <button class="btn btn-o" onclick="exportCSV('quotes-tbl','stonedesk-quotes')">Export Quotes CSV</button>
+      <button class="btn btn-o" onclick="exportCSV('slabs-tbl','stonedesk-slabs')">Export Slab Inventory CSV</button>
+      <button class="btn btn-o" onclick="exportCSV('cust-tbl','stonedesk-customers')">Export Customers CSV</button>
+      <button class="btn btn-o" onclick="exportCSV('inv-tbl','stonedesk-invoices')">Export Invoices CSV</button>
+      <button class="btn btn-o" onclick="exportCSV('cost-tbl','stonedesk-costing')">Export Job Costing CSV</button>
+    </div></div>
+  </div>
+</div>
+
+<!-- SAIRNBIZ PANEL -->
+<div class="page" id="pg-sairnbiz">
+  <div class="ptitle">SAIRNbiz</div>
+  <div class="psub">HR + Accounting backbone -- included free with StoneDesk</div>
+  <div id="sbiz-container" style="margin-bottom:16px;"></div>
+  <div class="flag fi">SAIRNbiz manages all your employees, payroll, GL entries, and invoicing. Job completions from StoneDesk auto-post to the GL. Open SAIRNbiz to run payroll, approve PTO, or review your financials.</div>
+  <div style="margin-top:14px;display:flex;gap:10px;">
+    <button class="btn btn-c" onclick="SAIRNbiz.openHub()">Open SAIRNbiz</button>
+    <button class="btn btn-o" onclick="syncToSAIRNbiz()">Sync Jobs to GL</button>
+  </div>
+</div>
+
+    </div><!-- /main -->
+  </div><!-- /app-body -->
+</div><!-- /app -->
+
+<!-- AI PANEL -->
+<div id="ai-panel">
+  <div class="aih"><div class="ait">StoneDesk AI</div><button class="aic" onclick="toggleAI()">X</button></div>
+  <div class="aim" id="aim"><div class="amsg b">Hi! I am your StoneDesk AI, powered by Claude. Ask me about jobs, quotes, slabs, customers, or your shop performance.</div></div>
+  <div class="aiq" id="aiq"></div>
+  <div class="air"><input type="text" id="ai-in" placeholder="Ask anything..." onkeydown="if(event.key==='Enter')sendAI()"><button class="btn btn-c" onclick="sendAI()">Send</button></div>
+</div>
+
+<!-- MODALS -->
+<div class="mo" id="m-new-job">
+  <div class="modal">
+    <div class="mh"><div class="mt">New Job</div><button class="mc" onclick="closeM('m-new-job')">X</button></div>
+    <div class="mb"><div class="fgrid">
+      <div class="fg"><label>Customer</label><input type="text" placeholder="Customer name"></div>
+      <div class="fg"><label>Job Type</label><select><option>Kitchen Countertop</option><option>Bathroom Vanity</option><option>Fireplace Surround</option><option>Commercial</option></select></div>
+      <div class="fg"><label>Material</label><select><option>Calacatta Gold</option><option>Absolute Black</option><option>White Carrara</option><option>Fantasy Brown</option><option>Statuario</option></select></div>
+      <div class="fg"><label>Sqft (approx)</label><input type="number" placeholder="0"></div>
+      <div class="fg"><label>Edge Profile</label><select><option>Eased</option><option>Bullnose</option><option>Ogee</option><option>Waterfall</option></select></div>
+      <div class="fg"><label>Template Date</label><input type="date"></div>
+      <div class="fg"><label>Install Date</label><input type="date"></div>
+      <div class="fg"><label>Assigned Crew</label><select><option>Team A</option><option>Team B</option><option>Tom N.</option></select></div>
+      <div class="fg full"><label>Notes</label><textarea placeholder="Special instructions, sink cutouts, cooktop..."></textarea></div>
+    </div></div>
+    <div class="mf"><button class="btn btn-o" onclick="closeM('m-new-job')">Cancel</button><button class="btn btn-c" onclick="closeM('m-new-job');toast('Job created')">Create Job</button></div>
+  </div>
+</div>
+
+<div class="mo" id="m-new-quote">
+  <div class="modal">
+    <div class="mh"><div class="mt">New Quote</div><button class="mc" onclick="closeM('m-new-quote')">X</button></div>
+    <div class="mb"><div class="fgrid">
+      <div class="fg"><label>Customer</label><input type="text" placeholder="Customer name"></div>
+      <div class="fg"><label>Phone</label><input type="tel" placeholder="(555) 000-0000"></div>
+      <div class="fg"><label>Material</label><select><option>Calacatta Gold</option><option>Absolute Black</option><option>White Carrara</option><option>Fantasy Brown</option></select></div>
+      <div class="fg"><label>Sqft</label><input type="number" id="q-sqft" placeholder="0" oninput="calcQuote()"></div>
+      <div class="fg"><label>Price/Sqft ($)</label><input type="number" id="q-rate" placeholder="90" oninput="calcQuote()"></div>
+      <div class="fg"><label>Calculated Total</label><input type="text" id="q-total" readonly style="background:#F8FAFC;font-weight:700;"></div>
+      <div class="fg"><label>Edge Profile</label><select><option>Eased (+$0)</option><option>Bullnose (+$8/lf)</option><option>Ogee (+$12/lf)</option></select></div>
+      <div class="fg"><label>Cutouts</label><select><option>None</option><option>1 Sink ($150)</option><option>1 Cooktop ($125)</option><option>Sink + Cooktop ($275)</option></select></div>
+      <div class="fg full"><label>Notes</label><textarea placeholder="Special instructions..."></textarea></div>
+    </div></div>
+    <div class="mf"><button class="btn btn-o" onclick="closeM('m-new-quote')">Cancel</button><button class="btn btn-c" onclick="askAI('Review this quote and suggest any adjustments to maximize margin without losing the job.');closeM('m-new-quote')">AI Review + Save</button></div>
+  </div>
+</div>
+
+<div class="mo" id="m-job-detail">
+  <div class="modal">
+    <div class="mh"><div class="mt">Job Detail</div><button class="mc" onclick="closeM('m-job-detail')">X</button></div>
+    <div class="mb">
+      <div class="fgrid" style="margin-bottom:16px;">
+        <div class="fg"><label>Job #</label><input type="text" value="J-1041" readonly></div>
+        <div class="fg"><label>Stage</label><select><option>Templating</option><option>Fabrication</option><option>Ready</option><option>Installed</option></select></div>
+        <div class="fg"><label>Customer</label><input type="text" value="Martinez Kitchen"></div>
+        <div class="fg"><label>Material</label><input type="text" value="Calacatta Gold"></div>
+        <div class="fg"><label>Sqft</label><input type="number" value="48"></div>
+        <div class="fg"><label>Revenue</label><input type="text" value="$4,200"></div>
+      </div>
+      <div class="flag fi">&#x1F916; <a href="#" onclick="askAI('Analyze job J-1041 and give me a status update, any risks, and next steps.');closeM('m-job-detail')">Ask AI for job analysis and next steps</a></div>
+    </div>
+    <div class="mf"><button class="btn btn-o" onclick="closeM('m-job-detail')">Close</button><button class="btn btn-c" onclick="closeM('m-job-detail');toast('Job updated')">Save Changes</button></div>
+  </div>
+</div>
+
+<div class="mo" id="m-signoff">
+  <div class="modal">
+    <div class="mh"><div class="mt">Customer Sign-Off</div><button class="mc" onclick="closeM('m-signoff')">X</button></div>
+    <div class="mb">
+      <div style="font-size:13px;margin-bottom:16px;">Job J-1043 -- Smith Residence -- White Carrara -- 62 sqft</div>
+      <div class="flag fi">The customer confirms the countertop installation is complete and satisfactory.</div>
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+        <div><div class="sig" style="border-top:1px solid #000;padding-top:4px;font-size:11px;color:var(--muted);">Customer Signature</div></div>
+        <div><div class="sig" style="border-top:1px solid #000;padding-top:4px;font-size:11px;color:var(--muted);">Date</div></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-o" onclick="closeM('m-signoff')">Cancel</button><button class="btn btn-c" onclick="closeM('m-signoff');toast('Sign-off recorded. Invoice posted to SAIRNbiz.')">Complete Job</button></div>
+  </div>
+</div>
+
+<div class="mo" id="m-client-view">
+  <div class="modal" style="max-width:600px;">
+    <div class="mh"><div class="mt">Client View -- No Internal Pricing</div><button class="mc" onclick="closeM('m-client-view')">X</button></div>
+    <div class="mb">
+      <div style="font-size:18px;font-weight:800;color:var(--cd);margin-bottom:4px;">StoneDesk</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">Estimate for Martinez Kitchen</div>
+      <table class="dt"><thead><tr><th>Description</th><th>Qty</th><th>Unit</th><th>Total</th></tr></thead><tbody>
+        <tr><td>Calacatta Gold Countertop</td><td>48</td><td>sqft</td><td>$3,600</td></tr>
+        <tr><td>Ogee Edge Profile</td><td>22</td><td>lf</td><td>$264</td></tr>
+        <tr><td>Undermount Sink Cutout</td><td>1</td><td>ea</td><td>$150</td></tr>
+        <tr><td>Template & Installation</td><td>1</td><td>job</td><td>$186</td></tr>
+        <tr class="ttr"><td colspan="3"><strong>Total</strong></td><td><strong>$4,200</strong></td></tr>
+      </tbody></table>
+      <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+        <div><div style="border-top:1px solid #000;padding-top:4px;font-size:11px;color:var(--muted);">Customer Signature</div></div>
+        <div><div style="border-top:1px solid #000;padding-top:4px;font-size:11px;color:var(--muted);">Date</div></div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn btn-o" onclick="closeM('m-client-view')">Close</button><button class="btn btn-c" onclick="window.print();closeM('m-client-view')">Print for Customer</button></div>
+  </div>
+</div>
+
+<div class="mo" id="m-add-slab">
+  <div class="modal"><div class="mh"><div class="mt">Receive Slab</div><button class="mc" onclick="closeM('m-add-slab')">X</button></div>
+  <div class="mb"><div class="fgrid">
+    <div class="fg"><label>Material</label><input type="text" placeholder="e.g. Calacatta Gold"></div>
+    <div class="fg"><label>Supplier</label><select><option>MSI Stone</option><option>Dal Tile</option><option>Emser</option></select></div>
+    <div class="fg"><label>Size (sqft)</label><input type="number" placeholder="0"></div>
+    <div class="fg"><label>Thickness</label><select><option>2cm</option><option>3cm</option></select></div>
+    <div class="fg"><label>Cost ($)</label><input type="number" placeholder="0"></div>
+    <div class="fg"><label>PO #</label><input type="text" placeholder="PO number"></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-add-slab')">Cancel</button><button class="btn btn-c" onclick="closeM('m-add-slab');toast('Slab added to inventory')">Add Slab</button></div></div>
+</div>
+
+<div class="mo" id="m-add-customer">
+  <div class="modal"><div class="mh"><div class="mt">Add Customer</div><button class="mc" onclick="closeM('m-add-customer')">X</button></div>
+  <div class="mb"><div class="fgrid">
+    <div class="fg"><label>Name / Company</label><input type="text" placeholder="Customer name"></div>
+    <div class="fg"><label>Type</label><select><option>Homeowner</option><option>Builder</option><option>Contractor</option><option>Designer</option></select></div>
+    <div class="fg"><label>Phone</label><input type="tel" placeholder="(555) 000-0000"></div>
+    <div class="fg"><label>Email</label><input type="email" placeholder="email@domain.com"></div>
+    <div class="fg full"><label>Address</label><input type="text" placeholder="Street address"></div>
+    <div class="fg full"><label>Notes</label><textarea placeholder="Preferences, referral source..."></textarea></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-add-customer')">Cancel</button><button class="btn btn-c" onclick="closeM('m-add-customer');toast('Customer added')">Save Customer</button></div></div>
+</div>
+
+<div class="mo" id="m-new-invoice">
+  <div class="modal"><div class="mh"><div class="mt">New Invoice</div><button class="mc" onclick="closeM('m-new-invoice')">X</button></div>
+  <div class="mb"><div class="fgrid">
+    <div class="fg"><label>Customer</label><select><option>Martinez Kitchen</option><option>Westlake Builders</option><option>ABC Remodel</option></select></div>
+    <div class="fg"><label>Job #</label><select><option>J-1041</option><option>J-1042</option><option>J-1043</option></select></div>
+    <div class="fg"><label>Invoice Date</label><input type="date"></div>
+    <div class="fg"><label>Due Date</label><input type="date"></div>
+    <div class="fg"><label>Amount</label><input type="number" placeholder="0.00"></div>
+    <div class="fg"><label>Deposit Received</label><input type="number" placeholder="0.00"></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-new-invoice')">Cancel</button><button class="btn btn-c" onclick="closeM('m-new-invoice');toast('Invoice created and posted to SAIRNbiz GL')">Create Invoice</button></div></div>
+</div>
+
+<div class="mo" id="m-schedule">
+  <div class="modal"><div class="mh"><div class="mt">Schedule Job</div><button class="mc" onclick="closeM('m-schedule')">X</button></div>
+  <div class="mb"><div class="fgrid">
+    <div class="fg"><label>Job #</label><select><option>J-1041</option><option>J-1042</option><option>J-1043</option><option>J-1044</option></select></div>
+    <div class="fg"><label>Type</label><select><option>Template</option><option>Install</option><option>Delivery</option></select></div>
+    <div class="fg"><label>Date</label><input type="date"></div>
+    <div class="fg"><label>Time</label><input type="time"></div>
+    <div class="fg"><label>Crew</label><select><option>Team A</option><option>Team B</option><option>Tom N.</option></select></div>
+    <div class="fg"><label>Est. Hours</label><input type="number" placeholder="0"></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-schedule')">Cancel</button><button class="btn btn-c" onclick="closeM('m-schedule');toast('Scheduled')">Schedule</button></div></div>
+</div>
+
+<div class="mo" id="m-add-lead">
+  <div class="modal"><div class="mh"><div class="mt">Add Lead</div><button class="mc" onclick="closeM('m-add-lead')">X</button></div>
+  <div class="mb"><div class="fgrid">
+    <div class="fg"><label>Name</label><input type="text" placeholder="Lead name"></div>
+    <div class="fg"><label>Source</label><select><option>Referral</option><option>Website</option><option>Google</option><option>Social Media</option><option>Walk-In</option></select></div>
+    <div class="fg"><label>Phone</label><input type="tel" placeholder="(555) 000-0000"></div>
+    <div class="fg"><label>Material Interest</label><input type="text" placeholder="e.g. Quartz kitchen"></div>
+    <div class="fg"><label>Est. Value</label><input type="number" placeholder="$0"></div>
+    <div class="fg"><label>Timeline</label><select><option>ASAP</option><option>1-3 months</option><option>3-6 months</option><option>Just browsing</option></select></div>
+    <div class="fg full"><label>Notes</label><textarea placeholder="What did they ask about?"></textarea></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-add-lead')">Cancel</button><button class="btn btn-c" onclick="closeM('m-add-lead');toast('Lead added');askAI('Score this new lead and suggest the best follow-up approach.')">Save + AI Score</button></div></div>
+</div>
+
+<div class="mo" id="m-add-remnant">
+  <div class="modal"><div class="mh"><div class="mt">Add Remnant</div><button class="mc" onclick="closeM('m-add-remnant')">X</button></div>
+  <div class="mb"><div class="fgrid">
+    <div class="fg"><label>Material</label><input type="text" placeholder="Material name"></div>
+    <div class="fg"><label>Size (WxH inches)</label><input type="text" placeholder="36x24"></div>
+    <div class="fg"><label>Sqft</label><input type="number" placeholder="0.0"></div>
+    <div class="fg"><label>Ask Price ($)</label><input type="number" placeholder="0"></div>
+    <div class="fg"><label>Source Job #</label><input type="text" placeholder="J-XXXX"></div>
+    <div class="fg"><label>Location in Yard</label><input type="text" placeholder="Row A, Bin 3"></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-add-remnant')">Cancel</button><button class="btn btn-c" onclick="closeM('m-add-remnant');toast('Remnant added')">Add Remnant</button></div></div>
+</div>
+
+<div class="mo" id="m-add-supplier">
+  <div class="modal"><div class="mh"><div class="mt">Add Supplier</div><button class="mc" onclick="closeM('m-add-supplier')">X</button></div>
+  <div class="mb"><div class="fgrid">
+    <div class="fg"><label>Supplier Name</label><input type="text" placeholder="Company name"></div>
+    <div class="fg"><label>Contact Name</label><input type="text" placeholder="Rep name"></div>
+    <div class="fg"><label>Phone</label><input type="tel" placeholder="(800) 555-0000"></div>
+    <div class="fg"><label>Email</label><input type="email" placeholder="rep@supplier.com"></div>
+    <div class="fg"><label>Materials Supplied</label><input type="text" placeholder="Granite, Marble, Quartz"></div>
+    <div class="fg"><label>Avg Lead Time</label><select><option>1-3 days</option><option>3-5 days</option><option>5-7 days</option><option>7-10 days</option></select></div>
+  </div></div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-add-supplier')">Cancel</button><button class="btn btn-c" onclick="closeM('m-add-supplier');toast('Supplier added')">Save Supplier</button></div></div>
+</div>
+
+<div class="mo" id="m-install-checklist">
+  <div class="modal"><div class="mh"><div class="mt">Installation Checklist</div><button class="mc" onclick="closeM('m-install-checklist')">X</button></div>
+  <div class="mb">
+    <div style="font-weight:700;margin-bottom:12px;">Job J-1043 -- Smith Residence</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox" checked> Countertops loaded and secured in truck</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox" checked> Template measurements verified on-site</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox"> Cabinets level and shimmed</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox"> Countertop seated and leveled</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox"> Seams tight and polished</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox"> Sink cutout cleaned and mounted</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox"> Silicone applied at walls and backsplash</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox"> Customer walkthrough complete</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:400;"><input type="checkbox"> Before and after photos taken</label>
+    </div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-install-checklist')">Close</button><button class="btn btn-c" onclick="closeM('m-install-checklist');openM('m-signoff')">Complete -- Get Signature</button></div></div>
+</div>
+
+<div class="mo" id="m-quote-detail">
+  <div class="modal"><div class="mh"><div class="mt">Quote Detail</div><button class="mc" onclick="closeM('m-quote-detail')">X</button></div>
+  <div class="mb">
+    <div class="fgrid">
+      <div class="fg"><label>Customer</label><input value="Rivera Kitchen" type="text"></div>
+      <div class="fg"><label>Material</label><input value="Fantasy Brown" type="text"></div>
+      <div class="fg"><label>Sqft</label><input value="55" type="number" oninput="calcQuoteDetail()"></div>
+      <div class="fg"><label>Rate ($/sqft)</label><input value="95" type="number" oninput="calcQuoteDetail()"></div>
+      <div class="fg"><label>Total</label><input id="qd-total" value="$5,225" type="text" readonly style="font-weight:700;background:#F8FAFC;"></div>
+      <div class="fg"><label>Status</label><select><option>Draft</option><option>Sent</option><option>Approved</option><option>Lost</option></select></div>
+    </div>
+    <div class="flag fi" style="margin-top:14px;">&#x1F916; <a href="#" onclick="askAI('Review quote Q-2041 for Rivera Kitchen. Is the price competitive? Should I adjust anything?');closeM('m-quote-detail')">Ask AI to review this quote</a></div>
+  </div>
+  <div class="mf"><button class="btn btn-o" onclick="closeM('m-quote-detail')">Cancel</button><button class="btn btn-c" onclick="closeM('m-quote-detail');toast('Quote saved')">Save Quote</button></div></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SAIRNBIZ CONNECTOR -->
+<script src="sairnbiz-connector.js"></script>
+
+<script>
+var PINS={owner:'1234',admin:'2345',sales:'3456',installer:'4567'};
+var curRole='';
+function selRole(r){curRole=r;document.querySelectorAll('.role-btn').forEach(function(b){b.classList.remove('sel');});document.getElementById('r-'+r).classList.add('sel');document.getElementById('p0').focus();}
+function pi(i){var v=document.getElementById('p'+i).value;if(v&&i<3)document.getElementById('p'+(i+1)).focus();}
+function pk(e,i){if(e.key==='Backspace'&&!document.getElementById('p'+i).value&&i>0)document.getElementById('p'+(i-1)).focus();if(e.key==='Enter')doLogin();}
+function getPin(){return ['p0','p1','p2','p3'].map(function(id){return document.getElementById(id).value;}).join('');}
+function doLogin(){
+  if(!curRole){document.getElementById('lerr').textContent='Select a role.';return;}
+  if(getPin()===PINS[curRole]){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    document.getElementById('uchip').textContent=curRole.charAt(0).toUpperCase()+curRole.slice(1);
+    applyRoleGates(curRole);
+    SAIRNbiz.sendEvent('stonedesk','app_loaded',{role:curRole,ts:new Date().toISOString()});
+    initAI();
+    toast('Welcome back!');
+  }else{
+    document.getElementById('lerr').textContent='Incorrect PIN.';
+    ['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value='';});
+    document.getElementById('p0').focus();
+  }
+}
+function applyRoleGates(role){
+  if(role==='installer'){
+    document.querySelector('[data-p="formula"]').style.display='none';
+    document.querySelector('[data-p="costing"]').style.display='none';
+    document.querySelector('[data-p="invoices"]').style.display='none';
+  }
+  if(role==='sales'){
+    document.querySelector('[data-p="formula"]').style.display='none';
+  }
+}
+function doLogout(){
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  ['p0','p1','p2','p3'].forEach(function(id){document.getElementById(id).value='';});
+  document.querySelectorAll('.role-btn').forEach(function(b){b.classList.remove('sel');});
+  curRole='';
+}
+function nav(p){
+  document.querySelectorAll('.page').forEach(function(x){x.classList.remove('active');});
+  document.querySelectorAll('.ni').forEach(function(x){x.classList.remove('active');});
+  var pg=document.getElementById('pg-'+p);if(pg)pg.classList.add('active');
+  var ni=document.querySelector('[data-p="'+p+'"]');if(ni)ni.classList.add('active');
+  document.getElementById('main').scrollTop=0;
+  if(p==='sairnbiz'){SAIRNbiz.renderPanel('sbiz-container','#16C762');}
+}
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.mo').forEach(function(o){o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
+function toast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2600);}
+function ft(inp,tid){var q=inp.value.toLowerCase();document.getElementById(tid).querySelectorAll('tbody tr').forEach(function(r){r.style.display=r.textContent.toLowerCase().includes(q)?'':'none';});}
+function exportCSV(tid,fname){
+  var t=document.getElementById(tid);if(!t){toast('No data');return;}
+  var csv=Array.from(t.querySelectorAll('tr')).map(function(r){return Array.from(r.querySelectorAll('td,th')).map(function(c){return '"'+c.textContent.trim().replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=(fname||'export')+'-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  toast('Exported '+fname+'.csv');
+}
+function calcQuote(){
+  var sq=parseFloat(document.getElementById('q-sqft').value)||0;
+  var rate=parseFloat(document.getElementById('q-rate').value)||0;
+  var tot=sq*rate;
+  document.getElementById('q-total').value='$'+tot.toFixed(2);
+}
+function calcQuoteDetail(){
+  var sq=parseFloat(document.querySelectorAll('#m-quote-detail input[type=number]')[0].value)||0;
+  var rate=parseFloat(document.querySelectorAll('#m-quote-detail input[type=number]')[1].value)||0;
+  document.getElementById('qd-total').value='$'+(sq*rate).toFixed(2);
+}
+function handleCSV(input){var f=input.files[0];if(f){toast('Importing '+f.name+'...');}}
+function syncToSAIRNbiz(){
+  SAIRNbiz.sendEvent('stonedesk','job_sync',{jobs:24,revenue:187000,ts:new Date().toISOString()});
+  toast('Jobs synced to SAIRNbiz GL');
+}
+var _aih=[];
+function toggleAI(){document.getElementById('ai-panel').classList.toggle('open');}
+function askAI(p){document.getElementById('ai-in').value=p;sendAI();if(!document.getElementById('ai-panel').classList.contains('open'))toggleAI();}
+function addMsg(t,c){var m=document.getElementById('aim');var el=document.createElement('div');el.className='amsg '+c;el.textContent=t;m.appendChild(el);m.scrollTop=m.scrollHeight;return el;}
+async function sendAI(){
+  var inp=document.getElementById('ai-in');var msg=inp.value.trim();if(!msg)return;inp.value='';
+  addMsg(msg,'u');var th=addMsg('Thinking...','t');
+  _aih.push({role:'user',content:msg});if(_aih.length>12)_aih=_aih.slice(-12);
+  try{
+    var res=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,
+        system:'You are the AI for StoneDesk, a stone countertop fabrication management platform. You know about slabs, templating, fabrication, installation, quoting, job costing, and the stone industry. Be specific, data-driven, and actionable. Current data: 24 active jobs, $187K monthly revenue, 38% gross margin, 143 slabs in stock.',
+        messages:_aih,max_tokens:700})});
+    var d=await res.json();var r=(d.content&&d.content[0]&&d.content[0].text)||d.error||'No response.';
+    _aih.push({role:'assistant',content:r});SAIRNstore.saveAIHistory('stonedesk',_aih);th.className='amsg b';th.textContent=r;
+  }catch(e){th.className='amsg b';th.textContent='Connection error.';}
+}
+function initAI(){
+  var prompts=[
+    ['Job Pipeline','Analyze my current job pipeline. Which jobs are at risk?'],
+    ['Quote Follow-Up','Which quotes need follow-up and what should I say?'],
+    ['Slab Alert','Which slabs are running low? What should I reorder?'],
+    ['Margin Report','Which jobs had the lowest margin this month and why?'],
+    ['Lead Score','Score my current leads by likelihood to close.'],
+    ['Revenue Forecast','Forecast my revenue for the next 30 days based on current pipeline.']
+  ];
+  var qw=document.getElementById('aiq');qw.innerHTML='';
+  prompts.forEach(function(p){var b=document.createElement('button');b.className='aqb';b.textContent=p[0];b.onclick=function(){askAI(p[1]);};qw.appendChild(b);});
+}
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){document.querySelectorAll('.mo').forEach(function(m){m.classList.remove('open');});document.getElementById('ai-panel').classList.remove('open');}
+});
+</script>
+
+<!-- SAIRNstore: localStorage persistence -->
+<script>
+// SAIRNstore.js -- Persistent localStorage layer for all SAIRN B2B apps
+// Injected into every app. Auto-saves and auto-loads all data tables.
+// Michael L. Dibert -- SAIRN Technologies, LLC
+
+var SAIRNstore = (function() {
+
+  // ── CORE STORE ──────────────────────────────────────────────
+  function getKey(appId, table) {
+    return 'sairn:' + appId + ':' + table;
+  }
+
+  function save(appId, table, rows) {
+    try {
+      localStorage.setItem(getKey(appId, table), JSON.stringify({
+        rows: rows,
+        ts: Date.now()
+      }));
+      return true;
+    } catch(e) {
+      console.warn('SAIRNstore save error:', e);
+      return false;
+    }
+  }
+
+  function load(appId, table) {
+    try {
+      var raw = localStorage.getItem(getKey(appId, table));
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return parsed.rows || null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function clear(appId, table) {
+    try {
+      localStorage.removeItem(getKey(appId, table));
+    } catch(e) {}
+  }
+
+  function clearAll(appId) {
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) keys.push(k);
+      }
+      keys.forEach(function(k) { localStorage.removeItem(k); });
+    } catch(e) {}
+  }
+
+  // ── TABLE SERIALIZER ────────────────────────────────────────
+  // Reads a <tbody> and converts it to an array of row-data objects
+  function tableToRows(tbody) {
+    var rows = [];
+    if (!tbody) return rows;
+    tbody.querySelectorAll('tr').forEach(function(tr) {
+      var cells = [];
+      tr.querySelectorAll('td').forEach(function(td) {
+        cells.push(td.innerHTML);
+      });
+      if (cells.length > 0) rows.push(cells);
+    });
+    return rows;
+  }
+
+  // Restores rows into a <tbody>
+  function rowsToTable(tbody, rows) {
+    if (!tbody || !rows || rows.length === 0) return;
+    // Keep header row if it's a th-only row
+    var existingRows = tbody.querySelectorAll('tr');
+    // Clear non-header rows
+    existingRows.forEach(function(tr) {
+      if (!tr.querySelector('th')) tr.remove();
+    });
+    rows.forEach(function(cells) {
+      var tr = document.createElement('tr');
+      cells.forEach(function(html) {
+        var td = document.createElement('td');
+        td.innerHTML = html;
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ── AUTO-WATCH: patch all buttons that add rows ─────────────
+  function watchTable(appId, tableId) {
+    var tbl = document.getElementById(tableId);
+    if (!tbl) return;
+    var tbody = tbl.querySelector('tbody');
+    if (!tbody) return;
+
+    // Load saved data
+    var saved = load(appId, tableId);
+    if (saved) rowsToTable(tbody, saved);
+
+    // Observe changes and auto-save
+    var observer = new MutationObserver(function() {
+      var rows = tableToRows(tbody);
+      if (rows.length > 0) save(appId, tableId, rows);
+    });
+    observer.observe(tbody, { childList: true, subtree: true, characterData: true });
+  }
+
+  // ── FORM PERSISTENCE ────────────────────────────────────────
+  function saveForm(formId, appId) {
+    var form = document.getElementById(formId);
+    if (!form) return;
+    var data = {};
+    form.querySelectorAll('input, select, textarea').forEach(function(el) {
+      if (el.name || el.id) data[el.id || el.name] = el.value;
+    });
+    save(appId, 'form:' + formId, [data]);
+  }
+
+  function loadForm(formId, appId) {
+    var saved = load(appId, 'form:' + formId);
+    if (!saved || !saved[0]) return;
+    var data = saved[0];
+    var form = document.getElementById(formId);
+    if (!form) return;
+    Object.keys(data).forEach(function(id) {
+      var el = form.querySelector('#' + id) || form.querySelector('[name="' + id + '"]');
+      if (el) el.value = data[id];
+    });
+  }
+
+  // ── FORMULA EDITOR PERSISTENCE ──────────────────────────────
+  function saveFormulas(appId) {
+    var formulas = {};
+    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
+      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
+      var key = lbl ? lbl.textContent.trim() : inp.id || Math.random();
+      formulas[key] = inp.value;
+    });
+    save(appId, 'formulas', [formulas]);
+    return formulas;
+  }
+
+  function loadFormulas(appId) {
+    var saved = load(appId, 'formulas');
+    if (!saved || !saved[0]) return;
+    var formulas = saved[0];
+    document.querySelectorAll('#pg-formula input[type="number"]').forEach(function(inp) {
+      var lbl = inp.closest('.fg') ? inp.closest('.fg').querySelector('label') : null;
+      var key = lbl ? lbl.textContent.trim() : null;
+      if (key && formulas[key] !== undefined) inp.value = formulas[key];
+    });
+  }
+
+  // ── MODAL FORM → TABLE INJECTION ────────────────────────────
+  // When a modal save button is clicked, harvest its form fields
+  // and inject a new row into the target table
+  function hookModalSave(btnSelector, targetTableId, appId, rowBuilder) {
+    document.querySelectorAll(btnSelector).forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var modal = btn.closest('.modal');
+        if (!modal) return;
+        var inputs = {};
+        modal.querySelectorAll('input, select, textarea').forEach(function(el) {
+          var lbl = el.closest('.fg') ? el.closest('.fg').querySelector('label') : null;
+          var key = lbl ? lbl.textContent.trim() : el.id || el.name;
+          inputs[key] = el.value;
+        });
+        var tbl = document.getElementById(targetTableId);
+        if (!tbl) return;
+        var tbody = tbl.querySelector('tbody');
+        if (!tbody) return;
+        var row = rowBuilder(inputs);
+        if (row) {
+          var tr = document.createElement('tr');
+          row.forEach(function(cell) {
+            var td = document.createElement('td');
+            td.innerHTML = cell;
+            tr.appendChild(td);
+          });
+          tbody.insertBefore(tr, tbody.firstChild);
+          var rows = tableToRows(tbody);
+          save(appId, targetTableId, rows);
+        }
+      });
+    });
+  }
+
+  // ── EXPORT ALL ──────────────────────────────────────────────
+  function exportAll(appId) {
+    var all = {};
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) {
+          all[k.replace(prefix, '')] = JSON.parse(localStorage.getItem(k));
+        }
+      }
+    } catch(e) {}
+    return all;
+  }
+
+  // ── STORAGE STATS ───────────────────────────────────────────
+  function stats(appId) {
+    var count = 0, bytes = 0;
+    try {
+      var prefix = 'sairn:' + appId + ':';
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) {
+          count++;
+          bytes += (localStorage.getItem(k) || '').length;
+        }
+      }
+    } catch(e) {}
+    return { tables: count, bytes: bytes, kb: (bytes / 1024).toFixed(1) };
+  }
+
+  // ── AI CONVERSATION HISTORY ─────────────────────────────────
+  function saveAIHistory(appId, history) {
+    save(appId, '_ai_history', history.slice(-20));
+  }
+
+  function loadAIHistory(appId) {
+    return load(appId, '_ai_history') || [];
+  }
+
+  return {
+    save: save,
+    load: load,
+    clear: clear,
+    clearAll: clearAll,
+    watchTable: watchTable,
+    saveForm: saveForm,
+    loadForm: loadForm,
+    saveFormulas: saveFormulas,
+    loadFormulas: loadFormulas,
+    hookModalSave: hookModalSave,
+    exportAll: exportAll,
+    stats: stats,
+    saveAIHistory: saveAIHistory,
+    loadAIHistory: loadAIHistory
+  };
+})();
+
+
+// === LICENSE KEY ===
+function saveLicenseKey() {
+  var key = (document.getElementById('license-key-input') || {}).value || '';
+  key = key.trim().toUpperCase();
+  if (!key) { toast('Enter a license key'); return; }
+  if (key.length < 8) { toast('Invalid key -- too short'); return; }
+  localStorage.setItem('sairn_license_key_stonedesk', key);
+  document.getElementById('license-status').innerHTML = '<span style="color:var(--green)">&#x2713; Key saved. AI is now unlocked for unlimited use.</span>';
+  toast('License key activated!');
+}
+function loadLicenseKeyDisplay() {
+  var saved = localStorage.getItem('sairn_license_key_stonedesk') || '';
+  var inp = document.getElementById('license-key-input');
+  var status = document.getElementById('license-status');
+  if (inp) inp.value = saved;
+  if (status && saved) {
+    status.innerHTML = '<span style="color:var(--green)">&#x2713; Licensed: ' + saved + '</span>';
+  }
+}
+// Load key display when formula page is visited
+var _origNav = nav;
+function nav(p) {
+  _origNav(p);
+  if (p === 'formula') { setTimeout(loadLicenseKeyDisplay, 50); }
+}
+</script>
+</body>
+</html>

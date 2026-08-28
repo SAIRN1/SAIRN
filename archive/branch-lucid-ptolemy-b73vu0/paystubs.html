@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Pay Stubs</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; font-size: 12px; background: #f3f4f6; color: #111; }
+
+.no-print {
+  background: #14B8A6;
+  color: #fff;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+.no-print h2 { font-size: 16px; flex: 1; }
+.btn-print {
+  background: #fff;
+  color: #0f766e;
+  border: none;
+  padding: 8px 22px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn-close {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.4);
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.stubs-wrap { padding: 24px; max-width: 780px; margin: 0 auto; }
+
+.stub {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  margin-bottom: 32px;
+  overflow: hidden;
+  page-break-after: always;
+  page-break-inside: avoid;
+}
+.stub:last-child { margin-bottom: 0; page-break-after: auto; }
+
+.stub-header {
+  background: #14B8A6;
+  color: #fff;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.stub-header .co-name { font-size: 18px; font-weight: 700; }
+.stub-header .co-sub  { font-size: 11px; opacity: .85; margin-top: 2px; }
+.stub-header .period  { text-align: right; font-size: 12px; }
+.stub-header .period-label { opacity: .85; font-size: 11px; }
+
+.stub-employee {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.emp-name { font-weight: 700; font-size: 14px; }
+.emp-title { color: #6b7280; font-size: 12px; margin-top: 2px; }
+.pay-date { text-align: right; font-size: 12px; color: #6b7280; }
+.pay-date strong { display: block; color: #111; font-size: 13px; }
+
+.stub-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.stub-col { padding: 14px 18px; }
+.stub-col:first-child { border-right: 1px solid #e5e7eb; }
+.col-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: #6b7280;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 8px;
+}
+.stub-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 12px; }
+.stub-row.total {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 4px;
+  padding-top: 6px;
+  font-weight: 700;
+}
+
+.net-pay-bar {
+  background: #f0fdfa;
+  border-left: 4px solid #14B8A6;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.net-label { font-size: 11px; font-weight: 700; color: #0f766e; text-transform: uppercase; letter-spacing: .5px; }
+.net-words { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.net-amount { font-size: 26px; font-weight: 700; color: #0f766e; }
+
+.stub-ytd {
+  padding: 8px 18px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 28px;
+  font-size: 11px;
+  color: #6b7280;
+}
+.stub-ytd strong { color: #111; }
+
+.stub-footer {
+  padding: 8px 18px;
+  border-top: 1px dashed #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.error { padding: 48px; text-align: center; color: #6b7280; font-size: 15px; }
+
+@page { size: letter; margin: 0.5in; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .stubs-wrap { padding: 0; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="no-print">
+  <h2 id="print-title">Pay Stubs</h2>
+  <button class="btn-print" onclick="window.print()">&#x1F5A8; Print / Save as PDF</button>
+  <button class="btn-close" onclick="window.close()">Close</button>
+</div>
+
+<div class="stubs-wrap" id="stubs-wrap">
+  <div class="error">Loading pay stubs...</div>
+</div>
+
+<script>
+var ONES = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+var TENS = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+
+function toWords(n) {
+  if (n === 0) return 'Zero';
+  if (n < 20) return ONES[n];
+  if (n < 100) return TENS[Math.floor(n/10)] + (n%10 ? ' ' + ONES[n%10] : '');
+  return ONES[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' ' + toWords(n%100) : '');
+}
+function dollarWords(n) {
+  var d = Math.floor(n), c = Math.round((n-d)*100);
+  return toWords(d) + ' Dollars' + (c > 0 ? ' and ' + c + '/100' : '');
+}
+function fmt(n) { return '$' + Number(n).toLocaleString(); }
+
+function buildStub(e, co) {
+  return '<div class="stub">' +
+    '<div class="stub-header">' +
+      '<div><div class="co-name">' + co + '</div><div class="co-sub">EARNINGS STATEMENT</div></div>' +
+      '<div class="period"><div class="period-label">Pay Period</div><strong>' + e.period + '</strong></div>' +
+    '</div>' +
+    '<div class="stub-employee">' +
+      '<div><div class="emp-name">' + e.name + '</div><div class="emp-title">' + e.title + ' &mdash; ' + e.type + '</div></div>' +
+      '<div class="pay-date"><span>Pay Date</span><strong>Jun 14, 2025</strong></div>' +
+    '</div>' +
+    '<div class="stub-body">' +
+      '<div class="stub-col">' +
+        '<div class="col-title">Hours &amp; Earnings</div>' +
+        '<div class="stub-row"><span>Regular Pay (' + e.regHrs + ' hrs)</span><span>' + fmt(e.gross - (e.otHrs * (e.gross/(e.regHrs||1)) * 0.5)) + '</span></div>' +
+        (e.otHrs > 0 ? '<div class="stub-row"><span>Overtime (' + e.otHrs + ' hrs @ 1.5x)</span><span style="color:#F59E0B;">' + fmt((e.otHrs * (e.gross/(e.regHrs + e.otHrs*1.5)) * 1.5).toFixed(2)) + '</span></div>' : '') +
+        '<div class="stub-row total"><span>Gross Pay</span><span>' + fmt(e.gross) + '</span></div>' +
+      '</div>' +
+      '<div class="stub-col">' +
+        '<div class="col-title">Deductions</div>' +
+        '<div class="stub-row"><span>Federal Income Tax</span><span>-' + fmt(e.federal) + '</span></div>' +
+        '<div class="stub-row"><span>Ohio State Tax (3.5%)</span><span>-' + fmt(e.state) + '</span></div>' +
+        '<div class="stub-row"><span>FICA Social Security</span><span>-' + fmt(e.ficaSS) + '</span></div>' +
+        '<div class="stub-row"><span>Medicare</span><span>-' + fmt(e.medicare) + '</span></div>' +
+        '<div class="stub-row"><span>Health Insurance</span><span>-' + fmt(e.health) + '</span></div>' +
+        '<div class="stub-row"><span>401(k) Contribution</span><span>-' + fmt(e.k401) + '</span></div>' +
+        '<div class="stub-row total"><span>Total Deductions</span><span>-' + fmt(e.deductions) + '</span></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="net-pay-bar">' +
+      '<div><div class="net-label">Net Pay</div><div class="net-words">' + dollarWords(e.net) + '</div></div>' +
+      '<div class="net-amount">' + fmt(e.net) + '</div>' +
+    '</div>' +
+    '<div class="stub-ytd">' +
+      '<span>YTD Gross: <strong>' + fmt(e.ytdGross) + '</strong></span>' +
+      '<span>YTD Deductions: <strong>' + fmt(e.ytdGross - e.ytdNet) + '</strong></span>' +
+      '<span>YTD Net: <strong>' + fmt(e.ytdNet) + '</strong></span>' +
+    '</div>' +
+    '<div class="stub-footer">' +
+      '<span>This is not a negotiable instrument &mdash; Retain for your records</span>' +
+      '<span>' + co + ' &mdash; SAIRNbiz Payroll</span>' +
+    '</div>' +
+  '</div>';
+}
+
+window.onload = function() {
+  var raw = sessionStorage.getItem('sairn_print_stubs');
+  var wrap = document.getElementById('stubs-wrap');
+  var titleEl = document.getElementById('print-title');
+
+  if (!raw) {
+    wrap.innerHTML = '<div class="error">No stub data found. Please go back to SAIRNbiz and click Print Pay Stubs again.</div>';
+    return;
+  }
+
+  try {
+    var data = JSON.parse(raw);
+    var co = data.company || 'Your Company';
+    var stubs = data.stubs || [];
+
+    if (titleEl) titleEl.textContent = co + ' \u2014 Pay Stubs \u2014 ' + (stubs[0] ? stubs[0].period : '');
+    document.title = co + ' Pay Stubs';
+
+    if (stubs.length === 0) {
+      wrap.innerHTML = '<div class="error">No employees selected.</div>';
+      return;
+    }
+
+    wrap.innerHTML = stubs.map(function(e) { return buildStub(e, co); }).join('');
+
+    // Auto-trigger print after render
+    setTimeout(function() { window.print(); }, 500);
+
+  } catch(err) {
+    wrap.innerHTML = '<div class="error">Error loading stubs: ' + err.message + '</div>';
+  }
+};
+</script>
+</body>
+</html>

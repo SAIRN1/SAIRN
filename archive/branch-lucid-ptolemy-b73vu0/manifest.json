@@ -1,0 +1,79 @@
+{
+  "name": "SAIRN Technologies",
+  "short_name": "SAIRN",
+  "description": "AI intelligence platform across 15 verticals",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050810",
+  "theme_color": "#7C3AED",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/7C3AED/ffffff?text=S",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/7C3AED/ffffff?text=S",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "business",
+    "productivity",
+    "education"
+  ],
+  "shortcuts": [
+    {
+      "name": "Fabricor",
+      "short_name": "Fabricor",
+      "description": "Stone fabrication intelligence",
+      "url": "/fabricor",
+      "icons": [
+        {
+          "src": "https://via.placeholder.com/96x96/E8850A/ffffff?text=F",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "SAIRNlearn",
+      "short_name": "Learn",
+      "description": "Education administration AI",
+      "url": "/sairnlearn",
+      "icons": [
+        {
+          "src": "https://via.placeholder.com/96x96/1E88E5/ffffff?text=L",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "SAIRNlaw",
+      "short_name": "Law",
+      "description": "Legal intelligence platform",
+      "url": "/sairnlaw",
+      "icons": [
+        {
+          "src": "https://via.placeholder.com/96x96/10B981/ffffff?text=J",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "SAIRNhope",
+      "short_name": "Hope",
+      "description": "Youth suicide prevention",
+      "url": "/sairnhope",
+      "icons": [
+        {
+          "src": "https://via.placeholder.com/96x96/10B981/ffffff?text=H",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

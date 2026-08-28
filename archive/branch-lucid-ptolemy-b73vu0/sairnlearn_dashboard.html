@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNlearn — Superintendent Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#060A0F;--panel:#0D1420;--card:#111827;--border:#1E2D40;--border2:#243447;
+  --green:#00E5A0;--green-dim:rgba(0,229,160,0.12);--green-glow:rgba(0,229,160,0.25);
+  --amber:#FFB020;--amber-dim:rgba(255,176,32,0.12);
+  --red:#FF4560;--red-dim:rgba(255,69,96,0.12);
+  --blue:#3B82F6;--blue-dim:rgba(59,130,246,0.12);
+  --purple:#8B5CF6;--purple-dim:rgba(139,92,246,0.12);
+  --w:#E8F0F8;--m:#6B7E94;--d:#2D3E50;
+  --font:"DM Sans",system-ui,sans-serif;--mono:"DM Mono",monospace
+}
+html{background:var(--bg);color:var(--w)}
+body{font-family:var(--font);overflow-x:hidden;min-height:100vh}
+
+/* GRID LAYOUT */
+.layout{display:grid;grid-template-rows:56px 1fr;height:100vh}
+.topbar{background:var(--panel);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.main{display:grid;grid-template-columns:220px 1fr 320px;overflow:hidden}
+.sidebar{background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:16px 0}
+.content{overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.rightpanel{background:var(--panel);border-left:1px solid var(--border);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+
+/* TOPBAR */
+.tb-logo{display:flex;align-items:center;gap:10px}
+.tb-gem{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#00E5A0,#00B87A);display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 16px var(--green-glow)}
+.tb-name{font-size:15px;font-weight:700;color:var(--w)}
+.tb-name span{color:var(--green);font-weight:400}
+.tb-district{font-size:12px;font-weight:500;color:var(--m);background:var(--card);padding:4px 12px;border-radius:100px;border:1px solid var(--border2)}
+.tb-right{display:flex;align-items:center;gap:12px}
+.tb-time{font-family:var(--mono);font-size:12px;color:var(--m)}
+.tb-status{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--green);background:var(--green-dim);padding:4px 12px;border-radius:100px;border:1px solid var(--green-glow)}
+.tb-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* SIDEBAR */
+.sb-section{padding:8px 12px;margin-bottom:4px}
+.sb-label{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--d);padding:0 8px;margin-bottom:8px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;transition:all 0.15s;font-size:13px;font-weight:500;color:var(--m);border:1px solid transparent}
+.sb-item:hover{background:var(--card);color:var(--w)}
+.sb-item.active{background:var(--green-dim);color:var(--green);border-color:var(--green-glow)}
+.sb-icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
+.sb-badge{margin-left:auto;font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:var(--red-dim);color:var(--red)}
+.sb-divider{height:1px;background:var(--border);margin:12px 16px}
+
+/* CONTENT AREA */
+.row{display:grid;gap:16px}
+.row-4{grid-template-columns:repeat(4,1fr)}
+.row-3{grid-template-columns:repeat(3,1fr)}
+.row-2{grid-template-columns:repeat(2,1fr)}
+.row-21{grid-template-columns:2fr 1fr}
+
+/* KPI CARDS */
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;position:relative;overflow:hidden;transition:border-color 0.2s}
+.kpi:hover{border-color:var(--border2)}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.green::before{background:var(--green)}
+.kpi.amber::before{background:var(--amber)}
+.kpi.red::before{background:var(--red)}
+.kpi.blue::before{background:var(--blue)}
+.kpi.purple::before{background:var(--purple)}
+.kpi-label{font-size:11px;font-weight:600;letter-spacing:0.5px;color:var(--m);margin-bottom:10px;text-transform:uppercase}
+.kpi-value{font-size:32px;font-weight:700;letter-spacing:-1.5px;color:var(--w);line-height:1;margin-bottom:6px;font-family:var(--mono)}
+.kpi-sub{font-size:12px;color:var(--m);display:flex;align-items:center;gap:6px}
+.kpi-delta{font-size:11px;font-weight:700;padding:2px 7px;border-radius:100px}
+.delta-up{background:var(--green-dim);color:var(--green)}
+.delta-down{background:var(--red-dim);color:var(--red)}
+.delta-flat{background:var(--amber-dim);color:var(--amber)}
+
+/* PANELS */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.panel-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:13px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:8px}
+.panel-action{font-size:11px;font-weight:600;color:var(--green);cursor:pointer;background:var(--green-dim);padding:4px 10px;border-radius:6px;border:1px solid var(--green-glow);transition:all 0.15s}
+.panel-action:hover{background:rgba(0,229,160,0.2)}
+.panel-body{padding:20px}
+
+/* SCHOOL TABLE */
+.school-table{width:100%;border-collapse:collapse;font-size:13px}
+.school-table th{text-align:left;padding:10px 14px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--d);border-bottom:1px solid var(--border)}
+.school-table td{padding:12px 14px;border-bottom:1px solid rgba(30,45,64,0.5);color:var(--m);vertical-align:middle}
+.school-table tr:last-child td{border-bottom:none}
+.school-table tr:hover td{background:rgba(255,255,255,0.02);color:var(--w)}
+.school-name{color:var(--w);font-weight:600;font-size:13px}
+.school-type{font-size:10px;font-weight:600;padding:2px 8px;border-radius:100px;margin-left:8px}
+.type-elem{background:var(--blue-dim);color:var(--blue)}
+.type-mid{background:var(--purple-dim);color:var(--purple)}
+.type-high{background:rgba(0,229,160,0.1);color:var(--green)}
+.score-bar{display:flex;align-items:center;gap:8px}
+.bar-track{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width 0.8s ease}
+.bar-green{background:var(--green)}
+.bar-amber{background:var(--amber)}
+.bar-red{background:var(--red)}
+.score-num{font-family:var(--mono);font-size:12px;font-weight:500;min-width:28px;text-align:right}
+.status-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px;white-space:nowrap}
+.pill-green{background:var(--green-dim);color:var(--green)}
+.pill-amber{background:var(--amber-dim);color:var(--amber)}
+.pill-red{background:var(--red-dim);color:var(--red)}
+
+/* ALERT FEED */
+.alert-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(30,45,64,0.5)}
+.alert-item:last-child{border-bottom:none}
+.alert-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ai-red{background:var(--red-dim)}
+.ai-amber{background:var(--amber-dim)}
+.ai-green{background:var(--green-dim)}
+.ai-blue{background:var(--blue-dim)}
+.alert-content{flex:1}
+.alert-title{font-size:13px;font-weight:600;color:var(--w);margin-bottom:3px}
+.alert-desc{font-size:12px;color:var(--m);line-height:1.5}
+.alert-time{font-size:10px;font-family:var(--mono);color:var(--d);margin-top:4px}
+.alert-actions{display:flex;gap:6px;margin-top:8px}
+.aa-btn{font-size:11px;font-weight:600;padding:3px 10px;border-radius:6px;cursor:pointer;border:none;font-family:var(--font);transition:all 0.15s}
+.aa-primary{background:var(--green-dim);color:var(--green);border:1px solid var(--green-glow)}
+.aa-secondary{background:var(--card);color:var(--m);border:1px solid var(--border2)}
+
+/* MODULE GRID */
+.module-pills{display:flex;flex-wrap:wrap;gap:8px}
+.module-pill{font-size:11px;font-weight:600;padding:5px 12px;border-radius:8px;cursor:pointer;border:1px solid var(--border2);color:var(--m);background:var(--card);transition:all 0.15s;display:flex;align-items:center;gap:6px}
+.module-pill:hover,.module-pill.active{border-color:var(--green-glow);color:var(--green);background:var(--green-dim)}
+
+/* CHAT */
+.chat-area{display:flex;flex-direction:column;gap:10px;margin-bottom:12px;max-height:280px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.chat-msg{display:flex;gap:8px;animation:msgIn 0.2s ease}
+.chat-msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.chat-avatar{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#00E5A0,#00B87A);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.chat-bubble{max-width:85%;padding:10px 13px;border-radius:12px;font-size:13px;line-height:1.6}
+.chat-msg.ai .chat-bubble{background:var(--card);border:1px solid var(--border);color:var(--w);border-bottom-left-radius:4px}
+.chat-msg.user .chat-bubble{background:linear-gradient(135deg,#00E5A0,#00B87A);color:#000;font-weight:500;border-bottom-right-radius:4px}
+.chat-bubble p{margin-bottom:6px}.chat-bubble p:last-child{margin:0}.chat-bubble strong{color:var(--green)}
+.typing-row{display:flex;gap:4px;padding:8px 10px;align-items:center}
+.t-dot{width:5px;height:5px;border-radius:50%;background:var(--green);opacity:0.7;animation:bounce 1.2s ease-in-out infinite}
+.t-dot:nth-child(2){animation-delay:0.2s}.t-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+.chat-input-row{display:flex;gap:8px}
+.chat-input{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;color:var(--w);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s}
+.chat-input:focus{border-color:var(--green-glow)}
+.chat-input::placeholder{color:var(--d)}
+.chat-send{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#00E5A0,#00B87A);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:#000;font-weight:700;transition:all 0.15s;flex-shrink:0}
+.chat-send:hover{transform:scale(1.05)}
+.chat-send:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+
+/* SPARKLINE */
+.sparkline{display:flex;align-items:flex-end;gap:2px;height:32px}
+.spark-bar{flex:1;border-radius:2px 2px 0 0;min-width:4px;transition:height 0.4s ease}
+
+/* RIGHT PANEL */
+.rp-section{margin-bottom:4px}
+.rp-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--d);margin-bottom:10px}
+.quick-stat{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(30,45,64,0.5)}
+.quick-stat:last-child{border-bottom:none}
+.qs-label{font-size:12px;color:var(--m)}
+.qs-value{font-size:13px;font-weight:700;font-family:var(--mono)}
+.qs-green{color:var(--green)}
+.qs-amber{color:var(--amber)}
+.qs-red{color:var(--red)}
+
+/* MINI CHART */
+.mini-donut{display:flex;align-items:center;gap:16px;padding:12px 0}
+.donut-wrap{position:relative;width:64px;height:64px;flex-shrink:0}
+.donut-wrap svg{transform:rotate(-90deg)}
+.donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--w)}
+.donut-legend{flex:1}
+.dl-item{display:flex;align-items:center;gap:6px;margin-bottom:5px;font-size:11px;color:var(--m)}
+.dl-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="tb-logo">
+    <div class="tb-gem">🎓</div>
+    <div class="tb-name">SAIRNlearn <span>/ Superintendent Dashboard</span></div>
+    <div class="tb-district">Columbus City Schools</div>
+  </div>
+  <div class="tb-right">
+    <div class="tb-time" id="clock">--:-- --</div>
+    <div class="tb-status"><div class="tb-dot"></div>All 115 schools reporting</div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-section">
+    <div class="sb-label">District Overview</div>
+    <div class="sb-item active" onclick="setView('overview')"><span class="sb-icon">📊</span>Live Dashboard</div>
+    <div class="sb-item" onclick="setView('alerts')"><span class="sb-icon">🔔</span>Alerts<span class="sb-badge">7</span></div>
+    <div class="sb-item" onclick="setView('overview')"><span class="sb-icon">🏫</span>All Schools</div>
+    <div class="sb-item" onclick="setView('overview')"><span class="sb-icon">📈</span>Performance</div>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-section">
+    <div class="sb-label">Intelligence Modules</div>
+    <div class="sb-item" onclick="askModule('Analyze our chronic absenteeism data across all 115 schools and identify the top 5 at-risk schools that need immediate intervention')"><span class="sb-icon">📅</span>Attendance</div>
+    <div class="sb-item" onclick="askModule('Review district spending across all schools this month and flag any anomalies or budget concerns')"><span class="sb-icon">💰</span>Spending</div>
+    <div class="sb-item" onclick="askModule('Analyze student nutrition compliance across all cafeterias and identify schools failing USDA standards')"><span class="sb-icon">🥗</span>Nutrition</div>
+    <div class="sb-item" onclick="askModule('Show me teacher retention risk analysis — which teachers are showing burnout signals across our district')"><span class="sb-icon">👩‍🏫</span>Teachers</div>
+    <div class="sb-item" onclick="askModule('Analyze our bond spending to date and project whether we will complete all capital projects on time and on budget')"><span class="sb-icon">🏗️</span>Bond Projects</div>
+    <div class="sb-item" onclick="askModule('Generate a complete IEP compliance report across all special education students district-wide')"><span class="sb-icon">♾️</span>Special Needs</div>
+    <div class="sb-item" onclick="askModule('What are our Ohio State Test score trends and which schools need immediate curriculum intervention?')"><span class="sb-icon">📝</span>Testing</div>
+    <div class="sb-item" onclick="askModule('Show me student mental health and wellbeing stress indicators across all schools — flag any students showing withdrawal patterns')"><span class="sb-icon">💙</span>Wellbeing</div>
+    <div class="sb-item" onclick="askModule('Analyze behavioral incidents across all schools and identify which buildings need de-escalation training and restorative justice programs')"><span class="sb-icon">🕊️</span>De-Escalation</div>
+    <div class="sb-item" onclick="askModule('Review our cafeteria menus for added sugar content and recommend lower glycemic alternatives that improve student focus at equal or lower cost')"><span class="sb-icon">🧠</span>Brain Nutrition</div>
+    <div class="sb-item" onclick="askModule('Analyze physical activity levels across all schools and recommend how to integrate movement into the school day for better cognitive performance')"><span class="sb-icon">🏃</span>Exercise</div>
+    <div class="sb-item" onclick="askModule('Which students are at highest risk of summer learning loss and what programs should we connect them to before school ends?')"><span class="sb-icon">☀️</span>Summer Learning</div>
+    <div class="sb-item" onclick="askModule('Show me college readiness metrics across all high schools and identify first-generation students who need additional college access support')"><span class="sb-icon">🎓</span>College Access</div>
+    <div class="sb-item" onclick="askModule('Analyze our STEM program effectiveness and identify which schools need stronger project-based learning and industry mentorship connections')"><span class="sb-icon">🔬</span>STEM</div>
+    <div class="sb-item" onclick="askModule('Monitor our curriculum effectiveness across all subjects — which programs are underperforming against outcomes and what cost-effective alternatives should we consider?')"><span class="sb-icon">🔄</span>Curriculum</div>
+    <div class="sb-item" onclick="askModule('Identify students across our district who may be food insecure and connect them to all available resources')"><span class="sb-icon">🍎</span>Food Security</div>
+    <div class="sb-item" onclick="askModule('Which students in our district lack home internet access or working devices and what programs can we use to close that gap?')"><span class="sb-icon">💻</span>Digital Equity</div>
+  </div>
+  <div class="sb-divider"></div>
+  <div class="sb-section">
+    <div class="sb-label">Reports</div>
+    <div class="sb-item" onclick="askModule('Generate this weeks executive superintendent briefing with key issues, trends, and recommended actions from all 115 principals')"><span class="sb-icon">📋</span>Weekly Brief</div>
+    <div class="sb-item" onclick="askModule('Prepare board meeting materials for this month including financial summary, performance metrics, and key action items')"><span class="sb-icon">🏛️</span>Board Meeting</div>
+    <div class="sb-item" onclick="askModule('Generate Ohio Department of Education compliance report for House Bill 96 AI mandate requirements')"><span class="sb-icon">🏫</span>Ohio DOE Report</div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content" id="mainContent">
+
+  <!-- KPI ROW -->
+  <div class="row row-4">
+    <div class="kpi green">
+      <div class="kpi-label">District Attendance</div>
+      <div class="kpi-value">94.2<span style="font-size:16px;color:var(--m)">%</span></div>
+      <div class="kpi-sub"><span class="kpi-delta delta-up">+1.3%</span> vs last week</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Budget Utilization</div>
+      <div class="kpi-value">67<span style="font-size:16px;color:var(--m)">%</span></div>
+      <div class="kpi-sub"><span class="kpi-delta delta-flat">On track</span> Q3 target</div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-label">At-Risk Students</div>
+      <div class="kpi-value">342</div>
+      <div class="kpi-sub"><span class="kpi-delta delta-down">+28</span> since Monday</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-label">IEP Compliance</div>
+      <div class="kpi-value">98.7<span style="font-size:16px;color:var(--m)">%</span></div>
+      <div class="kpi-sub"><span class="kpi-delta delta-up">+0.4%</span> this month</div>
+    </div>
+  </div>
+
+  <!-- SECOND KPI ROW -->
+  <div class="row row-4">
+    <div class="kpi purple">
+      <div class="kpi-label">Teacher Retention</div>
+      <div class="kpi-value">91<span style="font-size:16px;color:var(--m)">%</span></div>
+      <div class="kpi-sub"><span class="kpi-delta delta-up">+3%</span> vs last year</div>
+    </div>
+    <div class="kpi green">
+      <div class="kpi-label">Bond Progress</div>
+      <div class="kpi-value">$23.4<span style="font-size:16px;color:var(--m)">M</span></div>
+      <div class="kpi-sub"><span class="kpi-delta delta-flat">Of $45M</span> allocated</div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-label">Avg Test Scores</div>
+      <div class="kpi-value">71<span style="font-size:16px;color:var(--m)">%</span></div>
+      <div class="kpi-sub"><span class="kpi-delta delta-up">+4pts</span> OST proficiency</div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-label">Parent Engagement</div>
+      <div class="kpi-value">78<span style="font-size:16px;color:var(--m)">%</span></div>
+      <div class="kpi-sub"><span class="kpi-delta delta-up">+12%</span> response rate</div>
+    </div>
+  </div>
+
+  <!-- SCHOOL TABLE + ALERTS -->
+  <div class="row row-21">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">🏫 School Performance — All 115 Buildings</div>
+        <div class="panel-action" onclick="askModule('Give me a full performance analysis of all 115 Columbus City Schools buildings with rankings and intervention recommendations')">Full Report</div>
+      </div>
+      <div class="panel-body" style="padding:0">
+        <table class="school-table">
+          <thead><tr><th>School</th><th>Attendance</th><th>Performance</th><th>Alerts</th><th>Status</th></tr></thead>
+          <tbody id="schoolTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">🔔 Live Alerts</div>
+        <div class="panel-action" onclick="askModule('Review all current district alerts and generate a priority action plan for today')">Action Plan</div>
+      </div>
+      <div class="panel-body" style="padding:12px 20px">
+        <div class="alert-item">
+          <div class="alert-icon ai-red">⚠️</div>
+          <div class="alert-content">
+            <div class="alert-title">Chronic Absenteeism Spike — East High</div>
+            <div class="alert-desc">14 students missed 3+ days this week. Counselor intervention triggered automatically.</div>
+            <div class="alert-time">Today 8:42 AM</div>
+            <div class="alert-actions">
+              <button class="aa-btn aa-primary" onclick="askModule('East High School has 14 students with 3 or more absences this week. What intervention strategy should we deploy today?')">Ask SAIRNlearn</button>
+              <button class="aa-btn aa-secondary">Dismiss</button>
+            </div>
+          </div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-icon ai-amber">💰</div>
+          <div class="alert-content">
+            <div class="alert-title">Budget Variance — Westmoor MS</div>
+            <div class="alert-desc">Supply spending 23% over monthly allocation. Review recommended before month end.</div>
+            <div class="alert-time">Today 7:15 AM</div>
+            <div class="alert-actions">
+              <button class="aa-btn aa-primary" onclick="askModule('Westmoor Middle School is 23 percent over budget on supplies this month. Analyze and recommend corrective action.')">Ask SAIRNlearn</button>
+            </div>
+          </div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-icon ai-blue">📝</div>
+          <div class="alert-content">
+            <div class="alert-title">IEP Annual Review Overdue — 3 Students</div>
+            <div class="alert-desc">Columbus Alternative HS has 3 IEP annual reviews past due. Legal exposure risk.</div>
+            <div class="alert-time">Yesterday 4:30 PM</div>
+            <div class="alert-actions">
+              <button class="aa-btn aa-primary" onclick="askModule('Three IEP annual reviews are overdue at Columbus Alternative High School. What is our legal exposure and what steps do we take immediately?')">Ask SAIRNlearn</button>
+            </div>
+          </div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-icon ai-green">🌟</div>
+          <div class="alert-content">
+            <div class="alert-title">Gifted Student Identified — Linden McKinley</div>
+            <div class="alert-desc">7th grader scoring at 11th grade level in mathematics. Advancement pathway ready.</div>
+            <div class="alert-time">Yesterday 2:10 PM</div>
+            <div class="alert-actions">
+              <button class="aa-btn aa-primary" onclick="askModule('A 7th grade student at Linden McKinley is scoring at 11th grade level in math. Build an advancement pathway and recommend how to talk to the parents.')">Build Pathway</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULE QUICK ACCESS -->
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">⚡ Ask SAIRNlearn — District Intelligence</div>
+    </div>
+    <div class="panel-body">
+      <div class="module-pills" style="margin-bottom:14px">
+        <div class="module-pill active" onclick="askModule('Generate this weeks superintendent briefing with executive summary, top issues from all principals, and recommended actions')">📋 Weekly Brief</div>
+        <div class="module-pill" onclick="askModule('Which schools have the highest chronic absenteeism this week and what interventions should I deploy today?')">📅 Attendance Crisis</div>
+        <div class="module-pill" onclick="askModule('Analyze our Title I spending this quarter — are we maximizing every federal dollar available to us?')">💰 Title I Analysis</div>
+        <div class="module-pill" onclick="askModule('Which teachers across the district are showing the highest burnout risk signals right now?')">👩‍🏫 Teacher Retention</div>
+        <div class="module-pill" onclick="askModule('Show me learning poverty indicators — students passing with grades but below comprehension level — district wide')">📖 Learning Poverty</div>
+        <div class="module-pill" onclick="askModule('Generate Ohio DOE AI mandate compliance documentation for House Bill 96')">🏫 Ohio Mandate</div>
+        <div class="module-pill" onclick="askModule('Which students district-wide are showing stress load indicators that suggest they may withdraw or disengage soon?')">💙 Wellbeing Scan</div>
+        <div class="module-pill" onclick="askModule('Prepare complete board meeting materials for this month including financial summary, performance trends, and key decisions needed')">🏛️ Board Meeting</div>
+        <div class="module-pill" onclick="askModule('Review cafeteria sugar content across all schools and recommend brain-nutrition meal changes for better student focus')">🧠 Brain Nutrition</div>
+        <div class="module-pill" onclick="askModule('Analyze behavioral incidents and recommend de-escalation training for the schools that need it most')">🕊️ De-Escalation</div>
+        <div class="module-pill" onclick="askModule('Which students are at risk of summer learning loss and what dual enrollment or college credit programs should we connect them to?')">☀️ Summer Learning</div>
+        <div class="module-pill" onclick="askModule('Identify food-insecure students across the district and connect them to available resources')">🍎 Food Security</div>
+        <div class="module-pill" onclick="askModule('Monitor curriculum effectiveness across all subjects — flag what is underperforming and recommend better alternatives')">🔄 Curriculum Monitor</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- RIGHT PANEL - AI CHAT -->
+<div class="rightpanel">
+  <div class="rp-section">
+    <div class="rp-title">SAIRNlearn Intelligence</div>
+    <div class="chat-area" id="chatArea">
+      <div class="chat-msg ai">
+        <div class="chat-avatar">🎓</div>
+        <div class="chat-bubble"><p>Good morning. All 115 Columbus City Schools buildings are reporting. I have identified <strong>7 alerts</strong> requiring your attention today. The most urgent is a chronic absenteeism spike at East High — 14 students need intervention before end of day. Ask me anything about your district.</p></div>
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="Ask about any school or issue..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="chat-send" id="chatSend" onclick="sendChat()">&#9658;</button>
+    </div>
+  </div>
+
+  <div class="sb-divider" style="margin:16px 0"></div>
+
+  <div class="rp-section">
+    <div class="rp-title">District at a Glance</div>
+    <div class="quick-stat"><span class="qs-label">Total Students</span><span class="qs-value qs-green">49,847</span></div>
+    <div class="quick-stat"><span class="qs-label">Schools Reporting</span><span class="qs-value qs-green">115 / 115</span></div>
+    <div class="quick-stat"><span class="qs-label">Open Alerts</span><span class="qs-value qs-red">7 urgent</span></div>
+    <div class="quick-stat"><span class="qs-label">IEP Students</span><span class="qs-value qs-amber">6,847</span></div>
+    <div class="quick-stat"><span class="qs-label">Title I Schools</span><span class="qs-value qs-amber">73 of 115</span></div>
+    <div class="quick-stat"><span class="qs-label">Bond Remaining</span><span class="qs-value qs-green">$21.6M</span></div>
+    <div class="quick-stat"><span class="qs-label">Days to OST</span><span class="qs-value qs-amber">47 days</span></div>
+  </div>
+
+  <div class="sb-divider" style="margin:16px 0"></div>
+
+  <div class="rp-section">
+    <div class="rp-title">Attendance Trend — 7 Days</div>
+    <div class="sparkline" id="sparkline"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--d)">
+      <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Mon</span><span>Today</span>
+    </div>
+  </div>
+
+  <div class="sb-divider" style="margin:16px 0"></div>
+
+  <div class="rp-section">
+    <div class="rp-title">Student Population</div>
+    <div class="mini-donut">
+      <div class="donut-wrap">
+        <svg width="64" height="64" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="26" fill="none" stroke="#1E2D40" stroke-width="8"/>
+          <circle cx="32" cy="32" r="26" fill="none" stroke="#00E5A0" stroke-width="8" stroke-dasharray="81 82" stroke-linecap="round"/>
+          <circle cx="32" cy="32" r="26" fill="none" stroke="#3B82F6" stroke-width="8" stroke-dasharray="41 122" stroke-dashoffset="-81" stroke-linecap="round"/>
+          <circle cx="32" cy="32" r="26" fill="none" stroke="#FFB020" stroke-width="8" stroke-dasharray="24 139" stroke-dashoffset="-122" stroke-linecap="round"/>
+        </svg>
+        <div class="donut-center">49K</div>
+      </div>
+      <div class="donut-legend">
+        <div class="dl-item"><div class="dl-dot" style="background:var(--green)"></div>General Ed — 62%</div>
+        <div class="dl-item"><div class="dl-dot" style="background:var(--blue)"></div>Title I — 31%</div>
+        <div class="dl-item"><div class="dl-dot" style="background:var(--amber)"></div>Special Ed — 14%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "study";
+const APP_ICON = "🎓";
+const SYSTEM = "You are SAIRNlearn, the superintendent intelligence dashboard for Columbus City Schools, powered by Claude AI. You have visibility into all 115 schools — attendance, performance, budget, IEPs, teacher retention, student wellbeing, testing, nutrition, bond projects, and more. You speak directly to the superintendent. Be precise, data-driven, and action-oriented. When asked about specific schools or issues, give specific recommendations. When asked to generate reports, generate complete professional documents. Never be vague. The superintendent does not have time for generic advice — give them exactly what they need to act.";
+
+let messages = [{role:"assistant",content:"Good morning. All 115 Columbus City Schools buildings are reporting. I have identified 7 alerts requiring your attention today. The most urgent is a chronic absenteeism spike at East High. Ask me anything about your district."}];
+let isLoading = false;
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes().toString().padStart(2,'0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = (h % 12 || 12).toString();
+  document.getElementById('clock').textContent = h12 + ':' + m + ' ' + ampm;
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// Sparkline
+(function() {
+  const vals = [91.2, 93.4, 92.8, 94.1, 93.7, 94.0, 94.2];
+  const max = 96, min = 89;
+  const sp = document.getElementById('sparkline');
+  vals.forEach(function(v) {
+    const bar = document.createElement('div');
+    bar.className = 'spark-bar';
+    const pct = ((v - min) / (max - min)) * 100;
+    bar.style.height = pct + '%';
+    bar.style.background = v >= 94 ? 'var(--green)' : v >= 92 ? 'var(--amber)' : 'var(--red)';
+    bar.style.opacity = '0.8';
+    sp.appendChild(bar);
+  });
+})();
+
+// School table
+const schools = [
+  {name:'East High School',type:'high',att:91.2,perf:68,alerts:3,status:'amber'},
+  {name:'Columbus Alternative HS',type:'high',att:94.8,perf:82,alerts:2,status:'amber'},
+  {name:'Linden McKinley STEM',type:'high',att:96.1,perf:87,alerts:0,status:'green'},
+  {name:'Mifflin High School',type:'high',att:93.4,perf:74,alerts:1,status:'green'},
+  {name:'Westmoor Middle School',type:'mid',att:94.2,perf:79,alerts:1,status:'amber'},
+  {name:'Dominion Middle School',type:'mid',att:95.7,perf:83,alerts:0,status:'green'},
+  {name:'Indianola K-8',type:'elem',att:97.1,perf:91,alerts:0,status:'green'},
+  {name:'Berwick Alternative ES',type:'elem',att:88.3,perf:61,alerts:2,status:'red'},
+];
+
+const tbody = document.getElementById('schoolTableBody');
+schools.forEach(function(s) {
+  const tr = document.createElement('tr');
+  const typeLabel = s.type === 'high' ? 'HS' : s.type === 'mid' ? 'MS' : 'ES';
+  const typeClass = s.type === 'high' ? 'type-high' : s.type === 'mid' ? 'type-mid' : 'type-elem';
+  const barClass = s.perf >= 80 ? 'bar-green' : s.perf >= 70 ? 'bar-amber' : 'bar-red';
+  const pillClass = s.status === 'green' ? 'pill-green' : s.status === 'amber' ? 'pill-amber' : 'pill-red';
+  const pillText = s.status === 'green' ? 'On Track' : s.status === 'amber' ? 'Monitor' : 'Urgent';
+  const attColor = s.att >= 95 ? 'var(--green)' : s.att >= 92 ? 'var(--amber)' : 'var(--red)';
+
+  tr.innerHTML = '<td><span class="school-name">' + s.name + '</span><span class="school-type ' + typeClass + '">' + typeLabel + '</span></td>' +
+    '<td style="font-family:var(--mono);font-size:12px;color:' + attColor + '">' + s.att + '%</td>' +
+    '<td><div class="score-bar"><div class="bar-track"><div class="bar-fill ' + barClass + '" style="width:' + s.perf + '%"></div></div><span class="score-num" style="color:' + (barClass === 'bar-green' ? 'var(--green)' : barClass === 'bar-amber' ? 'var(--amber)' : 'var(--red)') + '">' + s.perf + '</span></div></td>' +
+    '<td style="font-family:var(--mono);font-size:12px;color:' + (s.alerts > 0 ? 'var(--amber)' : 'var(--m)') + '">' + (s.alerts > 0 ? s.alerts + ' open' : 'Clear') + '</td>' +
+    '<td><span class="status-pill ' + pillClass + '">' + pillText + '</span></td>';
+
+  tr.style.cursor = 'pointer';
+  tr.onclick = function() {
+    askModule('Give me a complete intelligence briefing on ' + s.name + ' — attendance, performance, budget, IEPs, teacher status, and any concerns I should address this week.');
+  };
+  tbody.appendChild(tr);
+});
+
+function setView(view) {
+  document.querySelectorAll('.sb-item').forEach(function(i) { i.classList.remove('active'); });
+  event.currentTarget.classList.add('active');
+}
+
+function askModule(query) {
+  document.getElementById('chatInput').value = query;
+  sendChat();
+  document.querySelector('.rightpanel').scrollTop = 0;
+}
+
+function addChatMsg(role, content) {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  const formatted = content.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br>');
+  if(role === 'ai') {
+    div.innerHTML = '<div class="chat-avatar">' + APP_ICON + '</div><div class="chat-bubble"><p>' + formatted + '</p></div>';
+  } else {
+    div.innerHTML = '<div class="chat-bubble">' + content + '</div>';
+  }
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById('chatArea');
+  const div = document.createElement('div');
+  div.className = 'chat-msg ai'; div.id = 'typing';
+  div.innerHTML = '<div class="chat-avatar">' + APP_ICON + '</div><div class="chat-bubble"><div class="typing-row"><div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div></div></div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+async function sendChat() {
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if(!text || isLoading) return;
+  inp.value = '';
+  isLoading = true;
+  document.getElementById('chatSend').disabled = true;
+  addChatMsg('user', text);
+  messages.push({role:'user', content:text});
+  showTyping();
+  try {
+    const res = await fetch(SAIRN_API, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({max_tokens:1000, system:SYSTEM, messages:messages.slice(-20), app_id:APP_ID, is_demo:true})
+    });
+    const data = await res.json();
+    document.getElementById('typing') && document.getElementById('typing').remove();
+    if(res.status === 429) {
+      addChatMsg('ai', data.message || 'Daily demo limit reached. Sign up at sairn.vercel.app for full access.');
+    } else {
+      const reply = data.content && data.content[0] && data.content[0].text || 'Please try again.';
+      messages.push({role:'assistant', content:reply});
+      addChatMsg('ai', reply);
+    }
+  } catch(e) {
+    document.getElementById('typing') && document.getElementById('typing').remove();
+    addChatMsg('ai', 'Connection issue. Please try again.');
+  }
+  isLoading = false;
+  document.getElementById('chatSend').disabled = false;
+}
+
+document.getElementById('chatInput').addEventListener('keydown', function(e) {
+  if(e.key === 'Enter') sendChat();
+});
+</script>
+</body>
+</html>

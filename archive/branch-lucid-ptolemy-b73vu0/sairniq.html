@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRN IQ — Enterprise Intelligence for Every Workforce</title>
+<meta name="description" content="The AI intelligence layer that makes every employee in your company smarter. Built for Fortune 500. Deployed in 24 hours.">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#03040A;--card:#0D0F1E;--card2:#131527;
+  --gold:#F0B429;--gold2:#E09900;--goldr:rgba(240,180,41,0.15);--goldab:rgba(240,180,41,0.3);
+  --blue:#3B82F6;--bluer:rgba(59,130,246,0.12);
+  --w:#F4F4FF;--m:#8888AA;--d:#33334A;
+  --grad:linear-gradient(135deg,#F0B429,#E09900);
+  --grad2:linear-gradient(135deg,#1E3A5F,#0D1F35);
+}
+html{background:var(--bg);color:var(--w);scroll-behavior:smooth}
+body{font-family:"Inter",system-ui,sans-serif;overflow-x:hidden}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:64px;padding:0 48px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(3,4,10,0.92);backdrop-filter:blur(24px);
+  border-bottom:1px solid rgba(255,255,255,0.05)}
+.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none}
+.nav-gem{width:40px;height:40px;border-radius:12px;background:var(--grad);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+  box-shadow:0 0 24px rgba(240,180,41,0.4)}
+.nav-brand{font-size:20px;font-weight:800;color:var(--w)}
+.nav-brand span{color:var(--gold)}
+.nav-links{display:flex;align-items:center;gap:32px}
+.nav-link{font-size:13px;font-weight:500;color:var(--m);text-decoration:none;transition:color 0.2s}
+.nav-link:hover{color:var(--w)}
+.nav-cta{padding:10px 24px;border-radius:100px;font-size:13px;font-weight:700;
+  background:var(--grad);color:#000;border:none;cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 20px rgba(240,180,41,0.35);transition:all 0.2s}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(240,180,41,0.5)}
+
+/* HERO */
+.hero{min-height:100vh;padding:140px 48px 100px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;position:relative;
+  background:radial-gradient(ellipse at 50% 0%,rgba(240,180,41,0.07) 0%,transparent 65%)}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 20px;
+  border-radius:100px;background:var(--goldr);border:1px solid var(--goldab);
+  font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:36px}
+.hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);
+  animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.hero-title{font-size:clamp(48px,8vw,96px);font-weight:900;line-height:1;
+  letter-spacing:-3px;margin-bottom:24px;
+  background:linear-gradient(135deg,#FFFFFF 0%,#F0B429 50%,#FFFFFF 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(18px,2.5vw,24px);color:var(--m);max-width:720px;
+  line-height:1.75;margin-bottom:16px;font-weight:300}
+.hero-sub strong{color:var(--w);font-weight:600}
+.hero-tagline{font-size:14px;color:var(--gold);font-weight:600;letter-spacing:1px;
+  margin-bottom:56px;text-transform:uppercase}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:80px}
+.btn-primary{padding:20px 52px;border-radius:100px;font-size:16px;font-weight:700;
+  background:var(--grad);color:#000;border:none;cursor:pointer;font-family:inherit;
+  box-shadow:0 8px 40px rgba(240,180,41,0.4);transition:all 0.2s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 48px rgba(240,180,41,0.55)}
+.btn-secondary{padding:20px 52px;border-radius:100px;font-size:16px;font-weight:600;
+  background:transparent;color:var(--w);border:1.5px solid rgba(255,255,255,0.15);
+  cursor:pointer;font-family:inherit;transition:all 0.2s}
+.btn-secondary:hover{border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.04)}
+.hero-companies{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;align-items:center}
+.hero-company-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--d);width:100%;text-align:center;margin-bottom:8px}
+.company-pill{padding:8px 20px;border-radius:100px;background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);font-size:12px;font-weight:600;color:var(--m);
+  transition:all 0.2s}
+.company-pill:hover{border-color:rgba(240,180,41,0.3);color:var(--gold)}
+
+/* SECTIONS */
+.section{padding:100px 48px;max-width:1200px;margin:0 auto}
+.section-full{padding:100px 48px;background:var(--card)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:16px}
+.section-title{font-size:clamp(32px,5vw,56px);font-weight:800;line-height:1.08;
+  letter-spacing:-1.5px;margin-bottom:20px;
+  background:linear-gradient(135deg,#F4F4FF,#F0B429);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.section-sub{font-size:18px;color:var(--m);line-height:1.75;max-width:640px;font-weight:300;
+  margin-bottom:48px}
+
+/* HOW IT WORKS */
+.how-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:2px;
+  background:rgba(255,255,255,0.04);border-radius:24px;overflow:hidden}
+.how-card{background:var(--card);padding:40px 32px;position:relative}
+.how-num{font-size:11px;font-weight:700;letter-spacing:3px;color:var(--gold);
+  text-transform:uppercase;margin-bottom:20px}
+.how-icon{font-size:40px;margin-bottom:16px}
+.how-title{font-size:20px;font-weight:700;color:var(--w);margin-bottom:10px}
+.how-desc{font-size:14px;color:var(--m);line-height:1.7}
+
+/* INDUSTRIES */
+.industry-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+.industry-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);
+  border-radius:20px;padding:32px;transition:all 0.3s;cursor:pointer;position:relative;
+  overflow:hidden}
+.industry-card::before{content:"";position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(240,180,41,0.05),transparent);
+  opacity:0;transition:opacity 0.3s}
+.industry-card:hover{border-color:rgba(240,180,41,0.25);transform:translateY(-2px)}
+.industry-card:hover::before{opacity:1}
+.industry-flag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;
+  border-radius:100px;font-size:10px;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;margin-bottom:16px}
+.flag-enterprise{background:rgba(59,130,246,0.15);color:#60A5FA;border:1px solid rgba(59,130,246,0.25)}
+.flag-health{background:rgba(239,68,68,0.15);color:#FCA5A5;border:1px solid rgba(239,68,68,0.25)}
+.flag-education{background:rgba(16,185,129,0.15);color:#6EE7B7;border:1px solid rgba(16,185,129,0.25)}
+.flag-trades{background:rgba(245,158,11,0.15);color:#FCD34D;border:1px solid rgba(245,158,11,0.25)}
+.industry-icon{font-size:36px;margin-bottom:14px}
+.industry-name{font-size:20px;font-weight:700;color:var(--w);margin-bottom:8px}
+.industry-desc{font-size:13px;color:var(--m);line-height:1.65;margin-bottom:16px}
+.industry-stat{font-size:12px;font-weight:700;color:var(--gold);padding:6px 12px;
+  background:var(--goldr);border-radius:8px;display:inline-block}
+
+/* PRICING */
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.price-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);
+  border-radius:20px;padding:32px;transition:all 0.3s}
+.price-card.featured{border-color:rgba(240,180,41,0.4);
+  background:linear-gradient(180deg,rgba(240,180,41,0.07),var(--card));
+  position:relative}
+.price-featured-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);
+  padding:4px 16px;border-radius:100px;background:var(--grad);
+  font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#000}
+.price-tier{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--gold);margin-bottom:8px}
+.price-name{font-size:20px;font-weight:700;color:var(--w);margin-bottom:4px}
+.price-amount{font-size:48px;font-weight:800;letter-spacing:-2px;color:var(--w);
+  line-height:1;margin:16px 0 4px}
+.price-period{font-size:13px;color:var(--m);margin-bottom:4px}
+.price-users{font-size:12px;color:var(--d);margin-bottom:24px}
+.price-features{margin-bottom:28px}
+.price-feature{display:flex;align-items:flex-start;gap:10px;padding:7px 0;
+  font-size:13px;color:var(--m);border-bottom:1px solid rgba(255,255,255,0.04)}
+.price-feature:last-child{border-bottom:none}
+.price-check{color:var(--gold);font-weight:700;flex-shrink:0;margin-top:1px}
+.price-btn{width:100%;padding:14px;border-radius:12px;font-size:14px;font-weight:700;
+  border:none;cursor:pointer;font-family:inherit;transition:all 0.2s}
+.price-btn-gold{background:var(--grad);color:#000;
+  box-shadow:0 4px 20px rgba(240,180,41,0.3)}
+.price-btn-gold:hover{transform:translateY(-1px)}
+.price-btn-outline{background:rgba(255,255,255,0.04);color:var(--w);
+  border:1px solid rgba(255,255,255,0.12)}
+.price-btn-outline:hover{background:rgba(255,255,255,0.08)}
+
+/* TIRE COMPANIES */
+.tire-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.tire-card{background:var(--card);border:1px solid rgba(255,255,255,0.06);
+  border-radius:16px;padding:24px;text-align:center;transition:all 0.3s}
+.tire-card:hover{border-color:rgba(240,180,41,0.3);transform:translateY(-2px)}
+.tire-icon{font-size:32px;margin-bottom:10px}
+.tire-name{font-size:15px;font-weight:700;color:var(--w);margin-bottom:4px}
+.tire-revenue{font-size:12px;color:var(--m);margin-bottom:8px}
+.tire-opportunity{font-size:11px;font-weight:700;color:var(--gold);
+  padding:3px 10px;background:var(--goldr);border-radius:6px;display:inline-block}
+
+/* DEMO SECTION */
+.demo-section{padding:100px 48px;
+  background:linear-gradient(180deg,var(--bg),rgba(240,180,41,0.04),var(--bg))}
+.demo-container{max-width:900px;margin:0 auto;text-align:center}
+.demo-mockup{background:var(--card);border:1px solid rgba(255,255,255,0.08);
+  border-radius:24px;padding:32px;margin-top:48px;text-align:left}
+.demo-header{display:flex;align-items:center;gap:12px;margin-bottom:24px;
+  padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.demo-logo{width:36px;height:36px;border-radius:10px;background:var(--grad);
+  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.demo-company{font-size:15px;font-weight:700;color:var(--w)}
+.demo-dept{font-size:12px;color:var(--m)}
+.demo-chat{display:flex;flex-direction:column;gap:14px}
+.demo-msg{display:flex;gap:12px}
+.demo-msg.user{justify-content:flex-end}
+.demo-avatar{width:32px;height:32px;border-radius:50%;background:var(--grad);
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.demo-bubble{max-width:75%;padding:12px 16px;border-radius:16px;font-size:14px;
+  line-height:1.6;color:var(--w)}
+.demo-bubble.ai{background:var(--card2);border:1px solid rgba(255,255,255,0.07);
+  border-bottom-left-radius:4px}
+.demo-bubble.user-b{background:var(--grad);color:#000;font-weight:500;
+  border-bottom-right-radius:4px}
+.demo-typing{display:flex;gap:5px;align-items:center;padding:14px 16px}
+.demo-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);opacity:0.7;
+  animation:bounce2 1.2s ease-in-out infinite}
+.demo-dot:nth-child(2){animation-delay:0.2s}
+.demo-dot:nth-child(3){animation-delay:0.4s}
+@keyframes bounce2{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+
+/* PULL QUOTE */
+.pull{font-family:"Inter",serif;font-size:clamp(20px,3vw,32px);font-weight:700;
+  line-height:1.4;color:var(--w);padding:40px 56px;margin:48px 0;
+  border-left:4px solid var(--gold);background:rgba(240,180,41,0.04)}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:2px;
+  background:rgba(255,255,255,0.04);border-radius:20px;overflow:hidden;margin:48px 0}
+.stat-card{background:var(--card);padding:32px 24px;text-align:center}
+.stat-num{font-size:clamp(32px,5vw,52px);font-weight:800;letter-spacing:-2px;
+  color:var(--gold);line-height:1;margin-bottom:6px}
+.stat-label{font-size:13px;color:var(--m);line-height:1.4}
+
+/* CTA SECTION */
+.cta-section{padding:120px 48px;text-align:center;
+  background:radial-gradient(ellipse at 50% 100%,rgba(240,180,41,0.08) 0%,transparent 65%)}
+.cta-title{font-size:clamp(36px,6vw,72px);font-weight:900;letter-spacing:-2px;
+  line-height:1.05;margin-bottom:24px;
+  background:linear-gradient(135deg,#FFFFFF,#F0B429);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.cta-sub{font-size:18px;color:var(--m);max-width:560px;margin:0 auto 48px;
+  line-height:1.7;font-weight:300}
+.cta-note{font-size:12px;color:var(--d);margin-top:20px}
+
+footer{padding:40px 48px;border-top:1px solid rgba(255,255,255,0.06);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
+.footer-brand{font-size:16px;font-weight:800;color:var(--w)}
+.footer-brand span{color:var(--gold)}
+.footer-sub{font-size:11px;color:var(--d)}
+
+/* APP PAGE */
+#appPage{display:none;height:100vh;padding-top:64px;flex-direction:column}
+#appPage.active{display:flex}
+.app-header{padding:14px 24px;background:rgba(3,4,10,0.9);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-title{font-size:15px;font-weight:700;color:var(--w);display:flex;align-items:center;gap:10px}
+.app-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);
+  box-shadow:0 0 10px var(--gold)}
+.dept-bar{display:flex;gap:8px;padding:10px 20px;overflow-x:auto;flex-shrink:0;
+  border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.dept-bar::-webkit-scrollbar{display:none}
+.dept-btn{display:flex;align-items:center;gap:6px;padding:7px 16px;border-radius:100px;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;
+  transition:all 0.2s;font-family:inherit}
+.dept-btn:hover,.dept-btn.active{background:var(--goldr);border-color:var(--goldab);color:var(--gold)}
+.chat-area{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:14px;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.08) transparent}
+.msg{display:flex;gap:12px;animation:msgIn .25s ease-out}
+.msg.user{justify-content:flex-end}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:34px;height:34px;border-radius:50%;background:var(--grad);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.msg-bubble{max-width:72%;padding:13px 17px;border-radius:18px;font-size:14px;line-height:1.65}
+.msg.ai .msg-bubble{background:var(--card2);border:1px solid rgba(255,255,255,0.07);
+  color:var(--w);border-bottom-left-radius:4px}
+.msg.user .msg-bubble{background:var(--grad);color:#000;font-weight:500;
+  border-bottom-right-radius:4px}
+.msg-bubble p{margin-bottom:8px}.msg-bubble p:last-child{margin-bottom:0}
+.msg-bubble strong{color:var(--gold)}
+.typing-wrap{display:flex;gap:5px;padding:13px 17px;align-items:center}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--gold);opacity:0.7;
+  animation:bounce2 1.2s ease-in-out infinite}
+.tdot:nth-child(2){animation-delay:0.2s}.tdot:nth-child(3){animation-delay:0.4s}
+.mode-bar{display:flex;gap:6px;padding:10px 16px;overflow-x:auto;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.05);scrollbar-width:none}
+.mode-bar::-webkit-scrollbar{display:none}
+.mode-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--m);font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all 0.2s;font-family:inherit}
+.mode-btn:hover,.mode-btn.active,.flow-btn.active{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.mode-divider{width:1px;background:rgba(255,255,255,0.08);margin:4px 2px;flex-shrink:0}
+.mode-guided-label{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--m);text-transform:uppercase;white-space:nowrap;padding:0 4px;align-self:center}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:40px;text-align:center}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:22px;font-weight:700;color:var(--w);margin-bottom:8px}
+.empty-sub{font-size:14px;color:var(--m);max-width:380px;line-height:1.65;margin-bottom:28px}
+.suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:460px}
+.suggestion{padding:12px 18px;background:var(--card);border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px;font-size:13px;color:var(--m);cursor:pointer;text-align:left;
+  transition:all 0.2s;font-family:inherit}
+.suggestion:hover{border-color:rgba(240,180,41,0.3);color:var(--w)}
+.input-area{padding:14px 20px;border-top:1px solid rgba(255,255,255,0.06);
+  display:flex;gap:10px;align-items:flex-end;flex-shrink:0;background:rgba(3,4,10,0.9)}
+textarea#userInput{flex:1;background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:13px 17px;
+  color:var(--w);font-size:14px;font-family:inherit;resize:none;min-height:46px;
+  max-height:140px;line-height:1.5;outline:none;transition:border-color 0.2s}
+textarea#userInput:focus{border-color:rgba(240,180,41,0.5)}
+textarea#userInput::placeholder{color:var(--d)}
+#sendBtn{width:46px;height:46px;border-radius:12px;background:var(--grad);border:none;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;transition:all 0.2s;color:#000;font-weight:700}
+#sendBtn:hover{transform:scale(1.07)}
+#sendBtn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+@media(max-width:768px){.nav-links{display:none}.hero{padding:120px 24px 80px}
+  .section,.section-full{padding:64px 24px}.tire-grid{grid-template-columns:repeat(2,1fr)}
+  .pull{padding:28px 28px}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a class="nav-logo" href="#" onclick="showPage('home');return false">
+    <div class="nav-gem">⚡</div>
+    <div class="nav-brand">SAIRN<span> IQ</span></div>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="#how">How it works</a>
+    <a class="nav-link" href="#industries">Industries</a>
+    <a class="nav-link" href="#pricing">Pricing</a>
+    <a class="nav-link" href="#tires">Tire companies</a>
+  </div>
+  <button class="nav-cta" onclick="showPage('app')">Request Demo</button>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="homePage" class="page active">
+
+<section class="hero">
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    Enterprise AI · Now Deploying
+  </div>
+  <h1 class="hero-title">The Intelligence<br>Layer for Every<br>Workforce</h1>
+  <p class="hero-sub">
+    <strong>SAIRN IQ</strong> makes every employee in your company smarter — from the service center floor to the executive suite. Deploy in 24 hours. See ROI in 30 days.
+  </p>
+  <div class="hero-tagline">Tire Companies · Hospitals · School Districts · Fortune 500</div>
+  <div class="hero-ctas">
+    <button class="btn-primary" onclick="showPage('app')">See it in action</button>
+    <button class="btn-secondary" onclick="document.getElementById('pricing').scrollIntoView({behavior:'smooth'})">View pricing</button>
+  </div>
+  <div class="hero-companies">
+    <div class="hero-company-label">Built for the world's most important workforces</div>
+    <div class="company-pill">🛞 Goodyear</div>
+    <div class="company-pill">🛞 Michelin</div>
+    <div class="company-pill">🛞 Bridgestone</div>
+    <div class="company-pill">🛞 Continental</div>
+    <div class="company-pill">🏥 OhioHealth</div>
+    <div class="company-pill">🎓 Columbus City Schools</div>
+    <div class="company-pill">🏢 Fortune 500</div>
+  </div>
+</section>
+
+<div class="section-full" id="how">
+<div style="max-width:1200px;margin:0 auto">
+  <div class="eyebrow">How it works</div>
+  <h2 class="section-title">One intelligence layer.<br>Every employee. Every role.</h2>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-num">Step 01</div>
+      <div class="how-icon">🏢</div>
+      <div class="how-title">We learn your company</div>
+      <div class="how-desc">Upload your manuals, policies, procedures, and product knowledge. SAIRN IQ reads everything and becomes an expert in your specific operations — not generic AI advice.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">Step 02</div>
+      <div class="how-icon">⚡</div>
+      <div class="how-title">Deploy in 24 hours</div>
+      <div class="how-desc">Your branded AI platform goes live with your logo, your colors, and your domain. Every employee logs in with their company credentials. No IT project. No months of implementation.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">Step 03</div>
+      <div class="how-icon">🧠</div>
+      <div class="how-title">Every employee gets smarter</div>
+      <div class="how-desc">From the service center manager diagnosing a tire issue, to the HR director drafting a policy, to the nurse documenting a patient visit — SAIRN IQ gives every role the AI it actually needs.</div>
+    </div>
+    <div class="how-card">
+      <div class="how-num">Step 04</div>
+      <div class="how-icon">📈</div>
+      <div class="how-title">Measure the ROI</div>
+      <div class="how-desc">Real-time dashboard shows usage by department, time saved per employee, cost per interaction, and productivity gains. The average enterprise client sees 4.2 hours saved per employee per week.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="section">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-num">4.2h</div><div class="stat-label">Saved per employee<br>per week on average</div></div>
+    <div class="stat-card"><div class="stat-num">24hr</div><div class="stat-label">Average deployment<br>time from contract</div></div>
+    <div class="stat-card"><div class="stat-num">81%</div><div class="stat-label">Of Fortune 500s have<br>not deployed AI yet</div></div>
+    <div class="stat-card"><div class="stat-num">$0</div><div class="stat-label">IT infrastructure<br>required to deploy</div></div>
+  </div>
+</div>
+
+<div class="section" id="industries">
+  <div class="eyebrow">Industries</div>
+  <h2 class="section-title">Built for every industry<br>that cannot afford to fail.</h2>
+  <p class="section-sub">SAIRN IQ is not a generic AI assistant. It is built from the inside of each industry — with domain-specific knowledge, compliance requirements, and the exact workflows your employees face every day.</p>
+  <div class="industry-grid">
+    <div class="industry-card">
+      <div class="industry-flag flag-enterprise">🛞 Automotive & Tire</div>
+      <div class="industry-icon">🛞</div>
+      <div class="industry-name">Tire & Automotive</div>
+      <div class="industry-desc">Every Goodyear, Michelin, Bridgestone, Continental, Pirelli, Yokohama, and Hankook service center manager gets an AI that knows their products, their diagnostics, and their customers.</div>
+      <div class="industry-stat">Target: 7 major tire companies worldwide</div>
+    </div>
+    <div class="industry-card">
+      <div class="industry-flag flag-health">🏥 Healthcare</div>
+      <div class="industry-icon">🏥</div>
+      <div class="industry-name">Hospital Administration</div>
+      <div class="industry-desc">Prior authorization, clinical documentation, patient communication, and compliance — all automated. HIPAA-compliant with Business Associate Agreement. No PHI stored in AI training.</div>
+      <div class="industry-stat">81.3% of US hospitals have not adopted AI</div>
+    </div>
+    <div class="industry-card">
+      <div class="industry-flag flag-education">🎓 Education</div>
+      <div class="industry-icon">🎓</div>
+      <div class="industry-name">K-12 School Districts</div>
+      <div class="industry-desc">Lesson planning, student feedback, IEP documentation, parent communication, and curriculum alignment. FERPA-compliant. Ohio AI mandate July 2026 — every district needs this now.</div>
+      <div class="industry-stat">Ohio mandate active — 13,500 US districts</div>
+    </div>
+    <div class="industry-card">
+      <div class="industry-flag flag-trades">⚙️ Skilled Trades</div>
+      <div class="industry-icon">⚙️</div>
+      <div class="industry-name">Trades & Field Service</div>
+      <div class="industry-desc">HVAC technicians, plumbers, electricians, landscapers, and irrigation specialists get AI that knows their trade, their equipment, and their customers. Built from 30 years of trades knowledge.</div>
+      <div class="industry-stat">$650B+ combined market · Zero AI competitors</div>
+    </div>
+  </div>
+</div>
+
+<div class="section-full" id="tires">
+<div style="max-width:1200px;margin:0 auto">
+  <div class="eyebrow">The Tire Opportunity</div>
+  <h2 class="section-title">Every major tire company<br>on the planet.</h2>
+  <p class="section-sub" style="margin-bottom:48px">The tire industry employs millions of service technicians worldwide. Every one of them needs an AI that knows tires, diagnostics, customer service, and their company's specific products. SAIRN IQ is that AI.</p>
+  <div class="tire-grid">
+    <div class="tire-card"><div class="tire-icon">🟡</div><div class="tire-name">Goodyear</div><div class="tire-revenue">$20.8B revenue</div><div class="tire-opportunity">Active pipeline</div></div>
+    <div class="tire-card"><div class="tire-icon">🔴</div><div class="tire-name">Michelin</div><div class="tire-revenue">$28.6B revenue</div><div class="tire-opportunity">Target Year 1</div></div>
+    <div class="tire-card"><div class="tire-icon">🔴</div><div class="tire-name">Bridgestone</div><div class="tire-revenue">$31.2B revenue</div><div class="tire-opportunity">Target Year 1</div></div>
+    <div class="tire-card"><div class="tire-icon">🟡</div><div class="tire-name">Continental</div><div class="tire-revenue">$22.4B revenue</div><div class="tire-opportunity">Target Year 2</div></div>
+    <div class="tire-card"><div class="tire-icon">⚫</div><div class="tire-name">Pirelli</div><div class="tire-revenue">$7.3B revenue</div><div class="tire-opportunity">Target Year 2</div></div>
+    <div class="tire-card"><div class="tire-icon">🔵</div><div class="tire-name">Yokohama</div><div class="tire-revenue">$6.1B revenue</div><div class="tire-opportunity">Target Year 2</div></div>
+    <div class="tire-card"><div class="tire-icon">🟢</div><div class="tire-name">Hankook</div><div class="tire-revenue">$7.8B revenue</div><div class="tire-opportunity">Target Year 3</div></div>
+    <div class="tire-card"><div class="tire-icon">🟠</div><div class="tire-name">Cooper</div><div class="tire-revenue">$2.9B revenue</div><div class="tire-opportunity">Target Year 3</div></div>
+  </div>
+  <div class="pull">At $25/employee/month across just the top 3 tire companies — Goodyear, Michelin, and Bridgestone — the annual contract value exceeds $180M.</div>
+</div>
+</div>
+
+<div class="section" id="pricing">
+  <div class="eyebrow">Pricing</div>
+  <h2 class="section-title">Simple pricing.<br>Unlimited intelligence.</h2>
+  <p class="section-sub">Every plan includes the full SAIRN IQ platform — white-label branding, document intelligence, department apps, and the admin dashboard.</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-tier">Starter</div>
+      <div class="price-name">Team Intelligence</div>
+      <div class="price-amount">$2,000</div>
+      <div class="price-period">per month</div>
+      <div class="price-users">Up to 100 employees</div>
+      <div class="price-features">
+        <div class="price-feature"><span class="price-check">✓</span>Full SAIRN IQ platform</div>
+        <div class="price-feature"><span class="price-check">✓</span>Your branding and domain</div>
+        <div class="price-feature"><span class="price-check">✓</span>5 department apps</div>
+        <div class="price-feature"><span class="price-check">✓</span>Document intelligence (10 docs)</div>
+        <div class="price-feature"><span class="price-check">✓</span>Admin usage dashboard</div>
+        <div class="price-feature"><span class="price-check">✓</span>Email support</div>
+      </div>
+      <button class="price-btn price-btn-outline" onclick="showPage('app')">Get started</button>
+    </div>
+    <div class="price-card featured">
+      <div class="price-featured-badge">Most Popular</div>
+      <div class="price-tier">Enterprise</div>
+      <div class="price-name">Division Intelligence</div>
+      <div class="price-amount">$5,000</div>
+      <div class="price-period">per month</div>
+      <div class="price-users">Up to 500 employees · Auto-scale</div>
+      <div class="price-features">
+        <div class="price-feature"><span class="price-check">✓</span>Everything in Starter</div>
+        <div class="price-feature"><span class="price-check">✓</span>Unlimited department apps</div>
+        <div class="price-feature"><span class="price-check">✓</span>Document intelligence (unlimited)</div>
+        <div class="price-feature"><span class="price-check">✓</span>SSO integration (Okta, Azure AD)</div>
+        <div class="price-feature"><span class="price-check">✓</span>HIPAA BAA available</div>
+        <div class="price-feature"><span class="price-check">✓</span>Dedicated success manager</div>
+      </div>
+      <button class="price-btn price-btn-gold" onclick="showPage('app')">Request demo</button>
+    </div>
+    <div class="price-card">
+      <div class="price-tier">Global</div>
+      <div class="price-name">Company Intelligence</div>
+      <div class="price-amount">Custom</div>
+      <div class="price-period">annual contract</div>
+      <div class="price-users">Unlimited employees worldwide</div>
+      <div class="price-features">
+        <div class="price-feature"><span class="price-check">✓</span>Everything in Enterprise</div>
+        <div class="price-feature"><span class="price-check">✓</span>Multi-region deployment</div>
+        <div class="price-feature"><span class="price-check">✓</span>Custom AI training on your data</div>
+        <div class="price-feature"><span class="price-check">✓</span>SLA 99.99% uptime guarantee</div>
+        <div class="price-feature"><span class="price-check">✓</span>SOC 2 Type 2 certified</div>
+        <div class="price-feature"><span class="price-check">✓</span>Executive business reviews</div>
+      </div>
+      <button class="price-btn price-btn-outline" onclick="showPage('app')">Contact sales</button>
+    </div>
+  </div>
+</div>
+
+<div class="cta-section">
+  <h2 class="cta-title">Your employees are already<br>using AI. Give them the right one.</h2>
+  <p class="cta-sub">They are using ChatGPT on their phones. Give them an AI that knows your company, your products, your processes, and your customers instead.</p>
+  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+    <button class="btn-primary" onclick="showPage('app')">See SAIRN IQ live</button>
+    <button class="btn-secondary">Schedule a call</button>
+  </div>
+  <div class="cta-note">No contract required for pilots · Deploy in 24 hours · Cancel anytime</div>
+</div>
+
+<footer>
+  <div>
+    <div class="footer-brand">SAIRN<span> IQ</span></div>
+    <div class="footer-sub">Enterprise Intelligence · Powered by Claude AI · SAIRN Technologies · Michael L. Dibert · 2026</div>
+  </div>
+  <div class="footer-sub">Patents Pending · sairn.vercel.app · support@sairntechnologies.com</div>
+</footer>
+
+</div><!-- end homePage -->
+
+<!-- APP PAGE -->
+<div id="appPage">
+  <div class="app-header">
+    <div class="app-title">
+      <div class="app-dot"></div>
+      SAIRN IQ <span style="color:var(--m);font-weight:400;font-size:13px">· Enterprise Intelligence · Demo</span>
+    </div>
+    <button onclick="showPage('home')" style="background:none;border:none;color:var(--m);cursor:pointer;font-size:12px;font-family:inherit">Back to overview</button>
+  </div>
+  <div class="dept-bar">
+    <button class="dept-btn active" onclick="setDept(this,'General','Ask me anything about your company, your role, or your work')">⚡ General</button>
+    <button class="dept-btn" onclick="setDept(this,'Service Center','Ask about tire diagnostics, customer service, or product recommendations')">🛞 Service Center</button>
+    <button class="dept-btn" onclick="setDept(this,'HR','Ask about policies, onboarding, performance reviews, or employee questions')">👥 HR</button>
+    <button class="dept-btn" onclick="setDept(this,'Operations','Ask about processes, scheduling, inventory, or efficiency improvements')">⚙️ Operations</button>
+    <button class="dept-btn" onclick="setDept(this,'Sales','Ask about products, pricing, competitive positioning, or customer objections')">💼 Sales</button>
+    <button class="dept-btn" onclick="setDept(this,'Legal & Compliance','Ask about policies, compliance requirements, or regulatory questions')">⚖️ Legal</button>
+    <button class="dept-btn" onclick="setDept(this,'Finance','Ask about budgets, cost analysis, reporting, or financial guidance')">📊 Finance</button>
+  </div>
+  <div class="mode-bar">
+    <button class="mode-btn" onclick="setMode('General','Ask SAIRN IQ anything about your organization, industry, or strategy')"><span>🏢</span><span class="mode-label">General</span></button>
+    <button class="mode-btn" onclick="setMode('Strategy','Analyze competitive position, market opportunities, or strategic decisions')"><span>📊</span><span class="mode-label">Strategy</span></button>
+    <button class="mode-btn" onclick="setMode('Operations','Optimize processes, scheduling, quality, or supply chain')"><span>⚡</span><span class="mode-label">Operations</span></button>
+    <button class="mode-btn" onclick="setMode('Finance','Analyze budgets, costs, margins, or financial performance')"><span>💰</span><span class="mode-label">Finance</span></button>
+    <button class="mode-btn" onclick="setMode('HR','Address workforce, retention, training, or organizational issues')"><span>👥</span><span class="mode-label">HR</span></button>
+    <button class="mode-btn" onclick="setMode('Legal','Review policies, compliance requirements, or contract guidance')"><span>⚖️</span><span class="mode-label">Legal</span></button>
+    <button class="mode-btn" onclick="setMode('Sales','Build sales strategies, handle objections, or analyze opportunities')"><span>🎯</span><span class="mode-label">Sales</span></button>
+    <div class="mode-divider"></div>
+    <span class="mode-guided-label">Guided</span>
+    <button class="flow-btn mode-btn" data-flow="strategy" onclick="startFlow('strategy')"><span>📊</span><span class="mode-label">Strategy</span></button>
+    <button class="flow-btn mode-btn" data-flow="briefing" onclick="startFlow('briefing')"><span>📋</span><span class="mode-label">Briefing</span></button>
+  </div>
+  <div class="chat-area" id="chatArea">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">⚡</div>
+      <div class="empty-title">SAIRN IQ — Enterprise Intelligence</div>
+      <div class="empty-sub">This is what every employee in your company would experience. Ask anything — I know your industry, your role, and how to make you more effective.</div>
+      <div class="suggestions">
+        <button class="suggestion" onclick="useSuggestion(this)">A customer says their tires are wearing unevenly — what should I check first?</button>
+        <button class="suggestion" onclick="useSuggestion(this)">Draft an employee performance review for a service technician who exceeds targets but struggles with documentation</button>
+        <button class="suggestion" onclick="useSuggestion(this)">What are the top 3 ways our competitors are positioning against us and how should I respond?</button>
+      </div>
+    </div>
+  </div>
+  <div class="input-area">
+    <textarea id="userInput" placeholder="Ask SAIRN IQ anything..." rows="1"></textarea>
+    <button id="sendBtn" onclick="sendMessage()">&#9658;</button>
+  </div>
+</div>
+
+<script>
+const APP_NAME = "SAIRNIQ";
+const SAIRN_API = "https://sairn.vercel.app/api/claude";
+const APP_ID = "enterprise";
+const APP_ICON = "⚡";
+const GUIDED_FLOWS = [
+  {id:"strategy",emoji:"📊",label:"Strategic Analysis",
+   intro:"Let us build a strategic analysis. What business challenge or opportunity are you evaluating?",
+   steps:["What is the competitive landscape and who are your main competitors in this space?","What resources, constraints, or timeline do we need to factor into this strategy?"],
+   finish:"Here is your strategic analysis with situation assessment, strategic options, recommended approach, and implementation priorities. Review with your leadership team before executing."},
+  {id:"briefing",emoji:"📋",label:"Executive Briefing",
+   intro:"Let us prepare your executive briefing. What topic or decision needs to be communicated to leadership?",
+   steps:["What is the key information, recommendation, or decision that leadership needs to make?","What is the audience level and what context do they already have?"],
+   finish:"Here is your executive briefing document with situation summary, key findings, recommendation, and next steps. Customize with your specific data before presenting."}
+];
+let activeFlow = null, flowStep = 0;
+
+let messages = [], isLoading = false, lastResponse = "";
+let currentDept = "General";
+let currentPlaceholder = "Ask me anything about your company, your role, or your work";
+
+const BASE_SYSTEM = "You are SAIRN IQ, the enterprise intelligence platform built by SAIRN Technologies, founded by Michael L. Dibert. You are deployed inside a company as their internal AI — you know their industry, their workflows, and their employees needs. You give direct, actionable, expert-level guidance. You speak like a brilliant colleague who has mastered every role in the company, not like a generic chatbot. You are currently in demo mode showing what SAIRN IQ can do for enterprise clients. Do not use contractions. Always demonstrate why SAIRN IQ is the enterprise AI that every workforce needs.";
+
+const DEPT_SYSTEMS = {
+  "General": BASE_SYSTEM,
+  "Service Center": BASE_SYSTEM + " The employee is working in a tire service center. You know tire diagnostics, product lines including all major brands (Goodyear, Michelin, Bridgestone, Continental), wheel alignment, TPMS systems, rotation schedules, and how to handle customer complaints about tire wear, noise, and performance.",
+  "HR": BASE_SYSTEM + " The employee works in Human Resources. You know employment law basics, performance management, onboarding processes, benefits administration, conflict resolution, and how to draft professional HR communications including PIPs, offer letters, and policy documents.",
+  "Operations": BASE_SYSTEM + " The employee works in Operations. You help with process optimization, scheduling, inventory management, quality control, supply chain questions, and identifying operational inefficiencies. You think in systems and give structured, data-driven recommendations.",
+  "Sales": BASE_SYSTEM + " The employee is in Sales. You know competitive positioning, objection handling, product knowledge, pricing strategy, and how to move deals forward. You give specific, actionable sales guidance — not generic advice.",
+  "Legal & Compliance": BASE_SYSTEM + " The employee needs legal and compliance guidance. You help with policy interpretation, regulatory compliance questions, contract review guidance, and risk identification. Always note when a licensed attorney should be consulted.",
+  "Finance": BASE_SYSTEM + " The employee works in Finance. You help with budget analysis, cost reduction strategies, financial reporting, variance analysis, and business case development. You think in numbers and give precise financial guidance."
+};
+
+function showPage(page) {
+  document.getElementById("homePage").style.display = page === "home" ? "" : "none";
+  const app = document.getElementById("appPage");
+  if(page === "app") {
+    app.style.display = "flex";
+    if(!messages.length) loadFirstMessage();
+    showOILBadge();
+    setTimeout(function() { document.getElementById("userInput").focus(); }, 100);
+  } else {
+    app.style.display = "none";
+    window.scrollTo(0,0);
+  }
+}
+
+function setDept(btn, dept, placeholder) {
+  currentDept = dept;
+  currentPlaceholder = placeholder;
+  document.querySelectorAll(".dept-btn").forEach(function(b) { b.classList.remove("active"); });
+  btn.classList.add("active");
+  document.getElementById("userInput").placeholder = placeholder;
+  document.getElementById("userInput").focus();
+}
+
+function setMode(label, ph) {
+  activeFlow = null; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  event.currentTarget.classList.add("active");
+  document.getElementById("userInput").placeholder = ph;
+  document.getElementById("userInput").focus();
+}
+function startFlow(id) {
+  const f = GUIDED_FLOWS.find(function(x) { return x.id === id; });
+  if(!f) return;
+  activeFlow = f; flowStep = 0;
+  document.querySelectorAll(".mode-btn").forEach(function(b) { b.classList.remove("active"); });
+  document.querySelectorAll("[data-flow="+id+"]").forEach(function(b) { b.classList.add("active"); });
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState"); if(empty) empty.remove();
+  addMsg("ai", f.intro); messages.push({role:"assistant",content:f.intro});
+  document.getElementById("userInput").placeholder = "Reply to continue...";
+  document.getElementById("userInput").focus();
+}
+function useSuggestion(el) {
+  document.getElementById("userInput").value = el.textContent;
+  sendMessage();
+}
+
+function addMsg(role, content) {
+  const area = document.getElementById("chatArea");
+  const empty = document.getElementById("emptyState");
+  if(empty) empty.remove();
+  const div = document.createElement("div");
+  div.className = `msg ${role}`;
+  const formatted = content
+    .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\n\n/g,"</p><p>").replace(/\n/g,"<br>")
+;
+  if(role === "ai") {
+    div.innerHTML=`<div class="msg-avatar">⚡</div><div class="msg-bubble"><p>${formatted}</p></div>`;
+    lastResponse = content;
+    setTimeout(function() { showSaveBar(); }, 500);
+  } else {
+    div.innerHTML=`<div class="msg-bubble user-b">${content}</div>`;
+  }
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  const area = document.getElementById("chatArea");
+  const div = document.createElement("div");
+  div.className = "msg ai"; div.id = "typing-indicator";
+  div.innerHTML=`<div class="msg-avatar">⚡</div><div class="msg-bubble"><div class="typing-wrap"><div class="tdot"></div><div class="tdot"></div><div class="tdot"></div></div></div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+async function sendMessage() {
+  const inp = document.getElementById("userInput");
+  const text = inp.value.trim();
+  if(!text || isLoading) return;
+  if(activeFlow !== null) {
+    addMsg("user", text);
+    inp.value = ""; inp.style.height = "";
+    if(flowStep < activeFlow.steps.length) {
+      const nxt = activeFlow.steps[flowStep++];
+      setTimeout(function() { addMsg("ai", nxt); messages.push({role:"assistant",content:nxt}); }, 700);
+    } else if(flowStep === activeFlow.steps.length) {
+      flowStep++;
+      setTimeout(function() { addMsg("ai", activeFlow.finish); messages.push({role:"assistant",content:activeFlow.finish}); activeFlow = null; }, 700);
+    } else { activeFlow = null; }
+    return;
+  }
+  inp.value = ""; inp.style.height = "";
+  isLoading = true;
+  document.getElementById("sendBtn").disabled = true;
+  addMsg("user", text);
+  messages.push({role:"user", content:text});
+  showTyping();
+  try {
+    const system = DEPT_SYSTEMS[currentDept] || BASE_SYSTEM;
+    const res = await fetch(SAIRN_API, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        max_tokens: 1000,
+        system: system,
+        messages: messages.slice(-20),
+        app_id: APP_ID,
+        is_demo: true
+      })
+    });
+    const data = await res.json();
+    document.getElementById("typing-indicator")?.remove();
+    if(res.status === 429) {
+      addMsg("ai", (data.message || "Demo limit reached.") + " Contact us at support@sairntechnologies.com to deploy SAIRN IQ at your company.");
+    } else {
+      const reply = data.content?.[0]?.text || "Please try again.";
+      messages.push({role:"assistant", content:reply});
+      addMsg("ai", reply);
+    }
+  } catch(e) {
+    document.getElementById("typing-indicator")?.remove();
+    addMsg("ai","Connection issue. Please try again.");
+  }
+  isLoading = false;
+  document.getElementById("sendBtn").disabled = false;
+  document.getElementById("userInput").focus();
+}
+
+async function loadFirstMessage() {
+  try {
+    const now = new Date();
+    const res = await fetch("https://sairn.vercel.app/api/greeting", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({app_id: APP_ID, client_hour: now.getHours(), client_day: now.getDay()})
+    });
+    const data = await res.json();
+    if(!data.greeting) {
+      addMsg("ai", "Welcome to SAIRN IQ. I am your company intelligence platform. Ask me anything about your role, your industry, or your work — and I will show you what every employee in your company could experience.");
+      messages.push({role:"assistant", content:"Welcome to SAIRN IQ."});
+      return;
+    }
+    const area = document.getElementById("chatArea");
+    const empty = document.getElementById("emptyState");
+    if(empty) empty.remove();
+    const div = document.createElement("div");
+    div.className = "msg ai";
+    div.innerHTML=`<div class="msg-avatar">⚡</div><div class="msg-bubble"><p>${data.greeting}</p></div>`;
+    div.style.opacity = "0"; div.style.transform = "translateY(10px)";
+    area.appendChild(div);
+    messages.push({role:"assistant", content:data.greeting});
+    requestAnimationFrame(function() {
+      div.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+      div.style.opacity = "1"; div.style.transform = "translateY(0)";
+    });
+  } catch(e) {
+    addMsg("ai","Welcome to SAIRN IQ. Ask me anything to see what enterprise AI feels like when it actually knows your industry.");
+    messages.push({role:"assistant", content:"Welcome to SAIRN IQ."});
+  }
+}
+
+
+
+
+// ============================================================
+// SAIRN Universal Intelligence Layer v6.2
+// Cloud Memory · Voice Mode · Outcome Tracking · White Label
+// ============================================================
+
+// White label config — enterprise clients override these
+const SAIRN_BRAND_NAME = window.SAIRN_BRAND_NAME || APP_NAME || 'SAIRN';
+const SAIRN_BRAND_COLOR = window.SAIRN_BRAND_COLOR || null;
+
+// User identity — persistent across sessions
+function getSAIRNUserId() {
+  let uid = localStorage.getItem('sairn_uid');
+  if(!uid) {
+    uid = 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+    localStorage.setItem('sairn_uid', uid);
+  }
+  return uid;
+}
+const SAIRN_USER_ID = getSAIRNUserId();
+
+// Outcome tracking
+let sessionOutcomes = {queries: 0, saved: 0, startTime: Date.now()};
+
+// ── CLOUD MEMORY ────────────────────────────────────────────
+async function cloudSaveMemory(content) {
+  if(!content || content.length < 20) return;
+  // Save locally first (instant, no latency)
+  try {
+    const key = 'sairn_local_' + APP_ID;
+    const existing = JSON.parse(localStorage.getItem(key) || '[]');
+    existing.unshift({ts: Date.now(), text: content.slice(0, 400)});
+    localStorage.setItem(key, JSON.stringify(existing.slice(0, 100)));
+  } catch(e) {}
+  // Save to cloud (async, best effort)
+  try {
+    await fetch('https://sairn.vercel.app/api/memory-cloud', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-User-ID': SAIRN_USER_ID,
+        'X-App-ID': APP_ID,
+      },
+      body: JSON.stringify({content: content.slice(0, 400), user_id: SAIRN_USER_ID, app_id: APP_ID}),
+    });
+    sessionOutcomes.saved++;
+  } catch(e) {
+    // Cloud save failed — local backup is enough
+  }
+}
+
+async function cloudLoadMemory() {
+  // Try cloud first, fall back to local
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/memory-cloud?uid=' + SAIRN_USER_ID, {
+      headers: {'X-User-ID': SAIRN_USER_ID, 'X-App-ID': APP_ID}
+    });
+    const data = await res.json();
+    if(data.entries && data.entries.length) {
+      return 'Memory from previous sessions:\n' + data.entries.slice(0, 8).map(function(e) { return e.content; }).join('\n---\n');
+    }
+  } catch(e) {}
+  // Fall back to local
+  try {
+    const key = 'sairn_local_' + APP_ID;
+    const entries = JSON.parse(localStorage.getItem(key) || '[]');
+    if(entries.length) return 'Recent context:\n' + entries.slice(0, 5).map(function(e) { return e.text; }).join('\n---\n');
+  } catch(e) {}
+  return '';
+}
+
+// ── VOICE MODE ──────────────────────────────────────────────
+let isListening = false;
+let voiceRecognition = null;
+
+function initVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SpeechRecognition) return false;
+  voiceRecognition = new SpeechRecognition();
+  voiceRecognition.continuous = false;
+  voiceRecognition.interimResults = true;
+  voiceRecognition.lang = 'en-US';
+  voiceRecognition.onresult = function(event) {
+    const transcript = Array.from(event.results).map(function(r) { return r[0].transcript; }).join('');
+    const inp = document.getElementById('userInput');
+    if(inp) inp.value = transcript;
+    if(event.results[event.results.length - 1].isFinal) {
+      stopVoice();
+      sendMessage();
+    }
+  };
+  voiceRecognition.onerror = function() { stopVoice(); };
+  voiceRecognition.onend = function() { stopVoice(); };
+  return true;
+}
+
+function toggleVoice() {
+  if(isListening) { stopVoice(); return; }
+  if(!voiceRecognition && !initVoice()) {
+    alert('Voice input is not supported in this browser. Try Chrome.');
+    return;
+  }
+  isListening = true;
+  voiceRecognition.start();
+  const btn = document.getElementById('voice-btn');
+  if(btn) {
+    btn.style.background = 'var(--grad)';
+    btn.style.animation = 'pulse-voice 1s infinite';
+    btn.title = 'Listening... click to stop';
+  }
+}
+
+function stopVoice() {
+  isListening = false;
+  if(voiceRecognition) try { voiceRecognition.stop(); } catch(e) {}
+  const btn = document.getElementById('voice-btn');
+  if(btn) {
+    btn.style.background = 'rgba(255,255,255,0.05)';
+    btn.style.animation = '';
+    btn.title = 'Voice input';
+  }
+}
+
+function addVoiceButton() {
+  const inputArea = document.querySelector('.input-area');
+  if(!inputArea || document.getElementById('voice-btn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'voice-btn';
+  btn.innerHTML = '🎤';
+  btn.title = 'Voice input';
+  btn.style.cssText = 'width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;transition:all 0.2s;font-family:inherit';
+  btn.onclick = toggleVoice;
+  const sendBtn = document.getElementById('sendBtn');
+  if(sendBtn) inputArea.insertBefore(btn, sendBtn);
+  // Add pulse animation
+  const style = document.createElement('style');
+  style.textContent = '@keyframes pulse-voice{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.3)}50%{box-shadow:0 0 0 8px rgba(255,255,255,0)}}';
+  document.head.appendChild(style);
+}
+
+// ── OUTCOME TRACKING ─────────────────────────────────────────
+function trackOutcome() {
+  sessionOutcomes.queries++;
+  updateOutcomeDisplay();
+}
+
+function updateOutcomeDisplay() {
+  const el = document.getElementById('sairn-outcomes');
+  if(!el) return;
+  const mins = Math.round((Date.now() - sessionOutcomes.startTime) / 60000);
+  const saved = Math.round(sessionOutcomes.queries * 4.2); // avg 4.2 min saved per query
+  el.textContent = sessionOutcomes.queries + ' queries · ' + saved + ' min saved this session';
+}
+
+function addOutcomeBar() {
+  if(document.getElementById('sairn-outcomes')) return;
+  const header = document.querySelector('.app-header');
+  if(!header) return;
+  const bar = document.createElement('div');
+  bar.style.cssText = 'padding:5px 20px;background:rgba(0,0,0,0.2);border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-shrink:0';
+  const dot = document.createElement('span');
+  dot.style.cssText = 'width:6px;height:6px;border-radius:50%;background:#10B981;display:inline-block;animation:pulse 2s infinite';
+  const label = document.createElement('span');
+  label.id = 'sairn-outcomes';
+  label.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.3);font-family:inherit';
+  label.textContent = '0 queries · 0 min saved this session';
+  bar.appendChild(dot); bar.appendChild(label);
+  header.after(bar);
+}
+
+// ── ENHANCED SAVE BAR ────────────────────────────────────────
+function showSaveBar() {
+  // Auto-save to cloud silently
+  cloudSaveMemory(lastResponse);
+  trackOutcome();
+  // Show copy bar
+  const existing = document.getElementById('sairn-save-bar'); if(existing) existing.remove();
+  const bar = document.createElement('div'); bar.id = 'sairn-save-bar';
+  bar.style.cssText = 'position:fixed;bottom:80px;right:20px;background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px;display:flex;gap:8px;z-index:999;align-items:center';
+  const copyBtn = document.createElement('button'); copyBtn.textContent = 'Copy';
+  copyBtn.style.cssText = 'background:var(--ar);border:1px solid var(--ab);border-radius:8px;padding:6px 12px;color:var(--a);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit';
+  copyBtn.onclick = function() { navigator.clipboard.writeText(lastResponse).then(function() { copyBtn.textContent = 'Copied!'; setTimeout(function() { copyBtn.textContent = 'Copy'; }, 2000); }); };
+  const savedBadge = document.createElement('span');
+  savedBadge.textContent = '✓ Saved';
+  savedBadge.style.cssText = 'font-size:11px;color:#10B981;font-weight:600';
+  const closeBtn = document.createElement('button'); closeBtn.textContent = 'x';
+  closeBtn.style.cssText = 'background:none;border:none;color:#404060;font-size:16px;cursor:pointer;padding:0 4px';
+  closeBtn.onclick = function() { bar.remove(); };
+  bar.appendChild(copyBtn); bar.appendChild(savedBadge); bar.appendChild(closeBtn);
+  document.body.appendChild(bar);
+  setTimeout(function() { const b = document.getElementById('sairn-save-bar'); if(b) b.remove(); }, 6000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Add voice button and outcome bar after app page loads
+  const observer = new MutationObserver(function() {
+    if(document.getElementById('appPage') && document.getElementById('appPage').style.display !== 'none') {
+      addVoiceButton();
+      addOutcomeBar();
+    }
+  });
+  observer.observe(document.body, {childList: true, subtree: true, attributes: true});
+});
+
+
+// ============================================================
+// SAIRN Organization Intelligence Layer
+// Shared intelligence across locations and teams
+// ============================================================
+const SAIRN_ORG_ID = localStorage.getItem('sairn_org_id') || null;
+const SAIRN_ORG_NAME = localStorage.getItem('sairn_location_name') || 'My Organization';
+
+function getSAIRNContext() {
+  const parts = [];
+  if(SAIRN_ORG_ID) parts.push('Organization: ' + SAIRN_ORG_NAME + ' (ID: ' + SAIRN_ORG_ID + ')');
+  const mem = localStorage.getItem('sairn_user_memory_' + APP_ID);
+  if(mem) parts.push('User context: ' + mem.slice(0, 200));
+  return parts.length ? parts.join('\n') : '';
+}
+
+function showOILBadge() {
+  if(!SAIRN_ORG_ID || document.getElementById('oil-badge')) return;
+  const b = document.createElement('div'); b.id = 'oil-badge';
+  b.style.cssText = 'position:fixed;top:68px;right:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:4px 12px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.5);z-index:998;display:flex;align-items:center;gap:6px;font-family:inherit';
+  b.innerHTML = '<span style=\"width:5px;height:5px;border-radius:50%;background:#10B981;display:inline-block\"></span>' + SAIRN_ORG_NAME;
+  document.body.appendChild(b);
+}
+
+document.getElementById("userInput").addEventListener("input", function() {
+  this.style.height = ""; this.style.height = Math.min(this.scrollHeight, 140) + "px";
+});
+document.getElementById("userInput").addEventListener("keydown", function(e) {
+  if(e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// === Organization Intelligence Layer ===
+const ORG_ID = localStorage.getItem('sairn_org_id') || null;
+const LOCATION_ID = localStorage.getItem('sairn_location_id') || null;
+const LOCATION_NAME = localStorage.getItem('sairn_location_name') || 'Main Office';
+
+async function getOrgIntelligence(query) {
+  if (!ORG_ID) return '';
+  try {
+    const res = await fetch('https://sairn.vercel.app/api/org-intel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: 'query',
+        org_id: ORG_ID,
+        app_id: APP_ID,
+        query: query
+      })
+    });
+    const data = await res.json();
+    if (!data.insights || !data.insights.length) return '';
+    return '\n\nWhat your other locations know about this:\n' +
+      data.insights.map(i => '- [' + i.location + '] ' + i.insight).join('\n');
+  } catch(e) { return ''; }
+}
+
+async function saveOrgIntelligence(insight, category) {
+  if (!ORG_ID || !insight) return;
+  try {
+    await fetch('https://sairn.vercel.app/api/org-intel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: 'save',
+        org_id: ORG_ID,
+        location_id: LOCATION_ID,
+        location_name: LOCATION_NAME,
+        app_id: APP_ID,
+        insight: insight,
+        category: category || 'general'
+      })
+    });
+  } catch(e) {}
+}
+
+function showOILBadge() {
+  if (!ORG_ID) return;
+  const existing = document.getElementById('oil-badge');
+  if (existing) return;
+  const badge = document.createElement('div');
+  badge.id = 'oil-badge';
+  badge.style.cssText = 'position:fixed;top:68px;right:16px;background:rgba(240,180,41,0.15);border:1px solid rgba(240,180,41,0.3);border-radius:8px;padding:4px 12px;font-size:11px;font-weight:600;color:#F0B429;z-index:998;cursor:pointer';
+  badge.textContent = '🏢 ' + LOCATION_NAME;
+  badge.onclick = function() { showLocationSwitcher(); };
+  document.body.appendChild(badge);
+}
+
+function showLocationSwitcher() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = '<div style="background:#1A1C32;border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:28px;max-width:360px;width:90%">' +
+    '<div style="font-size:16px;font-weight:700;color:#F0F0FF;margin-bottom:8px">Organization Setup</div>' +
+    '<div style="font-size:13px;color:#9090B0;margin-bottom:20px">Connect to your organization to share intelligence across locations.</div>' +
+    '<input id="oil-org-input" placeholder="Organization ID" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:10px;outline:none">' +
+    '<input id="oil-loc-input" placeholder="Location name (e.g. Columbus Office)" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#F0F0FF;font-size:13px;font-family:inherit;margin-bottom:16px;outline:none">' +
+    '<div style="display:flex;gap:10px">' +
+    '<button onclick="saveOILSettings()" style="flex:1;padding:10px;border-radius:8px;background:linear-gradient(135deg,#F0B429,#E09900);border:none;color:#000;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">Connect</button>' +
+    '<button onclick="closeOILModal()" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#9090B0;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>' +
+    '</div></div>';
+  document.body.appendChild(modal);
+  document.getElementById('oil-org-input').value = ORG_ID || '';
+  document.getElementById('oil-loc-input').value = LOCATION_NAME || '';
+}
+
+
+function closeOILModal() {
+  const modals = document.querySelectorAll('[style*="position:fixed"][style*="inset:0"]');
+  modals.forEach(function(m) { m.remove(); });
+}
+function saveOILSettings() {
+  const orgId = document.getElementById('oil-org-input').value.trim();
+  const locName = document.getElementById('oil-loc-input').value.trim();
+  if (orgId) {
+    localStorage.setItem('sairn_org_id', orgId);
+    localStorage.setItem('sairn_location_name', locName || 'Main Office');
+    location.reload();
+  }
+}
+
+// Show badge on load if org is set
+setTimeout(function() { showOILBadge(); }, 1500);
+// =======================================================================
+
+</script>
+</body>
+</html>

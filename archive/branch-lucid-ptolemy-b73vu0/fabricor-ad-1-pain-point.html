@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;600;700&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1080px;
+    height: 1080px;
+    overflow: hidden;
+    background: #0D0D0D;
+    font-family: 'Barlow', sans-serif;
+  }
+
+  .ad {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    background: #111111;
+    overflow: hidden;
+  }
+
+  /* Stone texture background */
+  .stone-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(201,168,76,0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(201,168,76,0.05) 0%, transparent 50%),
+      linear-gradient(135deg, #0D0D0D 0%, #1A1A1A 40%, #111111 100%);
+  }
+
+  /* Marble veining lines */
+  .vein {
+    position: absolute;
+    background: rgba(255,255,255,0.03);
+    transform-origin: left center;
+  }
+  .vein-1 { width: 600px; height: 1px; top: 280px; left: -50px; transform: rotate(-8deg); }
+  .vein-2 { width: 400px; height: 1px; top: 420px; left: 200px; transform: rotate(-6deg); }
+  .vein-3 { width: 700px; height: 1px; top: 650px; left: -100px; transform: rotate(-4deg); }
+  .vein-4 { width: 300px; height: 2px; top: 180px; left: 500px; transform: rotate(-12deg); background: rgba(255,255,255,0.02); }
+
+  /* Gold accent bar top */
+  .top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #C9A84C, #E8C86A, #C9A84C);
+  }
+
+  /* Logo */
+  .logo {
+    position: absolute;
+    top: 52px;
+    left: 60px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-mark {
+    width: 42px;
+    height: 42px;
+    background: #C9A84C;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .logo-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 4px;
+    color: #FFFFFF;
+  }
+
+  /* Main content */
+  .content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 60px;
+    background: linear-gradient(to top, rgba(0,0,0,0.98) 0%, rgba(0,0,0,0.85) 60%, transparent 100%);
+    padding-top: 200px;
+  }
+
+  /* Hero stat — center of ad */
+  .hero-stat {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -52%);
+    text-align: center;
+    width: 100%;
+  }
+  .stat-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 220px;
+    line-height: 0.85;
+    color: #C9A84C;
+    letter-spacing: -8px;
+    opacity: 0.15;
+    display: block;
+    user-select: none;
+  }
+  .stat-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 8px;
+    color: rgba(201,168,76,0.4);
+    display: block;
+    margin-top: -20px;
+  }
+
+  /* Headline */
+  .headline {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 82px;
+    line-height: 0.9;
+    color: #FFFFFF;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+  .headline em {
+    color: #C9A84C;
+    font-style: normal;
+  }
+
+  /* Subhead */
+  .subhead {
+    font-size: 20px;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.65);
+    font-weight: 400;
+    margin-bottom: 36px;
+    max-width: 680px;
+  }
+
+  /* Divider */
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: #C9A84C;
+    margin-bottom: 32px;
+  }
+
+  /* CTA row */
+  .cta-row {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+  }
+
+  .cta-button {
+    background: #C9A84C;
+    color: #000000;
+    font-family: 'Barlow', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 16px 36px;
+    display: inline-block;
+  }
+
+  .cta-sub {
+    font-size: 14px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 400;
+    letter-spacing: 0.5px;
+  }
+
+  /* Corner accent */
+  .corner-accent {
+    position: absolute;
+    top: 52px;
+    right: 60px;
+    text-align: right;
+  }
+  .corner-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    color: rgba(201,168,76,0.7);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+  .corner-per {
+    font-size: 13px;
+    color: rgba(255,255,255,0.35);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Comparison strip */
+  .comparison {
+    position: absolute;
+    top: 155px;
+    left: 60px;
+    right: 60px;
+    display: flex;
+    gap: 0;
+  }
+  .comp-item {
+    flex: 1;
+    padding: 14px 20px;
+    border-left: 1px solid rgba(255,255,255,0.06);
+  }
+  .comp-item:first-child { border-left: none; padding-left: 0; }
+  .comp-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 4px;
+  }
+  .comp-time {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 24px;
+    letter-spacing: 1px;
+  }
+  .comp-time.bad { color: rgba(255,80,80,0.7); }
+  .comp-time.good { color: #C9A84C; }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="stone-bg"></div>
+  <div class="vein vein-1"></div>
+  <div class="vein vein-2"></div>
+  <div class="vein vein-3"></div>
+  <div class="vein vein-4"></div>
+  <div class="top-bar"></div>
+
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">FABRICOR</div>
+  </div>
+
+  <!-- Price corner -->
+  <div class="corner-accent">
+    <div class="corner-price">$299</div>
+    <div class="corner-per">per month</div>
+  </div>
+
+  <!-- Comparison strip -->
+  <div class="comparison">
+    <div class="comp-item">
+      <div class="comp-label">Spreadsheet quote time</div>
+      <div class="comp-time bad">2.5 Hours</div>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Fabricor quote time</div>
+      <div class="comp-time good">8 Minutes</div>
+    </div>
+    <div class="comp-item">
+      <div class="comp-label">Time you get back</div>
+      <div class="comp-time good">142 Min</div>
+    </div>
+  </div>
+
+  <!-- Ghost number -->
+  <div class="hero-stat">
+    <span class="stat-number">8</span>
+    <span class="stat-label">minutes per quote</span>
+  </div>
+
+  <!-- Main content -->
+  <div class="content">
+    <div class="headline">Your competitors<br>quote in <em>8 minutes.</em><br>You're still on<br>a spreadsheet.</div>
+    <div class="divider"></div>
+    <div class="subhead">Fabricor builds your quote — live pricing, edge profiles, cutouts, client-ready estimate — in the time it used to take to open Excel.</div>
+    <div class="cta-row">
+      <div class="cta-button">Start Free Trial →</div>
+      <div class="cta-sub">30 days free · No credit card · Cancel anytime</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

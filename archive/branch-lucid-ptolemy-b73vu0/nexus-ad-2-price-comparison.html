@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700;900&family=DM+Serif+Display&display=swap');
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; background: #06061A; font-family: 'DM Sans', sans-serif; }
+  .ad { width: 1080px; height: 1080px; position: relative; overflow: hidden; }
+
+  .bg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 700px 600px at 50% 30%, rgba(99,102,241,0.1) 0%, transparent 70%),
+      #06061A;
+  }
+
+  .top-bar { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #6366F1, #818CF8, #6366F1); }
+
+  .logo { position: absolute; top: 50px; left: 60px; display: flex; align-items: center; gap: 12px; }
+  .logo-mark { width: 32px; height: 32px; background: #6366F1; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
+  .logo-text { font-size: 18px; font-weight: 700; letter-spacing: 5px; color: rgba(255,255,255,0.85); text-transform: uppercase; }
+
+  .eyebrow {
+    position: absolute;
+    top: 130px;
+    left: 60px;
+    right: 60px;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(99,102,241,0.7);
+    font-weight: 600;
+  }
+
+  /* Comparison table */
+  .table {
+    position: absolute;
+    top: 170px;
+    left: 60px;
+    right: 60px;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    gap: 20px;
+  }
+  .row.sairn { background: rgba(99,102,241,0.06); border-bottom: none; padding: 24px 20px; border: 1px solid rgba(99,102,241,0.25); margin-top: 8px; }
+
+  .row-icon { font-size: 24px; width: 36px; text-align: center; flex-shrink: 0; }
+  .row-name { flex: 1; }
+  .row-product { font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.5); }
+  .row-product.bright { color: #FFFFFF; font-size: 20px; }
+  .row-scope { font-size: 12px; color: rgba(255,255,255,0.25); margin-top: 2px; letter-spacing: 0.5px; }
+  .row-scope.bright { color: rgba(99,102,241,0.7); }
+  .row-price { font-size: 28px; font-weight: 900; color: rgba(255,80,80,0.55); text-align: right; min-width: 120px; }
+  .row-price.gold { color: #6366F1; font-size: 36px; }
+  .row-period { font-size: 11px; color: rgba(255,255,255,0.2); text-align: right; margin-top: 2px; }
+  .row-period.bright { color: rgba(99,102,241,0.5); }
+
+  /* Total vs SAIRN */
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.03);
+    margin-top: 4px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .total-label { font-size: 13px; color: rgba(255,255,255,0.3); letter-spacing: 2px; text-transform: uppercase; }
+  .total-price { font-size: 24px; font-weight: 900; color: rgba(255,80,80,0.5); }
+
+  /* Bottom content */
+  .bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 40px 60px 52px;
+    background: linear-gradient(to top, rgba(6,6,26,1) 0%, rgba(6,6,26,0.85) 60%, transparent 100%);
+    padding-top: 100px;
+    text-align: center;
+  }
+
+  .headline {
+    font-family: 'DM Serif Display', serif;
+    font-size: 56px;
+    line-height: 1.05;
+    color: #FFFFFF;
+    margin-bottom: 12px;
+    letter-spacing: -1px;
+  }
+  .headline em { color: #6366F1; font-style: normal; }
+
+  .sub { font-size: 16px; color: rgba(255,255,255,0.4); margin-bottom: 28px; font-weight: 300; }
+
+  .cta-row { display: flex; align-items: center; justify-content: center; gap: 20px; }
+  .cta-button {
+    background: #6366F1;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 16px 40px;
+    border-radius: 2px;
+  }
+  .cta-sub { font-size: 13px; color: rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="bg"></div>
+  <div class="top-bar"></div>
+
+  <div class="logo">
+    <div class="logo-mark"></div>
+    <div class="logo-text">SAIRN NEXUS</div>
+  </div>
+
+  <div class="eyebrow">What you'd pay for individual apps</div>
+
+  <div class="table">
+    <div class="row">
+      <div class="row-icon">⚖️</div>
+      <div class="row-name">
+        <div class="row-product">AI Lawyer</div>
+        <div class="row-scope">Legal only</div>
+      </div>
+      <div>
+        <div class="row-price">$60</div>
+        <div class="row-period">per year</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row-icon">❤️</div>
+      <div class="row-name">
+        <div class="row-product">Ada Health Premium</div>
+        <div class="row-scope">Health only</div>
+      </div>
+      <div>
+        <div class="row-price">$84</div>
+        <div class="row-period">per year</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row-icon">🌍</div>
+      <div class="row-name">
+        <div class="row-product">Duolingo Plus</div>
+        <div class="row-scope">Language only</div>
+      </div>
+      <div>
+        <div class="row-price">$84</div>
+        <div class="row-period">per year</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="row-icon">💰</div>
+      <div class="row-name">
+        <div class="row-product">Financial Advisor</div>
+        <div class="row-scope">Finance only</div>
+      </div>
+      <div>
+        <div class="row-price">$300+</div>
+        <div class="row-period">per hour</div>
+      </div>
+    </div>
+
+    <div class="total-row">
+      <div class="total-label">All of the above combined</div>
+      <div class="total-price">$500+/mo</div>
+    </div>
+
+    <div class="row sairn">
+      <div class="row-icon">🧠</div>
+      <div class="row-name">
+        <div class="row-product bright">SAIRN NEXUS</div>
+        <div class="row-scope bright">All 8 specialists · Health · Money · Legal · Language · Home · Senior · Travel · Writing</div>
+      </div>
+      <div>
+        <div class="row-price gold">$49</div>
+        <div class="row-period bright">per month</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="headline">Everything.<br><em>One price.</em></div>
+    <div class="sub">Or start with just one for $6.99/month.</div>
+    <div class="cta-row">
+      <div class="cta-button">Try Free →</div>
+      <div class="cta-sub">No credit card required</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
