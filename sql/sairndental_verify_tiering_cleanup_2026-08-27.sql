@@ -1,6 +1,14 @@
 -- sql/sairndental_verify_tiering_cleanup_2026-08-27.sql
 -- Scoped cleanup for the SAIRNdental minimum-necessary TIERING live-verification
--- run, 2026-08-27. NOT RUN by this session (no DB access). Every statement is
+-- run, 2026-08-27.
+-- ⚠ STATUS CORRECTED 2026-08-28: THIS FILE HAS RUN, and its own header said
+-- "NOT RUN by this session" for a day after it had. Michael ran it and
+-- reported: credentials, providers and patients all cleaned successfully; the
+-- appointments delete matched nothing because it targeted AP-VERIFY-1 while the
+-- rows present were AP-VERIFY-A/D/E. The delete was CORRECT and the INVENTORY
+-- was incomplete -- see sql/sairndental_appointment_residue_identify_2026-08-27.sql.
+-- The trivial-PIN owner credential this file exists to remove IS gone; verified
+-- live 2026-08-27 by bootstrap re-arming on a clean licence. Every statement is
 -- targeted by exact id, never by license_hash alone.
 --
 -- NO PINs APPEAR IN THIS FILE, deliberately, unlike

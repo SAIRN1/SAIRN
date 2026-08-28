@@ -1,5 +1,13 @@
 -- sql/sairndental_demo_seed_2026-08-27.sql
--- Makes DNT-PINNACLE-2026 demo-ready. NOT RUN by this session (no DB access).
+-- Makes DNT-PINNACLE-2026 demo-ready.
+-- ⚠ STATUS CORRECTED 2026-08-28: THIS FILE HAS RUN. The line here said
+-- "NOT RUN by this session (no DB access)", which was true when written and
+-- false within the hour. Michael ran it and reported the result: 3 operatories,
+-- 5 procedures, 3 providers, 5 patients, 6 appointments, ZERO orphans.
+-- Left stale until a consistency sweep caught it, which is exactly the drift
+-- sairnroofing_access_panel_verify_cleanup_2026-08-28.sql documents: a NOT RUN
+-- label is a claim about the FILE at authoring time, never about the DATABASE.
+-- Re-running is safe regardless -- every insert is ON CONFLICT DO NOTHING.
 --
 -- ── WHY THIS EXISTS ──────────────────────────────────────────────────────
 -- The licence has never been seeded. Verified, not assumed:

@@ -1,9 +1,27 @@
 -- sql/sairndental_verify_auth_cleanup_2026-08-27.sql
 -- Scoped cleanup for the SAIRNdental auth live-verification run, 2026-08-27.
--- NOT RUN by this session (no DB access). Targeted by exact employee_id, never
+-- ⚠ STATUS CORRECTED 2026-08-28 by a later session (CC): THIS FILE HAS RUN.
+-- The line here said "NOT RUN by this session", accurate about the session that
+-- wrote it and wrong about the database ever since. Proven live 2026-08-27, not
+-- inferred: a login as dnt-verify-owner with the PIN this file itself printed
+-- returned 401 INVALID_CREDENTIALS, and bootstrap on DNT-PINNACLE-2026 SUCCEEDED
+-- -- which it can only do when zero credential rows exist. Both rows are gone.
+-- (Its own bottom-of-file confirmation step predicted exactly that 401.)
+-- Targeted by exact employee_id, never
 -- by license_hash alone.
 --
 -- ── THIS ONE IS MORE THAN TIDINESS ──────────────────────────────────────
+-- ⚠ NO LONGER TRUE, as of the status correction above: both rows are DELETED and
+-- both PINs below are DEAD. The paragraph is kept rather than scrubbed because
+-- it records why the file was urgent, and because deleting the two PIN literals
+-- now would not un-publish them -- they are already in the repo's history. What
+-- it should NOT be read as is a live exposure. Two lessons stand: a "these are
+-- live credentials" warning goes stale the moment someone acts on it, exactly
+-- like a NOT RUN label; and writing PIN literals into a repo file is the
+-- practice that made this paragraph necessary at all. Later verification files
+-- identify credentials by employee_id only, and print no PINs.
+--
+-- The original text, as written 2026-08-27:
 -- These are LIVE, WORKING CREDENTIALS on DNT-PINNACLE-2026, and their PINs are
 -- in a session transcript:
 --     dnt-verify-owner       role owner       PIN 714205
