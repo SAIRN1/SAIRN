@@ -98,9 +98,20 @@ arrived here through this file rather than a trigger word:
   detection, coverage-disclosure standard, dormant-code rule, multi-codebase
   drift, safe-editing rules). This replaced the old `sairn-code-guardian`
   entirely. **Corrected 2026-08-24:** that skill is not a deprecation stub —
-  it does not exist. There is no `sairn-code-guardian` directory in
-  `~/.claude/skills/` or in any clone's `.claude/skills/`; it was deleted
-  outright, not stubbed. Do not go looking for it, and do not recreate it.
+  there is no `sairn-code-guardian` directory in `~/.claude/skills/`, in
+  `C:/SAIRN/skills/sairn/`, or in any clone's `.claude/skills/`.
+  **Corrected again 2026-08-28 — the 2026-08-24 line said "do not go looking
+  for it" and that was wrong.** It was true of the skill stores and false of
+  the repo: 1,230 lines of it were on the unmerged branch
+  `claude/lucid-ptolemy-b73vu0` the whole time. It is now at
+  `archive/branch-lucid-ptolemy-b73vu0/skills/sairn-code-guardian/` on `main`,
+  with its full history under the tag `archive/lucid-ptolemy-b73vu0`.
+  It is Guardian v2's ancestor and the origin of the duplicate-global check
+  now numbered 13, *"added after the June 2026 StoneDesk outage."*
+  **Still do not recreate or run it** — v2 supersedes it and the archived copy
+  predates every current discipline. Read it for provenance, nothing else.
+  The lesson worth keeping: "it does not exist" was a claim about three
+  directories, stated as a claim about the whole repo.
 - `sairn-decision-gate` — run before any RFP/proposal work, before claiming
   "production/complete/live" to anyone outside the team, or before any
   AI-governance-related question (uses NIST AI RMF, Shipley Bid/No-Bid,
