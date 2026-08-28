@@ -28264,6 +28264,25 @@ document.addEventListener('DOMContentLoaded', function() {
       <div id="emp-login-success" role="status" aria-live="polite" style="display:none;color:#15803D;background:#f0fdf4;border:1px solid #86efac;border-radius:6px;padding:10px 12px;font-size:13px;font-weight:600;margin-bottom:8px"></div>
       <button class="q-btn primary" id="emp-login-submit-btn" style="width:100%" onclick="sdGrantLoginAccess()">Grant Access</button>
     </div>
+
+    <!-- REVOKE APP LOGIN ACCESS (2026-08-28) -- the other half of the card above.
+         StoneDesk shipped the GRANT side (action:'setup') on 2026-08-05 and never
+         the revoke side: grep for set_active in this file returned ZERO before
+         today, so removing a departing employee's sign-in meant a hand-written
+         SQL edit. api/sd-auth.js:304-308 records that as how three StoneDesk
+         licences were lost -- SD-PINNACLE-2026's PIN is still undocumented,
+         SD-AUDIT-2026 needed a hand-run DELETE, SD-PARTNER-2026 was provisioned
+         purely to route around both.
+         Fifth and last app to get this panel, after SAIRNroofing, SAIRNmechanical,
+         SAIRNdental and SAIRNcode. Shares the existing sdRefreshLoginAccessGate()
+         owner/admin gate -- UX only, api/sd-auth.js re-checks server-side. -->
+    <div id="emp-revoke-access-card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--text)">Sign-In Access</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Who can actually sign in &mdash; not the same as the directory above, which is SAIRNbiz-owned HR data. Deactivating removes sign-in only; the credential row is kept, never deleted, so the person stays auditable.</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px"><strong>A signed-in session can outlive a deactivation by up to 12 hours.</strong> If someone must lose access immediately, deactivate them here and then confirm they are signed out.</div>
+      <div id="emp-revoke-list">Loading&hellip;</div>
+      <div id="emp-revoke-confirm" style="margin-top:10px"></div>
+    </div>
     <!-- AI COMMUNICATION PROFILES (2026-08-06) -- deliberately a real, manager-set
          record (sd_employee_profiles via api/sd-data.js), not an inferred one, per
          the standing distinction from the shared-knowledge layer. Same client-side
@@ -28472,8 +28491,137 @@ document.addEventListener('DOMContentLoaded', function() {
       brandCard.style.display=isManager?'block':'none';
       if(isManager&&typeof sdLoadBrandColorsIntoForm==='function')sdLoadBrandColorsIntoForm();
     }
+    var revokeCard=document.getElementById('emp-revoke-access-card');
+    if(revokeCard){
+      revokeCard.style.display=isManager?'block':'none';
+      // Re-read on every gate refresh rather than once at load: another manager
+      // may have granted or revoked access from a different device, and a stale
+      // roster here is exactly what this card exists to prevent acting on.
+      if(isManager)sdLoadRevokeAccess();
+    }
   }
   window.sdRefreshLoginAccessGate=sdRefreshLoginAccessGate;
+
+  // ── REVOKE SIGN-IN ACCESS (2026-08-28) ────────────────────────────────
+  // Client for api/sd-auth.js's set_active. StoneDesk is the TWO-provisioning-
+  // role app -- PROVISIONING_ROLES is ['owner','admin'] and the server returns
+  // LAST_ADMIN / remaining_admins, not LAST_OWNER / remaining_owners. Field
+  // names read from api/sd-auth.js rather than carried across from the four
+  // apps built before it; three of those use the other family and copying them
+  // verbatim would print "undefined" on every success.
+  //
+  // The panel PREDICTS NOTHING. Last-admin and caller-still-active refusals are
+  // deliberately NOT pre-empted client-side; the button is offered, the server
+  // refuses, and the SERVER's message is shown verbatim.
+  var _sdRevokeRoster=[];
+  function sdRevokeAuthCall(action,payload){
+    var lic=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
+    var token='';
+    try{token=sessionStorage.getItem('sd_session_token')||'';}catch(e){}
+    if(!lic||!token)return Promise.resolve({ok:false,body:{error:{message:'Your session has expired -- sign out and back in, then try again'}}});
+    var body={action:action};for(var k in (payload||{}))body[k]=payload[k];
+    return fetch(SD_AUTH_API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':token},
+      body:JSON.stringify(body)
+    }).then(function(r){return r.json().catch(function(){return null;}).then(function(d){return {ok:r.ok,body:d};});})
+      .catch(function(){return {ok:false,body:{error:{message:'Network error -- try again'}}};});
+  }
+
+  function sdLoadRevokeAccess(){
+    var el=document.getElementById('emp-revoke-list');
+    if(!el)return;
+    el.textContent='Loading...';
+    sdRevokeAuthCall('roster',{}).then(function(res){
+      if(!res.ok||!res.body||!res.body.ok||!Array.isArray(res.body.employees)){
+        el.innerHTML='<div style="font-size:12px;color:var(--muted)">'+
+          escHtml((res.body&&res.body.error&&res.body.error.message)||'Could not load the roster.')+'</div>';
+        return;
+      }
+      _sdRevokeRoster=res.body.employees;
+      sdRenderRevokeAccess();
+    });
+  }
+
+  function sdRenderRevokeAccess(){
+    var el=document.getElementById('emp-revoke-list');
+    if(!el)return;
+    if(!_sdRevokeRoster.length){el.innerHTML='<div style="font-size:12px;color:var(--muted)">No sign-in credentials yet.</div>';return;}
+    var me='';
+    try{me=sessionStorage.getItem('sd_session_employee_id')||'';}catch(e){}
+    // Warning only, never a gate -- the server recomputes and is the authority.
+    // Counts BOTH provisioning roles, because either can provision here.
+    var activeProvisioners=_sdRevokeRoster.filter(function(e){
+      return e.active===true&&(e.role==='owner'||e.role==='admin');}).length;
+    el.innerHTML=_sdRevokeRoster.map(function(e){
+      var isSelf=me&&e.employee_id===me, isActive=e.active===true;
+      var lastProv=isActive&&(e.role==='owner'||e.role==='admin')&&activeProvisioners<=1;
+      var why=isSelf?'You cannot deactivate your own account'
+             :(lastProv?'This is the only active Owner/Manager':'');
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'+
+        '<div style="flex:1">'+
+          '<div style="font-weight:600;color:var(--text)">'+escHtml(e.display_name||e.employee_id)+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+escHtml(e.employee_id)+' &middot; '+escHtml(e.role||'--')+
+            ' &middot; '+(isActive?'Active':'Deactivated')+'</div>'+
+          (why?'<div style="font-size:11px;color:var(--muted)">'+escHtml(why)+'</div>':'')+
+        '</div>'+
+        (isSelf?'':'<button class="q-btn" onclick="sdAskRevokeAccess(\''+escHtml(e.employee_id)+'\','+(isActive?'false':'true')+')">'+
+          (isActive?'Deactivate':'Reactivate')+'</button>')+
+      '</div>';
+    }).join('');
+  }
+
+  function sdAskRevokeAccess(employee_id,nextActive){
+    var e=_sdRevokeRoster.filter(function(x){return x.employee_id===employee_id;})[0];
+    if(!e)return;
+    var box=document.getElementById('emp-revoke-confirm');
+    if(!box)return;
+    box.innerHTML='<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px">'+
+      '<div style="margin-bottom:8px;color:var(--text);font-size:13px">'+(nextActive
+        ? 'Restore sign-in for <strong>'+escHtml(e.display_name||employee_id)+'</strong>?'
+        : '<strong>'+escHtml(e.display_name||employee_id)+'</strong> will no longer be able to sign in. Their record and history are kept.')+'</div>'+
+      // Reason required ONLY to deactivate, matching the server exactly.
+      (nextActive?'':'<input id="emp-revoke-reason" maxlength="500" placeholder="Reason (required) -- e.g. Left the company 2026-08-28" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--card);color:var(--text);box-sizing:border-box">')+
+      '<div id="emp-revoke-err" style="display:none;color:#b91c1c;font-size:12px;margin-bottom:8px"></div>'+
+      '<button class="q-btn primary" id="emp-revoke-go" onclick="sdDoRevokeAccess(\''+escHtml(employee_id)+'\','+nextActive+')">Confirm</button> '+
+      '<button class="q-btn" onclick="document.getElementById(\'emp-revoke-confirm\').innerHTML=\'\'">Cancel</button>'+
+      '</div>';
+  }
+
+  function sdDoRevokeAccess(employee_id,nextActive){
+    var errEl=document.getElementById('emp-revoke-err');
+    var reasonEl=document.getElementById('emp-revoke-reason');
+    var reason=((reasonEl||{}).value||'').trim();
+    if(!nextActive&&!reason){
+      if(errEl){errEl.textContent='A reason is required to deactivate.';errEl.style.display='block';}
+      return;
+    }
+    var go=document.getElementById('emp-revoke-go');if(go)go.disabled=true;
+    if(errEl)errEl.style.display='none';
+    var payload={employee_id:employee_id,active:nextActive};
+    if(!nextActive)payload.reason=reason;
+    sdRevokeAuthCall('set_active',payload).then(function(res){
+      if(!res.ok||!res.body||!res.body.ok){
+        // The SERVER's message. LAST_ADMIN, SELF_DEACTIVATE,
+        // CREDENTIAL_INACTIVE and NOT_FOUND all arrive here.
+        if(errEl){errEl.textContent=(res.body&&res.body.error&&res.body.error.message)||'That change was refused.';errEl.style.display='block';}
+        if(go)go.disabled=false;
+        return;
+      }
+      var d=res.body;
+      document.getElementById('emp-revoke-confirm').innerHTML='';
+      // unchanged:true is a real server answer and is reported as such.
+      // remaining_admins -- StoneDesk's field name, not remaining_owners.
+      showToast(d.unchanged
+        ? 'No change -- that account was already '+(nextActive?'active':'deactivated')
+        : (nextActive?'Sign-in restored':'Sign-in removed')+
+          (typeof d.remaining_admins==='number'?' -- '+d.remaining_admins+' active owner/manager'+(d.remaining_admins===1?'':'s'):''));
+      sdLoadRevokeAccess();
+    });
+  }
+  window.sdAskRevokeAccess=sdAskRevokeAccess;
+  window.sdDoRevokeAccess=sdDoRevokeAccess;
+  window.sdLoadRevokeAccess=sdLoadRevokeAccess;
   function sdRenderEmployeeProfiles(){
     var listEl=document.getElementById('emp-prof-list');
     if(!listEl||typeof sdData!=='function')return;
