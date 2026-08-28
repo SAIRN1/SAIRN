@@ -40,11 +40,20 @@
 // a compliance module should not ship.
 //
 // TWO RESIDUAL GAPS, AND THEY ARE WHY `verified` IS NOT SIMPLY `true`:
-//   1. CMS's own EVV guidance has NOT been read -- medicaid.gov and cms.gov
-//      return 403 to automated fetch. That matters more than it sounds: a full
-//      Federal Register sweep confirms there is NO EVV rulemaking at all, so
-//      every operational detail CMS has published lives in sub-regulatory
-//      guidance nobody here has seen.
+//   1. CMS's own EVV guidance has NOT been read. That matters more than it
+//      sounds: a full Federal Register sweep confirms there is NO EVV
+//      rulemaking at all, so every operational detail CMS has published lives
+//      in sub-regulatory guidance nobody here has seen.
+//
+//      REASON CORRECTED 2026-08-28, and the correction is the useful part.
+//      This used to say medicaid.gov and cms.gov "return 403 to automated
+//      fetch". Re-tested directly: BOTH return 200. The EVV guidance page
+//      returns 404 -- it moved or was retired. A stale "blocked" note is worse
+//      than no note, because "blocked" says wait and retry while "moved" says
+//      go find the new URL, and nobody takes the second action while the first
+//      is written down. Two of our own research lanes disagreed about this host
+//      on the same day; one curl settled it. Do not record a host as blocked
+//      without re-testing it.
 //   2. See the per-state note below.
 //
 // ── PER-STATE RULES ARE NOT ENCODED, AND THAT IS A REFUSAL, NOT A GAP ────
@@ -97,7 +106,7 @@ const FEDERAL_SOURCE = {
   verified_against: ['uscode.house.gov', 'govinfo.gov'],
   note: 'The six items are the statutory DEFINITION of a qualifying electronic visit verification system — not a required-field list. The operative requirement (§ 1396b(l)(1)) is that a State require the USE of such a system.',
   residual_gaps: [
-    'CMS sub-regulatory EVV guidance has not been read (medicaid.gov and cms.gov return 403 to automated fetch). There is no EVV rulemaking, so that guidance is where CMS operational detail lives.',
+    'CMS sub-regulatory EVV guidance has not been read. There is no EVV rulemaking at all, so that guidance is where CMS operational detail lives. (Corrected 2026-08-28: this previously said cms.gov and medicaid.gov return 403. They do not — both return 200; the EVV guidance page returns 404, i.e. it moved. The gap is real, the stated reason was not.)',
     'That States may impose requirements beyond these six is an inference from statutory silence, not a quoted rule. The statute neither sets a minimum nor preempts additional State requirements.'
   ]
 };
