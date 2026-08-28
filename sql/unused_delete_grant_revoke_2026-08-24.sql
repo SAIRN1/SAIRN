@@ -518,6 +518,31 @@ order by t.table_name;
 --       -- reason. It gets its own dedicated review -- see the license_keys
 --       -- row in docs/SAIRN-OPEN-WORK-INDEX.md. Do NOT quietly fold it back
 --       -- into a later sweep.
+--       --
+--       -- HALF THIS RATIONALE IS NOW FALSE -- annotated 2026-08-28, exclusion
+--       -- deliberately LEFT IN PLACE. There IS a tracked CREATE TABLE, and
+--       -- there was one the whole time:
+--       --   archive/branch-lucid-ptolemy-b73vu0/db/schema_license_keys.sql
+--       -- declaring `key TEXT UNIQUE NOT NULL` (which is what generates the
+--       -- auto-named constraint license_keys_key_key, confirmed live
+--       -- 2026-08-28). It sat on an unmerged branch, so "no tracked CREATE
+--       -- TABLE anywhere in this repo" was a claim about the working tree
+--       -- stated as a claim about the repo -- the same mistake, on the same
+--       -- archived branch, that CLAUDE.md already records for
+--       -- sairn-code-guardian. Found while converting the 13 license seeds
+--       -- to ON CONFLICT (key) DO NOTHING (commit 4fd0297), which rests on
+--       -- that same constraint.
+--       --
+--       -- So "Section 2's output cannot be checked against an expected
+--       -- schema" no longer holds -- that schema file IS the expected
+--       -- shape to check against. The OTHER half stands untouched: every
+--       -- license check on the platform depends on this table, and that
+--       -- alone is sufficient reason to keep it out of a bulk sweep.
+--       -- NOT re-including it here: the exclusion was Michael's explicit
+--       -- decision and says do not quietly fold it back. This annotation
+--       -- corrects the stale premise; it does not overturn the decision.
+--       -- Whoever runs that dedicated review now has a schema to diff
+--       -- against, which is one less reason to keep deferring it.
 --       AND t.table_name <> 'license_keys'
 --     GROUP BY t.table_name
 --     HAVING bool_or(g.privilege_type = 'DELETE')

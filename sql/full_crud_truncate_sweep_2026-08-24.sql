@@ -848,6 +848,25 @@ order by t.table_name;
 --       -- it would come through intact (DELETE, INSERT, SELECT, UPDATE
 --       -- before and after), so this is caution, not a known risk -- drop
 --       -- the exclusion by choice if you would rather sweep it too.
+--       --
+--       -- "NO TRACKED CREATE TABLE" IS FALSE -- annotated 2026-08-28,
+--       -- exclusion deliberately LEFT IN PLACE. The tracked CREATE TABLE
+--       -- exists and always did:
+--       --   archive/branch-lucid-ptolemy-b73vu0/db/schema_license_keys.sql
+--       -- declaring `key TEXT UNIQUE NOT NULL` -> the auto-named constraint
+--       -- license_keys_key_key, confirmed live 2026-08-28. It was on an
+--       -- unmerged branch, so the original claim was about the working tree,
+--       -- not the repo -- same mistake, same archived branch, as the
+--       -- sairn-code-guardian correction already in CLAUDE.md. Found while
+--       -- converting the 13 license seeds to ON CONFLICT (key) DO NOTHING
+--       -- (commit 4fd0297).
+--       --
+--       -- The "verify the result against" half of the rationale therefore
+--       -- no longer applies; the "every license check depends on it" half
+--       -- does, and on its own justifies keeping the exclusion. Same
+--       -- annotation applied to the matching rationale in
+--       -- sql/unused_delete_grant_revoke_2026-08-24.sql. Not re-including
+--       -- it here -- correcting the premise, not overturning the decision.
 --       AND t.table_name NOT IN ('license_keys')
 --     GROUP BY t.table_name
 --     -- R2: widened from `= 'TRUNCATE'`. A table holding REFERENCES or
