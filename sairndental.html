@@ -386,6 +386,20 @@ label.chk input{width:auto;}
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
           <table id="providers-table"><thead><tr><th>Name</th><th>Role</th><th>Operatory</th><th>Linked Sign-In</th><th>Status</th><th></th></tr></thead><tbody id="providers-tbody"></tbody></table>
         </div></div>
+
+        <!-- SIGN-IN ACCESS (2026-08-28). Third set_active client, after
+             SAIRNroofing (ce8193e) and SAIRNmechanical. Deliberately placed
+             INSIDE the Providers panel rather than as an 18th nav item: this
+             panel already loads the same roster (dntLoadRoster) and already
+             owns the provider-to-credential link, so a separate panel would
+             mean two places showing the same people. A provider row and a
+             sign-in credential are different things and the copy says so. -->
+        <div class="card"><div class="ch"><div class="ct">Sign-In Access</div></div><div class="cb">
+          <div class="note">This is who can <strong>sign in</strong>, which is not the same as who is a provider on file above. Deactivating removes sign-in only &mdash; the credential row is kept, never deleted, so the person stays auditable.</div>
+          <div class="note"><strong>A signed-in session can outlive a deactivation by up to 12 hours.</strong> If someone must lose access immediately, deactivate them here and then confirm they are signed out.</div>
+          <div id="dnt-acc-list">Loading&hellip;</div>
+          <div id="dnt-acc-confirm" style="margin-top:10px"></div>
+        </div></div>
       </div>
 
       <!-- Provider edit. The FIRST edit path in this app: before 2026-08-27 every
@@ -1101,7 +1115,89 @@ async function dntLoadRoster(){
   if(r&&r.status===200&&r.body&&Array.isArray(r.body.employees)){
     dntRoster=r.body.employees;
     if($('pv-add-login'))$('pv-add-login').innerHTML=dntLoginOptions('');
+    dntRenderAccess();
   }
+}
+
+// ── SIGN-IN ACCESS / CREDENTIAL LIFECYCLE (2026-08-28) ────────────────────
+// Third set_active client. Reuses dntRoster, which dntLoadRoster already
+// fetches for the Linked Sign-In selector -- no second read of the same data.
+//
+// The panel PREDICTS NOTHING. Last-owner and caller-still-active refusals are
+// deliberately NOT pre-empted client-side; the button is offered, the server
+// refuses, and the SERVER's message is shown verbatim. The one locally computed
+// value, an active-owner count, is a warning beside the button and never a gate.
+function dntRenderAccess(){
+  var el=$('dnt-acc-list');
+  if(!el)return;
+  if(prole!=='owner'){el.innerHTML='<div class="note">Only an Owner can manage sign-in access.</div>';return;}
+  if(!dntRoster.length){el.innerHTML='<div class="note">No sign-in credentials yet.</div>';return;}
+  var me=(dntSession&&dntSession.employee_id)||'';
+  var activeOwners=dntRoster.filter(function(e){return e.active===true&&e.role==='owner';}).length;
+  el.innerHTML='<table><thead><tr><th>Employee</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>'+
+    dntRoster.map(function(e){
+      var isSelf=e.employee_id===me, isActive=e.active===true;
+      var lastOwner=isActive&&e.role==='owner'&&activeOwners<=1;
+      var why=isSelf?'You cannot deactivate your own account'
+             :(lastOwner?'This is the only active Owner':'');
+      return '<tr><td>'+H(e.display_name||e.employee_id)+
+          '<div style="font-size:11px;color:var(--muted)">'+H(e.employee_id)+'</div></td>'+
+        '<td>'+H(e.role||'--')+'</td>'+
+        '<td>'+(isActive?'<span style="color:var(--ok)">Active</span>':'<span style="color:var(--muted)">Deactivated</span>')+'</td>'+
+        '<td style="text-align:right">'+
+          (isSelf
+            ? '<span style="font-size:11px;color:var(--muted)">'+H(why)+'</span>'
+            : '<button class="btn '+(isActive?'bo':'bp')+' bs" onclick="dntAskSetActive(\''+H(e.employee_id)+'\','+(isActive?'false':'true')+')">'+
+                (isActive?'Deactivate':'Reactivate')+'</button>'+
+              (why?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+H(why)+'</div>':''))+
+        '</td></tr>';
+    }).join('')+'</tbody></table>';
+}
+
+// Inline confirm rather than a modal, matching how this panel's other
+// destructive-ish actions already behave.
+function dntAskSetActive(employee_id,nextActive){
+  var e=dntRoster.filter(function(x){return x.employee_id===employee_id;})[0];
+  if(!e)return;
+  var box=$('dnt-acc-confirm');
+  if(!box)return;
+  box.innerHTML='<div class="card"><div class="cb">'+
+    '<div style="margin-bottom:8px">'+(nextActive
+      ? 'Restore sign-in for <strong>'+H(e.display_name||employee_id)+'</strong>?'
+      : '<strong>'+H(e.display_name||employee_id)+'</strong> will no longer be able to sign in. Their record and history are kept.')+'</div>'+
+    // Reason is required ONLY to deactivate, matching the server exactly.
+    (nextActive?'':'<div class="fg"><label>Reason <span style="color:var(--danger)">*</span></label>'+
+      '<input type="text" id="dnt-acc-reason" maxlength="500" placeholder="e.g. Left the practice 2026-08-28"></div>')+
+    '<div style="color:var(--danger);font-size:12px;margin-bottom:8px" id="dnt-acc-err"></div>'+
+    '<button class="btn bp bs" id="dnt-acc-go" onclick="dntDoSetActive(\''+H(employee_id)+'\','+nextActive+')">Confirm</button> '+
+    '<button class="btn bo bs" onclick="$(\'dnt-acc-confirm\').innerHTML=\'\'">Cancel</button>'+
+    '</div></div>';
+}
+
+async function dntDoSetActive(employee_id,nextActive){
+  var errEl=$('dnt-acc-err');
+  var reason=(($('dnt-acc-reason')||{}).value||'').trim();
+  if(!nextActive&&!reason){if(errEl)errEl.textContent='A reason is required to deactivate.';return;}
+  var go=$('dnt-acc-go');if(go)go.disabled=true;
+  if(errEl)errEl.textContent='';
+  var payload={employee_id:employee_id,active:nextActive};
+  if(!nextActive)payload.reason=reason;
+  var r=await dntAuth('set_active',payload,true);
+  if(!r||r.status!==200||!r.body||!r.body.ok){
+    // Show the SERVER's message. LAST_OWNER, SELF_DEACTIVATE,
+    // CREDENTIAL_INACTIVE and NOT_FOUND all arrive here.
+    if(errEl)errEl.textContent=(r&&r.body&&r.body.error&&r.body.error.message)||'That change was refused.';
+    if(go)go.disabled=false;
+    return;
+  }
+  var d=r.body;
+  $('dnt-acc-confirm').innerHTML='';
+  // unchanged:true is a real server answer and is reported as such.
+  toast(d.unchanged
+    ? 'No change — that account was already '+(nextActive?'active':'deactivated')
+    : (nextActive?'Sign-in restored':'Sign-in removed')+
+      (typeof d.remaining_owners==='number'?' · '+d.remaining_owners+' active owner'+(d.remaining_owners===1?'':'s'):''));
+  await dntLoadRoster();
 }
 function rProviders(){
   var isOwnerNow=prole==='owner';
