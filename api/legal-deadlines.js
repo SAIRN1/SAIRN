@@ -24,7 +24,9 @@ const { sbClient } = require('./_lib/courtlistener');
 const { computeDeadline, COMPUTATION_STANDARDS, SERVICE_EXTENSION_STANDARDS,
   SERVICE_COMPLETION_STANDARDS } = require('./_lib/deadline-engine');
 
-const ACTIONS = ['compute', 'rules_status', 'add_rule', 'add_holidays'];
+const crypto = require('crypto');
+
+const ACTIONS = ['compute', 'rules_status', 'rules_fingerprint', 'add_rule', 'add_holidays'];
 
 // ── Display labels (Phase 4) ──────────────────────────────────────────────
 // Presentation only. A jurisdiction is stored and matched by its CODE -- these
@@ -428,6 +430,71 @@ async function upsert(sb, table, licHash, entryId, data) {
   return { provisioned: true };
 }
 
+// ── LOAD-STATE FINGERPRINTING ────────────────────────────────────────────
+// A seed-file change is INERT until tools/load_deadline_seed.py runs, and on
+// 2026-08-27 two committed corrections were never loaded: LAW-PINNACLE-2026
+// went on computing federal answer deadlines three days late for a day, and
+// nothing on the platform could see it. rules_status could not -- it reports
+// COUNTS, and a stale rule and a corrected rule count the same. The `version`
+// field could not either: every seed row in every jurisdiction is version 1,
+// including the two rows that correction changed. So a stale row and a fixed
+// row were byte-distinguishable and nothing was comparing bytes.
+//
+// This is what compares them. It returns a hash per entry rather than the
+// blobs themselves: enough to detect drift, an order of magnitude smaller
+// than 260+ rules, and it does not turn a licence-gated endpoint into a bulk
+// export of every rule's content.
+//
+// WHY verified_by IS EXCLUDED, and why NOTHING ELSE IS. add_rule/add_holidays
+// write `authority.verified_by` INTO the blob from the caller's session, so it
+// records HOW a licence was loaded, not WHAT the rule says -- an employee
+// session stamps an id, the bearer-key loader stamps null. Leaving it in makes
+// every row of a session-loaded licence differ from every row of a
+// loader-loaded one, which is exactly the false 87/48 "divergence" that led
+// here (see sql/platform_reference_rules_divergence_2026-08-28.sql). Every
+// other field is content: authority.retrieved_at and the authority URL are
+// substantive legal provenance, and a row whose cited source moved MUST show
+// as drifted.
+function stableJson(v) {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return '[' + v.map(stableJson).join(',') + ']';
+  return '{' + Object.keys(v).sort().map(
+    (k) => JSON.stringify(k) + ':' + stableJson(v[k])).join(',') + '}';
+}
+
+// Key order is normalised away deliberately: two loads of the same seed
+// through different code paths can serialise the same object in a different
+// order, and reporting that as drift would train people to ignore this check.
+function contentHash(data) {
+  const d = Object.assign({}, data);
+  if (d.authority && typeof d.authority === 'object') {
+    d.authority = Object.assign({}, d.authority);
+    delete d.authority.verified_by;
+  }
+  return crypto.createHash('sha256').update(stableJson(d)).digest('hex').slice(0, 16);
+}
+
+async function readEntries(sb, table, licHash) {
+  const r = await fetch(sb.rest(table + '?license_hash=eq.' + encodeURIComponent(licHash) + '&select=entry_id,data'), { headers: sb.headers });
+  if (r.status === 404 || r.status === 400) return { provisioned: false, rows: [] };
+  if (!r.ok) throw new Error(table + ' read failed: HTTP ' + r.status);
+  return { provisioned: true, rows: (await r.json()) || [] };
+}
+
+function fingerprintRows(rows) {
+  return (rows || [])
+    .filter((x) => x && x.entry_id)
+    .map((x) => ({
+      entry_id: x.entry_id,
+      // Reported, not trusted. If a row is stale while its version matches the
+      // seed's, the version field failed to record a correction and the hash
+      // is the only thing that caught it -- the checker says so out loud.
+      version: (x.data && x.data.version) || null,
+      hash: contentHash(x.data || {})
+    }))
+    .sort((a, b) => (a.entry_id < b.entry_id ? -1 : a.entry_id > b.entry_id ? 1 : 0));
+}
+
 // Shapes the flat holiday rows into the { jurisdiction: { year: [...] } } map
 // the pure engine expects.
 function buildCalendars(rows) {
@@ -532,6 +599,28 @@ module.exports = async (req, res) => {
       });
       res.status(200).json({ ok: true, jurisdictions: Object.values(byJur),
         note: 'A jurisdiction with rules but no holiday calendar for a year a computation crosses will still refuse — the engine checks the year it actually needs, not the year of the trigger.' });
+      return;
+    }
+
+    // ── RULES_FINGERPRINT: what this licence ACTUALLY holds, comparably.
+    // Read-only. Its answer is meaningless on its own -- it is designed to be
+    // diffed against the seed files by tools/deadline_load_state_check.py,
+    // which is the thing that decides whether a licence needs a reload. ──
+    if (action === 'rules_fingerprint') {
+      const rules = await readEntries(sb, 'law_deadline_rules', lic.license_hash);
+      const hols = await readEntries(sb, 'law_holidays', lic.license_hash);
+      if (!rules.provisioned || !hols.provisioned) {
+        res.status(503).json({ ok: false, code: 'NOT_PROVISIONED',
+          message: 'The deadline-engine tables are not set up yet — run sql/sairnlaw_deadline_rules_schema.sql in Supabase. Nothing can be compared until then.' });
+        return;
+      }
+      res.status(200).json({
+        ok: true,
+        algorithm: 'sha256/16 over the data blob with authority.verified_by removed, object keys sorted',
+        law_deadline_rules: fingerprintRows(rules.rows),
+        law_holidays: fingerprintRows(hols.rows),
+        note: 'A hash that differs from the seed file means the stored row is not what the repo says it should be. That is drift whether or not `version` changed — every SAIRNlaw seed row is version 1, including rows that corrections have since changed.'
+      });
       return;
     }
 

@@ -170,7 +170,7 @@ measured as (
        query_to_xml(format(
          $f$select count(*) as c from (select %I as k from public.%I group by %I
               having count(distinct license_hash) > 1
-                 and count(distinct md5(data::text)) = 1) s$f$,
+                 and count(distinct md5((data::jsonb #- '{authority,verified_by}')::text)) = 1) s$f$,
          i.id_col, r.table_name, i.id_col), false, true, '')))[1]::text::bigint
        as consistent_ids,
     -- ids held by 2+ licences with 2+ DISTINCT versions of the blob
@@ -178,7 +178,7 @@ measured as (
        query_to_xml(format(
          $f$select count(*) as c from (select %I as k from public.%I group by %I
               having count(distinct license_hash) > 1
-                 and count(distinct md5(data::text)) > 1) s$f$,
+                 and count(distinct md5((data::jsonb #- '{authority,verified_by}')::text)) > 1) s$f$,
          i.id_col, r.table_name, i.id_col), false, true, '')))[1]::text::bigint
        as diverged_ids,
     -- WHICH ids, as one always-present string. coalesce guarantees a value even
@@ -189,7 +189,7 @@ measured as (
          $f$select coalesce(string_agg(k::text, ', ' order by k), '(none)') as c
               from (select %I as k from public.%I group by %I
                      having count(distinct license_hash) > 1
-                        and count(distinct md5(data::text)) > 1) s$f$,
+                        and count(distinct md5((data::jsonb #- '{authority,verified_by}')::text)) > 1) s$f$,
          i.id_col, r.table_name, i.id_col), false, true, '')))[1]::text
        as diverged_id_list
   from ref_tables r
@@ -228,12 +228,30 @@ order by diverged_ids desc, table_name;
 --   more common shape -- customer A got the corrected rule, customer B never did.
 --
 -- ── LIMIT, stated so it is not assumed away ─────────────────────────────
--- md5(data::text) is sensitive to JSON key ORDER, so two semantically identical
+-- The hash is sensitive to JSON key ORDER, so two semantically identical
 -- blobs written by different code paths can hash differently and read as
 -- diverged. Treat diverged_id_list as a candidate list to eyeball, not a
 -- verdict: confirm by diffing the two `data` values directly before calling
 -- anything a defect. A false DIVERGED is cheap; a missed one is not, which is
 -- why the comparison errs in this direction deliberately.
+--
+-- ── THE ONE FIELD DELIBERATELY EXCLUDED, corrected 2026-08-28 ───────────
+-- The hash is md5((data::jsonb #- '{authority,verified_by}')::text), NOT
+-- md5(data::text). `authority.verified_by` is written INTO the blob by the app
+-- (api/legal-deadlines.js: `caller ? caller.employee_id : null`), so it records
+-- HOW a licence was loaded, not WHAT the rule says: an employee session stamps
+-- an id, the bearer-key loader stamps null. It is present on 100% of rows by
+-- construction, so leaving it in made this query report 100% of shared ids as
+-- diverged on the first real run -- 87 rules and 48 calendars, every one of
+-- them a false positive. See the result note below.
+--
+-- ⚠ EXCLUDE THAT FIELD AND NOTHING MORE. It is tempting to drop the whole
+-- `authority` object and be done; do not. `authority.retrieved_at` and the
+-- authority URL are substantive legal content, and a rule whose cited source
+-- differs between two licences is exactly the defect this query exists to
+-- catch. The cast to jsonb is deliberate too -- `#-` has no json counterpart,
+-- and a reference table declaring `data` as json would otherwise error rather
+-- than being silently skipped.
 
 -- ═════════════════════════════════════════════════════════════════════════
 -- RESULT OF THE FIRST REAL RUN -- 2026-08-28 (Hank). READ THIS BEFORE
@@ -251,9 +269,14 @@ order by diverged_ids desc, table_name;
 -- one of its rows carries "hank-verify". LAW-PINNACLE-2026 was backfilled by
 -- tools/load_deadline_seed.py, which sends the bearer key and no session, so
 -- every one of ITS rows carries null. That single field is present on 100% of
--- rows by construction, so md5(data::text) differs on 100% of shared ids no
--- matter what the rule says. The counts confirm it exactly: TEST holds 87 rules
--- and 8 jurisdictions x 6 years = 48 calendars. 87/87 and 48/48.
+-- rows by construction, so the old md5(data::text) differed on 100% of shared
+-- ids no matter what the rule said. The counts confirm it exactly: TEST holds
+-- 87 rules and 8 jurisdictions x 6 years = 48 calendars. 87/87 and 48/48.
+--
+-- FIXED IN THIS FILE the same day: the hash now excludes that one field, so a
+-- re-run should report law_deadline_rules diverged_ids = 7 (the rows the two
+-- 2026-08-27 corrections touched, TEST stale) and law_holidays = 0. If you see
+-- 87 and 48 again you are running an older copy of this file.
 --
 -- CONFIRMED, not assumed: a read-only compute-diff of all 89 repo rules in
 -- TEST's 8 jurisdictions, on both licences, 178 probes, whole responses compared
@@ -262,12 +285,6 @@ order by diverged_ids desc, table_name;
 -- 7 being rows touched by commits e1aa3f8 and a9daad1, with TEST the stale side.
 -- Only frcp-12a1Ai-answer-after-service and frcp-12a2-united-states-official-
 -- capacity produce a different DATE. Nothing unexplained remains.
---
--- ⚠ IF YOU FIX THIS QUERY, fix it by EXCLUDING verified_by from the hash, e.g.
---     md5((data #- '{authority,verified_by}')::text)
--- Do NOT widen it to ignore all of `authority` -- retrieved_at and the authority
--- URL are substantive content, and a rule whose cited source changed between two
--- licences is a real defect this query must still catch.
 --
 -- ALSO NOT A DEFECT: LAW-TEST-2026 is an internal verification tenant
 -- (sql/sairnlaw_test_license_seed.sql, customer_email
