@@ -107,19 +107,48 @@ pairs as (
        (select entry_id,data from public.law_deadline_rules, t where license_hash=t.h) b
     on a.entry_id=b.entry_id
 )
-select
-  pr.entry_id,
-  cf.f                                as compute_field,
-  left(pr.pin -> cf.f #>> '{}', 100)  as law_pinnacle,
-  left(pr.tst -> cf.f #>> '{}', 100)  as law_test,
-  case when pr.pin is null then 'MISSING on PINNACLE'
-       when pr.tst is null then 'MISSING on TEST'
-       else 'VALUE DIFFERS' end       as shape
-from pairs pr
-cross join compute_fields cf
-where pr.pin is null or pr.tst is null
-   or (pr.pin -> cf.f) is distinct from (pr.tst -> cf.f)
-order by pr.entry_id, cf.f;
+-- ⚠ ALSO FIXED 2026-08-28: this query had the SIBLING of query 3's inflation
+-- bug, found while fixing that one. The old WHERE was
+--     where pin is null or tst is null or (pin->f) is distinct from (tst->f)
+-- cross joined against 7 compute fields -- so a row present on only ONE licence
+-- satisfied the first two conditions for EVERY field and emitted SEVEN
+-- identical-looking lines. No precedence error this time, just a cross join
+-- left unguarded; the effect is the same, a count that reads far worse than
+-- reality. One-sided rows are now reported ONCE, and per-field diffs only for
+-- rows present on both sides.
+select entry_id, compute_field, law_pinnacle, law_test, shape from (
+  -- a) rows missing from one licence: reported once, not once per field
+  select
+    pr.entry_id,
+    '(entire row)'::text                as compute_field,
+    null::text                          as law_pinnacle,
+    null::text                          as law_test,
+    case when pr.pin is null then 'MISSING on PINNACLE'
+         else 'MISSING on TEST' end     as shape,
+    0                                   as sort_bucket
+  from pairs pr
+  where pr.pin is null or pr.tst is null
+
+  union all
+
+  -- b) rows on BOTH licences, one line per compute field that actually differs.
+  -- explicit parens on `->` then `#>>`: same precedence class, so the grouping
+  -- was already what Postgres does, but an unparenthesised operator chain is
+  -- what caused the other defect in this file and this was the only one left.
+  select
+    pr.entry_id,
+    cf.f                                    as compute_field,
+    left(((pr.pin -> cf.f) #>> '{}'), 100)  as law_pinnacle,
+    left(((pr.tst -> cf.f) #>> '{}'), 100)  as law_test,
+    'VALUE DIFFERS'::text                   as shape,
+    1                                       as sort_bucket
+  from pairs pr
+  cross join compute_fields cf
+  where pr.pin is not null
+    and pr.tst is not null
+    and (pr.pin -> cf.f) is distinct from (pr.tst -> cf.f)
+) d
+order by sort_bucket, entry_id, compute_field;
 
 -- ═════════════════════════════════════════════════════════════════════════
 -- QUERY 3 -- THE HEADLINE NUMBER, so the caveat can be closed with a figure.
@@ -133,16 +162,47 @@ pairs as (
        (select entry_id,data from public.law_deadline_rules, t where license_hash=t.h) b
     on a.entry_id=b.entry_id
 )
+-- ⚠ FIXED 2026-08-28 AFTER RETURNING A FALSE 145. The first version of this
+-- filter read:
+--     where pin is not null and tst is not null
+--       and (pin->'count')             is distinct from (tst->'count')
+--        or (pin->'trigger_event')     is distinct from (tst->'trigger_event')
+--        or (pin->'service_extension') is distinct from (tst->'service_extension')
+-- AND binds tighter than OR in SQL, so that parsed as
+--     (both-present AND count differs) OR (trigger differs) OR (extension differs)
+-- and the two null-guards only ever protected the FIRST branch. Any row missing
+-- from one licence has NULL on that side, so `NULL is distinct from <value>` is
+-- TRUE and the row was counted as computing a different date. That is how a
+-- clean query 1 sat next to a headline of 145 -- the number was mostly one-sided
+-- rows and rows differing in a single field, not date conflicts.
+--
+-- Michael caught the precedence; it is fixed here by removing the possibility
+-- rather than by adding brackets to the same expression. Each comparison is now
+-- its own named boolean in a CTE, so there is no operator-precedence question
+-- left to get wrong, and each component is reported separately -- an inflated
+-- total can no longer hide inside one aggregate.
+flags as (
+  select
+    entry_id,
+    (pin is null or tst is null)                                        as one_sided,
+    (pin is not null and tst is not null)                               as both_present,
+    ((pin->'count')             is distinct from (tst->'count'))        as count_differs,
+    ((pin->'trigger_event')     is distinct from (tst->'trigger_event')) as trigger_differs,
+    ((pin->'service_extension') is distinct from (tst->'service_extension')) as ext_differs,
+    (pin is distinct from tst)                                          as any_differs
+  from pairs
+)
 select
-  count(*) filter (where pin is not null and tst is not null
-                     and (pin->'count')            is distinct from (tst->'count')
-                      or (pin->'trigger_event')    is distinct from (tst->'trigger_event')
-                      or (pin->'service_extension')is distinct from (tst->'service_extension'))
-    as rows_that_compute_a_different_date,
-  count(*) filter (where pin is null or tst is null)          as rows_on_only_one_licence,
-  count(*) filter (where pin is distinct from tst)            as rows_differing_at_all,
-  count(*)                                                    as rows_total
-from pairs;
+  count(*) filter (
+    where both_present and (count_differs or trigger_differs or ext_differs)
+  )                                                        as rows_that_compute_a_different_date,
+  count(*) filter (where both_present and count_differs)    as of_which_count,
+  count(*) filter (where both_present and trigger_differs)  as of_which_trigger_event,
+  count(*) filter (where both_present and ext_differs)      as of_which_service_extension,
+  count(*) filter (where one_sided)                         as rows_on_only_one_licence,
+  count(*) filter (where any_differs)                       as rows_differing_at_all,
+  count(*)                                                  as rows_total
+from flags;
 
 -- ═════════════════════════════════════════════════════════════════════════
 -- READING IT
