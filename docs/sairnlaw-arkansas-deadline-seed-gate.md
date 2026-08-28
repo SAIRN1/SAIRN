@@ -161,6 +161,68 @@ It is still a block. A calendar built now would take its most delicate mechanic
 straddle a weekend — from a secondary source that disclaims itself, and would be
 **wrong in whichever direction the shift actually runs**.
 
+## 1b. UPDATE 2026-08-28 — one of the two questions is CLOSED; the other is not, and its cost is now known
+
+### CLOSED: nothing amended § 1-5-101 after 2017
+
+Michael checked Justia's 2024 code page, which carries the full amendment chain
+back to 1943, and it ends at **Acts 2017, No. 561, § 4** — the act read from
+primary in §1a. That matches, and the question is closed.
+
+**What is being relied on there is worth naming precisely, because it is not the
+same thing this gate refused to rely on elsewhere.** A publisher's *history
+line* is a mechanical citation list, and it is the part of a secondary source
+least likely to be wrong; the *substantive text* is the part that gets subtly
+mis-rendered. This gate declined the second and accepts the first, and that
+distinction is deliberate rather than a softening of the standard.
+
+**A primary confirmation was attempted and is not cheaply available.** arkleg
+serves Acts from 2017R onward, so a sweep of 2019R–2025R for `1-5-101` would
+settle it from primary — but that is roughly a thousand PDFs per session, and
+the per-session index that would collapse it is not published: every
+`CodeSectionsAmended` path tried returns the same **42-byte 1×1 GIF**, and the
+`/Acts/CodeSectionsAmended` page is JS-driven with nothing in static HTML.
+
+### STILL OPEN: § 1-5-101(b), the observation shift
+
+Michael also searched for the subsection (b) text and found:
+
+- **Justia across multiple years, FindLaw, USLegal and the Encyclopedia of
+  Arkansas** — all quoting the **identical** language.
+- **One genuine primary hit on `codeofarrules.arkansas.gov`** — a banking rule
+  that *cites* § 1-5-101 without *containing* it. Same category this gate
+  already ruled out: a citation is not the text.
+
+**Four independent secondary sources agreeing does not make a primary source**,
+and the block stands. But it changes what the residual risk actually is: the
+realistic failure is no longer "the language is wrong" — four publishers do not
+independently invent the same sentence — it is "the language is stale relative
+to an amendment nobody indexed", and §1a plus the closed question above make
+that unlikely too.
+
+**So the honest position is: high confidence, no primary source, and the gate
+does not seed on confidence.** That is the same standard applied to Iowa, whose
+currency could not be established and which stays blocked, and to Connecticut,
+whose calendar basis is unresolved.
+
+### What would actually clear it
+
+In descending order of likely cost:
+
+1. **The print or LexisNexis ACA** — Arkansas licenses its Code, so this is
+   probably the only route to the codified text, and it is not a free one.
+2. **The act that enacted or last amended subsection (b).** The chain runs 1943
+   No. 211 → … → 2001 No. 304 → 2017 No. 561. Act 561 amended only (a)(2), so
+   (b) predates it — and **arkleg serves nothing before 2017R**, which puts Act
+   304 of 2001 and everything earlier out of reach on that host. A different
+   official archive of pre-2017 Arkansas session laws would settle it.
+3. **A court or agency document that QUOTES (b) rather than citing § 1-5-101.**
+   The Treasurer's sheet was the near miss — it applies the rule without stating
+   it, and 2025 happens to be a year where it never had to.
+
+**Until one of those lands, Arkansas stays gated.** Everything else about the
+state is ready: §§ 2–6 are unchanged and the seeding plan in §8 stands.
+
 ## 2. THE WEEKEND-COVERAGE STANDING CHECK — step one
 
 **ARCP Rule 6(a)**, verbatim on the operative part:
