@@ -31,15 +31,18 @@
 -- ALF- is already an accepted client-side prefix -- no code change needed:
 --   sairncare.html:1005  VALID=['ALF-','DEMO-','SAIRN-']
 --
--- Uses WHERE NOT EXISTS rather than ON CONFLICT for the same reason the
--- original demo seed did: this repo has no tracked CREATE TABLE for
--- license_keys, so a UNIQUE constraint on `key` cannot be confirmed from the
--- repo, and ON CONFLICT against a column with no matching constraint fails
--- with 42P10. NOT EXISTS has no such requirement and is safe to re-run.
+-- Uses ON CONFLICT (key) DO NOTHING -- CORRECTED 2026-08-28. This previously
+-- said WHERE NOT EXISTS, on the grounds that this repo has no tracked CREATE
+-- TABLE for license_keys and so a UNIQUE constraint on `key` could not be
+-- confirmed. The constraint is confirmed: license_keys_key_key, UNIQUE (key).
+-- Full correction, including why the "no tracked CREATE TABLE" premise was
+-- also wrong, is in sql/demo_license_keys_seed.sql. DO NOTHING, not DO
+-- UPDATE: an existing row wins, so a re-run cannot reactivate or overwrite
+-- one. Safe to re-run.
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'ALF-TEST-2026', 'active', 'test@sairncare-verification.example', 'sairncare', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'ALF-TEST-2026');
+values ('ALF-TEST-2026', 'active', 'test@sairncare-verification.example', 'sairncare', 'demo', null)
+on conflict (key) do nothing;
 
 -- VERIFY AFTER RUNNING, before trusting it (same discipline every prior
 -- license provisioning on this platform used -- check the deployed endpoint,

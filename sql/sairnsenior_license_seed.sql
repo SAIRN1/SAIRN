@@ -31,20 +31,24 @@
 -- aspirational for trial_ends_at. The real columns were then re-derived
 -- against the live table by zero-write probing. Do not add trial_ends_at here.
 --
--- WHERE NOT EXISTS rather than ON CONFLICT, for the same reason that file
--- gives: this repo has no tracked CREATE TABLE for license_keys, so a UNIQUE
--- constraint on `key` cannot be confirmed from source, and ON CONFLICT against
--- a column with no matching constraint fails 42P10. That is not hypothetical
--- here -- an ON CONFLICT assumption is exactly what broke
--- api/sairncash/waitlist.js earlier tonight. NOT EXISTS is safe to re-run.
+-- ON CONFLICT (key) DO NOTHING -- CORRECTED 2026-08-28. This said WHERE NOT
+-- EXISTS, for the same reason that file gave: no tracked CREATE TABLE for
+-- license_keys, so a UNIQUE constraint on `key` could not be confirmed from
+-- source. The constraint is confirmed: license_keys_key_key, UNIQUE (key).
+-- Full correction, including why the "no tracked CREATE TABLE" premise was
+-- also wrong, is in sql/demo_license_keys_seed.sql. The waitlist.js break
+-- still stands as the lesson -- it was caused by an ON CONFLICT assumption
+-- that was never checked; this one has been. DO NOTHING, not DO UPDATE: an
+-- existing row wins, so a re-run cannot reactivate or overwrite one -- which
+-- for a persisting demo license like this is the point. Safe to re-run.
 --
 -- status must be the literal 'active': api/_lib/license.js:95 lowercases and
 -- compares to 'active', and anything else yields 403 LICENSE_INACTIVE rather
 -- than a clean 401, which is a different and more confusing failure.
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'SEN-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnsenior', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'SEN-PINNACLE-2026');
+values ('SEN-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnsenior', 'demo', null)
+on conflict (key) do nothing;
 
 -- Verify after running -- against the deployed endpoint, not by re-selecting
 -- the row, per this project's standing rule that a push/insert succeeding is

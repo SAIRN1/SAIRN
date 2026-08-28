@@ -7,9 +7,13 @@
 -- without touching anything already in use.
 --
 -- Same shape/precedent as sql/sairnlaw_test_license_seed.sql. Uses
--- WHERE NOT EXISTS rather than ON CONFLICT for the same reason documented
--- in sql/demo_license_keys_seed.sql: no confirmed UNIQUE constraint on
--- license_keys.key without live DB access. Safe to re-run.
+-- ON CONFLICT (key) DO NOTHING -- CORRECTED 2026-08-28; this previously said
+-- WHERE NOT EXISTS, citing "no confirmed UNIQUE constraint on
+-- license_keys.key without live DB access." The constraint is confirmed:
+-- license_keys_key_key, UNIQUE (key). Full correction, including why the
+-- "no tracked CREATE TABLE" premise was also wrong, is in
+-- sql/demo_license_keys_seed.sql. DO NOTHING, not DO UPDATE: an existing
+-- row wins, so a re-run cannot reactivate or overwrite one. Safe to re-run.
 --
 -- Verify after running:
 --   curl -s -X POST https://sairn.vercel.app/api/sd-data \
@@ -19,5 +23,5 @@
 -- Expected: 200 {"ok":true,"data":null} (row present, license active).
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'SB-TEST-2026', 'active', 'test@sairnbiz-verification.example', 'sairnbiz', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'SB-TEST-2026');
+values ('SB-TEST-2026', 'active', 'test@sairnbiz-verification.example', 'sairnbiz', 'demo', null)
+on conflict (key) do nothing;

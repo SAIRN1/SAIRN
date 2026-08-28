@@ -13,6 +13,16 @@
 -- same reasoning as every other *_license_seed.sql in this repo, applied
 -- to get a known-empty account instead of an unknown-state one.
 --
+-- Uses ON CONFLICT (key) DO NOTHING -- CORRECTED 2026-08-28, along with
+-- every other license seed here; they all previously used WHERE NOT EXISTS
+-- because a UNIQUE constraint on `key` was believed unconfirmable from the
+-- repo. It is confirmed: license_keys_key_key, UNIQUE (key). Full correction
+-- in sql/demo_license_keys_seed.sql. DO NOTHING, not DO UPDATE: an existing
+-- row wins -- which matters here specifically, since this key may already
+-- have credentials bootstrapped against it (see
+-- sql/stonedesk_partner_demo_license_seed.sql) and a re-run must not disturb
+-- it.
+--
 -- Verify after running:
 --
 --   curl -s -X POST https://sairn.vercel.app/api/sd-auth \
@@ -23,5 +33,5 @@
 -- 401 INVALID_LICENSE -> row still absent. {"ok":true,"token":...} -> ready to use.
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'SD-AUDIT-2026', 'active', 'audit@pinnaclestone.example', 'stonedesk', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'SD-AUDIT-2026');
+values ('SD-AUDIT-2026', 'active', 'audit@pinnaclestone.example', 'stonedesk', 'demo', null)
+on conflict (key) do nothing;

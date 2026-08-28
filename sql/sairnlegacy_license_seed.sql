@@ -19,12 +19,14 @@
 -- customer_email/plan match the exact demo@pinnaclestone.example / 'demo'
 -- pattern every other demo row already uses -- not a new convention.
 --
--- Uses WHERE NOT EXISTS rather than ON CONFLICT, same reasoning as every
--- other license seed file in this repo: no tracked CREATE TABLE for
--- license_keys (owned by a separate, not-yet-built generation system per
--- api/_lib/license.js's own header), so a UNIQUE constraint on `key`
--- can't be confirmed without live DB access -- ON CONFLICT against a
--- column with no confirmed matching constraint fails with 42P10.
+-- Uses ON CONFLICT (key) DO NOTHING -- CORRECTED 2026-08-28. This previously
+-- said WHERE NOT EXISTS, on the grounds that no tracked CREATE TABLE for
+-- license_keys existed and so a UNIQUE constraint on `key` could not be
+-- confirmed. The constraint is confirmed: license_keys_key_key, UNIQUE
+-- (key). Full correction, including why the "no tracked CREATE TABLE"
+-- premise was also wrong, is in sql/demo_license_keys_seed.sql. DO NOTHING,
+-- not DO UPDATE: an existing row wins, so a re-run cannot reactivate or
+-- overwrite one.
 --
 -- Verify after running:
 --
@@ -39,5 +41,5 @@
 -- 200 with "provisioned":true -> both migrations confirmed live.
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'LEG-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnlegacy', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'LEG-PINNACLE-2026');
+values ('LEG-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnlegacy', 'demo', null)
+on conflict (key) do nothing;

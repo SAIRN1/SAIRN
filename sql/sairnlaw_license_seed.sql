@@ -8,8 +8,15 @@
 -- sairnlaw.html's own gate error message already suggests) had never been
 -- provisioned -- confirmed via a live 401 INVALID_LICENSE against
 -- api/sd-data.js. Same missing-demo-key gap SAIRNdesign and SAIRNlegacy
--- both had, same fix, same column list and WHERE NOT EXISTS pattern
--- already confirmed live in every other license seed file in this repo.
+-- both had, same fix, same column list as every other license seed file in
+-- this repo.
+--
+-- Uses ON CONFLICT (key) DO NOTHING -- CORRECTED 2026-08-28, along with
+-- every other license seed here; they all previously used WHERE NOT EXISTS
+-- because a UNIQUE constraint on `key` was believed unconfirmable from the
+-- repo. It is confirmed: license_keys_key_key, UNIQUE (key). Full correction
+-- in sql/demo_license_keys_seed.sql. DO NOTHING, not DO UPDATE: an existing
+-- row wins, so a re-run cannot reactivate or overwrite one.
 --
 -- Note this is a SEPARATE blocker from the citator's other one
 -- (COURTLISTENER_API_TOKEN not configured, see api/courtlistener.js) --
@@ -29,5 +36,5 @@
 -- 200 with real CourtListener search results -> license row is good.
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'LAW-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnlaw', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'LAW-PINNACLE-2026');
+values ('LAW-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnlaw', 'demo', null)
+on conflict (key) do nothing;

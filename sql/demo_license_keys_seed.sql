@@ -58,23 +58,44 @@
 -- sairnscape). 401 INVALID_LICENSE -> row still absent. 403
 -- LICENSE_INACTIVE -> status not 'active'. 200 -> provisioned correctly.
 
--- Uses WHERE NOT EXISTS rather than ON CONFLICT: this repo has no tracked
--- CREATE TABLE for license_keys (owned by a separate, not-yet-built
--- generation system per license.js's own header), so a UNIQUE constraint
--- on `key` can't be confirmed without live DB access -- ON CONFLICT
--- against a column with no matching constraint fails with 42P10 (the
--- exact class of error this project already hit once tonight on a
--- different table). NOT EXISTS has no such requirement and is safe to
--- re-run regardless.
+-- ON CONFLICT (key) DO NOTHING -- CORRECTED 2026-08-28. This paragraph
+-- previously said the opposite, and every other license seed in this repo
+-- cites it, so the correction is recorded here in full and referenced from
+-- the rest.
+--
+-- What it used to say: use WHERE NOT EXISTS rather than ON CONFLICT,
+-- because this repo has no tracked CREATE TABLE for license_keys and so a
+-- UNIQUE constraint on `key` can't be confirmed without live DB access --
+-- and ON CONFLICT against a column with no matching constraint fails 42P10.
+--
+-- Both halves of that were wrong:
+--   1. The constraint is real. Confirmed live 2026-08-28:
+--      license_keys_key_key, UNIQUE (key). ON CONFLICT (key) is valid.
+--   2. The repo DID have a tracked CREATE TABLE the whole time, declaring
+--      `key TEXT UNIQUE NOT NULL` (which is exactly what generates the
+--      auto-named license_keys_key_key). It was on an unmerged branch, and
+--      is now at archive/branch-lucid-ptolemy-b73vu0/db/schema_license_keys.sql.
+--      "No tracked CREATE TABLE" was a claim about the working tree stated
+--      as a claim about the repo -- the same mistake, on the same archived
+--      branch, that CLAUDE.md already records for sairn-code-guardian.
+--
+-- DO NOTHING, not DO UPDATE. Preserves the exact semantics of the NOT
+-- EXISTS it replaces: an existing row wins. That matters here -- a live row
+-- may have been deliberately suspended (status 'cancelled'/'suspended') or
+-- re-assigned to a real customer_email, and re-running a seed must never
+-- silently reactivate or overwrite it. Matches sql/sairndental_demo_seed_
+-- 2026-08-27.sql; the DO UPDATE seeds in this directory (sairncode/
+-- sairnroofing verify_admin) are deliberately-refreshable test credentials,
+-- a different case. Still safe to re-run.
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'SB-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnbiz', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'SB-PINNACLE-2026');
+values ('SB-PINNACLE-2026', 'active', 'demo@pinnaclestone.example', 'sairnbiz', 'demo', null)
+on conflict (key) do nothing;
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'GRD-DEMO-2026', 'active', 'demo@pinnaclestone.example', 'sairngrounds', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'GRD-DEMO-2026');
+values ('GRD-DEMO-2026', 'active', 'demo@pinnaclestone.example', 'sairngrounds', 'demo', null)
+on conflict (key) do nothing;
 
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'SCP-DEMO-2026', 'active', 'demo@pinnaclestone.example', 'sairnscape', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'SCP-DEMO-2026');
+values ('SCP-DEMO-2026', 'active', 'demo@pinnaclestone.example', 'sairnscape', 'demo', null)
+on conflict (key) do nothing;

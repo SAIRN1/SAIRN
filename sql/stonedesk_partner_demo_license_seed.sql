@@ -15,12 +15,21 @@
 -- provisions a third, dedicated key -- same reasoning as every other
 -- *_license_seed.sql in this repo.
 --
+-- Uses ON CONFLICT (key) DO NOTHING -- CORRECTED 2026-08-28, along with
+-- every other license seed here; they all previously used WHERE NOT EXISTS
+-- because a UNIQUE constraint on `key` was believed unconfirmable from the
+-- repo. It is confirmed: license_keys_key_key, UNIQUE (key). Full correction
+-- in sql/demo_license_keys_seed.sql. DO NOTHING, not DO UPDATE: an existing
+-- row wins -- load-bearing here, since the whole point of this key is that
+-- the partner bootstraps their own credentials against it, and a re-run must
+-- not disturb that.
+--
 -- Run this in Supabase's SQL editor, then have the partner do their own
 -- self-service first-time setup (see steps below) -- nobody needs to
 -- hand them a PIN in plaintext.
 insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
-select 'SD-PARTNER-2026', 'active', 'partner@pinnaclestone.example', 'stonedesk', 'demo', null
-where not exists (select 1 from public.license_keys where key = 'SD-PARTNER-2026');
+values ('SD-PARTNER-2026', 'active', 'partner@pinnaclestone.example', 'stonedesk', 'demo', null)
+on conflict (key) do nothing;
 
 -- Verify after running (expect 401 INVALID_LICENSE -> row still absent;
 -- {"ok":true,...} -> ready):
