@@ -42,7 +42,8 @@ const JURISDICTION_LABELS = {
   // label is here so the refusal names the state rather than the bare code.
   ct: 'Connecticut',
   ut: 'Utah',
-  nv: 'Nevada'
+  nv: 'Nevada',
+  or: 'Oregon'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

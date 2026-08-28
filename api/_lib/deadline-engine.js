@@ -1322,7 +1322,40 @@ var COMPUTATION_STANDARDS = {
   // so omitting it can only report EARLY.
   nv_nrcp_6: { label: 'Nev. R. Civ. P. 6', impl: 'frcp_6a',
     base_period_suffix: '(a)(1)', months_years_suffix: '(a)(1)',
-    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(a)(5)' }
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '(a)(5)' },
+
+  // OREGON. The rollover names Saturday SEPARATELY and folds Sunday into the
+  // holiday definition: "unless it is a Saturday or a legal holiday, INCLUDING
+  // SUNDAY". That drafting is the whole reason Oregon is safe where Louisiana
+  // is blocked -- both states' holiday statutes make Sunday a holiday, but only
+  // Oregon's procedural rule names Saturday in its own right. isWeekend() is
+  // correct here because of how ORCP 10 A is written, not because of ORS 187.
+  //
+  // SHORT-PERIOD EXCLUSION AT SEVEN, and Oregon states the one thing every
+  // other jurisdiction leaves open: the threshold is measured on the period
+  // "(WITHOUT REGARD TO SECTION B OF THIS RULE)" -- section B being the service
+  // extension. So the 7-day test runs on the BASE period, before the three days
+  // are added. That is already how this engine works (the exclusion is applied
+  // during base-period counting, before any extension), so the rule and the
+  // implementation agree -- but it is asserted in the Oregon test rather than
+  // assumed, because Maryland leaves the identical question open and a future
+  // change made for Maryland could silently break Oregon.
+  //
+  // NO BACKWARD PROVISION EXISTS, so the backward suffix is blank -- the
+  // NJ/NC/WA/MA/MO/WI position, not Minnesota's, Utah's or Nevada's.
+  //
+  // A CARVE-OUT WORTH KNOWING: ORCP 10 A ends "This section does not apply to
+  // any time limitation governed by ORS 174.120", which is the STATUTORY
+  // computation rule for periods fixed by statute rather than by the ORCP.
+  // 174.120 counts the same way but has NO short-period exclusion at all, so a
+  // statutory Oregon period computed under this standard would wrongly drop
+  // intermediate days. Every seeded Oregon row takes its period from the ORCP,
+  // so the carve-out is not reached -- but a statutory row must not use this
+  // standard.
+  or_orcp_10: { label: 'Or. R. Civ. P. 10', impl: 'frcp_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: ' A', months_years_suffix: ' A',
+    rollover_suffix_forward: ' A', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -2264,6 +2297,43 @@ var SERVICE_EXTENSION_STANDARDS = {
     sequence: 'roll_then_add_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+
+  // OREGON. The BROADEST enumeration in the platform, and the only rule that
+  // states its own Rule 4 / Rule 5 scope split outright. ORCP 10 B:
+  //
+  //   "EXCEPT FOR SERVICE OF SUMMONS, whenever a party has the right to or is
+  //    required to do some act within a prescribed period after the service of
+  //    a notice or other document upon that party and the notice or document is
+  //    served by MAIL, E-MAIL, FACSIMILE COMMUNICATION, OR ELECTRONIC SERVICE,
+  //    3 days shall be added to the prescribed period."
+  //
+  // ALL FOUR METHODS QUALIFY, INCLUDING E-MAIL AND ELECTRONIC SERVICE. That is
+  // the opposite of Nevada, West Virginia, New York and the federal rule, where
+  // e-service deliberately takes nothing, and it matches Massachusetts and
+  // Arkansas. An allowlist copied from the federal family would UNDER-count and
+  // compute EARLY.
+  //
+  // "ADDED TO THE PRESCRIBED PERIOD" -> add_to_period_then_roll, the
+  // period-lengthening order, not the federal after-expiry one.
+  //
+  // "EXCEPT FOR SERVICE OF SUMMONS" IS THE SENTENCE'S FIRST CLAUSE, and it
+  // removes the single most repeated inference in this engine. Every other
+  // jurisdiction required working out from WHICH RULE authorises the service
+  // whether an answer deadline takes the extension -- an inference that had
+  // been got wrong on two federal rows, and that Arkansas states in a proviso.
+  // Oregon says it in four words at the front. No Oregon row running from
+  // service of the summons carries this standard.
+  //
+  // NO EXCLUSIVITY CONDITION -- Utah's and Florida's problem does not appear.
+  or_orcp_10_b: {
+    label: 'Or. R. Civ. P. 10 B',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail' || method === 'email' ||
+             method === 'facsimile' || method === 'electronic';
+    }
   }
 };
 
