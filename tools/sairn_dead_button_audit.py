@@ -276,7 +276,16 @@ def audit(path):
         calls[m.group(1)].append(ln(m.start()))
     handler_calls = collections.defaultdict(list)
     for m in HANDLER.finditer(html):
-        for c in re.finditer(r'\b([A-Za-z_$][\w$]*)\s*\(', m.group(2)):
+        # (?<![.\w$]) -- a call preceded by a DOT is a METHOD on an object, never
+        # an app-level global, so it can never be a "handler target never
+        # defined". Without this, onclick="this.select()" reports `select` as a
+        # dead button: `\b` matches after the dot and captures the method name.
+        # Found 2026-08-28 on sairnsenior.html:345, a readonly share-link input
+        # using the native DOM select(). This also covers el.focus(),
+        # form.reset(), window.print() and every other native call an inline
+        # handler legitimately makes -- the old DOM_BUILTINS allowlist could only
+        # ever chase them one name at a time, and `select` was simply not on it.
+        for c in re.finditer(r'(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(', m.group(2)):
             handler_calls[c.group(1)].append(ln(m.start()))
 
     findings = collections.OrderedDict()
