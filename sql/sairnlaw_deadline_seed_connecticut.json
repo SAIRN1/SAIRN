@@ -1,4 +1,5 @@
 {
+  "_hold_reason": "DELIBERATELY NOT LOADED TO ANY LICENCE. Read by tools/deadline_load_state_check.py, which would otherwise report this row as MISSING on every licence forever and train people to ignore a red result. The loader does not read this key -- it takes only `rules` and `holiday_calendars` -- so this marks intent without changing what a load does. See _readme below and docs/sairnlaw-connecticut-deadline-seed-gate.md: the Sec. 63-2 first-day question is unanswered, and loading anyway would compute Connecticut dates ONE DAY LATE. Remove this key when the gate clears, not before.",
   "_readme": [
     "CONNECTICUT CIVIL DEADLINE RULES -- 1 row, Practice Book Sec. 10-8.",
     "",

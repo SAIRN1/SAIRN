@@ -112,8 +112,16 @@ def seed_expectations():
     entry_id with different content, the loader stores whichever it sent last,
     so there is no fact of the matter about what "correct" is until a person
     decides. Silently picking one would let this check report a confident
-    verdict on an ambiguous question."""
-    rules, cals, conflicts = {}, {}, []
+    verdict on an ambiguous question.
+
+    A seed file carrying a top-level `_hold_reason` is DELIBERATELY not loaded
+    (Connecticut, whose first-day convention is unsourced -- loading it would
+    compute one day LATE). Its entries are held out of the comparison and
+    listed separately. Without this the check would report the same MISSING row
+    on every licence forever, and a check that is always red is a check nobody
+    reads. The loader ignores the key, so intent is recorded without changing
+    what a load actually does."""
+    rules, cals, conflicts, held = {}, {}, [], []
 
     def put(bucket, entry, record):
         prev = bucket.get(entry)
@@ -126,6 +134,13 @@ def seed_expectations():
         with open(path, "r", encoding="utf-8") as f:
             doc = json.load(f)
         src = os.path.basename(path)
+        if doc.get("_hold_reason"):
+            for r in doc.get("rules", []):
+                held.append(("rule", r["rule_id"], src, doc["_hold_reason"]))
+            for c in doc.get("holiday_calendars", []):
+                held.append(("calendar", "%s:%s" % (c.get("jurisdiction"), c.get("year")),
+                             src, doc["_hold_reason"]))
+            continue
         for r in doc.get("rules", []):
             stored = dict(r)
             stored["version"] = r.get("version") or 1
@@ -142,7 +157,7 @@ def seed_expectations():
                 "jurisdiction": c.get("jurisdiction"),
                 "source": src,
             })
-    return rules, cals, conflicts
+    return rules, cals, conflicts, held
 
 
 def fetch(endpoint, key):
@@ -207,7 +222,7 @@ def compare(label, expected, live_rows):
             print("     %-58s live %s" % (entry, got["hash"]))
 
     if version_silent:
-        print("\n   ⚠ VERSION DID NOT MOVE on %d stale row(s): %s"
+        print("\n   !! VERSION DID NOT MOVE on %d stale row(s): %s"
               % (len(version_silent), ", ".join(version_silent[:6])
                  + (" ..." if len(version_silent) > 6 else "")))
         print("     The seed and the live row disagree about content while agreeing")
@@ -233,12 +248,20 @@ def main():
             "Rules are stored PER LICENSE, so the key decides which tenant is\n"
             "being checked -- it is not a formality and must not be guessed.")
 
-    exp_rules, exp_cals, conflicts = seed_expectations()
+    exp_rules, exp_cals, conflicts, held = seed_expectations()
     print("Seed files: %d rules, %d calendars" % (len(exp_rules), len(exp_cals)))
     print("Licence   : %s" % args.key)
 
+    if held:
+        print("\nHELD -- in the repo, deliberately not loaded (_hold_reason):")
+        for kind, entry, src, reason in held:
+            print("   %-9s %-46s %s" % (kind, entry, src))
+            print("             %s" % reason[:150])
+        print("   Not counted as drift. If one of these turns up ON a licence,")
+        print("   it shows below as EXTRA, which is the direction that matters.")
+
     if conflicts:
-        print("\n⚠ THE SEED FILES DISAGREE WITH THEMSELVES -- %d entr(ies) are defined"
+        print("\n!! THE SEED FILES DISAGREE WITH THEMSELVES -- %d entr(ies) are defined"
               % len(conflicts))
         print("  twice, with different content. The loader stores whichever it sent")
         print("  LAST, so what a licence holds depends on file order, not on intent:")
