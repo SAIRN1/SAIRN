@@ -11,7 +11,9 @@
       "Bash(git fetch:*)",
       "Bash(curl -s https://raw.githubusercontent.com/SAIRN1/*)",
       "Bash(wc -c:*)",
-      "Bash(wc -l:*)"
+      "Bash(wc -l:*)",
+      "Write",
+      "Edit"
     ],
     "deny": [
       "Bash(rm -rf /*)",
@@ -19,8 +21,6 @@
       "Bash(git push*master*)"
     ],
     "ask": [
-      "Edit",
-      "Write",
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
