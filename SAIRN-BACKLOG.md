@@ -1432,3 +1432,65 @@ status). The clones share a remote but nothing announces intent.
 `sairn-parallel-app-scaling` already documents that gap — *"nothing in the
 existing set answers: is another clone building this right now?"* — so this is
 another instance of a known finding, not a new one.
+
+## Archive commit says 167 files; 168 landed — and the tag, not the commit, is what preserves the history
+
+**Logged:** 2026-08-28 (CC), from the post-archive verification. **Trivial, no
+action needed on the count itself.** Recorded because a count in a commit message
+is a claim, and this one is off by one.
+
+`39af4f5 archive: preserve the 167 files stranded on ...` archived **168** files.
+`git ls-files archive/ | wc -l` → 168, and the commit's own `--stat` footer reads
+*"168 files changed, 276874 insertions(+)"*. All 168 sit under
+`archive/branch-lucid-ptolemy-b73vu0/`; none landed outside it. Nothing is
+missing — the message undercounts what it did, which is the harmless direction.
+
+**The part that is NOT trivial, verified while checking the count:** the archive
+commit is an ordinary single-parent commit, so it preserves a **file snapshot
+only**. The branch's actual history survives solely through the annotated tag
+`archive/lucid-ptolemy-b73vu0` → `7d9b2d6`, which reaches **901 commits, every
+one of them unreachable from `main`**. Deleting the source branch was safe
+*because that tag exists*, and for no other reason. If the tag is ever pruned,
+901 commits go with it and the snapshot on `main` is all that remains.
+
+Two consequences worth knowing:
+- The tag is **not fetched by default**. A clone that runs `git fetch origin
+  main` will not see it and may reasonably conclude the history was lost. Run
+  `git fetch origin tag archive/lucid-ptolemy-b73vu0` first.
+- Content in the snapshot is byte-identical to the tagged history. The working
+  tree copies are larger by exactly their line counts (1,230 / 170 / 43 bytes on
+  `SKILL.md`, `license-manager.html`, `schema_license_keys.sql`) — pure CRLF
+  conversion, not drift. Checked so nobody re-diagnoses a size mismatch later.
+
+**Done looks like:** nothing, unless someone decides tag retention needs a
+guarantee. If archive tags are ever considered prunable, this row is the reason
+they are not.
+
+## Trading bot: the historical data source is a decision to make BEFORE the backtest, not during it
+
+**Logged:** 2026-08-28 (CC) for whoever builds it — **Cody owns this project**;
+this row exists only so the point is on record rather than in a chat transcript.
+
+The queued paper-trading bot's build order starts with "backtest the exact rules
+against real historical data using backtrader." That step has an unstated
+dependency: **backtrader has no built-in Alpaca feed**, and the strategy's scan
+universe is ~3,000–5,000 actively traded US symbols.
+
+So before any backtest code is written, someone has to decide where multi-year
+daily (and possibly intraday) bars for thousands of symbols come from, and
+confirm the licence permits it. Alpaca's own historical API is the obvious
+candidate since the keys are already in hand, but its coverage, rate limits and
+history depth need checking against the strategy's actual needs, not assumed —
+the rules require a **200-day moving average** and **intraday** drawdown
+detection, which are different data granularities with different costs.
+
+**Why this belongs before the backtest rather than inside it:** the data decision
+determines whether the backtest can even test the stated rules. An intraday
+3–5% drop cannot be detected from daily bars alone, so a daily-only feed silently
+changes the strategy being tested into a different one — and the backtest would
+still produce plausible-looking numbers. That is the failure mode: not an error,
+a confident result for rules nobody asked about.
+
+**Done looks like:** a named data source, confirmed to cover the symbol universe,
+the history depth, and BOTH granularities the rules need — recorded before the
+first backtrader run, not inferred from whatever the first run happened to load.

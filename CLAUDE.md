@@ -102,10 +102,19 @@ arrived here through this file rather than a trigger word:
   `C:/SAIRN/skills/sairn/`, or in any clone's `.claude/skills/`.
   **Corrected again 2026-08-28 — the 2026-08-24 line said "do not go looking
   for it" and that was wrong.** It was true of the skill stores and false of
-  the repo: 1,230 lines of it were on the unmerged branch
-  `claude/lucid-ptolemy-b73vu0` the whole time. It is now at
-  `archive/branch-lucid-ptolemy-b73vu0/skills/sairn-code-guardian/` on `main`,
-  with its full history under the tag `archive/lucid-ptolemy-b73vu0`.
+  the repo: 1,230 lines of it were on an unmerged branch the whole time. It is
+  now at `archive/branch-lucid-ptolemy-b73vu0/skills/sairn-code-guardian/` on
+  `main`, with its full history under the tag `archive/lucid-ptolemy-b73vu0`.
+  **Completed 2026-08-28 (CC), verified against the files on disk:** that
+  directory holds TWO artefacts, not one — `SKILL.md` (1,230 lines, 81,757
+  bytes) **and `sairn_static_checks.py` (32,555 bytes)**, the executable half.
+  The earlier description named only the skill, so a reader looking for the
+  ancestor's actual check implementations would not have known they survived.
+  **The tag is the only thing preserving the history** — it reaches 901 commits,
+  every one of them unreachable from `main`, so deleting the source branch was
+  safe *because* that tag exists and for no other reason. It is not fetched by
+  default: run `git fetch origin tag archive/lucid-ptolemy-b73vu0` before
+  expecting to see it locally.
   It is Guardian v2's ancestor and the origin of the duplicate-global check
   now numbered 13, *"added after the June 2026 StoneDesk outage."*
   **Still do not recreate or run it** — v2 supersedes it and the archived copy
