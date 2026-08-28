@@ -234,3 +234,49 @@ order by diverged_ids desc, table_name;
 -- verdict: confirm by diffing the two `data` values directly before calling
 -- anything a defect. A false DIVERGED is cheap; a missed one is not, which is
 -- why the comparison errs in this direction deliberately.
+
+-- ═════════════════════════════════════════════════════════════════════════
+-- RESULT OF THE FIRST REAL RUN -- 2026-08-28 (Hank). READ THIS BEFORE
+-- RE-RUNNING, or you will re-report a finding that is already resolved.
+-- ═════════════════════════════════════════════════════════════════════════
+-- The divergence query returned 87 diverged ids in law_deadline_rules and 48 in law_holidays,
+-- both between LAW-PINNACLE-2026 and LAW-TEST-2026, and ZERO everywhere else on
+-- the platform. All 87 and all 48 are FALSE POSITIVES of exactly the kind the
+-- LIMIT note above predicts -- though not for the key-order reason it names.
+--
+-- CAUSE: api/legal-deadlines.js writes `authority.verified_by` INTO the `data`
+-- blob on every add_rule and add_holidays --
+--     verified_by: caller ? caller.employee_id : null
+-- LAW-TEST-2026 was loaded through an authenticated employee session, so every
+-- one of its rows carries "hank-verify". LAW-PINNACLE-2026 was backfilled by
+-- tools/load_deadline_seed.py, which sends the bearer key and no session, so
+-- every one of ITS rows carries null. That single field is present on 100% of
+-- rows by construction, so md5(data::text) differs on 100% of shared ids no
+-- matter what the rule says. The counts confirm it exactly: TEST holds 87 rules
+-- and 8 jurisdictions x 6 years = 48 calendars. 87/87 and 48/48.
+--
+-- CONFIRMED, not assumed: a read-only compute-diff of all 89 repo rules in
+-- TEST's 8 jurisdictions, on both licences, 178 probes, whole responses compared
+-- with verified_by stripped. 160 identical with a real date, 4 identical
+-- refusals, 4 for the 2 ids TEST never had, and 10 divergent across 7 ids -- all
+-- 7 being rows touched by commits e1aa3f8 and a9daad1, with TEST the stale side.
+-- Only frcp-12a1Ai-answer-after-service and frcp-12a2-united-states-official-
+-- capacity produce a different DATE. Nothing unexplained remains.
+--
+-- ⚠ IF YOU FIX THIS QUERY, fix it by EXCLUDING verified_by from the hash, e.g.
+--     md5((data #- '{authority,verified_by}')::text)
+-- Do NOT widen it to ignore all of `authority` -- retrieved_at and the authority
+-- URL are substantive content, and a rule whose cited source changed between two
+-- licences is a real defect this query must still catch.
+--
+-- ALSO NOT A DEFECT: LAW-TEST-2026 is an internal verification tenant
+-- (sql/sairnlaw_test_license_seed.sql, customer_email
+-- test@sairnlaw-verification.example), deliberately left stale when
+-- LAW-PINNACLE-2026 became canonical on 2026-08-25. Two customers are NOT being
+-- told different things; one customer and one test tenant are.
+--
+-- WHAT THE RUN DID FIND, by diffing blobs rather than trusting the count: two
+-- fixes committed 2026-08-27 had never been LOADED, so the canonical customer
+-- licence was still computing federal answer deadlines three days late. Seed-file
+-- changes are inert until tools/load_deadline_seed.py runs. Reloaded and
+-- live-verified the same day; see docs/SAIRN-OPEN-WORK-INDEX.md, SAIRNlaw row.
