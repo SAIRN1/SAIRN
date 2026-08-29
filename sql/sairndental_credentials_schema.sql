@@ -35,15 +35,30 @@
 -- So expires_on lives in each row's own data, entered from the practice's own
 -- licence document. Nothing in this feature computes an expiry from a state.
 --
--- ── NO PER-EMPLOYEE ROLE GATE, STATED PLAINLY ────────────────────────────
--- SAIRNcare gates alf_staff_credentials by employee role because SAIRNcare has
--- a real per-employee session (api/alf-auth.js). SAIRNdental has NO employee
--- auth -- there is no api/dnt-auth.js, and every existing dnt_* resource is
--- gated by the practice's license key alone. These two tables follow that same
--- model rather than pretending to a role check the app cannot actually make.
--- If per-employee auth is added to SAIRNdental later, this is a resource that
+-- ── ROLE GATE: PROMISED HERE, THEN CLOSED 2026-08-29 ─────────────────────
+-- This header used to say there was no per-employee role gate and explain why:
+-- "SAIRNdental has NO employee auth -- there is no api/dnt-auth.js, and every
+-- existing dnt_* resource is gated by the practice's license key alone ... If
+-- per-employee auth is added to SAIRNdental later, this is a resource that
 -- should be re-gated at that time. Recorded here so the gap is known, not
--- discovered.
+-- discovered."
+--
+-- Employee auth was added (api/dnt-auth.js). The re-gating this note asked for
+-- did not happen, and the note stopped being true without changing, so the gap
+-- went back to being undiscovered until a platform-wide sweep on 2026-08-29
+-- compared this write path against rf_cert_rules and alf_compliance_rules --
+-- the same reference-rule shape in two other apps, both owner/management-only.
+-- Until then any signed-in employee, including a provider or front desk, could
+-- rewrite a state credentialing requirement.
+--
+-- NOW: dnt_cred_rules WRITE is owner-only, enforced in api/sd-data.js against
+-- api/dnt-auth.js's MANAGEMENT_ROLES ({ owner: true }); `verified_by` records
+-- that owner's employee_id instead of the literal 'license'. READ is unchanged
+-- and deliberately stays open to any signed-in employee -- a provider needs to
+-- see what their state requires of them, and published law is not sensitive.
+-- The lesson worth keeping is about the note, not the gate: a comment that
+-- describes a CONDITION ("there is no employee auth") silently becomes a false
+-- claim the day the condition changes, and nothing checks comments.
 --
 -- Run this once in the Supabase SQL editor. Safe to re-run.
 

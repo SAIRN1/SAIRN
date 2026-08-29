@@ -5956,13 +5956,29 @@ module.exports = async (req, res) => {
     // api/_lib/dental-credentials.js; these branches are storage + shaping
     // only, the same split as SAIRNcare's compliance-rules and payer-routing.
     //
-    // NO PER-EMPLOYEE ROLE GATE, and that is deliberate rather than an
-    // oversight: SAIRNdental has no employee auth (there is no api/dnt-auth.js
-    // and no verifySessionToken caller anywhere in this app's branches), so
-    // every dnt_* resource is gated by the practice's license key alone. These
-    // follow that model. A role check written here would be decoration -- there
-    // is no session to check it against. Recorded in the schema header too, so
-    // whoever adds employee auth to SAIRNdental knows to re-gate this.
+    // ── RE-GATED 2026-08-29. The comment that used to sit here was correct
+    // when it was written and became false without anyone noticing, which is
+    // the whole story of this defect. It read: "NO PER-EMPLOYEE ROLE GATE, and
+    // that is deliberate rather than an oversight: SAIRNdental has no employee
+    // auth (there is no api/dnt-auth.js and no verifySessionToken caller
+    // anywhere in this app's branches) ... A role check written here would be
+    // decoration -- there is no session to check it against ... whoever adds
+    // employee auth to SAIRNdental knows to re-gate this."
+    //
+    // Employee auth WAS added. api/dnt-auth.js exists, dntGate() above calls
+    // verifySessionToken, and every branch here has had a real session to check
+    // against ever since -- but nobody came back to do the re-gating the comment
+    // asked for. So `dnt_cred_rules` write kept the license-key-era posture: any
+    // signed-in employee, provider or front desk included, could rewrite a STATE
+    // CREDENTIALING REQUIREMENT. That is the same class of assertion the write
+    // path already refuses to store without a citation, so leaving who may make
+    // it unrestricted was the inconsistency.
+    //
+    // Write is now owner-only, matching rf_cert_rules / alf_compliance_rules,
+    // the two other reference tables of exactly this shape. READ IS UNCHANGED
+    // and stays session-only on purpose: a provider needs to see what their
+    // state requires of them, and a rule is not sensitive -- it is published law.
+    // Same read-wide/write-narrow split those two apps already use.
     if (resource === 'dnt_cred_rules' && action === 'read') {
       if (!dntGate(res)) return;
       const r = await fetch(rest('dnt_cred_rules?license_hash=eq.' + enc(licHash) + '&select=rule_id,state,requirement_type,role,effective_from,effective_to,status,data,verified_by'), { headers });
@@ -5981,7 +5997,12 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'dnt_cred_rules' && action === 'write') {
-      if (!dntGate(res)) return;
+      const dntRuleSess = dntGate(res);
+      if (!dntRuleSess) return;
+      if (!DNT_MANAGEMENT_ROLES[dntRuleSess.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the practice owner can change credentialing rules' } });
+        return;
+      }
       if (!payload || !payload.rule_id || !payload.state || !payload.requirement_type || !payload.effective_from) {
         res.status(400).json({ error: { message: 'dnt_cred_rules requires rule_id, state, requirement_type, and effective_from' } });
         return;
@@ -6002,7 +6023,14 @@ module.exports = async (req, res) => {
           state: String(payload.state).toUpperCase(), requirement_type: payload.requirement_type,
           role: payload.role || null, effective_from: payload.effective_from,
           effective_to: payload.effective_to || null, status: payload.status || 'active',
-          data: payload.data || {}, verified_by: 'license', updated_at: nowISO()
+          // Was the literal string 'license' -- the honest stamp back when the
+          // only thing this endpoint could prove was that SOMEONE held the
+          // practice key. Now that the gate above proves which owner made the
+          // assertion, record them, same as rf_cert_rules does. Server-derived,
+          // never client-supplied. `verified_by` is in the fingerprint's
+          // INERT_COLUMNS, so re-loading a seed under this change cannot make
+          // tools/sairn_load_state_check.py report false drift.
+          data: payload.data || {}, verified_by: dntRuleSess.employee_id, updated_at: nowISO()
         })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.' } }); return; }

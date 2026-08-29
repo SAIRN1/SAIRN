@@ -27,6 +27,67 @@ not paraphrase it looser.
 
 ---
 
+## 🚫 PRE-LAUNCH BLOCKER — SAIRNlaw cannot onboard a paying customer until this is closed
+
+**Named 2026-08-29. Michael's decision, made with the gap in front of him: leave
+it open for now, because every licence on these tables today is internal. It
+becomes a hard blocker the moment one is not.**
+
+**The gap.** `api/legal-deadlines.js` writes `law_deadline_rules` and
+`law_holidays` — the two tables this entire claim rests on — with **no
+authenticated write path at all**. The `add_rule` (`:698`) and `add_holidays`
+(`:717`) actions require only a valid `Authorization: Bearer <licence key>`. The
+endpoint *does* resolve a session at `:542`, but only to fill `verified_by` and
+the audit line; **it is never enforced**. A write with no session succeeds and
+stores `verified_by: null`.
+
+Proven live 2026-08-29, writing nothing — the probe payload was built to fail
+validation so it could not create a row:
+
+```
+POST /api/legal-deadlines   Authorization: Bearer LAW-PINNACLE-2026
+{"action":"add_rule","rule":{}}
+→ 400 {"ok":false,"code":"INVALID_RULE","message":"Missing required field: rule_id"}
+```
+
+A **400 from the payload validator, not a 401**, with no session token sent. It
+cleared authorisation.
+
+**Why this is a launch blocker and not a backlog item.** Every sentence in the
+approved claim above — *"every one of them encoded from primary-source rule text
+read verbatim, with a full audit trail from the date back to the authority that
+produced it"* — describes provenance. Anything holding the licence key can
+overwrite any of those 119 rules, and the column that records who verified it
+will say `null`. `tools/sairn_load_state_check.py` would then correctly report
+the licence as STALE against the repo **and would not be able to say who changed
+it or when**. The audit trail is the product. A customer-held key that can
+silently rewrite the authority is not a defect in a feature; it contradicts the
+claim.
+
+**What closing it requires — and the tradeoff that is why it is still open.**
+Not simply adding `verifySessionToken` to those two actions. `tools/load_deadline_seed.py`
+**depends on the bearer-key path**: needing only a licence key is exactly what
+lets it run from any clone and gate a pre-push step, and that property was chosen
+deliberately over the SQL gate it replaced (see the "WHY THIS ONE" note in
+`tools/sairn_load_state_check.py`). So the close needs a real authenticated write
+path that does not break loader-from-any-clone — a service-credential or
+signed-loader route distinct from a customer's licence key — **not** a session
+check bolted onto the existing action.
+
+**Definition of done.** A non-interactive loader identity that is not a customer
+licence key; `add_rule`/`add_holidays` refusing an unauthenticated write with 401;
+`verified_by` never null on a stored rule; and this section deleted rather than
+edited, with the gate re-run per the last section of this file.
+
+**Do not treat "internal licences only" as a durable state.** It is true on
+2026-08-29 and is the only reason this is deferred. The first real SAIRNlaw
+prospect makes it false, and nothing in the codebase will announce that.
+
+Tracked as a row in `docs/SAIRN-OPEN-WORK-INDEX.md` that points here; this file
+is the authority on it.
+
+---
+
 ## What this gate found, and the sixth distinct failure mode
 
 **Failure mode six: a claim that is true about the rules and silent about the
