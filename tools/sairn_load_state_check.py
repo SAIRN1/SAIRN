@@ -139,12 +139,30 @@ REFERENCE_APPS = {
     ]),
 }
 
-# NOT COVERED, AND THE ABSENCE IS THE FINDING (carried over from the DB-side
-# gate this replaced, because it is still true): sc_anesthesia_base_units
-# (SAIRNcode) has the right table shape and NO SEED FILE anywhere in the repo.
-# There is nothing to compare a live licence against, so no gate can be built
-# for it -- it is per-licence reference content with no source of truth in
-# version control.
+# NOT COVERED, AND THE ABSENCE IS **NOT** A FINDING -- CORRECTED 2026-08-29.
+# The DB-side gate this replaced recorded sc_anesthesia_base_units (SAIRNcode)
+# as "the right table shape and NO SEED FILE anywhere in the repo", i.e. as
+# per-licence reference content missing its source of truth. I repeated that
+# claim twice before checking it, and it is wrong in both halves.
+#
+# It is CUSTOMER-OWNED DATA, deliberately empty. SAIRNcode's own build record
+# (SAIRN-ACTIVE-WORK-cc.md, 2026-08-20) says the table is "empty-by-default,
+# Source-required": a coder enters base units WITH their own citation, the case
+# form auto-fills only from a verified match, and when nothing matches it says
+# "not in your reference table yet" rather than inventing a number. Writing a
+# platform seed for it would push unverified values into a table designed to
+# hold only what the practice itself verified -- the exact fabricated-data class
+# Guardian exists to catch, committed by the tool meant to prevent it.
+#
+# It is also NOT LIVE: its migration is recorded as queued and unrun, so there
+# is no table to compare against either. A gate cannot be built for it, should
+# not be, and the right entry in a backlog is "correctly has no seed", not
+# "missing one".
+#
+# The general shape worth keeping: BEFORE calling a missing seed a defect, ask
+# whether that table is platform reference content or the customer's own. Only
+# the first kind can drift from the repo, because only the first kind has a repo
+# to drift from.
 
 
 def row_hash(row, id_col):

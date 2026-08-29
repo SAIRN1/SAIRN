@@ -34,8 +34,17 @@ and were carried into the replacement rather than rediscovered later:
   2. THE TWO SERVER NORMALISATIONS, read out of api/sd-data.js's write branches
      rather than assumed: `state` is uppercased, `status` defaults to 'active'.
      Miss them and the gate cries wolf on its first run and gets switched off.
-  3. sc_anesthesia_base_units HAS NO SEED FILE. No gate can be built for it, and
-     that absence is itself the finding.
+  3. sc_anesthesia_base_units HAS NO SEED FILE. No gate can be built for it --
+     but CORRECTED 2026-08-29, the absence is NOT the finding, and both this
+     file and the replacement said it was before anyone checked. SAIRNcode's own
+     build record (SAIRN-ACTIVE-WORK-cc.md, 2026-08-20) says that table is
+     "empty-by-default, Source-required": the coder enters base units with their
+     own citation and the app says "not in your reference table yet" rather than
+     inventing one. It is CUSTOMER-OWNED data, correctly seedless, and its
+     migration is queued and unrun so there is no live table either. Writing a
+     platform seed for it would push unverified values into a table built to
+     hold only what the practice verified -- the fabricated-data class, committed
+     by the tool meant to prevent it.
 
 ONE DEFECT, recorded so it is not reintroduced anywhere: INERT_COLUMNS below is
 correct, but the SAIRNlaw-specific predecessor's INERT_KEYS listed `computation`
