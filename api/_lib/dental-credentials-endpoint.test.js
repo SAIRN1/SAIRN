@@ -16,11 +16,35 @@
 // HTTP VERB AND HEADERS the handler actually used -- which is the only way to
 // prove "append-only" mechanically: an upsert and an insert both return 200,
 // and only the Prefer header tells them apart.
+//
+// ── REPAIRED 2026-08-29. THIS FILE WAS PASSING NOTHING. ────────────────────
+// When it was written, every dnt_* branch was gated by the practice license key
+// alone, so a request carrying only `Authorization: Bearer DNT-TEST` reached the
+// real logic. Employee auth was added to SAIRNdental afterwards (api/dnt-auth.js,
+// and dntGate() in api/sd-data.js), every branch began requiring an `x-sd-auth`
+// session token, and this harness never sent one. From that point the file ran
+// 1 passed / 15 failed -- fifteen 401s -- and stayed that way.
+//
+// It did not go red in a way anyone acted on, and that is the part worth
+// recording: a test file that cannot reach the code it names is WORSE than no
+// test file, because the filename keeps promising coverage that stopped existing.
+// The single test that still passed ("evaluate writes NOTHING") passed for the
+// wrong reason -- a 401 issues no writes either.
+//
+// So the harness now signs a REAL session token with api/_lib/auth.js and the
+// license_hash the handler actually derives, and `call()` takes a role. That
+// makes role a first-class axis of the tests rather than an invisible constant,
+// which is what let the owner-only gap on dnt_cred_rules go unnoticed in the
+// first place -- see the gate tests at the end of the rules section.
 
 const assert = require('assert');
 
 process.env.SUPABASE_URL = process.env.SUPABASE_URL || 'https://stub.supabase.test';
 process.env.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'stub-service-key';
+// Must be set BEFORE api/sd-data.js is required -- signSessionToken and
+// verifySessionToken both read it, and an unset secret makes every session
+// silently unverifiable, which is a slower version of exactly the bug above.
+process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET || 'dental-endpoint-test-secret';
 
 const realFetch = global.fetch;
 let requests = [];
@@ -78,10 +102,28 @@ async function test(name, fn) {
   catch (err) { failed++; console.error('  FAIL - ' + name); console.error('    ' + err.message); }
 }
 
-async function call(action, resource, payload) {
+// The license_hash a session must be signed for is DERIVED by api/_lib/license.js
+// as sha256(bearer key) -- it is NOT the license_hash field on the license_keys
+// row. Signing against the row's literal 'HASH' produces a token that verifies
+// fine in isolation and is rejected by the handler, which is a confusing hour if
+// you have not seen it before. Derived here from the same function the handler
+// uses so the two cannot drift.
+const { signSessionToken } = require('./auth');
+const LICENSE_HASH = require('./license').hashLicense('DNT-TEST');
+function sessionFor(role) {
+  return signSessionToken({ app: 'sairndental', employee_id: 'EMP-' + role.toUpperCase(), role: role, license_hash: LICENSE_HASH });
+}
+
+// role defaults to 'owner' so the existing round-trip tests exercise the widest
+// path; pass an explicit role to test a narrower one, or null for no session at
+// all (which must 401, never fall through to the logic).
+async function call(action, resource, payload, role) {
   const out = { code: null, body: null };
   const res = { status(c) { out.code = c; return res; }, json(b) { out.body = b; return res; } };
-  await handler({ method: 'POST', headers: { authorization: 'Bearer DNT-TEST' }, body: { action, resource, payload } }, res);
+  const headers = { authorization: 'Bearer DNT-TEST' };
+  const r = role === undefined ? 'owner' : role;
+  if (r !== null) headers['x-sd-auth'] = sessionFor(r);
+  await handler({ method: 'POST', headers: headers, body: { action, resource, payload } }, res);
   return out;
 }
 
@@ -121,6 +163,51 @@ const RULE = {
     assert.strictEqual(r.body.data[0].data.hours_required, 30);
     assert.strictEqual(r.body.data[0].data.authority.citation, 'ORC 4715.141(A)');
     assert.ok(r.body.coverage.covered_states.indexOf('OH') !== -1);
+  });
+
+  console.log('\nRules — who may assert one (gate closed 2026-08-29):');
+
+  // These four are the regression guard for the gap this harness could not see
+  // while it was sending no session: dnt_cred_rules WRITE was reachable by any
+  // signed-in employee, so a provider or the front desk could rewrite a state
+  // credentialing requirement. Read stays open to every role on purpose -- a
+  // provider needs to know what their own state requires, and published law is
+  // not sensitive. Both halves are asserted, because a gate that over-corrects
+  // into blocking reads is a different bug, not a safer one.
+
+  await test('no session cannot write a rule, and nothing is stored', async () => {
+    const before = store.rules.length;
+    const r = await call('write', 'dnt_cred_rules', RULE, null);
+    assert.strictEqual(r.code, 401);
+    assert.strictEqual(r.body.error.code, 'NO_SESSION');
+    assert.strictEqual(store.rules.length, before, 'nothing should have been stored');
+  });
+
+  await test('a signed-in PROVIDER cannot write a rule (the gap that was open)', async () => {
+    const before = JSON.stringify(store.rules);
+    const r = await call('write', 'dnt_cred_rules', Object.assign({}, RULE, { data: { hours_required: 999, authority: RULE.data.authority } }), 'provider');
+    assert.strictEqual(r.code, 403);
+    assert.strictEqual(r.body.error.code, 'FORBIDDEN');
+    assert.strictEqual(JSON.stringify(store.rules), before, 'the rule must be untouched');
+  });
+
+  await test('a signed-in FRONT DESK cannot write a rule either', async () => {
+    const r = await call('write', 'dnt_cred_rules', RULE, 'frontdesk');
+    assert.strictEqual(r.code, 403);
+    assert.strictEqual(r.body.error.code, 'FORBIDDEN');
+  });
+
+  await test('a provider CAN still read rules — write narrowed, read not', async () => {
+    const r = await call('read', 'dnt_cred_rules', {}, 'provider');
+    assert.strictEqual(r.code, 200);
+    assert.strictEqual(r.body.data.length, 1);
+    assert.strictEqual(r.body.data[0].rule_id, 'OH-CE-DENTIST-BIENNIAL');
+  });
+
+  await test("verified_by records the owner who asserted the rule, not 'license'", async () => {
+    const stored = store.rules.filter((x) => x.rule_id === 'OH-CE-DENTIST-BIENNIAL')[0];
+    assert.ok(stored, 'the rule should be on the stub store');
+    assert.strictEqual(stored.verified_by, 'EMP-OWNER');
   });
 
   console.log('\nCredential records — append-only, proven from the request itself:');
