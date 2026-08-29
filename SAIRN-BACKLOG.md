@@ -1612,3 +1612,46 @@ weighing the three approaches:**
 
 Whichever is chosen, the test is that it would have flagged LAW-PINNACLE before
 a human went looking.
+
+## `verified_by` is stamped from whoever ran the load, not from who verified the content — 2026-08-29 (Hank)
+
+**Pattern to fix before this ever seeds a paying customer's data.** Raised by
+Michael after the Ohio HSSA contingency rules were loaded onto
+`RF-PINNACLE-2026`: both rows carry `verified_by: 'rf-verify-admin'`, a
+disposable verification account, because every write path stamps the field
+server-side from the caller's session (`api/sd-data.js`, and
+`api/legal-deadlines.js` for the deadline engine).
+
+**Why it is wrong, precisely.** The field's own schema comments describe it as
+recording WHO VERIFIED THE RULE — provenance for a compliance assertion a
+customer may one day have to defend. What it actually records is who was signed
+in when the row was written. Those are the same person only by coincidence. The
+seed files carry the real provenance in `data.authority` (citation, url,
+`read_on`), and the column that looks authoritative is the one that is not.
+
+**It has already caused a measurable problem once**, in the other direction:
+`verified_by` is inside the `data` blob on the SAIRNlaw tables, so a
+session-loaded licence and a bearer-key-loaded licence differ on **every single
+row**. That produced the false 87-rules/48-calendars "divergence" on 2026-08-28,
+and both the divergence query and the load-state fingerprint now have to
+explicitly subtract the field to be usable at all
+(`sql/platform_reference_rules_divergence_2026-08-28.sql`,
+`api/reference-fingerprint.js`).
+
+**Scope.** Every per-licence reference table with a `verified_by` column:
+`alf_compliance_rules`, `alf_payer_rules`, `dnt_cred_rules`, `rf_cert_rules`,
+`rf_contingency_rules`, plus `law_deadline_rules` / `law_holidays` where it
+lives inside `data`.
+
+**Not chosen, deliberately — this is a note, not a design.** Candidate shapes:
+carry the verifier in the seed and let the server record the loader separately
+(two fields, honest about both); or rename the column to `loaded_by` and stop
+implying a verification that did not happen; or refuse a load whose seed does
+not name a verifier. The first is closest to what the data already supports,
+since `data.authority.read_on` and the citation are the real provenance and are
+already required. Any of them is a schema change across seven tables and should
+not be done incidentally.
+
+**Acceptable where it stands today** — every affected licence is a demo or
+verification tenant. The line to not cross is a paying customer, and there is
+currently nothing that would stop it.
