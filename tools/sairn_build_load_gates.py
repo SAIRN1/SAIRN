@@ -1,5 +1,55 @@
 #!/usr/bin/env python
-"""Generate load-state gates for every app whose reference content is seeded per licence.
+"""SUPERSEDED 2026-08-29 -- DO NOT BUILD ON THIS. Use tools/sairn_load_state_check.py.
+
+>>> CC / anyone extending load-state checking: read this before adding an app. <<<
+
+Two load-state gates were built the same night by two sessions working in
+parallel -- this generated-SQL one, and a live-endpoint one. Michael's call on
+2026-08-29 was to standardise on ONE, and the deciding factor was staleness:
+
+    A GENERATED FILE MUST BE REGENERATED AFTER EVERY SEED EDIT. If someone
+    forgets, the gate quietly checks yesterday's expectations and reports
+    clean. That is the same silent-failure shape this whole gate exists to
+    catch, reintroduced inside the catcher.
+
+tools/sairn_load_state_check.py reads the seed files at RUN TIME, so it cannot
+go stale, needs only a licence key (no Supabase editor, so it can gate a
+pre-push step from any clone), covers holiday CALENDARS as well as rules, and
+reports MISSING and EXTRA rather than only STALE. It now covers SAIRNlaw plus
+the four tables this file reached -- alf_compliance_rules, alf_payer_rules,
+dnt_cred_rules, rf_cert_rules, rf_contingency_rules -- via the new read-only
+api/reference-fingerprint.js:
+
+    python tools/sairn_load_state_check.py --app sairncare
+    python tools/sairn_load_state_check.py --app sairndental
+    python tools/sairn_load_state_check.py --app sairnroofing
+
+THIS FILE IS KEPT, NOT DELETED, because three of its findings are load-bearing
+and were carried into the replacement rather than rediscovered later:
+
+  1. PROMOTED COLUMNS. Only SAIRNlaw keeps everything in `data`. rf_contingency_
+     rules keeps `count` and `unit` as real columns; a fingerprint over `data`
+     alone would miss a wrong count entirely. The replacement hashes the whole
+     row for exactly this reason.
+  2. THE TWO SERVER NORMALISATIONS, read out of api/sd-data.js's write branches
+     rather than assumed: `state` is uppercased, `status` defaults to 'active'.
+     Miss them and the gate cries wolf on its first run and gets switched off.
+  3. sc_anesthesia_base_units HAS NO SEED FILE. No gate can be built for it, and
+     that absence is itself the finding.
+
+ONE DEFECT, recorded so it is not reintroduced anywhere: INERT_COLUMNS below is
+correct, but the SAIRNlaw-specific predecessor's INERT_KEYS listed `computation`
+among the keys that cannot change a computed result. It selects the counting
+standard -- frcp_6a vs fl_rgpja_2514 vs ok_12_2006 -- and a rule whose standard
+drifted would have passed that gate clean. The subtractive principle stated
+below is right; the hand-picked exception list is where it went wrong.
+
+The generated .sql gates this produced have been removed. Regenerating them
+would put two gates back.
+
+── ORIGINAL HEADER FOLLOWS ─────────────────────────────────────────────────
+
+Generate load-state gates for every app whose reference content is seeded per licence.
 
 WHY THIS EXISTS
 ---------------

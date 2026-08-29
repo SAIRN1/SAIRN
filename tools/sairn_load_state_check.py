@@ -87,9 +87,9 @@ Exit codes, so this can gate rather than merely inform:
 
 Usage:
     set SAIRNLAW_LICENSE_KEY=LAW-PINNACLE-2026
-    python tools/deadline_load_state_check.py
-    python tools/deadline_load_state_check.py --key LAW-TEST-2026
-    python tools/deadline_load_state_check.py --key LAW-TEST-2026 --expect-stale
+    python tools/sairn_load_state_check.py
+    python tools/sairn_load_state_check.py --key LAW-TEST-2026
+    python tools/sairn_load_state_check.py --key LAW-TEST-2026 --expect-stale
 
 --expect-stale is for licences that are KNOWN to be behind on purpose --
 LAW-TEST-2026 is an internal verification tenant deliberately frozen when
@@ -108,7 +108,127 @@ import urllib.error
 import urllib.request
 
 DEFAULT_ENDPOINT = "https://sairn.vercel.app/api/legal-deadlines"
+REFERENCE_ENDPOINT = "https://sairn.vercel.app/api/reference-fingerprint"
 SQL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sql")
+
+# ── THE OTHER APPS ───────────────────────────────────────────────────────────
+# SAIRNlaw keeps all rule content in one `data` blob and has its own endpoint.
+# Every other app's reference tables carry PROMOTED COLUMNS holding
+# compute-relevant content directly -- rf_contingency_rules keeps `count` and
+# `unit` as real columns, dnt_cred_rules keeps `state` / `requirement_type` /
+# `role` -- so those are fingerprinted over the whole row via
+# api/reference-fingerprint.js. Same output, same exit codes, one tool.
+INERT_COLUMNS = {"id", "license_hash", "app_id", "created_at", "updated_at", "verified_by"}
+
+REFERENCE_APPS = {
+    "sairncare": dict(env="SAIRNCARE_LICENSE_KEY", tables=[
+        dict(table="alf_compliance_rules", id_col="rule_id",
+             seeds=["sairncare_compliance_seed.json"]),
+        dict(table="alf_payer_rules", id_col="rule_id",
+             seeds=["sairncare_payer_rules_seed.json"]),
+    ]),
+    "sairndental": dict(env="SAIRNDENTAL_LICENSE_KEY", tables=[
+        dict(table="dnt_cred_rules", id_col="rule_id",
+             seeds=["sairndental_credentials_seed_ohio.json"]),
+    ]),
+    "sairnroofing": dict(env="SAIRNROOFING_LICENSE_KEY", tables=[
+        dict(table="rf_cert_rules", id_col="rule_id",
+             seeds=["sairnroofing_certifications_seed_ohio.json"]),
+        dict(table="rf_contingency_rules", id_col="rule_id",
+             seeds=["sairnroofing_contingency_seed_ohio.json"]),
+    ]),
+}
+
+# NOT COVERED, AND THE ABSENCE IS THE FINDING (carried over from the DB-side
+# gate this replaced, because it is still true): sc_anesthesia_base_units
+# (SAIRNcode) has the right table shape and NO SEED FILE anywhere in the repo.
+# There is nothing to compare a live licence against, so no gate can be built
+# for it -- it is per-licence reference content with no source of truth in
+# version control.
+
+
+def row_hash(row, id_col):
+    """Byte-identical to rowHash() in api/reference-fingerprint.js.
+
+    Null-valued keys are dropped on BOTH sides, which is load-bearing rather
+    than tidying: a nullable column the seed simply omits (`effective_to`,
+    `role`, `facility_class`, `business_day_basis`) comes back from Postgres as
+    an explicit null, and without this every such row would read as drifted
+    forever. A column holding a REAL value live while the seed omits it still
+    differs, because only the null side disappears.
+    """
+    out = {k: v for k, v in row.items()
+           if k not in INERT_COLUMNS and k != id_col and v is not None}
+    return hashlib.sha256(stable_json(out).encode("utf-8")).hexdigest()[:16]
+
+
+def reference_expectations(spec, columns):
+    """Expected rows for one reference table, restricted to the columns that
+    actually exist and normalised the way the server's write path normalises.
+
+    THE NORMALISATIONS ARE READ FROM api/sd-data.js's WRITE BRANCHES, not
+    assumed: `state` is uppercased, `status` defaults to 'active'. Without
+    mirroring them the gate reports false STALE on every row whose seed omits
+    status -- and a gate that cries wolf on its first run gets switched off,
+    which is worse than not having one.
+
+    Keys the seed carries that NO column can store are returned separately.
+    The write paths persist an explicit column list and silently discard
+    anything else, so a seed field nobody stores is invisible from both ends
+    unless something says so. Underscore-prefixed keys are excluded from that
+    report by convention -- `_note` is documentation and is meant not to load.
+    """
+    rows, unstorable = {}, {}
+    allowed = set(columns) if columns else None
+    for name in spec["seeds"]:
+        path = os.path.join(SQL_DIR, name)
+        with open(path, "r", encoding="utf-8") as f:
+            doc = json.load(f)
+        if doc.get("_hold_reason"):
+            continue
+        for r in doc.get("rules", []):
+            rid = r.get(spec["id_col"])
+            if not rid:
+                raise SystemExit("rule with no %s in %s" % (spec["id_col"], name))
+            norm = {}
+            for k, v in r.items():
+                if k == spec["id_col"]:
+                    continue
+                if allowed is not None and k not in allowed:
+                    if not k.startswith("_"):
+                        unstorable.setdefault(k, []).append(rid)
+                    continue
+                norm[k] = v
+            if isinstance(norm.get("state"), str):
+                norm["state"] = norm["state"].strip().upper()
+            if allowed is None or "status" in allowed:
+                norm["status"] = norm.get("status") or "active"
+            rows[str(rid)] = {
+                "hash": row_hash(norm, spec["id_col"]),
+                "version": None,
+                "group": norm.get("state") or "-",
+                "source": name,
+            }
+    return rows, unstorable
+
+
+def fetch_reference(endpoint, key, specs):
+    body = json.dumps({"action": "fingerprint",
+                       "tables": [{"table": s["table"], "id_col": s["id_col"]} for s in specs]}).encode("utf-8")
+    req = urllib.request.Request(
+        endpoint, data=body, method="POST",
+        headers={"Content-Type": "application/json", "Authorization": "Bearer " + key})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return r.status, json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        raw = e.read().decode("utf-8", "replace")
+        try:
+            return e.code, json.loads(raw)
+        except ValueError:
+            return e.code, {"raw": raw[:400]}
+    except urllib.error.URLError as e:
+        return 0, {"error": {"message": "connection failed: %s" % e.reason}}
 
 
 def stable_json(v):
@@ -241,7 +361,7 @@ def compare(label, expected, live_rows):
     if missing:
         by_jur = {}
         for entry, exp in missing:
-            by_jur.setdefault(exp["jurisdiction"], []).append(entry)
+            by_jur.setdefault(exp.get("jurisdiction") or exp.get("group") or "-", []).append(entry)
         print("\n   MISSING -- in the seed files, never loaded to this licence:")
         for jur in sorted(by_jur):
             ids = by_jur[jur]
@@ -269,16 +389,86 @@ def compare(label, expected, live_rows):
     return len(missing), len(stale), len(extra)
 
 
+def run_reference(app, key, endpoint, expect_stale):
+    cfg = REFERENCE_APPS[app]
+    specs = cfg["tables"]
+    print("App       : %s" % app)
+    print("Licence   : %s" % key)
+
+    st, res = fetch_reference(endpoint, key, specs)
+    if st != 200 or not res.get("ok"):
+        msg = (res.get("message") or (res.get("error") or {}).get("message")
+               or json.dumps(res))[:300]
+        print("\nCOULD NOT TELL -- reference-fingerprint returned HTTP %s: %s" % (st, msg))
+        print("This is NOT a pass. Nothing was compared.")
+        return 2
+
+    drift, unreadable = 0, []
+    for spec in specs:
+        live = res["tables"].get(spec["table"]) or {}
+        if not live.get("ok"):
+            # A table that could not be read is NOT a table that matched. It is
+            # counted as an inability to tell, and it changes the exit code.
+            print("\n== %s\n   COULD NOT TELL -- %s: %s"
+                  % (spec["table"], live.get("code", "NO_RESPONSE"), live.get("message", "")))
+            unreadable.append(spec["table"])
+            continue
+        expected, unstorable = reference_expectations(spec, live.get("columns"))
+        m, s, e = compare(spec["table"], expected, live.get("entries", []))
+        drift += m + s + e
+        if unstorable:
+            print("\n   SEED KEYS NO COLUMN CAN STORE -- silently discarded on write:")
+            for k in sorted(unstorable):
+                ids = unstorable[k]
+                print("     %-24s %d row(s): %s" % (k, len(ids), ", ".join(ids[:3])
+                                                    + (" ..." if len(ids) > 3 else "")))
+            print("     Not counted as drift -- they never reach the table, so they")
+            print("     cannot be stale. Either promote them to columns or drop them.")
+
+    print("\n" + "-" * 72)
+    if unreadable:
+        print("COULD NOT TELL for: %s. Nothing is claimed about those tables."
+              % ", ".join(unreadable))
+        return 2
+    if not drift:
+        print("MATCHES THE SEED FILES. Nothing to reload.")
+        return 0
+    if expect_stale:
+        print("DRIFT: %d entr(ies) -- reported, and accepted because --expect-stale" % drift)
+        return 0
+    print("DRIFT: %d entr(ies). THIS LICENCE NEEDS A RELOAD." % drift)
+    print("Then verify by a CHANGED result on identical inputs -- a loader's exit")
+    print("code is not evidence that a rule now computes differently.")
+    return 1
+
+
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--key", default=os.environ.get("SAIRNLAW_LICENSE_KEY", ""),
-                    help="SAIRNlaw license key (default: $SAIRNLAW_LICENSE_KEY)")
-    ap.add_argument("--endpoint", default=os.environ.get("SAIRNLAW_DEADLINES_API", DEFAULT_ENDPOINT))
+    ap.add_argument("--app", default="sairnlaw",
+                    choices=["sairnlaw"] + sorted(REFERENCE_APPS),
+                    help="which app's reference content to check (default: sairnlaw)")
+    ap.add_argument("--key", default="",
+                    help="license key for --app (default: that app's env var)")
+    ap.add_argument("--endpoint", default="")
     ap.add_argument("--expect-stale", action="store_true",
                     help="licence is knowingly behind (e.g. LAW-TEST-2026); report drift but exit 0")
     args = ap.parse_args()
 
+    if args.app != "sairnlaw":
+        key = args.key or os.environ.get(REFERENCE_APPS[args.app]["env"], "")
+        if not key:
+            raise SystemExit(
+                "No license key. Set %s or pass --key.\n"
+                "Reference rules are stored PER LICENSE, so the key decides which\n"
+                "tenant is being checked -- it is not a formality and must not be\n"
+                "guessed." % REFERENCE_APPS[args.app]["env"])
+        return run_reference(args.app, key,
+                             args.endpoint or os.environ.get("SAIRN_REFERENCE_API", REFERENCE_ENDPOINT),
+                             args.expect_stale)
+
+    args.key = args.key or os.environ.get("SAIRNLAW_LICENSE_KEY", "")
+    args.endpoint = args.endpoint or os.environ.get("SAIRNLAW_DEADLINES_API", DEFAULT_ENDPOINT)
     if not args.key:
         raise SystemExit(
             "No license key. Set SAIRNLAW_LICENSE_KEY or pass --key.\n"

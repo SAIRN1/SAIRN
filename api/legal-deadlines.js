@@ -604,7 +604,7 @@ module.exports = async (req, res) => {
 
     // ── RULES_FINGERPRINT: what this licence ACTUALLY holds, comparably.
     // Read-only. Its answer is meaningless on its own -- it is designed to be
-    // diffed against the seed files by tools/deadline_load_state_check.py,
+    // diffed against the seed files by tools/sairn_load_state_check.py,
     // which is the thing that decides whether a licence needs a reload. ──
     if (action === 'rules_fingerprint') {
       const rules = await readEntries(sb, 'law_deadline_rules', lic.license_hash);
