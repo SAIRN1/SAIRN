@@ -38,5 +38,16 @@ module.exports = {
     'sd_blocks',
     'sd_bundles',
     'sd_slab_history',
+  // HR onboarding (2026-08-29) -- see sql/sd_hr_schema.sql. Backs
+  // stonedesk-hr.html, whose only persistence since 2026-06-10 was two
+  // localStorage keys, i.e. one browser on one machine. One of its six forms
+  // is an OSHA 1910.1053(k)(3) silica training record, which the employer is
+  // required to make and maintain -- localStorage does not maintain anything.
+  // Unlike the sd_slab_* lineage tables above, these are SESSION-GATED AND
+  // MANAGEMENT-ONLY (see SD_HR in api/sd-data.js): personnel data with pay
+  // rate, contact details and training history about identifiable people.
+  // REQUIRES sql/sd_hr_schema.sql to be run.
+    'sd_hr_employees',
+    'sd_hr_certs',
   ],
 };

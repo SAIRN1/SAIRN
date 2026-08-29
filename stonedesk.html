@@ -28283,6 +28283,20 @@ document.addEventListener('DOMContentLoaded', function() {
       <div id="emp-revoke-list">Loading&hellip;</div>
       <div id="emp-revoke-confirm" style="margin-top:10px"></div>
     </div>
+    <!-- HR ONBOARDING PAPERWORK (2026-08-29) -- links to /stonedesk-hr, a SEPARATE
+         page rather than a panel in this file. Deliberate: this file is already
+         ~2.2MB and past the size ceiling in sairn-software-architect, and the HR
+         module is 1,240 lines of print-oriented form markup that nothing else here
+         needs. It was written 2026-06-10 on commit ca55a7c and never merged; the
+         route it shipped with was never added to vercel.json either.
+         The link is management-gated the same UX-only way as the cards around it --
+         and unlike before, the HR page now has its own gate AND api/sd-data.js's
+         SD_HR branch re-checks session+role server-side on every call. -->
+    <div id="emp-hr-card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:none">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--text)">Onboarding Paperwork</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Six new-hire forms &mdash; employee information, shop safety orientation, crystalline silica hazard training, PPE issue record, employment agreement, and direct deposit. Opens in a new tab; uses this same sign-in, so no second login. Silica training records are retained on the server, not just this browser.</div>
+      <a class="q-btn primary" href="/stonedesk-hr" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">Open HR Onboarding</a>
+    </div>
     <!-- AI COMMUNICATION PROFILES (2026-08-06) -- deliberately a real, manager-set
          record (sd_employee_profiles via api/sd-data.js), not an inferred one, per
          the standing distinction from the shared-knowledge layer. Same client-side
@@ -28491,6 +28505,11 @@ document.addEventListener('DOMContentLoaded', function() {
       brandCard.style.display=isManager?'block':'none';
       if(isManager&&typeof sdLoadBrandColorsIntoForm==='function')sdLoadBrandColorsIntoForm();
     }
+    // Onboarding Paperwork link (2026-08-29). Show/hide only -- it is an <a>,
+    // not a fetch, and /stonedesk-hr runs its own gate plus a server-side
+    // session+role re-check on every call.
+    var hrCard=document.getElementById('emp-hr-card');
+    if(hrCard)hrCard.style.display=isManager?'block':'none';
     var revokeCard=document.getElementById('emp-revoke-access-card');
     if(revokeCard){
       revokeCard.style.display=isManager?'block':'none';

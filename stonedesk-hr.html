@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>StoneDesk HR — Employee Management & Compliance</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+:root{
+  --bg:#0f1117;--surface:#1a1d2e;--surface-2:#21253a;--border:#2a2f4a;
+  --text:#f0ede8;--muted:#8a8fa8;--a:#E8850A;--a2:#f5a030;
+  --navy:#1B3A6B;--navy-light:#2a5298;
+  --green:#16a34a;--green-bg:rgba(22,163,74,0.1);
+  --red:#dc2626;--red-bg:rgba(220,38,38,0.1);
+  --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.1);
+  --r:8px;--rlg:12px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-brand{display:flex;align-items:center;gap:10px}
+.topbar-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--navy),var(--navy-light));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.topbar-name{font-size:15px;font-weight:800;color:var(--a)}
+.topbar-sub{font-size:11px;color:var(--muted);margin-left:4px}
+.back-btn{padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:var(--r);color:var(--muted);font-size:12px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:5px}
+.back-btn:hover{border-color:var(--a);color:var(--a)}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 52px)}
+.sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px 0}
+.sidebar-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);padding:12px 16px 6px}
+.sidebar-item{display:flex;align-items:center;gap:9px;padding:9px 16px;font-size:13px;color:var(--muted);cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+.sidebar-item:hover{background:rgba(232,133,10,0.06);color:var(--text)}
+.sidebar-item.active{background:rgba(232,133,10,0.1);color:var(--a);border-left-color:var(--a)}
+.sidebar-item .icon{width:18px;text-align:center;flex-shrink:0}
+.sidebar-badge{margin-left:auto;background:var(--a);color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+
+/* MAIN */
+.main{padding:24px;overflow-y:auto}
+.page{display:none}
+.page.active{display:block}
+.page-header{margin-bottom:20px}
+.page-title{font-size:20px;font-weight:800;color:var(--text)}
+.page-sub{font-size:13px;color:var(--muted);margin-top:3px}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:20px;margin-bottom:16px}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--a);margin-bottom:14px}
+.card-grid{display:grid;gap:16px}
+.card-grid-2{grid-template-columns:1fr 1fr}
+.card-grid-3{grid-template-columns:1fr 1fr 1fr}
+
+/* KPI CARDS */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:16px;text-align:center}
+.kpi-val{font-size:28px;font-weight:800;color:var(--a);line-height:1}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+/* FORM STYLES */
+.form-section{margin-bottom:20px}
+.form-section-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--a);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.form-grid{display:grid;gap:12px}
+.form-grid-2{grid-template-columns:1fr 1fr}
+.form-grid-3{grid-template-columns:1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.fg input,.fg select,.fg textarea{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;font-size:13px;color:var(--text);font-family:inherit;outline:none;transition:border .2s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--a)}
+.fg select option{background:var(--surface-2)}
+.fg textarea{resize:vertical;min-height:70px}
+.req{color:var(--a)}
+
+/* BUTTONS */
+.btn{padding:9px 18px;border:none;border-radius:var(--r);font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--a);color:#000}
+.btn-primary:hover{background:var(--a2)}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-secondary:hover{border-color:var(--a);color:var(--a)}
+.btn-danger{background:var(--red-bg);border:1px solid var(--red);color:var(--red)}
+.btn-success{background:var(--green-bg);border:1px solid var(--green);color:var(--green)}
+.btn-sm{padding:5px 12px;font-size:11px}
+
+/* EMPLOYEE TABLE */
+.emp-table{width:100%;border-collapse:collapse}
+.emp-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.emp-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid rgba(42,47,74,0.5)}
+.emp-table tr:hover td{background:rgba(232,133,10,0.04)}
+.status-badge{padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.status-active{background:var(--green-bg);color:var(--green)}
+.status-onboarding{background:var(--blue-bg);color:var(--blue)}
+.status-terminated{background:var(--red-bg);color:var(--red)}
+.cert-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;font-size:10px;margin:1px}
+.cert-done{background:var(--green-bg);color:var(--green)}
+.cert-pending{background:rgba(232,133,10,0.1);color:var(--a)}
+.cert-overdue{background:var(--red-bg);color:var(--red)}
+
+/* TRAINING */
+.training-item{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.training-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.training-info{flex:1}
+.training-title{font-size:13px;font-weight:700;color:var(--text)}
+.training-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;background:var(--a);transition:width .3s}
+
+/* FORM PRINT STYLES */
+.printable-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:28px;margin-bottom:16px}
+.form-header{text-align:center;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--a)}
+.form-header h2{font-size:16px;font-weight:800;color:var(--text)}
+.form-header p{font-size:11px;color:var(--muted);margin-top:4px}
+.sig-line{border-bottom:1px solid var(--border);padding-top:30px;margin-top:10px;display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.checklist-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(42,47,74,0.4);font-size:13px}
+.checklist-item input[type=checkbox]{width:16px;height:16px;margin-top:1px;flex-shrink:0;accent-color:var(--a)}
+.checklist-item label{flex:1;cursor:pointer}
+.checklist-note{font-size:11px;color:var(--muted);margin-left:26px;margin-top:2px}
+.warning-box{background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.3);border-radius:var(--r);padding:12px 14px;margin-bottom:16px;font-size:12px;color:#fca5a5;line-height:1.6}
+.info-box{background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3);border-radius:var(--r);padding:12px 14px;margin-bottom:16px;font-size:12px;color:#93c5fd;line-height:1.6}
+.success-box{background:var(--green-bg);border:1px solid rgba(22,163,74,0.3);border-radius:var(--r);padding:12px 14px;margin-bottom:16px;font-size:12px;color:#86efac;line-height:1.6}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);width:100%;max-width:680px;max-height:90vh;overflow-y:auto}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface);z-index:1}
+.modal-title{font-size:14px;font-weight:700}
+.modal-x{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted)}
+.modal-body{padding:20px}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--surface)}
+
+/* NOTIFICATION */
+.notif{position:fixed;bottom:16px;right:16px;background:var(--surface);border:1px solid var(--a);color:var(--text);padding:12px 16px;border-radius:var(--r);font-size:13px;max-width:320px;z-index:9000;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.notif.show{opacity:1;transform:translateY(0)}
+
+@media print{
+  .topbar,.sidebar,.btn,.modal-bg,.notif{display:none!important}
+  .layout{display:block}
+  .main{padding:0}
+  .printable-form{border:none;box-shadow:none;color:#000;background:#fff}
+  .printable-form *{color:#000 !important}
+  body{background:#fff;color:#000}
+}
+</style>
+</head>
+<body>
+
+<!-- ACCESS GATE (2026-08-29) -- this page had NO gate of any kind when it was
+     written in June: it opened straight to a roster showing every employee's
+     pay rate, phone and email to anyone who reached the URL. Now it requires
+     the SAME licence key and StoneDesk session as the main app, and an
+     owner/admin role, which is also what api/sd-data.js's SD_HR branch
+     independently enforces server-side. This overlay is convenience -- the
+     server is the boundary. It reads the session the main app already stored;
+     there is no separate login here and no new auth to build. -->
+<div id="hr-gate" style="position:fixed;inset:0;z-index:9999;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px">
+  <div style="max-width:460px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);padding:24px">
+    <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">StoneDesk HR</div>
+    <div id="hr-gate-msg" style="font-size:13px;color:var(--muted);line-height:1.5">Checking your StoneDesk sign-in&hellip;</div>
+    <div id="hr-gate-actions" style="margin-top:14px;display:none">
+      <a href="/stonedesk" style="display:inline-block;background:var(--navy);color:#fff;text-decoration:none;padding:9px 14px;border-radius:var(--r);font-size:13px;font-weight:600">Open StoneDesk and sign in</a>
+    </div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">🪨</div>
+    <span class="topbar-name">StoneDesk</span>
+    <span class="topbar-sub">HR & Compliance</span>
+  </div>
+  <a href="/fabricor" class="back-btn">← Back to StoneDesk</a>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-section">People</div>
+    <div class="sidebar-item active" onclick="showPage('dashboard',this)">
+      <span class="icon">📊</span> Dashboard
+    </div>
+    <div class="sidebar-item" onclick="showPage('employees',this)">
+      <span class="icon">👥</span> Employees
+      <span class="sidebar-badge" id="emp-count">0</span>
+    </div>
+    <div class="sidebar-item" onclick="showPage('onboarding',this)">
+      <span class="icon">📋</span> Onboarding
+    </div>
+
+    <div class="sidebar-section">Forms & Docs</div>
+    <div class="sidebar-item" onclick="showPage('form-new-hire',this)">
+      <span class="icon">📝</span> New Hire Form
+    </div>
+    <div class="sidebar-item" onclick="showPage('form-i9',this)">
+      <span class="icon">🪪</span> I-9 Verification
+    </div>
+    <div class="sidebar-item" onclick="showPage('form-w4',this)">
+      <span class="icon">💵</span> W-4 Withholding
+    </div>
+    <div class="sidebar-item" onclick="showPage('form-safety',this)">
+      <span class="icon">⚠️</span> Safety Orientation
+    </div>
+    <div class="sidebar-item" onclick="showPage('form-silica',this)">
+      <span class="icon">😷</span> Silica Training
+    </div>
+    <div class="sidebar-item" onclick="showPage('form-ppe',this)">
+      <span class="icon">🥽</span> PPE Issue Record
+    </div>
+    <div class="sidebar-item" onclick="showPage('form-atwill',this)">
+      <span class="icon">📄</span> Employment Agreement
+    </div>
+    <div class="sidebar-item" onclick="showPage('form-direct-deposit',this)">
+      <span class="icon">🏦</span> Direct Deposit
+    </div>
+
+    <div class="sidebar-section">Training</div>
+    <div class="sidebar-item" onclick="showPage('training',this)">
+      <span class="icon">🎓</span> Training Modules
+    </div>
+    <div class="sidebar-item" onclick="showPage('certifications',this)">
+      <span class="icon">🏆</span> Certifications
+    </div>
+
+    <div class="sidebar-section">Compliance</div>
+    <div class="sidebar-item" onclick="showPage('compliance',this)">
+      <span class="icon">✅</span> Compliance Status
+    </div>
+    <div class="sidebar-item" onclick="showPage('policies',this)">
+      <span class="icon">📚</span> Shop Policies
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- ══ DASHBOARD ══ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">HR Dashboard</div>
+        <div class="page-sub">Stone shop workforce overview</div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-val" id="dash-total-emp">0</div><div class="kpi-label">Total Employees</div></div>
+        <div class="kpi"><div class="kpi-val" id="dash-active-emp">0</div><div class="kpi-label">Active</div></div>
+        <div class="kpi"><div class="kpi-val" id="dash-compliant">0%</div><div class="kpi-label">Silica Compliant</div></div>
+        <div class="kpi"><div class="kpi-val" id="dash-onboarding">0</div><div class="kpi-label">In Onboarding</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="card">
+          <div class="card-title">⚠️ Action Required</div>
+          <div id="dash-actions">
+            <div class="success-box">✅ All compliance items up to date. Great work!</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📅 Upcoming Deadlines</div>
+          <div id="dash-deadlines">
+            <div class="info-box">🗓️ California SB 20 Annual Silica Training due <strong>July 1, 2026</strong> for all fabricators working with engineered stone.</div>
+            <div class="info-box">📋 Review all employee I-9 documents annually.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 Recent Employees</div>
+        <div id="dash-emp-list">
+          <div style="font-size:13px;color:var(--muted);text-align:center;padding:20px">No employees yet. <a href="#" onclick="showPage('employees',document.querySelector('[onclick*=employees]'));return false" style="color:var(--a)">Add your first employee →</a></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ EMPLOYEES ══ -->
+    <div class="page" id="page-employees">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">Employees</div>
+          <div class="page-sub">Manage your shop workforce</div>
+        </div>
+        <button class="btn btn-primary" onclick="openAddEmployee()">+ Add Employee</button>
+      </div>
+      <div class="card">
+        <table class="emp-table" id="emp-table">
+          <thead>
+            <tr>
+              <th>Name</th><th>Role</th><th>Start Date</th><th>Status</th><th>Certifications</th><th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="emp-tbody">
+            <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No employees added yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ ONBOARDING ══ -->
+    <div class="page" id="page-onboarding">
+      <div class="page-header">
+        <div class="page-title">Onboarding Checklist</div>
+        <div class="page-sub">Complete all steps for new hires before first day</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 New Hire Onboarding Steps</div>
+        <div class="info-box">Complete these steps in order. Each form can be printed from the Forms section in the sidebar.</div>
+        <div style="margin-top:8px">
+          <div class="checklist-item"><input type="checkbox" id="ob1"><label for="ob1"><strong>Step 1: Offer letter signed</strong> — Verbal offer confirmed, written offer letter signed and filed</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob2"><label for="ob2"><strong>Step 2: New Hire Information Form</strong> — Personal info, emergency contacts, photo ID collected</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob3"><label for="ob3"><strong>Step 3: I-9 Employment Eligibility</strong> — Completed within 3 business days of hire. Verify original documents in person.</label></div>
+          <div class="checklist-note">⚠️ Federal law requires I-9 completion within 3 days. Failure is a $272–$2,701 fine per violation.</div>
+          <div class="checklist-item"><input type="checkbox" id="ob4"><label for="ob4"><strong>Step 4: W-4 Federal Withholding</strong> — Employee completes withholding allowances</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob5"><label for="ob5"><strong>Step 5: Direct Deposit Authorization</strong> — Bank account details collected and submitted to payroll</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob6"><label for="ob6"><strong>Step 6: At-Will Employment Agreement</strong> — Signed and filed</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob7"><label for="ob7"><strong>Step 7: Shop Safety Orientation</strong> — Review all shop hazards, emergency procedures, first aid locations</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob8"><label for="ob8"><strong>Step 8: Silica Dust Hazard Training</strong> — Mandatory for ALL employees working with stone. California SB 20 requires annual completion.</label></div>
+          <div class="checklist-note">⚠️ Engineered quartz is 93% crystalline silica. Silicosis is fatal and irreversible. No exceptions on this training.</div>
+          <div class="checklist-item"><input type="checkbox" id="ob9"><label for="ob9"><strong>Step 9: PPE Issue Record</strong> — Respirator, safety glasses, gloves, steel-toe boots issued and signed for</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob10"><label for="ob10"><strong>Step 10: Equipment Training Sign-Off</strong> — Trained on all equipment they will operate. Never allow unsupervised use before sign-off.</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob11"><label for="ob11"><strong>Step 11: StoneDesk system access</strong> — Login created, training on quoting and scheduling</label></div>
+          <div class="checklist-item"><input type="checkbox" id="ob12"><label for="ob12"><strong>Step 12: 30-day check-in scheduled</strong> — Calendar invite sent for 30-day performance and onboarding review</label></div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px">
+          <button class="btn btn-primary" onclick="printChecklist()">🖨️ Print Checklist</button>
+          <button class="btn btn-secondary" onclick="resetChecklist()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ NEW HIRE FORM ══ -->
+    <div class="page" id="page-form-new-hire">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">New Employee Information Form</div>
+          <div class="page-sub">Complete and file for every new hire before first day</div>
+        </div>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / PDF</button>
+      </div>
+      <div class="printable-form">
+        <div class="form-header">
+          <h2>NEW EMPLOYEE INFORMATION FORM</h2>
+          <p>Stone Fabrication Shop — Confidential Personnel Record</p>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Personal Information</div>
+          <div class="form-grid form-grid-3">
+            <div class="fg"><label>Legal First Name <span class="req">*</span></label><input type="text" placeholder="First name"></div>
+            <div class="fg"><label>Middle Name</label><input type="text" placeholder="Middle name"></div>
+            <div class="fg"><label>Legal Last Name <span class="req">*</span></label><input type="text" placeholder="Last name"></div>
+            <div class="fg"><label>Date of Birth <span class="req">*</span></label><input type="date"></div>
+            <div class="fg"><label>Social Security (last 4) <span class="req">*</span></label><input type="text" placeholder="XXXX" maxlength="4"></div>
+            <div class="fg"><label>Gender</label><select><option>Prefer not to say</option><option>Male</option><option>Female</option><option>Non-binary</option></select></div>
+            <div class="fg"><label>Home Address <span class="req">*</span></label><input type="text" placeholder="Street address"></div>
+            <div class="fg"><label>City</label><input type="text" placeholder="City"></div>
+            <div class="fg"><label>State / ZIP</label><input type="text" placeholder="OH 43215"></div>
+            <div class="fg"><label>Cell Phone <span class="req">*</span></label><input type="tel" placeholder="(555) 555-5555"></div>
+            <div class="fg"><label>Personal Email <span class="req">*</span></label><input type="email" placeholder="email@email.com"></div>
+            <div class="fg"><label>Driver's License #</label><input type="text" placeholder="License number"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Emergency Contact</div>
+          <div class="form-grid form-grid-3">
+            <div class="fg"><label>Full Name <span class="req">*</span></label><input type="text" placeholder="Emergency contact name"></div>
+            <div class="fg"><label>Relationship <span class="req">*</span></label><select><option>Spouse/Partner</option><option>Parent</option><option>Sibling</option><option>Child</option><option>Friend</option><option>Other</option></select></div>
+            <div class="fg"><label>Phone Number <span class="req">*</span></label><input type="tel" placeholder="(555) 555-5555"></div>
+            <div class="fg"><label>Secondary Contact Name</label><input type="text" placeholder="Secondary contact"></div>
+            <div class="fg"><label>Secondary Relationship</label><input type="text" placeholder="Relationship"></div>
+            <div class="fg"><label>Secondary Phone</label><input type="tel" placeholder="(555) 555-5555"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Employment Information</div>
+          <div class="form-grid form-grid-3">
+            <div class="fg"><label>Position / Role <span class="req">*</span></label><select><option>Fabricator</option><option>Installer</option><option>Templater</option><option>CNC Operator</option><option>Shop Manager</option><option>Sales</option><option>Office / Admin</option><option>Apprentice</option></select></div>
+            <div class="fg"><label>Start Date <span class="req">*</span></label><input type="date"></div>
+            <div class="fg"><label>Employment Type <span class="req">*</span></label><select><option>Full-Time</option><option>Part-Time</option><option>Seasonal</option><option>Temporary</option></select></div>
+            <div class="fg"><label>Pay Rate <span class="req">*</span></label><input type="text" placeholder="$XX.XX/hr or $XX,XXX salary"></div>
+            <div class="fg"><label>Pay Frequency</label><select><option>Weekly</option><option>Bi-weekly</option><option>Semi-monthly</option><option>Monthly</option></select></div>
+            <div class="fg"><label>Referred By</label><input type="text" placeholder="Who referred this employee?"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Health & Safety</div>
+          <div class="form-grid form-grid-2">
+            <div class="fg"><label>Known Allergies or Medical Conditions (relevant to shop safety)</label><textarea placeholder="Latex allergy, respiratory conditions, etc. — only if relevant to workplace safety"></textarea></div>
+            <div class="fg"><label>Respirator Size</label><select><option>Small</option><option>Medium</option><option>Large</option><option>Extra Large</option><option>Unknown — to be fit tested</option></select></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Acknowledgment</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px">
+            I certify that the information provided on this form is true and accurate to the best of my knowledge. I understand that falsification of this information may result in termination of employment. I authorize the company to verify the information provided.
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
+            <div class="sig-line">Employee Signature<span>Date</span></div>
+            <div class="sig-line">Date</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ I-9 PAGE ══ -->
+    <div class="page" id="page-form-i9">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">I-9 Employment Eligibility Verification</div>
+          <div class="page-sub">Federal form — must be completed within 3 business days of hire</div>
+        </div>
+        <a href="https://www.uscis.gov/sites/default/files/document/forms/i-9.pdf" target="_blank" class="btn btn-primary">⬇️ Download Official I-9 PDF</a>
+      </div>
+      <div class="warning-box">
+        ⚠️ <strong>Federal Law:</strong> The I-9 must be completed within 3 business days of the employee's first day of work. Section 1 is completed BY THE EMPLOYEE on or before their first day. Section 2 is completed BY THE EMPLOYER within 3 business days. Penalties range from $272 to $2,701 per violation for first offense, up to $27,018 for repeat violations.
+      </div>
+      <div class="card">
+        <div class="card-title">📋 I-9 Instructions for Stone Shop Owners</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8">
+          <p><strong style="color:var(--text)">Step 1 — Employee completes Section 1</strong> on or before Day 1. They enter their name, address, date of birth, Social Security number, and attest to their immigration status.</p>
+          <br>
+          <p><strong style="color:var(--text)">Step 2 — You examine original documents</strong> within 3 business days. You must physically examine the originals — photocopies are not acceptable. Record the document title, issuing authority, document number, and expiration date.</p>
+          <br>
+          <p><strong style="color:var(--text)">Acceptable Documents — List A (establishes both identity AND work authorization):</strong><br>
+          U.S. Passport or Passport Card · Permanent Resident Card (Green Card) · Employment Authorization Document (EAD)</p>
+          <br>
+          <p><strong style="color:var(--text)">OR — List B (identity) + List C (work authorization):</strong><br>
+          List B: State driver's license, state ID card, school ID with photo<br>
+          List C: Social Security card, U.S. birth certificate, employment authorization document</p>
+          <br>
+          <p><strong style="color:var(--text)">Retention:</strong> Keep I-9 forms for 3 years after hire date OR 1 year after termination, whichever is later. Do not attach to personnel file — keep in a separate I-9 binder.</p>
+        </div>
+        <div style="margin-top:16px">
+          <a href="https://www.uscis.gov/sites/default/files/document/forms/i-9.pdf" target="_blank" class="btn btn-primary">⬇️ Download Official USCIS I-9 Form (PDF)</a>
+          <a href="https://www.uscis.gov/i-9" target="_blank" class="btn btn-secondary" style="margin-left:8px">USCIS I-9 Instructions →</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">📁 I-9 Tracker</div>
+        <div id="i9-tracker">
+          <div style="font-size:13px;color:var(--muted);text-align:center;padding:16px">Add employees to track their I-9 status.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ W-4 PAGE ══ -->
+    <div class="page" id="page-form-w4">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">W-4 Employee's Withholding Certificate</div>
+          <div class="page-sub">Federal form — employee completes on first day</div>
+        </div>
+        <a href="https://www.irs.gov/pub/irs-pdf/fw4.pdf" target="_blank" class="btn btn-primary">⬇️ Download Official W-4 PDF</a>
+      </div>
+      <div class="info-box">
+        📌 The W-4 tells you how much federal income tax to withhold from each paycheck. The employee completes this — you keep it on file and give it to your payroll provider. You are not required to submit it to the IRS unless specifically requested.
+      </div>
+      <div class="card">
+        <div class="card-title">W-4 Key Points for Employers</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8">
+          <p>• Employees complete a new W-4 whenever their withholding situation changes (marriage, new child, second job)</p>
+          <p>• Keep all W-4 forms for 4 years after the last payroll period to which they apply</p>
+          <p>• If an employee claims exempt from withholding, they must submit a new W-4 every February</p>
+          <p>• Use the withholding information to set up payroll — most payroll software accepts W-4 data directly</p>
+          <p>• New hires who don't submit a W-4 should be treated as Single with no adjustments</p>
+        </div>
+        <div style="margin-top:16px">
+          <a href="https://www.irs.gov/pub/irs-pdf/fw4.pdf" target="_blank" class="btn btn-primary">⬇️ Download IRS W-4 (PDF)</a>
+          <a href="https://www.irs.gov/individuals/tax-withholding-estimator" target="_blank" class="btn btn-secondary" style="margin-left:8px">IRS Withholding Estimator →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SAFETY ORIENTATION ══ -->
+    <div class="page" id="page-form-safety">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">Shop Safety Orientation Form</div>
+          <div class="page-sub">Complete before employee touches any equipment</div>
+        </div>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / PDF</button>
+      </div>
+      <div class="warning-box">
+        ⚠️ OSHA requires employers to provide safety training to workers in a language they understand. This orientation must be completed BEFORE the employee operates any equipment. Keep signed copies in personnel files.
+      </div>
+      <div class="printable-form">
+        <div class="form-header">
+          <h2>SHOP SAFETY ORIENTATION CHECKLIST</h2>
+          <p>Stone Fabrication Shop — Employee must initial each completed item</p>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Emergency Procedures</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Fire exits located and reviewed</strong> — Employee shown all exits and understands evacuation route</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Fire extinguisher locations</strong> — Employee shown all extinguisher locations and basic operation</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>First aid kit location</strong> — Employee shown primary and backup first aid kits</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Emergency phone number posted</strong> — 911 and poison control (1-800-222-1222) visible at workstations</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Emergency shutdown procedures</strong> — Employee knows how to shut down all equipment in emergency</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Muster point identified</strong> — Employee knows where to gather in case of evacuation</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Silica & Respiratory Hazards (CRITICAL)</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Silica dust hazard explained</strong> — Employee understands that stone dust causes silicosis, lung cancer, and kidney disease</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Respirator requirement</strong> — Employee understands that N95 or better respirator is required when cutting, grinding, or polishing stone</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Wet cutting requirement</strong> — Employee understands water must be used when cutting to suppress dust</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Vacuum attachment requirement</strong> — Employee knows to use dust collection on all grinding/polishing operations</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>No dry sweeping policy</strong> — Employee understands that dry sweeping stone dust is prohibited; use wet methods or HEPA vacuum</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Silica exposure symptoms reviewed</strong> — Shortness of breath, cough, fatigue — report immediately</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Equipment Safety</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Lockout/Tagout (LOTO) procedure</strong> — Employee trained on energy control before any maintenance</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Bridge saw safety</strong> — Blade guard, water system, and emergency stop reviewed</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Angle grinder safety</strong> — Guard use, disc inspection, secure workholding reviewed</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>CNC / waterjet safety</strong> — No hands in cutting area, door interlocks, machine boundaries explained</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Forklift / slab cart safety</strong> — Slab handling, A-frame use, never walk under suspended slabs</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Electrical safety</strong> — Wet area precautions, no modified cords, GFCI outlets</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Personal Protective Equipment (PPE)</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Safety glasses / face shield</strong> — Required when cutting, grinding, or handling broken stone</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Steel-toe boots</strong> — Required at all times on shop floor</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Cut-resistant gloves</strong> — Required when handling stone edges</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Hearing protection</strong> — Required when operating bridge saw or loud equipment</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>No loose clothing / jewelry</strong> — Employee understands rotating equipment hazards</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Shop Rules</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>No cell phones while operating equipment</strong></label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Report all injuries immediately</strong> — Even minor cuts. Infection risk from stone dust is real.</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Housekeeping standards</strong> — Clean workstation at end of shift, no stone debris on walking surfaces</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>No horseplay policy</strong></label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Drug and alcohol policy</strong> — Zero tolerance on shop floor</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Acknowledgment</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px">
+            I acknowledge that I have received safety orientation training and understand all safety rules and procedures described above. I understand that failure to follow these safety rules may result in disciplinary action, including termination. I have been given the opportunity to ask questions.
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:20px">
+            <div class="sig-line">Employee Signature<span></span></div>
+            <div class="sig-line">Trainer Signature<span></span></div>
+            <div class="sig-line">Date<span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SILICA TRAINING ══ -->
+    <div class="page" id="page-form-silica">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">Silica Dust Hazard Training & Sign-Off</div>
+          <div class="page-sub">California SB 20 STOP Act — Annual training required by July 1, 2026</div>
+        </div>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / PDF</button>
+      </div>
+      <div class="warning-box">
+        ⚠️ <strong>California SB 20 (STOP Act):</strong> As of July 1, 2026, all stone fabrication shops in California must provide annual silica training to all employees who work with engineered stone. Engineered quartz is 93% crystalline silica — the most hazardous material in the stone industry. Silicosis is FATAL and IRREVERSIBLE. There is no cure.
+      </div>
+      <div class="printable-form">
+        <div class="form-header">
+          <h2>CRYSTALLINE SILICA HAZARD COMMUNICATION & TRAINING RECORD</h2>
+          <p>Annual Training — Required under OSHA 1910.1053 and California SB 20 (STOP Act)</p>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">What is Crystalline Silica?</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:12px">
+            Crystalline silica is a mineral found in stone, rock, sand, gravel, and clay. When stone is cut, ground, drilled, or polished, tiny particles of silica become airborne. These particles are so small they cannot be seen with the naked eye but are deadly when inhaled.
+            <br><br>
+            <strong style="color:var(--text)">Silica content by material:</strong> Engineered quartz: 90–93% | Granite: 20–45% | Marble: &lt;5% | Quartzite: 80–98%
+          </div>
+          <div class="checklist-item"><input type="checkbox"><label>Employee confirms understanding of what crystalline silica is and where it is found in our shop</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Health Effects</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Silicosis</strong> — Irreversible scarring of lung tissue. Progressive, incurable. Can develop after years of exposure OR rapid onset (acute silicosis) from high exposure.</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Lung Cancer</strong> — IARC classifies crystalline silica as a Group 1 carcinogen (definite cause of cancer in humans)</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>COPD</strong> — Chronic obstructive pulmonary disease, permanent breathing impairment</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Kidney Disease</strong> — Silica exposure linked to autoimmune kidney disease</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Symptoms to watch for:</strong> Shortness of breath, persistent cough, fatigue, chest tightness — report immediately</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">OSHA Permissible Exposure Limit (PEL)</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.8;margin-bottom:12px">
+            OSHA's PEL for respirable crystalline silica is <strong style="color:var(--a)">50 micrograms per cubic meter (50 µg/m³)</strong> as an 8-hour time-weighted average. Without controls, cutting engineered quartz can generate dust levels 100x–1000x this limit.
+          </div>
+          <div class="checklist-item"><input type="checkbox"><label>Employee understands the OSHA exposure limit and why engineering controls alone may not be sufficient</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Required Controls — Hierarchy of Controls</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Wet cutting (primary control)</strong> — Water must flow continuously during all cutting and grinding. Water suppresses 90%+ of airborne dust.</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Local exhaust ventilation (LEV)</strong> — Dust collection systems capture dust at the source before it becomes airborne</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Enclosure / isolation</strong> — CNC machines must remain closed during operation. Do not open doors during cutting.</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Housekeeping</strong> — Use wet methods or HEPA-filtered vacuums. NEVER dry sweep or use compressed air to clean up stone dust.</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Respirator as last line of defense</strong> — Even with all controls, wear N95 or higher when in cutting area. P100 half-face respirator recommended for engineered quartz.</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Respirator Requirements</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Respirator fit test completed</strong> — Employees must be fit-tested before using tight-fitting respirators (29 CFR 1910.134)</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Minimum: N95</strong> for granite cutting with wet methods and LEV in place</label></div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>P100 half-face respirator required</strong> for engineered quartz or quartzite without full LEV controls</label></div>
+          <div class="checklist-item"><input type="checkbox"><label>Employee knows how to inspect respirator for damage before each use</label></div>
+          <div class="checklist-item"><input type="checkbox"><label>Employee knows when to replace respirator (damaged, breathing resistance increases, soiled)</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Medical Surveillance</div>
+          <div class="checklist-item"><input type="checkbox"><label><strong>Baseline chest X-ray or spirometry recommended</strong> for fabricators working with engineered quartz</label></div>
+          <div class="checklist-item"><input type="checkbox"><label>Employee knows to report any respiratory symptoms to supervisor immediately</label></div>
+          <div class="checklist-item"><input type="checkbox"><label>Employee knows that OSHA requires medical evaluation for employees required to wear respirators (1910.134(e))</label></div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Training Acknowledgment & Sign-Off</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px">
+            I have received and understand training on crystalline silica hazards, health effects, exposure limits, engineering controls, PPE requirements, and my right to medical surveillance. I understand the severe and irreversible health risks of silica exposure and my responsibility to follow all control measures. I have been given the opportunity to ask questions.
+            <br><br>
+            <strong style="color:var(--text)">This training record must be retained for the duration of employment plus 30 years (OSHA recordkeeping requirement for silica exposure records).</strong>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:20px">
+            <div class="sig-line">Employee Signature<span></span></div>
+            <div class="sig-line">Trainer / Supervisor<span></span></div>
+            <div class="sig-line">Date of Training<span></span></div>
+          </div>
+          <div style="margin-top:16px;font-size:11px;color:var(--muted)">
+            Next Annual Training Due: _______________________  |  Training Method: □ In-person  □ Video  □ Online
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PPE ISSUE RECORD ══ -->
+    <div class="page" id="page-form-ppe">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">PPE Issue Record</div>
+          <div class="page-sub">Document all personal protective equipment issued to each employee</div>
+        </div>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / PDF</button>
+      </div>
+      <div class="printable-form">
+        <div class="form-header">
+          <h2>PERSONAL PROTECTIVE EQUIPMENT ISSUE RECORD</h2>
+          <p>Stone Fabrication Shop — One form per employee</p>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Employee Information</div>
+          <div class="form-grid form-grid-3">
+            <div class="fg"><label>Employee Name</label><input type="text" placeholder="Full name"></div>
+            <div class="fg"><label>Position</label><input type="text" placeholder="Role / position"></div>
+            <div class="fg"><label>Date of Issue</label><input type="date"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Equipment Issued</div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border)">
+                <th style="text-align:left;padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Item</th>
+                <th style="text-align:left;padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Size/Spec</th>
+                <th style="text-align:left;padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Qty</th>
+                <th style="text-align:left;padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Issued</th>
+                <th style="text-align:left;padding:8px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Employee Initial</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${['N95 Respirator','P100 Half-Face Respirator','Safety Glasses / Z87.1','Face Shield','Cut-Resistant Gloves','Steel-Toe Work Boots','Hearing Protection (ear plugs)','Hearing Protection (ear muffs)','High-Visibility Vest','Knee Pads','Back Support Belt','Shop Apron'].map(item => 
+                `<tr style="border-bottom:1px solid rgba(42,47,74,0.4)">
+                  <td style="padding:8px">${item}</td>
+                  <td style="padding:8px"><input type="text" style="background:transparent;border:none;border-bottom:1px solid var(--border);width:80px;color:var(--text);font-size:12px;padding:2px 4px" placeholder="Size"></td>
+                  <td style="padding:8px"><input type="number" style="background:transparent;border:none;border-bottom:1px solid var(--border);width:40px;color:var(--text);font-size:12px;padding:2px 4px" placeholder="1"></td>
+                  <td style="padding:8px"><input type="checkbox"></td>
+                  <td style="padding:8px"><input type="text" style="background:transparent;border:none;border-bottom:1px solid var(--border);width:60px;color:var(--text);font-size:12px;padding:2px 4px" placeholder="Initial"></td>
+                </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Employee Agreement</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px">
+            I acknowledge receipt of the above personal protective equipment. I understand that I am responsible for proper use, care, and maintenance of this equipment. I understand that I must wear the appropriate PPE as required and that failure to do so may result in disciplinary action. I will report damaged or missing PPE to my supervisor immediately.
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:20px">
+            <div class="sig-line">Employee Signature</div>
+            <div class="sig-line">Supervisor Signature</div>
+            <div class="sig-line">Date</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ AT-WILL EMPLOYMENT ══ -->
+    <div class="page" id="page-form-atwill">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">Employment Agreement</div>
+          <div class="page-sub">At-will employment acknowledgment and confidentiality</div>
+        </div>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / PDF</button>
+      </div>
+      <div class="info-box">📌 This is a general template. Have your employment attorney review before use in your state. Employment law varies by state — particularly regarding non-compete enforceability and at-will exceptions.</div>
+      <div class="printable-form">
+        <div class="form-header">
+          <h2>EMPLOYMENT AGREEMENT & ACKNOWLEDGMENT</h2>
+          <p>Stone Fabrication Shop</p>
+        </div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.8">
+          <p>This Employment Agreement is entered into between <strong style="color:var(--text)">_______________________</strong> ("Company") and <strong style="color:var(--text)">_______________________</strong> ("Employee"), effective <strong style="color:var(--text)">___________</strong>.</p>
+          <br>
+          <p><strong style="color:var(--text)">1. AT-WILL EMPLOYMENT.</strong> Employee's employment with the Company is at-will, meaning either party may terminate the employment relationship at any time, with or without cause, and with or without notice. Nothing in this agreement creates a contract of employment for a specific period.</p>
+          <br>
+          <p><strong style="color:var(--text)">2. POSITION AND DUTIES.</strong> Employee is hired for the position of <strong style="color:var(--text)">_______________________</strong>. Employee agrees to perform all duties assigned, follow all Company policies, and conduct themselves professionally at all times.</p>
+          <br>
+          <p><strong style="color:var(--text)">3. COMPENSATION.</strong> Employee will be compensated at the rate of <strong style="color:var(--text)">$_______/hr</strong> paid <strong style="color:var(--text)">_______________________</strong>. This does not constitute a guarantee of minimum hours.</p>
+          <br>
+          <p><strong style="color:var(--text)">4. CONFIDENTIALITY.</strong> Employee agrees to maintain the confidentiality of all Company information including customer lists, pricing, formulas, processes, supplier relationships, and any other proprietary information. This obligation survives termination.</p>
+          <br>
+          <p><strong style="color:var(--text)">5. SAFETY AND PPE.</strong> Employee agrees to follow all safety policies, wear required personal protective equipment at all times when required, and participate in all safety training. Employee acknowledges that failure to comply with safety requirements is grounds for immediate termination.</p>
+          <br>
+          <p><strong style="color:var(--text)">6. EQUIPMENT AND PROPERTY.</strong> Employee agrees not to use Company equipment, vehicles, or property for personal purposes without written authorization. All Company property must be returned immediately upon termination.</p>
+          <br>
+          <p><strong style="color:var(--text)">7. DRUG AND ALCOHOL.</strong> Employee agrees to report to work free from the influence of alcohol, illegal drugs, or any substance that impairs judgment or performance. The Company reserves the right to conduct reasonable-suspicion drug testing.</p>
+          <br>
+          <p><strong style="color:var(--text)">8. WORKERS' COMPENSATION.</strong> Employee acknowledges that they are covered by the Company's workers' compensation insurance and agrees to report all work-related injuries immediately to their supervisor.</p>
+          <br>
+          <p><strong style="color:var(--text)">9. HANDBOOK ACKNOWLEDGMENT.</strong> Employee acknowledges receipt of the Company Employee Handbook and agrees to read, understand, and abide by all policies contained therein. The Handbook is not a contract of employment.</p>
+        </div>
+        <div class="form-section" style="margin-top:20px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px">
+            <div>
+              <div class="sig-line">Employee Signature</div>
+              <div style="margin-top:12px" class="sig-line">Printed Name</div>
+              <div style="margin-top:12px" class="sig-line">Date</div>
+            </div>
+            <div>
+              <div class="sig-line">Company Representative Signature</div>
+              <div style="margin-top:12px" class="sig-line">Printed Name / Title</div>
+              <div style="margin-top:12px" class="sig-line">Date</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DIRECT DEPOSIT ══ -->
+    <div class="page" id="page-form-direct-deposit">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div class="page-title">Direct Deposit Authorization</div>
+          <div class="page-sub">Employee authorizes payroll to deposit wages to bank account</div>
+        </div>
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Print / PDF</button>
+      </div>
+      <div class="printable-form">
+        <div class="form-header">
+          <h2>DIRECT DEPOSIT AUTHORIZATION FORM</h2>
+          <p>Stone Fabrication Shop — Submit to payroll provider</p>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Employee Information</div>
+          <div class="form-grid form-grid-3">
+            <div class="fg"><label>Full Legal Name</label><input type="text" placeholder="Name as it appears on bank account"></div>
+            <div class="fg"><label>Employee ID / Last 4 SSN</label><input type="text" placeholder="XXXX"></div>
+            <div class="fg"><label>Start Date</label><input type="date"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Primary Account — Full Deposit</div>
+          <div class="form-grid form-grid-3">
+            <div class="fg"><label>Bank Name</label><input type="text" placeholder="Bank name"></div>
+            <div class="fg"><label>Account Type</label><select><option>Checking</option><option>Savings</option></select></div>
+            <div class="fg"><label>Deposit Amount</label><select><option>100% of net pay</option><option>Fixed amount</option><option>Remainder after splits</option></select></div>
+            <div class="fg"><label>Routing Number (9 digits)</label><input type="text" placeholder="000000000" maxlength="9"></div>
+            <div class="fg"><label>Account Number</label><input type="text" placeholder="Account number"></div>
+            <div class="fg"><label>Confirm Account Number</label><input type="text" placeholder="Confirm account number"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Secondary Account (Optional)</div>
+          <div class="form-grid form-grid-3">
+            <div class="fg"><label>Bank Name</label><input type="text" placeholder="Bank name"></div>
+            <div class="fg"><label>Account Type</label><select><option>Checking</option><option>Savings</option></select></div>
+            <div class="fg"><label>Fixed Amount to Deposit</label><input type="text" placeholder="$0.00"></div>
+            <div class="fg"><label>Routing Number</label><input type="text" placeholder="000000000" maxlength="9"></div>
+            <div class="fg"><label>Account Number</label><input type="text" placeholder="Account number"></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Authorization</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:16px">
+            I authorize the Company and its payroll provider to initiate ACH credit entries to my bank account(s) listed above. I understand this authorization will remain in effect until I notify the Company in writing to cancel it, and that changes take effect within two pay periods of written notification. I certify that I am the owner of the account(s) listed above.
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
+            <div class="sig-line">Employee Signature</div>
+            <div class="sig-line">Date</div>
+          </div>
+          <div style="margin-top:12px;font-size:11px;color:var(--muted)">Attach a voided check or bank letter confirming account and routing numbers.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TRAINING MODULES ══ -->
+    <div class="page" id="page-training">
+      <div class="page-header">
+        <div class="page-title">Training Modules</div>
+        <div class="page-sub">Stone fabrication — safety, equipment, and quality training</div>
+      </div>
+      <div class="info-box">Training completions are tracked per employee. Click any module to begin. Completion is recorded when the employee signs the associated form.</div>
+
+      <div class="training-item" style="border-left:3px solid var(--red)">
+        <div class="training-icon" style="background:var(--red-bg)">😷</div>
+        <div class="training-info">
+          <div class="training-title">Crystalline Silica Hazard Communication <span style="background:var(--red-bg);color:var(--red);font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px">MANDATORY</span></div>
+          <div class="training-sub">OSHA 1910.1053 · California SB 20 STOP Act · Annual renewal required</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: Silica health effects · Exposure limits · Engineering controls · Respirator use · Medical surveillance</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="showPage('form-silica',null)">Start Training →</button>
+      </div>
+
+      <div class="training-item" style="border-left:3px solid var(--a)">
+        <div class="training-icon" style="background:rgba(232,133,10,0.1)">⚠️</div>
+        <div class="training-info">
+          <div class="training-title">Shop Safety Orientation <span style="background:rgba(232,133,10,0.1);color:var(--a);font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px">REQUIRED — DAY 1</span></div>
+          <div class="training-sub">OSHA General Industry · One-time with annual refresher recommended</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: Fire safety · Emergency procedures · Equipment hazards · PPE · Shop rules</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="showPage('form-safety',null)">View Form →</button>
+      </div>
+
+      <div class="training-item" style="border-left:3px solid var(--blue)">
+        <div class="training-icon" style="background:var(--blue-bg)">🪚</div>
+        <div class="training-info">
+          <div class="training-title">Bridge Saw Operator Certification</div>
+          <div class="training-sub">One-time certification · No unsupervised operation without sign-off</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: Blade selection · Water system · Feed rate by material · Emergency stop · Blade changes</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openEquipCert('Bridge Saw')">Sign Off →</button>
+      </div>
+
+      <div class="training-item" style="border-left:3px solid var(--blue)">
+        <div class="training-icon" style="background:var(--blue-bg)">🤖</div>
+        <div class="training-info">
+          <div class="training-title">CNC / Waterjet Operator Certification</div>
+          <div class="training-sub">One-time certification · No unsupervised operation without sign-off</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: Machine setup · DXF file loading · Tool paths · Door interlock safety · Emergency stop · Coolant management</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openEquipCert('CNC/Waterjet')">Sign Off →</button>
+      </div>
+
+      <div class="training-item" style="border-left:3px solid var(--blue)">
+        <div class="training-icon" style="background:var(--blue-bg)">🔧</div>
+        <div class="training-info">
+          <div class="training-title">Angle Grinder & Hand Tool Safety</div>
+          <div class="training-sub">Required before unsupervised hand tool use</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: Guard requirements · Disc inspection · Secure workholding · Kickback prevention · RPM ratings</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openEquipCert('Angle Grinder')">Sign Off →</button>
+      </div>
+
+      <div class="training-item" style="border-left:3px solid var(--green)">
+        <div class="training-icon" style="background:var(--green-bg)">🪨</div>
+        <div class="training-info">
+          <div class="training-title">Stone Material Knowledge</div>
+          <div class="training-sub">Product knowledge for fabricators and sales staff</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: Granite vs quartz vs quartzite vs marble · Silica content · THH benchmarks · Waste factors · Edge profiles</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openEquipCert('Stone Materials')">Sign Off →</button>
+      </div>
+
+      <div class="training-item" style="border-left:3px solid var(--green)">
+        <div class="training-icon" style="background:var(--green-bg)">🚛</div>
+        <div class="training-info">
+          <div class="training-title">Slab Handling & Material Movement</div>
+          <div class="training-sub">Required for anyone moving slabs or operating slab cart / A-frame</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: A-frame use · Slab cart operation · Forklift basics · Never walk under suspended slabs · Back injury prevention</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openEquipCert('Slab Handling')">Sign Off →</button>
+      </div>
+
+      <div class="training-item" style="border-left:3px solid var(--green)">
+        <div class="training-icon" style="background:var(--green-bg)">⭐</div>
+        <div class="training-info">
+          <div class="training-title">Quality Standards & Customer Expectations</div>
+          <div class="training-sub">For all fabricators and installers</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: Edge profile standards · Seam placement · Overhang limits · Cutout tolerances · Silicone application · Customer communication</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openEquipCert('Quality Standards')">Sign Off →</button>
+      </div>
+
+      <div class="training-item" style="border-left:3px solid var(--green)">
+        <div class="training-icon" style="background:var(--green-bg)">🔒</div>
+        <div class="training-info">
+          <div class="training-title">Lockout/Tagout (LOTO) Procedures</div>
+          <div class="training-sub">OSHA 1910.147 · Required for anyone performing maintenance</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">Topics: Energy isolation · Lockout devices · Tagout procedures · Group lockout · Verification of zero energy state</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="openEquipCert('LOTO')">Sign Off →</button>
+      </div>
+    </div>
+
+    <!-- ══ CERTIFICATIONS ══ -->
+    <div class="page" id="page-certifications">
+      <div class="page-header">
+        <div class="page-title">Certification Tracker</div>
+        <div class="page-sub">Employee training and certification status</div>
+      </div>
+      <div class="card">
+        <div id="cert-tracker-content">
+          <div style="font-size:13px;color:var(--muted);text-align:center;padding:24px">Add employees to track their certification status.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ COMPLIANCE ══ -->
+    <div class="page" id="page-compliance">
+      <div class="page-header">
+        <div class="page-title">Compliance Status</div>
+        <div class="page-sub">Federal, state, and OSHA compliance dashboard</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🇺🇸 Federal Requirements</div>
+        <div class="checklist-item"><input type="checkbox" id="comp-poster"><label for="comp-poster"><strong>OSHA "Job Safety and Health" poster</strong> — Must be displayed in workplace. Download free at osha.gov/publications/poster</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-eeoc"><label for="comp-eeoc"><strong>Equal Employment Opportunity (EEO) poster</strong> — Required for employers with 1+ employees</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-flsa"><label for="comp-flsa"><strong>Fair Labor Standards Act (FLSA) poster</strong> — Minimum wage, overtime, child labor</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-fmla"><label for="comp-fmla"><strong>FMLA poster</strong> — Required for employers with 50+ employees</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-i9-binder"><label for="comp-i9-binder"><strong>I-9 binder maintained</strong> — Separate from personnel files. Audited by ICE.</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-osha300"><label for="comp-osha300"><strong>OSHA 300 Log</strong> — Maintain injury/illness log for establishments with 10+ employees. Post Form 300A Feb 1–April 30.</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-workers-comp"><label for="comp-workers-comp"><strong>Workers' compensation insurance active</strong> — Required in all states. Post certificate in workplace.</label></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">😷 OSHA Silica Standard (29 CFR 1910.1053)</div>
+        <div class="warning-box">Stone fabrication shops are among the highest-risk industries for silica exposure. OSHA conducts targeted enforcement in this sector.</div>
+        <div class="checklist-item"><input type="checkbox" id="comp-silica-plan"><label for="comp-silica-plan"><strong>Written Exposure Control Plan</strong> — Required when workers may be exposed above the action level (25 µg/m³)</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-silica-training"><label for="comp-silica-training"><strong>Annual silica training for all exposed workers</strong> — Documented with signed training records</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-silica-controls"><label for="comp-silica-controls"><strong>Engineering controls implemented</strong> — Wet cutting, LEV, enclosures on all cutting operations</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-silica-medical"><label for="comp-silica-medical"><strong>Medical surveillance program</strong> — Required when workers are exposed at or above the action level for 30+ days/year</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-silica-sds"><label for="comp-silica-sds"><strong>Safety Data Sheets (SDS) accessible</strong> — For all stone materials. Available from your slab supplier.</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-silica-respirators"><label for="comp-silica-respirators"><strong>Respirator program in place</strong> — Written program, fit testing, medical evaluation (1910.134)</label></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌐 State-Specific (California SB 20 — STOP Act)</div>
+        <div class="info-box">California: Engineered stone is banned in new commercial projects unless workers have annual silica training and employers maintain an exposure control plan. <strong>Effective July 1, 2024 for ban; annual training records required.</strong></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-sb20-training"><label for="comp-sb20-training"><strong>Annual SB 20 silica training completed</strong> — All employees who handle engineered stone must complete training by July 1 each year</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-sb20-records"><label for="comp-sb20-records"><strong>Training records maintained</strong> — 30-year retention for silica exposure records</label></div>
+        <div class="checklist-item"><input type="checkbox" id="comp-sb20-ban"><label for="comp-sb20-ban"><strong>Engineered stone ban compliance</strong> — If in California, confirm current status of engineered stone restrictions with your state labor board</label></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Record Retention Schedule</div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:8px;font-size:10px;color:var(--muted);text-transform:uppercase">Document</th>
+            <th style="text-align:left;padding:8px;font-size:10px;color:var(--muted);text-transform:uppercase">Retention Period</th>
+            <th style="text-align:left;padding:8px;font-size:10px;color:var(--muted);text-transform:uppercase">Authority</th>
+          </tr></thead>
+          <tbody>
+            ${[
+              ['I-9 Forms','3 years after hire OR 1 year after termination (whichever is later)','USCIS / 8 CFR 274a'],
+              ['W-4 Forms','4 years after last payroll period','IRS'],
+              ['Payroll Records','3 years','FLSA'],
+              ['OSHA 300 Log','5 years','OSHA 1904'],
+              ['Silica Exposure Records','30 years after end of employment','OSHA 1910.1053'],
+              ['Workers Comp Claims','10 years (varies by state)','State law'],
+              ['Personnel Files','7 years after termination (general guidance)','Best practice'],
+              ['Safety Training Records','Duration of employment + 3 years','OSHA best practice'],
+            ].map(([doc,ret,auth]) => `<tr style="border-bottom:1px solid rgba(42,47,74,0.4)">
+              <td style="padding:8px">${doc}</td>
+              <td style="padding:8px;color:var(--a)">${ret}</td>
+              <td style="padding:8px;font-size:11px;color:var(--muted)">${auth}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ POLICIES ══ -->
+    <div class="page" id="page-policies">
+      <div class="page-header">
+        <div class="page-title">Shop Policies</div>
+        <div class="page-sub">Standard policies for stone fabrication shops — customize for your shop</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📖 Recommended Shop Policies</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8">
+          <p><strong style="color:var(--a)">Attendance & Punctuality</strong> — Stone shops run on tight installation schedules. Define: acceptable tardiness threshold, call-out procedure (who to call, how early), no-show policy, and pattern absenteeism consequences.</p>
+          <br>
+          <p><strong style="color:var(--a)">Cell Phone & Electronics</strong> — No cell phones while operating any power equipment. Define when phones are allowed (breaks, emergencies). Customer-facing staff need flexibility but shop floor is zero-tolerance during operations.</p>
+          <br>
+          <p><strong style="color:var(--a)">Vehicle Use Policy</strong> — If employees drive company vehicles for installations or deliveries: MVR check required, define who may drive, accident reporting procedure, personal use policy.</p>
+          <br>
+          <p><strong style="color:var(--a)">Customer Interaction</strong> — All pricing, discounts, and project changes must go through management. Employees should not quote prices, make promises, or negotiate with customers without authorization.</p>
+          <br>
+          <p><strong style="color:var(--a)">Social Media</strong> — No photos of customer homes, jobs in progress, or proprietary processes without written permission. No posting negative comments about customers, competitors, or the company.</p>
+          <br>
+          <p><strong style="color:var(--a)">Drug & Alcohol</strong> — Zero tolerance on the shop floor and when driving company vehicles. Define reasonable suspicion testing policy. Many workers comp policies require this.</p>
+          <br>
+          <p><strong style="color:var(--a)">Damage & Breakage</strong> — What happens when a slab breaks? Who is responsible? Define accident vs. negligence. Have a clear process: report immediately, document with photos, notify manager before customer is contacted.</p>
+          <br>
+          <p><strong style="color:var(--a)">Tool & Equipment Use</strong> — No personal projects on company equipment. No loaning company tools. Define who is responsible for tool calibration and maintenance reporting.</p>
+          <br>
+          <p><strong style="color:var(--a)">Dress Code</strong> — Steel-toe boots mandatory. Long pants required. No loose clothing near rotating equipment. High-vis vest on shop floor. Define what is and is not acceptable.</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end main -->
+</div><!-- end layout -->
+
+<!-- ADD EMPLOYEE MODAL -->
+<div class="modal-bg" id="add-emp-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title">Add Employee</span>
+      <button class="modal-x" onclick="closeModal('add-emp-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <div class="fg"><label>First Name <span class="req">*</span></label><input type="text" id="new-first" placeholder="First name"></div>
+        <div class="fg"><label>Last Name <span class="req">*</span></label><input type="text" id="new-last" placeholder="Last name"></div>
+        <div class="fg"><label>Role <span class="req">*</span></label><select id="new-role">
+          <option value="">Select role...</option>
+          <option>Fabricator</option><option>Installer</option><option>Templater</option>
+          <option>CNC Operator</option><option>Shop Manager</option><option>Sales</option>
+          <option>Office / Admin</option><option>Apprentice</option>
+        </select></div>
+        <div class="fg"><label>Start Date</label><input type="date" id="new-start"></div>
+        <div class="fg"><label>Pay Rate</label><input type="text" id="new-pay" placeholder="$22.00/hr"></div>
+        <div class="fg"><label>Status</label><select id="new-status">
+          <option value="onboarding">Onboarding</option>
+          <option value="active">Active</option>
+        </select></div>
+        <div class="fg"><label>Phone</label><input type="tel" id="new-phone" placeholder="(555) 555-5555"></div>
+        <div class="fg"><label>Email</label><input type="email" id="new-email" placeholder="employee@email.com"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('add-emp-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEmployee()">Add Employee →</button>
+    </div>
+  </div>
+</div>
+
+<!-- EQUIPMENT CERT MODAL -->
+<div class="modal-bg" id="cert-modal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="cert-modal-title">Equipment Certification Sign-Off</span>
+      <button class="modal-x" onclick="closeModal('cert-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:14px" class="info-box">Select an employee and confirm they have been trained and observed by a qualified supervisor before signing off.</div>
+      <div class="form-grid form-grid-2">
+        <div class="fg"><label>Employee</label><select id="cert-emp-select"><option value="">Select employee...</option></select></div>
+        <div class="fg"><label>Trainer / Supervisor</label><input type="text" id="cert-trainer" placeholder="Trainer name"></div>
+        <div class="fg"><label>Training Date</label><input type="date" id="cert-date"></div>
+        <div class="fg"><label>Notes</label><input type="text" id="cert-notes" placeholder="Any notes..."></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('cert-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCert()">Record Sign-Off ✓</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIFICATION -->
+<div class="notif" id="notif"></div>
+
+<script>
+'use strict';
+
+// ── STATE ──
+let employees = JSON.parse(localStorage.getItem('sd_hr_employees') || '[]');
+let certifications = JSON.parse(localStorage.getItem('sd_hr_certs') || '{}');
+let currentCertType = '';
+
+// ── NAVIGATION ──
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  if (el) el.classList.add('active');
+  else {
+    const match = document.querySelector('.sidebar-item[onclick*="' + id + '"]');
+    if (match) match.classList.add('active');
+  }
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'employees') renderEmployeeTable();
+  if (id === 'certifications') renderCertTracker();
+}
+
+// ── NOTIFICATIONS ──
+function notify(msg, type) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.style.borderColor = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#E8850A';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ── MODALS ──
+function openAddEmployee() { document.getElementById('add-emp-modal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function openEquipCert(type) {
+  currentCertType = type;
+  document.getElementById('cert-modal-title').textContent = type + ' — Certification Sign-Off';
+  const sel = document.getElementById('cert-emp-select');
+  sel.innerHTML = '<option value="">Select employee...</option>' +
+    employees.map(e => '<option value="' + e.id + '">' + e.firstName + ' ' + e.lastName + ' — ' + e.role + '</option>').join('');
+  document.getElementById('cert-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cert-modal').classList.add('open');
+}
+
+// ── EMPLOYEES ──
+function saveEmployee() {
+  const first = document.getElementById('new-first').value.trim();
+  const last = document.getElementById('new-last').value.trim();
+  const role = document.getElementById('new-role').value;
+  if (!first || !last || !role) { notify('Name and role are required.', 'error'); return; }
+  const emp = {
+    id: Date.now().toString(),
+    firstName: first, lastName: last, role,
+    startDate: document.getElementById('new-start').value,
+    pay: document.getElementById('new-pay').value,
+    status: document.getElementById('new-status').value,
+    phone: document.getElementById('new-phone').value,
+    email: document.getElementById('new-email').value,
+    addedAt: new Date().toISOString()
+  };
+  employees.push(emp);
+  hrSaveEmployee(emp);
+  closeModal('add-emp-modal');
+  ['new-first','new-last','new-pay','new-phone','new-email'].forEach(id => document.getElementById(id).value = '');
+  notify(first + ' ' + last + ' added.', 'success');
+  renderEmployeeTable();
+  renderDashboard();
+  updateEmpCount();
+}
+
+function removeEmployee(id) {
+  // MARKS INACTIVE, DOES NOT DELETE -- changed 2026-08-29 along with the move
+  // to durable storage. The old version spliced the record out of the array
+  // and the confirm text said "cannot be undone", which was true and was the
+  // problem: removing someone from the roster also destroyed the only copy of
+  // their OSHA 1910.1053(k)(3) silica training record. sql/sd_hr_schema.sql
+  // grants no DELETE for exactly this reason, so there is no delete path to
+  // call even if this wanted one.
+  if (!confirm('Mark this employee inactive? Their record and training history are kept.')) return;
+  var emp = employees.filter(function (e) { return e.id === id; })[0];
+  if (!emp) return;
+  emp.status = 'Inactive';
+  emp.inactivatedAt = new Date().toISOString();
+  hrSaveEmployee(emp);
+  renderEmployeeTable();
+  renderDashboard();
+  updateEmpCount();
+  notify('Employee marked inactive -- training records kept.', 'info');
+}
+
+function renderEmployeeTable() {
+  const tbody = document.getElementById('emp-tbody');
+  if (!employees.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No employees added yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = employees.map(e => {
+    const certs = certifications[e.id] || {};
+    const certCount = Object.keys(certs).length;
+    const criticalDone = certs['Silica'] || false;
+    return '<tr>' +
+      '<td><strong>' + e.firstName + ' ' + e.lastName + '</strong><br><span style="font-size:11px;color:var(--muted)">' + (e.email||'') + '</span></td>' +
+      '<td>' + e.role + '</td>' +
+      '<td>' + (e.startDate ? new Date(e.startDate+'T00:00:00').toLocaleDateString() : '—') + '</td>' +
+      '<td><span class="status-badge status-' + e.status + '">' + e.status + '</span></td>' +
+      '<td>' +
+        (criticalDone ? '<span class="cert-pill cert-done">✓ Silica</span>' : '<span class="cert-pill cert-overdue">⚠ Silica</span>') +
+        (certCount > 1 ? '<span class="cert-pill cert-done">+' + (certCount-1) + ' more</span>' : '') +
+      '</td>' +
+      '<td style="display:flex;gap:6px;flex-wrap:wrap">' +
+        '<button class="btn btn-secondary btn-sm" onclick="showPage(\'form-new-hire\',null)">Forms</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="removeEmployee(\'' + e.id + '\')">Remove</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderDashboard() {
+  document.getElementById('dash-total-emp').textContent = employees.length;
+  const active = employees.filter(e => e.status === 'active').length;
+  const onboarding = employees.filter(e => e.status === 'onboarding').length;
+  document.getElementById('dash-active-emp').textContent = active;
+  document.getElementById('dash-onboarding').textContent = onboarding;
+  const silicaCompliant = employees.length > 0 ?
+    Math.round(employees.filter(e => (certifications[e.id] || {})['Silica']).length / employees.length * 100) : 0;
+  document.getElementById('dash-compliant').textContent = silicaCompliant + '%';
+  const recentEl = document.getElementById('dash-emp-list');
+  if (!employees.length) {
+    recentEl.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:20px">No employees yet.</div>';
+    return;
+  }
+  const recent = [...employees].sort((a,b) => b.addedAt.localeCompare(a.addedAt)).slice(0,5);
+  recentEl.innerHTML = recent.map(e => '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(42,47,74,0.4)">' +
+    '<div><div style="font-size:13px;font-weight:600">' + e.firstName + ' ' + e.lastName + '</div><div style="font-size:11px;color:var(--muted)">' + e.role + '</div></div>' +
+    '<span class="status-badge status-' + e.status + '">' + e.status + '</span></div>').join('');
+}
+
+function renderCertTracker() {
+  const el = document.getElementById('cert-tracker-content');
+  if (!employees.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);text-align:center;padding:24px">Add employees to track certifications.</div>';
+    return;
+  }
+  const modules = ['Silica','Safety Orientation','Bridge Saw','CNC/Waterjet','Angle Grinder','Stone Materials','Slab Handling','Quality Standards','LOTO'];
+  el.innerHTML = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px">' +
+    '<thead><tr><th style="text-align:left;padding:8px;color:var(--muted);font-size:10px;text-transform:uppercase">Employee</th>' +
+    modules.map(m => '<th style="padding:6px 4px;color:var(--muted);font-size:9px;text-transform:uppercase;text-align:center;max-width:70px">' + m + '</th>').join('') +
+    '</tr></thead><tbody>' +
+    employees.map(e => {
+      const certs = certifications[e.id] || {};
+      return '<tr style="border-bottom:1px solid rgba(42,47,74,0.4)">' +
+        '<td style="padding:8px;font-weight:600">' + e.firstName + ' ' + e.lastName + '<br><span style="font-size:10px;color:var(--muted)">' + e.role + '</span></td>' +
+        modules.map(m => '<td style="text-align:center;padding:6px 4px">' +
+          (certs[m] ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--muted)">—</span>') +
+        '</td>').join('') +
+      '</tr>';
+    }).join('') +
+    '</tbody></table></div>';
+}
+
+function saveCert() {
+  const empId = document.getElementById('cert-emp-select').value;
+  const trainer = document.getElementById('cert-trainer').value.trim();
+  const date = document.getElementById('cert-date').value;
+  if (!empId) { notify('Select an employee.', 'error'); return; }
+  if (!certifications[empId]) certifications[empId] = {};
+  const rec = { trainer, date, recordedAt: new Date().toISOString() };
+  certifications[empId][currentCertType] = rec;
+  hrSaveCert(empId, currentCertType, rec);
+  closeModal('cert-modal');
+  notify('Certification recorded.', 'success');
+  renderCertTracker();
+  renderEmployeeTable();
+}
+
+function updateEmpCount() {
+  document.getElementById('emp-count').textContent = employees.length;
+}
+
+// ── DURABLE STORAGE (2026-08-29) ────────────────────────────────────────────
+// Until now saveData() wrote two localStorage keys and nothing else, so every
+// record lived in ONE browser profile on ONE machine and vanished with a
+// cache clear -- silently, with no error, and undetectably until someone went
+// looking. That is a compliance problem, not an inconvenience: the
+// Crystalline Silica Hazard Communication & Training Record is an OSHA
+// 1910.1053(k)(3) record the employer must make and MAINTAIN.
+//
+// localStorage is KEPT, demoted to a cache. It paints instantly and survives a
+// network blip; the server is the source of truth. Same optimistic-local
+// pattern sd_crm already uses in stonedesk.html.
+//
+// CERTS ARE FLATTENED to one row per training event (key employee::type)
+// rather than the old nested object, because that is what a retained record
+// is -- each row carries its own trainer, date and stamp, and a second
+// training cannot silently overwrite the first.
+var HR_API = 'https://sairn.vercel.app/api/sd-data';
+var hrProvisioned = null;   // null = unknown, false = migration not run
+
+function hrLicenseKey() {
+  try {
+    return localStorage.getItem('sd_license_key') ||
+           localStorage.getItem('stonedesk_license_key') || '';
+  } catch (e) { return ''; }
+}
+function hrCall(action, resource, payload) {
+  var lic = hrLicenseKey();
+  if (!lic) return Promise.resolve({ ok: false, error: { message: 'No licence key on file' } });
+  var h = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + lic };
+  try { var t = sessionStorage.getItem('sd_session_token'); if (t) h['X-SD-Auth'] = t; } catch (e) {}
+  var body = { action: action, resource: resource, app_id: 'stonedesk' };
+  if (payload) body.payload = payload;
+  return fetch(HR_API, { method: 'POST', headers: h, body: JSON.stringify(body) })
+    .then(function (r) { return r.json().catch(function () { return null; }); })
+    .then(function (d) { return d || { ok: false, error: { message: 'Unreadable server response' } }; })
+    .catch(function () { return { ok: false, error: { message: 'Network error' } }; });
+}
+
+function saveData() {
+  // Cache first so the UI never blocks on the network.
+  try {
+    localStorage.setItem('sd_hr_employees', JSON.stringify(employees));
+    localStorage.setItem('sd_hr_certs', JSON.stringify(certifications));
+  } catch (e) {}
+}
+
+// Writes ONE record and reports the real outcome. Deliberately not fire-and-
+// forget: a silently-failed write is exactly the failure this whole change
+// exists to remove, so a rejection is surfaced rather than swallowed.
+function hrSaveEmployee(emp) {
+  saveData();
+  return hrCall('write', 'sd_hr_employees', Object.assign({ id: emp.id }, emp))
+    .then(function (r) {
+      if (!r || !r.ok) {
+        notify('Saved on this device only -- server said: ' +
+               ((r && r.error && r.error.message) || 'unknown error'), 'error');
+        return false;
+      }
+      return true;
+    });
+}
+function hrSaveCert(empKey, certType, rec) {
+  saveData();
+  var key = empKey + '::' + certType;
+  return hrCall('write', 'sd_hr_certs',
+      { id: key, employee_key: empKey, cert_type: certType,
+        trainer: rec.trainer, date: rec.date, recordedAt: rec.recordedAt })
+    .then(function (r) {
+      if (!r || !r.ok) {
+        notify('Training record saved on this device only -- server said: ' +
+               ((r && r.error && r.error.message) || 'unknown error'), 'error');
+        return false;
+      }
+      return true;
+    });
+}
+
+// Server read on load. On success the server REPLACES the cache rather than
+// merging: the cache is a copy of the last server read, so a merge would
+// resurrect records another manager deleted elsewhere.
+function hrLoadFromServer() {
+  return Promise.all([
+    hrCall('read', 'sd_hr_employees'),
+    hrCall('read', 'sd_hr_certs')
+  ]).then(function (res) {
+    var e = res[0], c = res[1];
+    if (!e || !e.ok || !c || !c.ok) {
+      notify('Working from this device’s copy -- could not reach the server. ' +
+             'Changes will save locally but may not be recorded.', 'error');
+      return;
+    }
+    hrProvisioned = (e.provisioned !== false && c.provisioned !== false);
+    if (!hrProvisioned) {
+      // An honest empty state. Without this the page shows a convincing empty
+      // roster and every save appears to work while nothing is retained.
+      notify('HR storage is not set up on the server yet -- run ' +
+             'sql/sd_hr_schema.sql. Records are NOT being retained.', 'error');
+      return;
+    }
+    employees = (e.data || []).map(function (x) {
+      var o = Object.assign({}, x); o.id = String(x.id); return o;
+    });
+    certifications = {};
+    (c.data || []).forEach(function (row) {
+      var ek = row.employee_key, ct = row.cert_type;
+      if (!ek || !ct) return;
+      if (!certifications[ek]) certifications[ek] = {};
+      certifications[ek][ct] = { trainer: row.trainer, date: row.date, recordedAt: row.recordedAt };
+    });
+    saveData();
+    renderEmployeeTable(); renderDashboard(); renderCertTracker(); updateEmpCount();
+  });
+}
+
+// ── ACCESS GATE ─────────────────────────────────────────────────────────────
+// Cosmetic only; api/sd-data.js's SD_HR branch re-checks the session and role
+// on every single call and is the real boundary.
+function hrGate() {
+  var msg = document.getElementById('hr-gate-msg');
+  var acts = document.getElementById('hr-gate-actions');
+  var gate = document.getElementById('hr-gate');
+  var lic = hrLicenseKey();
+  var role = '', tok = '';
+  try { role = sessionStorage.getItem('sd_session_role') || ''; } catch (e) {}
+  try { tok = sessionStorage.getItem('sd_session_token') || ''; } catch (e) {}
+
+  function refuse(text) {
+    if (msg) msg.textContent = text;
+    if (acts) acts.style.display = 'block';
+    return false;
+  }
+  if (!lic) return refuse('No StoneDesk licence key on this device. Open StoneDesk, enter your licence key and sign in, then return here.');
+  if (!tok) return refuse('You are not signed in to StoneDesk on this device, or your session has expired. Sign in there first -- this page uses the same session.');
+  if (role !== 'owner' && role !== 'admin') return refuse('HR records are limited to an Owner or Manager. You are signed in as "' + role + '".');
+  if (gate) gate.style.display = 'none';
+  return true;
+}
+
+function printChecklist() { window.print(); }
+function resetChecklist() {
+  document.querySelectorAll('#page-onboarding input[type=checkbox]').forEach(c => c.checked = false);
+  notify('Checklist reset.', 'info');
+}
+
+// ── INIT ──
+// Paint from cache first so the page is never blank, then reconcile against
+// the server. If the gate refuses, nothing is fetched and the overlay stays.
+updateEmpCount();
+renderDashboard();
+if (hrGate()) {
+  hrLoadFromServer();
+}
+
+// Close modals on background click
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => { if (e.target === bg) bg.classList.remove('open'); });
+});
+</script>
+</body>
+</html>

@@ -600,6 +600,66 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: (Array.isArray(wrows) && wrows[0]) ? wrows[0].data : payload });
       return;
     }
+    // ── HR ONBOARDING (2026-08-29) ──────────────────────────────────────────────────────────
+    // Backs stonedesk-hr.html. Same generic id-keyed shape as SD_LINEAGE above, and
+    // DELIBERATELY NOT the same gate. Lineage is unauthenticated because the slab record it
+    // describes is; this is personnel data -- name, pay rate, phone, email, and training
+    // history about identifiable people -- so it requires a real session AND management role,
+    // the same owner/admin pair that already gates the Grant and Revoke Sign-In Access cards
+    // in stonedesk.html. Copying SD_LINEAGE's gate along with its shape would have published
+    // the shop's payroll to anyone holding the licence key.
+    //
+    // NO DELETE BRANCH, on purpose. sql/sd_hr_schema.sql grants only select/insert/update, and
+    // removing an employee from the roster must not take their OSHA 1910.1053(k)(3) silica
+    // training record with them. The client's "Remove employee" marks status instead.
+    const SD_HR = {
+      sd_hr_employees: { idCol: 'employee_key', label: 'employees' },
+      sd_hr_certs:     { idCol: 'cert_key',     label: 'training records' }
+    };
+    if (SD_HR[resource] && (action === 'read' || action === 'write')) {
+      const cfg = SD_HR[resource];
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (session.role !== 'owner' && session.role !== 'admin') {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Manager can view or change HR records' } });
+        return;
+      }
+      if (action === 'read') {
+        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=' + cfg.idCol + ',data'), { headers });
+        // Un-run migration degrades to "nothing recorded yet" rather than breaking the page,
+        // same as the lineage tables -- but provisioned:false is reported so the client can
+        // say so out loud instead of showing a convincing empty list.
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({
+          ok: true,
+          data: (rows || []).map((x) => Object.assign({ id: x[cfg.idCol] }, x.data)),
+          provisioned: true
+        });
+        return;
+      }
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const hrRow = { license_hash: licHash, app_id: 'stonedesk', data: payload, updated_at: nowISO() };
+      hrRow[cfg.idCol] = String(payload.id);
+      const hw = await fetch(rest(resource + '?on_conflict=license_hash,' + cfg.idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(hrRow)
+      });
+      if (hw.status === 404 || hw.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'HR ' + cfg.label + ' storage is not set up yet — run sql/sd_hr_schema.sql in Supabase first.' } });
+        return;
+      }
+      const hwrows = await hw.json();
+      if (!hw.ok) return upstream(res, hwrows);
+      res.status(200).json({ ok: true, data: (Array.isArray(hwrows) && hwrows[0]) ? hwrows[0].data : payload });
+      return;
+    }
+
     // ── CRM / LEAD PIPELINE (2026-08-19) ────────────────────────────────────────────────────
     // First real server sync sd_crm has ever had -- was pure localStorage before this (see
     // sql/sd_crm_schema.sql's own header). Read/write both require a real StoneDesk session

@@ -7,6 +7,10 @@
       "dest": "/stonedesk.html"
     },
     {
+      "src": "/stonedesk-hr$",
+      "dest": "/stonedesk-hr.html"
+    },
+    {
       "src": "/sairnbiz$",
       "dest": "/sairnbiz.html"
     },
