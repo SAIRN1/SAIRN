@@ -66,6 +66,12 @@
             "type": "command",
             "command": "python C:/SAIRN/tools/git_push_master_guard.py",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python C:/SAIRN/tools/seed_load_gate_hook.py",
+            "timeout": 150,
+            "statusMessage": "Checking live rules match the seed files..."
           }
         ]
       },

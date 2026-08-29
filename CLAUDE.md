@@ -175,6 +175,43 @@ arrived here through this file rather than a trigger word:
    not proof the live app reflects the change.
 Neither step is optional, going forward, regardless of how small the change looks.
 
+3. **If the push touches a reference SEED file, the live licence must already
+   match it.** Added 2026-08-29 after the failure that made it necessary: on
+   2026-08-27 two committed SAIRNlaw corrections were never LOADED, and
+   `LAW-PINNACLE-2026` — the canonical customer licence — computed federal
+   answer deadlines three days late for a day. Step 2 above covers deployed
+   CODE; a seed-file change is **inert until a loader runs**, and nothing
+   covered that.
+
+   This step is **mechanical, not remembered.** `tools/seed_load_gate_hook.py`
+   runs as a PreToolUse Bash hook on every `git push`, looks at the commits
+   actually being pushed, and only acts if one touches a seed file. Then:
+   - live matches the repo → allows silently (the normal case if you loaded
+     first, which is why a correct workflow feels no friction);
+   - **drift → the push is DENIED**, naming the app, the rule id, and the
+     reload command;
+   - could not tell (no key, endpoint unreachable) → allows with a loud note.
+     **That is not a pass.** Run
+     `python tools/sairn_load_state_check.py --app <app> --key <key>` and
+     report the real result rather than treating silence as agreement.
+
+   Load-then-push and push-then-load both end with live == repo; the hook only
+   cares that they agree by the time you push. Load first anyway — a denied
+   push costs nothing, a shipped-but-unloaded correction costs a wrong legal
+   date.
+
+   `SAIRN_SEED_GATE=off` overrides it. **Say so out loud when you use it** — an
+   override nobody mentions is how a gate gets hollowed out. The hook fails
+   OPEN on any internal error, same standard as the other hooks, because one
+   that crashes closed gets disabled and then protects nothing.
+
+   The gate itself is `tools/sairn_load_state_check.py` (`--app sairnlaw |
+   sairncare | sairndental | sairnroofing`), which reads the seed files at run
+   time so it cannot go stale. **Do not reintroduce a GENERATED gate** — a file
+   that must be regenerated after every seed edit reproduces this exact
+   silent-failure shape inside the thing meant to catch it. See the superseded
+   header on `tools/sairn_build_load_gates.py`.
+
 ## Verification Discipline (added 2026-08-18)
 A status report is a claim, not a fact, until checked against the real current state:
 - Never report a migration, config change, or prior fix as "already done" from memory or a prior session's summary — verify it live (query the DB, curl the real deployed endpoint, re-read the current file) before saying so.

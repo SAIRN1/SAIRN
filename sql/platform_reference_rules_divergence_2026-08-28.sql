@@ -296,10 +296,20 @@ order by diverged_ids desc, table_name;
 -- ids no matter what the rule said. The counts confirm it exactly: TEST holds
 -- 87 rules and 8 jurisdictions x 6 years = 48 calendars. 87/87 and 48/48.
 --
--- FIXED IN THIS FILE the same day: the hash now excludes that one field, so a
--- re-run should report law_deadline_rules diverged_ids = 7 (the rows the two
--- 2026-08-27 corrections touched, TEST stale) and law_holidays = 0. If you see
--- 87 and 48 again you are running an older copy of this file.
+-- FIXED IN THIS FILE the same day: the hash now excludes that one field. If you
+-- see 87 and 48 again you are running an older copy of this file.
+--
+-- RUN CONFIRMED 2026-08-29 (Michael, Supabase editor): law_deadline_rules 7,
+-- law_holidays 5, and every other reference table on the platform consistent.
+-- THE 7 WAS PREDICTED HERE; THE 5 WAS NOT -- the prediction said 0, and it is
+-- worth saying why rather than quietly editing the note to match the result.
+-- The five are in:2027, mi:2027, oh:2027, pa:2027 and us-federal:2027, which
+-- were corrected on LAW-PINNACLE-2026 LATER THE SAME DAY the 0 was written --
+-- the doubly-defined 2027 calendars, see the SAIRNlaw row in
+-- docs/SAIRN-OPEN-WORK-INDEX.md. LAW-TEST-2026 still holds the pre-correction
+-- copies. So all 12 diverged entries are stale-vs-corrected against a frozen
+-- internal test tenant and none is customer-facing. A prediction written before
+-- a change and read after it is a prediction about a different database.
 --
 -- CONFIRMED, not assumed: a read-only compute-diff of all 89 repo rules in
 -- TEST's 8 jurisdictions, on both licences, 178 probes, whole responses compared
