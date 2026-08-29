@@ -26,8 +26,18 @@ import sys
 import collections
 
 TOAST = r'(?:showToast|toast|showMsg|notify|alert)'
-HANDLER = re.compile(r'\bon(?:click|change|submit|input|dblclick|keyup)\s*=\s*(["\'])(.*?)\1',
-                     re.S | re.I)
+# WIDENED 2026-08-29. Was click|change|submit|input|dblclick|keyup only, which
+# meant onblur / onfocus / onmouseover handlers were NEVER EXAMINED -- a dead
+# onmouseover="missingFn()" would have gone unreported in every app, and the
+# check would still print A -> 0 and look like a pass. Found while chasing a
+# false positive: 16 `rgba` captures in stonedesk.html sat in onfocus/onblur/
+# onmouseover attributes and could not be explained until it turned out the tool
+# never read those attributes at all. Silence was the bigger defect; the noise
+# was only what led to it.
+HANDLER = re.compile(
+    r'\bon(?:click|change|submit|input|dblclick|keyup|keydown|keypress'
+    r'|blur|focus|mouseover|mouseout|mouseenter|mouseleave)\s*=\s*(["\'])(.*?)\1',
+    re.S | re.I)
 DOM_BUILTINS = {
     'getElementById', 'querySelector', 'querySelectorAll', 'click', 'remove',
     'scrollIntoView', 'focus', 'blur', 'preventDefault', 'stopPropagation',
@@ -285,7 +295,20 @@ def audit(path):
         # form.reset(), window.print() and every other native call an inline
         # handler legitimately makes -- the old DOM_BUILTINS allowlist could only
         # ever chase them one name at a time, and `select` was simply not on it.
-        for c in re.finditer(r'(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(', m.group(2)):
+        #
+        # SECOND FALSE-POSITIVE CLASS, fixed 2026-08-29 in the same change as the
+        # regex widening above, and deliberately so: widening coverage without
+        # this would have turned 17 known-harmless captures into new class-A
+        # failures and made the tool noisier before it got better.
+        # A name followed by "(" INSIDE A STRING LITERAL is prose or CSS, never a
+        # call this file can resolve. Two real instances:
+        #   sairnlegacy  askAI('...General Price List (GPL)...')  -> captured `List`
+        #   stonedesk    this.style.borderColor='rgba(232,133,10,0.7)' -> `rgba` x16
+        # Blanking literals first is the fix, not adding `List` and `rgba` to
+        # DOM_BUILTINS: an allowlist can only ever chase these one word at a time,
+        # and the next one is whatever prose someone types into the next AI prompt.
+        body = re.sub(r"'[^'\n]*'|\"[^\"\n]*\"", lambda q: ' ' * len(q.group(0)), m.group(2))
+        for c in re.finditer(r'(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(', body):
             handler_calls[c.group(1)].append(ln(m.start()))
 
     findings = collections.OrderedDict()
