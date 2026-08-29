@@ -87,6 +87,29 @@ where (xpath('/row/c/text()',
                             r.table_name, l.lic_hash), false, true, '')))[1]::text::bigint > 0
 order by rows_held desc, r.table_name, l.app_id;
 
+-- ── UPDATED 2026-08-29: EXCLUDE authority.verified_by ───────────────────
+-- The first run of this file produced 87 diverged rules and 48 holidays. Every
+-- one turned out to be noise from a single nested field: add_rule/add_holidays
+-- write `authority.verified_by` INTO the data blob from the CALLER'S SESSION, so
+-- it records HOW a licence was loaded rather than WHAT a rule says -- an employee
+-- session stamps an id, the bearer-key loader stamps null. Leaving it in makes
+-- every row of a session-loaded licence differ from every row of a loader-loaded
+-- one.
+--
+-- ⚠ IT IS NESTED, NOT TOP-LEVEL. `data - 'verified_by'` removes NOTHING here and
+-- would have looked like a fix while changing no result. The path is
+-- {authority,verified_by}, hence `#-` rather than `-`.
+--
+-- NOTHING ELSE IS EXCLUDED, deliberately, and this mirrors the canonical
+-- definition already implemented in api/legal-deadlines.js contentHash():
+-- "sha256/16 over the data blob with authority.verified_by removed, object keys
+-- sorted". authority.retrieved_at and the authority URL are substantive legal
+-- provenance -- a row whose cited source moved MUST still show as drifted.
+--
+-- md5 over jsonb::text is stable here without sorting keys by hand: Postgres
+-- normalises key order inside the jsonb type itself, so two equal jsonb values
+-- always render identically.
+
 -- ═════════════════════════════════════════════════════════════════════════
 -- QUERY 2 -- THE ONE THAT MATTERS. Same rule id, DIFFERENT content, across two
 -- or more licences. Anything flagged here is two customers being told different
@@ -237,7 +260,7 @@ order by diverged_ids desc, table_name;
 --
 -- ── THE ONE FIELD DELIBERATELY EXCLUDED, corrected 2026-08-28 ───────────
 -- The hash is md5((data::jsonb #- '{authority,verified_by}')::text), NOT
--- md5(data::text). `authority.verified_by` is written INTO the blob by the app
+-- md5((data #- '{authority,verified_by}')::text). `authority.verified_by` is written INTO the blob by the app
 -- (api/legal-deadlines.js: `caller ? caller.employee_id : null`), so it records
 -- HOW a licence was loaded, not WHAT the rule says: an employee session stamps
 -- an id, the bearer-key loader stamps null. It is present on 100% of rows by
@@ -269,7 +292,7 @@ order by diverged_ids desc, table_name;
 -- one of its rows carries "hank-verify". LAW-PINNACLE-2026 was backfilled by
 -- tools/load_deadline_seed.py, which sends the bearer key and no session, so
 -- every one of ITS rows carries null. That single field is present on 100% of
--- rows by construction, so the old md5(data::text) differed on 100% of shared
+-- rows by construction, so the old md5((data #- '{authority,verified_by}')::text) differed on 100% of shared
 -- ids no matter what the rule said. The counts confirm it exactly: TEST holds
 -- 87 rules and 8 jurisdictions x 6 years = 48 calendars. 87/87 and 48/48.
 --
