@@ -161,30 +161,6 @@
         { "date": "2026-11-26", "name": "Thanksgiving Day", "kind": "declared" },
         { "date": "2026-12-25", "name": "Christmas Day", "kind": "declared" }
       ]
-    },
-    {
-      "jurisdiction": "in",
-      "year": 2027,
-      "authority": {
-        "citation": "Ind. Code Sec. 1-1-9-1 (legal holidays)",
-        "url": "https://codes.findlaw.com/in/title-1-general-provisions/in-code-sect-1-1-9-1.html",
-        "note": "Loaded alongside 2026 so a period triggered late in 2026 does not refuse for a missing year. Independence Day 2027 falls on a Sunday and shifts to Monday 2027-07-05; Christmas Day 2027 falls on a Saturday and shifts to Friday 2027-12-24 -- both under IC 1-1-9-1(b)'s two-way shift, each checked by day-of-week. Good Friday 2027 computed as 2027-03-26 and confirmed against published calendars. NO election days are listed for 2027: Indiana's municipal elections fall in odd years and vary by locality, so they cannot be enumerated statewide from here -- an Indiana computation in 2027 landing near a local election day must be checked by hand. See _readme finding 4.",
-        "retrieved_at": "2026-08-22"
-      },
-      "dates": [
-        { "date": "2027-01-01", "name": "New Year's Day", "kind": "declared" },
-        { "date": "2027-01-18", "name": "Martin Luther King, Jr.'s Birthday", "kind": "declared" },
-        { "date": "2027-02-12", "name": "Abraham Lincoln's Birthday", "kind": "declared" },
-        { "date": "2027-02-15", "name": "George Washington's Birthday", "kind": "declared" },
-        { "date": "2027-03-26", "name": "Good Friday", "kind": "declared" },
-        { "date": "2027-05-31", "name": "Memorial Day", "kind": "declared" },
-        { "date": "2027-07-05", "name": "Independence Day (observed, July 4 falls on Sunday)", "kind": "declared" },
-        { "date": "2027-09-06", "name": "Labor Day", "kind": "declared" },
-        { "date": "2027-10-11", "name": "Columbus Day", "kind": "declared" },
-        { "date": "2027-11-11", "name": "Veterans Day", "kind": "declared" },
-        { "date": "2027-11-25", "name": "Thanksgiving Day", "kind": "declared" },
-        { "date": "2027-12-24", "name": "Christmas Day (observed, Dec 25 falls on Saturday)", "kind": "declared" }
-      ]
     }
   ]
 }

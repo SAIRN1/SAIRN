@@ -211,34 +211,6 @@
         { "date": "2026-11-26", "name": "Thanksgiving Day", "kind": "declared" },
         { "date": "2026-12-25", "name": "Christmas Day", "kind": "declared" }
       ]
-    },
-    {
-      "jurisdiction": "pa",
-      "year": 2027,
-      "authority": {
-        "citation": "44 P.S. Sec. 11 (Pennsylvania legal holidays), together with the federal list, per Pa.R.J.A. 107(b)",
-        "url": "https://codes.findlaw.com/pa/title-44-ps-legal-holidays-and-observances/pa-st-sect-44-11/",
-        "note": "Loaded alongside 2026 so a period triggered late in 2026 does not refuse for a missing year. 2027 is the year Pennsylvania's two-sovereign construction does the most work, each date checked by day-of-week: FLAG DAY falls on a Monday (2027-06-14) and is a real weekday holiday here, something no other calendar in this system can produce at all. Juneteenth falls on a Saturday, so the federal observed Friday 2027-06-18 is included alongside the statutory 2027-06-19. Independence Day falls on a Sunday, so the federal observed Monday 2027-07-05 is included. Christmas Day falls on a Saturday, so the federal observed Friday 2027-12-24 is included alongside the statutory 2027-12-25. Good Friday computed as 2027-03-26 and confirmed. General Election Day computed from the statutory formula as 2027-11-02. Same deliberate exclusions as 2026 -- see _readme finding 5.",
-        "retrieved_at": "2026-08-22"
-      },
-      "dates": [
-        { "date": "2027-01-01", "name": "New Year's Day", "kind": "declared" },
-        { "date": "2027-01-18", "name": "Dr. Martin Luther King, Jr. Day", "kind": "declared" },
-        { "date": "2027-02-15", "name": "Presidents' Day", "kind": "declared" },
-        { "date": "2027-03-26", "name": "Good Friday", "kind": "declared" },
-        { "date": "2027-05-31", "name": "Memorial Day", "kind": "declared" },
-        { "date": "2027-06-14", "name": "Flag Day", "kind": "declared" },
-        { "date": "2027-06-18", "name": "Juneteenth (federal observed, June 19 falls on Saturday)", "kind": "declared" },
-        { "date": "2027-06-19", "name": "Juneteenth (statutory federal date)", "kind": "declared" },
-        { "date": "2027-07-05", "name": "Independence Day (federal observed, July 4 falls on Sunday)", "kind": "declared" },
-        { "date": "2027-09-06", "name": "Labor Day", "kind": "declared" },
-        { "date": "2027-10-11", "name": "Columbus Day", "kind": "declared" },
-        { "date": "2027-11-02", "name": "Election Day (general)", "kind": "declared" },
-        { "date": "2027-11-11", "name": "Veterans' Day", "kind": "declared" },
-        { "date": "2027-11-25", "name": "Thanksgiving Day", "kind": "declared" },
-        { "date": "2027-12-24", "name": "Christmas Day (federal observed, Dec 25 falls on Saturday)", "kind": "declared" },
-        { "date": "2027-12-25", "name": "Christmas Day (statutory date)", "kind": "declared" }
-      ]
     }
   ]
 }

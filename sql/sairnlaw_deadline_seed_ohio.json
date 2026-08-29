@@ -121,29 +121,6 @@
         { "date": "2026-11-26", "name": "Thanksgiving Day", "kind": "declared" },
         { "date": "2026-12-25", "name": "Christmas Day", "kind": "declared" }
       ]
-    },
-    {
-      "jurisdiction": "oh",
-      "year": 2027,
-      "authority": {
-        "citation": "Ohio Rev. Code Sec. 1.14 (legal holidays)",
-        "url": "https://codes.ohio.gov/ohio-revised-code/section-1.14",
-        "note": "Loaded alongside 2026 for the same cross-year reason as the federal calendar. Juneteenth 2027 and Christmas 2027 both fall on a Saturday and are NOT shifted under Ohio law (unlike federal's 2027-06-18 and 2027-12-24 observed entries). Independence Day 2027 falls on a Sunday and DOES shift to Monday under Ohio's own Sunday-shift provision, matching the federal date in this one instance only.",
-        "retrieved_at": "2026-08-21"
-      },
-      "dates": [
-        { "date": "2027-01-01", "name": "New Year's Day", "kind": "declared" },
-        { "date": "2027-01-18", "name": "Martin Luther King Day", "kind": "declared" },
-        { "date": "2027-02-15", "name": "Washington-Lincoln Day", "kind": "declared" },
-        { "date": "2027-05-31", "name": "Memorial Day", "kind": "declared" },
-        { "date": "2027-06-19", "name": "Juneteenth Day", "kind": "declared" },
-        { "date": "2027-07-05", "name": "Independence Day", "kind": "declared" },
-        { "date": "2027-09-06", "name": "Labor Day", "kind": "declared" },
-        { "date": "2027-10-11", "name": "Columbus Day", "kind": "declared" },
-        { "date": "2027-11-11", "name": "Veterans' Day", "kind": "declared" },
-        { "date": "2027-11-25", "name": "Thanksgiving Day", "kind": "declared" },
-        { "date": "2027-12-25", "name": "Christmas Day", "kind": "declared" }
-      ]
     }
   ]
 }

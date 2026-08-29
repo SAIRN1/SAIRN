@@ -43,6 +43,43 @@ rule, and it deliberately does not offer to fix what it finds -- reloading a
 customer licence is a decision with a person's name on it, not a side effect of
 running a check.
 
+WHAT IT STILL CANNOT DO, stated in the words of the DB-side gate this replaced:
+tell you a reload RAN. It reports what a licence HOLDS versus what the seeds
+SAY. That is the question that matters, but it is not the same question.
+
+── CONSOLIDATED 2026-08-29, one gate not two ────────────────────────────────
+Two load-state gates were built the same night by two sessions working in
+parallel: this one, and a generated SQL gate (tools/sairnlaw_build_load_gate.py
++ sql/sairnlaw_load_gate_generated.sql, commit ca83d1f). Two checks answering
+one question is how they drift apart and how people stop believing either, so
+the SQL pair was removed and this is canonical. The reasoning, recorded because
+the deleted one was good work and the tradeoff was not one-sided:
+
+  WHY THIS ONE. It needs only a licence key, so it runs from any clone and can
+  gate a pre-push step; the SQL gate needed Supabase editor access. It reads the
+  seeds at run time, so it cannot go stale; the SQL gate had to be REGENERATED
+  after every seed change, and a forgotten regeneration is silently the same
+  failure class the gate exists to catch. It covers holiday CALENDARS as well
+  as rules -- the SQL gate globbed seed_*.json only, and would have missed the
+  five doubly-defined 2027 calendars found on 2026-08-29. It reports MISSING and
+  EXTRA, not just STALE. And it checks the live API path, which is what the app
+  actually serves from.
+
+  WHAT THE OTHER ONE HAD THAT THIS DOES NOT. Postgres compares jsonb
+  canonically, so it never had to make two languages agree on a digest. That
+  risk here is real and was closed by proof rather than by care: the JS and
+  Python implementations were run against all 401 seed entries and agreed on
+  401/401.
+
+  A DEFECT IN THE DELETED GATE, worth keeping so it is not reintroduced: its
+  INERT_KEYS listed `computation` as unable to change a computed date. It
+  selects the counting standard -- frcp_6a vs fl_rgpja_2514 vs ok_12_2006 --
+  and changing it changes the date. A rule whose computation standard drifted
+  would have passed that gate clean. This one compares the whole blob minus a
+  single field, which is subtractive selection taken to its limit and is the
+  one design idea from the deleted gate worth restating: never hand-pick the
+  fields that matter, because that list goes stale silently.
+
 Exit codes, so this can gate rather than merely inform:
   0  the licence matches the seed files
   1  drift found (missing, stale or extra)
