@@ -464,3 +464,11 @@ function upstream(res, detail) {
   }
   res.status(502).json({ error: { message: 'Data store error — try again' } });
 }
+
+// ── Exported for tools/licence_recoverability_check.py via
+// api/provisioner-health.js, added 2026-08-29. The trapdoor is a licence with
+// credential rows and ZERO rows that are both `active` and hold one of these
+// roles. The detector must read THIS list rather than assume 'owner' --
+// SAIRNcode's is 'admin' -- so the list is exported instead of duplicated.
+module.exports.PROVISIONING_ROLES = PROVISIONING_ROLES;
+module.exports.EMPLOYEE_TABLE = TABLE;
