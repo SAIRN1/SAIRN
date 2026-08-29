@@ -1471,6 +1471,21 @@ they are not.
 **Logged:** 2026-08-28 (CC) for whoever builds it — **Cody owns this project**;
 this row exists only so the point is on record rather than in a chat transcript.
 
+**⚠ STATUS UPDATED 2026-08-29: THE BACKTEST HAS RUN and the live paper-trading
+version is built.** Reported result: a flatten-at-close configuration profitable
+across nine configs, +2.75% to +5.46% against SPY's +3.22% over the same window.
+The build is blocked only on Alpaca keys reaching Cody's `.env`.
+
+**What this row asked is therefore no longer a gate — but it is not confirmed
+answered either, and that distinction is the point of leaving it here.** I have
+not seen which data source the backtest used or at what granularity, and a
+result of "+2.75% to +5.46%" is exactly as plausible whether the entry trigger
+was detected from real intraday bars or silently approximated from daily ones.
+If the source and granularity are already recorded somewhere, this row closes on
+sight. If they are not, the number should be treated as unvalidated until they
+are — not because anything looks wrong, but because a daily-only feed produces a
+confident result for a strategy nobody specified.
+
 The queued paper-trading bot's build order starts with "backtest the exact rules
 against real historical data using backtrader." That step has an unstated
 dependency: **backtrader has no built-in Alpaca feed**, and the strategy's scan
@@ -1540,6 +1555,38 @@ anywhere records which seed generation it holds.
 Without a staleness signal the same gap reopens the next time any rule is
 corrected, and the next discovery will again be accidental. Tonight it was found
 because someone happened to run a divergence audit; that is not a control.
+
+**⚠ STATUS UPDATED 2026-08-29 — option (b) HAS BEEN BUILT, twice, independently.**
+This row was written when nothing could detect the drift. Since then:
+- `tools/sairn_build_load_gates.py` + `tools/sairnlaw_build_load_gate.py`
+  generate read-only gates comparing every live row against the seed it came
+  from, for **6 tables across 5 apps** — law_deadline_rules (270 rules),
+  alf_compliance_rules (16), alf_payer_rules (6), dnt_cred_rules (6),
+  rf_cert_rules (3), rf_contingency_rules (2). Proven retroactively: the
+  SAIRNlaw gate independently named the same 7 stale rule ids the compute-diff
+  found, by content comparison rather than by live computes.
+- `api/legal-deadlines.js` `contentHash()` (another session) exposes the same
+  idea as a live fingerprint endpoint — sha256/16 over the data blob with
+  `authority.verified_by` removed, keys sorted.
+
+So the answer landed as (b), not (a), and it did NOT require anyone to start
+bumping `version`. That matters: (a) always depended on author discipline, and
+an author who forgets reintroduces the blind spot silently. Content comparison
+cannot be forgotten.
+
+**WHAT IS STILL OPEN, narrower than the original row:**
+1. `sc_anesthesia_base_units` (SAIRNcode) is the one reference table with NO
+   gate, because it has **no seed file anywhere in the repo**. There is no
+   declared state to compare a live licence against. That is a source-of-truth
+   gap, not a tooling gap, and it is the remaining instance of this class.
+2. Nobody runs the gates on a schedule. They exist and are proven; they are
+   still invoked by a human deciding to invoke them. Tonight's defect was found
+   by accident, and "someone remembers to run it" is only marginally better.
+3. Whether to bump `version` anyway, as a cheap human-readable signal alongside
+   the content check. Optional now rather than load-bearing.
+
+**Original framing, retained because the reasoning still holds for anyone
+weighing the three approaches:**
 
 **Done looks like** — a decision between, at minimum:
 - **(a) bump `version` on every corrective edit**, and add a check comparing the
