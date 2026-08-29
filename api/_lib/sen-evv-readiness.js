@@ -45,15 +45,28 @@
 //      rulemaking at all, so every operational detail CMS has published lives
 //      in sub-regulatory guidance nobody here has seen.
 //
-//      REASON CORRECTED 2026-08-28, and the correction is the useful part.
-//      This used to say medicaid.gov and cms.gov "return 403 to automated
-//      fetch". Re-tested directly: BOTH return 200. The EVV guidance page
-//      returns 404 -- it moved or was retired. A stale "blocked" note is worse
-//      than no note, because "blocked" says wait and retry while "moved" says
-//      go find the new URL, and nobody takes the second action while the first
-//      is written down. Two of our own research lanes disagreed about this host
-//      on the same day; one curl settled it. Do not record a host as blocked
-//      without re-testing it.
+//      PAGE LOCATED 2026-08-29. The moved URL is
+//      medicaid.gov/medicaid/home-community-based-services/
+//      home-community-based-services-guidance-additional-resources/
+//      electronic-visit-verification -- reached by following the redirect from
+//      the old .../guidance/electronic-visit-verification-evv path in a real
+//      browser. It indexes ten documents, the load-bearing ones being the
+//      May 16 2018 CIB and FAQ, the August 2019 "Additional EVV Guidance" CIB,
+//      the December 2022 good-faith-effort exemption guidance, and the May 2022
+//      note on documenting EVV in 1915(c) waiver applications. NONE of the ten
+//      has been read; the gap below is now a reading task, not a search.
+//
+//      AND THE 2026-08-28 CORRECTION IS ITSELF PART-WRONG, recorded rather than
+//      overwritten. It said this file used to claim 403 and that "BOTH return
+//      200". On 2026-08-29 every medicaid.gov URL tried -- the guidance path,
+//      the PDFs and the site root -- returns 403 to both WebFetch and curl with
+//      a browser user-agent, while Chrome loads them all normally. cms.gov does
+//      return 200. So the block is real, host-specific and fetcher-specific,
+//      and the page had ALSO moved. Both notes were half right, and neither
+//      alone would have found the page: "blocked" says wait, "moved" says go
+//      look, and the answer needed a different CLIENT, not a different URL.
+//      Do not record a host as blocked without re-testing it -- and do not
+//      record it as reachable on the strength of one client either.
 //   2. See the per-state note below.
 //
 // ── PER-STATE RULES ARE NOT ENCODED, AND THAT IS A REFUSAL, NOT A GAP ────
@@ -106,7 +119,7 @@ const FEDERAL_SOURCE = {
   verified_against: ['uscode.house.gov', 'govinfo.gov'],
   note: 'The six items are the statutory DEFINITION of a qualifying electronic visit verification system — not a required-field list. The operative requirement (§ 1396b(l)(1)) is that a State require the USE of such a system.',
   residual_gaps: [
-    'CMS sub-regulatory EVV guidance has not been read. There is no EVV rulemaking at all, so that guidance is where CMS operational detail lives. (Corrected 2026-08-28: this previously said cms.gov and medicaid.gov return 403. They do not — both return 200; the EVV guidance page returns 404, i.e. it moved. The gap is real, the stated reason was not.)',
+    'CMS sub-regulatory EVV guidance has not been read. There is no EVV rulemaking at all, so that guidance is where CMS operational detail lives. (Located 2026-08-29 at medicaid.gov/medicaid/home-community-based-services/home-community-based-services-guidance-additional-resources/electronic-visit-verification — ten documents, none read yet, so this is now a reading task rather than a search. Two prior reasons given here were each half right: medicaid.gov does 403 automated fetch, today including its root, AND the guidance page had moved. Chrome reaches it fine.)',
     'That States may impose requirements beyond these six is an inference from statutory silence, not a quoted rule. The statute neither sets a minimum nor preempts additional State requirements.'
   ]
 };
