@@ -183,7 +183,7 @@ Neither step is optional, going forward, regardless of how small the change look
    CODE; a seed-file change is **inert until a loader runs**, and nothing
    covered that.
 
-   This step is **mechanical, not remembered.** `tools/seed_load_gate_hook.py`
+   This step is **mechanical, not remembered.** `tools/sairn_push_gate_hook.py`
    runs as a PreToolUse Bash hook on every `git push`, looks at the commits
    actually being pushed, and only acts if one touches a seed file. Then:
    - live matches the repo → allows silently (the normal case if you loaded
@@ -204,6 +204,30 @@ Neither step is optional, going forward, regardless of how small the change look
    override nobody mentions is how a gate gets hollowed out. The hook fails
    OPEN on any internal error, same standard as the other hooks, because one
    that crashes closed gets disabled and then protects nothing.
+
+4. **If the push adds or changes a SQL file that writes credential rows, it
+   must carry the recoverability guard.** Added 2026-08-29. A licence with
+   `*_employee_auth` rows and ZERO rows that are both `active` and in that
+   app's `PROVISIONING_ROLES` is **unrecoverable through the API**: `bootstrap`
+   refuses 409 while any row exists, `setup` and `set_active` both need an
+   active provisioner. RF-PINNACLE-2026 sat in that state and nothing noticed.
+
+   **The API cannot create it** — `set_active` refuses self-deactivation,
+   refuses the last active provisioner, and re-reads that the caller's own row
+   is still active, so the count cannot cross 1 → 0. **SQL is the only door**,
+   which is why the guard lives in the SQL file and not in the app.
+
+   `tools/employee_auth_guard_check.py` enforces it, and runs automatically as
+   check 2 of the same push hook. Two end states are safe and only two:
+   **zero rows** (this RE-ARMS `bootstrap` — it is recovery, not lockout), or
+   **at least one active provisioner**. Deleting or deactivating *some*
+   provisioners while leaving others is the only dangerous shape.
+
+   **Read the app's own `PROVISIONING_ROLES` — SAIRNcode's is `admin`, not
+   `owner`.** A guard that hardcodes `owner` passes SAIRNcode clean forever
+   while checking nothing. Nineteen pre-2026-08-29 writers are grandfathered in
+   an explicit list in that tool; they are not fixed, only visible, and the list
+   is meant to be burned down rather than added to.
 
    The gate itself is `tools/sairn_load_state_check.py` (`--app sairnlaw |
    sairncare | sairndental | sairnroofing`), which reads the seed files at run

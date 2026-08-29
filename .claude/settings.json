@@ -69,9 +69,9 @@
           },
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/seed_load_gate_hook.py",
+            "command": "python C:/SAIRN/tools/sairn_push_gate_hook.py",
             "timeout": 150,
-            "statusMessage": "Checking live rules match the seed files..."
+            "statusMessage": "Checking seed load state and credential guards..."
           }
         ]
       },

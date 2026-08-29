@@ -67,6 +67,47 @@ delete from public.sairnmechanical_employee_auth
      'mech-access-verify-tech'
    );
 
+
+-- ── GUARD: the end state must not be the trapdoor. Added 2026-08-29 (Hank). ──
+-- The trapdoor is "credential rows exist AND none of them is both `active` and
+-- holding a role in this app's PROVISIONING_ROLES". `bootstrap` refuses 409
+-- while ANY row exists and does not filter on `active`; `setup` and
+-- `set_active` both require an active provisioner. All three exits shut.
+--
+-- Zero rows is NOT that state -- it RE-ARMS bootstrap and is recovery. The only
+-- dangerous shape is deleting SOME provisioners while leaving others, which is
+-- exactly how RF-PINNACLE-2026 got stuck. This raises and rolls the whole
+-- transaction back rather than committing that shape.
+--
+-- The API cannot reach this state (set_active refuses self-deactivation and the
+-- last active provisioner, and re-reads that the caller's own row is active).
+-- SQL is the only door, which is why the guard lives here and not in the app.
+--
+-- ROLES BELOW ARE SAIRNmechanical's OWN PROVISIONING_ROLES, read from api/mech-auth.js:84.
+-- Do not copy this block to another app without re-reading that app's list --
+-- SAIRNcode's is `admin`, not `owner`.
+do $$
+declare
+  lh   text := encode(digest('MECH-PINNACLE-2026', 'sha256'), 'hex');
+  rows int;
+  prov int;
+begin
+  select count(*) into rows
+    from public.sairnmechanical_employee_auth where license_hash = lh;
+  select count(*) into prov
+    from public.sairnmechanical_employee_auth
+   where license_hash = lh and active = true and role = any (array['owner']);
+
+  if rows > 0 and prov = 0 then
+    raise exception
+      'ABORTED: this would leave MECH-PINNACLE-2026 with % credential row(s) and ZERO active provisioners. '
+      'That is the unrecoverable state. Delete EVERY row for this licence, or leave at least one '
+      'active provisioner. Never a subset of the provisioners.', rows;
+  end if;
+
+  raise notice 'Guard passed: % row(s) remain, % active provisioner(s).', rows, prov;
+end $$;
+
 commit;
 
 -- ── VERIFY AFTER RUNNING ─────────────────────────────────────────────────

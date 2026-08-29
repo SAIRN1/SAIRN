@@ -1,5 +1,16 @@
-"""PreToolUse hook for Bash. Blocks a `git push` that would ship a reference-seed
-change while the live licence is still serving the old value.
+"""PreToolUse hook for Bash. Two pre-push checks that must not depend on memory.
+
+  1. SEED LOAD STATE -- blocks a push that ships a reference-seed change while
+     the live licence is still serving the old value.
+  2. CREDENTIAL-WRITER GUARD -- blocks a push adding or changing a SQL file
+     that writes an `*_employee_auth` table without the guard that stops it
+     leaving a licence with rows and ZERO active provisioners. SQL is the only
+     path into that state; the API cannot reach it.
+
+Neither runs unless the commits being pushed actually touch the relevant files,
+so an ordinary push costs nothing.
+
+CHECK 1 IN DETAIL.
 
 WHY THIS EXISTS
 ---------------
@@ -122,8 +133,38 @@ def main():
     if not os.path.isfile(checker):
         sys.exit(0)
 
+    # ── CHECK 2: credential-writer guard on any changed sql/*.sql ──────────
+    changed = outgoing_files(repo)
+    sql_changed = [q for q in changed if q.startswith('sql/') and q.endswith('.sql')]
+    if sql_changed:
+        gcheck = os.path.join(repo, 'tools', 'employee_auth_guard_check.py')
+        if os.path.isfile(gcheck):
+            try:
+                g = subprocess.run(
+                    [sys.executable, gcheck, '--changed']
+                    + [os.path.join(repo, q) for q in sql_changed],
+                    capture_output=True, text=True, timeout=60, cwd=repo)
+            except Exception:
+                g = None
+            if g is not None and g.returncode == 1:
+                msg = [
+                    "Blocked: this push adds or changes a SQL file that writes credential",
+                    "rows without the guard that keeps a licence recoverable.",
+                    "",
+                    g.stdout.strip(),
+                    "",
+                    "SQL is the ONLY path into the zero-active-provisioner state -- the API",
+                    "refuses self-deactivation and refuses to deactivate the last active",
+                    "provisioner, so it cannot get there. That is why the guard belongs in",
+                    "the file rather than in the app.",
+                    "",
+                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                ]
+                deny(chr(10).join(msg))
+
+    # ── CHECK 1: seed load state ──────────────────────────────
     apps = []
-    for path in outgoing_files(repo):
+    for path in changed:
         for pattern, app in SEED_PATTERNS:
             if pattern.match(path) and app not in apps:
                 apps.append(app)

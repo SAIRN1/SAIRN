@@ -114,14 +114,14 @@ begin
     from public.sairnroofing_employee_auth where license_hash = lh;
   select count(*) into owns
     from public.sairnroofing_employee_auth
-   where license_hash = lh and role = 'owner' and active = true;
+   where license_hash = lh and active = true and role = any (array['owner']);  -- rf PROVISIONING_ROLES, api/rf-auth.js:101
 
   -- Safe shape A: no credential rows at all -> bootstrap is re-armed.
   -- Safe shape B: at least one ACTIVE owner -> setup and set_active both work.
   -- Anything else is the trapdoor and must not be committed.
   if rows > 0 and owns = 0 then
     raise exception
-      'ABORTED: this would leave RF-PINNACLE-2026 with % credential row(s) and ZERO active owners. '
+      'ABORTED: this would leave RF-PINNACLE-2026 with % credential row(s) and ZERO active provisioners. '
       'That is the unrecoverable state -- bootstrap refuses (409) while any row exists, and setup '
       'and set_active both require an active owner. Either delete EVERY row for this licence, or '
       'leave at least one active owner. Never a subset of the owners.', rows;
