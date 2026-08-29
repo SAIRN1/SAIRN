@@ -1471,6 +1471,16 @@ they are not.
 **Logged:** 2026-08-28 (CC) for whoever builds it — **Cody owns this project**;
 this row exists only so the point is on record rather than in a chat transcript.
 
+**✅ CLOSED 2026-08-29 — the granularity question is answered, and the answer is
+the one this row was written to protect.** Confirmed: **real 1-minute intraday
+bars** for the trailing-stop leg (~24-day window, ~1,900 trades) and **daily bars
+for the 200-day trend filter**. That is the two-granularity setup the row said
+the strategy required, using real intraday data rather than approximating the
+3-5% intraday entry trigger from daily bars. The result therefore tests the rules
+as specified. Nothing further owed here.
+
+**Superseded status note, kept for the record:**
+
 **⚠ STATUS UPDATED 2026-08-29: THE BACKTEST HAS RUN and the live paper-trading
 version is built.** Reported result: a flatten-at-close configuration profitable
 across nine configs, +2.75% to +5.46% against SPY's +3.22% over the same window.
