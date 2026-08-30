@@ -165,9 +165,7 @@ unlawful without a licence, so marketing copy carries a statutory edge there.
 been read exhaustively; every round document carries its own Tier 2 list of what
 was not read.
 
-**No route found:** Alabama and Mississippi (both route their own codes to
-LexisNexis, which is JS-gated), Utah, Connecticut, Kansas, New Mexico, Montana's
-*rules* (statutes work), Wyoming, Rhode Island. **Idaho** is a self-declared
+**No route found:** Alabama and Mississippi (both route their own codes to LexisNexis, which is JS-gated), Utah, Connecticut, Kansas, and Montana's *rules* (its statutes work). **Rhode Island, New Mexico and Wyoming were opened 2026-08-30** — RI via the RICR scheme at , NM via  (route works; the home health chapter is **[RESERVED]** and empty, so its operative rules are elsewhere and unlocated), WY via its Title 35 statute PDF. See . **Idaho** is a self-declared
 site outage, retried once. **Indiana** is on hold pending an API key.
 **Arizona's** Administrative Code and **Oregon's** OARs are bot-walled.
 
