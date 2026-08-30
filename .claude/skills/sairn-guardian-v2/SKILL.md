@@ -1,13 +1,13 @@
 ---
 name: sairn-guardian-v2
-description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 30 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
+description: 'The permanent mechanical guardian for ALL 13 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 31 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
 ---
 
 # SAIRN Guardian v2
 
 Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automatic. Zero tolerance.
 
-## The 30 Checks
+## The 31 Checks
 
 ### Architecture (5)
 1. **Proxy rule** — every Claude API call goes through sairn.vercel.app/api/claude, never api.anthropic.com directly.
@@ -60,7 +60,7 @@ Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automa
 4. **is_demo flag** — every API fetch includes is_demo:true
 5. **No service_role key** — Supabase anon key only in browser code
 
-### JavaScript Safety (6)
+### JavaScript Safety (7)
 6. **No Unicode box-drawing chars** — no ─ │ ╔ ═ └ in JS strings (breaks silently).
    **FALSE-POSITIVE WARNING, added 2026-08-25.** The rule says *in JS strings*
    but the mechanical scan below greps the **whole file**, so it fires on
@@ -73,6 +73,63 @@ Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automa
 9. **No undefined functions called** — every onclick/onchange function is defined
 10. **No const/let redeclaration** — no variable declared twice in same scope
 11. **No APP_ID redeclaration** — platform-wide constants declared once
+31. **A function must never mutate a parameter and then forward `arguments`
+    under `'use strict'`. The mutation is silently discarded.** (added
+    2026-08-30)
+
+    **The incident.** Six `window.fetch` patches in `stonedesk.html` all had
+    this shape:
+
+        opts = Object.assign({}, opts, { body: JSON.stringify(body) });
+        return _orig.apply(this, arguments);
+
+    Under `'use strict'` the arguments object is **not** linked to the
+    parameters, so reassigning `opts` never reached the wrapped fetch. **Three
+    of the six were on live features and every one had been doing nothing since
+    it shipped** — Session Memory ("the AI stops forgetting what it told you two
+    questions ago" reached zero requests), Tone & Style (the
+    Simple/Detailed/Formal/Casual/Expert setting never affected a response), and
+    the personalization / shared-knowledge / employee-profile injector. No
+    error, no failed request, nothing wrong on screen.
+
+    **Why no prior check caught it, and why this one is different.** The code
+    reads correctly, so review misses it. Nothing renders wrong, so
+    `sairn-visual-review` misses it. It is valid JavaScript, so Check 0a passes
+    it. **This class is only provable by execution** — the same reason the
+    rendered-DOM assertion lives in the visual pass rather than in a static
+    scanner. Do not reason about it from the spec; run it.
+
+    **The trap that hides it.** The functions carry **no `'use strict'` of their
+    own** — they inherit it from an enclosing IIFE dozens of lines above. Read
+    in isolation the function looks fine. So strictness must be judged at
+    **block** level, not function level; a function-level check finds nothing.
+
+    **Mechanical check — two tools, run both:**
+
+        python tools/sairn_strict_args_check.py        # find candidate sites
+        node   tools/strict_args_harness.js            # prove the behaviour
+
+    The scanner reports sites; the harness is the standing proof that the engine
+    really behaves this way (4 strictness cases + the real three-injector chain:
+    forwarding via `apply` delivers **0** layers, via `call` delivers **3**).
+    Both are reconciled against a true positive rather than only ever having
+    returned clean — the scanner was run against a probe file containing one real
+    instance, one non-strict block (correctly ignored, since `arguments` *is*
+    linked there) and one block whose comment quotes the old code (correctly
+    ignored).
+
+    **The fix is to forward explicitly:** `return _orig.call(this, url, opts);`
+
+    **Do not "fix" a forward that has nothing to forward.** A pass-through that
+    never mutates its parameters is correct as `apply(this, arguments)` and is
+    *better* that way, because it preserves extra arguments. Two such forwards
+    were deliberately left in place in `stonedesk.html` (`:2115` Layer 1
+    allowlist, `:19132` Smart Retry's non-Claude branch).
+
+    **Known false positive, seen in the wild:** the scanner matches the text
+    `.apply(this, arguments)` and the fix commit for the original six added an
+    explanatory comment *quoting the old line*. The re-scan flagged it. The tool
+    now strips comments before matching, but read every hit before believing it.
 
 ### Design (5)
 12. **No dark backgrounds** — no background:#000, #111, #1a1a1a, #2d2d2d on outer containers
@@ -311,7 +368,7 @@ as the Navigation section's 16/16 and the Non-functional-buttons section's
 
 ---
 
-## Check 0 — Run BEFORE the 28 checks, every time, non-negotiable
+## Check 0 — Run BEFORE the 31 checks, every time, non-negotiable
 
 Added 2026-07-26 after finding SAIRNbiz was entirely non-functional in production
 (a parse error broke the whole app's JS) and after finding 14 of ~18 "remaining"
