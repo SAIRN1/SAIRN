@@ -483,6 +483,110 @@ shape was the real exposure."* Here the stakes are higher: an AI answering
 *"what should I claim for?"* is producing claim preparation, under the post's
 brand, for an unaccredited asker, at scale.
 
+7. ~~IRS quid-pro-quo receipt valuation~~ · ~~minor-participant data~~ ·
+   ~~Ohio alcohol pricing~~ · ~~per-capita waiver treatment~~
+   **ALL FOUR RESEARCHED 2026-08-30** —
+   `docs/2026-08-30-sairnfreedom-four-research-items.md`. Each changed the
+   design. Headlines:
+
+   - **IRS.** The pin is the small problem. **§ 170(c)(3) veterans posts and
+     § 170(c)(4) fraternal societies have different deductibility conditions** —
+     for a fraternal lodge it applies *"only if such contribution or gift is to
+     be used exclusively for religious, charitable, scientific, literary, or
+     educational purposes"* and only for gifts **by an individual**. So
+     deductibility is a **gate before the receipt renders**, per org type and
+     designated use — not a fixed string. **Third legal regime to split on the
+     veterans/fraternal axis.** On the pin: § 6115 triggers above **$75**; a
+     **lodge-emblem** pin costing ≤ **$13.90** (TY2026) clears the logo route at
+     the $100 tier; **without a logo** the fallback is 2% of the payment = $2.00
+     and almost any pin fails. **Publication 1771 is three years stale** — it
+     prints 2023 figures; load from the annual Revenue Procedure.
+   - **Minor data. COPPA does not apply** — collection is defined as gathering
+     information *from a child*, and "collected online" is statutory. **It flips
+     the moment a child types into the system**: treat that as an architectural
+     invariant with an owner. The real exposure is **ORC 2741.01(B)(4), which
+     makes *fundraising* a "commercial purpose"** — the same photo is lawful in a
+     results story and prohibited in a donation appeal, and **the standard Elks
+     release is scoped to Hoop Shoot promotion only.** Build **scoped consent as
+     an enum, never a boolean.**
+   - **Ohio alcohol. The vendor-search feature does not survive for alcohol.**
+     Spirits are a state monopoly at a uniform price; **OAC 4301:1-1-43(J)(2)
+     prohibits the RETAILER from buying outside its distributor's territory** —
+     hidden in a rule titled about signs — and discounts and rebates are banned
+     both directions. The exposure is a **first-degree misdemeanor and the
+     lodge's permit**, not ours. Replacement is better: cost-per-serving,
+     pour-cost, menu pricing against the markup floors, and **auditing that the
+     lodge is actually charged the posted price.**
+   - **Per-capita. Half confirmed, half REFUTED.** It does accrue per member on
+     the roster regardless of dues status — but **"the lodge absorbs it" is one
+     of four patterns.** Elks: the **member pays it personally** (per capita is
+     defined *outside* "dues"). VFW: a **ring-fenced Post Relief Fund** pays it
+     under Sec. 219(g), and an **actuarial endowment** covers life members.
+     Legion: the post absorbs it. So **`payer` is a separate dimension** —
+     `member` | `restricted_fund` | `endowment` | `lodge_general`. **Moose books
+     it as "Acct 2515 as liability"** in its own chart of accounts, which
+     independently confirms §2a's pass-through design.
+
+   **Two spec corrections from the alcohol pass:** **D-4** is the club permit
+   (ORC 4303.17(A)(1), and (B) expressly preserves service in a bingo room);
+   **D-4a is an AIRLINE permit** (ORC 4303.171) — never label a lodge permit
+   that. And **ORC 4303.17(A)(1) conditions D-4 issuance AND retention on
+   officers certifying a dues-paying membership with the roster on request**, so
+   the membership module already touches a liquor-permit retention condition —
+   feeding §9a.3.
+
+   **Still open, and deliberately so:** whether a premium earned by crossing a
+   *cumulative lifetime* threshold attaches to the crossing payment (no
+   authority exists — tax professional); the Elks Youth Protection Guidelines
+   (not public); whether a *conferred* Moose life member generates per capita;
+   and **Eagles entirely** — the Grand Aerie Constitution is sold as a physical
+   product, so Eagles must be treated as unresearched. Three questions for a real
+   lodge officer are in the research doc.
+
+### 9b. Named but not defined — need the source detail
+
+**RESOLVED 2026-08-30 — all five source details received and folded in.**
+
+- ~~Three-layer fee structure~~ → **§2a**
+- ~~Conditional waiver rules~~ → **§2b**
+- ~~Donor recognition tiers~~ → **§5a**
+- ~~Named youth programs~~ → **§6a**
+- ~~AI vendor price search scope~~ → **§3a**
+
+Nothing in this sub-section is outstanding. Note that folding them in **created
+four new research items** (§9a.7–10) rather than closing the list — detail
+surfaces edges that a feature name hides, which is the argument for getting the
+detail before building rather than after.
+
+### 9c. ~~A conflict to resolve~~ — RESOLVED 2026-08-30
+
+**The animated-flag / static-branding tension is decided.** Animated banner
+app-wide, **static on onboarding**. The earlier rejection was of a bad
+implementation (turbulence filters reading as water or TV static), not of the
+idea, so what survives is a ban on the *technique*, not the effect. Built
+properly as real work and reviewed against `sairn-visual-review` on a rendered
+page at real size before it is called done. Full reasoning in **§1d**; also
+recorded in the canonical research doc's Binding Decisions.
+
+### 9d. Two hard product rules from the VA research — not optional
+
+**No fee may attach to claims assistance, anywhere in the product.** Every
+recognition route in 38 U.S.C. §§ 5902, 5903 and 38 CFR 14.630 requires
+certifying that **no compensation of any nature** is charged. A post is a
+nonprofit and its officer serves free, so this is satisfied naturally — **but
+the Service Officer function must never sit behind a paid tier, subscription
+gate or upgrade prompt.** Doing so creates exactly the compensation the
+certification denies.
+
+**The AI assistant must DECLINE claim-strategy questions in its system prompt.**
+Not a disclaimer, not a warning banner — a refusal. This platform already made
+this call once on SAIRNroofing, where the operations assistant was changed to
+refuse claim-strategy questions because *"nothing stopped it answering a
+negotiation question from general knowledge, and an app-branded answer of that
+shape was the real exposure."* Here the stakes are higher: an AI answering
+*"what should I claim for?"* is producing claim preparation, under the post's
+brand, for an unaccredited asker, at scale.
+
 7. **IRS quid-pro-quo / donor-tier receipt valuation.** §5a. Auto-emailed tax
    receipts (4.4) plus physical recognition items (4.5) meet at a real IRS rule:
    goods given in exchange for a contribution reduce the deductible amount and
