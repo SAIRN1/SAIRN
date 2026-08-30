@@ -1,6 +1,7 @@
 ---
 name: sairn-skill-author
 description: Write and maintain a SAIRN skill so it stays true after the thing it describes changes. Covers what earns a skill at all, how to source a rule from a real incident, and the maintenance conventions that keep a skill from quietly becoming a lie — dated in-place corrections, numbering that never renumbers, retiring rather than deleting, and never trusting a count. Trigger before creating any skill, before editing an existing one, when the same correction is made twice, and whenever a skill turns out to have been wrong. Distinct from sairn-skill-vetter, which gates skills arriving from OUTSIDE; this one is about authoring our own. Every convention here exists because a SAIRN skill went stale and cost real time.
+allowed-tools: Read Grep Glob
 ---
 
 # SAIRN Skill Author

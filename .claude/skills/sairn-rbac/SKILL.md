@@ -1,6 +1,7 @@
 ---
 name: sairn-rbac
 description: Per-employee role-based access control for multi-tenant apps that share one backend. Every rule here comes from a failure that shipped and was found live across thirteen SAIRN apps — the cross-app role collision, the last-admin lockout that stranded a real licence, the session that outlived its own deactivation. Trigger before writing or reviewing ANY auth branch, role check, session verification, provisioning flow, or credential-lifecycle action; before adding a role to any app's vocabulary; and any time a role name, table name, or session token is shared by more than one app.
+allowed-tools: Read Grep Glob Bash
 ---
 
 # SAIRN RBAC
@@ -218,3 +219,24 @@ card that could hand out sign-in and nothing in the app that could take it away.
 9. Round trip verified against the deployed endpoint — deactivate, confirm the
    account can no longer sign in, reactivate, confirm it can. A clean write is
    not evidence.
+
+---
+
+## What this does NOT cover
+
+- **Any app's own role vocabulary.** It says read the app's auth file; it does
+  not list the roles, because they diverge and a list here would go stale the
+  first time one changes.
+- **Authentication itself** — PIN hashing, session minting, WebAuthn. Rule 12
+  states the settled mechanics so they are not re-litigated; the implementation
+  lives in `api/_lib/auth.js`.
+- **Row-level security in Postgres.** These rules govern the API gate. RLS is a
+  second layer with its own file conventions.
+- **Non-SAIRN authorisation models** — OAuth scopes, ABAC, policy engines.
+  Everything here assumes one shared backend and per-employee credentials.
+
+**Precedence.** Replaces the general `access-control-rbac`, which covers roles,
+permissions and policies in the abstract. Use that one outside SAIRN. Adjacent
+here: `sairn-guardian-v2` (checks 22/25/26/28 catch these mechanically),
+`sairn-employee-auth-scaffold` (building the auth surface in the first place),
+and `sairn-differential-review` (whether a diff touching an auth gate is safe).

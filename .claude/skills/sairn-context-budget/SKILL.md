@@ -1,6 +1,7 @@
 ---
 name: sairn-context-budget
 description: Work correctly against data that does not fit — large files, long outputs, paginated exports, and a session window that ends. The core rule is that a TRUNCATED READ IS INDISTINGUISHABLE FROM A COMPLETE ONE and will become a confident wrong claim unless something forces the check. Trigger before reading or fetching any file over ~1MB, before quoting a count from any export or command output, before writing a large file, when piping output through head/tail/grep, when a tool result is persisted to disk instead of returned, and before a long session ends. Every incident below is a real SAIRN case where partial data was reported as whole.
+allowed-tools: Read Grep Glob Bash
 ---
 
 # SAIRN Context Budget
@@ -153,3 +154,23 @@ file, not just about the reader.
    from the preview.
 5. Where a tool prints its own total, that total is what is quoted.
 6. Anything that must survive the session is committed, not left in context.
+
+---
+
+## What this does NOT cover
+
+- **Model context-window sizing or cost estimation.** The skill it replaces was
+  about a token allowance; this one is about truncation. If the question is
+  literally "how many tokens is this", that is a counting problem, not this.
+- **Chunking strategies for long documents.** Rule 6 says narrow the question
+  instead; where chunking is genuinely required, that design is unspecified
+  here.
+- **Database or API pagination correctness.** Rule 2 covers a truncated export
+  being mistaken for a whole one; it does not tell you how to paginate.
+- **The 2MB single-file ceiling as an architecture problem** — rule 8 notes it
+  only as a truncation risk. `sairn-software-architect` owns the design call.
+
+**Precedence.** Replaces `token-budget-advisor`, and the rename is deliberate —
+see the header. Adjacent: `sairn-perf-profiler` (never state a timing you did
+not measure — same discipline, different quantity) and `sairn-session-handoff`
+(rule 7's obligation, in full).
