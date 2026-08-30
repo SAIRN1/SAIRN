@@ -169,7 +169,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <span class="topbar-name">StoneDesk</span>
     <span class="topbar-sub">HR & Compliance</span>
   </div>
-  <a href="/fabricor" class="back-btn">← Back to StoneDesk</a>
+  <!-- Was href="/fabricor" -- a 404, and pointing at the abandoned duplicate
+       codebase CLAUDE.md warns about by name. It came in with this file's
+       2026-06-10 restore and I shipped it without auditing the page's own
+       links; found 2026-08-30 by fetching every internal route. Same tab, for
+       the same sessionStorage reason as the link that opens this page. -->
+  <a href="/stonedesk" class="back-btn">← Back to StoneDesk</a>
 </div>
 
 <!-- LAYOUT -->

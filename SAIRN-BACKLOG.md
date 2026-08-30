@@ -1711,3 +1711,92 @@ now unreachable from the calculator.
 finished work — which is the specific cost of a fix that ships without a
 written trace. The unrelated *"SAIRNvet — 20 panels never audited"* row
 elsewhere in this file is a different item and stays open.
+
+---
+
+## Ten apps are routed and reachable but linked from nowhere — no in-product discovery path
+
+Found 2026-08-30 by a route-reachability sweep (fetch every internal route any
+app links to; separately list every route declared in `vercel.json`). The two
+sets barely overlap.
+
+**Reachable, and no app links to them:** `sairncash`, `sairncode`,
+`sairndental`, `sairndental-book`, `sairndental-complaint`, `sairngrounds`,
+`sairnlegacy`, `sairnmechanical`, `sairnroofing`, `sairnsenior`.
+
+Every one serves a 200. Nothing is broken. But the only way to reach any of
+them is to already know the URL — there is no path from inside any SAIRN app,
+and StoneDesk's suite launcher (the one place that cross-links apps) predates
+most of them: it lists eight, of which one was a dead rename until today.
+
+**Not urgent, and deliberately not auto-fixed.** Wiring every app into every
+other app's launcher is a product decision about what the suite IS, not a
+missing link — some of these (`sairndental-book`,
+`sairndental-complaint`) are *public patient-facing* pages that should NOT
+appear in an internal launcher, and lumping them in would be worse than the
+current gap.
+
+**Done looks like:** a decision about which apps belong in a cross-app
+launcher and which are entry points reached another way, then one launcher
+definition rather than a hand-maintained list per app. Re-run the sweep after;
+it is the mechanical half and it is cheap.
+
+---
+
+## StoneDesk Client Intake is dead end to end — and it fails silently, in three separate places
+
+Opened 2026-08-30 while fixing what looked like a single dead link. It is not a
+dead link. Every layer of this feature is broken and none of them say so.
+
+**1. The form does not exist.** `stonedesk.html:32123` sets
+`INTAKE_FORM_URL = 'https://sairn.vercel.app/stonedesk-intake'`, which returns
+**404**. `stonedesk-intake.html` (446 lines, `f241f0a`, 2026-06-18) was never
+merged; it survives only at
+`archive/branch-lucid-ptolemy-b73vu0/stonedesk-intake.html`, and `vercel.json`
+has no route for it.
+
+**2. The shop is told it worked.** `intakeBuildLink()` composes the URL and
+`intakeCopyLink()` copies it to the clipboard and toasts **"Intake link
+copied!"**. A shop pastes that into an email to a real customer and the
+customer lands on a 404. The success toast is the whole problem — the failure
+is invisible from the only side that would notice.
+
+**3. The panel that reads submissions cannot read them.** `intakeRefresh()`
+calls `sb.from('intake_submissions').select('*')` **from the browser on the
+anon key**. Probed live 2026-08-30: that returns **42501 permission denied for
+table intake_submissions** — anon holds no SELECT. The call is inside a
+`try/catch` that silently falls back to `localStorage`, so the panel renders a
+stale local cache and never reports an error. Confirms the note already in
+`sql/full_crud_truncate_sweep_2026-08-24.sql` that this table is reached on the
+anon key, never through `api/`.
+
+**THE CREDENTIAL PROBLEM, which survives any fix to the above.** The generated
+URL appends `&lic=<license key>`, and the archived form reads it
+(`LICENSE = params.get('lic')`) and writes it into the submission row as
+`license_key` — tenant attribution supplied by the customer's browser. So the
+shop's licence key is mailed to every customer who gets an intake link, and the
+tenant tag on every row is client-controlled. It is not authentication and
+cannot be made into authentication by moving it.
+
+**A fourth problem is latent, not live.** The panel's read has **no tenant
+filter at all** — `select('*')` with `limit(100)` and no `license_hash`
+predicate. Today the 42501 makes that moot. The moment someone "fixes" the
+panel by granting anon SELECT, every StoneDesk shop sees every other shop's
+intake submissions: customer names, phones, emails and project photos. The
+obvious repair to problem 3 is the one that turns problem 4 into a live
+cross-tenant PII leak.
+
+**Done looks like** — and this is a rebuild, not a patch:
+- Intake submissions go through `api/sd-data.js` with a real licence-scoped
+  branch, not the browser anon key, so the tenant filter is server-side and
+  cannot be forgotten.
+- The public form is addressed by an **opaque, revocable per-shop intake
+  token** that maps to a licence server-side — never the licence key itself.
+  A public identifier, not a secret, and useless for anything but intake.
+- `intakeCopyLink()` does not claim success for a URL nobody has fetched.
+- Decide explicitly whether the June form is restored or rewritten; it inserts
+  base64 photos straight into a table from the browser, which is its own
+  review.
+
+**Until then the feature is inert**, which is safer than half-fixed. Do not
+grant anon SELECT on `intake_submissions` as a quick repair.
