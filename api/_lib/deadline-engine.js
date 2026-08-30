@@ -1426,6 +1426,22 @@ var COMPUTATION_STANDARDS = {
   sc_rcp_6: { label: 'S.C. R. Civ. P. 6', impl: 'frcp_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' },
+  // FOURTEEN. The longest short-period threshold in the platform, and the
+  // number is the whole point of giving Arkansas its own standard rather
+  // than reusing a neighbour's. Six seeded states use 7, three use 11, and
+  // Minnesota, Utah and Nevada have none. Copying any of them computes
+  // EARLY on Arkansas periods of 7-13 days, and ARCP 6(c)'s 10-day response
+  // and 5-day reply both fall inside that band, so it is load-bearing on
+  // real rows rather than academic.
+  //
+  // DO NOT REASON FROM FRCP 6(a) HERE, even though the Reporter's Notes say
+  // Rule 6 is 'practically identical to FRCP 6'. The federal rule abolished
+  // the exclusion in 2009; Arkansas moved the other way -- 11 days in 1986
+  // 'consistently with the federal rule', and 14 since.
+  ar_rcp_6: { label: 'Ark. R. Civ. P. 6', impl: 'frcp_6a',
+    short_period_exclusion_days: 14,
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
     rollover_suffix_forward: '(a)', rollover_suffix_backward: '' }
 };
 
@@ -1446,6 +1462,12 @@ var COMPUTATION_STANDARDS = {
 //             malpractice one. Refusing here would buy no safety.
 // Nothing is added to this table without deciding which of the two it is.
 var JURISDICTION_COVERAGE = {
+  ar: {
+    complete: false,
+    direction: 'early',
+    summary: 'Arkansas court closures beyond the statewide legal holidays are NOT modelled, and the calendar covers 2026 only. This date may be EARLIER than the true deadline, never later.',
+    detail: "The calendar is the union Ark. R. Civ. P. 6(a) requires -- \"designated as a holiday by the President or Congress of the United States or designated by the laws of this State\" -- transcribed for 2026 from the Arkansas Secretary of State's own 2026 State Holidays sheet and 5 U.S.C. 6103(a). TWO THINGS IT DOES NOT ENCODE, both of which can only push the true deadline LATER. (1) Rule 6(a) also rolls off \"other day when the clerk's office is closed\", and rolls forward only to \"the next day that the clerk's office is open\" -- both limbs are per-court and unknowable in advance, and the 2003 amendment added them to codify Honeycutt v. Fanning, 349 Ark. 324, 78 S.W.3d 96 (2002). (2) Ark. Code Ann. 1-5-101(a) includes \"an employee's birthday\" as a state holiday; it is a floating personal-leave day rather than a calendar date, Rule 6(a) incorporates the state list wholesale without filtering, and it is not modellable either way. If the computed date falls on a day the relevant clerk's office was in fact closed, the true deadline rolls to the next open day and is LATER than shown -- confirm the local court's own closure schedule before relying on a date that falls near one. SEPARATELY, the calendar is 2026 ONLY: the Secretary of State publishes no 2027 sheet yet, and Ark. Code Ann. 1-5-101(b)'s observance shift has never been read on a primary source, so later years are REFUSED rather than derived."
+  },
   va: {
     complete: false,
     direction: 'early',
@@ -2474,6 +2496,40 @@ var SERVICE_EXTENSION_STANDARDS = {
     shape: 'enumerated_allowlist',
     qualifies: function (method) {
       return method === 'mail' || method === 'statutory_agent';
+    }
+  },
+  // ARCP 6(d). THREE BUSINESS DAYS, and every word of that matters.
+  //
+  // BUSINESS DAYS, NOT CALENDAR DAYS. Almost every other extension on this
+  // platform adds calendar days; writing calendar_days here out of habit
+  // would compute EARLY across every weekend the extension spans. The unit
+  // lives on the rule row, not here, but it is stated here because this is
+  // where someone copying a neighbour would look.
+  //
+  // ELECTRONIC SERVICE IS EXPRESSLY INCLUDED -- 'e-mail or service through
+  // the court's electronic filing system pursuant to Rule 5(b)(2)'. That is
+  // the OPPOSITE of the federal rule, Nevada, West Virginia and New York,
+  // where e-service is deliberately outside the extension. An allowlist
+  // copied from any of them under-counts and computes EARLY.
+  //
+  // THE ANSWER CARVE-OUT IS NOT HANDLED HERE, DELIBERATELY. 6(d)'s proviso
+  // withholds the three days from an answer when the summons was served by
+  // mail or commercial delivery under Rule 4. That is a property of the ROW,
+  // so the Rule 12(a)(1) rows simply carry no service_extension at all --
+  // the same shape the federal 12(a)(1)(A)(i) row was corrected to on
+  // 2026-08-27. Arkansas states in its own text what FRCP 6(d) leaves to be
+  // inferred from a cross-reference.
+  ar_rcp_6_d: {
+    label: 'Ark. R. Civ. P. 6(d)',
+    // 'three (3) business days shall be added to the prescribed period' --
+    // the days lengthen the period rather than following its expiry, so the
+    // weekend/holiday rollover acts once, on the end of the lengthened
+    // period. Same reading as N.Y. CPLR 2103(b).
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return ({ mail: 1, commercial_delivery: 1, electronic: 1, email: 1,
+        efiling_service_provider: 1 })[method] === 1;
     }
   }
 };
