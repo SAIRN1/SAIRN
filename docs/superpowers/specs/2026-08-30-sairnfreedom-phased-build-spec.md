@@ -45,7 +45,7 @@ mapped per `org_type`.
 | `canteen.operate` | bar staff | Shift-scoped, not officer-scoped |
 | `canteen.close` | Canteen manager + Finance Officer | Nightly reconciliation |
 | `member.admit` | Adjutant | |
-| `services.refer` | Service Officer | **See §9 — regulated, research first** |
+| `services.refer` | Service Officer | **Scoped §9a.1** — referral/scheduling/accreditation-tracking only, never claim preparation |
 | `ceremonial.manage` | Sergeant-at-Arms | Honor guard equipment, details |
 | `history.write` | Historian | |
 | `legal.review` | Judge Advocate | Bylaws, disputes |
@@ -123,14 +123,83 @@ with a small star cluster, not a flag.
 | 1.1 | Entity + org_type + licence model | `org_type` drives §1a titles AND the §5 charitable categories |
 | 1.2 | Officer roles / capability model | §1a. On `sairn-employee-auth-scaffold` |
 | 1.3 | Member roster, categories, S.A.L. sub-category | §1b |
-| 1.4 | Dues, renewal, **three-layer fee structure** | **§9 — structure named, not defined** |
-| 1.5 | Conditional dues/fee waivers | **§9 — conditions not defined.** Note: waiver eligibility is a governance decision with audit implications, not a discount code |
+| 1.4 | Dues, renewal, **three-layer fee structure** | Defined — see **§2a**. One-time initiation, annual dues, national per-capita. The third is a **pass-through liability, not revenue** |
+| 1.5 | Conditional dues/fee waivers | Defined — see **§2b**. Active-duty, recently-separated (24 months, **expiring**), sick/in distress. **Elks-confirmed only — org-type-specific, do not assume** |
 | 1.6 | Post profile: licence types, **15-year test** for fraternal orgs | OAC 109:1-4-08 Types I/II/III gate lawful activity; ORC 2915.01(V)(3) 15-years-continuous-existence gates fraternal disbursement eligibility |
 | 1.7 | Branding shell | Red/white/blue, **diagonal** stripe, small star cluster, no literal flag reproduction. Post name + org type + city in header. **ANIMATED banner across the whole app — see §1d** |
 
 **Phase 1 exit criterion:** a real post can be created, its officers provisioned,
 its members enrolled and dues taken — and the app knows its org type, licence
 types and eligibility facts, because everything downstream branches on those.
+
+### 2a. The three-layer fee structure — three money types, not three prices
+
+| Layer | Set by | Typical | What it actually is |
+|---|---|---|---|
+| **Initiation fee** | the lodge | one-time, at admission | Lodge revenue |
+| **Annual dues** | the lodge | **~$25–150/yr** | Lodge revenue |
+| **National per-capita assessment** | the national body | every member, every lodge | **A PASS-THROUGH LIABILITY** |
+
+**The third layer is the one that will be modelled wrong if it is treated as a
+price.** The lodge *collects* per-capita from the member and *owes* it upward.
+Money collected on behalf of another entity is a **liability, not income** — the
+lodge is a conduit. Booking it as revenue overstates the lodge's income by the
+whole per-capita line and understates what it owes.
+
+**It also has a deadline and a real penalty**, from the service-hour appendix:
+Elks per capita is **due May 1**, and late filing of the Annual Report that
+accompanies it carries *"a $100 fine and possible probation, or harsher
+penalties"* — the only hard penalty found anywhere in that research.
+
+Build consequences:
+
+- Three separate ledger treatments, not one `amount` column with a `type` tag
+  used only for display.
+- Per-capita liability is **per member per period**, so it accrues on admission
+  and is owed even for a member whose dues were waived — **see §2b, which is
+  exactly where this gets subtle.**
+- A per-capita remittance deadline belongs in the same calendar that already
+  carries the gaming constraints and the national reporting deadlines.
+- Amounts are **configuration per org type and per year**, never constants.
+  Layer 1 and 2 are lodge-set; layer 3 is set by a body the lodge does not
+  control and changes without asking.
+
+### 2b. Conditional waivers — governance decisions, and two of them expire
+
+Confirmed conditions, **at Elks specifically**:
+
+1. **Active-duty** members
+2. **Recently separated** veterans — **within 24 months**
+3. Members who are **sick or in distress**
+
+**Three things this must not become.**
+
+**It is not a discount code.** A waiver is a governance decision under the
+lodge's bylaws with an audit trail: who granted it, under which condition, on
+what date, and reviewable. Model it as a **record**, not a price modifier.
+
+**Condition 2 EXPIRES, and expiry is computed.** "Within 24 months of
+separation" lapses on a date the system derives from the separation date. That
+is date arithmetic on a boundary, in a codebase that has already shipped a
+UTC-midnight date bug — compute in the post's local date, and re-evaluate
+eligibility rather than storing a boolean that silently goes stale. Condition 3
+is open-ended and needs a **review date**, not an expiry.
+
+**It is org-type-specific — this is confirmed for Elks only.** The same lesson
+as ORC 2915.01 (V)(2) vs (V)(3) and as the officer titles: **do not assume VFW,
+Legion, Moose or Eagles share these conditions.** Waiver conditions are a cited
+row per org type, like the charitable-purpose categories.
+
+**The interaction with §2a, stated because it is easy to get wrong:** a dues
+waiver is a decision the lodge can make about *its own* revenue. **The national
+per-capita assessment is not the lodge's to waive** — it is owed upward for
+every member regardless. So waiving "dues" must not silently waive the
+pass-through, or the lodge quietly funds the difference without seeing it.
+**Confirm this against the actual bylaws before building it** — §9b.
+
+**PII note:** the evidence for conditions 1 and 2 is a DD-214 or equivalent
+service record. Decide storage, access role and retention before the field
+exists — same gate as the winner-SSN requirement in Phase 3.
 
 ---
 
@@ -144,10 +213,48 @@ types and eligibility facts, because everything downstream branches on those.
 | 2.4 | Lodge events + live-music calendar | Public-facing side of the same calendar the gaming module constrains |
 | 2.5 | Hall rental | Weekday/weekend rates, member vs public tier, **larger damage deposit for alcohol-serving events** |
 | 2.6 | Vendor/supplier management | Gaming supplies, alcohol, food, entertainment bookings |
-| 2.7 | AI vendor price search | **§9 — scope undefined.** Grounding and citation discipline required before build |
+| 2.7 | AI vendor price search | Defined — **two distinct capabilities**, see **§3a**. (1) compare vendors already on file — grounded, deterministic. (2) search the wider market — **fabrication surface, different rules** |
 
 **Dependency note:** 2.4 must be built as one calendar with the Phase 3 gaming
 constraints, not a second calendar bolted alongside. See §4.
+
+### 3a. AI vendor price search — two capabilities with different truth rules
+
+These are **not one feature with a wider radius.** They have different failure
+modes and must be built and labelled separately.
+
+**(1) Compare among vendors already on file.** Grounded entirely in the lodge's
+own data — the vendors in 2.6 and their recorded prices. Deterministic,
+auditable, and there is no fabrication surface: every number came from a record
+the lodge entered. This is the one that should ship first and it does not
+strictly need a model at all.
+
+**(2) Actively search the wider market** for better pricing on gaming supplies,
+alcohol, food and entertainment — **including vendors not yet used.** This is a
+genuinely different thing: it leaves the lodge's data and produces numbers no
+record backs.
+
+**Rules for (2), non-negotiable:**
+
+- **Every price carries its source URL and the date it was read.** A price with
+  no source is a fabricated price — the same standard the platform enforces at
+  the API for `rf_cert_rules` and `rf_contingency_rules`, where a rule with no
+  citation is refused rather than discouraged.
+- **A searched price is never presented as a quote.** It is a lead. The UI
+  wording must make a searched figure and a vendor-confirmed figure visually
+  distinguishable, because a Finance Officer acting on a stale scraped price and
+  budgeting against it is the failure this rule exists to prevent.
+- **Prices go stale.** Show the read date next to the number, always, not in a
+  tooltip.
+- **Alcohol pricing is regulated in Ohio.** Ohio has state-controlled spirits
+  pricing; a "better price" for spirits may not be a thing a lodge can act on,
+  and beer/wine distribution runs through a franchise system. **§9b** — do not
+  ship market search for alcohol until that is checked.
+- **Gaming supplies must come from a licensed distributor.** ORC 2915.09(A)(1):
+  equipment must be owned or leased from licensed sources, and the AG endorses
+  electronic instant bingo distributors. A search result offering cheaper bingo
+  supplies from an unlicensed seller is not a saving, it is a licence problem.
+  **The search must filter or at minimum warn on this category.**
 
 ---
 
@@ -179,9 +286,42 @@ retention must be decided **before** the column exists, not retrofitted.
 | 4.2 | Instant-bingo tiered distribution engine | 2915.101: ≥25% on the first $250,000, ≥50% above, 5% own-purpose allowance. **Cumulative annual running total**, calendar year, and the threshold is *"or adjusted amount"* — configuration, never a constant |
 | 4.3 | Disbursement record fields | `funding_source` (gaming net profit vs general), `game_type`, `disbursement_direction` (given away vs cost-to-post). Per the appendix: the CPR's ~15 "cost to post for X" fields are legitimate nationally and are **not** permitted (V)(2) destinations |
 | 4.4 | Donations received + **automatic emailed tax receipts** | Reuse the platform's Resend integration — **`RESEND_FROM_EMAIL`**, not `RESEND_FROM_ADDRESS`, which has never existed here and silently broke two apps |
-| 4.5 | Donor-tier recognition | **§9 — tiers not defined** |
+| 4.5 | Donor-tier recognition | Defined — see **§5a**. **Cumulative lifetime** giving from $100, earning physical items (pins). Fulfilment tracking, and a **tax-receipt interaction flagged in §9a** |
 | 4.6 | AI-directed community outreach tied to disbursement categories | Must propose only within the org's *own* legal category set. An outreach suggestion outside (V)(2)/(V)(3) is a compliance hazard dressed as marketing |
 | 4.7 | Volunteer / service-hour tracking | Full schema implications in the service-hour appendix. **Decimal hours** (5 min = .08), cumulative person-hours, round-trip miles × occupants, member/non-member split, `counts_toward_national_service` flag, per-org reporting periods as **configuration** — four different fiscal years, none shared |
+
+### 5a. Donor recognition — cumulative lifetime, physical fulfilment, and a tax edge
+
+Pattern: **cumulative giving-level tiers starting at $100**, earning **physical
+recognition items (pins)** — the Moose Charities *League of Guardians* shape.
+
+**Cumulative means LIFETIME, not annual.** A running per-donor aggregate that
+survives every year boundary, every fiscal-year change in §4.7, and every
+reporting period reset. Do not derive it from the current period's ledger; store
+and increment it, and be able to rebuild it from the donation records.
+
+**A tier is an award, not a disbursement.** It sits on the *money-received* side.
+It must never appear in the §4.1 `ohio_charitable_purpose` taxonomy, which
+governs where gaming **net profit goes**. Two different directions of money, and
+conflating them would put a donor pin in a charitable-purpose report.
+
+**Physical items need fulfilment state.** Earned / ordered / sent / presented.
+A tier crossed and a pin never sent is a promise silently broken, and the person
+it was broken to is a donor. This is the same silent-failure class as a write
+that shows "Saved" and did not persist.
+
+**The pin costs money**, so it is also a small expense on the other side of the
+books — and per the service-hour appendix, "cost to post for X" is a legitimate
+national-reporting line but **not** a permitted (V)(2) destination for gaming net
+profit. Tag it accordingly.
+
+**THE EDGE THAT NEEDS A REAL ANSWER — §9a:** under IRS quid-pro-quo rules, a
+donor who receives goods in exchange for a contribution may deduct only the
+excess over the value of those goods, and the receipt must state that value —
+unless the item is below the token/low-cost threshold. **4.4 auto-emails tax
+receipts.** A receipt that omits the pin's value where it is required is a
+defective receipt issued automatically, at scale, in the donor's name. **Do not
+ship 4.4 and 4.5 together until this is researched.**
 
 ---
 
@@ -190,12 +330,55 @@ retention must be decided **before** the column exists, not retrofitted.
 | # | Feature | Notes |
 |---|---|---|
 | 5.1 | New-member onboarding | "World-class." **See §9 on the animated flag** |
-| 5.2 | Volunteer scope-of-work / liability paperwork | Reuse StoneDesk's HR e-sign pattern (`sd_hr_*`, e-sign + durable storage). **§9 — the documents themselves need legal review** |
+| 5.2 | Volunteer scope-of-work / liability paperwork | Reuse StoneDesk's HR e-sign pattern (`sd_hr_*`, e-sign + durable storage). **§9a.6** — the documents themselves need legal review; the e-sign mechanism does not |
 | 5.3 | Ceremonial duties | Honor-guard equipment, shell-casing tracking, shared-team details across posts |
 | 5.4 | Vehicle / maintenance tracking | Post-owned vehicles. Distinct from the deferred *building* maintenance item |
 | 5.5 | Automated AI monthly newsletter | Grounded in the post's own live data. Depends on Phases 2–4 having data worth reporting |
-| 5.6 | Named youth programs | **§9 — programs not named** |
+| 5.6 | Named youth programs | Defined — see **§6a**. Named and **distinct per org type**; explicitly NOT folded into generic community outreach |
 | 5.7 | Veteran-services availability across ALL lodge types | Explicitly not veteran-org-only. Elks and Moose posts run veteran services too |
+
+### 6a. Youth programs are NAMED and PER ORG TYPE — not generic outreach
+
+Instruction is explicit: track as **named, distinct programs**, not folded into
+generic "community outreach". The three orders do not just run different
+programs — they run **structurally different kinds of thing**, and a single
+`youth_program` free-text field would erase that.
+
+| Org | Programs | Shape |
+|---|---|---|
+| **Elks** | **Hoop Shoot** — national free-throw contest, **ages 8–13**; **Soccer Shoot**; **Most Valuable Student** scholarships | Competitions with brackets and age divisions, plus a scholarship |
+| **VFW** | Youth **scholarships up to $30,000**; classroom / citizenship programs | Award + curriculum, no competition bracket |
+| **Moose** | **Mooseheart** — a residential community for children in need | **Not a competition or a contest at all.** Ongoing welfare, integrated |
+
+**Why the shape difference matters more than the names.** A schema built around
+"contest → round → winner" fits Elks and breaks on Moose. A schema built around
+"program → contribution" fits Moose and cannot express a Hoop Shoot age
+division. Model a **program registry keyed by org type**, with per-program
+structure rather than one shared shape — the same conclusion the service-hour
+research reached about Moose wanting a quarter-level total and prose where the
+Legion wants 126 numbered items.
+
+**Three cross-links, none optional:**
+
+- **Disbursement (§4.1):** scholarships are an enumerated (V)(2) purpose —
+  *"awarding scholarships to or for attendance at an institution mentioned in
+  division (B)(12) of section 5739.02"* — and youth activities are too:
+  *"nonprofit youth activities."* So a scholarship funded from gaming net profit
+  is legitimately taggable, and must be tagged.
+- **Service-hour reporting (§4.7):** the Legion CPR has a whole **CHILDREN &
+  YOUTH (C&Y)** section with its own hour bucket (`#96`) and its own dollar
+  fields. Youth program activity feeds that directly.
+- **Outreach (§4.6):** the AI may propose within these named programs. It must
+  **not invent a program** — a lodge-branded suggestion to run a contest that
+  does not exist is the fabricated-capability class.
+
+**MINOR DATA — decide before the table exists.** Hoop Shoot is ages **8–13**.
+Any participant record is data about a child: names, ages, schools, possibly
+photographs and results published under the lodge's name. Storage, access role,
+retention, parental consent and photo release all need a decision **up front** —
+the same gate applied to winner SSNs in Phase 3 and DD-214 evidence in §2b, and
+for the same reason: retrofitting protection onto a table that already holds the
+data protects nobody who is already in it. **§9a.**
 
 ---
 
@@ -256,6 +439,31 @@ it was not scanned).
 6. **Volunteer liability documents (5.2)** — templates need legal review; this
    is document *drafting*, not schema.
 
+### 9b. Named but not defined — need the source detail
+
+**RESOLVED 2026-08-30 — all five source details received and folded in.**
+
+- ~~Three-layer fee structure~~ → **§2a**
+- ~~Conditional waiver rules~~ → **§2b**
+- ~~Donor recognition tiers~~ → **§5a**
+- ~~Named youth programs~~ → **§6a**
+- ~~AI vendor price search scope~~ → **§3a**
+
+Nothing in this sub-section is outstanding. Note that folding them in **created
+four new research items** (§9a.7–10) rather than closing the list — detail
+surfaces edges that a feature name hides, which is the argument for getting the
+detail before building rather than after.
+
+### 9c. ~~A conflict to resolve~~ — RESOLVED 2026-08-30
+
+**The animated-flag / static-branding tension is decided.** Animated banner
+app-wide, **static on onboarding**. The earlier rejection was of a bad
+implementation (turbulence filters reading as water or TV static), not of the
+idea, so what survives is a ban on the *technique*, not the effect. Built
+properly as real work and reviewed against `sairn-visual-review` on a rendered
+page at real size before it is called done. Full reasoning in **§1d**; also
+recorded in the canonical research doc's Binding Decisions.
+
 ### 9d. Two hard product rules from the VA research — not optional
 
 **No fee may attach to claims assistance, anywhere in the product.** Every
@@ -275,28 +483,24 @@ shape was the real exposure."* Here the stakes are higher: an AI answering
 *"what should I claim for?"* is producing claim preparation, under the post's
 brand, for an unaccredited asker, at scale.
 
-### 9b. Named but not defined — need the source detail
+7. **IRS quid-pro-quo / donor-tier receipt valuation.** §5a. Auto-emailed tax
+   receipts (4.4) plus physical recognition items (4.5) meet at a real IRS rule:
+   goods given in exchange for a contribution reduce the deductible amount and
+   the receipt must state their value, unless below the token threshold. **Do
+   not ship 4.4 and 4.5 together until this is answered.** An automatically
+   issued defective receipt is worse than no receipt.
+8. **Minor-participant data for youth programs.** §6a. Ages 8–13. Consent,
+   photo release, retention, access role — before any participant table exists.
+9. **Ohio alcohol pricing and distribution.** §3a. State-controlled spirits
+   pricing and beer/wine franchise distribution may make "shop for a better
+   price" inapplicable or unlawful for some categories. Check before shipping
+   market search for alcohol. Sits alongside the wholly-unexamined liquor
+   licensing item (§9a.3).
+10. **Whether a dues waiver can waive the national per-capita.** §2b. Almost
+    certainly not — it is owed upward per member regardless — but it is a bylaw
+    question, it differs by order, and getting it wrong means the lodge quietly
+    funds the difference without seeing it. **Confirm against actual bylaws.**
 
-7. **Three-layer fee structure** — layers not enumerated.
-8. **Conditional dues/fee waiver rules** — conditions not specified.
-9. **Donor recognition tiers** — thresholds and names not given.
-10. **Named youth programs** — not listed.
-11. **AI vendor price search** — scope, sources and citation discipline undefined.
-
-### 9c. A conflict to resolve, not research
-
-12. **The animated flag visual (5.1) contradicts the branding direction.** The
-    branding guidance says a **static** design with subtle fold-shadow banding is
-    acceptable and safer, and that **animated distortion effects were tried and
-    rejected as visually broken** (water/TV-static), with canvas/SVG turbulence
-    animation to be avoided. The onboarding item asks for "a properly-built
-    animated flag visual."
-
-    These may be reconcilable — the rejection was specifically of *turbulence
-    filters on the header*, and a one-time onboarding moment is a different
-    surface from a working dashboard. **But it is a direct tension between two
-    stated directions and needs an explicit call rather than a builder picking
-    one.**
 
 ---
 
