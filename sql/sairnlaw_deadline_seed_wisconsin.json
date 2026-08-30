@@ -1,0 +1,403 @@
+{
+  "_readme": [
+    "WISCONSIN CIVIL DEADLINE RULES -- 12 rows, Wis. Stats. chs. 801, 802 and 804.",
+    "Statute text read verbatim from the Legislature's own certified PDFs at",
+    "docs.legis.wisconsin.gov/statutes/statutes/<chapter>.pdf -- 'Updated 2023-24",
+    "Wis. Stats. Published and certified under s. 35.18. August 5, 2026.'",
+    "",
+    "== THE THING THAT MAKES WISCONSIN DIFFERENT, AND IT IS THE CALENDAR ==",
+    "Sec. 801.15(1)(b) uses TWO DIFFERENT TESTS in one subsection: the LAST DAY",
+    "rolls unless it is 'a day the clerk of courts office is closed', while",
+    "INTERMEDIATE days are excluded on the statutory holiday LIST in 801.15(1)(a).",
+    "Wisconsin's clerks are COUNTY officers and they genuinely diverge -- see the",
+    "calendar file. The calendar therefore carries only the STATEWIDE INTERSECTION",
+    "of actual closures, which is correct for the rollover and deliberately",
+    "under-inclusive for the exclusion. Every error it can make is EARLY.",
+    "",
+    "== THE 45-DAY BRANCHES ARE THE TRAP ================================",
+    "Sec. 802.06(1)(a) gives 45 days instead of 20 where the defendant is the",
+    "state, where ANY defendant is an INSURANCE COMPANY, or where ANY cause of",
+    "action is founded in TORT. That turns on what the claim is about, which the",
+    "engine cannot infer, so each branch is its own row with an unmissable trigger",
+    "name. Using the 20-day row for a tort claim reports EARLY -- safe in",
+    "direction, badly wrong for a user, and it is the most commonly hit branch.",
+    "",
+    "== 'MAY' vs 'SHALL NOT BE REQUIRED' ================================",
+    "Secs. 804.08 and 804.09 give the defendant an ELECTION to take 45 days; only",
+    "Sec. 804.11 imposes a FLOOR. Only 804.11 is a resolve_periods.",
+    "",
+    "== EFFECTIVE DATES ARE CONSERVATIVE, AND THAT IS DELIBERATE ========",
+    "The statutes PDF prints a History line per section but not a per-section",
+    "effective DATE. Each row therefore carries 1 January of the year FOLLOWING",
+    "that section's last amending act -- a date that can only ever be LATER than",
+    "the true one, so the engine REFUSES in the gap rather than computing against",
+    "a rule that was not yet in force. 801.15 -> 2019 a. 30; 802.06 -> 1993 a. 486;",
+    "804.08 and 804.09 -> 2017 a. 235; 804.11 -> 1997 a. 133."
+  ],
+  "rules": [
+    {
+      "rule_id": "wi-802-06-1a-answer-20-days",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Answer to a complaint -- 20 days (Wisconsin)",
+      "trigger_event": "service_of_complaint",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "Except when a court dismisses an action or special proceeding under s. 802.05 (4), a defendant shall serve an answer within 20 days after the service of the complaint upon the defendant.",
+        "note": "TWENTY days -- shorter than every other jurisdiction seeded except Florida's 20, and half of Arkansas's and Alabama's 30. THIS ROW IS THE DEFAULT AND IS OFTEN THE WRONG ONE: Sec. 802.06(1)(a) gives 45 days instead where the defendant is the state or a state officer, where a defendant is an INSURANCE COMPANY, or where ANY cause of action is founded in TORT. Each has its own row. THE BRANCH TURNS ON WHAT THE CLAIM IS ABOUT, NOT ON HOW SERVICE HAPPENED -- which is a fact the engine has no input for and cannot infer. It is therefore its own row with an unmissable trigger name, the same treatment Missouri's three Sec. 55.25(a) branches got. A caller who uses the plain 20-day answer row for a tort claim or an insurer defendant will be told 20 days when the answer is really due in 45 -- EARLY, so safe in direction, but badly wrong for a user, and it would be the MOST COMMONLY HIT branch in practice since a large share of civil filings sound in tort. NO SERVICE EXTENSION ON THIS ROW, AND THE REASON IS A QUESTION THAT WAS NOT READ. Sec. 801.15(5) adds days whenever a party must act \"within a prescribed period after the service of a notice or other paper\" -- generic words, with none of the Rule 4 / Rule 5 carve-out the federal rule, Arkansas and Alabama all carry. Whether a SUMMONS AND COMPLAINT served under ch. 801 is \"a notice or other paper\" for 801.15(5) purposes was not determined from the sources read. Applying the three days if it is not would report a date THREE DAYS LATE -- the direction that loses a filing -- while withholding them if it is reports EARLY. The engine withholds. If a Wisconsin reading settles it the other way, this is the row to change, and it should be changed deliberately rather than by copying a neighbour.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-802-06-1a-answer-45-days-state",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Answer, cross-claim answer or reply by the state or a state officer -- 45 days (Wisconsin)",
+      "trigger_event": "service_on_state_or_state_officer",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 45,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "The state or an agency of the state or an officer, employee, or agent of the state shall serve an answer to the complaint or to a cross claim or a reply to a counterclaim within 45 days after service of the pleading in which the claim is asserted.",
+        "note": "A PARTY-STATUS BRANCH the engine cannot detect, so the caller selects it by naming this trigger. Note the period runs from service of \"the pleading in which the claim is asserted\", which is the complaint, the cross-claim or the counterclaim depending on which one names the state -- the caller supplies that date. NO SERVICE EXTENSION ON THIS ROW, AND THE REASON IS A QUESTION THAT WAS NOT READ. Sec. 801.15(5) adds days whenever a party must act \"within a prescribed period after the service of a notice or other paper\" -- generic words, with none of the Rule 4 / Rule 5 carve-out the federal rule, Arkansas and Alabama all carry. Whether a SUMMONS AND COMPLAINT served under ch. 801 is \"a notice or other paper\" for 801.15(5) purposes was not determined from the sources read. Applying the three days if it is not would report a date THREE DAYS LATE -- the direction that loses a filing -- while withholding them if it is reports EARLY. The engine withholds. If a Wisconsin reading settles it the other way, this is the row to change, and it should be changed deliberately rather than by copying a neighbour.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-802-06-1a-answer-45-days-insurer-or-tort",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Answer or reply where a defendant is an insurer OR any cause of action sounds in TORT -- 45 days (Wisconsin)",
+      "trigger_event": "service_of_pleading_insurer_defendant_or_tort_claim",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 45,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "If a defendant in the action is an insurance company, or if any cause of action raised in the original pleading, cross claim, or counterclaim is founded in tort, the periods of time to serve a reply or answer shall be 45 days.",
+        "note": "READ THE TRIGGER NAME BEFORE USING THE 20-DAY ROW. THE BRANCH TURNS ON WHAT THE CLAIM IS ABOUT, NOT ON HOW SERVICE HAPPENED -- which is a fact the engine has no input for and cannot infer. It is therefore its own row with an unmissable trigger name, the same treatment Missouri's three Sec. 55.25(a) branches got. A caller who uses the plain 20-day answer row for a tort claim or an insurer defendant will be told 20 days when the answer is really due in 45 -- EARLY, so safe in direction, but badly wrong for a user, and it would be the MOST COMMONLY HIT branch in practice since a large share of civil filings sound in tort. Note the breadth of the statutory words: it is enough that ANY cause of action in the pleading is founded in tort, and it is enough that ANY defendant is an insurance company -- neither is limited to the party answering. NO SERVICE EXTENSION ON THIS ROW, AND THE REASON IS A QUESTION THAT WAS NOT READ. Sec. 801.15(5) adds days whenever a party must act \"within a prescribed period after the service of a notice or other paper\" -- generic words, with none of the Rule 4 / Rule 5 carve-out the federal rule, Arkansas and Alabama all carry. Whether a SUMMONS AND COMPLAINT served under ch. 801 is \"a notice or other paper\" for 801.15(5) purposes was not determined from the sources read. Applying the three days if it is not would report a date THREE DAYS LATE -- the direction that loses a filing -- while withholding them if it is reports EARLY. The engine withholds. If a Wisconsin reading settles it the other way, this is the row to change, and it should be changed deliberately rather than by copying a neighbour.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-802-06-1a-answer-to-crossclaim",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Answer to a cross-claim -- 20 days (Wisconsin)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "wi_801_15_5",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "facsimile",
+          "electronic_mail",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "A party served with a pleading stating a cross claim against the party shall serve an answer thereto within 20 days after the service upon the party.",
+        "note": "20 days by default, but the SAME 45-day tort and insurer branch reaches a cross-claim answer -- the statute names \"the original pleading, cross claim, or counterclaim\" expressly. Use the insurer-or-tort row where that is true.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-802-06-1a-reply-to-counterclaim",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim -- 20 days (Wisconsin)",
+      "trigger_event": "service_of_answer_containing_counterclaim",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "wi_801_15_5",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "facsimile",
+          "electronic_mail",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer.",
+        "note": "20 days by default; the 45-day insurer-or-tort branch reaches a reply too, and the 45-day state branch reaches a reply by the state.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-802-06-1a-guardian-ad-litem-answer",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Answer by a guardian ad litem -- 20 days from APPOINTMENT (Wisconsin)",
+      "trigger_event": "appointment_of_guardian_ad_litem",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "If a guardian ad litem is appointed for a defendant, the guardian ad litem shall have 20 days after appointment to serve the answer.",
+        "note": "THE TRIGGER IS APPOINTMENT, NOT SERVICE, which is why this is its own row rather than a variant of the answer row -- and it is also why NO SERVICE EXTENSION APPLIES: Sec. 801.15(5) adds days only where a party must act \"within a prescribed period after the service of a notice or other paper\", and an appointment is neither. Omitting the extension computes EARLY, the safe direction.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-802-06-1a-pleading-ordered-by-court",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "A pleading ordered by the court -- 20 days after service of the order (Wisconsin)",
+      "trigger_event": "service_of_order_requiring_pleading",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "wi_801_15_5",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "facsimile",
+          "electronic_mail",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "If any pleading is ordered by the court, it shall be served within 20 days after service of the order, unless the order otherwise directs.",
+        "note": "\"unless the order otherwise directs\" is on the face of the statute and the engine cannot see the order, so a computed date here is the default and nothing more. Service of the order is service of a paper, so Sec. 801.15(5) applies.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-802-06-1a-responsive-pleading-after-motion-denied",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Sec. 802.06(2) motion is denied or postponed -- 10 days (Wisconsin)",
+      "trigger_event": "notice_of_court_action_on_motion",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action;",
+        "note": "TEN DAYS, INSIDE THE ELEVEN-DAY SHORT-PERIOD EXCLUSION -- but read what Wisconsin excludes. Sec. 801.15(1)(b) excludes intermediate Saturdays, Sundays and \"holidays\" as defined in (1)(a), a STATUTORY LIST, while rolling the LAST day on courthouse CLOSURE instead. This calendar carries only the statewide closure intersection, so the exclusion here is deliberately UNDER-inclusive and the date may be EARLIER than the true one. See JURISDICTION_COVERAGE.wi. NO SERVICE EXTENSION: the period runs from NOTICE OF THE COURT'S ACTION, not from service of a paper by a party, which is what Sec. 801.15(5) reaches. Its sibling limb does take it.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-802-06-1a-responsive-pleading-after-more-definite-statement",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a more definite statement -- 10 days (Wisconsin)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "wi_801_15_5",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "facsimile",
+          "electronic_mail",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 802.06(1)(a)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/802.pdf",
+        "quote": "or if the court grants a motion for a more definite statement, the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "TEN DAYS, inside the eleven-day exclusion. Runs from SERVICE of a party's paper, so unlike its sibling it takes Sec. 801.15(5): three days for mail, and ONE day for fax, e-mail or the e-filing system completed between 5 p.m. and midnight. Sec. 802.06(1)(b) stays ALL discovery for 180 days on the filing of a motion to dismiss under (2)(a)6., a motion for judgment on the pleadings, or a motion for a more definite statement. It is not a deadline and is not modelled, but it changes whether a discovery period can run at all, and the engine cannot see that a motion was filed.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1994-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-804-08-1b-interrogatory-answers",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Answers or objections to interrogatories -- 30 days (Wisconsin)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "wi_801_15_5",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "facsimile",
+          "electronic_mail",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 804.08(1)(b)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/804.pdf",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within 30 days after the service of the interrogatories, except that a defendant may serve answers or objections within 45 days after service of the summons and complaint upon that defendant.",
+        "note": "A PLAIN 30-DAY ROW, NOT A FLOOR, and the deciding word is \"MAY\". Sec. 804.08(1)(b) and 804.09(2)(b)1. both say a defendant MAY serve within 45 days -- an ELECTION -- while Sec. 804.11(1)(b) says a defendant \"SHALL NOT BE REQUIRED\" to serve before 45 days, which is a mandatory FLOOR. Only the mandatory one is computed as a resolve_periods later_of. Encoding an election as a floor would report a date the statute does not guarantee. The same three-way split appears in Alabama and South Carolina. \"The court may allow a shorter or longer time\" is on the face of the statute. Sec. 802.06(1)(b) stays ALL discovery for 180 days on the filing of a motion to dismiss under (2)(a)6., a motion for judgment on the pleadings, or a motion for a more definite statement. It is not a deadline and is not modelled, but it changes whether a discovery period can run at all, and the engine cannot see that a motion was filed.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2018-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-804-09-2b1-production-response",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- 30 days (Wisconsin)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "wi_801_15",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "wi_801_15_5",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "facsimile",
+          "electronic_mail",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 804.09(2)(b)1.",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/804.pdf",
+        "quote": "The party upon whom the request is served shall serve a written response within 30 days after the service of the request, except that a defendant may serve a response within 45 days after service of the summons and complaint upon that defendant.",
+        "note": "Word-for-word the Sec. 804.08 structure, including \"MAY serve\" -- an election, not a floor, so this is a plain row for the same reason. Sec. 802.06(1)(b) stays ALL discovery for 180 days on the filing of a motion to dismiss under (2)(a)6., a motion for judgment on the pleadings, or a motion for a more definite statement. It is not a deadline and is not modelled, but it changes whether a discovery period can run at all, and the engine cannot see that a motion was filed.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2018-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "wi-804-11-1b-admission-response-defendant-later-of",
+      "jurisdiction": "wi",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- the later of 30 days and the 45-day defendant floor (Wisconsin)",
+      "trigger_event": {
+        "id": "wisconsin_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "wi_801_15",
+      "service_extension": {
+        "standard": "wi_801_15_5",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "facsimile",
+          "electronic_mail",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Wis. Stat. Sec. 804.11(1)(b)",
+        "url": "https://docs.legis.wisconsin.gov/statutes/statutes/804.pdf",
+        "quote": "The matter is admitted unless, within 30 days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or attorney, but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 45 days after service of the summons and complaint upon the defendant.",
+        "note": "THE ONLY WISCONSIN DISCOVERY ROW THAT IS A FLOOR. \"a defendant SHALL NOT BE REQUIRED to serve answers or objections before the expiration of 45 days\" is mandatory, where Secs. 804.08 and 804.09 say a defendant MAY serve within 45 -- an election. That one word is why this row is a resolve_periods later_of and its two siblings are plain 30-day rows. AND THE CONSEQUENCE IS THE OUTLIER: on this statute alone, silence ADMITS. Missing an interrogatory deadline invites a motion to compel; missing this one decides the fact. Both limbs run from caller-supplied dates, so Wisconsin does not hit the Maryland chained-floor gap. Sec. 802.06(1)(b) stays ALL discovery for 180 days on the filing of a motion to dismiss under (2)(a)6., a motion for judgment on the pleadings, or a motion for a more definite statement. It is not a deadline and is not modelled, but it changes whether a discovery period can run at all, and the engine cannot see that a motion was filed.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1998-01-01",
+      "effective_to": null
+    }
+  ]
+}

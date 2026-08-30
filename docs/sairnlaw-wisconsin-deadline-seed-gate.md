@@ -324,10 +324,43 @@ non-closure marker on at least one listed holiday. Read straight off the PDF:
 
 | County | What the schedule says |
 |---|---|
-| Barron | MLK Jr Day **No Court**; Memorial Day **Open** |
-| Dane | Juneteenth **Open** |
+| Barron | MLK Jr Day **No Court**; observed Independence Day (07-03) **Open** |
+| Dane | observed Independence Day (07-03) **Open** |
+| Chippewa | substitutes **7/3 & 7/6** for the observed Independence Day |
 | Fond du Lac, Forest, Grant, Marinette, Portage, Taylor | MLK Jr Day **PM** only |
-| Burnett, Chippewa, Marathon, St. Croix | **No Court** on at least one listed day |
+| Brown | Labor Day marked **`_`**, not X -- an ambiguity, not a closure |
+| Kewaunee | not closed all day on **Christmas Day** |
+| Milwaukee | not closed all day on **Christmas Eve** or the **day after Thanksgiving** |
+
+**CORRECTION, 2026-08-30.** An earlier version of this section said *"Dane is
+OPEN on Juneteenth"* and *"Barron is OPEN on Memorial Day"*. **Both were
+wrong.** They came from splitting the PDF's text layer, which DROPS BLANK CELLS
+and therefore shifts every marker left. Re-reading the schedule by CHARACTER
+POSITION -- x-coordinates of all 72 county rows, via pdfplumber -- puts both
+counties' `Open` marker on **2026-07-03**, the observed Independence Day. The
+conclusion below is unchanged and if anything stronger; the two examples were
+not. A misaligned marker here is a wrong legal deadline, which is why the
+calendar generator reads positions and not text.
+
+**The full per-date count, from the positional read:**
+
+| date | holiday | counties NOT closed all day |
+|---|---|---|
+| 2026-01-01 | New Year's Day | **0** |
+| 2026-01-19 | MLK Jr Day | 54 |
+| 2026-02-16 | Washington's Birthday | 60 |
+| 2026-04-03 | Good Friday | 19 |
+| 2026-05-25 | Memorial Day | **0** |
+| 2026-06-19 | Juneteenth | 67 |
+| 2026-07-03 | observed Independence Day | 3 |
+| 2026-09-07 | Labor Day | 1 |
+| 2026-10-12 | Indigenous Peoples' / Columbus Day | 69 |
+| 2026-11-11 | Veterans Day | 55 |
+| 2026-11-26 | Thanksgiving Day | **0** |
+| 2026-11-27 | day after Thanksgiving | 2 |
+| 2026-12-24 | Christmas Eve | 1 |
+| 2026-12-25 | Christmas Day | 1 |
+| 2026-12-31 | New Year's Eve | 28 |
 
 So a day on the Sec. 801.15(1)(a) union list is **NOT** reliably a day the clerk
 of courts office is closed. Encoding the list as a rollover proxy would roll the
@@ -351,3 +384,28 @@ own publication.**
 belongs to Michael, not to the session that found the schedule. **Wisconsin
 remains unseeded pending that call**, and it is the same question Alabama's
 Sec. 1-3-8(f)(1) raises in a milder form.
+
+## 8. SEEDED 2026-08-30 -- option 4, on Michael's approval
+
+**12 rules, calendar 2026, three dates.** Loaded to `LAW-PINNACLE-2026` and
+live-verified **16/16**.
+
+The calendar is the statewide INTERSECTION: **New Year's Day, Memorial Day and
+Thanksgiving Day** -- the only three of fifteen on which every one of the 72
+counties is marked closed all day. Four more were excluded on a single county
+each, which is the rule working rather than failing.
+
+**The under-exclusion is asserted, not just disclosed.** Sec. 801.15(1)(b) keys
+the INTERMEDIATE-day exclusion to the statutory list while keying the ROLLOVER
+to closure, and this calendar can only serve one. A 10-day period from
+2026-06-11 returns **2026-06-25** live, counting Juneteenth as an ordinary day.
+A list-based engine would answer 06-26 -- one day later. Every error this
+calendar can make is in that direction.
+
+**One question left open deliberately.** Sec. 801.15(5) adds days after service
+of "a notice or other paper", with none of the Rule 4 / Rule 5 carve-out the
+federal rule, Arkansas and Alabama carry. Whether a summons and complaint is
+such a paper was not read, so the three original-process rows carry NO
+extension: applying it wrongly reports three days LATE, withholding it reports
+EARLY. Recorded on each row as the place to change if a Wisconsin reading
+settles it.

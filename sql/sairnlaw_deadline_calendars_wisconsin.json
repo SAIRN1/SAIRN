@@ -1,0 +1,51 @@
+{
+  "_readme": [
+    "WISCONSIN HOLIDAY CALENDAR -- 2026, and it is deliberately THREE DAYS LONG.",
+    "It is not the statutory holiday list and is not meant to be. Wis. Stat.",
+    "801.15(1)(b) rolls the last day on COURTHOUSE CLOSURE, and Wisconsin's clerks",
+    "of circuit court are county officers who genuinely diverge -- so the only",
+    "days that can be rolled off safely statewide are the ones every county is",
+    "closed on. Three, out of the fifteen the court system lists.",
+    "",
+    "Everything this omits runs EARLY, which is the safe direction. Everything a",
+    "statutory-list calendar would have added runs LATE, which is not.",
+    "",
+    "Regenerate with the parser in the scratchpad note on the SAIRNlaw row of",
+    "docs/SAIRN-OPEN-WORK-INDEX.md: read the schedule by CHARACTER POSITION, not",
+    "by splitting the text layer, or blank cells shift every marker left."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "wi",
+      "year": 2026,
+      "authority": {
+        "citation": "Wisconsin Court System, 2026 Circuit Court Closure Schedule, as the fact Wis. Stat. Sec. 801.15(1)(b) keys the last-day rollover to (\"a day the clerk of courts office is closed\")",
+        "url": "https://www.wicourts.gov/courts/circuit/docs/holidayschedule26.pdf",
+        "computation_url": "https://docs.legis.wisconsin.gov/statutes/statutes/801.pdf",
+        "quote": "Key: X = Closed all day; PM = Closed in the afternoon; No Court = Courts are down but offices are open",
+        "note": "THE STATEWIDE INTERSECTION OF ACTUAL CLOSURES -- three days, not the fifteen the court system lists and not the larger statutory union. This is the whole design, and it exists because Wis. Stat. Sec. 801.15(1)(b) rolls the last day on \"a day the clerk of courts office is CLOSED\" rather than on any holiday list. SOURCE: the Wisconsin Court System's own 2026 Circuit Court Closure Schedule, https://www.wicourts.gov/courts/circuit/docs/holidayschedule26.pdf (HTTP 200, 86,005 B, 3 pages), which prints one row per county and this key: 'X = Closed all day; PM = Closed in the afternoon; No Court = Courts are down but offices are open.' READ BY CHARACTER POSITION, NOT BY SPLITTING THE TEXT LAYER. The text layer drops blank cells, so a naive split shifts every marker left; two specific claims made that way on 2026-08-30 were wrong and were corrected by re-reading the x-coordinates of all 72 county rows. WHY THE STATUTORY LIST CANNOT BE USED: of the fifteen dates the schedule lists, 67 of 72 counties are NOT closed all day on Juneteenth, 69 of 72 on Indigenous Peoples' / Columbus Day, 60 of 72 on Washington's Birthday, 55 of 72 on Veterans Day and 54 of 72 on MLK Jr Day. Rolling a deadline off any of those would roll it in counties whose courthouse was OPEN -- LATER than Sec. 801.15(1)(b) allows, the direction that loses a filing. ONLY THREE DATES SURVIVE, every county marked X on each: New Year's Day, Memorial Day and Thanksgiving Day. Four more came close and are excluded on a single county, which is the rule working rather than failing: Labor Day (Brown prints '_' rather than X -- an ambiguity, and ambiguity must not become a closure), Christmas Day (Kewaunee), Christmas Eve and the day after Thanksgiving (Milwaukee), and the observed Independence Day 2026-07-03 (Barron and Dane both marked 'Open', Chippewa substituting '7/3 & 7/6'). THE ERROR DIRECTION IS ALWAYS EARLY. A day some county was in fact closed on is simply absent, so a computed deadline can be sooner than the true one and can never be later. That is also true of the intermediate-day exclusion in Sec. 801.15(1)(b), which the statute keys to the (1)(a) LIST rather than to closure -- this calendar under-excludes there deliberately. 2026 ONLY: the court system publishes no 2027 schedule (holidayschedule27.pdf returns 404), and a later year could only be derived from the statutory list, which is the thing this design exists to avoid. Adding a year means fetching that year's schedule and re-running the intersection, not extending a rule.",
+        "retrieved_at": "2026-08-30"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "All 72 counties marked X (closed all day) on the 2026 Circuit Court Closure Schedule."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "All 72 counties marked X. Note Barron is marked 'Open' on the observed Independence Day but X here -- the divergence is per-date, not per-county."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "All 72 counties marked X. The DAY AFTER Thanksgiving is NOT here: Milwaukee is not closed all day, so 2026-11-27 fails the intersection."
+        }
+      ]
+    }
+  ]
+}
