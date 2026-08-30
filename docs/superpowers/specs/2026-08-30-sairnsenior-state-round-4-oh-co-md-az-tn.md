@@ -275,7 +275,7 @@ would be null for eighteen, and **Ohio would be null on the whole axis**.
 | TN 0720-39 duties on employers | **NOT READ** | The rule covers Commission procedure; whether it imposes a pre-hire *query* duty on a home care organization (as MA § 155.010(E)(3) does) was **not** established. Do not assume symmetry with MA. |
 | OH 3701-60-05 (database review) and -09 (exclusionary periods) full text | **PARTIALLY READ** | Titles and role are known; the substantive lists are not. |
 | MD Health-General Art. Title 19 Subtitle 19 | **NOT READ** | COMAR § .10 cross-references it for the background-check standard. |
-| Missouri | **CITATION WRONG, ABANDONED** | Carried from round 3. |
+| Missouri | **THE “WRONG CITATION” CLAIM WAS ITSELF WRONG** | 19 CSR 30-26 really is Home Health Agencies; the failure was a too-narrow scan, not a bad citation. Corrected in round 9 §0. |
 | The remaining ~28 states | **NOT ATTEMPTED** | Twenty-three states on at least one axis is not coverage. |
 
 ## 9. Method notes

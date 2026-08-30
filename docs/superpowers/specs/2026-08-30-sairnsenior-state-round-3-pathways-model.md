@@ -23,9 +23,28 @@ read so far actually require.
 > providers it refers (6 CCR 1011-1 ch. 26 § 3.3(B)). **Scheduling,
 > training-delivery and assignment-direction must be absent from that customer's
 > product, not merely unused** — an account-level capability gate keyed on
-> registration category, decided before any UI is exposed. It is the only
-> requirement found so far that is satisfied by **withholding** a feature rather
-> than by storing or checking data. Full text and consequences in round 6.
+> registration category, decided before any UI is exposed. Full text and
+> consequences in round 6.
+>
+> ### A sixth category of rule: BEHAVIOUR CONSTRAINTS
+>
+> Some rules are not requirements a worker meets or data a record holds. **They
+> say what the software must, or must not, do.** They come in both polarities and
+> both are binding:
+>
+> | | State | Rule | Product consequence |
+> |---|---|---|---|
+> | **Forbids** | Colorado | A registered placement agency *"does not direct, control, **schedule**, or train"* providers it refers — disclosed and consumer-signed before services start (ch. 26 § 3.3(B)) | The feature must be **absent** for that account |
+> | **Compels** | Louisiana | A home health aide's own definition requires *"a **clinical note for each patient visit**"* (LAC 48:I ch. 91) | Every scheduled visit must **produce a record** |
+> | **Compels** | Oklahoma | An agency *"shall only assign the home health aide to tasks for which the aide has been determined to be competent"* (63 O.S. § 1-1962(C)(2)) | **Assignment-time** check, per task |
+> | **Compels** | Louisiana | Direct-service-worker competency is certified by an RN **for a named individual receiving care**, and that certification *"shall not be delegated"* (LAC 48:I § 9245(A)) | Caregiver substitution is **not free** — authorisation is per client |
+> | **Compels** | Kentucky | Dementia training must be completed **before** serving a patient exhibiting symptoms; supervisory visits every 2 weeks, or every 60 days where no skilled service is involved (902 KAR 20:081) | Eligibility depends on **the patient**, and visits are **scheduled obligations** |
+>
+> **None of these is expressible as a field on a worker record.** Three of the
+> five are triggered by *the client or the task*, not by the worker — so a model
+> that asks only "is this caregiver qualified?" answers the wrong question.
+> Track them separately from the five axes and check them at **assignment
+> time**, not at onboarding.
 
 ## 1. The model, stated so every later state can be filled in against it
 
@@ -164,7 +183,7 @@ Also read on wage/overtime axes but not on training: CT, OR, IL, NV.
 |---|---|---|
 | Codified 26 TAC § 558.2/.244/.247/.289 text | **NOT READ** | Everything in §2 is HHSC's July 2026 FAQ restating its own rules. Appian portal still unusable. |
 | WI § DHS 133.17 (aide services) and § 133.18 (supervisory visits) | **NOT READ** | Only the chapter's definitions and section list were retrieved; the substantive rules are on sub-pages. |
-| Missouri 19 CSR 30-26 | **WRONG CHAPTER, ABANDONED** | Fetched cleanly (189 KB) but contains no aide-qualification or hour provisions — the citation was a guess and it was wrong. Recorded so nobody re-fetches the same PDF. |
+| Missouri 19 CSR 30-26 | **THIS ROW WAS WRONG — corrected 2026-08-30** | The citation was RIGHT: the Secretary of State’s own Title 19 index lists `19c30-26.pdf` as “Chapter 26 — Home Health Agencies”. My scan searched only for **hour patterns**, found none, and I reported “nothing relevant” — a different claim, and untested. The chapter incorporates 42 CFR 484 wholesale and adds a dementia-training mandate. See `2026-08-30-sairnsenior-state-round-9-la-ch92-missouri-kentucky.md` §0. |
 | Arizona (`apps.azsos.gov` 403), Tennessee (`publications.tnsosfiles.com` 403), Maryland (`dsd.maryland.gov` 404), Seattle DWO (404) | **THREE RESOLVED 2026-08-30, ARIZONA STILL BLOCKED** — see `2026-08-30-sairnsenior-state-round-4-oh-co-md-az-tn.md` | Tennessee was never blocked: an XML 403 from that object store is a **bad key**, and the real hrefs are flat and date-stamped. Maryland's canonical host is `regs.maryland.gov`, which `dsd.maryland.gov` redirects to. Arizona statutes are on `azleg.gov`; the **Administrative Code has no working route**. |
 | Ohio 3701-60-04, Colorado 6 CCR 1011-1 | **THIS ROW WAS WRONG — corrected 2026-08-30** | Neither was on disk: the probe loop wrote every body to `/dev/null`, so "fetched" rested on a status code and nothing else. The Colorado URL was also **not** 6 CCR 1011-1 — it resolves to 10 CCR 2505-10 § 8.500, the Medicaid benefit rule. Both now fetched and read for real; CO's licensure chapter remains unlocated. |
 | Municipal domestic-worker ordinances | **NOT ATTEMPTED** | Seattle's canonical URL 404s; needs the current one. |
@@ -176,9 +195,15 @@ Also read on wage/overtime axes but not on training: CT, OR, IL, NV.
   and hhs.texas.gov; Arizona, Tennessee and Maryland still refuse. Reporting it
   as *the* fix would have been the same over-generalisation as calling the
   original block a "request fingerprint".
-- **A guessed citation that fetches cleanly is still a wrong citation.** Missouri
-  returned a real 189 KB PDF containing nothing relevant. **HTTP 200 is not
-  relevance** — check the content answers the question before counting it.
+- **CORRECTED 2026-08-30 — this bullet originally said "a guessed citation that
+  fetches cleanly is still a wrong citation", using Missouri as the example.
+  Missouri was not a wrong citation.** 19 CSR 30-26 really is *Home Health
+  Agencies*; what failed was my scan, which searched only for hour patterns,
+  found none, and reported "nothing relevant" — a claim I never tested. **The
+  surviving lesson is the narrower one: a negative from a single pattern is a
+  negative about that pattern**, and it must be reported that way. (The
+  wrong-citation lesson is real, but its true example is Tennessee 0720-11 —
+  see round 4.)
 - **An agency FAQ can be more current than the code.** Texas's is dated July 2026
   and carries `<Added 07/02/26>` markers. It is still one step from the rule, and
   the label stays on.
