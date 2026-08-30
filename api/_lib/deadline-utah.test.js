@@ -230,7 +230,7 @@ check('supplying service_method: mail adds NOTHING -- no extension is seeded',
 
 // ── Nothing else moved ────────────────────────────────────────────────────
 check('Utah declares NO coverage entry -- its gaps are all EARLY and row-level',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ks', 'ma', 'md', 'mn', 'mo', 'va', 'wi']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'va', 'wi']);
 check('Utah adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // Two pre-existing jurisdictions must be untouched by the new standard.

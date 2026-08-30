@@ -1506,7 +1506,68 @@ var COMPUTATION_STANDARDS = {
   // same way it is for the FRCP family.
   ks_60_206: { label: 'K.S.A. 60-206', impl: 'frcp_6a',
     base_period_suffix: '(a)', months_years_suffix: '(a)',
-    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '' },
+  // MISSISSIPPI. Miss. R. Civ. P. 6(a), the whole computation limb verbatim:
+  //
+  //   "the day of the act, event, or default from which the designated period
+  //    of time begins to run shall not be included. The last day of the period
+  //    so computed shall be included, unless it is a Saturday, a Sunday, or a
+  //    legal holiday, AS DEFINED BY STATUTE, OR ANY OTHER DAY WHEN THE
+  //    COURTHOUSE OR THE CLERK'S OFFICE IS IN FACT CLOSED, whether with or
+  //    without legal authority ... When the period of time prescribed or
+  //    allowed is LESS THAN SEVEN DAYS, intermediate Saturdays, Sundays, and
+  //    legal holidays shall be excluded in the computation. In the event any
+  //    legal holiday falls on a Sunday, the next following day shall be a
+  //    legal holiday."
+  //
+  // SEVEN, AND IT IS A STRICT LESS-THAN, which is what the field already means
+  // at the call site. Same threshold as Ohio, Indiana, Florida, New Jersey,
+  // North Carolina, Washington, Massachusetts, Missouri and South Carolina --
+  // read independently here, not carried across, because the neighbours
+  // disagree wildly (Alabama and Wisconsin 11, Maryland 8, Arkansas 14, Texas
+  // 6, and Kansas, Minnesota, Utah and Nevada none at all).
+  //
+  // NO PER-DIRECTION SPLIT. Unlike Md. Rule 1-203(b), Rule 6(a) says nothing
+  // about backward periods at all, so the exclusion is left applying in both
+  // directions, which is the plain reading of "the period of time prescribed
+  // or allowed is less than seven days".
+  //
+  // ⚠ NO MISSISSIPPI ROW MAY BE SEEDED BACKWARD WHILE THE CALENDAR IS THE
+  // TWO-DAY INTERSECTION. This is the one place where this jurisdiction can
+  // compute LATE, and the seed avoids it by construction rather than by luck.
+  // The ms calendar deliberately carries only the two holidays Miss. Code Ann.
+  // Sec. 3-3-7(2) forbids a county to substitute away (see
+  // JURISDICTION_COVERAGE.ms), so it is knowably missing days that really are
+  // legal holidays in most counties.
+  //
+  // Under-inclusion is EARLY, and therefore safe, in both FORWARD mechanisms:
+  // a last day that should have rolled forward off a holiday stays where it is
+  // (sooner), and a short period that should have excluded a holiday counts it
+  // (sooner). COUNTING BACKWARD IT INVERTS IN BOTH. A short backward period
+  // excludes fewer days than the rule requires, and a backward last day that
+  // should have rolled BACK off a holiday does not roll at all -- each lands
+  // CLOSER to the trigger, i.e. LATER than the true last date to act, which is
+  // the direction that lets a party serve or file too late.
+  //
+  // THE LENGTH OF THE PERIOD DOES NOT RESCUE IT. An earlier draft of this seed
+  // carried Rule 56(c) -- "the motion shall be served at least ten days before
+  // the time fixed for the hearing" -- on the reasoning that ten clears the
+  // seven-day threshold so the exclusion never fires. That is true of the
+  // exclusion and irrelevant to the ROLLOVER: a hearing on 7 May 2026 counts
+  // back to Monday 27 April, Confederate Memorial Day, which this calendar
+  // omits because Sec. 3-3-7(2) lets a county trade it away. In a county that
+  // still observes it the true last day is Friday 24 April. So Rule 56(c),
+  // Rule 6(d)'s five-day motion notice and its one-day opposing affidavit are
+  // ALL omitted. Seeding a Mississippi backward row needs a complete
+  // county-level calendar, not a longer period.
+  //
+  // THE SUFFIX IS BARE "(a)". Rule 6 is not subdivided past the letter -- the
+  // computation, the rollover, the short-period exclusion and the Sunday shift
+  // are four sentences of one unnumbered paragraph.
+  ms_r_civ_p_6: { label: 'Miss. R. Civ. P. 6', impl: 'frcp_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '(a)' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1594,6 +1655,12 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'Three Minnesota closure categories are NOT modelled and can only make this date EARLIER, never later. Separately, Indigenous Peoples Day IS counted on a reading of Rule 6.01(d) that has not been confirmed by counsel — if that reading is wrong, a date landing near the second Monday in October could be LATE.',
     detail: 'The calendar encodes Saturdays, Sundays and the eleven holidays in Minn. Stat. 645.44 subd. 5, which Minn. R. Civ. P. 6.01(d) incorporates by name. THREE THINGS ARE NOT ENCODED, ALL OF WHICH CAN ONLY REPORT EARLY: (1) THE FRIDAY AFTER THANKSGIVING. 645.44 subd. 5(a) gives non-executive branches, including the judiciary, the OPTION whether to observe it, and Rule 6.01(d) second limb does not reach it because the U.S. mail operates that day. Omitting it is the safe default; if the Judiciary does observe it, a deadline landing there rolls later than shown. (2) ONE-OFF DAYS THE U.S. MAIL DOES NOT OPERATE for reasons other than a federal holiday, which Rule 6.01(d) counts but which are not knowable in advance. (3) DAYS THE COURT ADMINISTRATOR OFFICE IS INACCESSIBLE under Rule 6.01(a)(4), which extends filing to the first accessible day. Note that limb is ADDITIONAL to the Saturday/Sunday/holiday rollover rather than a replacement for it, which is exactly why omitting it is safe here and why Minnesota does not have the problem Wisconsin does. AND ONE INFERENCE, DISCLOSED AS SUCH: INDIGENOUS PEOPLES DAY, the second Monday in October, IS encoded. The judiciary merely has the OPTION to observe it under 645.44 subd. 5(a), but Rule 6.01(d) independently counts any day that the U.S. mail does not operate, and that Monday is the federal Columbus Day on which mail does not run. This engine therefore treats it as a legal holiday regardless of the branch option. THAT IS A READING OF THE RULE AND NOT A QUOTED HOLDING. It is the only place in this jurisdiction where the engine could be LATE rather than early, and it is the one item here worth confirming with counsel. If a computed date falls on or just after the second Monday in October, or near the Friday after Thanksgiving, check it by hand.'
+  },
+  ms: {
+    complete: false,
+    direction: 'early',
+    summary: 'The Mississippi calendar carries only the TWO holidays a county is forbidden by statute to substitute away — the third Monday in January and 11 November. Every other Mississippi court holiday is omitted on purpose, so this date may be EARLIER than the true deadline, never later. Confirm the relevant county courthouse\'s own schedule before relying on a date that falls near any other holiday.',
+    detail: 'THREE STATUTES HAVE TO AGREE BEFORE A DAY CAN GO IN THIS CALENDAR, AND FOR MOST MISSISSIPPI HOLIDAYS THEY DO NOT. (1) Miss. R. Civ. P. 6(a) rolls the last day off "a legal holiday, AS DEFINED BY STATUTE, or any other day when the courthouse or the clerk\'s office is IN FACT CLOSED, whether with or without legal authority." (2) Miss. Code Ann. Sec. 3-3-7(1) supplies that definition — ten days — but opens "EXCEPT AS OTHERWISE PROVIDED IN SUBSECTION (2)", and Sec. 3-3-7(2) lets the governing authorities of ANY municipality or county declare, by order spread upon its minutes, "Mardi Gras Day or any one (1) other day during the year, to be a legal holiday" IN LIEU OF any one of them — expressly excepting only the third Monday in January (Robert E. Lee\'s and Dr. Martin Luther King, Jr.\'s birthdays) and the eleventh day of November (Armistice or Veterans\' Day). (3) Miss. Code Ann. Sec. 25-1-99 then makes closure mandatory — "the courthouse SHALL be closed on all state holidays as set forth in Section 3-3-7" — but only for the days that are still Sec. 3-3-7 holidays in that county. THIS IS NOT THEORETICAL. Jackson County publishes a ten-item holiday schedule that lists GOOD FRIDAY, which is not in Sec. 3-3-7 at all, and omits the last Monday in April (Confederate Memorial Day), which is: a one-for-one Sec. 3-3-7(2) substitution, on the record, in a real county. A statewide calendar carrying 27 April 2026 would roll a Jackson County deadline off a day that courthouse was OPEN, and report LATER than Rule 6(a) allows. That is the direction that loses a filing, so the day is not carried. THE CALENDAR IS THEREFORE THE STATUTORY INTERSECTION: the two days Sec. 3-3-7(2) forbids any county to trade away. New Year\'s Day, Washington\'s Birthday, Confederate Memorial Day, National Memorial Day and Jefferson Davis\'s birthday, Independence Day, Labor Day, Thanksgiving and Christmas are all ABSENT, and every one of those absences reports EARLY. FOUR FURTHER GAPS, ALL EARLY. (a) Sec. 25-1-99 says the courthouse "MAY be closed on the Friday immediately preceding" a Saturday holiday — permissive, per county. 4 July 2026 is a Saturday and the Supreme Court closed the Gartin Justice Building on Friday 3 July, but no county is obliged to; that Friday is not here. (b) Thanksgiving is "the day fixed by proclamation by the Governor", and Sec. 25-1-99 leaves it to each board of supervisors whether to close for "those holidays created by executive order of the Governor" — the Governor\'s customary extra Thanksgiving-Friday and Christmas-Eve/New-Year\'s-Eve days are discretionary county by county and are not here. (c) Rule 6(a)\'s "in fact closed, whether with or without legal authority" limb reaches weather, emergencies and local closures, which no annual calendar can express. (d) A county that HAS adopted Mardi Gras or another substitute day has a holiday this calendar does not carry; omitting it is also early. THE SUNDAY SHIFT IS MANDATORY AND IS MODELLED WHERE IT BITES: Sec. 3-3-7(1) and Rule 6(a) both say a legal holiday falling on a Sunday makes the next day a legal holiday. No Sec. 3-3-7 holiday falls on a Sunday in 2026, so the shift is dormant this year rather than absent. 2026 ONLY: a later year is REFUSED rather than derived. THE ONE PLACE MISSISSIPPI COULD COMPUTE LATE IS CLOSED BY CONSTRUCTION, NOT BY LUCK: under-inclusion only reports EARLY while the count runs FORWARD. Counting BACKWARD it inverts — a period under seven days excludes fewer intermediate holidays than Rule 6(a) requires, and a last day that should have rolled back off an omitted holiday does not roll at all — so both land closer to the trigger, i.e. LATER than the true last date to act. NO MISSISSIPPI ROW IS SEEDED BACKWARD AT ALL. Rule 6(d)\'s five-day motion notice, its one-day opposing affidavit and Rule 56(c)\'s ten-day service of a summary-judgment motion are all omitted — including the ten-day one, whose length clears the seven-day exclusion threshold and does nothing about the rollover limb (a hearing on 7 May 2026 counts back to Monday 27 April, Confederate Memorial Day, which this calendar omits). Seeding a Mississippi backward row needs a complete county-level calendar, not a longer period.'
   }
 };
 
@@ -2772,6 +2839,45 @@ var SERVICE_EXTENSION_STANDARDS = {
     shape: 'enumerated_allowlist',
     qualifies: function (method) {
       return method === 'mail' || method === 'left_with_clerk';
+    }
+  },
+  // MISSISSIPPI. Miss. R. Civ. P. 6(e), verbatim and complete:
+  //
+  //   "Whenever a party has the right or is required to do some act or take
+  //    some proceedings within a prescribed period after the service of a
+  //    notice or other paper upon him and the notice or paper is served upon
+  //    him BY MAIL, three days shall be ADDED TO THE PRESCRIBED PERIOD. This
+  //    subdivision does not apply to responses to service of summons under
+  //    Rule 4."
+  //
+  // "ADDED TO THE PRESCRIBED PERIOD" -> add_to_period_then_roll, the
+  // period-lengthening order, and NOT the federal after-expiry order Kansas
+  // and Alabama use. The two diverge whenever the unextended last day lands on
+  // a weekend or a holiday.
+  //
+  // MAIL AND NOTHING ELSE, AND THAT IS THE FINDING, because Mississippi has
+  // had electronic service since 1989. Rule 5(b)(1) expressly permits service
+  // "by transmitting it to him by electronic means", by "leaving it with the
+  // clerk of the court", and by "transmitting it to the clerk by electronic
+  // means"; Rule 5(b)(2) routes service through the Mississippi Electronic
+  // Court System wherever a court has adopted it by local rule. Rule 6(e) was
+  // never widened to reach any of them. So e-mail, the MEC system and
+  // leaving-with-the-clerk all get ZERO -- unlike Kansas, which does extend
+  // for leaving with the clerk, and unlike Arkansas, Alabama, Massachusetts,
+  // Oregon and Oklahoma, which all extend for electronic service. Copying any
+  // of those qualifies() here over-counts and reports LATE.
+  //
+  // THE RULE 4 CARVE-OUT IS EXPRESS, not inferred from the Rule 5/Rule 4
+  // distinction the way it is federally. No answer row triggered by service of
+  // the summons and complaint carries this extension at all; the seed omits
+  // service_extension from those rows rather than relying on a caller not to
+  // pass a service_method.
+  ms_r_civ_p_6_e: {
+    label: 'Miss. R. Civ. P. 6(e)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail';
     }
   }
 };
