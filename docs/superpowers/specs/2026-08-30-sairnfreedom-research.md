@@ -1094,3 +1094,32 @@ than this document did:
 | `2026-08-21-plumbing-electrical-hvac-worldwide-research.md` | **Clean.** Proportionally dense on both cost and access |
 
 So this is a lesson from one document, not a pattern across the platform.
+
+### Lesson 1 audited too — the SAIRNsenior series, also clean
+
+The scope failure was separately checked against the ten-document SAIRNsenior
+state series (2,450 lines), since it is the same shape: statutory requirements
+that bind one provider class and not another. **It does not have the failure**,
+and is consistently more careful than this document was:
+
+- **Subdivisions pinned**, not sections: `RCW 74.39A.074(1)(b)`,
+  `63 O.S. § 1-1962(C)(1)`, `R.60-77 § 501(B)`.
+- **Entity scope stated at the point of the claim** — "a long-term care
+  worker"; certification "for home health aides *and* home care agency
+  administrators. Both roles, one mechanism."
+- **Exemption lists enumerated**, i.e. the "who is NOT bound" question asked
+  directly — Washington's registered nurses, pre-2012-01-07 hires, family
+  members, ≤20 hours, <300 hours/year.
+- **Absence recorded as a finding**, not silence: South Carolina "there is no
+  home health aide [standard]", plus a register flagging *"Whether SC sets aide
+  qualifications anywhere outside R.60-77 — NOT ESTABLISHED"*, which is exactly
+  the scope question left open rather than assumed.
+
+**A correction to the audit's own method, worth more than the result.** The
+first pass ranked documents by a subdivision-precision ratio (cites carrying a
+subdivision ÷ bare cites). It ranked **round 8 worst** — and round 8 is the
+best document in the series. The ratio measured *citation density in prose*,
+not scope discipline: a document that cites many sections precisely generates
+many "bare" matches too. The finding came from reading, not the metric. A
+mechanical proxy for a judgement property will rank confident, well-cited work
+badly; use it to choose a reading order and never as the verdict.
