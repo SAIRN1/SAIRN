@@ -20,6 +20,16 @@
       "claimed_at_epoch": 1788126746.4809582,
       "status": "released",
       "released_at": "2026-08-30T22:01:01Z"
+    },
+    {
+      "id": "cody-1788130988",
+      "session": "cody",
+      "subject": "sairnvet",
+      "task": "panel audit gap rederive",
+      "claimed_at": "2026-08-30T23:03:08Z",
+      "claimed_at_epoch": 1788130988.5717537,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
