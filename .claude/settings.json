@@ -105,6 +105,11 @@
             "type": "command",
             "command": "python C:/SAIRN/tools/session_lock_check.py start",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "python C:/SAIRN/tools/sairn_claim_hook.py",
+            "timeout": 12
           }
         ]
       }
