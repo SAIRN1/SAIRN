@@ -71,6 +71,15 @@ both bear on the unlicensed segment, and Oregon's domestic-worker overtime
 carve-out for licensed in-home care agencies is already recorded in
 `2026-08-29-sairnsenior-domestic-worker-overtime.md`.
 
+> **RESOLVED 2026-08-30 — Oregon has ONE caregiver-matching category, not three.**
+> This document speculated that ORS 443.360 and ORS 443.370–443.376 might be two
+> more. They are not. **443.370–376 ("long term care referral") is FACILITY
+> placement** — the same business as Nevada's referral agency — and **443.360
+> ("agency with choice services") is a state-procured programme limited to two
+> contracted providers**, not a category anyone can enter. Same over-count as the
+> Nevada error, caught in the round it was raised. See
+> `2026-08-30-sairnsenior-state-round-15-oregon-count-and-mw-ne-routes.md` §1.
+
 ---
 
 ## 2. ORS 443.190 / 443.195 — a statute that specifies an intake form and a mobile app
