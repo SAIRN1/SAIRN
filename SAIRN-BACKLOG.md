@@ -1677,3 +1677,37 @@ migrated for another reason; not worth a standalone migration on live data.
 **Acceptable where it stands today** — every affected licence is a demo or
 verification tenant. The line to not cross is a paying customer, and there is
 currently nothing that would stop it.
+
+---
+
+## SAIRNvet exotic-species scoping — CLOSED 2026-08-30, shipped 2026-08-28 and never recorded
+
+Raised because the thread went quiet and nobody could say whether it had
+landed. It had. The work is in `cbd3576` and is **live-verified on production**
+— it was simply never written down anywhere, so it read as an open item.
+
+**What the finding was.** SAIRNvet's four species selectors disagreed with each
+other. `calc-species` — the one feeding the drug **calculator**, which computes
+an actual mg dose and runs the contraindication gate — offered 17 options while
+`drug-species` offered 21 and `dx-species` 16 including Exotic, Zoo/Wildlife,
+Aquatic/Fish and Amphibian. So the drug *browser* let a vet filter to Exotic or
+Swine and the drug *calculator* did not.
+
+**Why it was a safety fix, not a tidy-up.** `RED_FLAG_MATRIX` carries FATAL
+contraindications for hamster (penicillin, clindamycin) and chinchilla
+(penicillin) — "fatal enterotoxemia, do not use" — and neither species could be
+selected in the calculator, so `checkRedFlags()` could never fire for them
+there. Swine and poultry are both in `FOOD_ANIMAL_SPECIES`, so
+`isFoodAnimalSpecies()` gates a legally required FDA withdrawal-time banner
+that could not be triggered for two of the seven species it exists to protect.
+
+**Verified live 2026-08-30, not inferred from the commit:** fetched
+`sairn.vercel.app/sairnvet` and parsed the real `calc-species` element — **25
+options**, with Exotic, Swine, Hamster, Chinchilla, Zoo/Wildlife, Poultry,
+Aquatic/Fish and Amphibian all PRESENT. Zero entries in `RED_FLAG_MATRIX` are
+now unreachable from the calculator.
+
+**Nothing is open.** Recorded here only so the next session does not re-scope
+finished work — which is the specific cost of a fix that ships without a
+written trace. The unrelated *"SAIRNvet — 20 panels never audited"* row
+elsewhere in this file is a different item and stays open.
