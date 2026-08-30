@@ -38,8 +38,8 @@
       "task": "nebraska deadline seed gate",
       "claimed_at": "2026-08-30T23:08:05Z",
       "claimed_at_epoch": 1788131285.388227,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-08-30T23:43:39Z"
     }
   ]
 }
