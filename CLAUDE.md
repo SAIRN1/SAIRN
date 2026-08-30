@@ -159,6 +159,30 @@ reasoning, and the template.
   a specific new reason to.
 
 ## Skills — read these, don't just rely on trigger-word matching
+
+**Precedence when several skills cover one job: see
+`docs/2026-08-30-skill-precedence.md`.** A 2026-08-30 audit found 52 skills on
+disk (23 SAIRN, mirrored in this repo and verified byte-identical to the user
+store; 29 general and user-level only) with four apparently-overlapping groups.
+Three of the four turned out to be correctly-separated tools that a
+name-and-size scan made look like duplicates — notably `perf-profiler`, which is
+the only **server-side** profiling skill in the store and the one most SAIRN
+performance questions actually want. The short version:
+
+- **Design** — `sairn-client-facing-design` wins on any existing SAIRN app;
+  `frontend-design` for genuinely new UI; `design-taste-frontend` is scoped to
+  marketing sites and rarely applies here; `ui-ux-pro-max` is a lookup table,
+  not a competitor.
+- **Performance** — pick by layer: `perf-profiler` (backend/queries),
+  `performance` (frontend broad), `core-web-vitals` (a named metric).
+- **Security** — `sairn-guardian-v2` and `sairn-code-scrubber` run first;
+  `owasp-security` is the canonical general layer. `security-auditor` is
+  superseded **and stale** (its Top 10 is the 2017 list) — flagged for removal,
+  not removed.
+- **Skill management** — not duplicates, a pipeline:
+  `self-improving-agent` harvests → `skill-creator` authors → `skill-vetter`
+  admits third-party skills.
+
 This project has a full skill set covering more than syntax. At minimum,
 be aware these exist and read them when the situation matches, even if you
 arrived here through this file rather than a trigger word:
