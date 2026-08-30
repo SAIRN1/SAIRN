@@ -26,6 +26,46 @@ read so far actually require.
 > registration category, decided before any UI is exposed. Full text and
 > consequences in round 6.
 >
+> ### ⛔⛔ "Is this caregiver qualified?" is the WRONG QUESTION in at least four states
+>
+> **Qualification is not always a property of the worker.** In Louisiana it is a
+> property of a **worker × client × task** triple, and the other three are the
+> same family:
+>
+> **Louisiana, LAC 48:I § 9245(A)** — a direct service worker's competency for
+> medication administration and noncomplex tasks is certified **by an RN who has
+> personally assessed the health status of the individual receiving care**, who
+> determines the worker can perform the tasks *"in a safe, appropriate manner
+> **for this person**"*. The certification is written, filed, **and "shall not be
+> delegated"**. It must be **repeated** if the RN does not certify competency,
+> and **refreshed when that person's health status or physician orders change**.
+>
+> **What that means for scheduling logic, concretely:**
+>
+> - A caregiver cleared for Client A **is not cleared for Client B.** There is no
+>   worker-level "qualified" state to check.
+> - **Filling a shift from a pool is a regulated act**, not a convenience. Open-
+>   shift claiming, auto-assignment, agency-pool substitution and last-minute
+>   cover all need a per-client authorisation lookup **before** the assignment is
+>   allowed to stand.
+> - **The authorisation expires on a clinical event, not a date.** A change in the
+>   client's condition or orders invalidates its basis, so the client record and
+>   the caregiver's authorisation are coupled.
+> - **The certifying RN must be named** on the record, because the determination
+>   is non-delegable.
+>
+> Same family, elsewhere: **Oklahoma** — assign an aide *"only to tasks for which
+> the aide has been determined to be competent"* (63 O.S. § 1-1962(C)(2));
+> **Colorado** — demonstrated ability with the **specific adaptive equipment**
+> that worker will encounter (6 CCR 1011-1 ch. 26 § 7.4(C)(1)(e)); **Kentucky** —
+> dementia training completed **before** serving a patient exhibiting symptoms
+> (902 KAR 20:081).
+>
+> **Design consequence:** the qualification check belongs at **assignment time**,
+> keyed on (worker, client, task) — not at onboarding, keyed on worker. A schema
+> that stores qualifications only on the caregiver record cannot answer the
+> question these four states actually ask.
+>
 > ### A sixth category of rule: BEHAVIOUR CONSTRAINTS
 >
 > Some rules are not requirements a worker meets or data a record holds. **They
