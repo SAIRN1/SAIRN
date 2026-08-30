@@ -220,7 +220,7 @@ check('a 2032 trigger refuses -- the calendar stops at 2031',
 
 // ── Nothing else moved ────────────────────────────────────────────────────
 check('Nevada declares NO coverage entry -- its gaps are all EARLY and row-level',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ma', 'md', 'mn', 'mo', 'va', 'wi']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ks', 'ma', 'md', 'mn', 'mo', 'va', 'wi']);
 check('Nevada adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 {

@@ -1495,7 +1495,18 @@ var COMPUTATION_STANDARDS = {
     short_period_exclusion_days: 8,
     short_period_exclusion_directions: ['forward'],
     base_period_suffix: '(a)', months_years_suffix: '(a)',
-    rollover_suffix_forward: '(a)(1)', rollover_suffix_backward: '(b)' }
+    rollover_suffix_forward: '(a)(1)', rollover_suffix_backward: '(b)' },
+  // NO SHORT-PERIOD EXCLUSION, AND THE ABSENCE IS DELIBERATE. K.S.A.
+  // 60-206(a)(1)(B) says "count every day, INCLUDING intermediate Saturdays,
+  // Sundays and legal holidays" -- Kansas adopted the 2010 restyling that
+  // abolished the exclusion federally, so it joins Minnesota, Utah and
+  // Nevada in having none at all. Declaring a threshold here would exclude
+  // days the statute counts and report LATER than the true deadline, which
+  // is the direction that misses a filing. The field is simply absent, the
+  // same way it is for the FRCP family.
+  ks_60_206: { label: 'K.S.A. 60-206', impl: 'frcp_6a',
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1515,6 +1526,12 @@ var COMPUTATION_STANDARDS = {
 //             malpractice one. Refusing here would buy no safety.
 // Nothing is added to this table without deciding which of the two it is.
 var JURISDICTION_COVERAGE = {
+  ks: {
+    complete: false,
+    direction: 'early',
+    summary: 'Kansas legal holidays declared ad hoc by the President or Congress after the Judicial Branch publishes its annual list are NOT modelled, and the chief justice may suspend these computation rules in an emergency. This date may be EARLIER than the true deadline, never later.',
+    detail: "K.S.A. 60-206(a)(6) defines \"legal holiday\" as any day declared a holiday by the President, by Congress, by the Kansas legislature, OR \"any day observed as a holiday by order of the Kansas supreme court\". This calendar is the Judicial Branch's own published annual list, which is the fourth limb and the one that governs the courts. TWO GAPS, BOTH EARLY. (1) An AD HOC day declared by the President or Congress after the annual list is published -- a national day of mourning, say -- is a legal holiday under the first two limbs and is not here; omitting it reports EARLIER than the true deadline. (2) A half holiday is expressly NOT a holiday (\"A half holiday is considered as other days and not as a holiday\") and is correctly absent, which is noted so nobody adds one. WHAT IS NOT A GAP, and the contrast with Wisconsin is the point: the schedule says a court \"may defer observing a holiday\" and that a district court \"may remain open on any of these designated holidays\" with the chief judge's and the judicial administrator's approval. That changes practical access, NOT the statutory definition -- 60-206(a)(6) keys on the day being OBSERVED BY ORDER OF THE SUPREME COURT, statewide, not on whether a particular courthouse opened. Wisconsin keys its rollover on actual closure and therefore could not use its list at all; Kansas keys on the order, so the list IS the legal test. Finally, the chief justice may extend or suspend these computation rules entirely during an emergency under 60-206(e) and K.S.A. 20-172, which no engine can anticipate."
+  },
   md: {
     complete: false,
     direction: 'early',
@@ -2737,6 +2754,24 @@ var SERVICE_EXTENSION_STANDARDS = {
         } };
       }
       return { add: 3, unit: 'calendar_days' };
+    }
+  },
+  // K.S.A. 60-206(d). THE ORDER IS FEDERAL after-expiry -- "three days are
+  // added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under subsection (a)" --
+  // the same sequencing words as FRCP 6(d) and Alabama's Rule 6(d), and the
+  // opposite of the period-lengthening order most recently seeded states use.
+  //
+  // AND THERE IS NO ELECTRONIC LIMB AT ALL. 60-206(d) reaches service under
+  // K.S.A. 60-205(b)(2)(C) (mail) or (D) (leaving with the clerk) and nothing
+  // else. E-mail and e-filing get NOTHING, which is the federal position and
+  // the opposite of Arkansas, Alabama and Massachusetts. A qualifies() copied
+  // from any of those would over-count and report LATE.
+  ks_60_206_d: {
+    label: 'K.S.A. 60-206(d)',
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail' || method === 'left_with_clerk';
     }
   }
 };

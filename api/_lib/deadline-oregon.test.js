@@ -223,7 +223,7 @@ check('the two later-of rows use different summons triggers',
 
 // ── Nothing else moved ────────────────────────────────────────────────────
 check('Oregon declares NO coverage entry -- its gaps are all EARLY and row-level',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ma', 'md', 'mn', 'mo', 'va', 'wi']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ks', 'ma', 'md', 'mn', 'mo', 'va', 'wi']);
 check('Oregon adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 {
