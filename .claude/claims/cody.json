@@ -10,6 +10,16 @@
       "claimed_at_epoch": 1788122897.874829,
       "status": "released",
       "released_at": "2026-08-30T21:32:17Z"
+    },
+    {
+      "id": "cody-1788126746",
+      "session": "cody",
+      "subject": "platform",
+      "task": "raw html tag balance sweep",
+      "claimed_at": "2026-08-30T21:52:26Z",
+      "claimed_at_epoch": 1788126746.4809582,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
