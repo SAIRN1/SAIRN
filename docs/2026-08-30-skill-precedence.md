@@ -141,6 +141,48 @@ cleared it.
 - **Actively stale**: its Top 10 is the 2017 list.
 - **One thing worth salvaging first**: the six-field reporting template.
 
+**DONE 2026-08-30, authorised by Michael. `security-auditor` is removed.**
+Skill count 52 -> 51.
+
+**And the verification found my own earlier assessment was WRONG, which is why
+it was run.** This note originally said the six-field template was *"its one
+unique asset."* Checking topic-by-topic before deleting — rather than trusting
+that sentence — found **three more substantive topics it named that
+`owasp-security` did not: XSS by name, CORS, and JWT.** `owasp-security` carries
+the *control* for XSS (ASVS 1.2.1–1.2.3 context-appropriate output encoding) but
+never uses the word, because the 2025 Top 10 folds XSS into A03 Injection; CORS
+and JWT had zero mentions.
+
+Deleting on the strength of the original assessment would have silently lost
+all three. Both lifts are now in `owasp-security`, each carrying an attribution
+line saying where it came from and why:
+
+- `## Reporting Format` — the six-field template, placed after
+  *Before Reporting a Finding* so the file reads "whether to report" then
+  "how to report".
+- `### Output Encoding, Browser and Token Controls` — XSS / CORS / JWT, in the
+  Security Code Review Checklist, **preserved at the same bullet depth the
+  retired skill had them.** No new security guidance was authored during a
+  cleanup task.
+
+`owasp-security` 14,957 -> 16,341 bytes. Re-ran the topic check after the lifts:
+the only terms still absent are `broken auth` (present as **A07 Authentication
+Failures** and the *Authentication & Sessions* checklist — wording only),
+`RBAC` (absent from both originally; access control is covered), and
+`deserialization`/`XXE`, which are **2017 categories and correctly gone**.
+
+A copy of the removed file is in this session's scratchpad
+(`removed-skills/security-auditor/`), which is temporary — the durable
+preservation is the two lifted sections above, not that backup.
+
+**The generalisable lesson, and the reason this paragraph is long:** a
+supersession claim is a claim like any other. "X covers everything Y does" was
+asserted from reading both files once and was 75% right, which is the dangerous
+kind of wrong — confident enough to act on, incomplete enough to lose content.
+Check topic-by-topic before deleting, not summary-by-summary.
+
+**Original note, kept because the reasoning still stands:**
+
 **Not deleted, and not deleted by me.** It is user-level, shared with every
 other project on this machine, and deletion authority sits with Michael. The
 order matters too: lift the template into `owasp-security` **first**, confirm it
