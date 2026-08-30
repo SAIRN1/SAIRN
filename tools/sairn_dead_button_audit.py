@@ -146,6 +146,47 @@ VAR_FUNC_RE = re.compile(
 WINDOW_ASSIGN_RE = re.compile(r'window\.([A-Za-z_$][\w$]*)\s*=\s*')
 FUNC_LITERAL_RHS_RE = re.compile(r'(?:async\s*)?function\b|\([^()]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>')
 
+# ── DECORATOR / WRAPPER PATTERN, added 2026-08-30 ──────────────────────────
+# D1 means "later silently wins", and that is a real bug worth reporting. But
+# `window.NAME = function(){ ... }` has TWO meanings and this check could only
+# see one of them. sairnbuild.html:
+#
+#     var _origRBids = window.rBids;
+#     window.rBids = function() { if (_origRBids) _origRBids(); renderBidPredictiveInsights(); };
+#
+# Nothing is lost there. The original is captured first and CALLED, and the
+# wrapper adds behaviour after it -- the ordinary monkey-patch idiom, correct
+# because the hoisted `function rBids()` is already a global by the time the
+# capture line runs. Reporting it as "later silently wins" is precisely wrong:
+# the earlier definition is the one that still runs.
+#
+# The distinction is not "does it assign to window.NAME" -- both do. It is
+# whether the original SURVIVES. So both halves are required before a site is
+# waived, and either one alone is not enough:
+#   1. a capture of the existing value  -- `<alias> = window.NAME` or `<alias> = NAME`
+#   2. a call THROUGH it in the new body -- `<alias>(`, `<alias>.call`, `<alias>.apply`
+# A genuine clobber has neither. A capture with no call-through is a saved
+# reference nobody uses, which really does lose the original at runtime and is
+# still reported. Deliberately narrow: it waives the exact shape it can prove,
+# not everything that looks vaguely like a wrapper.
+CAPTURE_LOOKBACK = 500          # chars; the capture is normally the line above
+WRAPPER_BODY_SCAN = 1200        # chars of the new body to search for a call-through
+
+
+def _is_decorator_rewrap(src, name, assign_start, body_start):
+    """True when `window.<name> = function...` demonstrably calls the value it
+    replaced, so the earlier definition is not lost and D1 must not fire."""
+    back = src[max(0, assign_start - CAPTURE_LOOKBACK):assign_start]
+    aliases = set(re.findall(
+        r'\b([A-Za-z_$][\w$]*)\s*=\s*(?:window\.)?' + re.escape(name) + r'\s*[;,\n]', back))
+    if not aliases:
+        return False
+    body = src[body_start:body_start + WRAPPER_BODY_SCAN]
+    for a in aliases:
+        if re.search(r'(?<![.\w$])' + re.escape(a) + r'\s*(?:\(|\.(?:call|apply|bind)\b)', body):
+            return True
+    return False
+
 
 def find_scoped_definitions(src):
     """Single pass over comment-stripped src. Tracks brace depth and a
@@ -215,7 +256,12 @@ def find_scoped_definitions(src):
             if m:
                 rest = src[m.end():m.end() + 60].lstrip()
                 if FUNC_LITERAL_RHS_RE.match(rest):
-                    defs[m.group(1)].append((active[-1], cur_line(m.start())))
+                    # A wrapper that calls the original is not a second
+                    # definition -- see _is_decorator_rewrap above. Still opens
+                    # a scope either way: the body is real code whose own
+                    # nested definitions must land in the right scope.
+                    if not _is_decorator_rewrap(src, m.group(1), m.start(), m.end()):
+                        defs[m.group(1)].append((active[-1], cur_line(m.start())))
                     if re.match(r'(?:async\s*)?function\b', rest):
                         pending_scope_id = next_id
                         next_id += 1
