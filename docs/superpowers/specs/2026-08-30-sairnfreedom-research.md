@@ -435,14 +435,69 @@ inventory data with no hardware business and no patent exposure, and the
 patent thicket found here is an argument *for* that route rather than an
 obstacle to route around.
 
-## Recommended next step, if this is pursued
+## The integrate-instead check — RUN 2026-08-30. Answer: no route.
 
-Check whether Nectar or BarVision expose an API or partner integration. That
-is a one-hour question and it likely decides the whole phase — if either does,
-the build-versus-integrate answer is settled without a single further patent
-search. **Do that before any deeper patent work.**
+The recommendation above was to check whether Nectar or BarVision expose an
+API before doing more patent work. Done. **Neither offers one, and the
+economics do not fit the customer either.** That closes both paths, not one.
 
-This is a first-pass read, not a freedom-to-operate opinion. Not counsel.
+### BarVision — active, no API, priced past the customer
+
+Site live and current (© 2026). Read directly rather than from search
+summaries, because the search result *"connects to over 50 of the top POS
+systems"* reads like an integration platform and is not one — that is
+**outbound** work BarVision does and sells as a feature, not an inbound
+surface a third party can build against.
+
+- **"Ways to Connect"**, the only nav item that sounded like a partner route,
+  is **a contact form.** Name, phone, email, note. No API, no developer docs,
+  no partner programme anywhere on the site.
+- **Pricing: "$250 to $300 a month", 1-year contract, billed quarterly**,
+  50–80 spouts typical. That is **$3,000–$3,600 a year**.
+
+That price is the finding. This product's customer is a volunteer-run post
+whose own VFW Quartermaster training material advises starting by listing
+income and expenses **in one place** — the documented pain is that bills went
+to a deceased member's house and nobody could see them. A $3,000-a-year
+bar-monitoring subscription is not adjacent to that problem; it is an order of
+magnitude past it, and likely past SAIRNfreedom's own plausible price point.
+
+BarVision does list "country club, sports arena, airport lounge" as speciality
+venues, so fraternal-club-shaped customers are within their aim — they are
+simply aiming at the ones with budget.
+
+### Nectar — cannot confirm the liquor business is still operating
+
+`nectar.buzz` turned out to be **an unrelated company** (commercial
+beekeeping software) — recorded so nobody else loses time on it. The liquor
+Nectar (Palo Alto, founded 2014, Aayush Phumbhra) has patents active to 2036
+and press coverage in 2017 and 2019, but **no current operating status could
+be confirmed** in this pass. Live patents plus a cold trail is the worst
+combination for an integration partner: the IP is enforceable, the company may
+not be there to integrate with.
+
+## Recommendation: defer Phase 2 entirely
+
+Both routes are now closed for different reasons, and neither is a
+scheduling problem that waiting fixes:
+
+- **Build** — active patent thicket (Nectar's 8+ family to 2036, BarVision's
+  spouts), plus a hardware business this platform has no part of.
+- **Integrate** — no API exists at either vendor, and the one with confirmed
+  current operation is priced at roughly ten times what this customer is
+  likely to pay for the whole product.
+
+**Let Phase 1's automatic photo determination carry the inventory feature.**
+It is patent-cleared by design (see *Binding decisions*), needs no hardware,
+and already delivers the actual differentiator — fill data tied to the event
+calendar and the bingo-fund compliance chain. Phase 2 was always
+"zero-touch convenience on top of that", and no evidence found here says the
+convenience is worth a hardware business or a $3,000/year dependency.
+
+**Reopen only if** a post asks for it specifically and can fund it, or a
+vendor with a real API appears. Neither is worth watching for.
+
+This was a first-pass read, not a freedom-to-operate opinion. Not counsel.
 
 ## Sources
 
