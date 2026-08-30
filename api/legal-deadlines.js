@@ -702,7 +702,15 @@ module.exports = async (req, res) => {
         version: body.rule.version || 1,
         authority: Object.assign({}, body.rule.authority, {
           retrieved_at: body.rule.authority.retrieved_at || new Date().toISOString().slice(0, 10),
-          // Server-derived, never client-supplied: who actually verified this.
+          // Server-derived, never client-supplied. CORRECTED 2026-08-29: this
+          // is whoever was SIGNED IN when the row was written, NOT who verified
+          // the rule -- it used to claim the latter. The real provenance is the
+          // rest of this authority object (citation, url, retrieved_at), which
+          // the validator requires. A bearer-key load stamps null here and a
+          // session load stamps an employee id, which is why both
+          // api/reference-fingerprint.js and the platform divergence query
+          // subtract this field before hashing: leaving it in made 87 rules and
+          // 48 calendars read as diverged when none of them had.
           verified_by: caller ? caller.employee_id : null
         })
       });

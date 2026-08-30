@@ -74,7 +74,18 @@ create table if not exists public.dnt_cred_rules (
   effective_to     date,
   status           text not null default 'active',
   data             jsonb not null default '{}'::jsonb,   -- carries data.authority (citation/url/quote/read_on)
-  verified_by      text,                           -- server-stamped
+  verified_by      text,   -- server-stamped from the session. SEE NOTE BELOW.
+  -- WHAT THIS ACTUALLY RECORDS, corrected 2026-08-29: the employee_id of
+  -- whoever was SIGNED IN when the row was written. Not who verified the
+  -- content. The two coincide only by accident -- the Ohio HSSA contingency
+  -- rules were written by a disposable verification account and carry its id.
+  -- THE REAL PROVENANCE IS data.authority (citation, url, quote, read_on),
+  -- which is required and is what a customer would have to defend.
+  -- Kept as `verified_by` rather than renamed to `loaded_by`: the rename is
+  -- correct and is deferred, because it is a migration across six live tables
+  -- plus every write path plus two tools that subtract this field BY NAME
+  -- (api/reference-fingerprint.js, sql/platform_reference_rules_divergence_
+  -- 2026-08-28.sql). See SAIRN-BACKLOG.md.
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
   unique (license_hash, rule_id),

@@ -6,7 +6,8 @@
 --
 -- SHAPE IS DELIBERATELY THE SAME AS alf_payer_rules (Phase 1): rule_id, state,
 -- a type discriminator, effective_from/effective_to, status, jsonb data, a
--- server-stamped verified_by, and a required authority citation. Reused rather
+-- a server-stamped verified_by (which records who was SIGNED IN, not who
+-- verified -- see the column note), and a required authority citation. Reused rather
 -- than reinvented -- the two engines answer different questions but have the
 -- identical "versioned regulation as data with a real citation" problem.
 --
@@ -47,7 +48,18 @@ create table if not exists public.alf_compliance_rules (
   effective_to     date,
   status           text not null default 'active', -- active | never_in_force
   data             jsonb not null default '{}'::jsonb,
-  verified_by      text,
+  verified_by      text,   -- SEE NOTE BELOW -- this is who was signed in, not who verified
+  -- WHAT THIS ACTUALLY RECORDS, corrected 2026-08-29: the employee_id of
+  -- whoever was SIGNED IN when the row was written. Not who verified the
+  -- content. The two coincide only by accident -- the Ohio HSSA contingency
+  -- rules were written by a disposable verification account and carry its id.
+  -- THE REAL PROVENANCE IS data.authority (citation, url, quote, read_on),
+  -- which is required and is what a customer would have to defend.
+  -- Kept as `verified_by` rather than renamed to `loaded_by`: the rename is
+  -- correct and is deferred, because it is a migration across six live tables
+  -- plus every write path plus two tools that subtract this field BY NAME
+  -- (api/reference-fingerprint.js, sql/platform_reference_rules_divergence_
+  -- 2026-08-28.sql). See SAIRN-BACKLOG.md.
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now(),
   unique (license_hash, rule_id),

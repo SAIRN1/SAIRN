@@ -1652,6 +1652,28 @@ since `data.authority.read_on` and the citation are the real provenance and are
 already required. Any of them is a schema change across seven tables and should
 not be done incidentally.
 
+**RESOLVED 2026-08-29, in the comment-alignment direction.** Every place the
+field is declared or written now says what it actually records: the five
+reference-table schemas (`sairncare_compliance`, `sairncare_payer_rules`,
+`sairndental_credentials`, `sairnroofing_agreements`,
+`sairnroofing_certifications`), the SAIRNlaw `data.authority` shape note, and
+the `add_rule` / `add_holidays` write path in `api/legal-deadlines.js` which had
+the strongest wrong claim of the lot -- *"who actually verified this"*.
+
+**Why that direction and not the other.** Changing what the field RECORDS would
+mean seeds naming a verifier, and no seed has one; the app would be inventing a
+name for a human act that did not happen, which is the fabricated-data class.
+The real provenance already exists and is already required -- `data.authority`
+with citation, url and `read_on`/`retrieved_at`.
+
+**The rename to `loaded_by` is the honest end state and is DEFERRED, not
+dropped.** It is a migration across six live tables, every write path, and two
+tools that subtract this field BY NAME (`api/reference-fingerprint.js`,
+`sql/platform_reference_rules_divergence_2026-08-28.sql`) -- both of which would
+silently stop subtracting anything and start reporting false drift on every row
+of a session-loaded licence. Worth doing when one of those tables is next
+migrated for another reason; not worth a standalone migration on live data.
+
 **Acceptable where it stands today** — every affected licence is a demo or
 verification tenant. The line to not cross is a paying customer, and there is
 currently nothing that would stop it.

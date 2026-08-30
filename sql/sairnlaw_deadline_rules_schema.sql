@@ -63,6 +63,17 @@ create index if not exists idx_law_deadlines_license on public.law_deadlines(lic
 --   computation: 'frcp_6a' | 'frap_26a' | 'bankr_9006a'   (named, versioned)
 --   service_extension: { standard, add, unit, applies_when[], order }
 --   authority: { citation, url, retrieved_at, verified_by }   -- URL REQUIRED
+--     `verified_by` is the odd one out and is NOT provenance. Corrected
+--     2026-08-29: it records whoever was SIGNED IN when the row was written --
+--     a bearer-key load stamps null, a session load stamps an employee id --
+--     not who verified the rule. citation / url / retrieved_at are the real
+--     provenance and are what a partner would follow to the source.
+--     BECAUSE IT LIVES INSIDE `data` HERE, it is part of the blob hash, so a
+--     session-loaded licence and a loader-loaded licence differ on EVERY row.
+--     That produced a false 87-rules / 48-calendars "divergence" on 2026-08-28.
+--     Both the platform divergence query and api/reference-fingerprint.js now
+--     subtract this one field by name -- and NOTHING ELSE from `authority`,
+--     since a changed citation or URL is a real defect they must still catch.
 --   effective_from, effective_to, version, supersedes
 create table if not exists public.law_deadline_rules (
   id           uuid primary key default gen_random_uuid(),
