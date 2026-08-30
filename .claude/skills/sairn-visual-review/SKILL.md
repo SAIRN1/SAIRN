@@ -25,7 +25,89 @@ Everything else checks whether the code is correct. This checks whether a real p
 2. Navigate to every panel/screen systematically — not a sample, all of them, same coverage discipline as everything else this project holds to.
 3. Screenshot each one at a real viewport size (both desktop and mobile widths, given tonight's mobile POS work).
 4. Review each screenshot directly (vision, not code) against the checklist below.
-5. For anything interactive: actually click it, actually open the dropdown, actually hover the tooltip — confirm it does what it visually implies, not just that it looks right sitting still.
+5. **Run the rendered-DOM assertion below on each panel** before moving on — it catches what the eye reliably misses.
+6. For anything interactive: actually click it, actually open the dropdown, actually hover the tooltip — confirm it does what it visually implies, not just that it looks right sitting still.
+
+## Rendered-DOM Assertion: literal markup on screen (added 2026-08-30)
+
+**Why this is here and not in a static scanner.** A 2026-08-30 platform sweep for
+raw-HTML exposure ran six static checks across all 19 apps and came back clean,
+but every one of them reads **string literals** — so markup whose tags arrive
+through a variable is invisible to all of them:
+
+    var tag = cond ? '<div>' : '<span>';
+    el.innerHTML = tag + content + '</div>';
+
+That blind spot cannot be closed by reading source, only by reading **output**.
+This pass is already in the browser, already past the PIN gate, already on every
+panel — so it is the cheapest place in the whole toolchain to close it, and no
+new tool has to be built or kept in sync.
+
+**Why an assertion and not the screenshot review.** Step 4 looks at these panels
+by eye, and a literal `<div>` sitting in a paragraph of body text is exactly the
+kind of thing eyes slide over — it reads as a typo, or as part of the content.
+It is trivial to assert against the DOM and unreliable to catch visually. The
+same is not true of the colour and layout checks, which is why those stay
+visual.
+
+Run in the page once each panel is visible:
+
+```js
+(() => {
+  const TAG = /<\/?\s*(div|span|p|a|b|i|strong|em|ul|ol|li|table|thead|tbody|tr|td|th|h[1-6]|img|button|input|select|option|label|section|br)\b/i;
+  // <code>/<pre>/<textarea> legitimately display markup AS text. Without this
+  // the assertion cries wolf on any panel showing a snippet, and a checker that
+  // over-reports gets ignored.
+  const SKIP = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'CODE', 'PRE']);
+  const hits = [];
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+    const el = n.parentElement;
+    if (!el || SKIP.has(el.tagName)) continue;
+    if (!TAG.test(n.nodeValue || '')) continue;
+    // Only what a customer can actually SEE. StoneDesk carries a block of
+    // display:none placeholder stubs; a hit inside one is not a defect.
+    const visible = el.offsetParent !== null || getComputedStyle(el).position === 'fixed';
+    if (!visible) continue;
+    hits.push({
+      where: el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') +
+             (el.className && typeof el.className === 'string' ? '.' + el.className.split(/\s+/)[0] : ''),
+      text: (n.nodeValue || '').trim().slice(0, 140)
+    });
+  }
+  return hits;
+})()
+```
+
+**Expected result is `[]`.** Any entry is a real finding: markup that reached the
+screen as text. Report it with the `where` selector and the offending text, same
+standard as everything else here.
+
+**Proven against a true positive before being written down**, because a checker
+that has only ever returned clean is unproven, not proven — which is exactly the
+criticism levelled at the static sweep this replaces. Run live on
+`sairn.vercel.app/stonedesk` 2026-08-30:
+
+| Probe | Expected | Result |
+|---|---|---|
+| Baseline, untouched page | `[]` | `[]` |
+| Visible `<p>` whose tag was built by `['<','div',' class="x">'].join('')` | caught | **caught** |
+| Same string inside `<code>` | ignored | **ignored** |
+| Same string inside a `display:none` div | ignored | **ignored** |
+| After probes removed | `[]` | `[]` |
+
+The true-positive probe assembles its tag from an array join **on purpose** —
+that is precisely the dynamic construction every literal-reading static scanner
+is blind to, so the probe demonstrates the blind spot being closed rather than
+just that the regex matches.
+
+**Record it as a finding, do not throw.** The assertion returns hits rather than
+raising, so one bad panel does not abort the sweep before the remaining panels
+are covered.
+
+**Honest limit, and it is the same one this whole skill has:** it only sees
+panels the pass actually visits, in the states it actually puts them in. It
+closes the static blind spot for exercised paths, not for the app.
 
 ## The Checklist, Per Panel
 
