@@ -10,6 +10,167 @@ read so far actually require.
 
 ---
 
+# ▲ CONSOLIDATED FINDINGS — read this instead of sixteen round documents
+
+*Added 2026-08-30, after 38 states were touched. This is the index to the whole
+survey; the boxed warnings below it are the items that change what gets built.
+Every claim names its state and citation so it can be checked without re-reading
+a round document.*
+
+## The model in one paragraph
+
+A worker may work for a given employer in a given state when they satisfy **each
+applicable axis** — and **which axes apply is decided one level up, by the
+employer's registration category**. Separately, a handful of rules are not
+requirements at all: they say what the **software** must or must not do. And in
+three states the **matching business itself** is a regulated entity.
+
+## Layer 0 — registration category decides which axes apply
+
+The same state imposes different requirements on two different customers. Found
+in **Florida** (register vs licence), **Ohio** (skilled vs nonmedical), **Texas**
+(seven HCSSA categories), **Colorado** (Part 6 skilled, Part 7 non-medical, Part 3
+placement), **Nevada** (personal care agency vs employment agency vs referral
+agency), **Arizona** (licensed vs § 36-144 disclosure-only).
+
+**Five distinct answers to "what happens to non-medical in-home care":**
+
+| Answer | State |
+|---|---|
+| Nothing — unless bundled with home health | **Louisiana** |
+| Register, no training | **Florida** § 400.509 |
+| No licence, but **disclose your own standards annually, per client** | **Arizona** A.R.S. § 36-144 |
+| No licence, but **40 hours of training** | **Arkansas** 20 CAR pt. 45 |
+| **Licensed as its own category** | **Nevada** NAC 449.396+, **Ohio**, **Colorado** pt. 7 |
+
+## Layer 1 — the five axes
+
+| Axis | What it holds |
+|---|---|
+| **A. Qualification route** | one of N alternatives — licence, approved programme, competency evaluation, documented experience, or hours |
+| **B. Criminal record** | authority, timing window, staleness limit, barred offences, and whether disqualification can expire |
+| **C. Registry** | a dated query or listing event — and it has three polarities |
+| **D. Health screening** | TB, physical, immunisation — with intervals and lookbacks |
+| **E. Supervision / delegation** | who evaluates competency, for which tasks, on what cadence |
+
+**Axis A has eight written forms:** hours with a pre-service floor (**WA** 75, of
+which 5 before any care); hours with a grace period (**TN** 75/16 by month 3,
+**TX** L&CHHS 75, **OK** registry within 4 months); hours as one route among
+several (**GA** 40); small recurring hours (**CA** 5 + 5 annual); **nested** hours
+(**AR** 40 ⊃ 16 demonstrated ⊃ 4 dementia); competency demonstrated before
+assignment (**MD**, **CO**, **MN**, **NC**, **PA**, **VA**); recurring training
+counted in **topics** (**CO**, 4 topics per 12 months); registry presence as the
+qualification (**WI**); and **none at all** (**OH**, **MI**).
+
+**Only 6 of 38 states name an hour figure.** A `training_hours` field is null or
+wrong for most of the map.
+
+**Axis B has three shapes:** enumerated barred offences (**OH**, **TX**, **VA**,
+**FL**, **KY**, **MI**); **agency-determined risk with a required policy**
+(**CO**); and enumerated-plus-open-ended (**SC** — *"or any similar criminal
+offense"*). Disqualification **expires or is curable** in **OH** (exclusionary
+periods, certificates, pardons), **AR** (expunged or pardoned) and **MI**
+(15 years from completion of sentence, parole *and* probation).
+
+**Axis C has three polarities:** adverse-findings queried pre-hire with hiring
+barred on a hit (**MA** § 155.010(E)(3), **AZ** § 36-411(C), **TN**, **LA**,
+**KY**, **CO** CAPS); **presence required to work** (**WI**, **OK**); and
+nurse-aide registry as a qualification route (**GA**, **VA**, **NC**). Status is
+**dated and contestable** — removal petitions in **MA** (after 1 year) and **TN**
+(UAPA), appeal in **MI** § 20173b. **AZ** additionally required a **one-off
+retroactive sweep of the existing workforce** by 2025-03-31.
+
+## Layer 2 — behaviour constraints: rules about the software itself
+
+**Not fields. Checked at assignment time, not at onboarding.**
+
+| Polarity | State | Rule |
+|---|---|---|
+| **Forbids** | **Colorado** | A **pure-referral** placement agency (§ 2.12 — *"only referrals"*) must give a consumer-signed notice that it *"does not direct, control, **schedule**, or train"*. Those features must be **absent** for that account. |
+| **Forbids** | **Nevada** | NAC 449.3978 — an enumerated **task deny-list**: catheter insertion/irrigation, body-cavity irrigation, injections, medication administration, physical assessments, digital rectal exam, **trimming toenails**, massage, medical case management. |
+| **Compels** | **Louisiana** | A **clinical note for each patient visit**, written into the aide's own definition. |
+| **Compels** | **Louisiana** | § 9245(A) — competency certified by an RN **for a named individual**, non-delegably, refreshed when that person's condition or orders change. |
+| **Compels** | **Oregon** | ORS 443.190(3) — a **statutory intake field list**; ORS 443.195 names **a mobile application** and requires policies permitting charting **outside** the home. |
+| **Compels** | **Oklahoma** | Assign an aide **only to tasks** they have been determined competent for. |
+| **Compels** | **Kentucky** | Dementia training **before** serving a symptomatic patient; supervisory visits every **14 or 60 days** depending on service mix. |
+| **Permits, with notice** | **Vermont** | § 6309 — may **refuse to dispatch** to a home where a previously-discharged individual is believed present; **notice stating reasons** required. |
+
+**"Is this caregiver qualified?" is the wrong question in LA, OK, CO and KY** —
+qualification is a **worker × client × task** triple. Detail in the boxed section
+below.
+
+## Layer 3 — the intermediary category: the vendor may be the regulated entity
+
+**Three states regulate caregiver matching**, under three names sharing **no
+keyword**:
+
+| State | Category | Trigger | Instrument |
+|---|---|---|---|
+| **Iowa** | health care technology platform | independent contractors **bid on open shifts** posted by a health care entity | registration, $500/yr |
+| **Colorado** | home care placement agency | **a fee, for referrals only** | registration |
+| **Oregon** | caregiver registry | roster of **private contractor** caregivers **provided to the client for hiring** | **licence** + site inspection every 3 years |
+
+Adjacent: **Nevada** *employment agency to provide nonmedical services* — hinges
+on **contracting with the caregivers**. **Not** analogues: Nevada *referral
+agency* and Oregon *long term care referral* — both are **facility placement**.
+
+**SAIRNsenior as built on 2026-08-30 is OUTSIDE all four.** See
+`2026-08-30-sairnsenior-iowa-135Q-scope-determination.md` and
+`2026-08-30-sairnsenior-intermediary-scope-or-co-nv.md`. **The four triggers
+differ, so an open-shift marketplace must be re-tested against each separately —
+they would not all flip together.** Oregon adds a limb the others lack:
+**representing to the public that you are a caregiver registry** is itself
+unlawful without a licence, so marketing copy carries a statutory edge there.
+
+## Layer 4 — cross-cutting patterns
+
+- **Federal coupling — store the pointer, not the value.** **MO** adopts 42 CFR
+  484 wholesale *including survey methodology*; **TN**'s aide hours point at the
+  federal competency rule; **MI** defines a home health agency as
+  *Medicare-certified*; **CT** § 31-58(e) and **OR** ORS 653.547 define overtime
+  coverage by FLSA reference; **OR** ORS 443.195 benchmarks training to
+  **NIOSH/OSHA**.
+- **Dated rules hiding inside apparent constants.** **WA**'s 365-day window
+  expires 2027-12-31; **NY**'s printed wage schedule ends 2026-12-31; **CA** adds
+  a dementia topic 2027-01-01; **OH** splits recheck anniversaries on 2008-01-01;
+  **LA** splits administrator qualifications on 2018-01-13.
+- **Delegation is a shape applied to different axes.** **CO** delegates axis B
+  (agency-determined risk) and specifies axis A in detail; **SC** § 501(B) does
+  the exact reverse.
+- **Self-direction inverts who trains and who schedules.** **NV** § 449.39519
+  (client is managing employer **and trainer**), **VT** § 6321 (recipient hires,
+  trains, **sets work schedules**, oversees payment and recordkeeping), **OR**
+  § 443.360 (agency with choice — two contracted providers only).
+- **Caregiver safety is an emerging statutory dimension.** **VT** 2024 § 6309 and
+  **OR** 2025 §§ 443.190/443.195 — both land on the **assignment**, both concern
+  **household individuals**, not only the client.
+- **Dementia is a four-state overlay by four mechanisms.** **KY** 6 + 3 annual
+  hours, pre-service; **AR** 4 hours inside the 40; **MO** topics, no hours,
+  reaching independent contractors; **CA** one topic added to the annual five
+  from 2027.
+- **Wage rules live inside licensure rules.** **NV** NAC 449.39735 makes training
+  time **and travel time** compensable at the employee's own rate.
+- **Market structure.** **VT** designates **exclusive geographic franchises**
+  with a four-year obligation to serve — the only closed market found. **OK**
+  § 1-1962(B) regulates **the referral**, barring licensed facilities and
+  clinicians from referring to an unlicensed agency.
+- **Scope triggers that are not service type.** **AR** scopes by the **client's
+  age** (50 or older, at the time services are provided). **CMS** excludes
+  **congregate residential settings with 24-hour availability** and **PACE** from
+  the EVV requirement.
+
+## Coverage, stated honestly
+
+**38 states touched on at least one axis. That is not coverage.** No state has
+been read exhaustively; every round document carries its own Tier 2 list of what
+was not read.
+
+**No route found:** Alabama and Mississippi (both route their own codes to
+LexisNexis, which is JS-gated), Utah, Connecticut, Kansas, New Mexico, Montana's
+*rules* (statutes work), Wyoming, Rhode Island. **Idaho** is a self-declared
+site outage, retried once. **Indiana** is on hold pending an API key.
+**Arizona's** Administrative Code and **Oregon's** OARs are bot-walled.
+
 > ## ⛔ Read first: the model has a dimension ABOVE the five axes, and one entry in it is a build constraint
 >
 > **Registration category decides which axes apply at all** — Florida's
