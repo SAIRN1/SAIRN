@@ -40,33 +40,59 @@
 // a compliance module should not ship.
 //
 // TWO RESIDUAL GAPS, AND THEY ARE WHY `verified` IS NOT SIMPLY `true`:
-//   1. CMS's own EVV guidance has NOT been read. That matters more than it
-//      sounds: a full Federal Register sweep confirms there is NO EVV
-//      rulemaking at all, so every operational detail CMS has published lives
-//      in sub-regulatory guidance nobody here has seen.
+//   1. CMS's own EVV guidance is PARTLY READ as of 2026-08-30 -- two of ten
+//      documents. It matters because a full Federal Register sweep confirms
+//      there is NO EVV rulemaking at all, so every operational detail CMS has
+//      published lives in sub-regulatory guidance.
 //
-//      PAGE LOCATED 2026-08-29. The moved URL is
+//      Guidance index:
 //      medicaid.gov/medicaid/home-community-based-services/
 //      home-community-based-services-guidance-additional-resources/
-//      electronic-visit-verification -- reached by following the redirect from
-//      the old .../guidance/electronic-visit-verification-evv path in a real
-//      browser. It indexes ten documents, the load-bearing ones being the
-//      May 16 2018 CIB and FAQ, the August 2019 "Additional EVV Guidance" CIB,
-//      the December 2022 good-faith-effort exemption guidance, and the May 2022
-//      note on documenting EVV in 1915(c) waiver applications. NONE of the ten
-//      has been read; the gap below is now a reading task, not a search.
+//      electronic-visit-verification
+//      (the old .../guidance/electronic-visit-verification-evv path redirects).
 //
-//      AND THE 2026-08-28 CORRECTION IS ITSELF PART-WRONG, recorded rather than
-//      overwritten. It said this file used to claim 403 and that "BOTH return
-//      200". On 2026-08-29 every medicaid.gov URL tried -- the guidance path,
-//      the PDFs and the site root -- returns 403 to both WebFetch and curl with
-//      a browser user-agent, while Chrome loads them all normally. cms.gov does
-//      return 200. So the block is real, host-specific and fetcher-specific,
-//      and the page had ALSO moved. Both notes were half right, and neither
-//      alone would have found the page: "blocked" says wait, "moved" says go
-//      look, and the answer needed a different CLIENT, not a different URL.
-//      Do not record a host as blocked without re-testing it -- and do not
-//      record it as reachable on the strength of one client either.
+//      READ: the CMCS Informational Bulletin and the FAQ, both 2018-05-16.
+//      NOT READ, and each could still change how a readiness check should
+//      behave: the August 2019 "Additional EVV Guidance" CIB, the December 2022
+//      good-faith-effort exemption guidance, the May 2022 note on documenting
+//      EVV in 1915(c) waiver applications, and five presentation decks.
+//
+//      FOUR THINGS THE 2018 PAIR SETTLE, none of which is in the statute:
+//      (a) SCOPE CARVE-OUT. CMS "interprets the reference in the statute to an
+//          'in-home visit' to exclude PCS provided in congregate residential
+//          settings where 24 hour service is available" (FAQ Q3) -- group
+//          homes, assisted living. PACE is out too (Q5). A visit is not in
+//          scope merely because it is a Medicaid personal care visit.
+//      (b) NO GPS REQUIREMENT. "There is no requirement to use global
+//          positioning services" and capturing "the location in which the
+//          service is started and stopped is sufficient" (Q15). Continuous
+//          location capture is a state option, never a federal floor.
+//      (c) NO UNIFORM SYSTEM. § 12006(c)(2) bars construing § 1903(l) to
+//          require a particular or uniform system; CMS reads that as binding
+//          on CMS, not on a state that chooses one (CIB, "EVV Models"). Five
+//          models are described -- Provider Choice, MCP Choice, State Mandated
+//          In-house, State Mandated External Vendor, Open Vendor.
+//      (d) The good-faith-effort relief is "a limited exception for the FIRST
+//          YEAR of the requirement", against an FMAP reduction phased over
+//          five years to 1 percent (CIB, Background).
+//
+//      NOT ENCODED HERE, deliberately. (a) is a scope test this module does not
+//      perform -- it checks a visit it is handed and cannot know the setting --
+//      so a caller passing congregate-setting visits will get answers about
+//      visits CMS does not require EVV for. That is the caller's gap to close
+//      and it is named here rather than silently assumed away.
+//
+//      HOW IT WAS FINALLY READ, because the obstacle was never what it looked
+//      like. Two prior notes each had half of it: "403 to automated fetch" and
+//      "200, but the page 404s -- it moved". Both were right and neither was
+//      enough. medicaid.gov 403s a bare curl AND a curl sending only a
+//      User-Agent; it serves 200 to the full browser header set (Accept,
+//      Accept-Language, sec-ch-ua, Sec-Fetch-*, Referer). So it is a HEADER
+//      check, not a TLS fingerprint and not an IP block -- my own 2026-08-29
+//      note calling it a "request-fingerprint block" was wrong in a way that
+//      would have sent the next reader to a browser-automation workaround
+//      instead of to four extra headers. A reachability claim is about a host,
+//      a CLIENT and a date; drop any one and it goes wrong quietly.
 //   2. See the per-state note below.
 //
 // ── PER-STATE RULES ARE NOT ENCODED, AND THAT IS A REFUSAL, NOT A GAP ────
@@ -119,7 +145,9 @@ const FEDERAL_SOURCE = {
   verified_against: ['uscode.house.gov', 'govinfo.gov'],
   note: 'The six items are the statutory DEFINITION of a qualifying electronic visit verification system — not a required-field list. The operative requirement (§ 1396b(l)(1)) is that a State require the USE of such a system.',
   residual_gaps: [
-    'CMS sub-regulatory EVV guidance has not been read. There is no EVV rulemaking at all, so that guidance is where CMS operational detail lives. (Located 2026-08-29 at medicaid.gov/medicaid/home-community-based-services/home-community-based-services-guidance-additional-resources/electronic-visit-verification — ten documents, none read yet, so this is now a reading task rather than a search. Two prior reasons given here were each half right: medicaid.gov does 403 automated fetch, today including its root, AND the guidance page had moved. Chrome reaches it fine.)',
+    'CMS sub-regulatory EVV guidance is PARTLY read as of 2026-08-30 — the 2018-05-16 CIB and FAQ, 2 of 10 documents. There is no EVV rulemaking at all, so that guidance is where CMS operational detail lives. Still unread: the Aug 2019 Additional EVV Guidance CIB, the Dec 2022 good-faith-effort exemption guidance, the May 2022 1915(c) documentation note, and five decks.',
+    'SCOPE IS NARROWER THAN THIS MODULE CAN TEST. CMS reads "in-home visit" to EXCLUDE personal care furnished in congregate residential settings with 24-hour service availability (group homes, assisted living), and excludes PACE — 2018-05-16 FAQ Q3 and Q5. This module is handed a visit and cannot know the setting, so a caller feeding it congregate-setting visits will get well-formed answers about visits CMS does not require EVV for. Closing that is the caller\'s job.',
+    'CMS states there is NO federal GPS requirement and that capturing the location where service STARTS and STOPS is sufficient for the statutory minimum (2018-05-16 FAQ Q15). Continuous location capture is a state option, never a federal floor — do not let a product decision to track continuously be presented as compliance.',
     'That States may impose requirements beyond these six is an inference from statutory silence, not a quoted rule. The statute neither sets a minimum nor preempts additional State requirements.'
   ]
 };

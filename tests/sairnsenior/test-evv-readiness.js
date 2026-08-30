@@ -191,10 +191,20 @@ check('the statute is NOT described as requiring data elements to be captured', 
 check('residual gaps are carried on every result -- verified is NARROWED, not dropped', () => {
   const r = m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, { state: 'OH' });
   assertTrue(Array.isArray(r.federal_source.residual_gaps), 'residual_gaps must be present');
-  assertEq(r.federal_source.residual_gaps.length, 2);
+  // Assert the SUBSTANCE, not a count. 2026-08-30: this line was
+  // `assertEq(..., 2)` and it failed the moment two real disclosures were
+  // added -- an exact count turns "we told the caller more" into a test
+  // failure, which is pressure in exactly the wrong direction. The invariant
+  // that actually matters is that each known gap is stated, so each is now
+  // asserted by name; adding a fifth gap will pass, DELETING any of these
+  // four will not. That is strictly stronger than the count it replaced.
+  assertTrue(r.federal_source.residual_gaps.length >= 4, 'every known gap must be carried');
   const joined = r.federal_source.residual_gaps.join(' ');
-  assertTrue(/CMS/.test(joined), 'the unread-CMS-guidance gap must be stated');
+  assertTrue(/CMS/.test(joined), 'the CMS-guidance gap must be stated');
+  assertTrue(/2 of 10|partly read/i.test(joined), 'the guidance must be described as only PARTLY read');
   assertTrue(/inference from statutory silence/.test(joined), 'the states-may-add inference must be stated as an inference');
+  assertTrue(/congregate/i.test(joined), 'the congregate-setting scope carve-out must be disclosed');
+  assertTrue(/no federal GPS requirement/i.test(joined), 'the absence of a federal GPS requirement must be disclosed');
 });
 
 check('a configured state is never reported as compliant -- only as not_verified', () => {
@@ -209,7 +219,7 @@ check('a READY visit still carries what is NOT known -- ready never means compli
   const r = m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, { state: 'OH' });
   assertTrue(r.ready);
   assertEq(r.state_rules, 'not_verified', 'a configured state is never reported compliant');
-  assertEq(r.federal_source.residual_gaps.length, 2, 'a green result must still carry the residual gaps');
+  assertTrue(r.federal_source.residual_gaps.length >= 4, 'a green result must still carry every residual gap');
 });
 
 // ── the engine PERSISTS NOTHING and MUTATES NOTHING ─────────────────────
@@ -265,7 +275,10 @@ check('summarize carries the SAME federal_source object as checkVisit -- one sou
   const r = m.checkVisit(fullVisit(), FULL_CLIENT, FULL_CG, { state: 'OH' });
   assertEq(s.federal_source, r.federal_source, 'roll-up and per-visit must never disagree about provenance');
   assertEq(s.federal_source.verified, true);
-  assertEq(s.federal_source.residual_gaps.length, 2);
+  // Identity is what this test is really for -- the roll-up and the per-visit
+  // result must be the SAME object, so a count here would only ever restate
+  // what assertEq(s.federal_source, r.federal_source) already proved.
+  assertEq(s.federal_source.residual_gaps.length, r.federal_source.residual_gaps.length);
   assertEq(s.state_rules, 'not_verified');
   assertEq(s.elements.length, 6);
 });
