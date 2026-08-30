@@ -130,7 +130,7 @@ check('a pre-2014 trigger refuses on effective_from, before the calendar',
 
 // ── Nothing else moved ────────────────────────────────────────────────────
 check('Connecticut declares NO coverage entry -- it never computes, so one would be dormant',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'nm', 'va', 'wi']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'nm', 'va', 'wi']);
 check('Connecticut adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // A pre-existing jurisdiction must be untouched by the new standard.

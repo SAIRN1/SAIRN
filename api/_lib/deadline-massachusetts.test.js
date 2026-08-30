@@ -238,15 +238,15 @@ check('wv_rcp_6e is still the only contested standard',
 // jurisdiction, so an accidental or copy-pasted entry shows up here as a
 // failure. Add a jurisdiction to this list only when its gap was actually
 // reasoned about, never to make the test pass.
-check('exactly Alabama, Arkansas, Kansas, Maryland, Wisconsin, Massachusetts, Minnesota, Mississippi, Missouri, New Mexico and Virginia declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'nm', 'va', 'wi']);
+check('exactly Alabama, Arkansas, Idaho, Kansas, Maryland, Wisconsin, Massachusetts, Minnesota, Mississippi, Missouri, New Mexico and Virginia declare a coverage gap',
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'nm', 'va', 'wi']);
 // Each entry must be its OWN text, not another state's copied across -- the
 // failure mode this pins down is a disclosure that names the wrong state.
 check('each coverage summary names its own jurisdiction',
-  ['al', 'ar', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'nm', 'va', 'wi'].filter(k => {
+  ['al', 'ar', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'nm', 'va', 'wi'].filter(k => {
     const s = engine.JURISDICTION_COVERAGE[k].summary;
-    return { al: /Alabama/, ar: /Arkansas/, ks: /Kansas/, ma: /Massachusetts|Suffolk/, md: /Maryland/, mn: /Minnesota|Indigenous/, mo: /Missouri/, ms: /Mississippi/, nm: /New Mexico/, va: /Virginia/, wi: /Wisconsin/ }[k].test(s);
-  }), ['al', 'ar', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'nm', 'va', 'wi']);
+    return { al: /Alabama/, ar: /Arkansas/, id: /Idaho/, ks: /Kansas/, ma: /Massachusetts|Suffolk/, md: /Maryland/, mn: /Minnesota|Indigenous/, mo: /Missouri/, ms: /Mississippi/, nm: /New Mexico/, va: /Virginia/, wi: /Wisconsin/ }[k].test(s);
+  }), ['al', 'ar', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'nm', 'va', 'wi']);
 // A pre-existing jurisdiction still computes what it computed, through the
 // same standards table the two new entries were added to.
 {

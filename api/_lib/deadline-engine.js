@@ -1612,7 +1612,49 @@ var COMPUTATION_STANDARDS = {
   nm_1_006: { label: 'Rule 1-006 NMRA', impl: 'frcp_6a',
     short_period_exclusion_days: 11,
     base_period_suffix: '(A)', months_years_suffix: '(A)',
-    rollover_suffix_forward: '(A)(1)(c)', rollover_suffix_backward: '(A)(6)' }
+    rollover_suffix_forward: '(A)(1)(c)', rollover_suffix_backward: '(A)(6)' },
+  // IDAHO. I.R.C.P. 2.2(a)(1), and note the NUMBER: Idaho restyled its civil
+  // rules in 2016 and moved computation from Rule 6 to RULE 2.2. A citation to
+  // "Idaho Rule 6" is a citation to nothing since 1 July 2016.
+  //
+  //   "(1) Generally. When the period is stated in days or a longer unit of
+  //    time: (A) exclude the day of the event that triggers the period;
+  //    (B) COUNT EVERY DAY, INCLUDING INTERMEDIATE SATURDAYS, SUNDAYS, AND
+  //    LEGAL HOLIDAYS; and (C) include the last day of the period, but if the
+  //    last day is a Saturday, Sunday, or legal holiday, the period continues
+  //    to run until the end of the next day that is not a Saturday, Sunday, or
+  //    legal holiday."
+  //
+  // NO SHORT-PERIOD EXCLUSION, AND THE ABSENCE IS DELIBERATE. Idaho took the
+  // 2009 federal restyling wholesale, so it joins Minnesota, Utah, Nevada and
+  // Kansas in having none at all. Declaring any threshold here would exclude
+  // days the rule counts and report LATER than the true deadline. The field is
+  // simply absent, and the test asserts it is undefined rather than small --
+  // which matters more in Idaho than usual, because its two Rule 12(a)(2) rows
+  // are FOURTEEN days and its Rule 59 rows are fourteen: under Alabama's or
+  // Wisconsin's 11 they would still count straight through, but under
+  // Arkansas's 14 they would not.
+  //
+  // THE HOLIDAY REFERENT IS A STATUTE THE RULE NEVER NAMES. I.R.C.P. 2.2 says
+  // "legal holiday" and stops; nothing in the Idaho Rules of Civil Procedure
+  // or the Idaho Appellate Rules defines it. Idaho Code Sec. 73-108 ("Holidays
+  // enumerated") is the referent, and Sec. 67-5302(15)(a) confirms the chain by
+  // pointing back at it in terms -- "Holidays are enumerated in section 73-108,
+  // Idaho Code." See JURISDICTION_COVERAGE.id for why that still leaves one
+  // date contested.
+  //
+  // NO DIRECTION RULE, SO NO BACKWARD ROW IS SEEDED. 2.2(a)(1)(C) rolls to "the
+  // NEXT day" and says nothing about a period measured before an event -- the
+  // Mississippi shape, not the New Mexico one, where 1-006(A)(6) settles it
+  // expressly. Idaho has real backward periods worth having (Rule 55(a)(1) and
+  // 55(b)(2) each require three days' notice, and Rule 56(b)(2) runs 28/14/7
+  // days before a hearing) and none of them is seeded. The reason is in the
+  // coverage entry: one annually-recurring date is contested, and an omitted
+  // holiday that should have rolled a BACKWARD deadline further back leaves it
+  // closer to the trigger, i.e. later than the rule allows.
+  id_ircp_2_2: { label: 'I.R.C.P. 2.2', impl: 'frcp_6a',
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1712,6 +1754,12 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'The New Mexico calendar is the Chief Justice\'s own published 2026 branch holiday schedule and is complete for that year, but Rule 1-006(A)(4) separately extends a filing deadline whenever the court is closed or unavailable for filing — weather, technology, or anything else — which no annual calendar can express. This date may be EARLIER than the true deadline, never later. 2027 is REFUSED rather than derived.',
     detail: 'THE CALENDAR IS THE STATUTORY TEST HERE, NOT A PROXY FOR IT, and that is worth stating because the two most recent states seeded were the opposite. Rule 1-006(A)(7) NMRA: "\'Legal holiday\' means the day that the following are observed BY THE JUDICIARY", then eleven named days, then "(b) any other day observed as a holiday by the judiciary." New Mexico\'s district courts are state administered and the Chief Justice publishes ONE schedule for the whole branch, so the schedule is the legal fact the rule points at — the Kansas shape. Wisconsin and Mississippi both key on something a county can vary, which is why their calendars are deliberately under-inclusive intersections and this one is not. THE 2026 SCHEDULE IS TRANSCRIBED, NOT DERIVED, from the memorandum of Chief Justice David K. Thomson dated 19 November 2025, and every one of its eleven 2026 dates was checked against its printed weekday. TWO OF THEM CANNOT BE DERIVED FROM ANY RULE: Presidents\' Day is observed on FRIDAY 27 NOVEMBER 2026, the day after Thanksgiving — Rule 1-006(A)(7)(a) says so in a parenthetical, "(traditionally observed on the day after Thanksgiving)", and no other seeded jurisdiction moves a holiday across the calendar like that — and Independence Day is observed on FRIDAY 3 JULY 2026 because 4 July is a Saturday. WHAT IS NOT MODELLED, AND IT IS ALWAYS EARLY: Rule 1-006(A)(4) extends the time for FILING whenever "the court is closed or is unavailable for filing at any time that the court is regularly open", which the committee commentary says contemplates "weather, technological problems, or other circumstances", and which a person relying on it must be prepared to demonstrate. That is per-court and unknowable in advance; omitting it can only make a computed date sooner than the true one. Nor is Rule 1-006(A)(3)\'s HOURS arithmetic modelled — no seeded row is stated in hours. Nor is Rule 1-006(A)(5)\'s definition of when the last day ends, which is midnight for electronic filing and closing time for everything else: this engine returns a DATE, and on that date the cut-off differs by filing method. 2027 IS REFUSED RATHER THAN DERIVED, and the temptation here is unusually specific: the 2026 memorandum announces one 2027 date, New Year\'s Day on Friday 1 January 2027. Building a 2027 calendar out of that single entry would let 2027 deadlines compute against a calendar missing ten of its eleven days, which reads as an answer rather than as the refusal it should be. THE ONE PLACE A READING WAS MADE RATHER THAN QUOTED: Rule 1-006(C) grants three days after service by mail, facsimile or court-facility deposit, and says nothing about whether it reaches service of PROCESS. Rule 1-005(A) governs "every pleading subsequent to the original complaint", original process is Rule 1-004, and Rule 1-006(C) defines its own third method by cross-reference into Rule 1-005(C)(1)(e) — so no row triggered by service of the summons and complaint carries the extension. Withholding it reports EARLY; granting it on a mailed summons would report LATE.'
+  },
+  id: {
+    complete: false,
+    direction: 'early',
+    summary: 'Idaho publishes THREE different holiday lists that do not agree, and this calendar is the one the rule points at — Idaho Code Sec. 73-108. It omits JUNETEENTH, which the Secretary of State publishes as a state holiday and some Idaho courts close for, because Sec. 73-108 does not enumerate it. It also omits any day appointed ad hoc by the President or the Governor. Every omission can only make this date EARLIER than the true deadline, never later. No backward row is seeded, for the same reason. Check any Idaho date falling on or just after 19 June by hand.',
+    detail: 'THREE LISTS, AND THEY DISAGREE IN BOTH DIRECTIONS. (1) IDAHO CODE Sec. 73-108, "Holidays enumerated", is what I.R.C.P. 2.2\'s undefined term "legal holiday" refers to — nothing in the Idaho Rules of Civil Procedure or the Idaho Appellate Rules defines it, and Idaho Code Sec. 67-5302(15)(a) confirms the chain by saying so in terms: "Holidays are enumerated in section 73-108, Idaho Code." That list has ELEVEN entries and NO JUNETEENTH, and it carries BOTH observance shifts as mandatory statute: "Any legal holiday that falls on Saturday, the preceding Friday shall be a holiday and any legal holiday enumerated herein other than Sunday that falls on Sunday, the following Monday shall be a holiday." (2) THE SECRETARY OF STATE\'S published State Holidays list DOES carry Juneteenth on Friday 19 June 2026, and does NOT apply the Saturday shift — it prints Independence Day as Saturday 4 July. So it disagrees with the statute in both directions at once. (3) ACTUAL COURT CLOSURES are a third set again: the Idaho Supreme Court published a release headed "Idaho Courts to be Open July 2 & 6" for 2026, keeping courts open as essential services on days other parts of state government close, while at least one county trial court publishes a 2026 schedule that DOES close for Juneteenth. THIS CALENDAR IS SET (1), THE STATUTE, AND IS DELIBERATELY UNDER-INCLUSIVE. Juneteenth is the contested date: it is not enumerated in Sec. 73-108, so it could only be a legal holiday through that section\'s open limb — "every day appointed by the President of the United States, or by the governor of this state, for a public fast, thanksgiving, or holiday" — which is a proclamation this engine cannot read. Omitting it means a forward deadline landing on 19 June is reported as due that day when the true deadline may roll to the 22nd: EARLIER, which is safe. Adding it would roll a deadline off a day that may be fully countable: LATER, which is not. The same reasoning omits every other ad-hoc presidential or gubernatorial day. WHAT IS IN AND WHY IT COULD NOT BE COPIED: FRIDAY 3 JULY 2026 IS A LEGAL HOLIDAY BY STATUTE, because 4 July 2026 is a Saturday and the shift is mandatory — the Secretary of State\'s own list does not show it. COLUMBUS DAY, the second Monday in October, IS enumerated and IS carried, unlike Oregon, which omits it. The Sunday-to-Monday limb is mandatory and simply dormant in 2026: no Sec. 73-108 holiday falls on a Sunday this year. NO BACKWARD ROW IS SEEDED, AND IDAHO HAS GOOD ONES. Rule 55(a)(1) requires three days\' written notice before entry of DEFAULT — unusual, most states require notice only before default JUDGMENT — Rule 55(b)(2) requires three days before the default-judgment hearing, and Rule 56(b)(2) runs 28, 14 and 7 days before a summary-judgment hearing, with the motion itself due 90 days before trial. None is seeded. Under-inclusion is EARLY only while the count runs forward; counting backward, a holiday that should have rolled the date further from the trigger and does not leaves it CLOSER, which is later than the rule allows. With Juneteenth genuinely contested and recurring every year, that is not a risk worth taking for a three-day notice period. Seeding Idaho backward rows needs the Juneteenth question answered, not a longer period. ONE MORE GAP, ALSO EARLY: Rule 2.2(a)(2) extends the time for FILING whenever "the clerk\'s office is inaccessible", which is per-court and unknowable in advance, and is a separate limb from the holiday list rather than part of it. 2027 IS REFUSED rather than derived — the Sec. 73-108 rules would generate it, but the ad-hoc limb and the Juneteenth question would still be open, and a generated year hides that behind a confident answer.'
   }
 };
 
@@ -2985,6 +3033,44 @@ var SERVICE_EXTENSION_STANDARDS = {
     qualifies: function (method) {
       return method === 'mail' || method === 'facsimile' ||
              method === 'court_facility_deposit';
+    }
+  },
+  // IDAHO. I.R.C.P. 2.2(c), verbatim and complete -- it is one sentence, and
+  // the shortest service-extension provision of any seeded jurisdiction:
+  //
+  //   "(c) Additional Time After Service by Mail. When a party may or must act
+  //    within a specified time after service and service is made BY MAIL, 3
+  //    days are ADDED TO THE SPECIFIED TIME."
+  //
+  // "ADDED TO THE SPECIFIED TIME" -> add_to_period_then_roll, the
+  // period-lengthening order, not the federal after-expiry one.
+  //
+  // MAIL AND NOTHING ELSE, and unlike Mississippi that is not a survival from
+  // an older draft -- Idaho wrote this rule from scratch in 2016, when
+  // electronic service was already routine, and still reached only mail.
+  // E-mail, the iCourt e-filing system, facsimile and hand delivery all get
+  // ZERO.
+  //
+  // ⚠ IT SAYS "AFTER SERVICE", NOT "AFTER SERVICE OF A NOTICE OR OTHER PAPER",
+  // AND THAT ONE MISSING PHRASE DECIDES A ROW. Miss. R. Civ. P. 6(e) reaches
+  // "the service of a NOTICE or other paper", which is why Mississippi's
+  // post-motion row -- triggered by "notice of the court's action" -- carries
+  // the extension. Idaho's Rule 12(a)(2)(A) runs from "notice of the court's
+  // action" too, but Rule 2.2(c) has no notice limb, so that row carries
+  // NOTHING here. Two states, near-identical triggers, opposite answers, and
+  // the difference is four words in the time rule.
+  //
+  // NO ROW TRIGGERED BY SERVICE OF PROCESS CARRIES THIS. There is no express
+  // Rule 4 carve-out -- the Wisconsin and New Mexico position, resolved the
+  // same way. I.R.C.P. 5(a)(1)(B) reaches "a pleading filed AFTER THE ORIGINAL
+  // COMPLAINT"; original process is Rule 4. Withholding reports EARLY, granting
+  // on a mailed summons would report LATE.
+  id_ircp_2_2_c: {
+    label: 'I.R.C.P. 2.2(c)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail';
     }
   }
 };
