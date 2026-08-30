@@ -140,10 +140,16 @@ read from the Legislature's own PDF; 481 IAC ch. 55 (round 13); and
   enforcement), § 135Q.5 (department annual report).
 - The remainder of § 135Q.3(3) beyond the noncompete clause.
 - Iowa Code § 231C.2's definition of personal care, incorporated by (10).
-- **Whether any other state has an equivalent** — this survey found it only
-  because a keyword sweep happened to include "home care". **No other state has
-  been checked for a platform-registration statute**, and the absence of a
-  finding is not evidence of absence.
+- **ANSWERED 2026-08-30, and the answer is that Iowa is NOT isolated.** Four
+  states now have a distinct regulatory category for the matching / referral /
+  placement business: **Iowa** (*health care technology platform*, registration),
+  **Colorado** (*home care placement agency*, registration), **Oregon**
+  (*caregiver registry*, **licence** — ORS 443.100) and **Nevada** (*referral
+  agency* and *employment agency to provide nonmedical services*, both licensed).
+  **They share no keyword**, so a term-based sweep finds one of four; look for the
+  function. Only Iowa's definition has been read in full — the equivalent
+  determination has **not** been run for Oregon, Colorado or Nevada. See
+  `2026-08-30-sairnsenior-state-round-14-oregon.md`.
 
 **A standing condition, not a one-time answer.** The determination is about the
 product *as built on 2026-08-30*. It should be re-run against § 135Q.1(6) before
