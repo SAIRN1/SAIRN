@@ -257,9 +257,18 @@ Ordered by dependency and by what is provably ready, not by revenue guess:
 
 Visual design and brand. Pricing. SEO and content strategy. Anything about
 competitors in the corporate-site space. Legal entity, terms of sale, refund
-policy, sales-tax obligations on digital goods **(that last one is a real
-research item — Ohio and destination-based digital-goods taxation are not
-guesses to make)**. Accessibility, which for a public commercial site is a
+policy. ~~Sales-tax obligations on digital goods.~~ **RESEARCHED 2026-08-30 —
+`docs/2026-08-30-sairntech-digital-goods-sales-tax.md`. Three findings change
+the build: (1) SaaS licences and ebooks are taxed under DIFFERENT Ohio statutory
+prongs — SaaS only "for use in business", ebooks to everyone — so they need
+separate product classes from day one, not one "digital product" type;
+(2) Stripe-as-processor is NOT a marketplace facilitator and SAIRN stays liable,
+but Stripe Managed Payments IS merchant-of-record and does take the burden — a
+real architectural fork to price before building; (3) the nonprofit exemption
+mostly does NOT apply to our customers, because Ohio's is 501(c)(3)-and-
+charitable-purposes and the veterans provision reaches STATE HEADQUARTERS only,
+not local posts. Register an Ohio vendor's license before the first sale — it is
+not threshold-dependent.** Accessibility, which for a public commercial site is a
 different bar from an internal tool.
 
 Nothing here is a design decision. It is the list of things that have to be
