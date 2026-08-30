@@ -1545,31 +1545,12 @@
 <button class="btn btn-sm" onclick="exportTableCSV('settings-table','settings')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Users</div>
-<div class="kpi-value">14</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Integrations Active</div>
-<div class="kpi-value">4</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Data Backup</div>
-<div class="kpi-value">Daily</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Last Backup</div>
-<div class="kpi-value">2026-07-07 3:00 AM</div>
-</div>
-</div>
+<div class="kpi-row" id="settings-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="settings-table">
 <thead><tr><th>Setting</th><th>Value</th></tr></thead>
-<tbody>
-<tr><td>Practice Name</td><td>Pinnacle Animal Hospital</td></tr>
-<tr><td>Time Zone</td><td>America/New_York</td></tr>
-<tr><td>License</td><td>SV-PINNACLE-2026</td></tr>
-</tbody></table></div></div>
+<tbody id="settings-tbody"></tbody></table></div></div>
+<div id="settings-edit-slot"></div>
+<div class="card"><h3>Where this data lives</h3><p style="font-size:13px;line-height:1.6;color:var(--muted);margin-top:8px;">Everything in SAIRNvet is stored in <strong>this browser only</strong>. It is not synced to a server and it is not backed up automatically. Clearing your browser data, or opening the app on a different device, means starting from an empty roster. Use the Export CSV button on each panel to keep your own copy of anything you need to retain.</p></div>
 </div>
 
 <div id="panel-ai" class="panel">
@@ -1910,6 +1891,7 @@ function gateSubmit(){
   renderEquineDental();
   renderPPE();
   renderPatients();
+  renderSettings();
   renderSoap();
   renderBoarding();
   renderComms();
@@ -4057,6 +4039,108 @@ function svRenderSpeciesPanel(key){
 
 function svRenderAllSpeciesPanels(){
   Object.keys(SV_SPECIES_GROUPS).forEach(svRenderSpeciesPanel);
+}
+
+// ===================================================================
+// SETTINGS (2026-08-30) — the ninth and last shell in the audit gap.
+//
+// WHAT IT WAS, and one of the four KPIs was worse than fabricated. The panel
+// showed `Users 14`, `Integrations Active 4`, `Data Backup: Daily` and
+// `Last Backup: 2026-07-07 3:00 AM`, plus three hardcoded rows in a table
+// nothing populated.
+//
+// `Data Backup: Daily` AND `Last Backup` ARE THE REASON THIS PANEL MATTERED
+// MOST. There is no backup system in this app — every store is browser
+// localStorage. Those two KPIs told a practice its records were being backed
+// up nightly, and named a time it supposedly last happened. That is not a
+// stale number, it is a false assurance about data safety, and it is removed
+// and replaced with the truth rather than with a smaller number.
+// `Integrations Active 4` is the same class: a capability claim with no
+// integration code behind it anywhere in the file (Guardian 0b).
+//
+// WHAT IS HERE NOW. Two KPIs, each counted from a store that really exists —
+// getStaff() and getPatients(). Two editable settings persisted to
+// sv_settings. Time Zone defaults to the browser's ACTUAL resolved zone
+// rather than a hardcoded 'America/New_York'. And a plain statement of where
+// the data lives, which is the honest replacement for the backup claim.
+var SV_SETTING_FIELDS = [
+  { key: 'practiceName', label: 'Practice Name' },
+  { key: 'timeZone',     label: 'Time Zone' }
+];
+
+function getSettings(){
+  var tz = 'UTC';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch(e){}
+  var defaults = { practiceName: 'Pinnacle Animal Hospital', timeZone: tz };
+  try {
+    var stored = localStorage.getItem('sv_settings');
+    if(stored){
+      var parsed = JSON.parse(stored);
+      SV_SETTING_FIELDS.forEach(function(f){
+        if(typeof parsed[f.key] === 'string' && parsed[f.key]) defaults[f.key] = parsed[f.key];
+      });
+    }
+  } catch(e){}
+  return defaults;
+}
+
+function saveSettings(obj){
+  return st('sv_settings', obj);
+}
+
+function renderSettings(){
+  var tbody = document.getElementById('settings-tbody');
+  if(!tbody) return;
+  var cfg = getSettings();
+  tbody.innerHTML = '';
+  SV_SETTING_FIELDS.forEach(function(f){
+    var tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = function(){ openSettingEdit(f.key); };
+    tr.innerHTML = '<td>'+escHtml(f.label)+'</td><td>'+escHtml(cfg[f.key]||'—')+'</td>';
+    tbody.appendChild(tr);
+  });
+
+  var kpis = document.getElementById('settings-kpis');
+  if(!kpis) return;
+  var staffCount = (typeof getStaff === 'function') ? getStaff().length : 0;
+  var patientCount = (typeof getPatients === 'function') ? getPatients().length : 0;
+  kpis.innerHTML =
+    '<div class="kpi"><div class="kpi-label">Team Members</div><div class="kpi-value">'+staffCount+'</div><div class="kpi-change">On the staff roster</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Patients on Roster</div><div class="kpi-value">'+patientCount+'</div><div class="kpi-change">All species</div></div>';
+}
+
+function openSettingEdit(key){
+  var f = SV_SETTING_FIELDS.filter(function(x){ return x.key === key; })[0];
+  if(!f) return;
+  var slot = document.getElementById('settings-edit-slot');
+  if(!slot) return;
+  var cfg = getSettings();
+  slot.innerHTML =
+    '<div class="card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(f.label)+'</h3>'+
+    '<input type="text" id="sv-set-val" value="'+escHtml(cfg[key]||'')+'" style="width:100%;margin:12px 0;">'+
+    '<button class="btn" onclick="saveSettingEdit(\''+escHtml(key)+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelSettingEdit()">Cancel</button>'+
+    '</div>';
+}
+
+function saveSettingEdit(key){
+  var el = document.getElementById('sv-set-val');
+  if(!el) return;
+  var val = el.value.trim();
+  if(!val){ showToast('Value cannot be empty','error'); return; }
+  var cfg = getSettings();
+  cfg[key] = val;
+  saveSettings(cfg);
+  cancelSettingEdit();
+  renderSettings();
+  showToast('Settings updated','success');
+}
+
+function cancelSettingEdit(){
+  var slot = document.getElementById('settings-edit-slot');
+  if(slot) slot.innerHTML = '';
 }
 
 function openPatientEdit(id){
@@ -7761,6 +7845,7 @@ if(auth&&checkTrialGate()){
   renderEquineDental();
   renderPPE();
   renderPatients();
+  renderSettings();
   renderSoap();
   renderBoarding();
   renderComms();
