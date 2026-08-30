@@ -300,3 +300,34 @@ discovery floor. Two of those are small; the third is DECISION TWO above and is
 the reason this state should not be seeded piecemeal — seeding the plain
 discovery rows while leaving the defendant floor unmodelled is defensible only
 if the disclosure is explicit that a defendant's real deadline is later.
+
+## 11. UPDATE 2026-08-30 -- the 2026 calendar source is CONFIRMED LIVE; the two decisions are not
+
+Sec. 5 said the holiday list must be INGESTED, not derived, and named
+`mdcourts.gov/administration/holidays` as the target. **It resolves and it
+carries 2026** -- HTTP 200, plain HTML, thirteen dated entries under CALENDAR
+YEAR 2026, with archives back to 2020:
+
+```
+Thu Jan  1  New Year's Day            Mon Sep  7  Labor Day
+Mon Jan 19  Dr. M.L. King, Jr.'s Bday Mon Oct 12  Columbus Day
+Mon Feb 16  Presidents' Day           Tue Nov  3  Election Day
+Mon May 25  Memorial Day              Wed Nov 11  Veterans' Day
+Fri Jun 19  Juneteenth                Thu Nov 26  Thanksgiving Day
+Fri Jul  3  Independence Day          Fri Nov 27  American Indian Heritage Day
+                                      Fri Dec 25  Christmas Day
+```
+
+Two of Sec. 5's three reasons a generator cannot produce this list are visible
+in that single year: **Election Day (Nov 3)** is there because 2026 is an even
+year, per SPP Sec. 9-201(13); and **American Indian Heritage Day** is the
+Friday after Thanksgiving under 9-201(11), which no other seeded state carries.
+**Independence Day is published as Friday 3 July** -- the Saturday-to-preceding-
+Friday half of the 9-204 shift, applied by the Judiciary itself, which is the
+published practice Sec. 5 relied on for the doctrinal gap.
+
+**So the calendar is not what blocks Maryland.** What blocks it is unchanged:
+DECISION ONE (Sec. 7), DECISION TWO (Sec. 8), and the per-direction exclusion
+flag in Sec. 6 item 2 -- which is a build item rather than a decision, and would
+be the first jurisdiction on this platform to need it. **Nothing was seeded and
+nothing was guessed.**
