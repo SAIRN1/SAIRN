@@ -1589,30 +1589,10 @@
 <button class="btn btn-sm" onclick="exportTableCSV('companion-patients-table','companion-patients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Patients</div>
-<div class="kpi-value">287</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Visits YTD</div>
-<div class="kpi-value">1,204</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Vaccination Compliance</div>
-<div class="kpi-value">94%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue YTD</div>
-<div class="kpi-value">$156K</div>
-</div>
-</div>
+<div class="kpi-row" id="companion-patients-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="companion-patients-table">
-<thead><tr><th>Patient</th><th>Breed</th><th>Age</th><th>Last Visit</th><th>Next Due</th></tr></thead>
-<tbody>
-<tr><td>Max</td><td>Golden Retriever</td><td>5y</td><td>2026-07-05</td><td>Rabies — 2026-07-15</td></tr>
-<tr><td>Whiskers</td><td>Persian</td><td>8y</td><td>2026-07-04</td><td>Dental cleaning — recommended</td></tr>
-</tbody></table></div></div>
+<thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
+<tbody id="companion-patients-tbody"></tbody></table></div></div>
 </div>
 
 <div id="equine-patients" class="panel">
@@ -1624,30 +1604,10 @@
 <button class="btn btn-sm" onclick="exportTableCSV('equine-patients-table','equine-patients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Patients</div>
-<div class="kpi-value">87</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Farm Calls YTD</div>
-<div class="kpi-value">234</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Lameness Cases Open</div>
-<div class="kpi-value">5</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Avg Invoice</div>
-<div class="kpi-value">$1,640</div>
-</div>
-</div>
+<div class="kpi-row" id="equine-patients-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="equine-patients-table">
-<thead><tr><th>Patient</th><th>Breed</th><th>Age</th><th>Discipline</th><th>Last Visit</th></tr></thead>
-<tbody>
-<tr><td>Star</td><td>Quarter Horse</td><td>12y</td><td>Trail</td><td>2026-06-28</td></tr>
-<tr><td>Duke</td><td>Thoroughbred</td><td>8y</td><td>Show Jumping</td><td>2026-07-01</td></tr>
-</tbody></table></div></div>
+<thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
+<tbody id="equine-patients-tbody"></tbody></table></div></div>
 </div>
 
 <div id="large-patients" class="panel">
@@ -1659,30 +1619,10 @@
 <button class="btn btn-sm" onclick="exportTableCSV('large-patients-table','large-patients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Herds Managed</div>
-<div class="kpi-value">23</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Total Head</div>
-<div class="kpi-value">2,847</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Visits YTD</div>
-<div class="kpi-value">156</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue YTD</div>
-<div class="kpi-value">$198K</div>
-</div>
-</div>
+<div class="kpi-row" id="large-patients-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="large-patients-table">
-<thead><tr><th>Herd/Owner</th><th>Species</th><th>Head</th><th>Primary Concern</th></tr></thead>
-<tbody>
-<tr><td>Miller Dairy Farm</td><td>Holstein Cattle</td><td>340</td><td>Routine herd health</td></tr>
-<tr><td>Green Pastures Ranch</td><td>Angus Beef</td><td>890</td><td>Vaccination program</td></tr>
-</tbody></table></div></div>
+<thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
+<tbody id="large-patients-tbody"></tbody></table></div></div>
 </div>
 
 <div id="exotic-patients" class="panel">
@@ -1694,30 +1634,10 @@
 <button class="btn btn-sm" onclick="exportTableCSV('exotic-patients-table','exotic-patients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Patients</div>
-<div class="kpi-value">234</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Species Represented</div>
-<div class="kpi-value">18</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Surgeries YTD</div>
-<div class="kpi-value">67</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue YTD</div>
-<div class="kpi-value">$89K</div>
-</div>
-</div>
+<div class="kpi-row" id="exotic-patients-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="exotic-patients-table">
-<thead><tr><th>Patient</th><th>Species</th><th>Age</th><th>Last Visit</th></tr></thead>
-<tbody>
-<tr><td>Pip</td><td>Netherland Dwarf Rabbit</td><td>3y</td><td>2026-06-30</td></tr>
-<tr><td>Ziggy</td><td>Ferret</td><td>2y</td><td>2026-07-02 — adrenal recheck</td></tr>
-</tbody></table></div></div>
+<thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
+<tbody id="exotic-patients-tbody"></tbody></table></div></div>
 </div>
 
 <div id="avian-patients" class="panel">
@@ -1729,30 +1649,10 @@
 <button class="btn btn-sm" onclick="exportTableCSV('avian-patients-table','avian-patients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Patients</div>
-<div class="kpi-value">178</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Surgeries YTD</div>
-<div class="kpi-value">34</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Recovery Rate</div>
-<div class="kpi-value">93%</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue YTD</div>
-<div class="kpi-value">$76K</div>
-</div>
-</div>
+<div class="kpi-row" id="avian-patients-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="avian-patients-table">
-<thead><tr><th>Patient</th><th>Species</th><th>Age</th><th>Last Visit</th></tr></thead>
-<tbody>
-<tr><td>Kiwi</td><td>African Grey Parrot</td><td>15y</td><td>2026-07-02</td></tr>
-<tr><td>Sunny</td><td>Cockatiel</td><td>6y</td><td>2026-06-18</td></tr>
-</tbody></table></div></div>
+<thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
+<tbody id="avian-patients-tbody"></tbody></table></div></div>
 </div>
 
 <div id="reptile-patients" class="panel">
@@ -1764,30 +1664,10 @@
 <button class="btn btn-sm" onclick="exportTableCSV('reptile-patients-table','reptile-patients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Patients</div>
-<div class="kpi-value">112</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">MBD Cases Managed</div>
-<div class="kpi-value">9</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Husbandry Consults YTD</div>
-<div class="kpi-value">41</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue YTD</div>
-<div class="kpi-value">$52K</div>
-</div>
-</div>
+<div class="kpi-row" id="reptile-patients-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="reptile-patients-table">
-<thead><tr><th>Patient</th><th>Species</th><th>Age</th><th>Last Visit</th></tr></thead>
-<tbody>
-<tr><td>Shelly</td><td>Sulcata Tortoise</td><td>20y</td><td>2026-06-15 — MBD recheck</td></tr>
-<tr><td>Noodle</td><td>Ball Python</td><td>4y</td><td>2026-05-30</td></tr>
-</tbody></table></div></div>
+<thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
+<tbody id="reptile-patients-tbody"></tbody></table></div></div>
 </div>
 
 <div id="aquatic-patients" class="panel">
@@ -1799,30 +1679,10 @@
 <button class="btn btn-sm" onclick="exportTableCSV('aquatic-patients-table','aquatic-patients')">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Active Cases</div>
-<div class="kpi-value">31</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Pond/System Consults YTD</div>
-<div class="kpi-value">22</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Water Quality Kits Issued</div>
-<div class="kpi-value">14</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue YTD</div>
-<div class="kpi-value">$18K</div>
-</div>
-</div>
+<div class="kpi-row" id="aquatic-patients-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="aquatic-patients-table">
-<thead><tr><th>Client</th><th>System</th><th>Species</th><th>Issue</th></tr></thead>
-<tbody>
-<tr><td>Park, David</td><td>Backyard Koi Pond</td><td>Koi</td><td>Fin rot — treating</td></tr>
-<tr><td>Nguyen, Lisa</td><td>75gal Freshwater</td><td>Assorted Community</td><td>Routine consult</td></tr>
-</tbody></table></div></div>
+<thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
+<tbody id="aquatic-patients-tbody"></tbody></table></div></div>
 </div>
 
 <div id="zoo-patients" class="panel">
@@ -4094,6 +3954,109 @@ function renderPatients(){
       '<div class="kpi"><div class="kpi-label">Avg Visits/Yr</div><div class="kpi-value">'+avgVisits+'</div><div class="kpi-change">Per patient</div></div>'+
       '<div class="kpi"><div class="kpi-label">Chart Completion</div><div class="kpi-value">'+completionPct+'%</div><div class="kpi-change">SOAP compliance</div></div>';
   }
+
+  // The seven species panels are derived views over this same roster, so they
+  // are refreshed from HERE rather than from each mutation site. addPatient(),
+  // savePatientEdit() and removePatient() already call renderPatients(); wiring
+  // the views in at those three call sites instead would mean a future fourth
+  // mutation path could silently leave the species panels stale.
+  svRenderAllSpeciesPanels();
+}
+
+// ===================================================================
+// SPECIES PANELS (2026-08-30) — seven panels, one model.
+//
+// WHAT THEY WERE. companion/equine/large/exotic/avian/reptile/aquatic
+// -patients were static shells: four hardcoded KPIs each, two invented table
+// rows each, a <table> no code ever populated (each table id appeared exactly
+// twice in the whole file — its id attribute and one exportTableCSV call, and
+// ZERO times in any getElementById), and an Export CSV button wired to the
+// fabricated table, so a customer could export invented rows as records.
+//
+// WHY THEY GET NO CRUD OF THEIR OWN. These are derived VIEWS over the real
+// sv_patients roster, not their own entity — the same call panel-analytics
+// already makes. Adding happens once, on panel-patients, rather than through
+// seven duplicate Quick Add forms that would drift apart.
+//
+// WHAT THE KPIs ARE NOW. Every one is computed from a field that actually
+// exists on a patient record. The old rows led with invented revenue
+// ($156K, $1,640, $198K, $89K, $76K, $52K, $18K) — there is NO revenue field
+// on a patient, so it is DROPPED rather than re-fabricated with a smaller
+// lie. Same for Vaccination Compliance and Surgeries YTD: no backing field
+// here, and surgery already has its own real store (sv_surgery).
+//
+// GROUPS ARE DISJOINT ON PURPOSE. Small mammals sit in `exotic` only, not
+// also in `companion`, so the per-panel counts sum rather than double-count.
+// Standard practice calls them exotic companion mammals; either home is
+// defensible, but a patient silently appearing on two panels is not.
+//
+// TWO PANELS CHANGED MEANING, AND IT IS DELIBERATE. `large` used to show
+// Herd/Owner + Head + Primary Concern and `aquatic` used to show
+// Client/System/Issue — herd-level and system-level entities, not patients.
+// Herd-level work already has a real home (sv_herdhealth / renderHerdHealth);
+// pond-system consults had no data model at all. Rather than invent one, both
+// become species-filtered views of the real roster like the other five.
+//
+// A SPECIES MATCHING NO GROUP IS NOT LOST — it stays on panel-patients, which
+// is the authoritative roster. It simply will not appear on a species view
+// until it is added to the map below, which is a one-line edit.
+var SV_SPECIES_GROUPS = {
+  'companion-patients': { label: 'Companion animal', species: ['Canine', 'Feline'] },
+  'equine-patients':    { label: 'Equine',           species: ['Equine'] },
+  'large-patients':     { label: 'Large animal',     species: ['Bovine', 'Ovine', 'Caprine', 'Porcine', 'Camelid'] },
+  'exotic-patients':    { label: 'Exotic',           species: ['Lagomorph', 'Rodent', 'Ferret', 'Hedgehog', 'Sugar Glider', 'Primate'] },
+  'avian-patients':     { label: 'Avian',            species: ['Avian', 'Psittacine', 'Passerine', 'Raptor', 'Waterfowl', 'Poultry'] },
+  'reptile-patients':   { label: 'Reptile',          species: ['Reptile', 'Chelonian', 'Squamate', 'Serpent', 'Lizard', 'Crocodilian'] },
+  'aquatic-patients':   { label: 'Aquatic',          species: ['Fish', 'Piscine', 'Amphibian', 'Cephalopod'] }
+};
+
+function svRenderSpeciesPanel(key){
+  var g = SV_SPECIES_GROUPS[key];
+  if(!g) return;
+  var tbody = document.getElementById(key+'-tbody');
+  if(!tbody) return;
+
+  var list = getPatients().filter(function(p){
+    return g.species.indexOf(String(p.species||'').trim()) !== -1;
+  });
+
+  tbody.innerHTML = '';
+  if(!list.length){
+    // A real empty state, not a blank box that reads as broken.
+    var er = document.createElement('tr');
+    var ed = document.createElement('td');
+    ed.colSpan = 7;
+    ed.style.cssText = 'text-align:center;padding:24px;color:var(--muted)';
+    ed.textContent = 'No ' + g.label.toLowerCase() + ' patients on the roster yet — add them from the Patients panel.';
+    er.appendChild(ed);
+    tbody.appendChild(er);
+  } else {
+    list.forEach(function(p){
+      var tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.onclick = function(){ svNav('panel-patients'); openPatientEdit(p.id); };
+      tr.innerHTML = '<td>'+escHtml(p.name)+'</td><td>'+escHtml(p.species)+'</td><td>'+escHtml(p.breed)+'</td><td>'+escHtml(p.owner)+'</td><td>'+(p.age||'—')+'y</td><td>'+escHtml(p.lastVisit||'—')+'</td><td>'+escHtml(p.status||'—')+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+
+  var kpis = document.getElementById(key+'-kpis');
+  if(!kpis) return;
+  var thisMonth = new Date().toISOString().slice(0,7);
+  var newThisMonth = list.filter(function(p){ return p.added && p.added.slice(0,7) === thisMonth; }).length;
+  var visits = list.map(function(p){ return p.visitsThisYear || 0; });
+  var avgVisits = visits.length ? (visits.reduce(function(a,b){ return a+b; }, 0) / visits.length).toFixed(1) : '0.0';
+  var complete = list.filter(function(p){ return p.chartComplete; }).length;
+  var completionPct = list.length ? Math.round(complete / list.length * 100) : 0;
+  kpis.innerHTML =
+    '<div class="kpi"><div class="kpi-label">Active Patients</div><div class="kpi-value">'+list.length+'</div><div class="kpi-change">'+escHtml(g.label)+'</div></div>'+
+    '<div class="kpi"><div class="kpi-label">New This Month</div><div class="kpi-value">'+newThisMonth+'</div><div class="kpi-change">This group</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Avg Visits/Yr</div><div class="kpi-value">'+avgVisits+'</div><div class="kpi-change">Per patient</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Chart Completion</div><div class="kpi-value">'+completionPct+'%</div><div class="kpi-change">SOAP compliance</div></div>';
+}
+
+function svRenderAllSpeciesPanels(){
+  Object.keys(SV_SPECIES_GROUPS).forEach(svRenderSpeciesPanel);
 }
 
 function openPatientEdit(id){
