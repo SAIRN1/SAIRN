@@ -66,6 +66,24 @@ read so far actually require.
 > that stores qualifications only on the caregiver record cannot answer the
 > question these four states actually ask.
 >
+> ### ⛔⛔⛔ And in Iowa the REGULATED ENTITY may be SAIRNsenior itself
+>
+> Iowa Code ch. 135Q / 481 IAC ch. 55 registers and regulates **"health care
+> technology platforms"** — annual registration and fee, plus the criminal /
+> dependent-adult-abuse / child-abuse checks, TB screening and
+> training-and-good-standing verification that would otherwise fall on the health
+> care entity, immediate abuse-allegation notification, documentation on demand,
+> and **quarterly reporting of every Medicare/Medicaid entity contracted with and
+> the average amount charged**, broken down by provider type and worker category.
+>
+> **Every other rule in this model constrains a customer. This one may constrain
+> the vendor.** The statutory definition at Iowa Code § 135Q.1 has **not** been
+> read, so **which software is in scope is unverified** — a tool scheduling an
+> agency's own employees is plausibly outside it, a marketplace matching
+> independent professionals to facilities is plausibly inside, and neither
+> reading is established. Routed to `sairn-decision-gate`, not answered in the
+> research. See `2026-08-30-sairnsenior-state-round-13-iowa-platform-registration.md`.
+>
 > ### A sixth category of rule: BEHAVIOUR CONSTRAINTS
 >
 > Some rules are not requirements a worker meets or data a record holds. **They
