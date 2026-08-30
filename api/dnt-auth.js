@@ -143,10 +143,34 @@ const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'rost
 // later split of 'estimator' is a one-line change here, not a gate rewrite.
 const MANAGEMENT_ROLES = { owner: true };
 const AUTHENTICATED_ROLES = { owner: true, frontdesk: true, provider: true };
-// Only 'owner' provisions or changes credentials. 'admin' runs the office but
+// Only 'owner' provisions or changes credentials.
+//
+// CORRECTED 2026-08-29. This comment used to read "'admin' runs the office but
 // does not mint identities -- deliberately narrower than StoneDesk, where both
-// owner and admin can, because a 20-100 person shop has one principal and the
-// blast radius of a mistaken deactivation is the whole company.
+// owner and admin can". SAIRNDENTAL HAS NO 'admin' ROLE. The vocabulary is
+// ROLES_BY_APP.sairndental = ['owner','frontdesk','provider']; the sentence was
+// carried over from an app that does have one, and it made this look like a
+// deliberate narrowing from two provisioning roles to one when it was never
+// two. Left as it was, the likeliest outcome was a future reader "restoring" a
+// role that never existed here.
+//
+// The design itself is unchanged and is deliberate: a 20-100 person practice
+// has one principal, and the blast radius of a mistaken deactivation is the
+// whole company. The real second-role candidates in THIS app are 'frontdesk'
+// (the least-trusted and highest-turnover seat) and 'provider' (clinical, and
+// the app cannot tell a partner from a locum) -- which is why widening here is
+// a harder call than in SAIRNmechanical or SAIRNroofing, both of which already
+// carry an 'admin' that could simply be added.
+//
+// NOT a lockout mitigation, and worth saying so where the list lives: the API
+// cannot reach the zero-active-provisioner state. set_active refuses
+// self-deactivation, refuses to deactivate the last active provisioner, and
+// re-reads that the caller's own row is still active. That state is created
+// only by SQL, and is guarded by tools/employee_auth_guard_check.py and
+// detected by api/provisioner-health.js.
+//
+// Full options, costs and the standing recommendation (leave it as-is):
+// docs/2026-08-29-sairndental-provisioning-role-decision.md
 const PROVISIONING_ROLES = ['owner'];
 
 // Exported so gates elsewhere (api/sd-data.js's DNT_RESOURCES branch) import these
