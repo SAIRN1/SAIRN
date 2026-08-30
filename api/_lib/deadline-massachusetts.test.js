@@ -238,15 +238,15 @@ check('wv_rcp_6e is still the only contested standard',
 // jurisdiction, so an accidental or copy-pasted entry shows up here as a
 // failure. Add a jurisdiction to this list only when its gap was actually
 // reasoned about, never to make the test pass.
-check('exactly Alabama, Arkansas, Wisconsin, Massachusetts, Minnesota, Missouri and Virginia declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ma', 'mn', 'mo', 'va', 'wi']);
+check('exactly Alabama, Arkansas, Maryland, Wisconsin, Massachusetts, Minnesota, Missouri and Virginia declare a coverage gap',
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'ma', 'md', 'mn', 'mo', 'va', 'wi']);
 // Each entry must be its OWN text, not another state's copied across -- the
 // failure mode this pins down is a disclosure that names the wrong state.
 check('each coverage summary names its own jurisdiction',
-  ['al', 'ar', 'ma', 'mn', 'mo', 'va', 'wi'].filter(k => {
+  ['al', 'ar', 'ma', 'md', 'mn', 'mo', 'va', 'wi'].filter(k => {
     const s = engine.JURISDICTION_COVERAGE[k].summary;
-    return { al: /Alabama/, ar: /Arkansas/, ma: /Massachusetts|Suffolk/, mn: /Minnesota|Indigenous/, mo: /Missouri/, va: /Virginia/, wi: /Wisconsin/ }[k].test(s);
-  }), ['al', 'ar', 'ma', 'mn', 'mo', 'va', 'wi']);
+    return { al: /Alabama/, ar: /Arkansas/, ma: /Massachusetts|Suffolk/, md: /Maryland/, mn: /Minnesota|Indigenous/, mo: /Missouri/, va: /Virginia/, wi: /Wisconsin/ }[k].test(s);
+  }), ['al', 'ar', 'ma', 'md', 'mn', 'mo', 'va', 'wi']);
 // A pre-existing jurisdiction still computes what it computed, through the
 // same standards table the two new entries were added to.
 {

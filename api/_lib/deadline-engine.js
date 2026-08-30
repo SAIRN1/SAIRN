@@ -1471,7 +1471,31 @@ var COMPUTATION_STANDARDS = {
   wi_801_15: { label: 'Wis. Stat. Sec. 801.15', impl: 'frcp_6a',
     short_period_exclusion_days: 11,
     base_period_suffix: '(1)(b)', months_years_suffix: '(1)(b)',
-    rollover_suffix_forward: '(1)(b)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '(1)(b)', rollover_suffix_backward: '' },
+  // ── THE THRESHOLD IS 8 AND THAT IS NOT A TYPO. READ BEFORE EDITING. ──
+  // Md. Rule 1-203(a): "if the period of time allowed is SEVEN DAYS OR
+  // LESS, intermediate Saturdays, Sundays, and holidays are not counted."
+  // That is <= 7, which is < 8, and this field is compared with a STRICT
+  // less-than. The literal number in the Maryland rule is SEVEN and the
+  // correct value here is EIGHT -- the second jurisdiction after Texas
+  // ("five days or less" -> 6) where the rule's number and this field's
+  // number differ. Writing 7 would stop excluding on exactly the seven-day
+  // periods the rule is aimed at, reporting EARLIER than the true deadline.
+  //
+  // ── AND THE EXCLUSION IS FORWARD-ONLY, WHICH NOTHING ELSE HERE IS. ──
+  // Md. Rule 1-203(b) computes a backward period counting "all days prior
+  // thereto, INCLUDING intervening Saturdays, Sundays, and holidays" --
+  // the (a) exclusion deliberately does not carry across -- and then rolls
+  // the latest day BACKWARD to "the first preceding day which is not a
+  // Saturday, Sunday, or holiday." Reusing forward logic backward would
+  // drop days the rule counts and report LATER than the true date, which
+  // on a backward period means telling someone they may still serve after
+  // the last lawful day. Hence short_period_exclusion_directions.
+  md_rule_1_203: { label: 'Md. Rule 1-203', impl: 'frcp_6a',
+    short_period_exclusion_days: 8,
+    short_period_exclusion_directions: ['forward'],
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)(1)', rollover_suffix_backward: '(b)' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1491,6 +1515,12 @@ var COMPUTATION_STANDARDS = {
 //             malpractice one. Refusing here would buy no safety.
 // Nothing is added to this table without deciding which of the two it is.
 var JURISDICTION_COVERAGE = {
+  md: {
+    complete: false,
+    direction: 'early',
+    summary: 'Maryland also rolls the last day when the clerk\'s office is closed or closed for PART of a day, which is per-court and not knowable in advance. This date may be EARLIER than the true deadline, never later.',
+    detail: "Md. Rule 1-203(a)(2) rolls the last day on a SECOND, non-holiday trigger the calendar cannot express: \"the act to be done is the filing of a paper in court and the office of the clerk of that court on the last day of the period is not open, OR IS CLOSED FOR A PART OF THE DAY.\" That reaches weather, emergencies and partial-day closures, is published per court at mdcourts.gov/administration/closingsdelays rather than in any annual list, and is not knowable in advance. Omitting it can only make a computed date EARLIER than the true one. THE HOLIDAY LIST ITSELF IS INGESTED, NOT DERIVED, and is complete for the year it covers: Rule 1-202(l) points at State Personnel and Pensions Sec. 9-201, whose paragraph (14) reaches \"each other day that the President of the United States or the Governor designates for general cessation of business\" -- arbitrary by construction, and the Judiciary has published TWO observed days for one holiday in a past year. So the calendar is taken from the Judiciary's own published list rather than generated, and a year it does not cover is REFUSED rather than derived. NOTE ALSO THE WRONG-SOURCE TRAP, recorded because the obvious statute is the wrong one twice over: General Provisions Sec. 1-302 rolls only on \"a Sunday or legal holiday\" with no Saturday roll (reporting EARLY), and Sec. 1-111 adds Good Friday, Lincoln's Birthday, Maryland Day and Defenders' Day, which are NOT court holidays (reporting LATE). Rule 1-203's own committee note settles it: \"This section supersedes Code, General Provisions Article, Sec. 1-302 to the extent of any inconsistency.\" The correct chain is Rule 1-203 -> Rule 1-202(l) -> SPP Sec. 9-201."
+  },
   wi: {
     complete: false,
     direction: 'early',
@@ -2658,6 +2688,56 @@ var SERVICE_EXTENSION_STANDARDS = {
         ? { add: 1, unit: 'calendar_days' }
         : { add: 0, unit: 'calendar_days' };
     }
+  },
+  // Md. Rule 1-203(c). Three days for MAIL ONLY -- Maryland is the fourth
+  // distinct answer on electronic service and its answer is that there is
+  // no electronic limb at all: (c) names mail and nothing else.
+  //
+  // ── IT REFUSES ON A SHORT PERIOD, AND THAT IS THE WHOLE POINT. ──
+  // 1-203(c) adds three days "to the prescribed period". 1-203(a) drops
+  // intermediate weekends and holidays when "the period of time allowed is
+  // seven days or less". So a mailed 7-day period arguably becomes a
+  // 10-day period, which is more than seven, which would FLIP the
+  // intermediate days from excluded to counted and change the date. Two
+  // live readings:
+  //   (A) "the period of time allowed" means the period AFTER the mail
+  //       extension -> the exclusion is lost -> an EARLIER date;
+  //   (B) it means the underlying rule's period -> the exclusion survives
+  //       and the three days are appended -> a LATER date.
+  // No committee note, no cross-reference and no controlling authority was
+  // found. They diverge on any mailed period of 4-7 days.
+  //
+  // THIS CANNOT BE RESOLVED BY PICKING THE SAFE SIDE, because which
+  // reading is safe depends on the period -- unlike every other ambiguity
+  // on this platform, where one direction is always the conservative one.
+  // So the engine REFUSES and returns the unextended date, the same call
+  // already made for West Virginia's contested Rule 6(e). Michael's
+  // decision, 2026-08-30.
+  md_rule_1_203_c: {
+    label: 'Md. Rule 1-203(c)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist_with_per_method_amount',
+    qualifies: function (method) { return method === 'mail'; },
+    amount: function (method, ctx) {
+      var n = ctx && ctx.base_period_count;
+      var unit = ctx && ctx.base_period_unit;
+      if (unit === 'calendar_days' && typeof n === 'number' && n <= 7) {
+        return { refuse: {
+          code: 'CONTESTED_SHORT_PERIOD_INTERACTION',
+          message: 'Md. Rule 1-203(c) adds three days for service by mail, and Md. Rule 1-203(a) drops ' +
+            'intermediate Saturdays, Sundays and holidays when the period allowed is seven days or less. ' +
+            'This period is ' + n + ' days, so the two provisions interact and Maryland has not said how: ' +
+            'if the three days make the period "more than seven days", the intermediate days become ' +
+            'COUNTED and the deadline moves EARLIER; if the seven-day test looks at the underlying rule ' +
+            'instead, they stay excluded and the three days are appended, moving it LATER. No committee ' +
+            'note, cross-reference or controlling authority resolves it. The engine will not choose: ' +
+            'unlike the other ambiguities it handles, there is no consistently safe side here -- which ' +
+            'reading is conservative depends on the length of the period. The date below is computed ' +
+            'WITHOUT the three days. Add them by hand only after deciding which reading applies.'
+        } };
+      }
+      return { add: 3, unit: 'calendar_days' };
+    }
   }
 };
 
@@ -2811,7 +2891,25 @@ function computeBasePeriod(std, triggerDate, countValue, unit, direction, sign, 
     // assumed from one to the other) with a shared authority label per
     // standard so the audit trail still cites the RIGHT state's rule. Never
     // fires for an FRCP-family rule, which declares no such property.
-    if (std.short_period_exclusion_days && countValue < std.short_period_exclusion_days) {
+    //
+    // PER-DIRECTION, added 2026-08-30 for Maryland. Optional and absent
+    // everywhere else, so every existing standard behaves exactly as before:
+    // when short_period_exclusion_directions is undefined the exclusion
+    // applies in both directions, which is what the other twelve standards
+    // that declare a threshold mean.
+    //
+    // MARYLAND IS THE FIRST JURISDICTION WHERE FORWARD AND BACKWARD DIFFER,
+    // and they differ in the rule's own words. Md. Rule 1-203(a) drops
+    // intermediate Saturdays, Sundays and holidays when the period is seven
+    // days or less. Md. Rule 1-203(b) counts backward periods "including
+    // intervening Saturdays, Sundays, and holidays" -- the exclusion
+    // deliberately does NOT carry across. An engine that reused the forward
+    // logic backward would drop days the rule counts and report a date LATER
+    // than the true one on every short backward Maryland period, which is the
+    // direction that lets a party serve too late.
+    if (std.short_period_exclusion_days && countValue < std.short_period_exclusion_days
+        && (!std.short_period_exclusion_directions
+            || std.short_period_exclusion_directions.indexOf(direction) !== -1)) {
       var shortRes = countExcludingWeekendsAndHolidays(triggerDate, sign, countValue, calendars, jurisdiction, direction);
       if (!shortRes.ok) return shortRes;
       return { ok: true, date: shortRes.date, authority: std.label,
