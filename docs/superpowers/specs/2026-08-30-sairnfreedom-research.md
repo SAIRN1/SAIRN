@@ -2,6 +2,24 @@
 
 **Status:** research only. Nothing built. No spec, no schema, no app file.
 
+**THIS IS THE CANONICAL SAIRNfreedom RESEARCH DOCUMENT.** Merged 2026-08-30
+(CC) from two independent parallel research passes that ran the same three
+pre-build gates without knowing about each other. Where they disagreed on a
+fact, the disagreement was resolved against codes.ohio.gov rather than by
+picking a document — see *Reconciliation record* at the end, which names every
+difference and how it was settled.
+
+Two detailed research reports are kept as **appendices** rather than inlined,
+because they are source-of-record with full citation lists and inlining them
+would bury the decisions above them:
+
+- `docs/2026-08-30-sairnfreedom-competitive-and-patent-scan.md`
+- `docs/2026-08-30-sairnfreedom-service-hour-reporting-research.md`
+
+Their findings are summarised in this file. A third file,
+`docs/2026-08-30-sairnfreedom-orc-2915-verification.md`, was fully absorbed
+here and deleted; its content is in git history at `e04e6c9`.
+
 ---
 
 ## BINDING DECISIONS — read before designing anything
@@ -35,6 +53,37 @@ image.
 
 Phase 2's passive sensor is a different technology and **was not scanned**.
 It needs its own patent pass before it is built.
+
+**RESIDUAL RISK ON THIS DECISION — added 2026-08-30 from the second scan. The
+decision stands; this is the reasoning behind it, not a reopening.**
+
+Two facts the first scan did not have, both of which argue the same way:
+
+- **There is a PENDING continuation in the same family: US20240320601A1
+  (application 18/586,707)**, filed 2024-02-26, published 2024-09-26. Claims
+  1–21 are cancelled and claim 22 is the first independent claim — and claim 22
+  *also* requires "contacting the graphical user interface at a position." A
+  pending application means **claims can still be amended** while this product
+  is being built.
+- **Partender's own specification already discloses the automatic approach:**
+  "the computer can also identify and calculate the liquid level in each bottle
+  simply via photographing, video recording, or panning over the bottle(s)
+  being measured."
+
+So automatic determination is the right build path — it avoids every *granted*
+claim, all of which require a user-positioned indicator — but it is **not a
+clean room.** The automatic method sits on top of disclosure inside a live
+family with an amendable pending continuation.
+
+**What follows, and it does not change what gets built:** before this feature
+appears in **sales material, a demo to a real post, or any external claim**,
+get a real freedom-to-operate opinion from counsel. Both passes were keyword
+screens by non-lawyers. Neither is clearance, and both say so.
+
+Worth weighing when that bill arrives: this feature guards **none** of the
+three things the competitive scan identifies as the actual moat (see *The
+competitive gap*, corrected below). It is a demo feature, not a defensive one,
+and its FTO cost should be judged on that basis.
 
 ### 2. Scope of this document
 
@@ -74,16 +123,95 @@ overseeing body**, not one owner running several physical locations as one
 operation. That is a materially different data model from every other
 multi-location feature on this platform and should not be copied from one.
 
-## The competitive gap
+## The competitive gap — REWRITTEN 2026-08-30, the original framing does not survive
 
-- **TidyHQ** — 300+ service clubs, 32 countries. Serves membership and
-  governance (dues, meetings, AGM tooling). **Zero** canteen/bar POS, **zero**
-  state gaming/bingo compliance, **zero** fund segregation between canteen and
-  bingo.
-- **Member Muster** — American Legion-specific; appears membership/dues only.
+The baseline said: *"No competitor found combines membership + regulated bar +
+regulated gaming + legally-required fund segregation. That intersection is the
+opening."* **That is partially refuted.** Full scan in
+`docs/2026-08-30-sairnfreedom-competitive-and-patent-scan.md`; eleven products
+verified against primary sources.
 
-No competitor found combines membership + regulated bar + regulated gaming +
-legally-required fund segregation. That intersection is the opening.
+**Arrow International, headquartered in Cleveland, Ohio, already markets three
+of the four pillars in one shipping product.** Verbatim from their page:
+
+> "Arrow's Tab King® is an industry-leading point-of-sale solution for clubs,
+> social quarters, and charities. Designed to simplify operations and boost
+> efficiency, Tab King puts every part of your business at your fingertips
+> **from food and beverage to gaming, membership, time tracking, and
+> reporting**."
+> — equipment.arrowinternational.com/electronic-pull-tabs, 9900 Clinton Road,
+> Cleveland, OH 44144
+
+55 years in charitable gaming. Acquired Tab Wizard in December 2021,
+consolidating the pull-tab + F&B POS category. Tab King USA partnered with the
+**Northeast Moose Association** in 2019 on a fraternal lodge management system
+including membership-card swipe for good standing.
+
+### THE MOAT, RESTATED
+
+**It is not the four-pillar combination.** Three of those four are combined and
+selling, by a vendor in the target state with the distribution channel this
+product would need anyway.
+
+**The defensible ground is the three things no verified competitor touches:**
+
+1. **ORC Ch. 2915 charitable-purpose disbursement tagging.** No vendor makes any
+   claim about it, and it is the hardest to copy because it requires reading the
+   statute correctly — see CORRECTION 3 below, where the category list turns out
+   to be per organization type. A competitor bolting this on would very likely
+   get exactly that wrong.
+2. **District/state read-only rollup across independently-governed posts.** Only
+   ClubExpress has anything adjacent, and its multi-tier chapters model is a
+   general org hierarchy, not a cross-tenant regulatory rollup.
+3. **Hall rental.** Only ALPost has it, inside an American-Legion-specific
+   website builder with no accounting, no POS and no gaming.
+
+**Fund segregation alone is thin and must not be relied on as the moat.** Nobody
+claims it today, but it is a chart-of-accounts decision plus a reporting
+template, not a hard engineering problem. If Arrow decides Ohio segregation is
+worth two sprints, the four-pillar framing is fully refuted.
+
+### Corrections to the named leads
+
+- **TidyHQ — HOLDS.** Feature list verified: CRM, Memberships, Events, Finances,
+  Communications, Tasks & Governance, Meetings, Shop, Web Pages, Documents.
+  Confirmed absent: POS, bar, canteen, liquor inventory, gaming, bingo,
+  charitable gaming, fund accounting, fund segregation. One caveat: "TidyAI" is
+  *"AI consulting and workshops for sporting organisations"* — a services
+  offering, **not** an AI assistant over org data. The "300+ clubs, 32 countries"
+  figure was not found on the features page and is unverified.
+- **Member Muster — APPEARS DEFUNCT.** `membermuster.com` is a parked ParkLogic
+  page offering the domain; `membermuster.us` returns DNS NXDOMAIN. No feature
+  claim about it is verifiable.
+- **GUST — NOT FOUND.** No product by that name was locatable. The nearest real
+  product is Cannabis Club Systems, whose "SmartBud AI" is verified as *product
+  recommendation*, not marketing generation. **The AI-on-own-data validation
+  cited in the baseline is therefore weakly supported**, and the AI marketing
+  assistant should be justified on its own merits rather than on this precedent.
+- **Partender — MISCHARACTERISED.** It is **not** photo-based estimation.
+  Verbatim: *"Just tap where the liquor level is on the bottle and swipe to the
+  next bottle."* Manual tap-on-image. This is the same finding that produced
+  Binding Decision 1, reached independently.
+
+### Others worth knowing
+
+- **M.A.P.S. Online / EO Software** (thepostsoftware.com) — a **licensed VFW
+  National vendor**, VFW-specific since 1991: ledger, check writer, bank
+  reconciliation, Post Trustees' Quarterly Report, 990 summary, membership
+  rosters and dues posting. Notably *"Even Bingo funds are accounted for with
+  transaction codes"* — the closest thing to segregation found anywhere, and it
+  is **tracking within one ledger, not segregation.** No canteen POS, no bingo
+  operations.
+- **ClubExpress** — decisive quote from its own Money tab: *"ClubExpress is not
+  a full accounting system for your club or association."*
+- **Buz Club Software** — membership + F&B POS + real accounting, but targets
+  golf/yacht/city/racquet clubs, **no** fraternal or veterans mention, **no**
+  gaming.
+
+**Single most important open competitive question:** whether Tab King does real
+dues billing and fraternal governance, or only card-swipe good-standing. Arrow
+publishes no pricing and no feature matrix. **Request a demo before locking any
+strategic conclusion.**
 
 ## Evidence base for the canteen/financial pain points
 
@@ -153,7 +281,7 @@ kind that would mislead a later reader rather than break anything today.
 
 | Claim | Verified | Where |
 |---|---|---|
-| Charitable purpose enumerates scholarships, flags, patriotism, disaster relief, youth activities | YES | **§2915.01(V)** |
+| ~~Charitable purpose enumerates scholarships, flags, patriotism, disaster relief, youth activities~~ | **PARTLY WRONG AS STATED — see CORRECTION 3** | those words are in **§2915.01(V)(2)**, the veteran's limb ONLY, not division (V) generally |
 | Allowable expenses explicitly include canteen/clubhouse operating costs | YES | **§2915.01(GG)(11)** |
 | Bingo session = max 5 continuous hours | YES | **§2915.01(S)(1)** |
 | Instant bingo for up to 2 hours before **and** 2 hours after that period | YES | **§2915.01(S)(2)** |
@@ -206,6 +334,179 @@ Citing a single effective date for the whole chapter would be wrong about most
 of it. Any compliance claim this product makes must cite the **section**, with
 that section's own effective date, the same discipline SAIRNlaw's deadline
 seeds already use per-jurisdiction.
+
+## CORRECTION 3 — the charitable-purpose category list is PER ORGANIZATION TYPE, and this is the single most important finding for the data model
+
+**This corrects a row in this document's own confirmation table above, which
+marked the veteran's category list as the general meaning of division (V).**
+
+Verified against codes.ohio.gov on 2026-08-30, and **confirmed three times by
+two independent research passes** — twice via the section page and once via the
+authenticated PDF (`codes.ohio.gov/assets/laws/revised-code/authenticated/29/
+2915/2915.01/9-30-2025/2915.01-9-30-2025.pdf`). All three reads agree.
+
+Division (V) has four limbs and **veteran's organizations and fraternal
+organizations get different ones.**
+
+**§2915.01(V)(2) — veteran's organizations** (VFW, American Legion posts and
+their auxiliaries). This is where the familiar list actually lives. Net profit
+must be:
+
+> "used by the post, chapter, or organization for the charitable purposes set
+> forth in division (B)(12) of section 5739.02 of the Revised Code, is used for
+> awarding scholarships to or for attendance at an institution mentioned in
+> division (B)(12) of section 5739.02 of the Revised Code, is donated to a
+> governmental agency, or is used for nonprofit youth activities, the purchase
+> of United States or Ohio flags that are donated to schools, youth groups, or
+> other bona fide nonprofit organizations, promotion of patriotism, or disaster
+> relief"
+
+(V)(2) also carries a **75%-veteran membership test** and a no-private-inurement
+condition.
+
+**§2915.01(V)(3) — fraternal organizations** (Elks, Moose, Eagles), quoted in
+full:
+
+> "A fraternal organization that has been in continuous existence in this state
+> for fifteen years and that uses the net profit exclusively for religious,
+> charitable, scientific, literary, or educational purposes, or for the
+> prevention of cruelty to children or animals, if contributions for such use
+> would qualify as a deductible charitable contribution under subsection 170 of
+> the Internal Revenue Code"
+
+**(V)(3) contains none of those words** — no scholarships, no flags, no
+patriotism, no disaster relief, no youth activities. Explicitly re-checked
+against primary source for this reconciliation.
+
+And it carries a **hard fifteen-years-continuous-existence-in-Ohio
+precondition**. A fraternal lodge younger than that does not qualify under this
+limb at all. That is a gating fact, not a category.
+
+### Why this matters more than it looks
+
+**The disbursement tag list is not one list.** A VFW post and an Elks lodge, in
+the same product, in the same state, tag the same dollar against different
+legally-enumerated sets. A single shared `charitable_purpose` enum would be
+wrong for one of them — and wrong in the direction that produces a
+clean-looking licence renewal report backed by the wrong statute.
+
+This is the SAIRNroofing multi-state lesson recurring on a different axis:
+**"Ohio-only" removed the state variable and did not remove the variation.**
+Here the axis is organization type, inside a single state.
+
+Same shape as `rf_contingency_rules`: the category set belongs in **a row with
+a citation, keyed by organization type**, never a hardcoded array.
+
+**The cross-reference is now closed too.** §5739.02(B)(12), pulled verbatim
+during the service-hour research, adds: *relief of poverty; improvement of
+health through the alleviation of illness, disease, or injury; operation of an
+organization exclusively for the provision of professional, laundry, printing,
+and purchasing services to hospitals or charitable institutions; operation of a
+home for the aged; operation of a noncommercial educational radio or television
+broadcasting station; operation of a nonprofit animal adoption service or county
+humane society; promotion of education by an institution of learning…; operation
+of a parent-teacher association, booster group, or similar organization…;
+operation of a community or area center in which presentations in music,
+dramatics, the arts, and related fields are made…; the production of
+performances in music, dramatics, and the arts; or the promotion of education by
+an organization engaged in carrying on research in, or the dissemination of,
+scientific and technological knowledge.*
+
+## CORRECTION 4 — division (V) does not govern instant bingo at all
+
+The opening words of (V), verbatim:
+
+> "'Charitable purpose' means that the net profit of bingo, **other than instant
+> bingo or electronic instant bingo**, is used by, or is given, donated, or
+> otherwise transferred to, any of the following:"
+
+So the purpose-tagged regime in (V) and the **tiered percentage regime in
+§2915.101** (below) are not alternative readings of one rule — they are two
+regimes split by game type, and **a post running both traditional and instant
+bingo is subject to both simultaneously, on different money.**
+
+**Product consequence:** `game_type` must be on the disbursement record. The
+rule a disbursement has to satisfy is determined by the game that produced the
+money.
+
+## CORRECTION 5 — the fund-segregation requirement is §2915.10(C), and the relationship runs opposite to the thesis below
+
+This document's profit-chain section concludes that "the bar's books are not
+merely adjacent to the bingo books; they are an input to them." That is correct
+about (FF)/(GG)(11) — and it is only half the picture, because **§2915.10 was
+not read in the first pass.**
+
+**§2915.10(C), verbatim:**
+
+> "The gross profit from each bingo session or game described in division (O)(1)
+> or (2) of section 2915.01 of the Revised Code shall be deposited into a
+> checking account devoted exclusively to the bingo session or game."
+
+All bingo expenses and net-profit distributions must be made **"only by checks
+or electronic fund transfers drawn on the bingo session or game account."**
+
+Three things follow that the app must model exactly:
+
+1. **It is GROSS PROFIT that gets deposited** — receipts *minus prize awards* —
+   not gross receipts. Depositing the wrong figure is a records violation even
+   when the arithmetic reconciles later.
+2. **An exclusive account, and payment only from it.** No cash disbursement
+   path. This constrains the nightly canteen close-out design directly.
+3. **(GG)(11) then permits canteen operating cost to be paid OUT of that
+   segregated account** as an allowable expense. So the correct model is
+   **mandatory segregation inbound, enumerated permission for one class of
+   expense to cross outbound** — which is exactly why every canteen cost charged
+   to bingo needs an auditable tag. Not because the books are merged, but
+   because they are legally separated and one specific class is allowed across.
+
+### §2915.10(A) is a schema specification, and it names the canteen
+
+Records to be kept **at least 3 years**:
+
+| Div | Requirement |
+|---|---|
+| (A)(1) | Itemized gross receipts and profits **by game type** |
+| (A)(2) | Itemized expenses with **payee names** and receipts |
+| (A)(3) | Prize lists with winner name, address and **SSN for prizes $600+** |
+| (A)(4) | Net profit recipients with names/addresses and itemized expenditure |
+| (A)(5) | **Participant count per session** |
+| (A)(6) | **Food and beverage sales receipts** |
+| (A)(7) | **Food and beverage expenses**, with payee names and receipts |
+
+- **(B)** Records kept at the principal/headquarters location; **the Attorney
+  General must be notified of that location** — so "where the records live" is a
+  stored field, not an operational detail.
+- **(D)** Annual inventory of bingo supplies, **due by November 1**.
+- **(H)** Attorney General and law enforcement may inspect accounts and records.
+
+**(A)(6) and (A)(7) are the canteen↔bingo linkage as a *records obligation*, and
+they are the strongest single justification for building the canteen and gaming
+modules as one product rather than two.**
+
+**PII WARNING — decide before the table exists.** (A)(3) requires storing winner
+**Social Security numbers** for prizes of $600 or more. That is regulated PII
+inside a gaming record and needs an explicit encryption, access-role and
+retention decision **up front**, not retrofitted. Flagged here so it cannot be
+discovered late.
+
+## Additional §2915.09 limits the calendar must ENFORCE
+
+Beyond the 2 a.m.–10 a.m. blackout already recorded above:
+
+- **(C)(4)** No more than **three bingo sessions in any seven-day period**
+  (exceptions for volunteer firefighter and rescue organizations).
+- **(C)(5)** Maximum prize payout **$6,000 per session**.
+- **(C)(7)** Under-18s may not work as bingo game operators.
+- **(C)(8)** Persons with felony or gambling convictions may not be operators.
+- **(D)(1)** No *"commission, wage, salary, reward, tip, donation, gratuity, or
+  other form of compensation"* to bingo game operators.
+
+These are **constraints the booking calendar must refuse to violate**, not
+fields it reports after the fact — the same fail-closed posture the SAIRNroofing
+rescission engine uses.
+
+**(D)(1) interacts with canteen staffing:** a post that pays a bartender who
+also runs the bingo game has a problem the software should be able to see.
 
 ## The profit chain — verified 2026-08-30, all three divisions
 
@@ -263,6 +564,114 @@ Veteran's and fraternal organizations may hold Types I, II (with I), and III.
 **Product consequence:** licence type is not a display field, it gates which
 activities are lawful for that post. A Type III-only post conducting instant
 bingo *at* a session is out of compliance. The type must drive behaviour.
+
+## A third segregation requirement — the Attorney General, not the Revised Code
+
+Surfaced by the competitive scan, absent from both statutory passes. The Ohio
+AG states that organizations must maintain **"a separate checking account for
+their electronic instant bingo proceeds"**, must file **quarterly reports due
+February 28 / May 31 / August 31 / November 30**, and that **"Manufacturers and
+distributors of electronic instant bingo systems must obtain an endorsement from
+the attorney general's office."**
+— charitable.ohioago.gov/Charitable-Bingo/Electronic-Instant-Bingo
+
+That is a **third** segregation requirement, on a **different money type**, with
+deadlines nothing in Chapter 2915 itself supplies. It confirms that the AG /
+Ohio Administrative Code layer flagged below as unread is load-bearing rather
+than a formality.
+
+**Strategic note:** the endorsement requirement is a regulatory moat around
+*gaming system distribution* that Arrow already sits inside and this product
+does not. Another reason the differentiation should rest on the compliance and
+reporting layer rather than anything touching system distribution.
+
+---
+
+# National service-hour reporting — item 8, researched before schema
+
+Full report with citations:
+`docs/2026-08-30-sairnfreedom-service-hour-reporting-research.md`. Item 8 was
+flagged as the one part of the scope not researched to the standard of the rest,
+and therefore the likeliest source of invented compliance fields. Summary:
+
+## The headline: two taxonomies, not one
+
+**National reporting categories and Ohio charitable-gaming categories are NOT
+alignable.** National reports measure *what the post did and gave, including its
+own program costs.* Chapter 2915 measures *where gaming net profit went.*
+
+The American Legion's Consolidated Post Report carries ~15 explicit "cost to
+post for X" fields — `#28` wake/funeral/memorial services, `#104`
+administrative costs, `#111` ALR operations, `#116` NEF operations. All are
+legitimate CPR line items. **None is a permitted destination under (V)(2).**
+Tagging both from one picklist would silently assert compliance the statute does
+not support.
+
+**Hours have no place in Chapter 2915 at all.** Volunteer hours are central to
+all four national reports and appear nowhere in the charitable-purpose test,
+which is about net-profit dollars. **Hours are single-tagged; dollars are
+double-tagged.**
+
+## No shared period boundary exists
+
+| Org | Fiscal year | Deadline | Cadence |
+|---|---|---|---|
+| American Legion | Jun 1 – May 31 | **Jul 1** | annual (CPR, 126 numbered items) |
+| VFW | Jul 1 – Jun 30 | **Jun 30** | rolling entry, annual cutoff |
+| Elks (national) | Apr 1 – Mar 31 | **before Apr 30** | annual (CLMS2Web) |
+| **Elks (Ohio overlay)** | per event | **10th of following month** | **monthly, required of all Ohio lodges** |
+| Moose | May 1 – Apr 30 | Feb 15 / May 15 / Aug 15 / Nov 15 | quarterly |
+| Eagles | **UNVERIFIED** | — | password wall |
+
+**Reporting periods must be per-organization configuration, never constants.**
+Hardcoding any one of these is wrong for three others.
+
+## Unit rules that constrain column types
+
+- **`hours` must be DECIMAL.** VFW mandates `.08` for five minutes. An integer
+  column silently truncates to zero.
+- **`hours` are cumulative person-hours** — stated identically by VFW (5 comrades
+  × 2 hrs = 10) and Ohio Elks (2 Elks × 6 hrs = 12). Store the product; store
+  headcount separately.
+- **`miles` are round trip × people in the vehicle**, same rule in both sources.
+- **Money is two columns, never one** — cash vs non-cash/in-kind. Both Elks and
+  the CPR separate them.
+- **Elks uniquely splits member/non-member on both hours and miles.** It cannot
+  be reconstructed from a blended total, so it must be captured at entry or it
+  is lost permanently. It collapses harmlessly to one number for the other four.
+- **`counts_toward_national_service` flag.** VFW and Moose both carry explicit
+  exclusions — post-benefit work, member-only activities, fundraiser hours, and
+  **"working on bingo night"**. Without the flag, totals inflate and the VFW
+  Department chairman, who is the sole approving authority, rejects the report.
+
+## Must NOT be hardcoded — verified reasons, not caution
+
+- **Eagles: everything.** foe.com returns a literal password prompt. No form, no
+  deadline, no units, no categories. **Build nothing by analogy.**
+- **Moose categories.** Two *official* Moose sources — the fillable form and the
+  2023 handbook — contradict each other **today** on their own category list.
+  This is the strongest single argument against hardcoding any enum in this
+  feature.
+- **Elks CLMS2 program codes** and **VFW sub-categories** are login-gated. One
+  example Elks value was visible (`1001- Youth Scholarship`); one example is not
+  a list.
+- **CPR item numbers 1–126 as database keys.** They are scoped to a form year
+  (2025-26 artwork `#71IA1125`, 2024-25 `71IA1024`). Key on a stable internal
+  concept and map item numbers per year.
+- **Auto-submit / API integration.** All four are manual member portals; no
+  public API found for any. Design for CSV export and human re-entry, and **do
+  not promise submission.**
+
+## A collision worth remembering
+
+The Ohio Elks Charity Records Booklet lists **"Bingo"** and **"Charity Poker
+Night"** as *reportable charitable activities*. VFW guidance lists *"working on
+bingo night"* as explicitly **not** community service. Chapter 2915 treats the
+same evening as a *revenue source* for both. **Three different meanings, one
+event** — and the software has to hold all three without letting any of them
+contaminate the others.
+
+---
 
 ## Still not verified — flagged rather than assumed
 
@@ -514,5 +923,88 @@ This was a first-pass read, not a freedom-to-operate opinion. Not counsel.
 
 - [ORC §2915.01 — Definitions](https://codes.ohio.gov/ohio-revised-code/section-2915.01)
 - [ORC §2915.09 — Illegally conducting bingo game](https://codes.ohio.gov/ohio-revised-code/section-2915.09)
+- [ORC §2915.10 — Bingo records retention](https://codes.ohio.gov/ohio-revised-code/section-2915.10)
 - [ORC §2915.101 — Distribution of net profit](https://codes.ohio.gov/ohio-revised-code/section-2915.101)
+- [ORC §5739.02 — cross-referenced by §2915.01(V)(2)](https://codes.ohio.gov/ohio-revised-code/section-5739.02)
 - [OAC 109:1-4-08 — Bingo license types](https://codes.ohio.gov/ohio-administrative-code/rule-109:1-4-08)
+- [Ohio AG — Electronic Instant Bingo](https://charitable.ohioago.gov/Charitable-Bingo/Electronic-Instant-Bingo)
+
+---
+
+# Reconciliation record — two parallel passes, merged 2026-08-30
+
+Two sessions ran the same three pre-build gates the same night without knowing
+about each other. Both committed. This section records every difference and how
+it was settled, because a silent merge would hide the one place the two
+documents disagreed **on a fact**.
+
+## The correction count was 2 vs 4, and neither was wrong about arithmetic
+
+They are **different findings, not a disagreement about how many exist.** Merged
+total is five, plus the operational limits.
+
+| Finding | Pass A (this file, originally) | Pass B | Resolution |
+|---|---|---|---|
+| Session limits are a **definition** at §2915.01(S), not a conduct rule at §2915.09 | **FOUND** | missed | **Kept — Pass A only.** The strongest implementation insight in either document: a "session" running long is not a non-compliant session, it is **not a session**, and every per-session calculation is then keyed to nothing |
+| Chapter effective date is imprecise; sections differ | FOUND | FOUND | Agreed. Pass B added §2915.10 and §2915.101 both at 2021-09-30 |
+| **(V)(2) vs (V)(3) — category list is per org type** | **STATED INCORRECTLY** | **FOUND** | **Pass B correct. See CORRECTION 3.** This is the one real factual disagreement |
+| (V) excludes instant bingo by its own opening words | missed | **FOUND** | Added as CORRECTION 4 |
+| Segregation is §2915.10(C); §2915.10 unread in Pass A | missed | **FOUND** | Added as CORRECTION 5 |
+| §2915.101 tiered distribution, cumulative-annual threshold | **FOUND, in depth** | found, summarised | **Kept — Pass A's version.** More precise, and the running-total product consequence is Pass A's |
+| OAC 109:1-4-08 licence Types I/II/III gate lawful activity | **FOUND** | missed | **Kept — Pass A only** |
+| §2915.09 (C)(4) 3-sessions/7-days, (C)(5) $6,000 cap, (D)(1) no operator compensation | missed | **FOUND** | Added |
+| §2915.09 (C)(6) blackout, with instant sales from 9 a.m. for a 10 a.m. session | **FOUND**, with the 9 a.m. detail | found, without it | **Kept — Pass A's version** |
+| §2915.10(A) record schema, SSN PII, Nov 1 inventory, AG notified of records location | missed | **FOUND** | Added |
+| §5739.02(B)(12) cross-reference resolved verbatim | missed | **FOUND** | Added |
+| AG electronic-instant-bingo account + quarterly reports | missed | **FOUND** | Added |
+
+**The one real factual disagreement**, resolved by going back to primary source
+a third time rather than by preferring a document: this file's own confirmation
+table listed *"Charitable purpose enumerates scholarships, flags, patriotism,
+disaster relief, youth activities"* as **verified at §2915.01(V)**. Those words
+are real, but they sit in **(V)(2)**, which applies only to veteran's
+organizations. **(V)(3), which governs Elks, Moose and Eagles, contains none of
+them.** Re-checked explicitly against codes.ohio.gov for this reconciliation and
+confirmed a third time; the row is struck through above rather than deleted, so
+the error stays visible.
+
+Had that row survived into a build, it would have produced **one shared
+charitable-purpose enum** — the wrong data model for every fraternal lodge in
+the product, failing in the direction that yields a clean-looking licence
+renewal report backed by the wrong statute.
+
+## The bottle feature: no disagreement, and the decision stands
+
+Both passes independently found that Partender is manual tap-on-image, not
+automatic, and both independently identified the granted claims as requiring a
+user-positioned indicator. Pass A took it to a decision with Michael and Cody;
+Pass B stopped at "needs counsel."
+
+**Pass A's framing is the one that reflects the actual decision** and is
+unchanged at the top of this document: automatic determination from the start,
+no user-positioned indicator anywhere. Pass B's caution has been folded in as
+**the reasoning behind that decision and a residual-risk flag** — the pending
+continuation `US20240320601A1` whose claims can still be amended, and
+Partender's own specification already disclosing the automatic method. Neither
+reopens the decision. Both argue for the same build path and for getting a real
+FTO opinion before the feature reaches sales material.
+
+Pass A additionally cleared **US12450865B2** (Nutricia — claim 1 requires scale
+markings, which liquor bottles lack) and flagged the surrounding system claims
+5, 6, 9, 14 and 15, which Pass B missed entirely. Those are kept above.
+
+## What this cost, and the lesson
+
+Two sessions, roughly two hours each, on the same three gates. The duplication
+was not detected until a rebase pulled three unexpected `docs(sairnfreedom)`
+commits into an unrelated push.
+
+It was not a total waste — the parallel passes caught each other's errors, and
+the (V)(2)/(V)(3) correction only exists because two people read the same
+statute independently. But that is a defence of the outcome, not of the process.
+
+**The process lesson is the one already written in `CLAUDE.md`:** read all four
+`SAIRN-ACTIVE-WORK-*.md` files before starting, and the split removes the write
+collision, not the need to know what another session is touching. Neither pass
+logged "starting SAIRNfreedom gates" anywhere another session would see before
+both were already deep in the work.

@@ -1,5 +1,12 @@
 # SAIRNfreedom — national service-hour and charitable-giving reporting requirements
 
+> **CANONICAL DOCUMENT IS ELSEWHERE.** This file is an APPENDIX. The
+> decisions, the merged statutory findings and the reconciliation record live in
+> **`docs/superpowers/specs/2026-08-30-sairnfreedom-research.md`** — read that
+> first. This file is kept as source-of-record for the full per-organization
+> detail, the verbatim quotes and the citation list behind the summary there.
+
+
 **Researched 2026-08-30.** Gate 3: item 8 of the phase-1 scope was flagged as
 the one feature not researched to the same standard as the rest, and therefore
 the one most likely to generate invented compliance fields. This is that

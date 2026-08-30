@@ -1,5 +1,20 @@
 # SAIRNfreedom — competitive and patent/prior-art scan
 
+> **CANONICAL DOCUMENT IS ELSEWHERE.** This file is an APPENDIX. The
+> decisions, the merged statutory findings and the reconciliation record live in
+> **`docs/superpowers/specs/2026-08-30-sairnfreedom-research.md`** — read that
+> first. This file is kept as source-of-record for the competitive and patent
+> scan's full citations and per-product detail.
+>
+> One thing here is SUPERSEDED: the section below says the bottle-photo feature
+> "must not be built as originally scoped without a real freedom-to-operate
+> opinion." **A decision has since been made** — build automatic determination
+> from the start, no user-positioned indicator anywhere. See *Binding decisions*
+> in the canonical document. The FTO caution is retained there as the reasoning
+> behind that decision and as a gate before the feature reaches sales material,
+> **not** as a still-open question about whether to build it.
+
+
 **Run 2026-08-30.** Gate 2 of the SAIRNfreedom build, per the standing
 platform rule that a competitive and prior-art scan happens before code.
 
