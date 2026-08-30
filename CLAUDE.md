@@ -77,6 +77,55 @@ split removes the write collision, not the need to know what another
 session is touching. The shared file keeps every pre-split entry as the
 historical record (code comments and SQL headers cite it by name).
 
+### Claim a gate before you run it — added 2026-08-30, after four hours of duplication
+
+"Read all four before starting work" was already the rule and it was not
+enough, because it was understood as **collision avoidance on files** rather
+than **collision avoidance on work**. Two sessions can run the same research
+without touching a single common file, and nothing catches it.
+
+That happened on 2026-08-30. Two sessions independently ran all three
+SAIRNfreedom pre-build gates the same night — the ORC Chapter 2915 read, the
+competitive/patent scan, and the service-hour research. Neither knew. It was
+discovered only when a rebase pulled three unexpected `docs(sairnfreedom)`
+commits into an unrelated push, by which point both were finished. Roughly
+four hours, duplicated.
+
+**The rule, stated so it cannot be read as being about files:**
+
+> Before starting any research or build **gate** that the coordinating chat
+> session did not explicitly assign you — a statutory read, a competitive or
+> patent scan, a market/requirements research pass, a new app's scaffolding —
+> **grep all four `SAIRN-ACTIVE-WORK-*.md` files for the app or subject name
+> first.** Not for write conflicts. For *"is somebody already doing this."*
+>
+> Then **append a one-line claim to your own file and commit it before you
+> begin**, not after you finish:
+>
+> `- CLAIMING: <app> <gate name> -- starting now (<session>, <date>). Will log the result here.`
+>
+> An uncommitted claim is invisible to every other clone, exactly like an
+> uncommitted handoff. The claim is worth more than the result is: a result
+> tells the next session what was found, a claim stops them finding it again.
+
+**Why a claim and not just a check.** A check only works if the other session
+has already written something down, and the expensive window is precisely the
+hours *before* anyone has results to log. The claim closes that window.
+
+**Honest scope of this fix.** It reduces the odds, it does not eliminate them
+— two sessions can still claim within minutes of each other. It is a cheap
+mitigation for an expensive failure, not a lock. The genuine fix is the
+coordinating chat session assigning gates explicitly, and this rule exists for
+the cases where it did not.
+
+**Worth recording: the duplication was not a total loss that night.** The two
+passes caught each other's errors, and a real factual mistake about ORC
+2915.01(V)(2) vs (V)(3) — which would have shipped one shared
+charitable-purpose enum and been wrong for every fraternal lodge in the
+product — was only found because two readers hit the same statute
+independently. That is a defence of the *outcome*, not of the process. Do not
+use it as an argument for running gates twice on purpose.
+
 See the `sairn-session-handoff` skill for the full convention, the
 reasoning, and the template.
 
