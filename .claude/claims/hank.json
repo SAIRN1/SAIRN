@@ -1,0 +1,15 @@
+{
+  "session": "hank",
+  "claims": [
+    {
+      "id": "hank-1788097000",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "mississippi deadline seed gate",
+      "claimed_at": "2026-08-30T13:36:40Z",
+      "claimed_at_epoch": 1788097000.8848982,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}
