@@ -1793,6 +1793,18 @@ cross-tenant PII leak.
 - The public form is addressed by an **opaque, revocable per-shop intake
   token** that maps to a licence server-side — never the licence key itself.
   A public identifier, not a secret, and useless for anything but intake.
+  **This pattern already exists on the platform and should be copied, not
+  reinvented:** `sairndental-complaint.html:107` builds
+  `?token=<access_token>` where the token is an opaque per-complaint value
+  stored on the row and resolved server-side by
+  `api/sairndental/public-complaint-thread.js`
+  (`dnt_complaints?access_token=eq.…`). It is a capability URL scoped to one
+  thread — no licence key, no session token, revocable by clearing one
+  column. A platform-wide scan on 2026-08-30 for credentials embedded in
+  shareable links found exactly **two** URL-building sites of this shape:
+  that one (correct) and StoneDesk intake (wrong). The other two hits were
+  false positives — a subcontractor licence-expiry variable in SAIRNbuild and
+  a comment about Stripe's own `?session_id=` in SAIRNcash.
 - `intakeCopyLink()` does not claim success for a URL nobody has fetched.
 - Decide explicitly whether the June form is restored or rewritten; it inserts
   base64 photos straight into a table from the browser, which is its own
