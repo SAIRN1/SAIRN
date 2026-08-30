@@ -95,20 +95,15 @@ must do, and therefore what the product must support or withhold. **Iowa
 describes a regulated entity that a placement-capable product could itself
 be.**
 
-**The trigger is unverified and that is the important caveat.** Ch. 55 says the
-definitions "set forth in Iowa Code section 135Q.1 are incorporated herein by
-reference", and **I have not read § 135Q.1**. So:
-
-- **What is verified:** Iowa registers and regulates "health care technology
-  platforms" annually, imposes screening, notification, documentation and
-  quarterly price reporting on them, and defines "health care entity" to include
-  home health agencies, assisted living programs and adult day services.
-- **What is NOT verified:** the statutory definition of "health care technology
-  platform" and of "independent nursing services professional" — i.e. **exactly
-  which software is in scope.** A tool that only schedules an agency's own
-  W-2 employees is plausibly outside it; a marketplace matching independent
-  professionals to facilities is plausibly inside. **Neither reading is
-  established, and the distinction is the whole question.**
+**RESOLVED 2026-08-30 — Iowa Code § 135Q.1 read. SAIRNsenior's current model is
+OUTSIDE both definitions.** Full reasoning, quotations and the trigger that would
+flip it are in
+`2026-08-30-sairnsenior-iowa-135Q-scope-determination.md`. In short: the platform
+definition requires an **internet- or application-based marketplace through which
+an independent contractor BIDS ON OPEN SHIFTS posted by a health care entity**,
+and SAIRNsenior is an agency-facing roster-and-assignment scheduler with no
+marketplace, no bidding and no independent contractors. The employment-agency
+definition does not reach a software vendor at all.
 
 **This belongs in a decision-gate pass, not just a research file** — it is a
 question about what SAIRNsenior may sell in Iowa, and `sairn-decision-gate`

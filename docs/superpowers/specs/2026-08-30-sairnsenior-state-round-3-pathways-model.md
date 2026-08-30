@@ -76,13 +76,16 @@ read so far actually require.
 > and **quarterly reporting of every Medicare/Medicaid entity contracted with and
 > the average amount charged**, broken down by provider type and worker category.
 >
-> **Every other rule in this model constrains a customer. This one may constrain
-> the vendor.** The statutory definition at Iowa Code § 135Q.1 has **not** been
-> read, so **which software is in scope is unverified** — a tool scheduling an
-> agency's own employees is plausibly outside it, a marketplace matching
-> independent professionals to facilities is plausibly inside, and neither
-> reading is established. Routed to `sairn-decision-gate`, not answered in the
-> research. See `2026-08-30-sairnsenior-state-round-13-iowa-platform-registration.md`.
+> **Every other rule in this model constrains a customer. This one constrains the
+> vendor.** **SCOPE SETTLED 2026-08-30 against Iowa Code § 135Q.1:
+> SAIRNsenior as currently built is OUTSIDE it.** The definition requires an
+> internet- or application-based **marketplace** through which an **independent
+> contractor bids on open shifts** posted by a health care entity; SAIRNsenior is
+> an agency-facing roster-and-assignment scheduler with none of the three.
+> **The trigger that would flip it: shipping an open-shift marketplace where
+> non-employee caregivers bid.** And note "nursing services" expressly includes
+> personal care by non-certified staff, so "we are not nursing" would NOT be a
+> defence. See `2026-08-30-sairnsenior-iowa-135Q-scope-determination.md`.
 >
 > ### A sixth category of rule: BEHAVIOUR CONSTRAINTS
 >
