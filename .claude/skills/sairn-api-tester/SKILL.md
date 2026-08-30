@@ -86,9 +86,17 @@ test.** Before trusting a new test, run it against the pre-fix commit.
 
     git stash push api/sd-data.js && node <test> ; git stash pop
 
-**Real result:** the `dnt_cred_rules` role tests went red against `a877978^` —
-provider 200, frontdesk 200, `verified_by: 'license'` — and green after. That is
-what made them a guard rather than decoration.
+**Real result:** the `dnt_cred_rules` role tests went red against the pre-fix
+commit — provider 200, frontdesk 200, `verified_by: 'license'` — and green
+after. That is what made them a guard rather than decoration.
+
+> **Corrected 2026-08-30.** This line cited `a877978^`. **That SHA does not
+> exist in this repository** — not as a commit, not in `git log --all`. The fix
+> is `06ba0b8` *(fix(sairndental): dnt_cred_rules write was owner-only in intent
+> and any-role in fact, 2026-08-29)*, so the pre-fix state is `06ba0b8^`. Every
+> substantive detail above was verified against that commit and is correct;
+> only the identifier was wrong. Recorded rather than silently swapped, because
+> a skill selling checkable incidents cannot carry an uncheckable citation.
 
 ## 6. Unit tests do not exercise the storage layer — Guardian Check 29
 

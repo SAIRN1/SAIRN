@@ -131,9 +131,18 @@ thing being removed and grep each one against the replacement.
 
 ## 10. Line endings are not content
 
-This repo has **mixed line endings, file-by-file** — `api/sd-data.js` is CRLF,
-`sairncare.html` is LF. A diff that touches every line of a 2 MB file is
+This repo stores blobs as **LF** and checks them out as **CRLF**
+(`core.autocrlf=true`, and `.gitattributes` is scoped to `docs/skill-backups/`
+and `scripts/*.sh` only). A diff that touches every line of a 2 MB file is
 unreviewable, and a real change can hide inside 34,000 lines of noise.
+
+> **Corrected 2026-08-30.** This rule previously read *"mixed line endings,
+> file-by-file — `api/sd-data.js` is CRLF, `sairncare.html` is LF."* Measured in
+> this clone, **both files are CRLF in the working tree and LF in the stored
+> blob** — the specific contrast does not hold here. The hazard is real but its
+> mechanism is the autocrlf round trip, not per-file divergence: an editor that
+> rewrites endings produces a whole-file diff that git then normalises away,
+> hiding the real change in the noise until commit.
 
 `sed -i` is unsafe here. Detect the file's existing ending and preserve it
 explicitly. A size difference of exactly one byte per line is CRLF, not drift —
