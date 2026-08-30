@@ -184,3 +184,59 @@ Legislative Legal Services directly.** The public-access page states OLLS "can
 provide electronic copies of specified portions of the Colorado Revised Statutes
 without charge." Whether that extends to the court rules is worth one email, and
 would sidestep the question entirely.
+
+## 6. UPDATE 2026-08-30 -- the terms question is RESOLVED and Colorado is STILL blocked, by something else
+
+**Michael authorised accepting the LexisNexis terms. That is no longer the
+blocker, and it turned out not to be the operative one either.**
+
+Walked the real site in a browser with that authorisation:
+
+```
+lexisnexis.com/hottopics/colorado/  -> advance.lexis.com/container?...  200, renders
+  -> "Colorado - Local, State and Federal Court Rules"                 200, renders
+     -> Colorado Rules of Civil Procedure -> Chapter 1 -> Rule 6. Time.
+        -> advance.lexis.com/RobotValidation?...&flow=PawFirstDocAccess
+```
+
+**TWO FINDINGS, and the second is the one that matters.**
+
+**(1) The terms modal never re-appeared.** The session showed "Sign Out" and
+the statutes TOC rendered without any acceptance dialog, so on this profile the
+"I Agree" click was not the thing standing between the session and the text.
+Sec. 2's analysis of the terms remains correct and is now moot.
+
+**(2) THE FIRST DOCUMENT ACCESS RETURNS A CAPTCHA.** Clicking "Rule 6. Time."
+redirects to `/RobotValidation` with `flow=PawFirstDocAccess` and the text *"We
+use CAPTCHA on this site to prevent automated software from overburdening the
+system and thus degrading or preventing access for the general public."*
+
+**That is bot-detection, and completing it is a hard prohibition -- not a
+judgement call and not something an authorisation can lift.** It is a different
+kind of barrier from a terms acceptance: the terms question was about what we
+agree to, and this one is about the site asking to confirm a human is present.
+The gate declined to click "I Agree" as a matter of policy; this session cannot
+pass the CAPTCHA as a matter of rule.
+
+### What would actually clear it, in descending order of likely cost
+
+1. **A human reads Rule 6 and the other rules directly** on this site and
+   supplies the verbatim text. The CAPTCHA is a one-time first-document gate,
+   so this is minutes of work for a person and is the obvious route.
+2. **A different primary channel for the consolidated C.R.C.P.** Re-probed
+   2026-08-30 and still dead: `courts.state.co.us/.../Updated_Full_set_of_CRCP_
+   and_Water_Rules.pdf` returns **HTML, not a PDF**, exactly as Sec. 2 recorded
+   for the `.doc`. `coloradojudicial.gov/rule-changes` and
+   `/supreme-court/rule-changes` are both **404**; only
+   `courts.state.co.us/Courts/Supreme_Court/Rule_Changes.cfm` answers, and that
+   is the rule-change index, not a consolidated text.
+3. **Reconstruct Rule 6 from the last order that amended it.** Narrower than
+   the Arizona method Sec. 2 rejected -- not a whole rule set, just the
+   operative amendment for each rule seeded, each of which carries its full
+   text as adopted. Still needs proof that no later order touched the rule,
+   which is exactly the completeness problem that sank Arizona, and Rule Change
+   2011(18) is a wholesale TIME CALCULATION overhaul, so a missed later order
+   would be wrong on the most load-bearing property in the rule.
+
+**Colorado stays unseeded. The blocker has moved, and it moved to a place a
+session cannot go.**
