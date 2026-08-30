@@ -28,8 +28,8 @@
       "task": "idaho deadline seed gate",
       "claimed_at": "2026-08-30T22:06:39Z",
       "claimed_at_epoch": 1788127599.8772461,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-08-30T23:01:58Z"
     }
   ]
 }
