@@ -38,8 +38,8 @@
       "task": "species patient panels model",
       "claimed_at": "2026-08-30T23:17:24Z",
       "claimed_at_epoch": 1788131844.648375,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-08-30T23:45:35Z"
     }
   ]
 }
