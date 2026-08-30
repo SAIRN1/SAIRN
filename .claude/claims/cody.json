@@ -1,0 +1,15 @@
+{
+  "session": "cody",
+  "claims": [
+    {
+      "id": "cody-1788122897",
+      "session": "cody",
+      "subject": "stonedesk",
+      "task": "hidden chatArea render audit",
+      "claimed_at": "2026-08-30T20:48:17Z",
+      "claimed_at_epoch": 1788122897.874829,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}
