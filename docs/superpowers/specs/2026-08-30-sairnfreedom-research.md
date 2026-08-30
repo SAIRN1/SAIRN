@@ -2,6 +2,12 @@
 
 **Status:** research only. Nothing built. No spec, no schema, no app file.
 
+**BUILD SPEC:** `docs/superpowers/specs/2026-08-30-sairnfreedom-phased-build-spec.md`
+turns everything below into a phased, dependency-ordered plan with the officer
+model as the permissions basis. This file stays canonical for the **research and
+the binding decisions**; that file is canonical for **what gets built in what
+order**. When they disagree about a fact, this one wins.
+
 **THIS IS THE CANONICAL SAIRNfreedom RESEARCH DOCUMENT.** Merged 2026-08-30
 (CC) from two independent parallel research passes that ran the same three
 pre-build gates without knowing about each other. Where they disagreed on a
