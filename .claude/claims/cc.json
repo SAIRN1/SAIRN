@@ -1,0 +1,15 @@
+{
+  "session": "cc",
+  "claims": [
+    {
+      "id": "cc-1788083715",
+      "session": "cc",
+      "subject": "sairnfreedom",
+      "task": "phase 1 build",
+      "claimed_at": "2026-08-30T09:55:15Z",
+      "claimed_at_epoch": 1788083715.7756658,
+      "status": "active",
+      "released_at": null
+    }
+  ]
+}
