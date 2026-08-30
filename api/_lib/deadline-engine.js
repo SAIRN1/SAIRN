@@ -1654,7 +1654,49 @@ var COMPUTATION_STANDARDS = {
   // closer to the trigger, i.e. later than the rule allows.
   id_ircp_2_2: { label: 'I.R.C.P. 2.2', impl: 'frcp_6a',
     base_period_suffix: '(a)', months_years_suffix: '(a)',
-    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '(a)(1)(C)', rollover_suffix_backward: '' },
+  // NEBRASKA. THE COMPUTATION RULE IS A STATUTE AND THE COURT RULE SAYS SO.
+  // Neb. Ct. R. Pldg. § 6-1106(a): "Neb. Rev. Stat. § 25-2221 governs the
+  // computation of time periods." So unlike Idaho, where the referent had to be
+  // traced, Nebraska's rule names its own statute in its first line.
+  //
+  // Neb. Rev. Stat. § 25-2221, first paragraph, verbatim:
+  //
+  //   "Except as may be otherwise more specifically provided, the period of
+  //    time within which an act is to be done in any action or proceeding shall
+  //    be computed by excluding the day of the act, event, or default after
+  //    which the designated period of time begins to run. The last day of the
+  //    period so computed shall be included unless it is a Saturday, a Sunday,
+  //    or a day during which the offices of courts of record may be legally
+  //    closed as provided in this section, in which event the period shall run
+  //    until the end of the next day on which the office will be open."
+  //
+  // NO SHORT-PERIOD EXCLUSION. There is no intermediate-day rule at all -- the
+  // statute excludes the trigger day, counts to the last day, and rolls. Sixth
+  // seeded jurisdiction with none, after Minnesota, Utah, Nevada, Kansas and
+  // Idaho.
+  //
+  // THE ROLLOVER TEST IS "A DAY DURING WHICH THE OFFICES OF COURTS OF RECORD
+  // MAY BE LEGALLY CLOSED AS PROVIDED IN THIS SECTION" -- and the same section
+  // then enumerates those days. The list IS the test, which is the Kansas and
+  // New Mexico shape rather than the Wisconsin one, and it is stronger here
+  // than in either: the statute does not point outward at another list, it
+  // carries its own.
+  //
+  // NO SUFFIXES. § 25-2221 is a single unsubdivided section; there is no
+  // paragraph to cite past the number, so every suffix is empty rather than
+  // guessed.
+  //
+  // NOTE FOR ANYONE ADDING A BACKWARD ROW: the statute says the period "shall
+  // run until the end of the NEXT day on which the office will be open" and
+  // says nothing about a period measured before an event -- the Mississippi and
+  // Idaho shape, not New Mexico's. No backward row is seeded. The calendar here
+  // is materially more complete than Idaho's, so the case is weaker, but the
+  // question has not been read out of any Nebraska text and is not being
+  // guessed.
+  ne_25_2221: { label: 'Neb. Rev. Stat. § 25-2221', impl: 'frcp_6a',
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1760,6 +1802,12 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'Idaho publishes THREE different holiday lists that do not agree, and this calendar is the one the rule points at — Idaho Code Sec. 73-108. It omits JUNETEENTH, which the Secretary of State publishes as a state holiday and some Idaho courts close for, because Sec. 73-108 does not enumerate it. It also omits any day appointed ad hoc by the President or the Governor. Every omission can only make this date EARLIER than the true deadline, never later. No backward row is seeded, for the same reason. Check any Idaho date falling on or just after 19 June by hand.',
     detail: 'THREE LISTS, AND THEY DISAGREE IN BOTH DIRECTIONS. (1) IDAHO CODE Sec. 73-108, "Holidays enumerated", is what I.R.C.P. 2.2\'s undefined term "legal holiday" refers to — nothing in the Idaho Rules of Civil Procedure or the Idaho Appellate Rules defines it, and Idaho Code Sec. 67-5302(15)(a) confirms the chain by saying so in terms: "Holidays are enumerated in section 73-108, Idaho Code." That list has ELEVEN entries and NO JUNETEENTH, and it carries BOTH observance shifts as mandatory statute: "Any legal holiday that falls on Saturday, the preceding Friday shall be a holiday and any legal holiday enumerated herein other than Sunday that falls on Sunday, the following Monday shall be a holiday." (2) THE SECRETARY OF STATE\'S published State Holidays list DOES carry Juneteenth on Friday 19 June 2026, and does NOT apply the Saturday shift — it prints Independence Day as Saturday 4 July. So it disagrees with the statute in both directions at once. (3) ACTUAL COURT CLOSURES are a third set again: the Idaho Supreme Court published a release headed "Idaho Courts to be Open July 2 & 6" for 2026, keeping courts open as essential services on days other parts of state government close, while at least one county trial court publishes a 2026 schedule that DOES close for Juneteenth. THIS CALENDAR IS SET (1), THE STATUTE, AND IS DELIBERATELY UNDER-INCLUSIVE. Juneteenth is the contested date: it is not enumerated in Sec. 73-108, so it could only be a legal holiday through that section\'s open limb — "every day appointed by the President of the United States, or by the governor of this state, for a public fast, thanksgiving, or holiday" — which is a proclamation this engine cannot read. Omitting it means a forward deadline landing on 19 June is reported as due that day when the true deadline may roll to the 22nd: EARLIER, which is safe. Adding it would roll a deadline off a day that may be fully countable: LATER, which is not. The same reasoning omits every other ad-hoc presidential or gubernatorial day. WHAT IS IN AND WHY IT COULD NOT BE COPIED: FRIDAY 3 JULY 2026 IS A LEGAL HOLIDAY BY STATUTE, because 4 July 2026 is a Saturday and the shift is mandatory — the Secretary of State\'s own list does not show it. COLUMBUS DAY, the second Monday in October, IS enumerated and IS carried, unlike Oregon, which omits it. The Sunday-to-Monday limb is mandatory and simply dormant in 2026: no Sec. 73-108 holiday falls on a Sunday this year. NO BACKWARD ROW IS SEEDED, AND IDAHO HAS GOOD ONES. Rule 55(a)(1) requires three days\' written notice before entry of DEFAULT — unusual, most states require notice only before default JUDGMENT — Rule 55(b)(2) requires three days before the default-judgment hearing, and Rule 56(b)(2) runs 28, 14 and 7 days before a summary-judgment hearing, with the motion itself due 90 days before trial. None is seeded. Under-inclusion is EARLY only while the count runs forward; counting backward, a holiday that should have rolled the date further from the trigger and does not leaves it CLOSER, which is later than the rule allows. With Juneteenth genuinely contested and recurring every year, that is not a risk worth taking for a three-day notice period. Seeding Idaho backward rows needs the Juneteenth question answered, not a longer period. ONE MORE GAP, ALSO EARLY: Rule 2.2(a)(2) extends the time for FILING whenever "the clerk\'s office is inaccessible", which is per-court and unknowable in advance, and is a separate limb from the holiday list rather than part of it. 2027 IS REFUSED rather than derived — the Sec. 73-108 rules would generate it, but the ad-hoc limb and the Juneteenth question would still be open, and a generated year hides that behind a confident answer.'
+  },
+  ne: {
+    complete: false,
+    direction: 'early',
+    summary: 'The Nebraska calendar is the list Neb. Rev. Stat. Sec. 25-2221 carries in its own text, and it is one of the fullest on the platform \u2014 Arbor Day, Juneteenth, Columbus/Indigenous Peoples\' Day and the day after Thanksgiving are all in it. What it cannot express is the statute\'s two open limbs: a specific court closed by order of the Chief Justice, and days declared by proclamation of the Governor. Both are unknowable in advance, and omitting them can only make this date EARLIER, never later. 2027 is REFUSED rather than derived.',
+    detail: 'THE STATUTE CARRIES ITS OWN LIST, WHICH IS UNUSUAL AND IS WHAT MAKES THIS CALENDAR STRONG. Neb. Ct. R. Pldg. Sec. 6-1106(a) says \"Neb. Rev. Stat. Sec. 25-2221 governs the computation of time periods\", and Sec. 25-2221 then rolls the last day off \"a day during which the offices of courts of record may be legally closed AS PROVIDED IN THIS SECTION\" \u2014 and enumerates those days in the next sentence. The rollover test and the holiday list are the same text, so there is no chain to trace and no second publisher to disagree with. Contrast Idaho, seeded the same day, where the rule left \"legal holiday\" undefined and three different lists competed. IT IS ONE OF THE FULLEST LISTS SEEDED: New Year\'s Day; MLK; President\'s Day; ARBOR DAY, the last Friday in April, which appears on no other calendar in this platform and which Nebraska invented; Memorial Day; JUNETEENTH; Independence Day; Labor Day; \"Indigenous Peoples\' Day and Columbus Day\" as one day under two names; Veterans Day; Thanksgiving; THE DAY AFTER THANKSGIVING, enumerated in the statute itself; and Christmas. Both observance shifts are mandatory statute in both directions \u2014 Sunday to the following Monday, Saturday to the preceding Friday \u2014 so Friday 3 July 2026 is DERIVED rather than transcribed. THE CONTRAST WITH IDAHO IS EXACT, AND THEY ARE NEIGHBOURS: Idaho Code Sec. 73-108 has NO Juneteenth and NO day after Thanksgiving; Nebraska has both, plus Arbor Day. Three days of difference between two adjacent statutory lists, which is why neither may be read across. THE FEDERAL-OVERRIDE CLAUSE IS REAL, UNIQUE, AND DORMANT IN 2026. Sec. 25-2221 ends: \"If the date designated by the state for observance of any legal holiday pursuant to this section, EXCEPT VETERANS DAY, is different from the date of observance of such holiday pursuant to a FEDERAL holiday schedule, the FEDERAL holiday schedule shall be observed.\" No other seeded jurisdiction subordinates its own dates to the federal calendar. Every 2026 date was checked against the federal schedule and none diverges, so the clause changes nothing this year \u2014 but it is live law, it is not modelled, and a year in which the two schedules split would need it applied by hand. Veterans Day is expressly carved out of it and therefore always takes the state date. TWO OPEN LIMBS, BOTH EARLY, NEITHER MODELLABLE: \"days on which a specifically designated court is closed BY ORDER OF THE CHIEF JUSTICE of the Supreme Court\", which is per-court rather than statewide and is the only place Nebraska resembles Wisconsin; and \"all days declared by law or PROCLAMATION OF THE GOVERNOR to be holidays\". Omitting either means a deadline landing on such a day is reported as due that day when the true one rolls: earlier, and safe. NOTE THE STATUTE SAYS COURTS \"MAY BE CLOSED\" ON THESE DAYS, NOT MUST, and then designates them \"nonjudicial days\". The rollover test keys on that legal designation rather than on whether a particular courthouse opened, so a court sitting on a nonjudicial day does not unmake the roll \u2014 the same reasoning that let Kansas use its published list and stopped Wisconsin using its. NO BACKWARD ROW IS SEEDED. The statute says the period \"shall run until the end of the NEXT day on which the office will be open\" and says nothing about a period measured before an event \u2014 the Mississippi and Idaho shape, not New Mexico\'s. This calendar is materially more complete than Idaho\'s so the case is weaker here, but the direction question has not been read out of any Nebraska text and is not being guessed. 2027 IS REFUSED rather than derived, even though the statutory rules would generate it mechanically, because the two open limbs and the federal-override clause would still be unresolved and a generated year hides that behind a confident answer. A CURRENCY WARNING THAT IS NOT ABOUT HOLIDAYS: the Nebraska Judicial Branch publishes the PRIOR versions of both Article 11 and Article 3 alongside the current ones \u2014 correctly labelled, fully intact, and one click away. The 1 January 2025 amendments changed real numbers: the post-motion responsive pleading went from 20 days to 21, and the court-ordered reply from 15 days to 21. Every seeded row carries the current number with an effective_from of 2025-01-01, so a pre-2025 trigger REFUSES rather than answering with a number that was not yet law.'
   }
 };
 
@@ -3068,6 +3116,50 @@ var SERVICE_EXTENSION_STANDARDS = {
   id_ircp_2_2_c: {
     label: 'I.R.C.P. 2.2(c)',
     sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail';
+    }
+  },
+  // NEBRASKA. Neb. Ct. R. Pldg. § 6-1106(c), verbatim:
+  //
+  //   "Additional Time After Service by Mail. When a party may or must act
+  //    within a specified time after being served and service is made under
+  //    § 6-1105(b)(3)(C), 3 days are ADDED AFTER THE PERIOD WOULD OTHERWISE
+  //    EXPIRE."
+  //
+  // ★ THE COURT SETTLED THIS ENGINE'S EXACT AMBIGUITY IN 2024, IN WRITING.
+  // Comment [2] to § 6-1106: "The original version of the rule provided that 3
+  // days were added to the applicable time period when a document was served by
+  // mail. IT WAS UNCLEAR WHETHER THE 3 DAYS WERE ADDED TO THE TIME PERIOD ITSELF
+  // OR AT THE END OF THE TIME PERIOD as computed by § 25-2221. In 2024, the
+  // provision ... was reworded to clarify that the 3 days are added after the
+  // period would otherwise expire."
+  //
+  // That is the add_to_period_then_roll / roll_then_add_then_roll distinction,
+  // named by a court, identified as genuinely ambiguous, and resolved by
+  // amendment. Every other jurisdiction here had to be read for it. Nebraska
+  // says which one it is and why the words changed -- and it means every
+  // Nebraska mailed deadline computed against the PRE-2025 rule text may be a
+  // day out.
+  //
+  // Comment [3] then works an example, which the test asserts verbatim: "answers
+  // to interrogatories are normally due 30 days after service ... If the 30th
+  // day is a Saturday, the period would expire on Monday ... Adding 3 days after
+  // the period would otherwise expire (Monday) extends the period to Thursday."
+  //
+  // MAIL ONLY, AND THE DRAFTING IS THE SHARPEST ON THE PLATFORM. It does not say
+  // "by mail" -- it cross-references ONE lettered subparagraph, § 6-1105(b)(3)(C),
+  // out of six sibling methods sitting beside it: (A) handing it to the person,
+  // (B) leaving it at an office or residence, (C) MAILING, (D) email, (E) a
+  // designated delivery service under Neb. Rev. Stat. § 25-505.01(1)(d), and
+  // (F) any other consented or court-authorised means. Electronic service
+  // through the court-authorized service provider is a separate limb again,
+  // § 6-1105(b)(2). Five named alternatives get nothing, and the rule picked one
+  // by letter.
+  ne_6_1106_c: {
+    label: 'Neb. Ct. R. Pldg. § 6-1106(c)',
+    sequence: 'roll_then_add_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) {
       return method === 'mail';
