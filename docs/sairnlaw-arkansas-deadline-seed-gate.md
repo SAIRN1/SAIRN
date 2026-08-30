@@ -1,5 +1,11 @@
 # Arkansas — deadline-seed source-availability gate
 
+**AMENDED 2026-08-29: SEEDED -- 13 rules, calendar 2026 ONLY. Read Sec. 1c,
+which is the section that matters now. The original verdict below is kept
+unedited, because the reasoning that produced the block is what made the
+eventual route findable -- Sec. 1b named this channel as the third of three
+things that would clear it.**
+
 **Run 2026-08-27. Verdict: RULES PASS with a real currency date and no
 structural blocker — but the HOLIDAY STATUTE could not be reached on any
 primary source, so the calendar is blocked and the state is not seedable today.
@@ -222,6 +228,96 @@ In descending order of likely cost:
 
 **Until one of those lands, Arkansas stays gated.** Everything else about the
 state is ready: §§ 2–6 are unchanged and the seeding plan in §8 stands.
+
+
+## 1c. UPDATE 2026-08-29 — THE BLOCK IS CLEARED, BY A CHANNEL THIS GATE NAMED AND HAD NOT TRIED
+
+**Verdict amended: SEEDED, 13 rules, calendar 2026 ONLY.**
+
+§1b listed three things that would clear this, in descending cost. The third was:
+
+> **A court or agency document that QUOTES (b) rather than citing § 1-5-101.**
+> The Treasurer's sheet was the near miss — it applies the rule without stating
+> it, and 2025 happens to be a year where it never had to.
+
+That is exactly what landed, on a host this gate never tried. Every earlier
+attempt went to `media.ark.org/artreasury/`, where 2026 and 2027 both **403**.
+The **SECRETARY OF STATE** publishes the same sheet:
+
+```
+https://www.sos.arkansas.gov/uploads/holidays_2026.pdf   200, 204,182 B, 1 page
+https://www.sos.arkansas.gov/uploads/holidays_2027.pdf   404
+https://www.sos.arkansas.gov/uploads/holidays_2028.pdf   404
+```
+
+Real text via pypdf, headed verbatim:
+
+> **2026 State Holidays. Legal holidays by authority of Act 304 of 2001 and
+> Amended by Act 561 of 2017.**
+
+### It confirms §4, including both traps
+
+The list is exactly what §4 had only from Justia — and the two things that make
+Arkansas dangerous to guess at are both present and both correct:
+
+- **CHRISTMAS EVE IS THERE**, `December 24 . . . Christmas Eve`. A calendar built
+  from the federal list alone omits it.
+- **JUNETEENTH AND COLUMBUS DAY ARE NOT.** Neither appears on the state sheet, so
+  a calendar built from the state statute alone omits two days and computes
+  **EARLY**. The union ARCP 6(a) requires is confirmed as mandatory rather than
+  assumed.
+- **"an employee's birthday" does not appear as a date**, as §4 predicted it
+  could not.
+
+### And it SHOWS subsection (b) operating, in the one 2026 instance where it fires
+
+> `July 4 . . . Independence Day` **`(Observed on Friday, July 3, 2026)`**
+
+4 July 2026 is a Saturday. That is the Saturday-to-preceding-Friday limb, applied
+by the State's own publisher, for the exact year being encoded.
+
+### WHAT IS STILL TRUE, and why the seed is capped at 2026
+
+**§ 1-5-101(b) has still never been read on a primary source.** Nothing here
+changes that, and the honest reason the seed can exist anyway is narrower than
+"the block cleared":
+
+> **The calendar is TRANSCRIBED, not DERIVED.** A holiday calendar in this engine
+> is an enumerated list of dates, not a shift rule. Every 2026 date now comes off
+> a primary state publication, so no unread statute is relied on. The gate blocked
+> a *generated* calendar spanning years; it does not block a *transcribed* one for
+> a year the State itself has published.
+
+Two consequences, both recorded in the seed files:
+
+1. **2027+ REFUSES `NOT_PROVISIONED`** rather than being derived. Adding a year
+   means fetching that year's SoS sheet, not extending a rule. Same shape as
+   Utah's 2026 cap, and the safe direction. Verified live.
+2. **The Sunday limb is untested and unused.** No 2026 Arkansas holiday falls on
+   a Sunday, so the half of (b) that four secondary publishers agree on and no
+   primary source states never fires in what was seeded.
+
+**If the ACA text of (b) is ever read from primary, that does not merely confirm
+this — it is what would allow a GENERATED calendar and lift the 2026 cap.** The
+three routes in §1b stand unchanged for that purpose.
+
+### What was seeded
+
+13 rules, all read verbatim from the court's own PDF (`opinions.arcourts.gov`,
+1,311,020 B, 195pp, *"current through June 4, 2026"*), all live-verified on
+`LAW-PINNACLE-2026`: **20/20 live assertions passed.**
+
+**PER-RULE EFFECTIVE DATES, and this was nearly got wrong.** The first draft used
+the collection's currency date, 2026-06-04, for every row — and every Rule 12 row
+then refused `NO_RULE_IN_FORCE` for any trigger before June 2026, against rules
+that were in fact in force. Each rule's own HISTORY line gives the real answer:
+Rules 6, 33, 34 and 36 were *"amended and effective June 4, 2026"*; **Rule 12's
+current text has been in force since *"amended June 21, 2018, effective January 1,
+2019"***. A currency date and an effective date are different things, and the
+engine — which computes against the law as it stood at the TRIGGER date — makes
+the difference visible immediately.
+
+§§ 2–7 are unchanged and still describe what was built.
 
 ## 2. THE WEEKEND-COVERAGE STANDING CHECK — step one
 

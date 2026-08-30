@@ -1,0 +1,98 @@
+{
+  "_readme": [
+    "ARKANSAS HOLIDAY CALENDAR -- 2026 ONLY, transcribed from a primary state publication.",
+    "Every date below appears either on the Arkansas Secretary of State's 2026 State Holidays",
+    "sheet or in 5 U.S.C. 6103(a). Nothing here is generated from Ark. Code Ann. 1-5-101(b),",
+    "which has still never been read on a primary source -- see the note on the calendar entry.",
+    "Adding 2027 means fetching that year's SoS sheet. It 404s today, and until it exists the",
+    "engine must keep refusing NOT_PROVISIONED for 2027 rather than deriving the dates."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ar",
+      "year": 2026,
+      "authority": {
+        "citation": "Ark. Code Ann. Sec. 1-5-101 (official state holidays) UNION 5 U.S.C. Sec. 6103 (federal holidays), as required by Ark. R. Civ. P. 6(a)'s \"designated as a holiday by the President or Congress of the United States or designated by the laws of this State\"",
+        "url": "https://www.sos.arkansas.gov/uploads/holidays_2026.pdf",
+        "computation_url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "2026 State Holidays. Legal holidays by authority of Act 304 of 2001 and Amended by Act 561 of 2017.",
+        "note": "ARKANSAS IS 2026 ONLY, AND THAT CAP IS THE WHOLE REASON THIS FILE CAN EXIST. The seed gate blocked Arkansas because Ark. Code Ann. Sec. 1-5-101 could not be read on any primary source -- in particular subsection (b), the Saturday-to-preceding-Friday and Sunday-to-succeeding-Monday observance shift. Four secondary publishers agree on that sentence and the gate declined to seed on agreement. THAT IS STILL TRUE: (b) has not been read from primary. What changed on 2026-08-29 is that the dates no longer have to be DERIVED from it. PRIMARY SOURCE FOUND: the Arkansas SECRETARY OF STATE publishes the 2026 sheet at https://www.sos.arkansas.gov/uploads/holidays_2026.pdf (HTTP 200, 204,182 B, 1 page, real text via pypdf), headed verbatim '2026 State Holidays / Legal holidays by authority of Act 304 of 2001 and Amended by Act 561 of 2017.' It CONFIRMS the state list the gate had only from Justia -- including both traps: CHRISTMAS EVE IS PRESENT, and JUNETEENTH AND COLUMBUS DAY ARE ABSENT, which is why the union with the federal list is mandatory and why a state-only calendar would compute EARLY by two days a year. It also SHOWS the Saturday shift operating in the one 2026 instance where it fires: 'July 4 . . . Independence Day (Observed on Friday, July 3, 2026)' -- 4 July 2026 is a Saturday. SO EVERY DATE BELOW IS TRANSCRIBED FROM A PRIMARY STATE PUBLICATION RATHER THAN GENERATED FROM A SHIFT RULE, which is why no unread statute is relied on. NO SUNDAY-LIMB DATE OCCURS IN 2026 -- none of the listed holidays falls on a Sunday -- so the unproven half of (b) never fires here. 2027 AND 2028 ARE DELIBERATELY ABSENT: sos.arkansas.gov/uploads/holidays_2027.pdf and _2028.pdf both return 404, so those years would have to be derived from the unread subsection and the engine refuses NOT_PROVISIONED on them instead. Same shape as Utah's 2026 cap, and the safe direction. Adding a year means fetching that year's SoS sheet, not extending a rule. THE UNION IS REQUIRED BY THE RULE'S OWN WORDS: ARCP 6(a) defines 'legal holiday' as 'those days designated as a holiday by the President or Congress of the United States OR designated by the laws of this State', so the federal list is co-equal, not a fallback -- the same structure as South Carolina, the platform's first such union. NOT ENCODED, AND BOTH OMISSIONS RUN EARLY: (1) Sec. 1-5-101(a)'s 'an employee's birthday' limb, which is a floating personal-leave day and not a calendar date at all; (2) ARCP 6(a)'s 'other day when the clerk's office is closed', which is per-court and unknowable in advance. See the jurisdiction coverage disclosure for ar in api/_lib/deadline-engine.js.",
+        "retrieved_at": "2026-08-29"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- January 1. Also federal."
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Dr. Martin Luther King, Jr.'s Birthday",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- third Monday in January. Also federal."
+        },
+        {
+          "date": "2026-02-16",
+          "name": "George Washington's Birthday and Daisy Gatson Bates Day",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- third Monday in February; the combined Arkansas name, printed that way on the SoS sheet. Federally Washington's Birthday."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- last Monday in May. Also federal."
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "declared",
+          "derivation": "5 U.S.C. Sec. 6103(a) -- June 19. FEDERAL ONLY: absent from the Arkansas list on the SoS sheet, and reached only through ARCP 6(a)'s union. Omitting it computes EARLY."
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day (observed)",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- printed verbatim as 'July 4 . . . Independence Day (Observed on Friday, July 3, 2026)'. 4 July 2026 is a Saturday. This is the ONLY 2026 date where the Sec. 1-5-101(b) shift fires, and it is transcribed from the State's own sheet rather than derived. Federally also observed 2026-07-03 under 5 U.S.C. 6103(b)(1)."
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- first Monday in September. Also federal."
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "5 U.S.C. Sec. 6103(a) -- second Monday in October. FEDERAL ONLY: absent from the Arkansas list, reached only through the union. Omitting it computes EARLY."
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- November 11. Also federal."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- fourth Thursday in November. Also federal."
+        },
+        {
+          "date": "2026-12-24",
+          "name": "Christmas Eve",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- December 24. STATE ONLY: not a federal holiday, and no other jurisdiction in this platform except South Carolina carries 24 December. Omitting it computes EARLY."
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "Ark. Code Ann. Sec. 1-5-101(a), as published for 2026 by the Arkansas Secretary of State -- December 25. Also federal."
+        }
+      ]
+    }
+  ]
+}

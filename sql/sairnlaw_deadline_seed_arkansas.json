@@ -1,0 +1,461 @@
+{
+  "_readme": [
+    "ARKANSAS CIVIL DEADLINE RULES -- 13 rows, Arkansas Rules of Civil Procedure.",
+    "Rule text read verbatim from the Supreme Court of Arkansas's own PDF:",
+    "  https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+    "  HTTP 200, 1,311,020 bytes, 195 pages, text-extractable via pypdf.",
+    "  First line states its own currency: 'Rules of Civil Procedure (current through June 4, 2026)'.",
+    "",
+    "== THE THREE THINGS THAT MAKE ARKANSAS DIFFERENT ====================",
+    "1. THE SHORT-PERIOD EXCLUSION IS FOURTEEN DAYS -- the longest on this platform.",
+    "   Six seeded states use 7, three use 11, three have none. Copying any of them",
+    "   computes EARLY on the 10-day and 5-day rows below. Hence its own standard,",
+    "   ar_rcp_6, rather than reuse. Do NOT reason from FRCP 6(a): the federal rule",
+    "   abolished the exclusion in 2009 and Arkansas went the other way.",
+    "2. THE EXTENSION IS THREE BUSINESS DAYS AND INCLUDES E-SERVICE EXPRESSLY --",
+    "   the opposite of the federal rule, Nevada, West Virginia and New York. An",
+    "   allowlist copied from any of them under-counts and computes EARLY.",
+    "3. THE ANSWER CARVE-OUT IS EXPRESS. ARCP 6(d) names Rule 4 in a proviso. The",
+    "   same question had to be INFERRED federally and had been got wrong until",
+    "   2026-08-27. Arkansas is direct textual confirmation of that reading.",
+    "",
+    "== THE CALENDAR IS 2026 ONLY, ON PURPOSE ============================",
+    "sql/sairnlaw_deadline_calendars_arkansas.json is transcribed from the Arkansas",
+    "Secretary of State's 2026 sheet. Ark. Code Ann. 1-5-101(b) has still never been",
+    "read on a primary source, so 2027+ is REFUSED rather than derived. Any period",
+    "here that runs into 2027 returns NOT_PROVISIONED, which is the safe direction.",
+    "",
+    "== NOT ENCODED, AND WHY =============================================",
+    "Rule 4 itself (so warning-order and service dates are caller-supplied and",
+    "unverified), Rule 5(b)(2), Rule 77(c), the appellate rules (a separate",
+    "collection with its own currency date), and Rule 6(b) enlargements, which are",
+    "discretionary and cannot be computed."
+  ],
+  "rules": [
+    {
+      "rule_id": "ar-rcp-12a1-answer-after-service",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Answer after service of summons and complaint (Arkansas)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 12(a)(1)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "A defendant shall file his or her answer within 30 days after the service of summons and complaint upon him or her.",
+        "note": "THIRTY days, not the federal 21 and not Florida's 20. NO SERVICE EXTENSION, AND THE RULE SAYS SO ITSELF. ARCP 6(d) ends with a proviso: \"Provided, however, that this subdivision shall not extend the time in which the defendant must file an answer or pre-answer motion when service of the summons and complaint is by mail or commercial delivery company in accordance with Rule 4.\" This is the finding worth carrying beyond Arkansas: two FEDERAL rows were corrected on 2026-08-27 because FRCP 6(d) reaches only service \"under Rule 5(b)(2)\" while a summons goes out under Rule 4 -- a reading that had to be INFERRED from a cross-reference and had been got wrong. Arkansas states it outright and names Rule 4. THE CARVE-OUT IS NARROWER THAN THE FEDERAL POSITION and this row is deliberately narrower still: the proviso withholds the three days only where the summons was served BY MAIL OR COMMERCIAL DELIVERY, and whether an answer following some other Rule 4 method takes them is not settled by the text. This row therefore carries no extension at all rather than guessing at the unsettled case -- omitting it computes EARLY, which is the safe direction, where guessing wrong computes LATE.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2019-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-12a1-answer-after-warning-order",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Answer after first publication or posting of a warning order (Arkansas)",
+      "trigger_event": "first_publication_or_posting_of_warning_order",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 12(a)(1)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "A defendant served by warning order under Rule 4(g)(3) or (4) shall file an answer within 30 days from the date of first publication or posting of the warning order.",
+        "note": "A CONSTRUCTIVE-SERVICE TRIGGER: the period runs from FIRST PUBLICATION OR POSTING, not from any act on the defendant. Rule 4 itself was not read for this seed, so what date a caller supplies for 'first publication or posting' is not sourced here -- the engine takes the date given and does not verify it was a valid warning order. NO SERVICE EXTENSION, AND THE RULE SAYS SO ITSELF. ARCP 6(d) ends with a proviso: \"Provided, however, that this subdivision shall not extend the time in which the defendant must file an answer or pre-answer motion when service of the summons and complaint is by mail or commercial delivery company in accordance with Rule 4.\" This is the finding worth carrying beyond Arkansas: two FEDERAL rows were corrected on 2026-08-27 because FRCP 6(d) reaches only service \"under Rule 5(b)(2)\" while a summons goes out under Rule 4 -- a reading that had to be INFERRED from a cross-reference and had been got wrong. Arkansas states it outright and names Rule 4. THE CARVE-OUT IS NARROWER THAN THE FEDERAL POSITION and this row is deliberately narrower still: the proviso withholds the three days only where the summons was served BY MAIL OR COMMERCIAL DELIVERY, and whether an answer following some other Rule 4 method takes them is not settled by the text. This row therefore carries no extension at all rather than guessing at the unsettled case -- omitting it computes EARLY, which is the safe direction, where guessing wrong computes LATE.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2019-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-12a1-answer-incarcerated-defendant",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Answer by a defendant incarcerated in this state -- 60 days (Arkansas)",
+      "trigger_event": "service_on_incarcerated_defendant_in_state",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 12(a)(1)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "A defendant incarcerated in any jail, penitentiary, or other correctional facility in this state shall file an answer within 60 days after service.",
+        "note": "A PARTY-STATUS PERIOD NO OTHER SEEDED JURISDICTION HAS, and the engine has no field for party status, so it is expressed as its own TRIGGER rather than as a variant of the ordinary answer row. The caller chooses it by naming the trigger, which is the honest shape: the engine cannot know whether a defendant is incarcerated and must not guess. SCOPE IS ON THE FACE OF THE RULE -- 'in this state'. A defendant held out of state is not covered by this row and takes the ordinary 30 days; that is the rule's own limit, not an engine limitation. NO SERVICE EXTENSION, AND THE RULE SAYS SO ITSELF. ARCP 6(d) ends with a proviso: \"Provided, however, that this subdivision shall not extend the time in which the defendant must file an answer or pre-answer motion when service of the summons and complaint is by mail or commercial delivery company in accordance with Rule 4.\" This is the finding worth carrying beyond Arkansas: two FEDERAL rows were corrected on 2026-08-27 because FRCP 6(d) reaches only service \"under Rule 5(b)(2)\" while a summons goes out under Rule 4 -- a reading that had to be INFERRED from a cross-reference and had been got wrong. Arkansas states it outright and names Rule 4. THE CARVE-OUT IS NARROWER THAN THE FEDERAL POSITION and this row is deliberately narrower still: the proviso withholds the three days only where the summons was served BY MAIL OR COMMERCIAL DELIVERY, and whether an answer following some other Rule 4 method takes them is not settled by the text. This row therefore carries no extension at all rather than guessing at the unsettled case -- omitting it computes EARLY, which is the safe direction, where guessing wrong computes LATE.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2019-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-12a1-answer-to-crossclaim-or-counterclaim",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Answer or reply to a cross-claim or counterclaim (Arkansas)",
+      "trigger_event": "service_of_pleading_stating_crossclaim_or_counterclaim",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ar_rcp_6_d",
+        "add": 3,
+        "unit": "business_days",
+        "applies_when": [
+          "mail",
+          "commercial_delivery",
+          "electronic",
+          "email",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 12(a)(1)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "A party served with a pleading stating a cross-claim or counterclaim against him or her shall file an answer or reply thereto within 30 days after service upon the party.",
+        "note": "THIS ROW KEEPS THE THREE DAYS, and the contrast with the three rows above is the point. ARCP 6(d)'s proviso withholds the extension only from an answer to a SUMMONS AND COMPLAINT served under Rule 4. A pleading stating a cross-claim or counterclaim is served under Rule 5, so 6(d) reaches it normally. An unexplained difference between adjacent rows invites a future session to 'fix' the wrong one, so the positive case is stated as explicitly as the negative -- exactly the reasoning applied to the federal frcp-12a1B row on 2026-08-27.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2019-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-12a2A-responsive-pleading-after-motion-denied",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 12 motion is denied or deferred -- 10 days (Arkansas)",
+      "trigger_event": "notice_of_court_action_on_rule_12_motion",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 12(a)(2)(A)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be filed within 10 days after notice of the court's action;",
+        "note": "TEN DAYS, WHICH IS INSIDE THE FOURTEEN-DAY SHORT-PERIOD EXCLUSION -- intermediate Saturdays, Sundays and legal holidays are dropped from the count. That is the single most consequential number in this seed and it is why Arkansas has its own computation standard rather than reusing a neighbour's; see ar_rcp_6 in api/_lib/deadline-engine.js. NO SERVICE EXTENSION, DELIBERATELY. The period runs from 'notice of the court's action', which is not the service of a notice or paper BY A PARTY -- the thing ARCP 6(d) is about. Whether a clerk's notice is 'a notice or other paper ... served upon him' for 6(d) purposes was not read, and omitting the three days computes EARLY, which is the safe direction.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2019-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-12a2B-responsive-pleading-after-more-definite-statement",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a more definite statement -- 10 days (Arkansas)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ar_rcp_6_d",
+        "add": 3,
+        "unit": "business_days",
+        "applies_when": [
+          "mail",
+          "commercial_delivery",
+          "electronic",
+          "email",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 12(a)(2)(B)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "if the court grants a motion for a more definite statement, the responsive pleading shall be filed within 10 days after service of the more definite statement.",
+        "note": "TEN DAYS, inside the fourteen-day short-period exclusion. THIS ROW TAKES THE EXTENSION where its sibling (A) does not, and the difference is textual rather than stylistic: (B) runs from 'SERVICE OF the more definite statement' -- a paper served by a party, squarely within ARCP 6(d) -- while (A) runs from notice of the court's own action.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2019-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-12a3-answer-after-remand-from-federal-court",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Answer or Rule 12 motion after remand from federal court -- 30 days (Arkansas)",
+      "trigger_event": "receipt_of_notice_of_remand",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 12(a)(3)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "Any adverse party shall have 30 days from the receipt of such notice within which to file an answer or a motion permitted under this rule.",
+        "note": "RUNS FROM RECEIPT, NOT SERVICE, which is why this row carries no service extension: ARCP 6(d) adds time 'after the service of a notice or other paper', and a period already measured from RECEIPT has the delivery interval built into its own trigger. Adding three days on top would compensate twice for the same thing. The caller supplies the receipt date; the engine cannot observe it.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2019-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-6c-motion-and-notice-of-hearing",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Motion and notice of hearing -- served not later than 20 days before the hearing (Arkansas)",
+      "trigger_event": "hearing_date_specified",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 6(c)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "A written motion, other than one which may be heard ex parte, and notice of the hearing thereof shall be served not later than 20 days before the time specified for the hearing.",
+        "note": "A BACKWARD-COUNTED ROW, the first outside the federal seed on this platform. It answers 'how late may I still serve' by counting back from the hearing date the caller supplies. NO SERVICE EXTENSION, AND THE DIRECTION IS WHY. ARCP 6(d) adds days to a period that runs AFTER service; this period ends AT service. Adding three days to a backward count would move the deadline the wrong way and let a party serve LATER than the rule allows -- the one direction that costs the other side its notice. TWENTY IS OUTSIDE the fourteen-day short-period exclusion, so intermediate weekends and holidays are counted.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2026-06-04",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-6c-response-to-motion",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Response to a motion -- 10 days (Arkansas)",
+      "trigger_event": "service_of_motion",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ar_rcp_6_d",
+        "add": 3,
+        "unit": "business_days",
+        "applies_when": [
+          "mail",
+          "commercial_delivery",
+          "electronic",
+          "email",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 6(c)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "Any party opposing a motion shall serve a response within 10 days after service of the motion.",
+        "note": "TEN DAYS, inside the fourteen-day short-period exclusion, and running from service of a party's paper so ARCP 6(d)'s three business days apply. THE RULE IS DEFAULT-ONLY: 'The time periods set forth in this subdivision may be modified by order of the court and do not apply when a different period is fixed by these rules, including Rules 56(c) and 59(d).' The engine cannot see a court order or a competing rule, so a computed date here is the default period and nothing more.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2026-06-04",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-6c-reply-to-response",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Reply to a response -- 5 days (Arkansas)",
+      "trigger_event": "service_of_response_to_motion",
+      "computation": "ar_rcp_6",
+      "count": {
+        "value": 5,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ar_rcp_6_d",
+        "add": 3,
+        "unit": "business_days",
+        "applies_when": [
+          "mail",
+          "commercial_delivery",
+          "electronic",
+          "email",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 6(c)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "The movant shall then have 5 days after service of the response within which to serve a reply.",
+        "note": "FIVE DAYS -- the shortest period in this seed, and the row where the fourteen-day exclusion does the most work: five counted days can span two weekends and a holiday. Copying a neighbour's 7-day threshold would compute EARLY here. Default-only, same as the response row: subject to a contrary court order or rule the engine cannot see.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2026-06-04",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-33b3-interrogatory-answers-defendant-later-of",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Answers or objections to interrogatories -- the later of 30 days and the 45-day defendant floor (Arkansas)",
+      "trigger_event": {
+        "id": "arkansas_interrogatory_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_interrogatories",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the discovery request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_interrogatories",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after the summons and complaint have been served"
+          }
+        ]
+      },
+      "computation": "ar_rcp_6",
+      "service_extension": {
+        "standard": "ar_rcp_6_d",
+        "add": 3,
+        "unit": "business_days",
+        "applies_when": [
+          "mail",
+          "commercial_delivery",
+          "electronic",
+          "email",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 33(b)(3)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, or objections within 30 days after the service of the interrogatories, except that a defendant must serve answers or objections within 30 days after the service of the interrogatories upon him or within 45 days after the summons and complaint have been served upon him, whichever is longer.",
+        "note": "'MUST serve ... whichever is longer' -- a mandatory floor, not an election. ALL THREE ARKANSAS DISCOVERY RULES CARRY THE SAME DEFENDANT FLOOR WITH THE SAME NUMBERS -- 30/45 on interrogatories, production AND admissions. That uniformity is itself unusual and is worth stating, because the neighbours disagree: Missouri gives 45/45/60, North Carolina 45/45/60, Minnesota 45/45/none and Massachusetts none/45/45. Copying any of them is wrong here. TWO LIMBS WITH DIFFERENT COUNTS, so this is resolve_periods rather than a plain resolve: later_of that shares one count -- the shape built after Georgia's O.C.G.A. 9-11-36(a)(2) shipped fifteen days early. Both limbs run from caller-supplied dates, so Arkansas does not hit the chained-floor problem Maryland raises. THE FLOOR IS A DEFENDANT'S FLOOR ONLY. A plaintiff answering the same request takes the plain 30 days; supply only the request-service limb for that case.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2026-06-04",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-34b2-production-response-defendant-later-of",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- the later of 30 days and the 45-day defendant floor (Arkansas)",
+      "trigger_event": {
+        "id": "arkansas_production_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_production",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the discovery request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_production",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after the summons and complaint have been served"
+          }
+        ]
+      },
+      "computation": "ar_rcp_6",
+      "service_extension": {
+        "standard": "ar_rcp_6_d",
+        "add": 3,
+        "unit": "business_days",
+        "applies_when": [
+          "mail",
+          "commercial_delivery",
+          "electronic",
+          "email",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 34(b)(2)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "The party upon whom the request has been served shall serve a written response within 30 days after the service of the request, except that a defendant must serve a response within 30 days after the service of the request upon him or within 45 days after the summons and complaint have been served upon him, whichever is longer.",
+        "note": "Word-for-word the Rule 33 structure, including 'must' and 'whichever is longer'. ALL THREE ARKANSAS DISCOVERY RULES CARRY THE SAME DEFENDANT FLOOR WITH THE SAME NUMBERS -- 30/45 on interrogatories, production AND admissions. That uniformity is itself unusual and is worth stating, because the neighbours disagree: Missouri gives 45/45/60, North Carolina 45/45/60, Minnesota 45/45/none and Massachusetts none/45/45. Copying any of them is wrong here. TWO LIMBS WITH DIFFERENT COUNTS, so this is resolve_periods rather than a plain resolve: later_of that shares one count -- the shape built after Georgia's O.C.G.A. 9-11-36(a)(2) shipped fifteen days early. Both limbs run from caller-supplied dates, so Arkansas does not hit the chained-floor problem Maryland raises. THE FLOOR IS A DEFENDANT'S FLOOR ONLY. A plaintiff answering the same request takes the plain 30 days; supply only the request-service limb for that case.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2026-06-04",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ar-rcp-36a-admission-response-defendant-later-of",
+      "jurisdiction": "ar",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- the later of 30 days and the 45-day defendant floor (Arkansas)",
+      "trigger_event": {
+        "id": "arkansas_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the discovery request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after the summons and complaint have been served"
+          }
+        ]
+      },
+      "computation": "ar_rcp_6",
+      "service_extension": {
+        "standard": "ar_rcp_6_d",
+        "add": 3,
+        "unit": "business_days",
+        "applies_when": [
+          "mail",
+          "commercial_delivery",
+          "electronic",
+          "email",
+          "efiling_service_provider"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Ark. R. Civ. P. 36(a)",
+        "url": "https://opinions.arcourts.gov/ark/cr/en/16712/1/document.do",
+        "quote": "However, a defendant shall have 30 days after service of the request or 45 days after he has been served with the summons and complaint to answer, whichever time is longer.",
+        "note": "THE OUTLIER CONSEQUENCE: on this rule alone, silence ADMITS. 'The matter is admitted unless, within 30 days after service of the request, the party to whom the request is directed serves ... a written answer or objection.' Missing an interrogatory deadline invites a motion to compel; missing this one decides the fact. ALL THREE ARKANSAS DISCOVERY RULES CARRY THE SAME DEFENDANT FLOOR WITH THE SAME NUMBERS -- 30/45 on interrogatories, production AND admissions. That uniformity is itself unusual and is worth stating, because the neighbours disagree: Missouri gives 45/45/60, North Carolina 45/45/60, Minnesota 45/45/none and Massachusetts none/45/45. Copying any of them is wrong here. TWO LIMBS WITH DIFFERENT COUNTS, so this is resolve_periods rather than a plain resolve: later_of that shares one count -- the shape built after Georgia's O.C.G.A. 9-11-36(a)(2) shipped fifteen days early. Both limbs run from caller-supplied dates, so Arkansas does not hit the chained-floor problem Maryland raises. THE FLOOR IS A DEFENDANT'S FLOOR ONLY. A plaintiff answering the same request takes the plain 30 days; supply only the request-service limb for that case.",
+        "retrieved_at": "2026-08-29"
+      },
+      "effective_from": "2026-06-04",
+      "effective_to": null
+    }
+  ]
+}
