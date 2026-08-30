@@ -59,6 +59,42 @@ in its header, and failed the same way.
 If a note's truth depends on a condition, say which condition, and prefer a
 **mechanical check** over a note. Nothing greps comments.
 
+## 3b. A COMMIT SHA is a fact with a tense, and rebasing changes it
+
+**Added 2026-08-30, from an error in this platform's own skill pack.**
+
+`sairn-api-tester` cited `a877978^` as the pre-fix commit for the
+`dnt_cred_rules` role gate. **That SHA does not exist in this repository** — not
+as a commit, not in `git log --all`. A verification pass caught it. The real fix
+is `06ba0b8`.
+
+**The mechanism, and it will happen again:** the SHA was correct when written.
+Four sessions push to one repo, so every push means `git fetch && git rebase
+origin/main` — and **rebasing rewrites every commit it replays.** The SHA
+recorded in a document written before a rebase names a commit that no longer
+exists anywhere.
+
+**Rules:**
+
+- **Do not cite a SHA in a document until it has been pushed and re-read from
+  the remote.** `git rev-parse HEAD` after the push, not the local SHA from
+  before it.
+- **Prefer a stable identifier over a SHA** where one exists: the commit
+  *subject line*, a file path, a tag. A subject survives rebasing; a SHA does
+  not.
+- **Audit cited SHAs before shipping anything that sells checkability.** One
+  line:
+
+      grep -ohE '`[0-9a-f]{7,10}`' <files> | sort -u | while read h; do
+        git cat-file -e "$h^{commit}" 2>/dev/null || echo "MISSING $h"; done
+
+- **A skill whose value is "every incident is real and checkable" cannot carry
+  an uncheckable citation.** That is not a typo, it is the product claim
+  failing in miniature.
+
+The correction was made **in place with a dated note** rather than a silent
+swap, per §4 — a reader who saw the old SHA can see what changed and why.
+
 ## 4. Strike through, don't delete
 
 When a recorded claim turns out wrong, **keep it visible and mark it wrong.**
