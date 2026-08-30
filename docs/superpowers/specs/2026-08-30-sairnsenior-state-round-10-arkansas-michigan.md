@@ -179,7 +179,7 @@ of State but the document endpoint was not found.
 
 | Item | Status | Provenance |
 |---|---|---|
-| Michigan Public Health Code (Act 368 of 1978), Art. 17 | **NOT READ** | The negative above rests on BCHS's self-description only. |
+| Michigan Public Health Code (Act 368 of 1978), Art. 17 | **NOW READ — negative CONFIRMED, and Michigan is NOT a null case** | MCL 333.20106(1) enumerates “health facility or agency” in eleven items and **home health agencies are not among them** — so no licensure. But MCL 333.20173a makes a home health agency a **covered facility** under a statutory employment bar. See `2026-08-30-sairnsenior-state-round-11-michigan-confirmed.md`. |
 | Alabama Admin. Code ch. 420-5-6 (home health) | **NO ROUTE** | SPA + soft-404s. |
 | Mississippi Administrative Code Title 15 | **NO ROUTE** | Index loads, document endpoint not found. |
 | AR § 45-102(b)(3)(A)(iv) vs (v) | **NOTED, NOT RESOLVED** | The competency list names dementia twice — "at least four hours covering Alzheimer's… " at (iv) and "Dementia and Alzheimer's diseases" at (v). Quoted as printed; whether (v) is a drafting artefact was not established. |
