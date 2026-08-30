@@ -1,0 +1,441 @@
+{
+  "_readme": [
+    "MARYLAND CIVIL DEADLINE RULES -- 10 rows, Maryland Rules Titles 1 and 2.",
+    "Rule text read verbatim from govt.westlaw.com/mdc, the government slice the",
+    "Judiciary's own Thurgood Marshall State Law Library publishes on: no sign-in,",
+    "no click-through, no paywall on document pages.",
+    "",
+    "== THE WRONG-SOURCE TRAP, WHICH FAILS IN BOTH DIRECTIONS AT ONCE ===",
+    "The intuitive chain for a Maryland time rule is General Provisions 1-302",
+    "(computation) + 1-111 ('legal holiday'). BOTH ARE WRONG. 1-302 rolls only on",
+    "'a Sunday or legal holiday' -- no Saturday roll, reporting EARLY. 1-111 adds",
+    "Good Friday, Lincoln's Birthday, Maryland Day and Defenders' Day, which are",
+    "NOT court holidays, reporting LATE. Rule 1-203's own committee note settles",
+    "it: 'This section supersedes Code, General Provisions Article, 1-302 to the",
+    "extent of any inconsistency.' The correct chain is Rule 1-203 -> Rule",
+    "1-202(l) -> State Personnel and Pensions 9-201. Third time on this platform",
+    "that the obvious statute has been the wrong one.",
+    "",
+    "== TWO DECISIONS, BOTH MADE BY MICHAEL ON 2026-08-30 =================",
+    "ONE: the mail-extension / seven-day-exclusion interaction is DISCLOSED on",
+    "every affected row and the engine REFUSES on a mailed short period rather",
+    "than guessing. It is the one ambiguity here with no consistently safe side.",
+    "TWO: the chained discovery floor takes a CALLER-SUPPLIED date. Full rule",
+    "chaining was rejected as disproportionate; refusing the limb entirely was",
+    "rejected as throwing away value on the highest-stakes rule found.",
+    "",
+    "== WHAT THE CALLER MUST SUPPLY ======================================",
+    "Four rows take `date_initial_pleading_is_required` -- the three discovery",
+    "rules and Rule 2-311(b). Compute it from Rule 2-321 FIRST: 30 days in state,",
+    "60 outside the state or through a State agency or on the United States, 90",
+    "outside the United States, and 2-321(c) extends any of those to 15 days after",
+    "an order on a preliminary motion or remand. Supplying the wrong branch makes",
+    "the floor too early, and on Rule 2-424 an early date means facts are DEEMED",
+    "ADMITTED.",
+    "",
+    "== NOT ENCODED, AND WHY =============================================",
+    "Rule 2-321(b)(2), service by publication or posting under Rule 2-122, which",
+    "takes 'the time specified in the notice' -- the engine cannot read a notice.",
+    "Rule 2-321(b)(6), which defers to any other rule or statute setting a",
+    "different time. Rule 2-322 itself, Rule 2-122, and the Rule 1-203(d) death-of",
+    "-a-party extension, which turns on facts no deadline engine observes."
+  ],
+  "rules": [
+    {
+      "rule_id": "md-rule-2-321a-answer-30-days",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "Answer to an original complaint, counterclaim, cross-claim or third-party claim -- 30 days (Maryland)",
+      "trigger_event": "service_of_original_pleading_in_state",
+      "computation": "md_rule_1_203",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-321(a)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "A party shall file an answer to an original complaint, counterclaim, cross-claim, or third-party claim within 30 days after being served, except as provided by sections (b) and (c) of this Rule.",
+        "note": "THE DEFAULT, AND SECTION (b) HAS FIVE EXCEPTIONS THAT ARE NOT DEFAULTS. 60 days for a defendant served OUTSIDE MARYLAND but within the United States, 60 for a person served through a resident agent at SDAT, the Insurance Commissioner or another State agency authorised to receive process, 60 for the United States or a federal officer or agency, and 90 for a defendant served OUTSIDE THE UNITED STATES. Each has its own row. Service by publication or posting under Rule 2-122 takes \"the time specified in the notice\" and is NOT modelled -- the engine cannot read the notice. AND 2-321(b)(6) IS AN OPEN DOOR THIS ENGINE CANNOT SEE: \"If rules for special proceedings, or statutes of this State or of the United States, provide for a different time to answer, the answer shall be filed as provided by those rules or statutes.\" DECISION ONE, MADE 2026-08-30: THE ENGINE REFUSES RATHER THAN GUESSING. Md. Rule 1-203(c) adds three days for mail \"to the prescribed period\", and 1-203(a) drops intermediate Saturdays, Sundays and holidays when the period allowed is \"seven days or less\". On a mailed period of 4-7 days the two interact and Maryland has not said how: if the three days make the period more than seven, the intermediate days become COUNTED and the date moves EARLIER; if the seven-day test looks at the underlying rule instead, they stay excluded and the three days are appended, moving it LATER. No committee note, no cross-reference and no controlling authority resolves it. THIS IS NOT A DIRECTION-OF-ERROR QUESTION THAT CAN BE SETTLED BY PICKING THE SAFE SIDE -- unlike every other ambiguity on this platform, which reading is conservative depends on the length of the period. So the engine returns the UNEXTENDED date with a refusal naming both readings, the same call already made for West Virginia's contested Rule 6(e).",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-321b1-answer-60-days-served-outside-state",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "A defendant who is served with an original pleading outside of the State but within the Un (Maryland)",
+      "trigger_event": "service_of_original_pleading_outside_state_within_us",
+      "computation": "md_rule_1_203",
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-321(b)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "A defendant who is served with an original pleading outside of the State but within the United States shall file an answer within 60 days after being served.",
+        "note": "A SERVICE-LOCATION BRANCH the engine cannot detect, so the caller selects it by naming this trigger. Reaching this row by the 30-day default instead would report a date up to 60 days EARLY -- safe in direction but badly wrong for a user. DECISION ONE, MADE 2026-08-30: THE ENGINE REFUSES RATHER THAN GUESSING. Md. Rule 1-203(c) adds three days for mail \"to the prescribed period\", and 1-203(a) drops intermediate Saturdays, Sundays and holidays when the period allowed is \"seven days or less\". On a mailed period of 4-7 days the two interact and Maryland has not said how: if the three days make the period more than seven, the intermediate days become COUNTED and the date moves EARLIER; if the seven-day test looks at the underlying rule instead, they stay excluded and the three days are appended, moving it LATER. No committee note, no cross-reference and no controlling authority resolves it. THIS IS NOT A DIRECTION-OF-ERROR QUESTION THAT CAN BE SETTLED BY PICKING THE SAFE SIDE -- unlike every other ambiguity on this platform, which reading is conservative depends on the length of the period. So the engine returns the UNEXTENDED date with a refusal naming both readings, the same call already made for West Virginia's contested Rule 6(e).",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-321b3-answer-60-days-resident-agent",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "A person who is required by statute of this State to have a resident agent and who is serv (Maryland)",
+      "trigger_event": "service_on_state_agency_for_resident_agent",
+      "computation": "md_rule_1_203",
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-321(b)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "A person who is required by statute of this State to have a resident agent and who is served with an original pleading by service upon the State Department of Assessments and Taxation, the Insurance Commissioner, or some other agency of the State authorized by statute to receive process shall file an answer within 60 days after being served.",
+        "note": "Turns on HOW the entity was served, not where. A corporation served through SDAT takes 60 days; the same corporation served on its own resident agent directly takes 30. Reaching this row by the 30-day default instead would report a date up to 60 days EARLY -- safe in direction but badly wrong for a user. DECISION ONE, MADE 2026-08-30: THE ENGINE REFUSES RATHER THAN GUESSING. Md. Rule 1-203(c) adds three days for mail \"to the prescribed period\", and 1-203(a) drops intermediate Saturdays, Sundays and holidays when the period allowed is \"seven days or less\". On a mailed period of 4-7 days the two interact and Maryland has not said how: if the three days make the period more than seven, the intermediate days become COUNTED and the date moves EARLIER; if the seven-day test looks at the underlying rule instead, they stay excluded and the three days are appended, moving it LATER. No committee note, no cross-reference and no controlling authority resolves it. THIS IS NOT A DIRECTION-OF-ERROR QUESTION THAT CAN BE SETTLED BY PICKING THE SAFE SIDE -- unlike every other ambiguity on this platform, which reading is conservative depends on the length of the period. So the engine returns the UNEXTENDED date with a refusal naming both readings, the same call already made for West Virginia's contested Rule 6(e).",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-321b4-answer-60-days-united-states",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "The United States or an officer or agency of the United States served with an original ple (Maryland)",
+      "trigger_event": "service_on_united_states_or_federal_agency",
+      "computation": "md_rule_1_203",
+      "count": {
+        "value": 60,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-321(b)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "The United States or an officer or agency of the United States served with an original pleading pursuant to Rule 2-124(m) or (n) shall file an answer within 60 days after being served.",
+        "note": "A PARTY-STATUS branch: the United States, one of its officers, or one of its agencies. Reaching this row by the 30-day default instead would report a date up to 60 days EARLY -- safe in direction but badly wrong for a user. DECISION ONE, MADE 2026-08-30: THE ENGINE REFUSES RATHER THAN GUESSING. Md. Rule 1-203(c) adds three days for mail \"to the prescribed period\", and 1-203(a) drops intermediate Saturdays, Sundays and holidays when the period allowed is \"seven days or less\". On a mailed period of 4-7 days the two interact and Maryland has not said how: if the three days make the period more than seven, the intermediate days become COUNTED and the date moves EARLIER; if the seven-day test looks at the underlying rule instead, they stay excluded and the three days are appended, moving it LATER. No committee note, no cross-reference and no controlling authority resolves it. THIS IS NOT A DIRECTION-OF-ERROR QUESTION THAT CAN BE SETTLED BY PICKING THE SAFE SIDE -- unlike every other ambiguity on this platform, which reading is conservative depends on the length of the period. So the engine returns the UNEXTENDED date with a refusal naming both readings, the same call already made for West Virginia's contested Rule 6(e).",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-321b5-answer-90-days-served-outside-us",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "A defendant who is served with an original pleading outside of the United States (Maryland)",
+      "trigger_event": "service_of_original_pleading_outside_united_states",
+      "computation": "md_rule_1_203",
+      "count": {
+        "value": 90,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-321(b)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "A defendant who is served with an original pleading outside of the United States shall file an answer within 90 days after being served.",
+        "note": "NINETY days -- the longest answer period on this platform. Reaching this row by the 30-day default instead would report a date up to 60 days EARLY -- safe in direction but badly wrong for a user. DECISION ONE, MADE 2026-08-30: THE ENGINE REFUSES RATHER THAN GUESSING. Md. Rule 1-203(c) adds three days for mail \"to the prescribed period\", and 1-203(a) drops intermediate Saturdays, Sundays and holidays when the period allowed is \"seven days or less\". On a mailed period of 4-7 days the two interact and Maryland has not said how: if the three days make the period more than seven, the intermediate days become COUNTED and the date moves EARLIER; if the seven-day test looks at the underlying rule instead, they stay excluded and the three days are appended, moving it LATER. No committee note, no cross-reference and no controlling authority resolves it. THIS IS NOT A DIRECTION-OF-ERROR QUESTION THAT CAN BE SETTLED BY PICKING THE SAFE SIDE -- unlike every other ambiguity on this platform, which reading is conservative depends on the length of the period. So the engine returns the UNEXTENDED date with a refusal naming both readings, the same call already made for West Virginia's contested Rule 6(e).",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-321c-answer-after-preliminary-motion-or-remand",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "Answer after a Rule 2-322 motion or a remand -- 15 days after the order (Maryland)",
+      "trigger_event": "entry_of_order_on_preliminary_motion_or_remand",
+      "computation": "md_rule_1_203",
+      "count": {
+        "value": 15,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-321(c)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "When a motion is filed pursuant to Rule 2-322 or when a matter is remanded from an appellate court or a federal court, the time for filing an answer is extended without special order to 15 days after entry of the court's order on the motion or remand or, if the court grants a motion for a more definite statement, to 15 days after the service of the more definite statement.",
+        "note": "AN AUTOMATIC EXTENSION, not a discretionary one -- \"without special order\". Fifteen days is above the seven-day exclusion threshold, so intermediate weekends and holidays are counted. NO SERVICE EXTENSION: the period runs from ENTRY OF THE COURT'S ORDER, which is not service of a paper upon a party, and Rule 1-203(c) reaches only the latter. The more-definite-statement limb of the same sentence DOES run from service and has its own row.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-321c-answer-after-more-definite-statement",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "Answer after a more definite statement -- 15 days after service (Maryland)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "md_rule_1_203",
+      "count": {
+        "value": 15,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-321(c)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "or, if the court grants a motion for a more definite statement, to 15 days after the service of the more definite statement.",
+        "note": "The same subsection as the row above and a DIFFERENT TRIGGER: this limb runs from SERVICE of the more definite statement, so Rule 1-203(c)'s three days for mail apply where that one takes none. Fifteen days is outside the exclusion threshold. DECISION ONE, MADE 2026-08-30: THE ENGINE REFUSES RATHER THAN GUESSING. Md. Rule 1-203(c) adds three days for mail \"to the prescribed period\", and 1-203(a) drops intermediate Saturdays, Sundays and holidays when the period allowed is \"seven days or less\". On a mailed period of 4-7 days the two interact and Maryland has not said how: if the three days make the period more than seven, the intermediate days become COUNTED and the date moves EARLIER; if the seven-day test looks at the underlying rule instead, they stay excluded and the three days are appended, moving it LATER. No committee note, no cross-reference and no controlling authority resolves it. THIS IS NOT A DIRECTION-OF-ERROR QUESTION THAT CAN BE SETTLED BY PICKING THE SAFE SIDE -- unlike every other ambiguity on this platform, which reading is conservative depends on the length of the period. So the engine returns the UNEXTENDED date with a refusal naming both readings, the same call already made for West Virginia's contested Rule 6(e).",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-311b-response-to-motion-later-of",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "Response to a motion -- the later of 15 days and the time allowed for the party's original pleading (Maryland)",
+      "trigger_event": {
+        "id": "maryland_motion_response_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_motion",
+            "count": {
+              "value": 15,
+              "unit": "calendar_days"
+            },
+            "label": "15 days after service of the motion"
+          },
+          {
+            "event": "date_initial_pleading_is_required",
+            "count": {
+              "value": 0,
+              "unit": "calendar_days"
+            },
+            "label": "the date the party's own original pleading is required under Rule 2-321(a), supplied by the caller"
+          }
+        ]
+      },
+      "computation": "md_rule_1_203",
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-311(b)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "Except as otherwise provided in this section, a party against whom a motion is directed shall file any response within 15 days after being served with the motion, or within the time allowed for a party's original pleading pursuant to Rule 2-321(a), whichever is later.",
+        "note": "THE SAME CHAINED SHAPE AS THE THREE DISCOVERY ROWS, and it is easy to miss because it sits in the motions rule rather than in discovery. The second limb is \"the time allowed for a party's original pleading pursuant to Rule 2-321(a)\" -- another rule's output. DECISION TWO, MADE 2026-08-30: THE CALLER SUPPLIES THE ALREADY-COMPUTED DATE. The second limb of this rule runs from \"the date on which that party's initial pleading or motion is REQUIRED\" -- which is the OUTPUT OF ANOTHER RULE, not a date any party observes. Every other later-of row on this platform (Ohio, Georgia, New Jersey, North Carolina, Washington, Virginia, Massachusetts, Missouri, Alabama, Wisconsin) measures its floor from a date the caller supplies directly -- service of the complaint, an appearance, service of process. Maryland is the first that does not. AND IT IS NOT A STATIC OFFSET: Md. Rule 2-321 makes the answer date 30, 60 or 90 days depending on how and where the defendant was served, and 2-321(c) extends it again, \"without special order to 15 days after entry of the court's order\", on a Rule 2-322 motion or a remand. So the floor is 45 days for a Maryland-resident defendant, 75 for a 60-day defendant, 105 for a 90-day defendant, and 15 days after a ruling the engine cannot see where a preliminary motion was filed. THE OTHER TWO OPTIONS WERE REJECTED ON THE MERITS. Building rule chaining -- letting a limb name another rule and having the engine compute it -- is the theoretically correct answer and disproportionate engineering for one jurisdiction's problem. Refusing the defendant limb entirely is safe but throws away real value on the highest-stakes rule found in any gate. Requiring a date the party already knows about its own case is the middle ground: no guessing by the engine, no wasted build, and the feature stays usable. SUPPLY `date_initial_pleading_is_required` COMPUTED FROM RULE 2-321 FIRST. If the wrong branch is supplied (30 where 60 or 90 applies) the floor is too early, and on Rule 2-424 an early date means facts are DEEMED ADMITTED. That is why this row names the limb event explicitly rather than reusing a service date. The limb count here is ZERO because the caller supplies the required DATE itself, not a date to count from. NOT MODELLED: \"Unless the court orders otherwise, no response need be filed to a motion filed pursuant to Rule 1-204, 2-532, 2-533, or 2-534\" -- four rules for which this row should not be used at all.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-421b-interrogatory-response-later-of",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "Answers to interrogatories -- the later of 30 days and 15 days after the party's own pleading is due (Maryland)",
+      "trigger_event": {
+        "id": "maryland_interrogatory_response_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_interrogatories",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the discovery request"
+          },
+          {
+            "event": "date_initial_pleading_is_required",
+            "count": {
+              "value": 15,
+              "unit": "calendar_days"
+            },
+            "label": "15 days after the date the party's initial pleading or motion is required, supplied by the caller"
+          }
+        ]
+      },
+      "computation": "md_rule_1_203",
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-421(b)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "The party to whom the interrogatories are directed shall serve a response within 30 days after service of the interrogatories or within 15 days after the date on which that party's initial pleading or motion is required, whichever is later.",
+        "note": "DECISION TWO, MADE 2026-08-30: THE CALLER SUPPLIES THE ALREADY-COMPUTED DATE. The second limb of this rule runs from \"the date on which that party's initial pleading or motion is REQUIRED\" -- which is the OUTPUT OF ANOTHER RULE, not a date any party observes. Every other later-of row on this platform (Ohio, Georgia, New Jersey, North Carolina, Washington, Virginia, Massachusetts, Missouri, Alabama, Wisconsin) measures its floor from a date the caller supplies directly -- service of the complaint, an appearance, service of process. Maryland is the first that does not. AND IT IS NOT A STATIC OFFSET: Md. Rule 2-321 makes the answer date 30, 60 or 90 days depending on how and where the defendant was served, and 2-321(c) extends it again, \"without special order to 15 days after entry of the court's order\", on a Rule 2-322 motion or a remand. So the floor is 45 days for a Maryland-resident defendant, 75 for a 60-day defendant, 105 for a 90-day defendant, and 15 days after a ruling the engine cannot see where a preliminary motion was filed. THE OTHER TWO OPTIONS WERE REJECTED ON THE MERITS. Building rule chaining -- letting a limb name another rule and having the engine compute it -- is the theoretically correct answer and disproportionate engineering for one jurisdiction's problem. Refusing the defendant limb entirely is safe but throws away real value on the highest-stakes rule found in any gate. Requiring a date the party already knows about its own case is the middle ground: no guessing by the engine, no wasted build, and the feature stays usable. SUPPLY `date_initial_pleading_is_required` COMPUTED FROM RULE 2-321 FIRST. If the wrong branch is supplied (30 where 60 or 90 applies) the floor is too early, and on Rule 2-424 an early date means facts are DEEMED ADMITTED. That is why this row names the limb event explicitly rather than reusing a service date.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-422c-production-response-later-of",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- the later of 30 days and 15 days after the party's own pleading is due (Maryland)",
+      "trigger_event": {
+        "id": "maryland_production_response_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_production",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the discovery request"
+          },
+          {
+            "event": "date_initial_pleading_is_required",
+            "count": {
+              "value": 15,
+              "unit": "calendar_days"
+            },
+            "label": "15 days after the date the party's initial pleading or motion is required, supplied by the caller"
+          }
+        ]
+      },
+      "computation": "md_rule_1_203",
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-422(c)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "The party to whom a request is directed shall serve a written response within 30 days after service of the request or within 15 days after the date on which that party's initial pleading or motion is required, whichever is later.",
+        "note": "DECISION TWO, MADE 2026-08-30: THE CALLER SUPPLIES THE ALREADY-COMPUTED DATE. The second limb of this rule runs from \"the date on which that party's initial pleading or motion is REQUIRED\" -- which is the OUTPUT OF ANOTHER RULE, not a date any party observes. Every other later-of row on this platform (Ohio, Georgia, New Jersey, North Carolina, Washington, Virginia, Massachusetts, Missouri, Alabama, Wisconsin) measures its floor from a date the caller supplies directly -- service of the complaint, an appearance, service of process. Maryland is the first that does not. AND IT IS NOT A STATIC OFFSET: Md. Rule 2-321 makes the answer date 30, 60 or 90 days depending on how and where the defendant was served, and 2-321(c) extends it again, \"without special order to 15 days after entry of the court's order\", on a Rule 2-322 motion or a remand. So the floor is 45 days for a Maryland-resident defendant, 75 for a 60-day defendant, 105 for a 90-day defendant, and 15 days after a ruling the engine cannot see where a preliminary motion was filed. THE OTHER TWO OPTIONS WERE REJECTED ON THE MERITS. Building rule chaining -- letting a limb name another rule and having the engine compute it -- is the theoretically correct answer and disproportionate engineering for one jurisdiction's problem. Refusing the defendant limb entirely is safe but throws away real value on the highest-stakes rule found in any gate. Requiring a date the party already knows about its own case is the middle ground: no guessing by the engine, no wasted build, and the feature stays usable. SUPPLY `date_initial_pleading_is_required` COMPUTED FROM RULE 2-321 FIRST. If the wrong branch is supplied (30 where 60 or 90 applies) the floor is too early, and on Rule 2-424 an early date means facts are DEEMED ADMITTED. That is why this row names the limb event explicitly rather than reusing a service date.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "md-rule-2-424b-admission-response-later-of",
+      "jurisdiction": "md",
+      "domain": "civil-litigation",
+      "label": "Response to a request for admission -- the later of 30 days and 15 days after the party's own pleading is due (Maryland)",
+      "trigger_event": {
+        "id": "maryland_admission_response_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the discovery request"
+          },
+          {
+            "event": "date_initial_pleading_is_required",
+            "count": {
+              "value": 15,
+              "unit": "calendar_days"
+            },
+            "label": "15 days after the date the party's initial pleading or motion is required, supplied by the caller"
+          }
+        ]
+      },
+      "computation": "md_rule_1_203",
+      "service_extension": {
+        "standard": "md_rule_1_203_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Md. Rule 2-424(b)",
+        "url": "https://govt.westlaw.com/mdc/Browse/Index",
+        "quote": "Each matter of which an admission is requested shall be deemed admitted unless, within 30 days after service of the request or within 15 days after the date on which that party's initial pleading or motion is required, whichever is later, the party to whom the request is directed serves a response signed by the party or the party's attorney.",
+        "note": "DECISION TWO, MADE 2026-08-30: THE CALLER SUPPLIES THE ALREADY-COMPUTED DATE. The second limb of this rule runs from \"the date on which that party's initial pleading or motion is REQUIRED\" -- which is the OUTPUT OF ANOTHER RULE, not a date any party observes. Every other later-of row on this platform (Ohio, Georgia, New Jersey, North Carolina, Washington, Virginia, Massachusetts, Missouri, Alabama, Wisconsin) measures its floor from a date the caller supplies directly -- service of the complaint, an appearance, service of process. Maryland is the first that does not. AND IT IS NOT A STATIC OFFSET: Md. Rule 2-321 makes the answer date 30, 60 or 90 days depending on how and where the defendant was served, and 2-321(c) extends it again, \"without special order to 15 days after entry of the court's order\", on a Rule 2-322 motion or a remand. So the floor is 45 days for a Maryland-resident defendant, 75 for a 60-day defendant, 105 for a 90-day defendant, and 15 days after a ruling the engine cannot see where a preliminary motion was filed. THE OTHER TWO OPTIONS WERE REJECTED ON THE MERITS. Building rule chaining -- letting a limb name another rule and having the engine compute it -- is the theoretically correct answer and disproportionate engineering for one jurisdiction's problem. Refusing the defendant limb entirely is safe but throws away real value on the highest-stakes rule found in any gate. Requiring a date the party already knows about its own case is the middle ground: no guessing by the engine, no wasted build, and the feature stays usable. SUPPLY `date_initial_pleading_is_required` COMPUTED FROM RULE 2-321 FIRST. If the wrong branch is supplied (30 where 60 or 90 applies) the floor is too early, and on Rule 2-424 an early date means facts are DEEMED ADMITTED. That is why this row names the limb event explicitly rather than reusing a service date. AND THIS IS THE ONE WHERE AN EARLY DATE FORFEITS THE CASE ON THE MERITS. Rule 2-424(b) is SELF-EXECUTING -- \"shall be DEEMED ADMITTED unless\" -- so a floor guessed short does not invite a motion to compel, it decides the facts. That is why the gate called this the most dangerous single shape it had found, and why the caller supplies the date rather than the engine assuming a branch of Rule 2-321.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1984-07-01",
+      "effective_to": null
+    }
+  ]
+}

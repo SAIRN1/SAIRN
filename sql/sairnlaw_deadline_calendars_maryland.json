@@ -1,0 +1,108 @@
+{
+  "_readme": [
+    "MARYLAND HOLIDAY CALENDAR -- 2026, thirteen dates, INGESTED from the Judiciary.",
+    "Md. Rule 1-202(l) -> SPP 9-201. NOT General Provisions 1-111, which adds four",
+    "days that are not court holidays and would compute LATE.",
+    "",
+    "Two entries exist on no other calendar in this platform: ELECTION DAY (even",
+    "years only, SPP 9-201(13)) and AMERICAN INDIAN HERITAGE DAY, the Friday after",
+    "Thanksgiving (9-201(11)).",
+    "",
+    "Adding 2027 means fetching mdcourts.gov/administration/holidays2027, not",
+    "extending a rule. The list cannot be generated -- see the entry note."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "md",
+      "year": 2026,
+      "authority": {
+        "citation": "Md. Rule 1-202(l), which defines \"holiday\" as an \"employee holiday\" set forth in Code, State Personnel and Pensions Article, Sec. 9-201, as published for 2026 by the Maryland Judiciary",
+        "url": "https://www.mdcourts.gov/administration/holidays",
+        "computation_url": "https://govt.westlaw.com/mdc/Document/N417C58309CEA11DB9BCF9DAC28345A2A?viewType=FullText",
+        "quote": "CALENDAR YEAR 2026 -- Thursday, January 1, 2026 New Year's Day ... Tuesday, November 3, 2026 Election Day ... Friday, November 27, 2026 American Indian Heritage Day ... Friday, December 25, 2026 Christmas Day",
+        "note": "INGESTED, NOT DERIVED, AND THAT IS THE ONLY SAFE WAY TO BUILD IT. Md. Rule 1-202(l) defines \"holiday\" as an \"employee holiday\" set forth in State Personnel and Pensions Sec. 9-201, and three features of that section make a generator impossible. (1) 9-201(14) reaches \"each other day that the President of the United States or the Governor designates for general cessation of business\" -- arbitrary by construction, and the Judiciary's own archive shows a year with TWO observed days for one holiday. (2) 9-201(13) makes \"each statewide general election day\" a holiday, which fires only in even years and must be looked up -- 2026 IS such a year, which is why TUESDAY 3 NOVEMBER is on this list and would be absent from 2025's. (3) MLK, Memorial and Columbus each carry \"unless the United States Congress designates another day\", a live substitution. SO EVERY DATE HERE IS TRANSCRIBED from the Maryland Judiciary's own published calendar at https://www.mdcourts.gov/administration/holidays (HTTP 200, plain HTML, archives back to 2020). TWO ENTRIES NO OTHER JURISDICTION ON THIS PLATFORM CARRIES: Election Day, and AMERICAN INDIAN HERITAGE DAY -- the Friday after Thanksgiving, SPP 9-201(11). A calendar built from the federal list would miss both, plus the shift below. INDEPENDENCE DAY IS PUBLISHED AS FRIDAY 3 JULY because 4 July 2026 is a Saturday. SPP 9-204 shifts BOTH WAYS -- Saturday to the preceding Friday, Sunday to the following Monday -- unlike Massachusetts's and Missouri's Sunday-only shift, which must not be carried here. A DOCTRINAL GAP, FLAGGED RATHER THAN PAPERED OVER: Rule 1-202(l) cites only 9-201 (the list), NOT 9-204 (the shift), and 9-202 confines that subtitle to \"all employees of all units in the Executive Branch\", which excludes the Judiciary. The shift is therefore not, on its face, incorporated into the Rules' definition. It is resolved here against the JUDICIARY'S OWN PUBLISHED PRACTICE -- this very calendar prints 3 July -- which is what the engine should follow, but no rule or case closing the gap was found. Because the list is ingested rather than computed, the gap is mostly moot in practice. NO COUNTY-SCOPED HOLIDAYS -- one statewide list, unlike Massachusetts's Suffolk County. What IS locally variable is court CLOSURE (weather, emergencies, partial days), published per court at mdcourts.gov/administration/closingsdelays and reached by Rule 1-203(a)(2) rather than by any holiday list. See the jurisdiction coverage disclosure for md. 2026 ONLY: a year this calendar does not cover is REFUSED, not derived, for the reasons above. Adding one means fetching that year's published list.",
+        "retrieved_at": "2026-08-30"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Dr. Martin Luther King, Jr.'s Birthday",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth National Independence Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-11-03",
+          "name": "Election Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-11-27",
+          "name": "American Indian Heritage Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Maryland Judiciary at mdcourts.gov/administration/holidays, under Md. Rule 1-202(l) -> SPP Sec. 9-201."
+        }
+      ]
+    }
+  ]
+}

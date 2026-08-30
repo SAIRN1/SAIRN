@@ -331,3 +331,58 @@ DECISION ONE (Sec. 7), DECISION TWO (Sec. 8), and the per-direction exclusion
 flag in Sec. 6 item 2 -- which is a build item rather than a decision, and would
 be the first jurisdiction on this platform to need it. **Nothing was seeded and
 nothing was guessed.**
+
+## 12. SEEDED 2026-08-30 -- both decisions made, and the engine gap closed
+
+**11 rules, calendar 2026 with thirteen dates. Loaded to `LAW-PINNACLE-2026`
+and live-verified 14/14.**
+
+**DECISION ONE -- disclose, and REFUSE on a mailed short period.** Michael's
+call. `md_rule_1_203_c` returns the unextended date with a refusal naming BOTH
+readings when the period is seven days or less. The reasoning that made it a
+refusal rather than a choice is the one Sec. 7 identified: unlike every other
+ambiguity on this platform, **which reading is conservative depends on the
+length of the period**, so there is no safe side to pick.
+
+**NOT REACHABLE FROM THE SEED TODAY, and asserted so it stays that way.** No
+seeded Maryland row is seven calendar days or shorter, so the refusal is
+unreachable by construction -- the same shape as the `LAST_OWNER` guard. The
+test asserts the zero-count explicitly, so adding a short row later fails the
+suite and forces the question rather than silently arming a refusal nobody
+expected.
+
+**DECISION TWO -- the caller supplies the computed date.** Michael's call, and
+his reasoning is recorded on all four affected rows: full rule chaining is
+disproportionate engineering for one jurisdiction's problem, refusing the limb
+throws away real value on the highest-stakes rule in any gate, and requiring a
+date the party already knows about its own case is the middle ground -- no
+guessing, no wasted build, feature stays usable.
+
+**FOUR rows take `date_initial_pleading_is_required`, not three.** Sec. 8 named
+the three discovery rules. **Rule 2-311(b) has the same chained shape and sits
+in the motions rule**: *"within 15 days after being served with the motion, or
+within the time allowed for a party's original pleading pursuant to Rule
+2-321(a), whichever is later."* Its second limb carries a count of ZERO,
+because the caller supplies the required date itself rather than a date to
+count from.
+
+**THE ENGINE GAP IS CLOSED.** `short_period_exclusion_directions` is optional
+and absent on every other standard, so all twelve that declare a threshold
+behave exactly as before -- 871/871 unchanged when it landed. Maryland sets
+`['forward']`, because Rule 1-203(b) counts backward periods *including*
+intervening weekends and holidays.
+
+**AND THE THRESHOLD IS 8.** "Seven days or less" is <= 7, which is < 8, and the
+field is a strict less-than -- the second jurisdiction after Texas where the
+rule's number and the field's number differ.
+
+**Two more things no seeded Maryland row reaches yet**, both asserted with a
+SYNTHETIC rule the test labels as such rather than pretending it is coverage:
+the backward exclusion behaviour, and the mailed-short-period refusal.
+
+**The calendar is ingested, and Sec. 5 was right about why.** Thirteen dates
+from the Judiciary's own list, including **ELECTION DAY** (present only because
+2026 is even, SPP 9-201(13)) and **AMERICAN INDIAN HERITAGE DAY**, neither of
+which exists on any other calendar here. Independence Day is published as
+**Friday 3 July** -- the Judiciary applying the 9-204 Saturday shift itself,
+which is the published practice Sec. 5 relied on for the doctrinal gap.
