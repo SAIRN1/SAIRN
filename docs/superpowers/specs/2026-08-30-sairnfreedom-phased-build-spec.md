@@ -163,6 +163,12 @@ Build consequences:
 - Amounts are **configuration per org type and per year**, never constants.
   Layer 1 and 2 are lodge-set; layer 3 is set by a body the lodge does not
   control and changes without asking.
+- **THE INITIATION FEE AND ANNUAL DUES ARE CERTIFIED FIGURES ON A LIQUOR-PERMIT
+  FILING.** ORC 4303.17(A)(1) requires the officer certification to set forth
+  *"the amount of initiation fee and yearly dues"*, and ORC 4301.25(A)(3) makes
+  a false material statement in a permit application a revocation ground.
+  **Changing either amount must raise a permit-filing flag**, not just update a
+  price. See the liquor doc §1.
 
 ### 2b. Conditional waivers — governance decisions, and two of them expire
 
@@ -211,7 +217,7 @@ exists — same gate as the winner-SSN requirement in Phase 3.
 | 2.2 | Nightly shift close-out + cash reconciliation | Feeds §4. VFW's own materials: trustees are **required** to physically inventory canteen liquor regularly |
 | 2.3 | Bottle fill-level estimation | **AUTOMATIC determination only.** Binding decision, patent-avoidance. No slider, no tap-to-set, no adjustable guess. See canonical doc *Binding decisions* |
 | 2.4 | Lodge events + live-music calendar | Public-facing side of the same calendar the gaming module constrains |
-| 2.5 | Hall rental | Weekday/weekend rates, member vs public tier, **larger damage deposit for alcohol-serving events** |
+| 2.5 | Hall rental | Weekday/weekend rates, member vs public tier. **THE ALCOHOL TIER IS NOT A DEPOSIT DECISION — see §6a.** Three permit-modelled cases, and the third is a refusal |
 | 2.6 | Vendor/supplier management | Gaming supplies, alcohol, food, entertainment bookings |
 | 2.7 | AI vendor price search | Defined — **two distinct capabilities**, see **§3a**. (1) compare vendors already on file — grounded, deterministic. (2) search the wider market — **fabrication surface, different rules** |
 
@@ -255,6 +261,30 @@ record backs.
   electronic instant bingo distributors. A search result offering cheaper bingo
   supplies from an unlicensed seller is not a saving, it is a licence problem.
   **The search must filter or at minimum warn on this category.**
+
+### 6a. Hall rental has a PERMIT dimension — the third case is a hard block
+
+The D-4 sells *"to its members only."* **The lodge's own permit does not cover
+serving a renter's non-member guests.** Ohio's mechanism is a **jointly-issued
+F-2** — OAC 4301:1-1-36(B) lets an F-2 applicant request the permit be issued
+*"jointly to the applicant and a class D-3, **D-4**, or D-5 liquor permit
+holder, who is to conduct the sale."* ORC 4303.202 confirms the design by
+exempting D-4 affiliation from the otherwise-disqualifying test.
+
+**But that path is open only to a NOT-FOR-PROFIT renter** organised for a
+charitable, cultural, educational, fraternal or political purpose. A wedding, a
+birthday, a corporate rental — none qualify.
+
+| Case | Path | Product behaviour |
+|---|---|---|
+| **Member-hosted, lodge serves** | Covered by the D-4 | Gate that the host is **dues-current**; attendees under the members-only rule |
+| **Not-for-profit renter, lodge serves** | **Joint F-2** | Workflow: renter's non-profit qualification, **4 consecutive days max**, **1 per 30 days per renter**, $150 + $10, chief-peace-officer notification, proceeds destination |
+| **Private or commercial renter wanting alcohol** | **None found** | **HARD BLOCK + escalate to counsel.** Refuse the booking; do not price it |
+
+**The alcohol-serving deposit tier is gated behind cases 1 and 2.** The failure
+mode this prevents is a lodge selling drinks to a wedding party under its D-4
+and losing the permit under ORC 4301.25(A) for violating an applicable
+restriction of Chapter 4303.
 
 ---
 
@@ -428,10 +458,23 @@ it was not scanned).
 2. **Tips received — tax treatment.** Already flagged. Reporting obligations,
    tip credit, allocation between employees and volunteers. **Do not build
    fields until researched.**
-3. **Liquor licensing — entirely unexamined.** ORC 4301/4303 and OAC 4301:1-1-*.
-   The canteen has its own regulator, licence, records and inspection regime, and
-   **nothing verified so far covers it.** Do not read gaming coverage as canteen
-   coverage.
+3. ~~**Liquor licensing — entirely unexamined.**~~ **RESEARCHED 2026-08-30** —
+   `docs/2026-08-30-sairnfreedom-ohio-liquor-permits.md`. Headlines: the D-4
+   officer certification must **also set forth the initiation fee and yearly
+   dues amounts**, making §2a's fee figures *certified figures on a permit
+   filing* and a false one a revocation ground under ORC 4301.25(A)(3); **D-4
+   closes at 1:00 a.m., not 2:30** (OAC 4301:1-1-49(B)) and **consumption** is
+   barred too, not just sale; **Sunday is closed all day without a D-6, which
+   requires a local option election**; renewal is blocked by tax delinquency
+   measured at **six months before expiration** while notice arrives at three;
+   and **OAC 4301:1-1-53(D)–(E) makes a Chapter 2915 bingo violation a
+   simultaneous liquor-permit exposure** — the two modules are coupled. **Hall
+   rental changes — see §6a below.** Two questions go to counsel regardless:
+   guest service (no primary source either way) and whether officer turnover
+   forces a fresh certification. **Still unexamined:** the uniform expiration
+   dates themselves (delegated to the Division, `com.ohio.gov` 404s — a per-club
+   field, never hardcoded), D-6 local-option mechanics, and whether the
+   soldiers'-memorial quota exemption reaches a VFW or Legion post.
 4. **OAC 109:1-4-* beyond `-08`**, and the AG's actual licence-renewal forms.
    The renewal report this product feeds may impose its own categories.
 5. **ORC 2915.091 / .092 / .093** — instant bingo conduct and location rules,
