@@ -1442,7 +1442,18 @@ var COMPUTATION_STANDARDS = {
   ar_rcp_6: { label: 'Ark. R. Civ. P. 6', impl: 'frcp_6a',
     short_period_exclusion_days: 14,
     base_period_suffix: '(a)', months_years_suffix: '(a)',
-    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' },
+  // ELEVEN, matching Tennessee, Arizona and Wisconsin -- NOT the 7 of NJ,
+  // NC, WA, MA, MO and SC, and not Arkansas's 14. Wisconsin's own Judicial
+  // Council Note explains why the platform sees both numbers: states that
+  // tracked the 1985 federal amendment moved 7 -> 11, and the federal rule
+  // then abolished the exclusion outright in 2009. The split is a vintage
+  // artefact, not a policy difference, which is exactly why it cannot be
+  // guessed from a neighbour.
+  al_rcp_6: { label: 'Ala. R. Civ. P. 6', impl: 'frcp_6a',
+    short_period_exclusion_days: 11,
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)(3)', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1462,6 +1473,12 @@ var COMPUTATION_STANDARDS = {
 //             malpractice one. Refusing here would buy no safety.
 // Nothing is added to this table without deciding which of the two it is.
 var JURISDICTION_COVERAGE = {
+  al: {
+    complete: false,
+    direction: 'early',
+    summary: 'Alabama county-scoped holidays and weather closures are NOT modelled (both EARLY, safe). ONE EXCEPTION RUNS LATE and is disclosed rather than modelled: Ala. Code 1-3-8(f)(1) lets an office stay OPEN on a state holiday on 60 days notice, and this engine would roll off that day anyway.',
+    detail: "The calendar is the union Ala. R. Civ. P. 6(a)(4) requires -- the eleven days the rule names, plus \"any other day declared a holiday by the President or Congress or as prescribed by Sec. 1-3-8\" -- derived for 2026 and checked by day-of-week. TWO GAPS RUN EARLY AND ARE SAFE. (1) MARDI GRAS: Sec. 1-3-8(e)(1) makes it a holiday and closes all state offices in BALDWIN AND MOBILE COUNTIES only, and a jurisdiction+year calendar cannot express a two-county day; omitting it is correct in the other 65 counties and EARLY in those two. (2) Rule 6(a)(3) also rolls the last day when \"weather or other conditions make the clerk's office inaccessible\", which is unknowable in advance; omitting it is EARLY. ONE GAP RUNS LATE, AND IT IS FLAGGED RATHER THAN BURIED: Sec. 1-3-8(f)(1) lets a state office STAY OPEN on a state holiday on sixty days' written notice. If a court did that and this engine rolled the deadline off that day anyway, the date shown would be LATER than the true deadline -- the direction that loses a filing. It is discretionary, per-office and not published anywhere this engine can read, so it cannot be modelled; it is disclosed instead. The same question in a sharper form is why WISCONSIN is not seeded: Wis. Stat. 801.15(1)(b) rolls on \"a day the clerk of courts office is closed\" rather than on any list, and the Wisconsin court system's own 2026 closure schedule shows counties genuinely open on listed holidays. Before relying on an Alabama date that falls on or near a listed holiday, confirm that the court was in fact closed."
+  },
   ar: {
     complete: false,
     direction: 'early',
@@ -2530,6 +2547,33 @@ var SERVICE_EXTENSION_STANDARDS = {
     qualifies: function (method) {
       return ({ mail: 1, commercial_delivery: 1, electronic: 1, email: 1,
         efiling_service_provider: 1 })[method] === 1;
+    }
+  },
+  // Ala. R. Civ. P. 6(d). THE ORDER IS FEDERAL, AND THAT IS THE TRAP.
+  // "3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule
+  // 6(a)" -- roll the base period first, add three, then roll again. Nearly
+  // every state seeded recently is period-lengthening instead (NJ, NC, WA,
+  // NY, VA, MA, MO, MN, SC, and Arkansas above), and the two orders give
+  // DIFFERENT dates whenever the unrolled last day lands on a weekend or
+  // holiday. The error is not consistently in the safe direction -- it
+  // depends where the base period falls -- so this is read from 6(d)'s own
+  // words rather than inherited.
+  //
+  // E-FILING-SYSTEM SERVICE DOES GET THE THREE DAYS, enumerated in the rule
+  // itself alongside mail: "service is made under Rule 5(b)(2)(C) (by mail)
+  // or (E) (through the court's electronic-filing system)".
+  //
+  // AND THE ANSWER ROW STILL TAKES NOTHING. 6(d) reaches service made under
+  // RULE 5(b)(2) only; a summons and complaint go out under Rule 4. Same
+  // structure as the federal rule, and the same correction the federal rows
+  // needed on 2026-08-27 -- Arkansas says it in a proviso, Alabama leaves it
+  // to the cross-reference, and the answer is the same.
+  al_rcp_6_d: {
+    label: 'Ala. R. Civ. P. 6(d)',
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return ({ mail: 1, efiling_service_provider: 1, electronic: 1 })[method] === 1;
     }
   }
 };
