@@ -1,0 +1,304 @@
+{
+  "_readme": [
+    "IDAHO -- Idaho Rules of Civil Procedure, 11 rules, 32nd computing",
+    "jurisdiction.",
+    "",
+    "THE RULE NUMBER IS THE FIRST TRAP. Idaho restyled its civil rules in 2016",
+    "and moved computation of time from Rule 6 to RULE 2.2. A citation to",
+    "'Idaho Rule 6' has pointed at nothing since 1 July 2016, and Rule 6 is now",
+    "an unrelated rule.",
+    "",
+    "SOURCE: FREE, OFFICIAL, AND SERVER-RENDERED. isc.idaho.gov is a Nuxt",
+    "single-page app whose /rules/ and /ircp/ paths 404, but",
+    "isc.idaho.gov/rules-procedure/ircp returns the ENTIRE I.R.C.P. -- 104",
+    "rules, 1,445,212 bytes -- as server-rendered HTML on a plain curl, no gate,",
+    "no sign-in. Idaho Code Sec. 73-108 and Sec. 67-5302 are equally free from",
+    "the Idaho Legislature. Nothing here is behind a publisher.",
+    "",
+    "NO SHORT-PERIOD EXCLUSION AT ALL, AND THE ABSENCE IS THE FINDING. Rule",
+    "2.2(a)(1)(B) counts 'every day, INCLUDING intermediate Saturdays, Sundays,",
+    "and legal holidays'. Idaho took the 2009 federal restyling wholesale and",
+    "joins Minnesota, Utah, Nevada and Kansas in having none. It matters more",
+    "here than usual: four seeded rows are FOURTEEN days, which Alabama's and",
+    "Wisconsin's 11 would still count straight through but Arkansas's 14 would",
+    "not.",
+    "",
+    "NO DEFENDANT FLOOR ON ANY OF THE THREE DISCOVERY RULES -- not a floor, not",
+    "an election, nothing. Rules 33(b)(2), 34(b)(2)(A) and 36(a)(4) are each a",
+    "flat 30 days from service of the request, and the string '45 days' does not",
+    "appear anywhere in the I.R.C.P. IDAHO IS THE FIRST SEEDED STATE WITH NONE:",
+    "Arkansas made all three floors, Kansas all three elections, Mississippi and",
+    "New Mexico two elections and one floor, Massachusetts none/45/45. So this",
+    "is the first jurisdiction outside the federal seed itself where no",
+    "discovery row is a later_of, and the reason is an absence rather than a",
+    "reading.",
+    "",
+    "RULE 2.2(c) IS ONE SENTENCE AND SAYS 'AFTER SERVICE', NOT 'AFTER SERVICE OF",
+    "A NOTICE OR OTHER PAPER'. Four missing words decide a row. Miss. R. Civ. P.",
+    "6(e) has the notice limb, so Mississippi's post-motion row -- triggered by",
+    "'notice of the court's action' -- takes three days for mailed notice.",
+    "Idaho's Rule 12(a)(2)(A) has the same trigger and takes NOTHING.",
+    "",
+    "NO BACKWARD ROW IS SEEDED, AND IDAHO HAS GOOD ONES. Rule 55(a)(1) requires",
+    "three days' written notice before entry of DEFAULT -- unusual; most states",
+    "require notice only before default JUDGMENT -- Rule 55(b)(2) requires three",
+    "days before the default-judgment hearing, and Rule 56(b)(2) runs 28, 14 and",
+    "7 days before a summary-judgment hearing with the motion itself due 90 days",
+    "before trial. All omitted. Rule 2.2(a)(1)(C) rolls to 'the NEXT day' and",
+    "says nothing about a period measured before an event -- the Mississippi",
+    "shape, not New Mexico's, whose 1-006(A)(6) settles direction expressly --",
+    "and the calendar has one genuinely contested annual date (Juneteenth; see",
+    "the calendar file). Under-inclusion is EARLY forward and LATE backward, so",
+    "seeding an Idaho backward row needs the Juneteenth question answered, not a",
+    "longer period."
+  ],
+  "rules": [
+    {
+      "rule_id": "id-ircp-12a1A-answer-summons-and-complaint-21-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and complaint -- 21 days (Idaho)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "I.R.C.P. 12(a)(1)(A)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "a defendant must serve an answer within 21 days after being served with the summons and complaint;",
+        "note": "TWENTY-ONE, the federal number, with no long-arm or out-of-state variant and no waiver-of-service alternative -- one period for every defendant. Idaho's 2016 restyling followed FRCP 12(a) closely, and the whole opening clause is worth keeping in view: 'Unless another time is specified by rule or statute' -- a statutory period elsewhere in the Idaho Code displaces this row and the engine cannot see it. NO SERVICE EXTENSION, AND THE OMISSION IS A READING RATHER THAN A QUOTED CARVE-OUT. Rule 2.2(c) grants three days after service by mail and says nothing about service of PROCESS; I.R.C.P. 5(a)(1)(B) reaches 'a pleading filed AFTER THE ORIGINAL COMPLAINT' and original process is Rule 4. Mississippi and Arkansas say this expressly, Idaho and Wisconsin do not, and both are resolved the same way -- withholding reports EARLY, granting on a mailed summons would report LATE. The field is absent so a caller passing service_method cannot collect the days anyway.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2018-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-12a1B-answer-to-counterclaim-or-crossclaim-21-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Answer to a counterclaim or crossclaim -- 21 days (Idaho)",
+      "trigger_event": "service_of_pleading_stating_counterclaim_or_crossclaim",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "id_ircp_2_2_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "I.R.C.P. 12(a)(1)(B)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "a party must serve an answer to a counterclaim or crossclaim within 21 days after being served with the pleading that states the counterclaim or crossclaim;",
+        "note": "ONE ROW FOR BOTH, because Idaho writes one rule for both -- unlike Mississippi and New Mexico, which give the counterclaim and the cross-claim separate sentences and, in New Mexico's case, different triggers. THE EXTENSION DOES APPLY HERE, unlike the answer to the summons and complaint, and the pair is the whole reason both rows exist: this is a pleading served under Rule 5, not process served under Rule 4. MAIL AND NOTHING ELSE -- Idaho wrote Rule 2.2(c) from scratch in 2016, when electronic service was already routine, and still reached only mail.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2018-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-12a1C-reply-after-order-to-reply-21-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Reply to an answer, when the court orders one -- 21 days (Idaho)",
+      "trigger_event": "service_of_order_to_reply",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 21, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "id_ircp_2_2_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "I.R.C.P. 12(a)(1)(C)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "a party must serve a reply to an answer 21 days after being served with an order to reply, unless the court specifies a different time.",
+        "note": "QUOTED EXACTLY AS PUBLISHED, INCLUDING THE MISSING 'WITHIN'. The official text reads 'must serve a reply to an answer 21 days after being served' where its federal source reads 'within 21 days'. Read literally it names a day rather than a period; read as its source intends it is a deadline, which is how it is seeded. The quote is left unrepaired so a reader can see the discrepancy rather than trust a silent correction. 'UNLESS THE COURT SPECIFIES A DIFFERENT TIME' is on the face of the rule: a reply is only ever due because a court ordered it, so the same order can set its own period, and when it does that period governs and this row does not.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2018-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-12a2A-responsive-pleading-after-motion-denied-14-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 12 motion is denied or postponed -- 14 days (Idaho)",
+      "trigger_event": "notice_of_court_action_denying_or_postponing_motion",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 14, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "I.R.C.P. 12(a)(2)(A)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "if the court denies the motion or postpones its disposition until trial, the responsive pleading must be served within 14 days after notice of the court's action; or",
+        "note": "THIS ROW IS WHERE IDAHO AND MISSISSIPPI DIVERGE ON FOUR WORDS, and it is the clearest cross-jurisdiction contrast in this seed. Both states run this period from 'notice of the court's action'. Miss. R. Civ. P. 6(e) extends for 'the service of a NOTICE or other paper', so the Mississippi row takes three days when notice is mailed. I.R.C.P. 2.2(c) extends only 'after service' with no notice limb, so THIS row takes NOTHING. Copying the Mississippi treatment here reports three days LATE. FOURTEEN DAYS, and Idaho has no short-period exclusion, so it counts straight through weekends and holidays -- under Arkansas's 14-day threshold the same number would be excluded instead, which is why the standard's absent field is asserted rather than assumed. THE TRIGGER IS NOTICE, NOT ENTRY: a caller who supplies the date the order was entered computes EARLY.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2018-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-12a2B-responsive-pleading-after-more-definite-statement-14-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a more definite statement is served -- 14 days (Idaho)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 14, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "id_ircp_2_2_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "I.R.C.P. 12(a)(2)(B)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "if the court grants a motion for a more definite statement, the responsive pleading must be served within 14 days after the more definite statement is served.",
+        "note": "THE SIBLING ROW RUNS FROM SERVICE, NOT FROM NOTICE, and that is why this one DOES take the three days while the one immediately above does not. Same rule, same paragraph, same number of days, opposite answer on the extension -- decided entirely by which verb the subparagraph uses. Both are seeded separately for that reason. 'Unless the court sets a different time' opens Rule 12(a)(2) and governs both rows; it is invisible to this engine.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2018-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-33b2-interrogatory-answers-30-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- 30 days (Idaho)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "id_ircp_2_2_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "I.R.C.P. 33(b)(2)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "Time to Respond. The responding party must serve its answers and any objections within 30 days after being served with the interrogatories. A shorter or longer time may be stipulated to under Rule 29 or be ordered by the court.",
+        "note": "A FLAT THIRTY DAYS WITH NO DEFENDANT ALTERNATIVE OF ANY KIND -- no 45-day floor, no 45-day election, nothing. The string '45 days' does not appear anywhere in the Idaho Rules of Civil Procedure. That is unusual enough to state, because every state seeded before Idaho except the federal seed itself has SOMETHING here: Arkansas a mandatory floor on all three, Kansas an election on all three, Mississippi and New Mexico two elections and one floor, North Carolina 45/45/60, Massachusetts none/45/45. A row copied from any of them would give an Idaho defendant fifteen days it does not have. 'A shorter or longer time may be stipulated to under Rule 29 or be ordered by the court' is on the face of the rule and is invisible to this engine.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2016-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-34b2A-production-response-30-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- 30 days (Idaho)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "id_ircp_2_2_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "I.R.C.P. 34(b)(2)(A)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "Time to Respond. The party to whom the request is directed must respond in writing within 30 days after being served. A shorter or longer time may be stipulated to under Rule 29 or be ordered by the court.",
+        "note": "THE SAME FLAT THIRTY, AND THE SAME ABSENT DEFENDANT FLOOR. WHAT THIS ROW IS NOT: the production itself. Rule 34 separately lets the responding party state that it will produce copies rather than permit inspection, with production 'no later than the time for inspection specified in the request or another reasonable time specified in the response' -- a date set by the parties' own papers, not by the rule, and therefore not seedable. This row is the WRITTEN RESPONSE only.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2016-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-36a4-admissions-answer-30-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- 30 days, and silence ADMITS (Idaho)",
+      "trigger_event": "service_of_request_for_admission",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "id_ircp_2_2_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "I.R.C.P. 36(a)(4)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "Time to Respond; Effect of Not Responding. A matter is admitted unless, within 30 days after being served, the party to whom the request is directed serves on the requesting party a written answer or objection addressed to the matter and signed by the party or its attorney. A shorter or longer time for responding may be stipulated to under Rule 29 or be ordered by the court.",
+        "note": "THE HIGHEST-STAKES ROW IN THE SEED AND THE ONE WITH NO SAFETY MARGIN. It is SELF-EXECUTING -- 'A matter is admitted unless ...' -- and Rule 36(b) makes an admission conclusively established unless the court permits withdrawal. In Arkansas, North Carolina, Mississippi, New Mexico, South Carolina, Alabama and Wisconsin a defendant gets a 45- or 60-day floor on this rule precisely because the consequence is so sharp; IN IDAHO THERE IS NONE. A row carrying a floor read across from any of those would tell an Idaho defendant the matter is not yet admitted when it already is, which is the worst failure this engine can produce.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2016-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-59b-motion-for-new-trial-14-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 14 days after entry of judgment (Idaho)",
+      "trigger_event": "entry_of_judgment_idaho",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 14, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "I.R.C.P. 59(b)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "Time to File a Motion for a New Trial. A motion for a new trial must be filed and served within 14 days after the entry of the judgment.",
+        "note": "FOURTEEN, AND THE COURT CANNOT ENLARGE IT. Rule 2.2(b)(3) names this rule in its own prohibition: 'A court must not extend the time to act under Rules 50(b), 52(b), 59(b), (d), and (e), and 60(b).' Note also what Rule 2.2(b)(2) allows everywhere ELSE -- the parties may extend time by written stipulation -- and that this is one of the few places they cannot. 'FILED AND SERVED', not merely served: both acts must happen inside the fourteen days. NO SERVICE EXTENSION -- Rule 2.2(c) reaches a period running 'after service', and entry of judgment is not service. The trigger is ENTRY, not notice of entry, and Rule 2.3(c) makes that explicit: 'Lack of notice of entry of an order or judgment does not affect the time to appeal or to file a post-judgment motion.'",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2016-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-59e-motion-to-alter-or-amend-judgment-14-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Motion to alter or amend the judgment -- 14 days after entry (Idaho)",
+      "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend_idaho",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 14, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "I.R.C.P. 59(e)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "Motion to Alter or Amend a Judgment. A motion to alter or amend the judgment must be filed and served no later than 14 days after entry of the judgment.",
+        "note": "A SEPARATE ROW FROM RULE 59(b) even though the period and the trigger match, because they are different motions with different consequences and a caller asking for one should not be answered with the other's citation. Rule 2.2(b)(3) forbids enlargement of this one too. THE ROW STOPS AT THE DATE AND DOES NOT REACH THE APPEAL CLOCK, which is the Idaho Appellate Rules -- a separate rule set, out of this seed's domain. Do not infer an appeal deadline from this date.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2016-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "id-ircp-59c-opposing-affidavits-14-days",
+      "jurisdiction": "id",
+      "domain": "civil-litigation",
+      "label": "Opposing affidavits on a motion for a new trial -- 14 days after service (Idaho)",
+      "trigger_event": "service_of_new_trial_motion_affidavits",
+      "computation": "id_ircp_2_2",
+      "count": { "value": 14, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "id_ircp_2_2_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "I.R.C.P. 59(c)",
+        "url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "Time to Serve Affidavits. When a motion for a new trial is based on affidavits, they must be filed and served with the motion. The opposing party has 14 days after being served to file and serve opposing affidavits, which period may be extended for up to an additional 21 days by order of the court or written stipulation.",
+        "note": "THE ONLY RULE 59 PERIOD THE COURT CAN EXTEND, and the contrast is the point of seeding it beside the other two: Rule 2.2(b)(3) freezes 59(b), 59(d) and 59(e), and says nothing about 59(c), which then grants its own extension of up to 21 further days by order OR by written stipulation. THE TRIGGER IS SERVICE OF THE MOVANT'S AFFIDAVITS, not service of the motion -- in the ordinary case they are the same act, because the rule requires the affidavits to be filed and served WITH the motion, but the rule words the period against the affidavits and the trigger is named for them. This row DOES take the three mailed days, unlike its two siblings, because it is the only one of the three that runs from service rather than from entry of judgment.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2016-07-01",
+      "effective_to": null
+    }
+  ]
+}

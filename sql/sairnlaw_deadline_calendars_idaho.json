@@ -1,0 +1,63 @@
+{
+  "_readme": [
+    "IDAHO HOLIDAY CALENDAR -- 2026, eleven dates, derived from Idaho Code Sec.",
+    "73-108 and checked by weekday.",
+    "",
+    "IDAHO PUBLISHES THREE HOLIDAY LISTS THAT DO NOT AGREE, and this is the one",
+    "the rule points at. I.R.C.P. 2.2 says 'legal holiday' and never defines it;",
+    "nothing in the civil or appellate rules does either. Idaho Code Sec.",
+    "73-108 ('Holidays enumerated') is the referent, and Sec. 67-5302(15)(a)",
+    "confirms the chain in terms: 'Holidays are enumerated in section 73-108,",
+    "Idaho Code.'",
+    "",
+    "NO JUNETEENTH, AND THAT IS THE CONTESTED DATE. Sec. 73-108 does not",
+    "enumerate it. The Secretary of State's published State Holidays page DOES,",
+    "on Friday 19 June 2026, and at least one Idaho county trial court closes",
+    "for it. It could only be a legal holiday here through Sec. 73-108's open",
+    "limb -- 'every day appointed by the President of the United States, or by",
+    "the governor of this state, for a public fast, thanksgiving, or holiday' --",
+    "which is a proclamation this engine cannot read. Omitting it reports EARLY.",
+    "Adding it would report LATE. It is omitted and disclosed.",
+    "",
+    "FRIDAY 3 JULY 2026 IS HERE AND THE SECRETARY OF STATE'S LIST DOES NOT SHOW",
+    "IT. 4 July 2026 is a Saturday, and Sec. 73-108's shift is mandatory: 'Any",
+    "legal holiday that falls on Saturday, the preceding Friday shall be a",
+    "holiday.' The SOS page prints Independence Day as Saturday 4 July with no",
+    "Friday. So the two lists disagree in BOTH directions -- one adds a day the",
+    "statute does not have, the other drops a day the statute requires.",
+    "",
+    "COLUMBUS DAY IS ENUMERATED AND IS CARRIED, unlike Oregon, which omits it.",
+    "",
+    "2026 ONLY. The Sec. 73-108 rules would generate 2027 mechanically, and that",
+    "is exactly why it is refused instead: generating a year would hide the",
+    "unresolved Juneteenth question and the ad-hoc limb behind a confident",
+    "answer."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "id",
+      "year": 2026,
+      "authority": {
+        "citation": "I.R.C.P. 2.2(a)(1)(C) via Idaho Code Sec. 73-108",
+        "url": "https://legislature.idaho.gov/statutesrules/idstat/Title73/T73CH1/SECT73-108/",
+        "computation_url": "https://isc.idaho.gov/rules-procedure/ircp",
+        "quote": "73-108. Holidays enumerated. Holidays, within the meaning of these compiled laws, are: Every Sunday; January 1 (New Year's Day); Third Monday in January (Martin Luther King, Jr.-Idaho Human Rights Day); Third Monday in February (Washington's Birthday); Last Monday in May (Memorial Day); July 4 (Independence Day); First Monday in September (Labor Day); Second Monday in October (Columbus Day); November 11 (Veterans Day); Fourth Thursday in November (Thanksgiving Day); December 25 (Christmas); Every day appointed by the President of the United States, or by the governor of this state, for a public fast, thanksgiving, or holiday. Any legal holiday that falls on Saturday, the preceding Friday shall be a holiday and any legal holiday enumerated herein other than Sunday that falls on Sunday, the following Monday shall be a holiday.",
+        "note": "THE STATUTE, NOT THE PUBLISHED SCHEDULE, AND THE TWO GENUINELY DISAGREE. I.R.C.P. 2.2 uses 'legal holiday' without definition and no Idaho court rule defines it; Idaho Code Sec. 73-108 is the referent and Sec. 67-5302(15)(a) points back at it by name. ELEVEN DATES FOR 2026, every one derived from the statute's own words and checked against its weekday. TWO ARE THE FINDING. (1) NO JUNETEENTH. Sec. 73-108 does not enumerate it; the Idaho Secretary of State's State Holidays page publishes it as Friday 19 June 2026, and at least one county trial court closes for it. The only route to it here is the statute's open limb for days 'appointed by the President ... or by the governor', which is a proclamation this engine cannot read. Omitting it means a deadline landing on 19 June is reported as due that day when the true one may roll: EARLIER, and safe. Adding it would roll off a possibly-countable day: LATER, and not. (2) FRIDAY 3 JULY 2026 IS A LEGAL HOLIDAY AND THE SOS LIST DOES NOT SHOW IT -- 4 July 2026 is a Saturday and the preceding-Friday shift is mandatory statute, while the SOS page prints Independence Day as Saturday 4 July with nothing on the Friday. A calendar copied from the executive branch would therefore be wrong in both directions at once. 4 JULY ITSELF IS ALSO CARRIED: the statute makes the Friday a holiday without unmaking the Saturday, and a Saturday is excluded by the weekend rule regardless, so carrying it is faithful and costs nothing. COLUMBUS DAY IS ENUMERATED and is carried; Oregon's calendar omits its own equivalent, and the two must not be read across. THE SUNDAY LIMB IS MANDATORY AND DORMANT: no Sec. 73-108 holiday falls on a Sunday in 2026. 'EVERY SUNDAY' IS ALSO A STATUTORY HOLIDAY and is deliberately NOT enumerated as dates here -- Rule 2.2(a)(1)(C) already excludes Sundays by name, so listing 52 of them would add nothing and obscure the rest. WHAT IS NOT HERE, ALL EARLY: any ad-hoc presidential or gubernatorial day; and Rule 2.2(a)(2)'s separate limb extending the time for FILING whenever 'the clerk's office is inaccessible', which is per-court and unknowable in advance. THE COURTS ARE A THIRD LIST AGAIN: the Idaho Supreme Court published a 2026 release headed 'Idaho Courts to be Open July 2 & 6', keeping courts open as essential services on days other parts of state government close. Court closure, state-employee holiday and legal holiday are three different sets in this state, and only the third governs Rule 2.2. 2026 ONLY: a later year is REFUSED rather than derived, precisely because the statute WOULD generate it and generating would hide the two open questions.",
+        "retrieved_at": "2026-08-30"
+      },
+      "dates": [
+        { "date": "2026-01-01", "name": "New Year's Day", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'January 1'. 1 January 2026 is a Thursday, so neither shift limb is engaged." },
+        { "date": "2026-01-19", "name": "Martin Luther King, Jr. - Idaho Human Rights Day", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'Third Monday in January', computed for 2026 and verified by weekday. Idaho names this holiday for both observances in the statute itself." },
+        { "date": "2026-02-16", "name": "Washington's Birthday", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'Third Monday in February', computed for 2026 and verified by weekday. The statute says Washington's Birthday; the Secretary of State's page calls it Presidents' Day. Same date, and no other Idaho holiday shares this shape -- contrast New Mexico, which observes Presidents' Day in NOVEMBER." },
+        { "date": "2026-05-25", "name": "Memorial Day", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'Last Monday in May', computed for 2026 and verified by weekday." },
+        { "date": "2026-07-03", "name": "Independence Day (observed, statutory Saturday shift)", "kind": "declared", "derivation": "4 July 2026 is a SATURDAY, and Idaho Code Sec. 73-108 makes the shift mandatory: 'Any legal holiday that falls on Saturday, the preceding Friday shall be a holiday.' DERIVED FROM THE STATUTE, NOT TRANSCRIBED FROM A SCHEDULE -- the Secretary of State's published State Holidays page prints Independence Day as Saturday 4 July and shows nothing on the Friday, so a calendar copied from it would miss this date entirely." },
+        { "date": "2026-07-04", "name": "Independence Day", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'July 4'. Carried alongside the shifted Friday because the statute adds the Friday without unmaking the Saturday. A Saturday is excluded by Rule 2.2(a)(1)(C)'s weekend limb regardless, so this entry changes no computation; it is here so the shift is visible in the data and not only in prose." },
+        { "date": "2026-09-07", "name": "Labor Day", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'First Monday in September', computed for 2026 and verified by weekday." },
+        { "date": "2026-10-12", "name": "Columbus Day", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'Second Monday in October', computed for 2026 and verified by weekday. ENUMERATED IN IDAHO AND CARRIED -- Oklahoma omits Juneteenth and Oregon omits Columbus Day, and neither omission may be read across to this state." },
+        { "date": "2026-11-11", "name": "Veterans Day", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'November 11'. 11 November 2026 is a Wednesday, so neither shift limb is engaged." },
+        { "date": "2026-11-26", "name": "Thanksgiving Day", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'Fourth Thursday in November', computed for 2026 and verified by weekday. THE DAY AFTER IS NOT A STATUTORY HOLIDAY IN IDAHO and is deliberately absent, unlike Kansas, South Carolina, Wisconsin and Maryland, which all carry it." },
+        { "date": "2026-12-25", "name": "Christmas", "kind": "declared", "derivation": "Idaho Code Sec. 73-108, 'December 25'. 25 December 2026 is a Friday, so neither shift limb is engaged." }
+      ]
+    }
+  ]
+}
