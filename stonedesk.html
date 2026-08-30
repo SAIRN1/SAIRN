@@ -28294,8 +28294,20 @@ document.addEventListener('DOMContentLoaded', function() {
          SD_HR branch re-checks session+role server-side on every call. -->
     <div id="emp-hr-card" style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;display:none">
       <div style="font-weight:700;margin-bottom:4px;color:var(--text)">Onboarding Paperwork</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Six new-hire forms &mdash; employee information, shop safety orientation, crystalline silica hazard training, PPE issue record, employment agreement, and direct deposit. Opens in a new tab; uses this same sign-in, so no second login. Silica training records are retained on the server, not just this browser.</div>
-      <a class="q-btn primary" href="/stonedesk-hr" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none">Open HR Onboarding</a>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Six new-hire forms &mdash; employee information, shop safety orientation, crystalline silica hazard training, PPE issue record, employment agreement, and direct deposit. Uses this same sign-in, so no second login. Silica training records are retained on the server, not just this browser.</div>
+      <!-- SAME TAB, DELIBERATELY. This shipped as target="_blank" rel="noopener"
+           and was BROKEN: StoneDesk keeps its session token in sessionStorage,
+           and Chrome does not copy sessionStorage into a tab opened from a
+           link. Tested live 2026-08-30 rather than reasoned from spec, and the
+           result was worse than expected -- the child tab read null even
+           WITHOUT rel="noopener", so removing that alone would not have fixed
+           it. Same-tab navigation preserves sessionStorage (verified in the
+           same pass), so /stonedesk-hr sees the session and its gate opens.
+           No code-level check could catch this: node --check, div balance and
+           the dead-button audit all passed on the broken version. It is the
+           auth-gated blind spot sairn-guardian-v2 names in its own Known Scope
+           Limitation -- only a real browser with a real session finds it. -->
+      <a class="q-btn primary" href="/stonedesk-hr" style="display:block;text-align:center;text-decoration:none">Open HR Onboarding</a>
     </div>
     <!-- AI COMMUNICATION PROFILES (2026-08-06) -- deliberately a real, manager-set
          record (sd_employee_profiles via api/sd-data.js), not an inferred one, per
