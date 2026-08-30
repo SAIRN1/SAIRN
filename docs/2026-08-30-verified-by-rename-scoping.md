@@ -158,4 +158,110 @@ with a deliberate reload afterwards.
 
 **Half a session for the columns.** The SAIRNlaw blob key is its own half-session
 because it ends in a full reload of 426 rows and a gate run to prove the hashes
-settled.
+settled. *(Row count re-measured — see §8.)*
+
+---
+
+## 8. Re-check 2026-08-30, later the same day (Hank) — KEEP DEFERRING
+
+**Verdict: the trigger has not arrived. Nothing was touched.** Michael asked
+whether the "next migration those five tables need anyway" moment had come. It
+has not, and one near-miss is worth naming so the next reader does not mistake it
+for one.
+
+### What was checked, and what it returned
+
+| check | result |
+|---|---|
+| Commits altering any of the five schema files since §1 was written | **none** beyond the comment alignment itself |
+| Pending SQL that `alter`s any of the five tables | **none** — the only `alter table` lines in those files are the original `enable row level security` statements |
+| `sql/append_only_grant_audit.sql`, `unused_delete_grant_revoke_2026-08-24.sql`, `full_crud_truncate_sweep_2026-08-24.sql` — all three name the five tables | **all RUN 2026-08-25**, each file says so in its own header |
+| `sql/sairncare_all_remaining_migrations.sql` — ten unrun SAIRNcare migrations | **real, still unrun, and NOT a bundling opportunity** — see below |
+| UI surface | **still zero**, re-verified |
+
+### THE NEAR-MISS, AND WHY IT IS NOT THE TRIGGER
+
+`sql/sairncare_all_remaining_migrations.sql` is a genuine unrun migration paste
+for SAIRNcare, and two of the five columns live on SAIRNcare tables. It looks
+like the bundling opportunity this deferral was waiting for. **It is not**, on
+two grounds:
+
+1. **It does not touch either table.** Every `create table if not exists` in that
+   file is for a table that does not exist yet — residents, staff, MAR, billing,
+   incidents, the employee-auth table. `alf_compliance_rules` and
+   `alf_payer_rules` appear in the file **only in its explanatory header**, as
+   two of the four tables that already exist.
+2. **Adjacency does not reduce the cost being deferred, and this is the point.**
+   The DDL was never the expensive part — §2 says so. The cost is the code deploy
+   and the two gate tools that subtract this field **by name**. Running a rename
+   in the same SQL-editor session as an unrelated paste saves one paste and
+   nothing else, while adding a second reason for that session to go wrong.
+
+**The trigger is a migration that must ALTER one of the five tables**, not one
+that happens to run near them.
+
+### Two numbers in this document have already moved
+
+Both are snapshots and should be re-measured rather than cited.
+
+- **§7 says "a full reload of 426 rows". It is 490 today** — 352
+  `law_deadline_rules` plus 138 `law_holidays`, read live from
+  `rules_fingerprint`. Mississippi and New Mexico were seeded between the two
+  measurements. **Every jurisdiction seeded adds rows carrying
+  `authority.verified_by`, so the one-time blob rewrite grows with the seeding
+  programme** — about 15% in a single day at the current pace. It is still
+  trivial in absolute terms and it does **not** change the recommendation, but
+  the direction is one-way and worth saying out loud.
+- **§4 says "32 references in 10 files". Re-counted today with the
+  `verified_by_app` false positive excluded, the real set is 37 references in 8
+  files:** `api/sd-data.js` 19, `api/legal-deadlines.js` 6,
+  `tools/sairn_load_state_check.py` 3, `api/reference-fingerprint.js` 2,
+  `tools/sairn_build_load_gates.py` 1, and three endpoint tests (2 + 3 + 1).
+  **The false positive is now 3 hits across TWO files, not one** —
+  `api/_lib/roofing-programs.test.js` asserts on `verified_by_app` as well as the
+  module that emits it. A careless `grep -l verified_by | xargs sed` would sweep
+  both into the rename and break a passing test for no reason.
+
+### One new piece of evidence, and it STRENGTHENS the case for waiting
+
+§3.2 predicted that renaming the jsonb key would make the load-state gate report
+every SAIRNlaw row STALE. That was a prediction; **it now has a same-day
+precedent on the very same object.** Mississippi's first load stored all 11 rows
+with a server-stamped `authority.retrieved_at`, because the seed rows omitted the
+field and `add_rule` defaults it. `tools/sairn_load_state_check.py` reported
+**all 11 as STALE within minutes of the load**. The dates were correct throughout
+— the drift was provenance, not arithmetic — and the gate caught it anyway.
+
+That is the gate working exactly as designed, on `data.authority`, today. It is
+also a demonstration of how easily that object drifts: one absent field, and a
+whole jurisdiction goes red. A rename of a key inside it is the same class of
+event at 490 rows instead of 11, and it must land in the **same step** as the
+change to the tools that strip it.
+
+### The line not to cross — still uncrossed, on evidence I can actually stand behind
+
+Every licence key named anywhere in the repo against the five tables is a house
+tenant: `DNT-PINNACLE-2026`, `RF-PINNACLE-2026`, `ALF-TEST-2026`. "PINNACLE" is
+the internal canonical tenant name used across every SAIRN app, not a customer.
+The only two keys in the repo that look like third parties — `SD-PARTNER-2026`
+and `BLD-INDUSTRIES-2026` — are StoneDesk and SAIRNbuild, neither of which has
+any of the five tables.
+
+**That is repo evidence, not a live tenant audit.** Nobody has queried
+`license_keys` for a customer row on SAIRNcare, SAIRNdental or SAIRNroofing, and
+that query is what would actually settle it. Stated plainly rather than rounded
+up to "no customers", because this is the one fact the whole deferral rests on.
+
+### Re-check when any ONE of these becomes true
+
+1. A migration is written that must `alter` `alf_compliance_rules`,
+   `alf_payer_rules`, `dnt_cred_rules`, `rf_cert_rules` or
+   `rf_contingency_rules`.
+2. A paying customer is about to be provisioned on SAIRNcare, SAIRNdental or
+   SAIRNroofing. **This is the hard one** — after it, Option A stops existing and
+   Option B gets more expensive to schedule, and nothing will announce it.
+3. Either gate tool is being edited for another reason, since the by-name
+   subtraction is the risk and touching it deliberately is cheaper than touching
+   it incidentally.
+4. Someone proposes reading `verified_by` into a UI. The zero-surface fact in §4
+   is doing a lot of work in this recommendation and it would stop being true.

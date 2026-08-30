@@ -1689,6 +1689,31 @@ provisioned on SAIRNcare, SAIRNdental or SAIRNroofing, after which the cheap opt
 verification tenant. The line to not cross is a paying customer, and there is
 currently nothing that would stop it.
 
+**RE-CHECKED 2026-08-30, later the same day (Hank): STILL DEFERRED — the trigger
+has not arrived, and one near-miss is named so nobody mistakes it for one.** No
+commit has altered any of the five schema files; no pending SQL alters any of
+them; the three grant sweeps that name them were all RUN on 2026-08-25.
+`sql/sairncare_all_remaining_migrations.sql` IS a real unrun migration paste for
+SAIRNcare and looks like the bundling opportunity — **it is not**: it creates
+tables that do not exist yet and names `alf_compliance_rules` / `alf_payer_rules`
+only in its own explanatory header, and adjacency saves one SQL paste while the
+cost being deferred is the code deploy plus the two by-name gate-tool edits.
+**Two numbers in the scoping doc have already moved and are snapshots, not
+facts:** the SAIRNlaw blob count is **490, not 426** (Mississippi and New Mexico
+seeded in between — it grows with every jurisdiction), and the reference count is
+**37 real refs in 8 files, not 32 in 10**, with the `verified_by_app` false
+positive now spanning **two** files rather than one. **New evidence, and it
+argues for waiting:** the gate's predicted failure mode got a same-day precedent
+on the same object — Mississippi's first load stored 11 rows with a
+server-stamped `authority.retrieved_at` the seed omitted, and
+`tools/sairn_load_state_check.py` reported all 11 STALE within minutes. Correct
+dates, provenance-only drift, caught anyway. **The line is still uncrossed on
+REPO evidence** (every licence on the five tables is a house tenant; "PINNACLE"
+is the internal name across every app) — **but nobody has queried `license_keys`
+for a real customer row on SAIRNcare, SAIRNdental or SAIRNroofing, and that is
+the check that would settle it.** See §8 of the scoping doc for the four
+re-check triggers.
+
 ---
 
 ## SAIRNvet exotic-species scoping — CLOSED 2026-08-30, shipped 2026-08-28 and never recorded
