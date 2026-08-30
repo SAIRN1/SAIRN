@@ -538,6 +538,34 @@ drifts exactly like any other unverified claim in this skill set.
 | SAIRNmechanical | sairnmechanical.html | #84CC16 | sairnmechanical |
 | SAIRNcash | sairncash.html | #7C6FFF | sairncash |
 | SAIRNgrounds | sairngrounds.html | #16A34A | sairngrounds |
+| SAIRNdental | sairndental.html | #0EA5E9 | sairndental |
+| SAIRNroofing | sairnroofing.html | #C2410C | sairnroofing |
+| SAIRNsenior | sairnsenior.html | #DB2777 | sairnsenior |
+
+**Corrected 2026-08-30, the SIXTH correction, and this time the map is DERIVED
+rather than argued.** Added **SAIRNdental**, **SAIRNroofing** and **SAIRNsenior**
+— three real, tracked, routed apps, all returning **200 live**, all absent from
+this table. This is the identical failure to 2026-08-19 (SAIRNcash, SAIRNgrounds)
+repeating eleven days later, which is the argument for a tool rather than another
+promise to be careful.
+
+`tools/sairn_app_map_check.py` now derives the verifiable half from three
+sources — `git ls-files`, `vercel.json`, and a live HTTP request per route — and
+diffs them against this table. It **does not rewrite the table**: brand colour
+and `app_id` are real decisions that cannot be derived, and a regenerator would
+destroy them. It reports drift and exits non-zero. Run it before trusting any
+"all apps" claim, including this file's own description.
+
+Colour and `app_id` for the three new rows were read out of each app's own
+source (`--brand`/`--p` custom property and the `APP_ID` constant), not assigned.
+**Two pre-existing colour collisions stand and are not resolved here** —
+`#0D9488` and `#7C6FFF`/`#7C3AED` are near-neighbours flagged in earlier
+corrections; re-theming a live app is a product decision, not a map fix.
+
+**Header count note:** this file's own description says "ALL 13 SAIRN apps" and
+lists 13 by name. **There are 16.** The description is now wrong in the same way
+the table was, and is left as evidence rather than silently patched — a count
+carried in prose is exactly the thing the tool exists to replace.
 
 **Corrected 2026-08-13** — removed the planned `SAIRNhr -> hr.html` and
 `SAIRNacc -> sairnaccounting.html` rows entirely. Neither is a real or
