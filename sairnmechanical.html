@@ -1406,7 +1406,15 @@ async function runBlueprintAI(input){
     var s=null;try{s=JSON.parse(raw);}catch(e){return false;}
     if(!s||!s.token)return false;
     try{
-      var pl=JSON.parse(atob(s.token.split('.')[1]));
+      // SEGMENT [0], NOT [1] -- CORRECTED 2026-08-30. api/_lib/auth.js signs as
+      // `payloadB64 + '.' + b64url(sig)` (lines 266 and 343), so the PAYLOAD is
+      // segment 0 and the SIGNATURE is segment 1. Reading [1] handed atob() a
+      // signature, JSON.parse threw, the catch below returned false -- so
+      // mechRestore() could NEVER succeed on a genuine server-issued token,
+      // even once it was wired into the load path. SAIRNroofing already uses
+      // [0] and is correct; SAIRNdental also uses [1] and is reported
+      // separately rather than changed from here.
+      var pl=JSON.parse(atob(s.token.split('.')[0]));
       if(!pl||pl.app!=='sairnmechanical'||!pl.exp||pl.exp<=Date.now())return false;
     }catch(e){return false;}
     mechSession=s;
