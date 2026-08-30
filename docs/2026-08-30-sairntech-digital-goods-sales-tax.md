@@ -236,6 +236,11 @@ retained certificate is.**
 1. **Register for an Ohio vendor's license.** Physical nexus exists today.
    OAC 5703-9-46(C) requires it for anyone in Ohio selling ADP/computer/EIS for
    use in business.
+   **STATUS 2026-08-30: ON HOLD, deliberately.** A new LLC is being formed
+   (~30 days) and the filing needs that entity's real FEIN. **Do not chase this
+   or attempt to file under an interim identity** — Michael supplies the EIN when
+   it is ready. Recorded here so a later session does not read "register before
+   the first sale" as an outstanding action item and re-open it.
 2. **Decide the Stripe architecture** (§2). Highest-leverage decision here and
    cheapest to make now.
 3. **Decide what we are selling and name it accordingly** (§1, the wording risk).

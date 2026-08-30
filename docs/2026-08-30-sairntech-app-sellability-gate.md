@@ -43,11 +43,20 @@ not return the app.
 production route showing a 200 and the app's own content.
 
 **This is not theoretical.** `SAIRNmechanical` was listed in Guardian's App File
-Map for months as a live app. The file has **never been on `main`** — it exists
-only on an unmerged branch, and `sairn.vercel.app/sairnmechanical` returns
-**404**. It was found by curling every app route during an audit, because
-*nothing had ever checked that the mapped filenames exist.* A catalog would have
-published that as a product.
+Map for months as a live app while the file was **only on an unmerged branch**
+and `sairn.vercel.app/sairnmechanical` returned **404**. It was found by curling
+every app route, because *nothing had ever checked that the mapped filenames
+exist.* A catalog would have published that as a product.
+
+> **CORRECTED 2026-08-30, and the correction proves the check's own point.** The
+> paragraph above originally said the file *"has never been on `main`"* — present
+> tense — which **stopped being true on 2026-08-28**, two days before this
+> document was written. `bb9dbb3 feat(sairnmechanical): recover the app from an
+> unmerged branch, with real auth first` landed it; `vercel.json` routes it; and
+> a live curl returns **200**. I inherited the claim from Guardian's map without
+> re-running the very check the paragraph recommends. **Check 1 must be run
+> against a live curl every time, including against this document's own
+> examples.**
 
 **SAIRNfreedom fails this outright** — researched, nothing built.
 
@@ -194,7 +203,7 @@ run needs the live probes each check names.
 | App | Standing | Blocking check |
 |---|---|---|
 | **SAIRNfreedom** | **NOT LISTED** | Check 1 — nothing built |
-| **SAIRNmechanical** | **NOT LISTED** | Check 1 — never on `main`, route 404s |
+| **SAIRNmechanical** | **UNASSESSED** (was NOT LISTED) | Check 1 now **PASSES** — on `main` since `bb9dbb3`, routed, live 200. Remaining checks not run |
 | **SAIRNlaw** | **NOT LISTED** | **Check 2 — open pre-launch blocker whose sole justification is that no external customer exists** |
 | All others | **UNASSESSED** | The gate has not been run. Do not read "not listed here" as "sellable" |
 

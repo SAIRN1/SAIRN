@@ -478,7 +478,7 @@ drifts exactly like any other unverified claim in this skill set.
 | SAIRNcare | sairncare.html | #0D9488 | sairncare |
 | SAIRNvet | sairnvet.html | #7C3AED | sairnvet |
 | SAIRNlegacy | sairnlegacy.html | #6B7280 | sairnlegacy |
-| ~~SAIRNmechanical~~ | **NOT ON `main` — see note below** | #84CC16 | sairnmechanical |
+| SAIRNmechanical | sairnmechanical.html | #84CC16 | sairnmechanical |
 | SAIRNcash | sairncash.html | #7C6FFF | sairncash |
 | SAIRNgrounds | sairngrounds.html | #16A34A | sairngrounds |
 
@@ -494,8 +494,22 @@ above. If SAIRNhr or SAIRNacc becomes a real planned app later, treat that
 as a fresh addition with its own color decision, not a restoration of
 these rows.
 
-**Corrected 2026-08-27 — SAIRNmechanical is NOT a live app and its file has
-never been on `main`.** The row above claimed `sairnmechanical.html`; that file
+**CORRECTED AGAIN 2026-08-30 — SAIRNmechanical IS now a live app, and the
+2026-08-27 correction below is itself superseded.** `bb9dbb3
+feat(sairnmechanical): recover the app from an unmerged branch, with real auth
+first` landed the file on `main` on **2026-08-28**; `vercel.json` routes it; and
+`https://sairn.vercel.app/sairnmechanical` returns **200**, re-verified
+2026-08-30 by curling every app route. The map row above is restored.
+
+**The 2026-08-27 correction is kept below rather than deleted**, because it is
+the reason the recovery happened and because this table has now been wrong about
+this one app in *both* directions — first asserting a live app that did not
+exist, then asserting a missing app that had been recovered. **That is the
+argument for deriving the row (`git ls-files` + a live curl) rather than reading
+it.** The 2026-08-30 sweep found all 19 app routes returning 200.
+
+**Superseded — corrected 2026-08-27 — SAIRNmechanical is NOT a live app and its
+file has never been on `main`.** The row above claimed `sairnmechanical.html`; that file
 does not exist in `main`'s tree, is on disk in no clone, and `vercel.json`
 carries no route for it. `https://sairn.vercel.app/sairnmechanical` returns
 **404**, correctly — there is nothing to serve.

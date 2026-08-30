@@ -106,9 +106,11 @@ Not every app is sellable today, and the differences are known:
 
 - **SAIRNfreedom** — researched tonight, **nothing built**. No schema, no app
   file.
-- **SAIRNmechanical** — the file has **never been on `main`**; it lives only on
-  an unmerged branch, `sairn.vercel.app/sairnmechanical` returns **404**, and
-  recovery is a separate authorised task requiring a real review pass.
+- ~~**SAIRNmechanical** — never on `main`, returns 404.~~ **CORRECTED
+  2026-08-30: recovered and live.** `bb9dbb3` landed it on `main` on 2026-08-28,
+  it is routed in `vercel.json`, and a live curl returns **200**. The claim was
+  inherited from Guardian's app map and was two days stale when written here.
+  Status is now *unassessed against the sellability gate*, not *not listed*.
 - Several live apps carry **known open items** — unaudited panels, deferred
   minimum-necessary tiering, an unexamined liquor-licensing surface.
 
