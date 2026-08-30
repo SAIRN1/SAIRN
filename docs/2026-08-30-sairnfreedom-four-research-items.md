@@ -108,7 +108,7 @@ parking, preferred access, discounts. It covers **recurring privileges, not
 physical items**; Pub 1771's own example values a $20 poster separately inside a
 $75 membership. **A pin does not ride along on dues.**
 
-## Unverified
+## Unverified — IRS
 
 - **Whether a premium earned by crossing a *cumulative lifetime* threshold
   attaches to the crossing payment.** No authority found; § 170(f)(8) and § 6115
@@ -238,7 +238,7 @@ acting for the agency"* question (34 CFR 99.31(a)(1)(i)(B)) and ORC 3319.321's
 redisclosure condition. **Get everything from the parent and both problems
 vanish.**
 
-## Unverified
+## Unverified — minor data
 
 Post-June-2025 text of 16 CFR 312.2 (eCFR and federalregister.gov both blocked;
 quoted from GovInfo's 2023 annual edition — **the statutory basis is unchanged**,
@@ -340,7 +340,7 @@ dues-paying membership, with the roster available on request. **The membership
 module is therefore already touching a liquor-permit retention condition** —
 which belongs in the wholly-unexamined licensing gap (§9a.3).
 
-## Unverified
+## Unverified — Ohio alcohol
 
 `com.ohio.gov` Division of Liquor Control pages returned **404**; nothing from
 the Department of Commerce is relied on. Definition of "alcoholic beverages" in
@@ -430,7 +430,7 @@ Easy to read as a dues waiver. It is not.
 - **Elks:** $100 fine plus possible probation for late **Annual Report** filing;
   no penalty found specific to per-capita non-remittance.
 
-## Unverified
+## Unverified — per-capita
 
 **Eagles entirely** — the Grand Aerie Constitution & Statutes is sold, not
 posted; treat Eagles as unresearched. The "Golden Age Eagle pays per capita

@@ -57,7 +57,7 @@ low, the acceptable behaviours are to **re-shoot**, **flag for manual
 re-count**, or **accept a typed volume** — none of which is a position on an
 image.
 
-### 3. Phase 2's passive sensor is DEFERRED — do not plan around it
+### 2. Phase 2's passive sensor is DEFERRED — do not plan around it
 
 Superseded 2026-08-30. This section previously read "was not scanned; it needs
 its own patent pass before it is built." **It has since been scanned, and both
@@ -104,7 +104,7 @@ three things the competitive scan identifies as the actual moat (see *The
 competitive gap*, corrected below). It is a demo feature, not a defensive one,
 and its FTO cost should be judged on that basis.
 
-### 2. Banner is ANIMATED app-wide, static on onboarding (2026-08-30)
+### 3. Banner is ANIMATED app-wide, static on onboarding (2026-08-30)
 
 Supersedes the earlier static-everywhere call. One animated flag banner,
 consistently, on the dashboard and every page; **onboarding is the exception and
@@ -115,7 +115,7 @@ rendered page before it is called done. No literal flag reproduction: diagonal
 red/white/blue stripe with a small star cluster. Full reasoning in the build
 spec §1d.
 
-### 3. Scope of this document
+### 4. Scope of this document
 
 Everything verified here is the **gaming** half. Liquor licensing is
 unexamined — see *Still not verified*. Do not read compliance coverage into

@@ -149,6 +149,61 @@ unreviewable, and a real change can hide inside 34,000 lines of noise.
 explicitly. A size difference of exactly one byte per line is CRLF, not drift —
 normalise before calling anything diverged.
 
+## 10b. String-anchored edits on a growing document silently hit the wrong copy
+
+**Added 2026-08-30, from two defects found by an end-to-end read of a document
+this platform had just assembled — both introduced by edits that each reported
+success.**
+
+**What happened.** A 750-line spec was built by many small programmatic edits,
+each anchored on a heading string. One edit moved section `9d` above `9b`. A
+later edit replaced a range using `s.index("### 9b")` — which by then pointed at
+a copy *above* the text it meant to replace. Result: **the entire 9b/9c/9d block
+existed twice, ~100 lines apart, with an orphaned section stranded between
+them.** Every individual section read correctly. Nothing short of reading the
+whole file end to end would have found it.
+
+**A second instance, same day, one line long.** Relabelling four identical
+`## Unverified` headings with `s.replace(old, new, 1)` four times produced
+`## Unverified — per-capita — Ohio alcohol — minor data — IRS` on the *first*
+heading, because `"## Unverified"` is a **prefix of its own replacement** and
+each pass re-matched the line the previous pass had just edited.
+
+**A third, different cause, same symptom.** A binding-decisions list read
+`1, 3, 2, 3` because one session inserted a numbered heading while another was
+renumbering — **the document changed between the read and the write.**
+
+### Rules
+
+- **Anchor on line indices, not strings, for any structural edit** — moving,
+  deleting or replacing a block. Find the boundaries, then splice by index.
+- **Never `replace(old, new, 1)` in a loop where `new` contains `old`.** That is
+  guaranteed to re-match. Collect the target line numbers first, then assign.
+- **Assert the anchor is unique before using it:** `assert s.count(anchor) == 1`.
+  One line, and it converts a silent mis-edit into a loud failure.
+- **A heading that can repeat is not an anchor.** `## Unverified`,
+  `### 9b`, `## Sources` — if the document could ever contain two, index them.
+- **Re-read before renumbering.** Another session may have inserted into the
+  range you are about to renumber, in this repo, tonight.
+
+### The check that actually catches it
+
+Structural defects survive section-level review because each section is
+individually correct. Run this over any document assembled by more than a few
+edits, and over a whole directory before shipping:
+
+    # duplicate headings and duplicate multi-line blocks, per file
+    python - <<'EOF'
+    import collections, hashlib, sys
+    lines = open(sys.argv[1], encoding='utf-8').read().split('
+')
+    for h, n in collections.Counter(l for l in lines if l.startswith('#')).items():
+        if n > 1: print('DUP HEADING', n, h[:60])
+    EOF
+
+**Then read it end to end anyway.** The scan finds exact repeats; it does not
+find an orphan that is merely in the wrong place.
+
 ## 11. Verify against a marker that exists ONLY in this change
 
 **Incident:** a live-verification grep for a colour fix returned a hit and read
