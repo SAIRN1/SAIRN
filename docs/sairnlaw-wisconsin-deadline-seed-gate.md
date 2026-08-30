@@ -304,3 +304,50 @@ cannot be expressed in a jurisdiction+year calendar (EARLY, safe).
 schedules, per county or centrally, which is what option 1 above turns on; and
 the § 801.18 e-filing subchapter was not read beyond § 801.15(5)(b)'s reference
 to it.
+
+## 7. UPDATE 2026-08-30 -- THE OPEN QUESTION IS NOW ANSWERED, AND THE ANSWER REFUSES OPTION 1
+
+Sec. 6 listed as **not determined** "whether Wisconsin's clerks of circuit court
+publish closure schedules, per county or centrally, which is what option 1
+above turns on". They do, and it settles the question in the direction that
+makes option 1 unusable.
+
+```
+https://www.wicourts.gov/courts/circuit/docs/holidayschedule26.pdf   200, 86,005 B, 3pp
+https://www.wicourts.gov/courts/circuit/docs/holidayschedule27.pdf   404
+```
+
+**It is per-COUNTY, and the counties genuinely diverge.** The key printed on the
+sheet is `X = Closed all day; PM = Closed in the afternoon; No Court = Courts
+are down but offices are OPEN`, and at least **12 of the 72 counties** carry a
+non-closure marker on at least one listed holiday. Read straight off the PDF:
+
+| County | What the schedule says |
+|---|---|
+| Barron | MLK Jr Day **No Court**; Memorial Day **Open** |
+| Dane | Juneteenth **Open** |
+| Fond du Lac, Forest, Grant, Marinette, Portage, Taylor | MLK Jr Day **PM** only |
+| Burnett, Chippewa, Marathon, St. Croix | **No Court** on at least one listed day |
+
+So a day on the Sec. 801.15(1)(a) union list is **NOT** reliably a day the clerk
+of courts office is closed. Encoding the list as a rollover proxy would roll the
+deadline in Dane County on Juneteenth and in Barron County on Memorial Day when
+Sec. 801.15(1)(b) would not -- **LATE, the direction that misses a filing.**
+**Option 1 is therefore not merely unproven, it is refuted by the court system's
+own publication.**
+
+### What that leaves
+
+- **Option 2** (seed only periods >= 11 days) still leaves the rollover exposed.
+- **Option 3** (refuse rollover) is safe and nearly useless.
+- **Option 4, NEW and not in the original three: seed the STATEWIDE INTERSECTION
+  of actual closures** -- only days on which every county is marked closed all
+  day. Derived from a primary court-system publication; can never roll LATE,
+  because any day some county is open is simply absent; and where it is wrong it
+  is EARLY, which is the disclosable direction. It also caps at 2026, since the
+  2027 sheet 404s -- the Arkansas and Utah shape.
+
+**Not chosen here.** Option 4 is a design decision with a legal consequence and
+belongs to Michael, not to the session that found the schedule. **Wisconsin
+remains unseeded pending that call**, and it is the same question Alabama's
+Sec. 1-3-8(f)(1) raises in a milder form.

@@ -1,0 +1,109 @@
+{
+  "_readme": [
+    "ALABAMA HOLIDAY CALENDAR -- 2026, the union of three sources.",
+    "Ala. R. Civ. P. 6(a)(4) is self-contained in a way no other seeded rule is:",
+    "it NAMES eleven holidays and then sweeps in the federal list AND Ala. Code",
+    "1-3-8. 1-3-8 carries two days the rule does not name -- Confederate Memorial",
+    "Day and Jefferson Davis' Birthday -- and both are legal holidays for deadline",
+    "purposes anyway. Neither exists on any other calendar in this platform.",
+    "",
+    "2027 IS NOT EMITTED. Every date here was derived from statutory formulas and",
+    "checked by day-of-week for 2026 specifically, and 1-3-8(b)'s both-ways shift",
+    "produces year-boundary spills that must be asserted per year rather than",
+    "assumed through. Adding 2027 means doing that work for 2027."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "al",
+      "year": 2026,
+      "authority": {
+        "citation": "Ala. Code Sec. 1-3-8 (state holidays) UNION 5 U.S.C. Sec. 6103 (federal holidays), as both are incorporated by Ala. R. Civ. P. 6(a)(4)(A) and (B)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv6.pdf",
+        "computation_url": "https://judicial.alabama.gov/docs/library/rules/cv6.pdf",
+        "quote": "As used in this rule and Rule 77(c), \"legal holiday\" includes: (A) the day set aside by statute for observing New Year's Day, Martin Luther King Jr.'s Birthday, President's Day, Memorial Day, Juneteenth, Independence Day, Labor Day, Columbus Day, Veterans' Day, Thanksgiving Day, or Christmas Day; or (B) any other day declared a holiday by the President or Congress or as prescribed by Sec. 1-3-8, Ala. Code 1975.",
+        "note": "A UNION OF THREE SOURCES, and Alabama is the only seeded state whose RULE NAMES ITS OWN HOLIDAYS. Ala. R. Civ. P. 6(a)(4)(A) enumerates eleven days; 6(a)(4)(B) then sweeps in \"any other day declared a holiday by the President or Congress or as prescribed by Sec. 1-3-8\". Sec. 1-3-8(a) lists THIRTEEN. So the answer is the union, not the rule's shorter list, and the Committee Comment says so outright: \"The net effect is the inclusion of all holidays whether state or federal within the definition of a legal holiday.\" THE TWO THE RULE OMITS ARE THE ONES THAT MATTER: CONFEDERATE MEMORIAL DAY (fourth Monday in April) and JEFFERSON DAVIS' BIRTHDAY (first Monday in June). Neither is federal, neither is in the rule's eleven, and no other jurisdiction on this platform carries either date -- so a calendar built from the rule's own list alone would compute EARLY twice a year, and one built from the federal list alone would miss both plus the combined-name days. THANKSGIVING HAS NO STATUTORY DATE. Sec. 1-3-8(a)(12) reads \"Thanksgiving Day, as designated by the Governor\", so it is NOT derivable from the statute and is taken from the federal limb instead. Recorded rather than assumed. THE SHIFT IS BOTH WAYS AND UNCONDITIONAL -- Sec. 1-3-8(b): \"If any holiday falls on Sunday, the following day is the holiday. If any holiday falls on Saturday, the preceding day is the holiday.\" No enumerated subset (contrast Minnesota) and no purpose caveat (contrast South Carolina). In 2026 it fires exactly once, on 4 July, a Saturday, moving the holiday BACK to Friday 3 July. SATURDAYS ARE NOT HOLIDAYS BUT ARE STILL EXCLUDED: the Committee Comment records that Rule 6 overrides Sec. 1-1-4 on this point -- \"Under Sec. 1-1-4 ... Saturdays are not treated as holidays. This Rule will include Saturdays\". The engine's weekend handling already does that; it is noted so nobody adds Saturdays to this list as dates. NOT ENCODED, BOTH EARLY AND BOTH DISCLOSED: MARDI GRAS, which Sec. 1-3-8(e)(1) makes a holiday in BALDWIN AND MOBILE COUNTIES only, and which a jurisdiction+year calendar cannot express; and Sec. 1-3-8(f)(1), which lets a state office STAY OPEN on a state holiday on 60 days' written notice -- discretionary, unknowable, and the one Alabama item whose direction is LATE if a court used it. See the jurisdiction coverage disclosure for al in api/_lib/deadline-engine.js.",
+        "retrieved_at": "2026-08-30"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(1) January 1; also named in Ala. R. Civ. P. 6(a)(4)(A) and federal."
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King, Jr.'s and Robert E. Lee's Birthday",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(2) the third Monday in January. The COMBINED Alabama name; Ala. R. Civ. P. 6(a)(4)(A) names only MLK."
+        },
+        {
+          "date": "2026-02-16",
+          "name": "George Washington's and Thomas Jefferson's Birthday",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(3) the third Monday in February. Ala. R. Civ. P. 6(a)(4)(A) calls it President's Day."
+        },
+        {
+          "date": "2026-04-27",
+          "name": "Confederate Memorial Day",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(4) the fourth Monday in April. STATE ONLY, and NOT named in Rule 6(a)(4)(A)'s eleven -- it reaches deadlines through 6(a)(4)(B)'s 'as prescribed by Sec. 1-3-8' limb. Omitting it computes EARLY. No other seeded jurisdiction has this date."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(5) the last Monday in May; also federal."
+        },
+        {
+          "date": "2026-06-01",
+          "name": "Jefferson Davis' Birthday",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(6) the first Monday in June. STATE ONLY and again NOT in the rule's own eleven -- reached only through 6(a)(4)(B). No other seeded jurisdiction has this date."
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(7) June 19; also named in Ala. R. Civ. P. 6(a)(4)(A) and federal."
+        },
+        {
+          "date": "2026-07-03",
+          "name": "The Fourth of July (observed)",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(8) July 4. 4 July 2026 is a SATURDAY, and Sec. 1-3-8(b) shifts a Saturday holiday to THE PRECEDING DAY -- Friday 2026-07-03. The federal observance under 5 U.S.C. 6103(b)(1) is the same day, by the same mechanism."
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(9) the first Monday in September; also federal."
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day, Fraternal Day, and American Indian Heritage Day",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(10) the second Monday in October. The three-part Alabama name; also federal as Columbus Day."
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(11) November 11; also federal."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(12) says only 'as designated by the Governor' -- THE DATE IS NOT DERIVABLE FROM THE STATUTE. It is taken here from the FEDERAL limb, 5 U.S.C. Sec. 6103(a) the fourth Thursday in November, which reaches Alabama through Rule 6(a)(4)(B)'s President-or-Congress clause and is independently named in 6(a)(4)(A)."
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "Ala. Code Sec. 1-3-8(a)(13) December 25; also federal."
+        }
+      ]
+    }
+  ]
+}

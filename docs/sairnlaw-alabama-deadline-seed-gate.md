@@ -1,5 +1,20 @@
 # Alabama — deadline-seed source-availability gate
 
+**SEEDED 2026-08-30 -- 11 rules, calendar 2026. Loaded to LAW-PINNACLE-2026 and
+live-verified 16/16.** All four "get this right" items in the verdict were
+encoded and asserted: the FEDERAL after-expiry service order (asserted against
+the date period-lengthening would have given), the ELEVEN-day exclusion, the
+three-source holiday union, and Thanksgiving taken from the federal limb
+because Sec. 1-3-8(a)(12) gives no date.
+
+**Sec. 1-3-8(f)(1) IS NOT RESOLVED.** The office-may-stay-open provision, whose
+direction is LATE, is disclosed in JURISDICTION_COVERAGE.al rather than modelled
+-- it is discretionary, per-office and published nowhere machine-readable. This
+gate said it should go to the bundled holiday question rather than be waved
+through, and it is still there, now alongside the sharper Wisconsin form of the
+same question: a statutory holiday list is not the same fact as whether the
+courthouse was open.
+
 **Run 2026-08-26. Verdict: PASS — the most recently amended rule of any state
 gated, a self-contained holiday definition that does NOT depend on the statute
 for its list, and the FIRST state seeded in a long run that uses the FEDERAL

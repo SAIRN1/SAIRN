@@ -1,0 +1,373 @@
+{
+  "_readme": [
+    "ALABAMA CIVIL DEADLINE RULES -- 11 rows, Alabama Rules of Civil Procedure.",
+    "Each rule read verbatim from its OWN official PDF on the Alabama Judicial",
+    "System site, judicial.alabama.gov/docs/library/rules/cv<N>.pdf -- real text,",
+    "pypdf-extractable, each carrying its own amendment line.",
+    "",
+    "== FOUR THINGS THAT WOULD BE WRONG IF INHERITED FROM A NEIGHBOUR ====",
+    "1. THE SERVICE ORDER IS FEDERAL after-expiry -- '3 days are added AFTER THE",
+    "   PERIOD WOULD OTHERWISE EXPIRE'. Nearly every recently seeded state is",
+    "   period-lengthening, and the two orders diverge whenever the unrolled last",
+    "   day lands on a weekend or holiday.",
+    "2. THE EXCLUSION IS ELEVEN DAYS, not seven and not Arkansas's fourteen.",
+    "3. THE HOLIDAY ANSWER IS A UNION of the rule's own eleven named days,",
+    "   Ala. Code 1-3-8's thirteen, and the federal list. The rule NAMES ITS OWN",
+    "   DAYS -- a shape no other seeded state has -- and 1-3-8 adds two the rule",
+    "   omits, swept in by 6(a)(4)(B).",
+    "4. 'MAY' vs 'SHALL NOT BE REQUIRED'. Rules 33 and 34 give the defendant an",
+    "   ELECTION to take 45 days; only Rule 36 imposes a FLOOR. Encoding the",
+    "   elections as floors would report dates the rules do not guarantee.",
+    "",
+    "== EFFECTIVE DATES ARE PER RULE ====================================",
+    "Read from each PDF's own amendment line, not from one collection date.",
+    "Rule 6 is the freshest text on the platform -- 'Amended 3-26-2026, effective",
+    "4-9-2026' -- while Rule 36's dates from 1995. The engine computes against",
+    "the law as it stood at the TRIGGER date, so this field is load-bearing.",
+    "",
+    "== NOT ENCODED, AND WHY ============================================",
+    "Rule 12(a)'s service-by-publication carve-out (the applicable procedure was",
+    "not read); Rule 6(dc), which disapplies the exclusion in unlawful-detainer",
+    "and eviction actions -- a domain-scoped disapplication no other jurisdiction",
+    "has, irrelevant to civil litigation but it must not be lost if landlord/",
+    "tenant is ever seeded; Rule 5(b)(2) itself; and Rule 6(b) extensions, which",
+    "are discretionary."
+  ],
+  "rules": [
+    {
+      "rule_id": "al-arcp-12a-answer-after-service",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and complaint (Alabama)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 12(a)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv12.pdf",
+        "quote": "A defendant shall serve an answer within thirty (30) days after the service of the summons and complaint upon that defendant except when service is made by publication and a different time is prescribed under the applicable procedure.",
+        "note": "THIRTY days. THE PUBLICATION CARVE-OUT IS NOT ENCODED: the rule excepts service by publication \"where a different time is prescribed under the applicable procedure\", and that procedure was not read, so a caller whose service was by publication must not use this row. The engine cannot detect the method of service and does not try. NO SERVICE EXTENSION. Ala. R. Civ. P. 6(d) adds its three days only where \"service is made under Rule 5(b)(2)(C) (by mail) or (E) (through the court's electronic-filing system)\". A summons and complaint go out under RULE 4, not Rule 5(b)(2), so 6(d) does not reach this row. Same structure as the federal rule and the same answer Arkansas reaches -- Arkansas says it in an express proviso naming Rule 4, Alabama leaves it to the cross-reference, and two FEDERAL rows had to be corrected on 2026-08-27 because that cross-reference had been read the other way. Omitting the extension computes EARLY, which is the safe direction.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2012-11-28",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-12a-answer-to-crossclaim",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Answer to a cross-claim (Alabama)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "al_rcp_6_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "efiling_service_provider",
+          "electronic"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 12(a)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv12.pdf",
+        "quote": "A party served with a pleading stating a cross-claim against that party shall serve an answer thereto within thirty (30) days after the service upon that party.",
+        "note": "THIS ROW KEEPS THE THREE DAYS while the summons-answer row above does not, and the difference is the service rule rather than the time rule: a pleading stating a cross-claim is served under Rule 5, which is what 6(d) reaches. TAKES THE THREE DAYS, and the ORDER IS FEDERAL: \"3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule 6(a)\" -- roll, add, roll again. Nearly every recently seeded state is period-lengthening instead, and the two orders diverge whenever the unrolled last day lands on a weekend or holiday. Electronic-filing-system service is enumerated alongside mail in the rule itself.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2012-11-28",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-12a-reply-to-counterclaim",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim in the answer (Alabama)",
+      "trigger_event": "service_of_answer_containing_counterclaim",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "al_rcp_6_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "efiling_service_provider",
+          "electronic"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 12(a)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv12.pdf",
+        "quote": "The plaintiff shall serve a reply to a counterclaim in the answer within thirty (30) days after service of the answer",
+        "note": "Runs from service of the ANSWER, a Rule 5 paper. TAKES THE THREE DAYS, and the ORDER IS FEDERAL: \"3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule 6(a)\" -- roll, add, roll again. Nearly every recently seeded state is period-lengthening instead, and the two orders diverge whenever the unrolled last day lands on a weekend or holiday. Electronic-filing-system service is enumerated alongside mail in the rule itself.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2012-11-28",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-12a-reply-to-counterclaim-ordered",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim where the court orders one (Alabama)",
+      "trigger_event": "service_of_order_requiring_reply",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "al_rcp_6_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "efiling_service_provider",
+          "electronic"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 12(a)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv12.pdf",
+        "quote": "or, if a reply is ordered by the court, within thirty (30) days after service of the order, unless the order otherwise directs.",
+        "note": "A SEPARATE ROW BECAUSE THE TRIGGER IS DIFFERENT -- service of the court's ORDER, not of the answer. \"unless the order otherwise directs\" is on the face of the rule and the engine cannot see the order, so a computed date here is the default and nothing more. Service of a court order is service under Rule 5, so the extension applies. TAKES THE THREE DAYS, and the ORDER IS FEDERAL: \"3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule 6(a)\" -- roll, add, roll again. Nearly every recently seeded state is period-lengthening instead, and the two orders diverge whenever the unrolled last day lands on a weekend or holiday. Electronic-filing-system service is enumerated alongside mail in the rule itself.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2012-11-28",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-12a1-responsive-pleading-after-motion-denied",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 12 motion is denied or postponed -- 10 days (Alabama)",
+      "trigger_event": "notice_of_court_action_on_rule_12_motion",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 12(a)(1)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv12.pdf",
+        "quote": "if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within ten (10) days after notice of the court's action;",
+        "note": "TEN DAYS, INSIDE THE ELEVEN-DAY SHORT-PERIOD EXCLUSION -- intermediate Saturdays, Sundays and legal holidays drop out of the count. NO EXTENSION, DELIBERATELY: the period runs from NOTICE OF THE COURT'S ACTION rather than from service of a paper by a party under Rule 5(b)(2), which is what 6(d) reaches. Its sibling limb (2) runs from SERVICE and does take the days -- the same notice-vs-service split Missouri and Massachusetts have. Omitting here computes EARLY, the safe direction.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2012-11-28",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-12a2-responsive-pleading-after-more-definite-statement",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a more definite statement -- 10 days (Alabama)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "al_rcp_6_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "efiling_service_provider",
+          "electronic"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 12(a)(2)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv12.pdf",
+        "quote": "if the court grants a motion for a more definite statement the responsive pleading shall be served within ten (10) days after the service of the more definite statement.",
+        "note": "TEN DAYS, inside the eleven-day exclusion. Runs from SERVICE of a party's paper, so unlike its sibling limb (1) it does take the three days. TAKES THE THREE DAYS, and the ORDER IS FEDERAL: \"3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule 6(a)\" -- roll, add, roll again. Nearly every recently seeded state is period-lengthening instead, and the two orders diverge whenever the unrolled last day lands on a weekend or holiday. Electronic-filing-system service is enumerated alongside mail in the rule itself.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2012-11-28",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-6c1-motion-and-notice-of-hearing",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Motion and notice of hearing -- at least 5 days before the hearing (Alabama)",
+      "trigger_event": "hearing_date_specified",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 5,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 6(c)(1)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv6.pdf",
+        "quote": "A written motion and notice of hearing must be served at least 5 days before the time specified for the hearing",
+        "note": "A BACKWARD-COUNTED ROW, and one of only two rows on this platform outside the federal seed and Arkansas. NO EXTENSION, AND THE DIRECTION IS WHY: 6(d) adds days to a period running AFTER service, while this period ENDS at service. Adding days to a backward count would let a party serve LATER than the rule allows -- the direction that costs the other side its notice. THE THREE EXCEPTIONS ARE ON THE FACE OF THE RULE and none is modellable: an ex parte motion, another rule setting a different time, or a court order. A computed date here is the default only.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2026-04-09",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-6c2-opposing-affidavit",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Opposing affidavit -- at least 1 day before the hearing (Alabama)",
+      "trigger_event": "hearing_date_for_opposing_affidavit",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 1,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 6(c)(2)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv6.pdf",
+        "quote": "Except as Rule 59(c) provides otherwise, any opposing affidavit must be served at least 1 day before the hearing, unless the court permits service at another time.",
+        "note": "ONE DAY -- the shortest period on the platform, and the row where the eleven-day exclusion does the most work relative to its length: a single counted day can sit on the far side of a weekend and a holiday. Backward, so no extension, for the same reason as 6(c)(1). Rule 59(c) and a contrary court order both displace it and neither is visible to the engine.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2026-04-09",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-33a-interrogatory-answers",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Answers or objections to interrogatories -- 30 days (Alabama)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "al_rcp_6_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "efiling_service_provider",
+          "electronic"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 33(a)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv33.pdf",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within thirty (30) days after the service of the interrogatories, except that the defendant may serve answers or objections within forty-five (45) days after service of the summons and the complaint upon that defendant.",
+        "note": "A PLAIN 30-DAY ROW, NOT A FLOOR, and the word that decides it is \"MAY\". Rules 33 and 34 say a defendant MAY serve within 45 days -- an ELECTION available to the defendant -- while Rule 36 says a defendant \"SHALL NOT BE REQUIRED\" to serve before 45 days, which is a mandatory floor. Only the mandatory one is computed as a resolve_periods later_of; encoding an election as a floor would report a date the rule does not guarantee. Exactly the distinction South Carolina's Rule 36 row records. \"The court may allow a shorter or longer time\" is on the face of the rule and is invisible to the engine. TAKES THE THREE DAYS, and the ORDER IS FEDERAL: \"3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule 6(a)\" -- roll, add, roll again. Nearly every recently seeded state is period-lengthening instead, and the two orders diverge whenever the unrolled last day lands on a weekend or holiday. Electronic-filing-system service is enumerated alongside mail in the rule itself.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2010-02-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-34b-production-response",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- 30 days (Alabama)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "al_rcp_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "al_rcp_6_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "efiling_service_provider",
+          "electronic"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 34(b)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv34.pdf",
+        "quote": "The party upon whom the request is served shall serve a written response within thirty (30) days after the service of the request, except that a defendant may serve a response within forty-five (45) days after service of the summons and complaint upon that defendant.",
+        "note": "Word-for-word the Rule 33 structure, including \"MAY serve\" -- an election, not a floor, so this is a plain row for the same reason. TAKES THE THREE DAYS, and the ORDER IS FEDERAL: \"3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule 6(a)\" -- roll, add, roll again. Nearly every recently seeded state is period-lengthening instead, and the two orders diverge whenever the unrolled last day lands on a weekend or holiday. Electronic-filing-system service is enumerated alongside mail in the rule itself.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2009-11-18",
+      "effective_to": null
+    },
+    {
+      "rule_id": "al-arcp-36a-admission-response-defendant-later-of",
+      "jurisdiction": "al",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- the later of 30 days and the 45-day defendant floor (Alabama)",
+      "trigger_event": {
+        "id": "alabama_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons and complaint"
+          }
+        ]
+      },
+      "computation": "al_rcp_6",
+      "service_extension": {
+        "standard": "al_rcp_6_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "efiling_service_provider",
+          "electronic"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Ala. R. Civ. P. 36(a)",
+        "url": "https://judicial.alabama.gov/docs/library/rules/cv36.pdf",
+        "quote": "The matter is admitted unless, within thirty (30) days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or by the party's attorney, but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of forty-five (45) days after service of the summons and complaint upon that defendant.",
+        "note": "THE ONLY ALABAMA DISCOVERY ROW THAT IS A FLOOR. \"a defendant SHALL NOT BE REQUIRED to serve answers or objections before the expiration of forty-five (45) days\" is mandatory, where Rules 33 and 34 say a defendant MAY serve within 45 -- an election. That single word is why this row is a resolve_periods later_of and its two siblings are plain 30-day rows. AND THE CONSEQUENCE IS THE OUTLIER: on this rule alone, silence ADMITS. Missing an interrogatory deadline invites a motion to compel; missing this one decides the fact. Both limbs run from caller-supplied dates, so Alabama does not hit the Maryland chained-floor gap. TAKES THE THREE DAYS, and the ORDER IS FEDERAL: \"3 days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under Rule 6(a)\" -- roll, add, roll again. Nearly every recently seeded state is period-lengthening instead, and the two orders diverge whenever the unrolled last day lands on a weekend or holiday. Electronic-filing-system service is enumerated alongside mail in the rule itself.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1995-10-01",
+      "effective_to": null
+    }
+  ]
+}
