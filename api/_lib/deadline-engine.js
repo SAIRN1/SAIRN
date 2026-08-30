@@ -1567,7 +1567,52 @@ var COMPUTATION_STANDARDS = {
   ms_r_civ_p_6: { label: 'Miss. R. Civ. P. 6', impl: 'frcp_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '(a)', months_years_suffix: '(a)',
-    rollover_suffix_forward: '(a)', rollover_suffix_backward: '(a)' }
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '(a)' },
+  // NEW MEXICO. Rule 1-006(A) NMRA, restyled in 2014 to follow the federal
+  // rule and amended again effective 31 December 2024. Two paragraphs matter
+  // here and the second one is the reason this jurisdiction can do something
+  // Mississippi could not:
+  //
+  //   (A)(2)(a) "When the period is stated in days but the number of days is
+  //             TEN (10) DAYS OR LESS ... exclude intermediate Saturdays,
+  //             Sundays, and legal holidays"
+  //   (A)(6)    "The 'NEXT DAY' is determined by continuing to count FORWARD
+  //             when the period is measured after an event and BACKWARD when
+  //             measured before an event."
+  //
+  // ELEVEN, NOT TEN. "Ten days or less" is <= 10, which is < 11, and this
+  // field is a strict less-than at the call site. Third jurisdiction after
+  // Texas ("five days or less" -> 6) and Maryland ("seven days or less" -> 8)
+  // where the rule's own number and the field's number differ, and the one
+  // place writing the rule's number would silently drop the ten-day rows --
+  // Rule 1-012(A)(1) and (A)(2) are both exactly ten.
+  //
+  // (A)(6) IS AN EXPRESS DIRECTION RULE AND IT IS RARE. Only Fla. R. Gen.
+  // Prac. & Jud. Admin. 2.514(a)(5) says the same thing among the states
+  // seeded. It is what makes a SHORT BACKWARD row safe here: Rule 1-055(B)'s
+  // three-day notice of an application for default judgment is exactly the
+  // shape Mississippi had to refuse, and New Mexico can seed it because the
+  // rule states which way "next day" runs and the calendar is the judiciary's
+  // own complete published list rather than a defensive intersection.
+  //
+  // THE HOLIDAY DEFINITION IS THE KANSAS SHAPE, NOT THE WISCONSIN ONE.
+  // (A)(7): "'Legal holiday' means the day that the following are observed BY
+  // THE JUDICIARY", then a named list, then "(b) any other day observed as a
+  // holiday by the judiciary". New Mexico's district courts are state
+  // administered and the Chief Justice publishes one schedule for the whole
+  // branch, so that schedule IS the statutory test rather than a proxy for it.
+  //
+  // ONE CARVE-OUT THE ENGINE CANNOT SEE, recorded so nobody encodes it later:
+  // (A)(2)(b) says the ten-day exclusion "shall not apply to any statutory
+  // notice that is required to be given prior to the filing of an action" --
+  // the committee commentary gives the Uniform Owner-Resident Relations Act's
+  // three-day notice to pay rent as the example. No such notice is seeded, and
+  // one must not be seeded on this standard: it would be excluded when the
+  // rule says to count straight through.
+  nm_1_006: { label: 'Rule 1-006 NMRA', impl: 'frcp_6a',
+    short_period_exclusion_days: 11,
+    base_period_suffix: '(A)', months_years_suffix: '(A)',
+    rollover_suffix_forward: '(A)(1)(c)', rollover_suffix_backward: '(A)(6)' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1661,6 +1706,12 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'The Mississippi calendar carries only the TWO holidays a county is forbidden by statute to substitute away — the third Monday in January and 11 November. Every other Mississippi court holiday is omitted on purpose, so this date may be EARLIER than the true deadline, never later. Confirm the relevant county courthouse\'s own schedule before relying on a date that falls near any other holiday.',
     detail: 'THREE STATUTES HAVE TO AGREE BEFORE A DAY CAN GO IN THIS CALENDAR, AND FOR MOST MISSISSIPPI HOLIDAYS THEY DO NOT. (1) Miss. R. Civ. P. 6(a) rolls the last day off "a legal holiday, AS DEFINED BY STATUTE, or any other day when the courthouse or the clerk\'s office is IN FACT CLOSED, whether with or without legal authority." (2) Miss. Code Ann. Sec. 3-3-7(1) supplies that definition — ten days — but opens "EXCEPT AS OTHERWISE PROVIDED IN SUBSECTION (2)", and Sec. 3-3-7(2) lets the governing authorities of ANY municipality or county declare, by order spread upon its minutes, "Mardi Gras Day or any one (1) other day during the year, to be a legal holiday" IN LIEU OF any one of them — expressly excepting only the third Monday in January (Robert E. Lee\'s and Dr. Martin Luther King, Jr.\'s birthdays) and the eleventh day of November (Armistice or Veterans\' Day). (3) Miss. Code Ann. Sec. 25-1-99 then makes closure mandatory — "the courthouse SHALL be closed on all state holidays as set forth in Section 3-3-7" — but only for the days that are still Sec. 3-3-7 holidays in that county. THIS IS NOT THEORETICAL. Jackson County publishes a ten-item holiday schedule that lists GOOD FRIDAY, which is not in Sec. 3-3-7 at all, and omits the last Monday in April (Confederate Memorial Day), which is: a one-for-one Sec. 3-3-7(2) substitution, on the record, in a real county. A statewide calendar carrying 27 April 2026 would roll a Jackson County deadline off a day that courthouse was OPEN, and report LATER than Rule 6(a) allows. That is the direction that loses a filing, so the day is not carried. THE CALENDAR IS THEREFORE THE STATUTORY INTERSECTION: the two days Sec. 3-3-7(2) forbids any county to trade away. New Year\'s Day, Washington\'s Birthday, Confederate Memorial Day, National Memorial Day and Jefferson Davis\'s birthday, Independence Day, Labor Day, Thanksgiving and Christmas are all ABSENT, and every one of those absences reports EARLY. FOUR FURTHER GAPS, ALL EARLY. (a) Sec. 25-1-99 says the courthouse "MAY be closed on the Friday immediately preceding" a Saturday holiday — permissive, per county. 4 July 2026 is a Saturday and the Supreme Court closed the Gartin Justice Building on Friday 3 July, but no county is obliged to; that Friday is not here. (b) Thanksgiving is "the day fixed by proclamation by the Governor", and Sec. 25-1-99 leaves it to each board of supervisors whether to close for "those holidays created by executive order of the Governor" — the Governor\'s customary extra Thanksgiving-Friday and Christmas-Eve/New-Year\'s-Eve days are discretionary county by county and are not here. (c) Rule 6(a)\'s "in fact closed, whether with or without legal authority" limb reaches weather, emergencies and local closures, which no annual calendar can express. (d) A county that HAS adopted Mardi Gras or another substitute day has a holiday this calendar does not carry; omitting it is also early. THE SUNDAY SHIFT IS MANDATORY AND IS MODELLED WHERE IT BITES: Sec. 3-3-7(1) and Rule 6(a) both say a legal holiday falling on a Sunday makes the next day a legal holiday. No Sec. 3-3-7 holiday falls on a Sunday in 2026, so the shift is dormant this year rather than absent. 2026 ONLY: a later year is REFUSED rather than derived. THE ONE PLACE MISSISSIPPI COULD COMPUTE LATE IS CLOSED BY CONSTRUCTION, NOT BY LUCK: under-inclusion only reports EARLY while the count runs FORWARD. Counting BACKWARD it inverts — a period under seven days excludes fewer intermediate holidays than Rule 6(a) requires, and a last day that should have rolled back off an omitted holiday does not roll at all — so both land closer to the trigger, i.e. LATER than the true last date to act. NO MISSISSIPPI ROW IS SEEDED BACKWARD AT ALL. Rule 6(d)\'s five-day motion notice, its one-day opposing affidavit and Rule 56(c)\'s ten-day service of a summary-judgment motion are all omitted — including the ten-day one, whose length clears the seven-day exclusion threshold and does nothing about the rollover limb (a hearing on 7 May 2026 counts back to Monday 27 April, Confederate Memorial Day, which this calendar omits). Seeding a Mississippi backward row needs a complete county-level calendar, not a longer period.'
+  },
+  nm: {
+    complete: false,
+    direction: 'early',
+    summary: 'The New Mexico calendar is the Chief Justice\'s own published 2026 branch holiday schedule and is complete for that year, but Rule 1-006(A)(4) separately extends a filing deadline whenever the court is closed or unavailable for filing — weather, technology, or anything else — which no annual calendar can express. This date may be EARLIER than the true deadline, never later. 2027 is REFUSED rather than derived.',
+    detail: 'THE CALENDAR IS THE STATUTORY TEST HERE, NOT A PROXY FOR IT, and that is worth stating because the two most recent states seeded were the opposite. Rule 1-006(A)(7) NMRA: "\'Legal holiday\' means the day that the following are observed BY THE JUDICIARY", then eleven named days, then "(b) any other day observed as a holiday by the judiciary." New Mexico\'s district courts are state administered and the Chief Justice publishes ONE schedule for the whole branch, so the schedule is the legal fact the rule points at — the Kansas shape. Wisconsin and Mississippi both key on something a county can vary, which is why their calendars are deliberately under-inclusive intersections and this one is not. THE 2026 SCHEDULE IS TRANSCRIBED, NOT DERIVED, from the memorandum of Chief Justice David K. Thomson dated 19 November 2025, and every one of its eleven 2026 dates was checked against its printed weekday. TWO OF THEM CANNOT BE DERIVED FROM ANY RULE: Presidents\' Day is observed on FRIDAY 27 NOVEMBER 2026, the day after Thanksgiving — Rule 1-006(A)(7)(a) says so in a parenthetical, "(traditionally observed on the day after Thanksgiving)", and no other seeded jurisdiction moves a holiday across the calendar like that — and Independence Day is observed on FRIDAY 3 JULY 2026 because 4 July is a Saturday. WHAT IS NOT MODELLED, AND IT IS ALWAYS EARLY: Rule 1-006(A)(4) extends the time for FILING whenever "the court is closed or is unavailable for filing at any time that the court is regularly open", which the committee commentary says contemplates "weather, technological problems, or other circumstances", and which a person relying on it must be prepared to demonstrate. That is per-court and unknowable in advance; omitting it can only make a computed date sooner than the true one. Nor is Rule 1-006(A)(3)\'s HOURS arithmetic modelled — no seeded row is stated in hours. Nor is Rule 1-006(A)(5)\'s definition of when the last day ends, which is midnight for electronic filing and closing time for everything else: this engine returns a DATE, and on that date the cut-off differs by filing method. 2027 IS REFUSED RATHER THAN DERIVED, and the temptation here is unusually specific: the 2026 memorandum announces one 2027 date, New Year\'s Day on Friday 1 January 2027. Building a 2027 calendar out of that single entry would let 2027 deadlines compute against a calendar missing ten of its eleven days, which reads as an answer rather than as the refusal it should be. THE ONE PLACE A READING WAS MADE RATHER THAN QUOTED: Rule 1-006(C) grants three days after service by mail, facsimile or court-facility deposit, and says nothing about whether it reaches service of PROCESS. Rule 1-005(A) governs "every pleading subsequent to the original complaint", original process is Rule 1-004, and Rule 1-006(C) defines its own third method by cross-reference into Rule 1-005(C)(1)(e) — so no row triggered by service of the summons and complaint carries the extension. Withholding it reports EARLY; granting it on a mailed summons would report LATE.'
   }
 };
 
@@ -2878,6 +2929,62 @@ var SERVICE_EXTENSION_STANDARDS = {
     shape: 'enumerated_allowlist',
     qualifies: function (method) {
       return method === 'mail';
+    }
+  },
+  // NEW MEXICO. Rule 1-006(C) NMRA as amended effective 31 December 2024,
+  // verbatim and complete:
+  //
+  //   "When a party may or must act within a specified time after service and
+  //    service is made by MAIL, FACSIMILE, or by DEPOSIT AT A LOCATION
+  //    DESIGNATED FOR AN ATTORNEY AT A COURT FACILITY under Rule
+  //    1-005(C)(1)(e) NMRA, three (3) days are ADDED AFTER THE PERIOD WOULD
+  //    OTHERWISE EXPIRE under Paragraph A. Intermediate Saturdays, Sundays,
+  //    and legal holidays ARE INCLUDED in counting these added three (3) days.
+  //    If the third day is a Saturday, Sunday, or legal holiday, the last day
+  //    to act is the next day that is not a Saturday, Sunday, or legal
+  //    holiday."
+  //
+  // ⚠ ELECTRONIC TRANSMISSION WAS REMOVED, AND EVERY SECONDARY SOURCE STILL
+  // SAYS OTHERWISE. Supreme Court Order No. S-1-RCR-2023-00046, approved 1
+  // November 2024 and effective for all cases pending or filed on or after 31
+  // December 2024, struck "electronic transmission," from this list. The
+  // approved-amendment PDF shows it bracketed for deletion and the CLEAN text
+  // in the official NMRA compilation no longer contains it -- both were read,
+  // because a redline alone is not the operative text. Granting three days for
+  // e-service or e-filing here reports THREE DAYS LATE, and that is the answer
+  // a search engine will hand you: the pre-2024 wording is still what most
+  // secondary sources quote.
+  //
+  // THE ASYMMETRY IS REAL AND IS NOT A DRAFTING SLIP TO BE "FIXED" HERE.
+  // Rule 1-005(C)(1)(b) makes "sending a copy by facsimile OR electronic
+  // transmission" one sub-limb of what "delivering a copy" means -- the two
+  // are siblings in the service rule -- and Rule 1-006(C) now extends for one
+  // and not the other. Encode what the time rule says, not what the symmetry
+  // suggests.
+  //
+  // "ADDED AFTER THE PERIOD WOULD OTHERWISE EXPIRE" -> roll_then_add_then_roll,
+  // the federal order, and the rule then spells out both halves of that
+  // sequence explicitly: the three added days count straight through weekends
+  // and holidays even when the BASE period was a ten-day-or-less period that
+  // excluded them, and the result rolls again if it lands badly. New Mexico is
+  // the only seeded jurisdiction whose text states the whole sequence rather
+  // than leaving the second roll to be inferred.
+  //
+  // NO ROW TRIGGERED BY SERVICE OF PROCESS CARRIES THIS, and there is no
+  // express carve-out saying so -- the same position as Wisconsin, resolved
+  // the same way. Rule 1-005(A) governs "every pleading SUBSEQUENT TO THE
+  // ORIGINAL COMPLAINT", original process is Rule 1-004, and Rule 1-006(C)
+  // defines its own third method by cross-reference INTO Rule 1-005(C)(1)(e).
+  // That is a structural reading and not a quotation, so it is resolved in the
+  // safe direction: withholding the three days reports EARLY, granting them on
+  // a mailed summons would report LATE.
+  nm_1_006_c: {
+    label: 'Rule 1-006(C) NMRA',
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail' || method === 'facsimile' ||
+             method === 'court_facility_deposit';
     }
   }
 };
