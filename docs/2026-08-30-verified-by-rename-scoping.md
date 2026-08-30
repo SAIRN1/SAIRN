@@ -247,10 +247,45 @@ The only two keys in the repo that look like third parties — `SD-PARTNER-2026`
 and `BLD-INDUSTRIES-2026` — are StoneDesk and SAIRNbuild, neither of which has
 any of the five tables.
 
-**That is repo evidence, not a live tenant audit.** Nobody has queried
-`license_keys` for a customer row on SAIRNcare, SAIRNdental or SAIRNroofing, and
-that query is what would actually settle it. Stated plainly rather than rounded
-up to "no customers", because this is the one fact the whole deferral rests on.
+**That is repo evidence, not a live tenant audit.** Stated plainly rather than
+rounded up to "no customers", because this is the one fact the whole deferral
+rests on.
+
+#### 8a. The `license_keys` check — attempted, and it needs one hand that is not mine
+
+**What is now known live**, and it is corroboration rather than enumeration:
+`check_license` on each app's own auth endpoint returns the licence's `app_id`
+for a key you present. Run on 2026-08-30 against the three keys the repo names:
+
+| key | endpoint | live result |
+|---|---|---|
+| `ALF-TEST-2026` | `api/alf-auth` | `{ok:true, active:true, app_id:"sairncare"}` |
+| `DNT-PINNACLE-2026` | `api/dnt-auth` | `{ok:true, active:true, app_id:"sairndental"}` |
+| `RF-PINNACLE-2026` | `api/rf-auth` | `{ok:true, active:true, app_id:"sairnroofing"}` |
+
+All three are real, active, and bound to the app the repo says they are. **That
+confirms the keys we know about and says nothing about the ones we do not.**
+
+**THE ENUMERATION CANNOT BE RUN FROM THIS CLONE, and the reason is structural
+rather than a missing step.** `license_keys` is readable only with
+`SUPABASE_SERVICE_ROLE_KEY`; `.env.local` is empty, no `tools/` script reads it,
+and no endpoint exposes it. `api/_lib/license.js` looks up exactly **one** row,
+by the raw key presented in the request — by construction it cannot list. The
+service-role key was deliberately **not** pulled from the deployment into this
+session: it is full database access, and fetching it to answer a scoping question
+trades a real credential for a fact that one paste answers just as well.
+
+**The query is written and waiting:
+`sql/license_keys_customer_check_2026-08-30.sql`** — read-only, four SELECTs.
+Section 1 is the answer (a non-null `stripe_subscription_id` means the line has
+been crossed); section 2 shows which licences have actually touched the five
+tables; section 3 joins the two; **section 4 is the control**, because section 3
+returns zero rows both when there is no customer and when the sha256 join never
+matched, and those two look identical.
+
+**Until it is run, this deferral rests on repo evidence plus three confirmed
+house keys.** That is stronger than it was this morning and it is still not the
+same as knowing.
 
 ### Re-check when any ONE of these becomes true
 

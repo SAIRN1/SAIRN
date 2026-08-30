@@ -1709,10 +1709,26 @@ server-stamped `authority.retrieved_at` the seed omitted, and
 `tools/sairn_load_state_check.py` reported all 11 STALE within minutes. Correct
 dates, provenance-only drift, caught anyway. **The line is still uncrossed on
 REPO evidence** (every licence on the five tables is a house tenant; "PINNACLE"
-is the internal name across every app) — **but nobody has queried `license_keys`
-for a real customer row on SAIRNcare, SAIRNdental or SAIRNroofing, and that is
-the check that would settle it.** See §8 of the scoping doc for the four
+is the internal name across every app). See §8 of the scoping doc for the four
 re-check triggers.
+
+**THE `license_keys` CHECK WAS ATTEMPTED THE SAME DAY AND IS ONE PASTE FROM
+DONE.** What is now known LIVE: `check_license` on each app's own auth endpoint
+returns `{ok:true, active:true, app_id:…}` for `ALF-TEST-2026` (sairncare),
+`DNT-PINNACLE-2026` (sairndental) and `RF-PINNACLE-2026` (sairnroofing) — all
+three real, active and bound to the app the repo claims. **That corroborates the
+keys we know about and says nothing about the ones we do not.** The enumeration
+cannot be run from a clone by construction: `license_keys` needs
+`SUPABASE_SERVICE_ROLE_KEY`, `.env.local` is empty, no tool reads it, and
+`api/_lib/license.js` looks up exactly ONE row by the presented key. The
+service-role key was deliberately NOT pulled out of the deployment to answer a
+scoping question — that trades full database access for something one paste
+settles. **The query is written and waiting:
+`sql/license_keys_customer_check_2026-08-30.sql`, read-only, four SELECTs, and
+section 4 is a control because an empty section 3 looks identical whether there
+is no customer or the sha256 join simply never matched.** Until someone runs it,
+this deferral rests on repo evidence plus three confirmed house keys — stronger
+than it was, still not the same as knowing.
 
 ---
 
