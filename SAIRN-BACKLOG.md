@@ -1674,6 +1674,17 @@ silently stop subtracting anything and start reporting false drift on every row
 of a session-loaded licence. Worth doing when one of those tables is next
 migrated for another reason; not worth a standalone migration on live data.
 
+**SCOPED 2026-08-30: docs/2026-08-30-verified-by-rename-scoping.md.** The migration is trivial and the
+coordination is not -- 33 rows of column data and a metadata-only DDL, against 7 production code sites,
+3 test files, and **2 gate tools that subtract the field BY NAME**. Two findings worth carrying:
+**(1) NO APP UI RENDERS IT** (`sairnroofing.html`'s only hit is `verified_by_app`, unrelated), so there is
+no user-visible surface at all. **(2) THE SAIRNLAW CASE IS NOT A COLUMN** -- it is a jsonb key inside
+`data.authority` on 426 rows, so renaming it rewrites every blob AND moves every content hash, which would
+make the load-state gate report every SAIRNlaw row STALE. That is the cry-wolf failure the gate exists to
+prevent, caused by the fix. **Recommendation: expand/contract, bundled with the next migration those five
+tables need anyway, columns first and the jsonb key separately -- and before the first paying customer is
+provisioned on SAIRNcare, SAIRNdental or SAIRNroofing, after which the cheap option stops existing.**
+
 **Acceptable where it stands today** — every affected licence is a demo or
 verification tenant. The line to not cross is a paying customer, and there is
 currently nothing that would stop it.
