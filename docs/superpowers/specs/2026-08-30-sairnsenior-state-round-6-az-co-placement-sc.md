@@ -8,6 +8,47 @@ land directly on a scheduling product.
 
 ---
 
+## ⛔ BUILD CONSTRAINT — read this before designing any scheduling feature
+
+**A Colorado-registered home care placement agency must not be given scheduling,
+training-delivery, or assignment-direction features at all.**
+
+6 CCR 1011-1 Chapter 26 § 3.3(B) requires a written disclosure notice, in the
+form the Department prescribes, **signed by the consumer or authorised
+representative before services start**, stating:
+
+> "(1) That the home care placement agency **is not the employer** of any provider
+> it refers to a home care consumer; and (2) That the home care placement agency
+> **does not direct, control, schedule, or train** any provider it refers."
+
+**"Schedule" is in the regulation's own list.** A placement agency that schedules
+providers is acting against a disclosure its customer has already signed, and the
+Department inspects for disclosure compliance (§ 3.4) with a civil penalty of up
+to **$10,000** available (§ 3.1(B)(2), § 3.6(A)(5)).
+
+**What this means for the build, concretely:**
+
+- The product must know **which registration a customer holds** — licensed home
+  care agency (Parts 5–7) or registered placement agency (Part 3) — **before**
+  deciding what UI to expose. This is not a per-worker data field; it is an
+  **account-level capability gate**.
+- For a Part 3 customer, scheduling, shift assignment, training modules and
+  anything that directs or controls a provider must be **absent**, not merely
+  unused or discouraged. A hidden-but-present feature that a user can enable is
+  the same exposure.
+- The two categories live in **one chapter under one regulator**, so "Colorado"
+  is not a single configuration. A per-state rule table cannot express this.
+- This is the **first requirement in the entire survey that is satisfied by
+  withholding a feature rather than by storing or checking data.** Treat it as a
+  design constraint on the product, not as a compliance field.
+
+Every other instance of the registration-category dimension found so far
+(Florida's registration vs licensure, Ohio's skilled vs nonmedical, Texas's seven
+categories, Colorado's own Part 6 vs Part 7) changes *which requirements apply*.
+**Only this one changes what the software is allowed to do.**
+
+---
+
 ## 1. Arizona — the Administrative Code mattered less than I thought
 
 Round 5 closed AAC R9-10 as unreachable after eight approaches and called

@@ -10,6 +10,23 @@ read so far actually require.
 
 ---
 
+> ## ⛔ Read first: the model has a dimension ABOVE the five axes, and one entry in it is a build constraint
+>
+> **Registration category decides which axes apply at all** — Florida's
+> registration vs licensure, Ohio's skilled vs nonmedical, Texas's seven HCSSA
+> categories, Colorado's Part 6 vs Part 7. Added 2026-08-30; see
+> `2026-08-30-sairnsenior-state-round-6-az-co-placement-sc.md`.
+>
+> **And one category forbids a feature outright.** A **Colorado-registered home
+> care placement agency** must give the consumer a signed notice, before services
+> start, stating it *"does not direct, control, **schedule**, or train"* the
+> providers it refers (6 CCR 1011-1 ch. 26 § 3.3(B)). **Scheduling,
+> training-delivery and assignment-direction must be absent from that customer's
+> product, not merely unused** — an account-level capability gate keyed on
+> registration category, decided before any UI is exposed. It is the only
+> requirement found so far that is satisfied by **withholding** a feature rather
+> than by storing or checking data. Full text and consequences in round 6.
+
 ## 1. The model, stated so every later state can be filled in against it
 
 A worker is permitted to work for a given employer in a given state when they
