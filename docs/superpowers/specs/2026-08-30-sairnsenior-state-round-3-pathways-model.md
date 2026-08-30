@@ -66,6 +66,41 @@ read so far actually require.
 > that stores qualifications only on the caregiver record cannot answer the
 > question these four states actually ask.
 >
+> ### ⛔⛔ Oregon specifies the CLIENT INTAKE FORM in primary legislation
+>
+> **ORS 443.190(3) (2025 c.535 § 12) is a field list, not compliance boilerplate.**
+> A home health agency or home hospice program must, at client intake, use a
+> questionnaire that **at a minimum** asks about:
+>
+> 1. **Pets** at the setting — and **whether they can be secured away from the
+>    area in which care is given, if the caregiver requests it** (so the answer is
+>    two fields: presence, and securability-on-request);
+> 2. **Suspected pest infestations**;
+> 3. **The client's willingness to securely store any weapons present, prior to
+>    any visit** (a client commitment, captured before the first visit).
+>
+> **And it is directional.** § 443.190(2)(b) requires the information be
+> **provided to each staff member who will be responsible for the services** —
+> so it attaches to the **assignment**, not just the client record. § 443.190(2)(c)
+> adds that for hospital-discharge referrals, any **client history of violence**
+> learned through continuity of care must be passed to each assigned caregiver.
+> The definitions also cover **"household individual"** — anyone other than the
+> client *"present or reasonably anticipated to be present"* — so risk is not
+> scoped to the client alone.
+>
+> **§ 443.195 then names the delivery mechanism:** the entity must provide
+> *"mechanisms by which home health care staff can perform safety checks,
+> **including but not limited to the use of a mobile application** to access the
+> relevant safety-related information collected … under ORS 443.190"*, plus
+> **quarterly safety assessments** with assigned staff, **client identity
+> verification before an initial visit**, NIOSH/OSHA-consistent hazard training,
+> and policies permitting **data entry and chart updates outside the client's
+> home** — which cuts against a point-of-care-only documentation design.
+>
+> **Build implication:** intake needs these fields, the assignment needs to carry
+> them to the caregiver's device, and charting must work away from the home. See
+> `2026-08-30-sairnsenior-state-round-14-oregon.md`.
+>
 > ### ⛔⛔⛔ And in Iowa the REGULATED ENTITY may be SAIRNsenior itself
 >
 > Iowa Code ch. 135Q / 481 IAC ch. 55 registers and regulates **"health care

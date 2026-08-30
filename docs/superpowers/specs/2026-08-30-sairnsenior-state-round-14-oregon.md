@@ -23,7 +23,7 @@ Two findings, both of which change conclusions written earlier in this survey:
 | **Iowa** | *health care technology platform* | **registration**, $500/yr | round 13 |
 | **Colorado** | *home care placement agency* | **registration** | round 6 |
 | **Oregon** | *caregiver registry* | **licence** | this round |
-| **Nevada** | *referral agency*; *employment agency to provide nonmedical services* | **licence** (both appear in NAC 449's fee schedule) | round 12, noted in passing |
+| **Nevada** | ~~*referral agency*~~; *employment agency to provide nonmedical services* | **licence** | round 12 — **CORRECTED 2026-08-30: *referral agency* is NOT an analogue.** NAC 449.0061 defines it as referring **clients into residential facilities for groups** (assisted-living placement), not matching caregivers to homes. I took it from a fee-schedule label without reading the definition. See `2026-08-30-sairnsenior-intermediary-scope-or-co-nv.md` §4. |
 
 **Round 13 said the absence of a finding elsewhere was not evidence of absence.
 That was the right caution and it was warranted** — Oregon's turned up on the
@@ -173,7 +173,7 @@ found it was reading the chapter's own section index.
 | ORS 443.090, 443.095 | **NOT READ** — exemption from in-home care agency licensing; applicability to domestic service. |
 | ORS 443.004–443.087 (in-home care agency and home health agency licensing proper) | **NOT READ** — only the section index was surveyed. |
 | ORS 654.412 (workplace violence; home hospice program) | **NOT READ** — carries the definition § 443.190 incorporates. |
-| Whether Oregon's caregiver-registry licence would reach SAIRNsenior | **NOT DETERMINED** | The Iowa-style determination has **not** been run for Oregon. On the face of ORS 443.100 the answer looks the same — no public offering of individuals' services — but that is an impression, not the section-by-section reading Iowa got. |
+| Whether Oregon's caregiver-registry licence would reach SAIRNsenior | **DETERMINED 2026-08-30 — OUTSIDE** | ORS 443.014(1) read: the roster must be **of private contractor caregivers** and **provided to the client for consideration in hiring**. SAIRNsenior fails elements 2, 3 and 4 independently. Colorado and Nevada also determined OUTSIDE. See `2026-08-30-sairnsenior-intermediary-scope-or-co-nv.md`. |
 | Nevada *referral agency* / *employment agency to provide nonmedical services* | **NOT READ** — seen only in NAC 449's fee schedule. |
 | Colorado placement agency vs Oregon registry vs Iowa platform — are the triggers actually different? | **NOT COMPARED** | Three different instruments, three definitions, only Iowa's read in full. |
 | Mountain West and New England states | **NOT ATTEMPTED** | Next. |
