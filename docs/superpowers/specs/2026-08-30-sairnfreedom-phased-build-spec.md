@@ -35,7 +35,7 @@ political purpose.
 | Not-for-profit renter | Allowed via **joint F-2**: 4 consecutive days max, 1 per 30 days per renter, notification, proceeds destination |
 | **Private or commercial renter** (wedding, birthday, corporate) | **HARD BLOCK. Refuse the booking. Escalate to counsel.** No verified permit path exists |
 
-**The alcohol deposit tier in §3 (2.5) is gated behind cases 1 and 2 only.**
+**The alcohol deposit tier (§3, row 2.5) is gated behind cases 1 and 2 only. Detail in §3b.**
 Failure mode: a lodge sells drinks to a wedding party under its D-4 and loses
 the permit under ORC 4301.25(A).
 
@@ -290,7 +290,7 @@ exists — same gate as the winner-SSN requirement in Phase 3.
 | 2.2 | Nightly shift close-out + cash reconciliation | Feeds §4. VFW's own materials: trustees are **required** to physically inventory canteen liquor regularly |
 | 2.3 | Bottle fill-level estimation | **AUTOMATIC determination only.** Binding decision, patent-avoidance. No slider, no tap-to-set, no adjustable guess. See canonical doc *Binding decisions* |
 | 2.4 | Lodge events + live-music calendar | Public-facing side of the same calendar the gaming module constrains |
-| 2.5 | Hall rental | Weekday/weekend rates, member vs public tier. **THE ALCOHOL TIER IS NOT A DEPOSIT DECISION — see §6a.** Three permit-modelled cases, and the third is a refusal |
+| 2.5 | Hall rental | Weekday/weekend rates, member vs public tier. **THE ALCOHOL TIER IS NOT A DEPOSIT DECISION — see §3b.** Three permit-modelled cases, and the third is a refusal |
 | 2.6 | Vendor/supplier management | Gaming supplies, alcohol, food, entertainment bookings |
 | 2.7 | AI vendor price search | Defined — **two distinct capabilities**, see **§3a**. (1) compare vendors already on file — grounded, deterministic. (2) search the wider market — **fabrication surface, different rules** |
 
@@ -335,7 +335,7 @@ record backs.
   supplies from an unlicensed seller is not a saving, it is a licence problem.
   **The search must filter or at minimum warn on this category.**
 
-### 6a. Hall rental has a PERMIT dimension — the third case is a hard block
+### 3b. Hall rental has a PERMIT dimension — the third case is a hard block
 
 The D-4 sells *"to its members only."* **The lodge's own permit does not cover
 serving a renter's non-member guests.** Ohio's mechanism is a **jointly-issued
@@ -542,7 +542,7 @@ it was not scanned).
    measured at **six months before expiration** while notice arrives at three;
    and **OAC 4301:1-1-53(D)–(E) makes a Chapter 2915 bingo violation a
    simultaneous liquor-permit exposure** — the two modules are coupled. **Hall
-   rental changes — see §6a below.** Two questions go to counsel regardless:
+   rental changes — see §3b below.** Two questions go to counsel regardless:
    guest service (no primary source either way) and whether officer turnover
    forces a fresh certification. **Still unexamined:** the uniform expiration
    dates themselves (delegated to the Division, `com.ohio.gov` 404s — a per-club
@@ -554,50 +554,6 @@ it was not scanned).
    unread.
 6. **Volunteer liability documents (5.2)** — templates need legal review; this
    is document *drafting*, not schema.
-
-### 9b. Named but not defined — need the source detail
-
-**RESOLVED 2026-08-30 — all five source details received and folded in.**
-
-- ~~Three-layer fee structure~~ → **§2a**
-- ~~Conditional waiver rules~~ → **§2b**
-- ~~Donor recognition tiers~~ → **§5a**
-- ~~Named youth programs~~ → **§6a**
-- ~~AI vendor price search scope~~ → **§3a**
-
-Nothing in this sub-section is outstanding. Note that folding them in **created
-four new research items** (§9a.7–10) rather than closing the list — detail
-surfaces edges that a feature name hides, which is the argument for getting the
-detail before building rather than after.
-
-### 9c. ~~A conflict to resolve~~ — RESOLVED 2026-08-30
-
-**The animated-flag / static-branding tension is decided.** Animated banner
-app-wide, **static on onboarding**. The earlier rejection was of a bad
-implementation (turbulence filters reading as water or TV static), not of the
-idea, so what survives is a ban on the *technique*, not the effect. Built
-properly as real work and reviewed against `sairn-visual-review` on a rendered
-page at real size before it is called done. Full reasoning in **§1d**; also
-recorded in the canonical research doc's Binding Decisions.
-
-### 9d. Two hard product rules from the VA research — not optional
-
-**No fee may attach to claims assistance, anywhere in the product.** Every
-recognition route in 38 U.S.C. §§ 5902, 5903 and 38 CFR 14.630 requires
-certifying that **no compensation of any nature** is charged. A post is a
-nonprofit and its officer serves free, so this is satisfied naturally — **but
-the Service Officer function must never sit behind a paid tier, subscription
-gate or upgrade prompt.** Doing so creates exactly the compensation the
-certification denies.
-
-**The AI assistant must DECLINE claim-strategy questions in its system prompt.**
-Not a disclaimer, not a warning banner — a refusal. This platform already made
-this call once on SAIRNroofing, where the operations assistant was changed to
-refuse claim-strategy questions because *"nothing stopped it answering a
-negotiation question from general knowledge, and an app-branded answer of that
-shape was the real exposure."* Here the stakes are higher: an AI answering
-*"what should I claim for?"* is producing claim preparation, under the post's
-brand, for an unaccredited asker, at scale.
 
 7. ~~IRS quid-pro-quo receipt valuation~~ · ~~minor-participant data~~ ·
    ~~Ohio alcohol pricing~~ · ~~per-capita waiver treatment~~
