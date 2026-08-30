@@ -17083,7 +17083,7 @@ window.fetch = async function(url, opts) {
       }
     } catch(e) {}
   }
-  return _origFetch.apply(this, arguments);
+  return _origFetch.call(this, url, opts);
 };
 
 // == COUNT AI RESPONSES AND BUILD MEMORY ======================
@@ -17287,7 +17287,7 @@ if (!window._saircToneFetchPatched) {
         }
       } catch(e) {}
     }
-    return _origFetch.apply(this, arguments);
+    return _origFetch.call(this, url, opts);
   };
 }
 
@@ -18691,7 +18691,7 @@ if (!window._saircKnowledgeFetchPatched) {
         }
       } catch(e) {}
     }
-    return _orig.apply(this, arguments);
+    return _orig.call(this, url, opts);
   };
 }
 
@@ -18907,7 +18907,7 @@ if (newSystem && !window._saircPromptFetchPatched) {
         }
       } catch(e) {}
     }
-    return _orig.apply(this, arguments);
+    return _orig.call(this, url, opts);
   };
 }
 
@@ -19352,7 +19352,7 @@ function patchFetch() {
         }
       } catch (e) {}
     }
-    return _orig.apply(this, arguments);
+    return _orig.call(this, url, opts);
   };
 }
 
@@ -19670,7 +19670,16 @@ if (!window._saircPersExFetchPatched) {
         }
       } catch(e) {}
     }
-    return _orig.apply(this, arguments);
+    // CORRECTED 2026-08-30, and this is a SECOND silent no-op in the same
+    // function -- the 2026-08-06 note above fixed a different one. This line
+    // read `_orig.apply(this, arguments)`. Under 'use strict' (inherited from
+    // this block's IIFE) the arguments object is NOT linked to the parameters,
+    // so reassigning `opts` three lines up never reached the wrapped fetch and
+    // every injection above was discarded. Verified by running it, not by
+    // reading the spec: sloppy mode gives arguments[1].body === 'MUTATED',
+    // strict mode gives 'ORIGINAL'. Six patches in this file had the identical
+    // shape; three of them were live. Forward the parameters explicitly.
+    return _orig.call(this, url, opts);
   };
 }
 
