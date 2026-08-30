@@ -1,0 +1,98 @@
+{
+  "_readme": [
+    "KANSAS HOLIDAY CALENDAR -- 2026, twelve dates, from the Judicial Branch's own",
+    "published schedule. This is the fourth limb of K.S.A. 60-206(a)(6), 'any day",
+    "observed as a holiday by order of the Kansas supreme court'.",
+    "",
+    "Note TWO days for Thanksgiving, and Independence Day published as Friday 3",
+    "July. Adding 2027 means fetching that year's schedule, not extending a rule."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ks",
+      "year": 2026,
+      "authority": {
+        "citation": "K.S.A. 60-206(a)(6), \"any day observed as a holiday by order of the Kansas supreme court\", as published in the Kansas Judicial Branch holiday schedule",
+        "url": "https://kscourts.gov/Footer/Holiday-Schedule",
+        "computation_url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0006.html",
+        "quote": "State courts are closed on holidays observed by the Kansas judicial branch. ... 2026 New Year's Day January 1 (Thursday) ... Independence Day July 3 (Friday) ... Thanksgiving November 26 (Thursday) November 27 (Friday) Christmas Day December 25 (Friday)",
+        "note": "THE FOURTH LIMB OF THE STATUTORY DEFINITION, AND THE ONE THAT GOVERNS COURTS. K.S.A. 60-206(a)(6): \"'Legal holiday' means any day declared a holiday by the president of the United States, the congress of the United States or the legislature of this state, OR ANY DAY OBSERVED AS A HOLIDAY BY ORDER OF THE KANSAS SUPREME COURT.\" This calendar is that last limb -- the Judicial Branch's own published annual schedule at kscourts.gov/Footer/Holiday-Schedule, which lists 2025 and 2026 side by side. TWO DAYS FOR THANKSGIVING -- 26 and 27 November 2026, both listed. Only Wisconsin, South Carolina and Maryland also carry a day after Thanksgiving, and Kansas prints it as part of the same holiday rather than under its own name. INDEPENDENCE DAY IS PUBLISHED AS FRIDAY 3 JULY because 4 July 2026 is a Saturday. The schedule states the observed date directly, so nothing is derived from a shift rule -- the same transcription approach used for Arkansas and Maryland. WHY THIS IS NOT THE WISCONSIN PROBLEM, and the distinction matters: the schedule says a court \"may defer observing a holiday if it will interfere with judicial proceedings in progress\" and that a district court \"may remain open on any of these designated holidays\" with approval. Wisconsin's statute keys its rollover on whether the clerk's office IS CLOSED, so a county staying open destroys the list as a proxy. KANSAS KEYS ON THE DAY BEING OBSERVED BY ORDER OF THE SUPREME COURT -- a statewide legal fact -- so a district court opening its doors does not stop the day being a legal holiday for 60-206 purposes. The list IS the test here; in Wisconsin it was not. NOT HERE, AND EARLY: a day declared ad hoc by the President or Congress after this schedule was published is a legal holiday under the first two limbs and cannot be anticipated. A HALF HOLIDAY is expressly NOT a holiday -- \"A half holiday is considered as other days and not as a holiday\" -- and is correctly absent. 2026 ONLY: the schedule publishes 2025 and 2026 and no later year. A year it does not cover is REFUSED rather than derived.",
+        "retrieved_at": "2026-08-30"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day / Indigenous Peoples' Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-11-27",
+          "name": "Thanksgiving (second day)",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "Published for 2026 by the Kansas Judicial Branch, which is the K.S.A. 60-206(a)(6) limb for days observed by order of the Kansas supreme court."
+        }
+      ]
+    }
+  ]
+}

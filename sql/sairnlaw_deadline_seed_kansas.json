@@ -1,0 +1,326 @@
+{
+  "_readme": [
+    "KANSAS CIVIL DEADLINE RULES -- 10 rows, K.S.A. chapter 60 article 2.",
+    "Statute text read verbatim from the KANSAS OFFICE OF REVISOR OF STATUTES,",
+    "ksrevisor.gov, the official publisher, on a plain request with no gate.",
+    "Kansas puts civil procedure in the STATUTE rather than in court rules, so",
+    "the whole seed comes from one free official source -- the best source",
+    "position since Wisconsin.",
+    "",
+    "== THREE THINGS THAT WOULD BE WRONG IF CARRIED FROM A NEIGHBOUR =====",
+    "1. THERE IS NO SHORT-PERIOD EXCLUSION. 60-206(a)(1)(B) counts every day,",
+    "   including intermediate weekends and holidays. Kansas took the 2010",
+    "   restyling that abolished it federally. Declaring any threshold would drop",
+    "   days the statute counts and report LATE.",
+    "2. NO ELECTRONIC LIMB. 60-206(d) reaches mail and leaving-with-the-clerk",
+    "   only. E-mail and e-filing get nothing.",
+    "3. ALL THREE DISCOVERY STATUTES SAY 'MAY'. The 45-day defendant period is an",
+    "   ELECTION in every one of them -- Kansas is the first seeded jurisdiction",
+    "   where none of the three is a mandatory floor -- so all three are plain",
+    "   30-day rows and none is a resolve_periods.",
+    "",
+    "== EFFECTIVE DATES ARE PRINTED, NOT INFERRED =======================",
+    "The revisor prints the effective date per section immediately after the last",
+    "session law: 60-206 'L. 2020, ch. 4, § 3; March 19'. No convention was",
+    "needed and none was invented, unlike Wisconsin.",
+    "",
+    "== NOT ENCODED, AND WHY ============================================",
+    "60-212(a)(1)(A)(ii), service by publication, which takes 'the time fixed in",
+    "the notice' -- the 41 days is a floor on what the notice may say, not the",
+    "period. 60-205 itself. 60-206(b) extensions, which are discretionary. And",
+    "60-206(e), under which the chief justice may extend or suspend these",
+    "computation rules entirely during an emergency."
+  ],
+  "rules": [
+    {
+      "rule_id": "ks-60-212a1Ai-answer-21-days",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and petition -- 21 days (Kansas)",
+      "trigger_event": "service_of_summons_and_petition",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ks_60_206_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-212(a)(1)(A)(i)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0012.html",
+        "quote": "A defendant must serve an answer: (i) Within 21 days after being served with the summons and petition;",
+        "note": "TWENTY-ONE days, the federal number, and Kansas calls the initiating pleading a PETITION rather than a complaint. KANSAS HAS NO SHORT-PERIOD EXCLUSION AT ALL, which is the single thing most likely to be got wrong by carrying a neighbour across. K.S.A. 60-206(a)(1)(B) says \"count every day, INCLUDING intermediate Saturdays, Sundays and legal holidays\" -- Kansas took the 2010 restyling that abolished the exclusion federally. Six seeded states use a 7-day threshold, three use 11, Alabama and Wisconsin 11, Maryland 8 and Arkansas 14. Declaring any of them here would drop days the statute counts and report LATER than the true deadline, which is the direction that misses a filing. NOT ENCODED: 60-212(a)(1)(A)(ii), service by publication, which takes \"the time fixed in the notice, which must not be less than 41 days from the time the notice is first published\". The engine cannot read a notice, and 41 days is a FLOOR on what the notice may say rather than the period itself, so guessing 41 would report a date that is merely the earliest the notice could lawfully have set. NO ELECTRONIC LIMB. K.S.A. 60-206(d) adds its three days only for service under 60-205(b)(2)(C) (mail) or (D) (leaving with the clerk). E-mail and the e-filing system get NOTHING -- the federal position, and the opposite of Arkansas, Alabama and Massachusetts, all of which extend for electronic service. A qualifies() copied from any of those over-counts and reports LATE. AND THE ORDER IS FEDERAL after-expiry: \"three days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under subsection (a)\" -- roll, add, roll again, not period-lengthening.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-212a1B-answer-to-counterclaim-or-crossclaim",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Answer to a counterclaim or crossclaim -- 21 days (Kansas)",
+      "trigger_event": "service_of_pleading_stating_counterclaim_or_crossclaim",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ks_60_206_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-212(a)(1)(B)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0012.html",
+        "quote": "a party must serve an answer to a counterclaim or crossclaim within 21 days after being served with the pleading that states the counterclaim or crossclaim; and",
+        "note": "Same 21 days as the answer to the petition. NO ELECTRONIC LIMB. K.S.A. 60-206(d) adds its three days only for service under 60-205(b)(2)(C) (mail) or (D) (leaving with the clerk). E-mail and the e-filing system get NOTHING -- the federal position, and the opposite of Arkansas, Alabama and Massachusetts, all of which extend for electronic service. A qualifies() copied from any of those over-counts and reports LATE. AND THE ORDER IS FEDERAL after-expiry: \"three days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under subsection (a)\" -- roll, add, roll again, not period-lengthening.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-212a1C-reply-to-answer-ordered",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Reply to an answer, where the court orders one -- 21 days (Kansas)",
+      "trigger_event": "service_of_order_to_reply",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ks_60_206_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-212(a)(1)(C)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0012.html",
+        "quote": "a party must serve a reply to an answer within 21 days after being served with an order to reply, unless the order specifies a different time.",
+        "note": "A REPLY IS ORDERED, NOT AUTOMATIC -- there is no reply to an answer in Kansas unless the court orders one, so this row's trigger is service of the ORDER. \"unless the order specifies a different time\" is on the face of the statute and the engine cannot see the order, so a computed date here is the default only. NO ELECTRONIC LIMB. K.S.A. 60-206(d) adds its three days only for service under 60-205(b)(2)(C) (mail) or (D) (leaving with the clerk). E-mail and the e-filing system get NOTHING -- the federal position, and the opposite of Arkansas, Alabama and Massachusetts, all of which extend for electronic service. A qualifies() copied from any of those over-counts and reports LATE. AND THE ORDER IS FEDERAL after-expiry: \"three days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under subsection (a)\" -- roll, add, roll again, not period-lengthening.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-212a2A-responsive-pleading-after-motion-denied",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a 60-212 motion is denied or postponed -- 14 days (Kansas)",
+      "trigger_event": "notice_of_court_action_on_motion",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-212(a)(2)(A)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0012.html",
+        "quote": "If the court denies the motion or postpones its disposition until trial, the responsive pleading must be served within 14 days after notice of the court's action; or",
+        "note": "FOURTEEN days, and because Kansas has no short-period exclusion this is a straight count including weekends and holidays -- in a state with a 7-day threshold the same row would compute quite differently. NO SERVICE EXTENSION: the period runs from NOTICE OF THE COURT'S ACTION, not from service of a paper under 60-205(b)(2)(C) or (D), which is all 60-206(d) reaches. Its sibling limb runs from service and does take the three days. Omitting here reports EARLY, the safe direction.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-212a2B-responsive-pleading-after-more-definite-statement",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a more definite statement -- 14 days (Kansas)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ks_60_206_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-212(a)(2)(B)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0012.html",
+        "quote": "if the court grants a motion for a more definite statement, the responsive pleading must be served within 14 days after the more definite statement is served.",
+        "note": "Fourteen days, counted straight through weekends and holidays. This limb runs from SERVICE, so unlike its sibling it takes 60-206(d)'s three days -- but only for mail or leaving with the clerk. NO ELECTRONIC LIMB. K.S.A. 60-206(d) adds its three days only for service under 60-205(b)(2)(C) (mail) or (D) (leaving with the clerk). E-mail and the e-filing system get NOTHING -- the federal position, and the opposite of Arkansas, Alabama and Massachusetts, all of which extend for electronic service. A qualifies() copied from any of those over-counts and reports LATE. AND THE ORDER IS FEDERAL after-expiry: \"three days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under subsection (a)\" -- roll, add, roll again, not period-lengthening.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-206c1-motion-and-notice-of-hearing",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Motion and notice of hearing -- at least 7 days before the hearing (Kansas)",
+      "trigger_event": "hearing_date_specified",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 7,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-206(c)(1)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0006.html",
+        "quote": "A written motion and notice of the hearing must be served at least seven days before that time specified for the hearing",
+        "note": "A BACKWARD-COUNTED ROW. Seven days, counted straight through weekends and holidays because Kansas has no exclusion -- in Maryland the same seven-day period would drop them, which is why the thresholds cannot be carried between states. NO SERVICE EXTENSION, AND THE DIRECTION IS WHY: 60-206(d) adds days to a period that runs AFTER service, while this period ENDS at service. Adding days to a backward count would let a party serve LATER than the statute allows -- the direction that costs the other side its notice. THREE EXCEPTIONS ON THE FACE OF THE STATUTE, none modellable: an ex parte motion, another rule setting a different time, or a court order.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2020-03-19",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-206c2-opposing-affidavit",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Opposing affidavit or declaration -- at least 1 day before the hearing (Kansas)",
+      "trigger_event": "hearing_date_for_opposing_affidavit",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 1,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-206(c)(2)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0006.html",
+        "quote": "any opposing affidavit or declaration must be served at least one day before the hearing, unless the court permits service at another time.",
+        "note": "ONE DAY, backward, counted straight through -- so an affidavit opposing a Monday hearing is due Sunday, not the preceding Friday, unless the last day itself is a Saturday, Sunday or legal holiday, in which case 60-206(a)(1)(C)'s rollover applies. K.S.A. 60-259(d) displaces this rule and the engine cannot see that.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2020-03-19",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-233b2-interrogatory-answers",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- 30 days (Kansas)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ks_60_206_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-233(b)(2)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0033.html",
+        "quote": "The responding party must serve its answers and any objections within 30 days after being served with the interrogatories, except that a defendant may serve answers or objections within 45 days after being served with process.",
+        "note": "A PLAIN 30-DAY ROW, NOT A FLOOR, and the deciding word is \"MAY\". All three Kansas discovery statutes say a defendant MAY serve within 45 days after being served with process -- an ELECTION available to the defendant, not a floor the statute guarantees. KANSAS IS THE FIRST SEEDED JURISDICTION WHERE ALL THREE ARE ELECTIONS: Alabama and Wisconsin each make one of the three mandatory (\"shall not be required to serve before\"), South Carolina makes its admissions rule mandatory, and Kansas makes none of them so. Encoding an election as a floor would report a date the statute does not guarantee. \"A shorter or longer time may be stipulated to under K.S.A. 60-229 or be ordered by the court\" is on the face of each statute and is invisible to the engine. NO ELECTRONIC LIMB. K.S.A. 60-206(d) adds its three days only for service under 60-205(b)(2)(C) (mail) or (D) (leaving with the clerk). E-mail and the e-filing system get NOTHING -- the federal position, and the opposite of Arkansas, Alabama and Massachusetts, all of which extend for electronic service. A qualifies() copied from any of those over-counts and reports LATE. AND THE ORDER IS FEDERAL after-expiry: \"three days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under subsection (a)\" -- roll, add, roll again, not period-lengthening.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-234b2A-production-response",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- 30 days (Kansas)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ks_60_206_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-234(b)(2)(A)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0034.html",
+        "quote": "The party to whom the request is directed must respond in writing within 30 days after being served, except that a defendant may serve a response within 45 days after being served with process.",
+        "note": "A PLAIN 30-DAY ROW, NOT A FLOOR, and the deciding word is \"MAY\". All three Kansas discovery statutes say a defendant MAY serve within 45 days after being served with process -- an ELECTION available to the defendant, not a floor the statute guarantees. KANSAS IS THE FIRST SEEDED JURISDICTION WHERE ALL THREE ARE ELECTIONS: Alabama and Wisconsin each make one of the three mandatory (\"shall not be required to serve before\"), South Carolina makes its admissions rule mandatory, and Kansas makes none of them so. Encoding an election as a floor would report a date the statute does not guarantee. \"A shorter or longer time may be stipulated to under K.S.A. 60-229 or be ordered by the court\" is on the face of each statute and is invisible to the engine. NO ELECTRONIC LIMB. K.S.A. 60-206(d) adds its three days only for service under 60-205(b)(2)(C) (mail) or (D) (leaving with the clerk). E-mail and the e-filing system get NOTHING -- the federal position, and the opposite of Arkansas, Alabama and Massachusetts, all of which extend for electronic service. A qualifies() copied from any of those over-counts and reports LATE. AND THE ORDER IS FEDERAL after-expiry: \"three days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under subsection (a)\" -- roll, add, roll again, not period-lengthening.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2017-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ks-60-236a3-admission-response",
+      "jurisdiction": "ks",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- 30 days (Kansas)",
+      "trigger_event": "service_of_request_for_admission",
+      "computation": "ks_60_206",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ks_60_206_d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "K.S.A. 60-236(a)(3)",
+        "url": "https://www.ksrevisor.gov/statutes/chapters/ch60/060_002_0036.html",
+        "quote": "A matter is admitted unless, within 30 days after being served, the party to whom the request is directed serve on the requesting party a written answer or objection addressed to the matter and signed by the party or its attorney, except that a defendant may serve answers or objections within 45 days after being served with process.",
+        "note": "THE OUTLIER CONSEQUENCE: on this statute alone, silence ADMITS. Missing an interrogatory deadline invites a motion to compel; missing this one decides the fact. A PLAIN 30-DAY ROW, NOT A FLOOR, and the deciding word is \"MAY\". All three Kansas discovery statutes say a defendant MAY serve within 45 days after being served with process -- an ELECTION available to the defendant, not a floor the statute guarantees. KANSAS IS THE FIRST SEEDED JURISDICTION WHERE ALL THREE ARE ELECTIONS: Alabama and Wisconsin each make one of the three mandatory (\"shall not be required to serve before\"), South Carolina makes its admissions rule mandatory, and Kansas makes none of them so. Encoding an election as a floor would report a date the statute does not guarantee. \"A shorter or longer time may be stipulated to under K.S.A. 60-229 or be ordered by the court\" is on the face of each statute and is invisible to the engine. NO ELECTRONIC LIMB. K.S.A. 60-206(d) adds its three days only for service under 60-205(b)(2)(C) (mail) or (D) (leaving with the clerk). E-mail and the e-filing system get NOTHING -- the federal position, and the opposite of Arkansas, Alabama and Massachusetts, all of which extend for electronic service. A qualifies() copied from any of those over-counts and reports LATE. AND THE ORDER IS FEDERAL after-expiry: \"three days are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE under subsection (a)\" -- roll, add, roll again, not period-lengthening.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2010-07-01",
+      "effective_to": null
+    }
+  ]
+}
