@@ -93,6 +93,37 @@ behavioural health needs under 42 U.S.C. § 1396n(i) and (k).
 
 ---
 
+## 3b. WIDENED 2026-08-30 — Delaware makes it a three-way, not a binary
+
+The sweep's ten patterns look for statutes that **deem** workers employees. They
+do not look for statutes that **affirm** the opposite, and one does.
+
+**16 Del. C. § 122(3)(o)(2)(A):**
+
+> "Home health agency services are provided **directly through employees of the
+> agency or through contract arrangements, including those contracts with
+> individuals considered to be independent contractors.**"
+
+**Delaware writes independent contractors into the statutory description of how
+the service is lawfully delivered** — the exact inverse of Rhode Island's
+"employees and not independent contractors, for all purposes".
+
+| Polarity | States |
+|---|---|
+| **Deems employees** | Rhode Island (both the staffing part and the home-care part) |
+| **Assigns employer roles** | Nevada (*employer of record*), Oregon (*common law employer* + statutory *co-employer*) |
+| **Expressly permits contractors** | **Delaware** |
+| **Silent** | every other state read |
+
+**Two consequences.** First, **silence is not a position** — Delaware and Rhode
+Island both address the question and answer it oppositely, so a product cannot
+infer either from the absence of a clause. Second, **this sweep's pattern set was
+one-sided**: it would have missed Delaware entirely, and it was found by reading
+rather than sweeping. **The pattern list should gain the affirmative forms**
+(*"including those contracts with individuals considered to be independent
+contractors"*, *"may be provided by independent contractors"*) before it is run
+against any new corpus.
+
 ## 4. What this changes
 
 **Employment status is a regulated attribute in at least three of the states read,
