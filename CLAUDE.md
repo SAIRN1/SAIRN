@@ -91,6 +91,25 @@ discovered only when a rebase pulled three unexpected `docs(sairnfreedom)`
 commits into an unrelated push, by which point both were finished. Roughly
 four hours, duplicated.
 
+**There is now a tool for this — `tools/sairn_claim.py`.** It is the mechanism
+behind the rule below; the rule stands on its own if the tool is unavailable.
+
+    python tools/sairn_claim.py check   sairnfreedom competitive scan
+    python tools/sairn_claim.py claim   sairnfreedom competitive scan
+    python tools/sairn_claim.py release sairnfreedom
+    python tools/sairn_claim.py list
+
+`check` fetches, compares against every session's claims and **exits 1 if
+another session holds an overlapping active claim**. `claim` runs `check` first
+and refuses if blocked, then writes, commits and pushes. Claims live in
+`.claude/claims/<session>.json` — one file per clone, so writes cannot conflict
+(the same reason `SAIRN-ACTIVE-WORK.md` was split per clone on 2026-08-24).
+Claims expire after 4 hours so a crashed session cannot block forever.
+
+**It is not a lock.** Claims travel by git, so two sessions starting within the
+same minute can still both claim. It narrows a four-hour window to about a
+one-fetch window. Read `.claude/claims/README.md` for the full limits.
+
 **The rule, stated so it cannot be read as being about files:**
 
 > Before starting any research or build **gate** that the coordinating chat
