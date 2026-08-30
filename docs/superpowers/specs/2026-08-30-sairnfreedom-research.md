@@ -51,8 +51,21 @@ low, the acceptable behaviours are to **re-shoot**, **flag for manual
 re-count**, or **accept a typed volume** — none of which is a position on an
 image.
 
-Phase 2's passive sensor is a different technology and **was not scanned**.
-It needs its own patent pass before it is built.
+### 3. Phase 2's passive sensor is DEFERRED — do not plan around it
+
+Superseded 2026-08-30. This section previously read "was not scanned; it needs
+its own patent pass before it is built." **It has since been scanned, and both
+routes closed** — see *Phase 2 passive sensor* below.
+
+- **Build** is blocked by an active patent thicket (Nectar's 8+ family to
+  2036, BarVision's spouts) plus a hardware business this platform has no
+  part of.
+- **Integrate** is blocked because neither vendor exposes an API, and the one
+  confirmed operating is **$250–$300/month on a 1-year contract** — roughly
+  ten times what a volunteer-run post is likely to pay for the whole product.
+
+Phase 1's automatic photo determination carries the inventory feature.
+Reopen only on real customer demand or a vendor with an actual API.
 
 **RESIDUAL RISK ON THIS DECISION — added 2026-08-30 from the second scan. The
 decision stands; this is the reasoning behind it, not a reopening.**
@@ -97,10 +110,20 @@ body of this document originated in a chat session's own memory system
 repo search for it found nothing. It is written here so Hank, CC and Ted can
 read it without someone pasting it, which was the whole reason for the file.
 
-The competitive and evidence sections below are recorded **as received** and
-have not been independently re-verified in this pass. The **Ohio statutory
-section has** — see *Statutory re-verification* at the end, which was run
-fresh against codes.ohio.gov on 2026-08-30 and carries two corrections.
+**Superseded 2026-08-30 by the merge — corrected rather than deleted, because
+the original wording is what a reader would otherwise trust.** This paragraph
+used to say the competitive sections were "recorded as received and have not
+been independently re-verified", and that the statutory section "carries two
+corrections". Both are now out of date:
+
+- The **competitive** section HAS been independently verified — eleven products
+  against primary sources — and was **rewritten**, because the original
+  four-pillar framing did not survive it. See *The competitive gap*.
+- The statutory section carries **five** corrections, not two, plus the
+  §2915.09 operational limits.
+
+The **canteen/financial evidence** section is still recorded as received and
+remains un-re-verified. That part of the original caveat stands.
 
 ---
 
@@ -233,9 +256,13 @@ From VFW's **own official training materials**, not inferred:
   **Partender**, an existing proven competitor — differentiated by tying into
   the post's event calendar and bingo-fund compliance data rather than being a
   standalone stock count.
-- **Phase 2:** passive, always-on proximity/depth sensor (inspired by
-  Spill-O-Not) for zero-touch tracking. **Only after Phase 1 is validated with
-  real posts.**
+- **Phase 2: DEFERRED 2026-08-30 — not "after Phase 1", but indefinitely.**
+  This originally read "passive, always-on proximity/depth sensor (inspired by
+  Spill-O-Not) for zero-touch tracking, only after Phase 1 is validated with
+  real posts." Both the build and integrate routes were scanned and both
+  closed — see *Binding decision 3* and *Phase 2 passive sensor*. Kept in
+  place rather than deleted so the original plan and its reason for dying stay
+  together.
 - **LiDAR ruled out** — impractical for standing-bottle fill-through-glass at
   bar distance.
 
@@ -525,6 +552,16 @@ also runs the bingo game has a problem the software should be able to see.
 profit figure that the charitable-distribution rules then bind. The bar's
 books are not merely *adjacent* to the bingo books; they are an input to them.
 
+> **⚠ READ CORRECTION 5 BEFORE MODELLING THIS.** The paragraph above is
+> correct about (FF)/(GG)(11) and is **only half the picture** — §2915.10(C)
+> requires gross profit to be deposited into an account devoted **exclusively**
+> to bingo, with all payments made only from it. The right model is therefore
+> **mandatory segregation inbound, with one enumerated expense class permitted
+> to cross outbound** — not merged books. Correction 5 appears ~80 lines
+> *above* this section and says "the thesis below", so this pointer exists
+> because a reader arriving here first would otherwise take the paragraph above
+> as the final word.
+
 ## Net profit distribution — §2915.101, and it is TIERED
 
 Effective **2021-09-30** (not 2025-09-30 — see Correction 2).
@@ -781,8 +818,9 @@ top of this document for the full constraint and the list of specifically
 prohibited controls. The alternative — build the slider and take counsel on
 US11961032B2 first — was considered and rejected.
 
-Phase 2's passive sensor is a different technology and was not scanned; it
-needs its own pass before it is built.
+Phase 2's passive sensor is a different technology. It was unscanned when this
+section was written; it **has since been scanned and DEFERRED** — see the
+section immediately below and *Binding decision 3*.
 
 ---
 
@@ -908,7 +946,7 @@ vendor with a real API appears. Neither is worth watching for.
 
 This was a first-pass read, not a freedom-to-operate opinion. Not counsel.
 
-## Sources
+## Sources — patents and vendors
 
 - [US11961032B2 — inventory of containers for beverages](https://patents.google.com/patent/US11961032B2/en)
 - [US10078003B2 — Nectar sensor device configuration](https://patents.google.com/patent/US10078003B2/en)
@@ -919,7 +957,7 @@ This was a first-pass read, not a freedom-to-operate opinion. Not counsel.
 - [US12450865B2 — detecting liquid level inside a container](https://patents.google.com/patent/US12450865B2/en)
 - [EP3992847A1 — a bottle analysis system](https://patents.google.com/patent/EP3992847A1/en)
 
-## Sources
+## Sources — statutes and administrative rules
 
 - [ORC §2915.01 — Definitions](https://codes.ohio.gov/ohio-revised-code/section-2915.01)
 - [ORC §2915.09 — Illegally conducting bingo game](https://codes.ohio.gov/ohio-revised-code/section-2915.09)
