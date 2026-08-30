@@ -7954,5 +7954,124 @@ document.addEventListener('DOMContentLoaded',function(){
   bldShowStep('lstep-login');
 });
 </script>
+<!-- SAIRN NEXUS CONTEXT RECEIVER (2026-08-30) -- the app-agnostic inbound half
+     of the cross-cell handoff whose sender lives in stonedesk.html:17867.
+     When another SAIRN app hands you a conversation, it lands here: the
+     situation text is pre-filled into this app's own AI input and a banner
+     says where it came from.
+
+     PORTED, NOT INVENTED. This is stonedesk.html's checkIncomingHandoff with
+     three changes, each for a stated reason:
+
+     1. ELEMENT IDS ARE RESOLVED FROM A LIST, not hardcoded. The apps do not
+        agree on names -- StoneDesk uses #ai-input/#ai-chat, SAIRNbiz/design/
+        law/grounds use #ainp/#achat, SAIRNscape prefixes #scp-ainp/#scp-achat,
+        SAIRNbuild uses #ai-question. One snippet, dropped in unedited, works
+        in all of them. Per-app editing is what makes a shared pattern drift.
+
+     2. THE KEY IS CLEARED ONLY ON SUCCESS, and this is the important one.
+        The original cleared it immediately on read. Every app here gates its
+        UI behind a licence screen, so a receiver that fires before login finds
+        no input, and the original would have CONSUMED the context and thrown
+        it away silently. This retries until the input exists (60s cap) and
+        removes the key only once the context has actually been applied.
+
+     3. NO innerHTML. The original built the banner with
+        `innerHTML = ... + ctx.situation + ...`, which is an injection sink --
+        ctx.situation is attacker-controllable by anything same-origin that can
+        write sessionStorage. Built with textContent instead. StoneDesk's own
+        copy was fixed in the same pass rather than shipping the safe version
+        to five apps and leaving the unsafe original in place.
+
+     Reads sessionStorage, so it only sees a handoff from a SAME-TAB
+     navigation -- which is exactly what sendHandoff does
+     (window.location.href, not a new tab). A new tab would arrive empty; that
+     is the 2026-08-30 /stonedesk-hr finding and the reason it is not one. -->
+<script>
+(function () {
+  'use strict';
+  if (window._sairnNexusReceiverInstalled) return;
+  window._sairnNexusReceiverInstalled = true;
+
+  var HANDOFF_KEY = 'sairn_handoff_context';
+  var INPUT_IDS = ['ai-input', 'ainp', 'scp-ainp', 'ai-question'];
+  var CHAT_IDS  = ['ai-chat', 'achat', 'scp-achat', 'ai-answer-wrap'];
+
+  function pick(ids) {
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (el) return el;
+    }
+    return null;
+  }
+
+  function clearKey() {
+    try { sessionStorage.removeItem(HANDOFF_KEY); } catch (e) {}
+  }
+
+  // Returns true when there is nothing further to do (applied, or nothing to
+  // apply, or storage unavailable). Returns false to ask for another attempt.
+  function apply() {
+    var raw = null;
+    try { raw = sessionStorage.getItem(HANDOFF_KEY); } catch (e) { return true; }
+    if (!raw) return true;
+
+    var ctx = null;
+    try { ctx = JSON.parse(raw); } catch (e) {}
+    if (!ctx || !ctx.situation) { clearKey(); return true; }
+
+    var inp = pick(INPUT_IDS);
+    if (!inp) return false;   // UI not up yet -- keep the key, try again
+
+    clearKey();
+
+    if (ctx.autoSend && String(ctx.situation).length > 20) {
+      var send = (typeof window.sdAIQuick === 'function') ? window.sdAIQuick
+               : (typeof window.askAI === 'function') ? window.askAI
+               : (typeof window.scpAskAI === 'function') ? window.scpAskAI
+               : null;
+      if (send) { setTimeout(function () { send(ctx.situation); }, 800); return true; }
+      // No send entry point in this app -- fall through to pre-fill rather
+      // than dropping the context on the floor.
+    }
+
+    inp.value = ctx.situation;
+    inp.style.borderColor = 'rgba(99,102,241,0.6)';
+    setTimeout(function () { inp.style.borderColor = ''; }, 3000);
+
+    var chat = pick(CHAT_IDS);
+    if (chat) {
+      var banner = document.createElement('div');
+      banner.style.cssText = 'background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px;padding:10px 14px;margin:8px 0;font-size:12px;line-height:1.5;display:flex;align-items:flex-start;gap:10px';
+
+      var icon = document.createElement('span');
+      icon.style.cssText = 'font-size:16px;flex-shrink:0';
+      icon.textContent = '↩️';
+
+      var body = document.createElement('div');
+      var label = document.createElement('strong');
+      label.textContent = 'Context from ' + (ctx.app_id ? String(ctx.app_id) : 'SAIRN NEXUS') + ': ';
+      var text = String(ctx.situation);
+      body.appendChild(label);
+      body.appendChild(document.createTextNode(text.slice(0, 200) + (text.length > 200 ? '...' : '')));
+
+      banner.appendChild(icon);
+      banner.appendChild(body);
+      chat.insertBefore(banner, chat.firstChild);
+    }
+    return true;
+  }
+
+  if (!apply()) {
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      if (apply() || tries > 120) clearInterval(iv);   // 120 x 500ms = 60s
+    }, 500);
+  }
+  document.addEventListener('DOMContentLoaded', function () { apply(); });
+})();
+</script>
+
 </body>
 </html>

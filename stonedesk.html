@@ -17857,23 +17857,65 @@ function checkIncomingHandoff() {
   // Show a context banner at the top of the real chat area
   var banner = document.createElement('div');
   banner.style.cssText = 'background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:10px 14px;margin:8px 16px;font-size:12px;color:rgba(240,240,255,0.65);line-height:1.5;display:flex;align-items:flex-start;gap:10px';
-  banner.innerHTML = '<span style="font-size:16px;flex-shrink:0">↩️</span><div><strong style="color:var(--brand2)">Context from SAIRN NEXUS:</strong> ' + ctx.situation.slice(0, 200) + (ctx.situation.length > 200 ? '...' : '') + '</div>';
+  // Built with textContent, not innerHTML (2026-08-30). This line previously
+  // concatenated ctx.situation straight into innerHTML -- an injection sink,
+  // since ctx.situation is whatever anything same-origin wrote into
+  // sessionStorage. Fixed here in the same pass that ported this receiver into
+  // five other apps, rather than shipping the safe version outward and leaving
+  // the unsafe original in the app that originated it.
+  var bIcon = document.createElement('span');
+  bIcon.style.cssText = 'font-size:16px;flex-shrink:0';
+  bIcon.textContent = '↩️';
+  var bBody = document.createElement('div');
+  var bLabel = document.createElement('strong');
+  bLabel.style.color = 'var(--brand2)';
+  bLabel.textContent = 'Context from SAIRN NEXUS: ';
+  var bText = String(ctx.situation);
+  bBody.appendChild(bLabel);
+  bBody.appendChild(document.createTextNode(bText.slice(0, 200) + (bText.length > 200 ? '...' : '')));
+  banner.appendChild(bIcon);
+  banner.appendChild(bBody);
 
   var chatArea = document.getElementById('ai-chat');
   if (chatArea) chatArea.insertBefore(banner, chatArea.firstChild);
 }
 
 // == SENDER: "Continue in [App]" buttons after AI responses ======
+// RETARGETED 2026-08-30. This table previously listed NINE consumer apps --
+// /index.html /health.html /money.html /legal.html /study.html /lingual.html
+// /senior.html /home.html /roam.html -- none of which exist in this repo,
+// none routed in vercel.json, and all four spot-checked live returned 404.
+// sendHandoff() navigates with window.location.href, so a click would have
+// taken a paying customer off StoneDesk into a dead page.
+//
+// SAME DEFECT CLASS Guardian fixed three times on June 16 2026 (see the
+// APP_ID notes at :17329, :19348, :20046): consumer-app data left inside
+// reusable NEXUS machinery. Guardian's fix each time was to CORRECT THE DATA
+// and keep the module, not delete it. This follows that precedent -- the
+// mechanism (detectRelevantCells/sendHandoff/addHandoffButtons and the
+// checkIncomingHandoff receiver) contains no consumer-app reference at all;
+// the coupling was entirely these nine rows.
+//
+// DESTINATIONS: five real B2B apps, every one with a live vercel.json route,
+// chosen because a stone shop plausibly continues a conversation there.
+// SAIRNvet/dental/care/senior/legacy/roofing/grounds/mechanical are live too
+// and are deliberately ABSENT -- a countertop fabricator has no reason to hand
+// off to a veterinary or dental app, and every extra row is another chance to
+// fire a button nobody wanted.
+//
+// KEYWORDS ARE DELIBERATELY NARROW, and that is the real lesson from the old
+// table. Its SAIRNlaw row matched bare 'contract', and its SAIRNhome row
+// matched 'home' and 'property' -- everyday vocabulary in a countertop shop,
+// so those buttons would have fired constantly. Every keyword below is a term
+// that does NOT appear in ordinary stone-fabrication talk. Prefer a multi-word
+// phrase over a bare noun; the matcher is a plain substring test on the
+// lowercased reply, so phrases work and are far safer.
 var CELL_MAP = [
-  { name:'SAIRNtype',    file:'/index.html',   icon:'⌨️', keywords:['write','draft','email','letter','post','document','essay','cover'] },
-  { name:'SAIRNhealth',  file:'/health.html',  icon:'❤️', keywords:['symptom','medication','health','doctor','pain','medical','diagnosis'] },
-  { name:'SAIRNmoney',   file:'/money.html',   icon:'💰', keywords:['budget','debt','money','invest','saving','credit','financial'] },
-  { name:'SAIRNlaw',     file:'/legal.html',   icon:'⚖️', keywords:['legal','rights','lawyer','lease','contract','tenant','lawsuit'] },
-  { name:'SAIRNstudy',   file:'/study.html',   icon:'📚', keywords:['study','learn','exam','homework','tutor','course','school'] },
-  { name:'SAIRNlingual', file:'/lingual.html', icon:'🌍', keywords:['language','spanish','french','chinese','translate','speak','fluent'] },
-  { name:'SAIRNsenior',  file:'/senior.html',  icon:'🌟', keywords:['medicare','social security','senior','retirement','benefit','medication'] },
-  { name:'SAIRNhome',    file:'/home.html',    icon:'🏠', keywords:['home','mortgage','rent','landlord','buy','sell','property','house'] },
-  { name:'SAIRNroam',    file:'/roam.html',    icon:'✈️', keywords:['travel','trip','hotel','flight','vacation','visit','destination'] },
+  { name:'SAIRNbiz',    file:'/sairnbiz',    icon:'👥', keywords:['payroll','timesheet','onboarding','w-2','i-9','workers comp','benefits enrollment'] },
+  { name:'SAIRNbuild',  file:'/sairnbuild',  icon:'🏗️', keywords:['general contractor','subcontractor','punch list','change order','submittal','draw schedule'] },
+  { name:'SAIRNdesign', file:'/sairndesign', icon:'🎨', keywords:['interior design','mood board','space plan','cabinetry','floor plan'] },
+  { name:'SAIRNscape',  file:'/sairnscape',  icon:'🌳', keywords:['hardscape','paver','retaining wall','landscape','patio design'] },
+  { name:'SAIRNlaw',    file:'/sairnlaw',    icon:'⚖️', keywords:['mechanics lien','lien waiver','breach of contract','litigation','deposition','subpoena','statute of limitations'] },
 ];
 
 var st = document.createElement('style');
