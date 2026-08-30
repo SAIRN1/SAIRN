@@ -1051,6 +1051,13 @@ both were already deep in the work.
 
 ## Two research lessons, and a platform-wide audit that came back clean
 
+> **Consolidated 2026-08-30 into
+> `docs/superpowers/specs/2026-08-30-research-method-lessons.md`**, together
+> with two further lessons from the same night (a mechanical proxy that ranked
+> the best document worst, and the EVV no-credential pattern). That file is the
+> single findable place; the detail below stays here because each lesson is
+> more useful beside the evidence that produced it.
+
 Both lessons come from this document's own mistakes. The audit checking whether
 they recur elsewhere was run 2026-08-30 and is a **negative result** — recorded
 because a negative result is what makes the lessons worth generalising rather
