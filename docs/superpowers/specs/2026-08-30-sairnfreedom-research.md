@@ -1046,3 +1046,51 @@ statute independently. But that is a defence of the outcome, not of the process.
 collision, not the need to know what another session is touching. Neither pass
 logged "starting SAIRNfreedom gates" anywhere another session would see before
 both were already deep in the work.
+
+---
+
+## Two research lessons, and a platform-wide audit that came back clean
+
+Both lessons come from this document's own mistakes. The audit checking whether
+they recur elsewhere was run 2026-08-30 and is a **negative result** — recorded
+because a negative result is what makes the lessons worth generalising rather
+than treating as one-offs.
+
+### Lesson 1 — confirming words EXIST is not confirming their SCOPE
+
+The (V)(2)/(V)(3) error above. The verification question asked was *"does (V)
+enumerate charitable purposes such as scholarships, flags, patriotism?"* and the
+answer was a truthful yes with a real quote. A yes/no question gets a yes. It
+establishes the words are present; it establishes nothing about which
+subdivision holds them or which organisation types they bind — and here the
+product covers two families, so that was the whole question.
+
+**Ask instead:** "quote the division letter, and say who it applies to."
+
+### Lesson 2 — price the integrate option BEFORE recommending build
+
+Phase 2 was scoped as a patent question and hours went into the patent
+landscape. The patent answer stayed ambiguous. What actually closed the phase
+was one hour of reading two vendor websites: neither exposes an API, and the one
+confirmed operating charges $250–300/month on a 1-year contract, roughly ten
+times what this customer would pay for the entire product.
+
+Also worth keeping: **read the vendor's own site, not the search summary.**
+"Connects to over 50 of the top POS systems" reads like an integration platform
+and is outbound work BarVision sells as a feature. The only nav item that
+sounded like a partner route was a contact form.
+
+### The audit: SAIRNfreedom was the only instance
+
+Every other in-progress SAIRN research doc was checked for the same
+build-vs-integrate viability gap. **None has it**, and several handle it better
+than this document did:
+
+| Doc | Verdict |
+|---|---|
+| `2026-08-27-evv-transmission-groundwork.md` | **Better.** Explicitly names the trading-partner agreement and credentials as unresolved gates, marks the Swagger schema "genuinely gated (401 live)", and found a way to progress regardless — format conformance provable "with no credentials, no agreement" |
+| `2026-08-26-competitive-gap-audit-roofing-dental-senior.md` | **Clean.** Explicitly "recommends no build", and flags dental credentialing vendors as "mostly without published pricing" rather than assuming |
+| `2026-08-27-sairnmechanical-shared-platform-competitive-research.md` | **Clean.** Incumbent pricing throughout ($179/user, $149, $189, $1,500/yr); the operative spec references it at its line 12 rather than restating it |
+| `2026-08-21-plumbing-electrical-hvac-worldwide-research.md` | **Clean.** Proportionally dense on both cost and access |
+
+So this is a lesson from one document, not a pattern across the platform.
