@@ -1453,7 +1453,25 @@ var COMPUTATION_STANDARDS = {
   al_rcp_6: { label: 'Ala. R. Civ. P. 6', impl: 'frcp_6a',
     short_period_exclusion_days: 11,
     base_period_suffix: '(a)', months_years_suffix: '(a)',
-    rollover_suffix_forward: '(a)(3)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '(a)(3)', rollover_suffix_backward: '' },
+  // ELEVEN, like Alabama, Tennessee and Arizona.
+  //
+  // WISCONSIN USES TWO DIFFERENT TESTS IN ONE SUBSECTION, and this standard
+  // can only honour one of them. Sec. 801.15(1)(b) rolls the LAST DAY unless
+  // it is "a day the clerk of courts office is closed" -- a courthouse-
+  // CLOSURE test -- while excluding INTERMEDIATE days on the statutory
+  // holiday LIST in 801.15(1)(a). Every other jurisdiction here uses one
+  // basis for both.
+  //
+  // The calendar therefore carries only days on which EVERY county's clerk
+  // is closed, read from the court system's own 2026 closure schedule --
+  // three days out of the fifteen it lists. That is correct for the rollover
+  // test and DELIBERATELY UNDER-INCLUSIVE for the exclusion test, which
+  // reports EARLY and never LATE. See JURISDICTION_COVERAGE.wi.
+  wi_801_15: { label: 'Wis. Stat. Sec. 801.15', impl: 'frcp_6a',
+    short_period_exclusion_days: 11,
+    base_period_suffix: '(1)(b)', months_years_suffix: '(1)(b)',
+    rollover_suffix_forward: '(1)(b)', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1473,6 +1491,12 @@ var COMPUTATION_STANDARDS = {
 //             malpractice one. Refusing here would buy no safety.
 // Nothing is added to this table without deciding which of the two it is.
 var JURISDICTION_COVERAGE = {
+  wi: {
+    complete: false,
+    direction: 'early',
+    summary: 'Wisconsin rolls the last day on COURTHOUSE CLOSURE, not on the statutory holiday list, and its clerks are county officers who diverge. This calendar carries only the three days every county is closed statewide, so a date may be EARLIER than the true deadline, never later.',
+    detail: "Wis. Stat. Sec. 801.15(1)(b) uses TWO DIFFERENT TESTS in one subsection, and no single calendar can honour both. The LAST DAY rolls unless it is \"a day the clerk of courts office is closed\" -- a courthouse-CLOSURE test. INTERMEDIATE days, in periods under 11 days, are excluded on the statutory holiday LIST in 801.15(1)(a). Wisconsin's clerks of circuit court are COUNTY officers, and the court system's own 2026 Circuit Court Closure Schedule shows they genuinely diverge: of the fifteen holidays it lists, 67 of 72 counties are not closed all day on Juneteenth, 69 of 72 on Indigenous Peoples' / Columbus Day, and 60 of 72 on Washington's Birthday. Encoding the statutory list for the rollover would therefore roll deadlines in counties whose courthouse was OPEN -- LATER than the statute allows, the direction that loses a filing. THIS CALENDAR INSTEAD CARRIES ONLY THE STATEWIDE INTERSECTION: the three days on which EVERY county is marked closed all day -- New Year's Day, Memorial Day and Thanksgiving Day. That is correct for the rollover test and deliberately UNDER-inclusive for the exclusion test, so a computed date may be EARLIER than the true deadline and can never be later. TWO FURTHER GAPS, both also EARLY: Sec. 995.20 makes the municipal election day a legal holiday in every 1st class city (Milwaukee) and lets counties of 750,000 or more provide holidays by ordinance, neither of which a jurisdiction+year calendar can express; and a county closed for weather or a local event is not here either. THE CALENDAR IS 2026 ONLY -- the court system publishes no 2027 schedule yet, and a later year would have to be derived from the statutory list, which is the thing this design exists to avoid. Before relying on a Wisconsin date that falls on or near a listed holiday, check that county's own closure schedule at wicourts.gov/courts/circuit."
+  },
   al: {
     complete: false,
     direction: 'early',
@@ -2574,6 +2598,65 @@ var SERVICE_EXTENSION_STANDARDS = {
     shape: 'enumerated_allowlist',
     qualifies: function (method) {
       return ({ mail: 1, efiling_service_provider: 1, electronic: 1 })[method] === 1;
+    }
+  },
+  // Wis. Stat. Sec. 801.15(5). THIS IS VIRGINIA'S MECHANISM, NOT MISSOURI'S.
+  // The 5 p.m. clock decides HOW MANY DAYS ARE ADDED (0 or 1), not when
+  // service was complete -- so it reuses the existing amount(method, ctx)
+  // shape and needs no new engine mechanism. Missouri's service-COMPLETION
+  // table is not involved.
+  //
+  // Fifth distinct answer on electronic service across the states gated:
+  //   Massachusetts  +3, in the time rule
+  //   Tennessee      service rule DEEMS it mail -> +3
+  //   Missouri       +0, the TRIGGER DATE moves
+  //   Maryland       +0, expressly negated
+  //   Wisconsin      +1 if completed between 5 p.m. and midnight, else +0
+  //
+  // TWO BOUNDARY READINGS, BOTH DELIBERATE AND BOTH DISCLOSED:
+  // (1) EXACTLY 17:00 ADDS NOTHING. The statute says "completed between 5
+  //     p.m. and midnight", and "between" does not settle whether 5 p.m.
+  //     itself is inside. Virginia's text is explicit where this is not.
+  //     Reading 17:00 as inside would add a day and report LATER than the
+  //     true deadline; reading it as outside reports EARLIER. The engine
+  //     takes the earlier reading, because a date that is too early costs a
+  //     day of preparation and a date that is too late costs the filing.
+  // (2) A TRANSMISSION AFTER MIDNIGHT BUT BEFORE 5 P.M. -- 02:00, say -- is
+  //     NOT "between 5 p.m. and midnight" and adds NOTHING. A naive
+  //     "after 5 p.m." implementation would wrongly add a day.
+  wi_801_15_5: {
+    label: 'Wis. Stat. Sec. 801.15(5)',
+    // "shall be added to the prescribed period" -- the days lengthen the
+    // period, so the rollover acts once, at the end.
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist_with_per_method_amount',
+    qualifies: function (method) {
+      return ({ mail: 1, facsimile: 1, electronic_mail: 1,
+        efiling_service_provider: 1 })[method] === 1;
+    },
+    amount: function (method, ctx) {
+      // Mail is a fixed three and does not touch the clock.
+      if (method === 'mail') return { add: 3, unit: 'calendar_days' };
+
+      var t = ctx && ctx.service_time;
+      if (!t || !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(t))) {
+        return { refuse: {
+          code: 'SERVICE_TIME_REQUIRED',
+          message: 'Wis. Stat. Sec. 801.15(5)(b) adds ONE day for service by ' +
+            String(method).replace(/_/g, ' ') + ' completed between 5 p.m. and midnight, and NOTHING for the ' +
+            'same service completed at any other hour -- including after midnight and before 5 p.m. ' +
+            (t ? 'The service_time supplied ("' + t + '") is not a 24-hour HH:MM time. '
+               : 'No service_time was supplied. ') +
+            'The engine will not choose between the two: guessing 1 day would report a date LATER than the ' +
+            'true deadline. Supply service_time as HH:MM in 24-hour form (for example "16:45" or "17:30"). ' +
+            'The date below is computed WITHOUT any extension.'
+        } };
+      }
+      // Strictly AFTER 17:00 and before midnight. 17:00 exactly is outside.
+      var mins = parseInt(String(t).slice(0, 2), 10) * 60 + parseInt(String(t).slice(3), 10);
+      return (mins > 17 * 60)
+        ? { add: 1, unit: 'calendar_days' }
+        : { add: 0, unit: 'calendar_days' };
     }
   }
 };
