@@ -2,6 +2,46 @@
 
 **Status:** research only. Nothing built. No spec, no schema, no app file.
 
+---
+
+## BINDING DECISIONS — read before designing anything
+
+Decided by Michael 2026-08-30, on the evidence in this document. These are
+settled, not options.
+
+### 1. Bottle fill level is determined AUTOMATICALLY. No slider, ever.
+
+**The system determines the level from the image itself. There is no user
+pointing, marking, tapping, dragging or positioning step anywhere in the UI.**
+
+This is a patent-avoidance constraint, not a UX preference. US11961032B2
+claim 1 is active to **2034-01-21** and reads on a method where volume is
+determined "as a function of the position of the position indicator" that the
+user places by "contacting the digital image at a position ... corresponding
+to an amount of beverage remaining." Full verbatim claim in the patent scan
+below.
+
+**Therefore, prohibited in the fill-level flow:**
+- a slider, handle, or draggable marker over a bottle image
+- tap-to-set-the-fill-line on a photo
+- any control whose *position* is an input to the volume calculation
+- any "confirm the level we guessed by adjusting it" step — an adjustable
+  guess is still a user-positioned indicator
+
+**Required instead:** the level comes out of image analysis. If confidence is
+low, the acceptable behaviours are to **re-shoot**, **flag for manual
+re-count**, or **accept a typed volume** — none of which is a position on an
+image.
+
+Phase 2's passive sensor is a different technology and **was not scanned**.
+It needs its own patent pass before it is built.
+
+### 2. Scope of this document
+
+Everything verified here is the **gaming** half. Liquor licensing is
+unexamined — see *Still not verified*. Do not read compliance coverage into
+the canteen side.
+
 **Provenance, stated because it matters for how much this is trusted:** the
 body of this document originated in a chat session's own memory system
 (`/areas/sairnveterans.md`), not on any clone's filesystem — which is why a
@@ -324,10 +364,16 @@ positions an indicator, claim 1 is not read on.
 ## What this means for the phased plan
 
 Phase 1 as written in the baseline — "photo-based fill-level estimation, same
-category as Partender" — **should not be built as a Partender-style slider.**
-Either build the automatic determination from the start, or get counsel on
-US11961032B2 before writing the UI. Phase 2's passive sensor is a different
-technology and was not scanned; it needs its own pass before it is built.
+category as Partender" — **must not be built as a Partender-style slider.**
+
+**DECIDED 2026-08-30: build automatic determination from the start.** No
+human-positioned indicator anywhere in the UI. See *Binding decisions* at the
+top of this document for the full constraint and the list of specifically
+prohibited controls. The alternative — build the slider and take counsel on
+US11961032B2 first — was considered and rejected.
+
+Phase 2's passive sensor is a different technology and was not scanned; it
+needs its own pass before it is built.
 
 ## Sources
 
