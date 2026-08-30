@@ -111,7 +111,13 @@ keyword**:
 | **Oregon** | caregiver registry | roster of **private contractor** caregivers **provided to the client for hiring** | **licence** + site inspection every 3 years |
 
 Adjacent: **Nevada** *employment agency to provide nonmedical services* — hinges
-on **contracting with the caregivers**. **Not** analogues: Nevada *referral
+on **contracting with the caregivers**. **Rhode Island** *nursing service agency*
+(216-RICR-40-10-10) hinges on **supplying personnel on a temporary basis** —
+and R.I. Gen. Laws § 23-17.7.1-2(d) **deems those workers employees and NOT
+independent contractors, for all purposes**. **That extinguishes the premise of
+an Iowa-style contractor marketplace in Rhode Island as a matter of statute, not
+licensing.** Both Rhode Island and Oregon also bar **holding yourself out** as
+the regulated thing, so marketing copy carries a statutory edge in each. **Not** analogues: Nevada *referral
 agency* and Oregon *long term care referral* — both are **facility placement**.
 
 **SAIRNsenior as built on 2026-08-30 is OUTSIDE all four.** See

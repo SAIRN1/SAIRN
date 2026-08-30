@@ -138,10 +138,10 @@ reserved chapters (28 through 37).
 
 | Item | Status |
 |---|---|
-| **RI 216-RICR-40-10-10, "Licensing Nursing Service Agencies"** | **NOT READ — and it is the priority.** § 17 points at it; it is a staffing-agency category and may be Rhode Island's intermediary analogue. |
+| **RI 216-RICR-40-10-10, "Licensing Nursing Service Agencies"** | **READ 2026-08-30.** It is a staffing-agency category, and its statute **deems supplied temporary workers employees, not independent contractors**. SAIRNsenior is outside it. |
 | RI § 17.5.3 (health screening, in-service education), § 17.5.2(C), the rest of 81 K characters | **NOT READ** |
 | R.I. Gen. Laws § 23-17-34 | **NOT READ** — carries the BCI mechanism. |
-| **Whether SAIRNsenior is outside RI's "arranges to provide / offers to provide" trigger** | **NOT FULLY DETERMINED** — one definition read, not the part. Narrowest margin of the five. |
+| **Whether SAIRNsenior is outside RI's "arranges to provide / offers to provide" trigger** | **DETERMINED 2026-08-30 — OUTSIDE.** Part 10 was read and resolved it: the neighbouring category turns on **supplying personnel**, and § 23-17.7.1-2(d) expressly excludes licensed home care providers from it. See `2026-08-30-sairnsenior-rhode-island-determination.md`. |
 | WY: whether a non-medical personal care agency is a licensed facility | **NOT ESTABLISHED** — the home health agency definition requires nursing or other health care services; Wyoming's other titles were not searched. |
 | WY personnel/training rules (Dept. of Health rules under W.S. 35-2-9xx) | **NOT READ** — statute only. |
 | NM operative home health rules | **NOT LOCATED** |
