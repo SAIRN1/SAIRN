@@ -1,0 +1,415 @@
+{
+  "_readme": [
+    "NEW MEXICO -- Rules of Civil Procedure for the District Courts, NMRA Rule",
+    "Set 1. 15 rules, 31st computing jurisdiction.",
+    "",
+    "THE SOURCE IS THE OFFICIAL PUBLISHER AND IT IS FREE, BUT NOT WHERE A GATE",
+    "WOULD LOOK FIRST. supremecourt.nmcourts.gov publishes one PDF per rule --",
+    "but only for rules RECENTLY AMENDED, so Rules 1-012, 1-036 and 1-056 are",
+    "not there at all. The complete current NMRA lives on NMOneSource.com, the",
+    "New Mexico Compilation Commission's free portal, which is a JavaScript",
+    "application whose navigation pages return 404 to a plain request. Behind it",
+    "each rule set has a plain PDF: Rule Set 1 is 5,668,940 bytes / 1,072 pages",
+    "at nmonesource.com/nmos/nmra/en/5687/1/document.do, served on an ordinary",
+    "curl with no gate, no sign-in and no click-through. Every quote here is",
+    "from that file, and both it and the Supreme Court's own approved-amendment",
+    "PDF were read for Rule 1-006 -- see the next paragraph for why.",
+    "",
+    "*** THE FINDING: ELECTRONIC SERVICE NO LONGER GETS THREE DAYS. ***",
+    "Supreme Court Order No. S-1-RCR-2023-00046, approved 1 November 2024 and",
+    "effective for all cases pending or filed on or after 31 DECEMBER 2024,",
+    "STRUCK 'electronic transmission,' from Rule 1-006(C). Mail, facsimile and",
+    "deposit at a court-facility attorney location still get three days;",
+    "e-service and e-filing now get NOTHING. The approved-amendment PDF shows it",
+    "bracketed for deletion and the clean compilation text no longer contains",
+    "it. BOTH WERE READ, because a redline is not the operative text and a clean",
+    "text alone would not have shown that something was removed. Most secondary",
+    "sources still quote the pre-2024 wording; granting the three days reports",
+    "THREE DAYS LATE.",
+    "",
+    "ELEVEN, NOT TEN. Rule 1-006(A)(2) excludes intermediate weekends and",
+    "holidays when the period is 'ten (10) days or less', and the engine field",
+    "is a strict less-than, so it is 11. Writing the rule's own number would",
+    "silently stop excluding on the two ten-day Rule 1-012 rows, which is",
+    "exactly where it matters.",
+    "",
+    "BACKWARD ROWS ARE SAFE HERE AND THE CONTRAST WITH MISSISSIPPI IS THE POINT.",
+    "Rule 1-006(A)(6): \"The 'next day' is determined by continuing to count",
+    "FORWARD when the period is measured after an event and BACKWARD when",
+    "measured before an event.\" Only Florida says the same among the states",
+    "seeded. Mississippi had to refuse every backward row because its rule is",
+    "silent AND its calendar is a defensive intersection; New Mexico states the",
+    "direction and its calendar is the judiciary's own complete list, so Rule",
+    "1-055(B)'s THREE-day notice of an application for default judgment -- short",
+    "and backward, the exact shape Mississippi dropped -- is seeded here.",
+    "",
+    "TWO ELECTIONS AND ONE FLOOR, the same split as Mississippi and South",
+    "Carolina. Rules 1-033(C)(3) and 1-034(B) each say a defendant 'MAY serve'",
+    "within forty-five days; Rule 1-036(A) says a defendant 'SHALL NOT BE",
+    "REQUIRED to serve ... before the expiration of' forty-five days. Only",
+    "admissions is a later_of.",
+    "",
+    "ONE EFFECTIVE DATE IS A CONVENTION AND IS LABELLED AS ONE. Rule 1-036",
+    "carries NO amendment bracket in the compilation; its annotations refer to a",
+    "'1979 amendment' with no date. It takes 1980-01-01 -- the 1 January",
+    "following the last amending act, the same deliberately conservative",
+    "convention Wisconsin needed. Too-late is a refusal; too-early is a wrong",
+    "answer."
+  ],
+  "rules": [
+    {
+      "rule_id": "nm-1-012a-answer-summons-and-complaint-30-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and complaint -- 30 days (New Mexico)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "computation": "nm_1_006",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "Rule 1-012(A) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "A defendant shall serve his answer within thirty (30) days after the service of the summons and complaint upon him.",
+        "note": "THIRTY, and there is no long-arm or out-of-state variant -- one number for every defendant. NO SERVICE EXTENSION, AND THE OMISSION IS A READING RATHER THAN A QUOTED CARVE-OUT. Rule 1-006(C) grants three days after service by mail, facsimile or court-facility deposit and says nothing about whether it reaches service of PROCESS. Three structural points resolve it: Rule 1-005(A) governs 'every pleading SUBSEQUENT TO THE ORIGINAL COMPLAINT'; original process is Rule 1-004; and Rule 1-006(C) defines its own third method by cross-reference INTO Rule 1-005(C)(1)(e). Mississippi and Arkansas say this expressly, New Mexico and Wisconsin do not, and both are resolved the same way -- withholding reports EARLY, granting on a mailed summons would report LATE. The field is absent so a caller passing service_method cannot collect the days anyway.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1989-08-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-012a-answer-to-crossclaim-30-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Answer to a cross-claim -- 30 days (New Mexico)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "computation": "nm_1_006",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-012(A) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "A party served with a pleading stating a cross-claim against him shall serve an answer thereto within thirty (30) days after the service upon him.",
+        "note": "THE EXTENSION DOES APPLY HERE, unlike the answer to the summons and complaint, and the pair is the whole reason both rows exist: a cross-claim is a pleading served under Rule 1-005, not process served under Rule 1-004. FACSIMILE QUALIFIES AND ELECTRONIC TRANSMISSION DOES NOT, as of 31 December 2024 -- see the standard's own note. The two are siblings in Rule 1-005(C)(1)(b), which makes 'sending a copy by facsimile or electronic transmission' one sub-limb of delivery, and Rule 1-006(C) now reaches only one of them.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1989-08-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-012a-reply-to-counterclaim-30-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Plaintiff's reply to a counterclaim in the answer -- 30 days after service of the answer (New Mexico)",
+      "trigger_event": "service_of_the_answer",
+      "computation": "nm_1_006",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-012(A) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "The plaintiff shall serve his reply to a counterclaim in the answer within thirty (30) days after service of the answer, or, if a reply is ordered by the court, within thirty (30) days after service of the order, unless the order otherwise directs.",
+        "note": "THE TRIGGER IS SERVICE OF THE ANSWER, NOT SERVICE OF THE COUNTERCLAIM. New Mexico words this differently from Mississippi, whose Rule 12(a) runs the same period 'after service of the counterclaim'. In the ordinary case the counterclaim is IN the answer and the two dates coincide, which is exactly why the difference is easy to miss and worth a separate note rather than a shared trigger name.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1989-08-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-012a-reply-when-ordered-30-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Reply, when the court orders one -- 30 days after service of the order (New Mexico)",
+      "trigger_event": "service_of_order_to_reply",
+      "computation": "nm_1_006",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-012(A) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "or, if a reply is ordered by the court, within thirty (30) days after service of the order, unless the order otherwise directs.",
+        "note": "'UNLESS THE ORDER OTHERWISE DIRECTS' is on the face of the rule and is invisible to this engine. A reply is only ever due because a court ordered it, so the same order can set its own period; when it does, that period governs and this row does not.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1989-08-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-012a1-responsive-pleading-after-motion-denied-10-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 1-012 motion is denied or postponed -- 10 days (New Mexico)",
+      "trigger_event": "court_action_denying_or_postponing_motion",
+      "computation": "nm_1_006",
+      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "Rule 1-012(A)(1) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within ten (10) days after the court's action;",
+        "note": "TEN DAYS, WHICH IS 'TEN DAYS OR LESS', SO RULE 1-006(A)(2) FIRES -- intermediate Saturdays, Sundays and legal holidays are excluded. This is one of the two rows the eleven-vs-ten threshold decides: writing 10 in the standard instead of 11 would silently count straight through and report EARLY on every one of these. THE TRIGGER IS THE COURT'S ACTION, NOT NOTICE OF IT, and that is a real difference from Mississippi's Rule 12(a)(1), which runs from 'notice of the court's action'. A caller who supplies the notice date here computes LATE. NO SERVICE EXTENSION for the same reason: the period runs from a judicial act, not from service of a paper on the party.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1989-08-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-012a2-responsive-pleading-after-more-definite-statement-10-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after service of a more definite statement -- 10 days (New Mexico)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "nm_1_006",
+      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-012(A)(2) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "if the court grants a motion for a more definite statement, the responsive pleading shall be served within ten (10) days after the service of the more definite statement.",
+        "note": "THE SIBLING ROW RUNS FROM SERVICE, NOT FROM THE COURT'S ACTION -- the rule states each trigger explicitly and they differ. That also means this one DOES take the three days while its sibling does not. AND IT IS THE ROW WHERE THE TWO MECHANISMS MEET: the base ten-day period EXCLUDES intermediate weekends and holidays under Rule 1-006(A)(2), and then Rule 1-006(C) says the three added days 'are included in counting' those same intermediate days. One rule, two opposite counting modes, applied in sequence.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1989-08-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-033c3-interrogatory-answers-30-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- 30 days (New Mexico)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "nm_1_006",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-033(C)(3) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within thirty (30) days after the service of the interrogatories, except that a defendant may serve answers or objections within forty-five (45) days after service of the summons and complaint upon that defendant.",
+        "note": "A PLAIN 30-DAY ROW, NOT A FLOOR, AND THE DECIDING WORD IS 'MAY'. The forty-five days is an ELECTION available to a defendant, not a period the rule guarantees, so it is not modelled as a later_of. Contrast this jurisdiction's own Rule 1-036, which says 'shall not be required ... before the expiration of' and IS seeded as a later_of. 'A shorter or longer time may be directed by the court or agreed to in writing by the parties subject to Rule 1-029 NMRA' is on the face of the rule and is invisible to this engine.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2009-05-15",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-034b-production-response-30-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- 30 days (New Mexico)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "nm_1_006",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-034(B) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "The party on whom the request is served shall serve a written response within thirty (30) days after service of the request, but a defendant may serve a response within forty-five (45) days after service of the summons and complaint on that defendant. The court may allow a shorter or longer time.",
+        "note": "'MAY' AGAIN, so an election and not a floor. WHAT THIS ROW IS NOT: the production itself. Rule 1-034(B) separately requires the request to 'specify a reasonable time, place, and manner of making the inspection' -- a date set by the parties' own papers rather than by the rule, and therefore not seedable. This row is the WRITTEN RESPONSE only. Amended effective 31 December 2021 to carry the electronically-stored-information provisions, which is why its effective date differs from Rule 1-033's.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2021-12-31",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-036a-admissions-answer-later-of",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to requests for admission -- the later of 30 days and the 45-day defendant floor (New Mexico)",
+      "trigger_event": {
+        "id": "newmexico_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": { "value": 30, "unit": "calendar_days" },
+            "label": "30 days after service of the request for admission"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": { "value": 45, "unit": "calendar_days" },
+            "label": "45 days after service of the summons and complaint on the defendant"
+          }
+        ]
+      },
+      "computation": "nm_1_006",
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-036(A) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "The matter is admitted unless, within thirty (30) days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or by his attorney, but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of forty-five (45) days after service of the summons and complaint upon him.",
+        "note": "THE ONLY NEW MEXICO DISCOVERY PERIOD THAT IS A REAL FLOOR. 'SHALL NOT BE REQUIRED TO SERVE ... BEFORE THE EXPIRATION OF forty-five days' is mandatory; Rules 1-033 and 1-034 both say a defendant 'MAY serve' and are plain thirty-day rows. Encoding an election as a floor reports a date the rule does not guarantee; encoding a floor as an election reports EARLY. New Mexico joins Mississippi and South Carolina in making admissions the mandatory one. THE STAKES ARE HIGHER HERE THAN ON THE OTHER TWO: the rule is self-executing -- 'The matter is admitted unless ...' -- and Rule 1-036(B) makes an admission conclusively established unless the court permits withdrawal. BOTH LIMBS RUN FROM CALLER-SUPPLIED DATES, so this does not hit the chained-floor problem Maryland raises. A PLAINTIFF answering the same request takes the plain thirty days: supply only the request-service date and the 45-day limb does not arise. THE EFFECTIVE DATE IS A CONVENTION -- Rule 1-036 carries NO amendment bracket in the compilation and its annotations only refer to a '1979 amendment', so it takes the 1 January following, the same conservative rule Wisconsin needed. Too late merely refuses; too early would answer for years when the rule may have read differently.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1980-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-056d2-response-memorandum-15-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Memorandum in opposition to a summary-judgment motion -- 15 days after service of the motion (New Mexico)",
+      "trigger_event": "service_of_motion_for_summary_judgment",
+      "computation": "nm_1_006",
+      "count": { "value": 15, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-056(D)(2) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "A party opposing the motion shall, within fifteen (15) days after service of the motion, submit to the court a written memorandum containing a short, concise statement of the reasons in opposition to the motion with authorities.",
+        "note": "FIFTEEN, which is more than ten, so Rule 1-006(A)(2) does NOT fire and this counts straight through weekends and holidays. Seeded alongside the ten-day rows deliberately, because the pair is what proves the threshold is doing work. WHAT IS NOT SEEDABLE FROM THIS RULE: 1-056(D)(1) requires the motion itself to be filed 'within a reasonable time prior to the date of trial' -- a standard, not a period. AND THE CONSEQUENCE OF MISSING THIS ONE IS NOT MERELY PROCEDURAL: 'All material facts set forth in the statement of the moving party shall be deemed admitted unless specifically controverted.'",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1989-08-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-056d2-reply-memorandum-15-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Reply memorandum on a summary-judgment motion -- 15 days after service of the response (New Mexico)",
+      "trigger_event": "service_of_memorandum_in_opposition",
+      "computation": "nm_1_006",
+      "count": { "value": 15, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-056(D)(2) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "The moving party may, within fifteen (15) days after the service of such memorandum, submit a written reply memorandum.",
+        "note": "'MAY', so this is a WINDOW rather than a duty -- nothing is forfeited by not replying, unlike the opposing memorandum in the sibling row, where uncontroverted facts are deemed admitted. It is seeded because the date is real and callers ask for it, and the label says 'reply memorandum' rather than 'deadline' for that reason. The trigger is service of the OPPOSING memorandum, not the motion.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1989-08-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-059b-motion-for-new-trial-30-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 30 days after entry of judgment (New Mexico)",
+      "trigger_event": "entry_of_judgment_new_mexico",
+      "computation": "nm_1_006",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "Rule 1-059(B) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "Time for motion. A motion for a new trial shall be filed not later than thirty (30) days after the entry of the judgment.",
+        "note": "THIRTY, NOT TEN, AND THE COMMITTEE COMMENTARY SAYS THE OLD NUMBER OUT LOUD: 'With the exception of Rule 1-060 NMRA, the time limit HAD BEEN ten (10) days.' The 2013 amendment moved every post-judgment motion to thirty. A ten-day figure carried from an older source, or from a neighbouring state, would report TWENTY DAYS EARLY -- and because the court cannot enlarge this period, an early date here is not merely inconvenient. THE COURT CANNOT EXTEND IT: Rule 1-006(B)(2) names Rules 1-050, 1-052, 1-059, 1-060, 1-062 and 12-201 in its own prohibition. NO SERVICE EXTENSION: Rule 1-006(C) reaches a period running 'after service', and entry of judgment is not service. The trigger is ENTRY, not notice of entry.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2013-12-31",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-059e-motion-to-alter-amend-or-reconsider-30-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Motion to alter, amend, or reconsider a final judgment -- 30 days after entry (New Mexico)",
+      "trigger_event": "entry_of_judgment_for_motion_to_reconsider_new_mexico",
+      "computation": "nm_1_006",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "Rule 1-059(E) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "Motion to alter, amend, or reconsider a final judgment. A motion to alter, amend, or reconsider a final judgment shall be filed not later than thirty (30) days after entry of the judgment.",
+        "note": "A SEPARATE ROW FROM RULE 1-059(B) even though the period and trigger match, because they are different motions and a caller asking for one should not be answered with the other's citation. NEW MEXICO EXPRESSLY AUTHORISED THE MOTION TO RECONSIDER AND CAPPED IT IN THE SAME BREATH: the committee commentary records that motions to reconsider 'are frequent, but there was no rule providing for them', and that the 2013 amendment ends the practice of stacking a motion to reconsider on top of a denied post-judgment motion to extend the appeal clock. THE ROW STOPS AT THE DATE AND DOES NOT REACH THE APPEAL CLOCK, which is Rule 12-201 NMRA -- an APPELLATE rule, out of this seed's domain. Do not infer an appeal deadline from this date.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2013-12-31",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-055b-default-judgment-notice-3-days-before-hearing",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Written notice of an application for default judgment -- at least 3 days before the hearing (New Mexico)",
+      "trigger_event": "hearing_on_application_for_default_judgment",
+      "computation": "nm_1_006",
+      "count": { "value": 3, "unit": "calendar_days", "direction": "backward" },
+      "authority": {
+        "citation": "Rule 1-055(B) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "If the party against whom judgment by default is sought has appeared in the action, the party (or, if appearing by representative, the party's representative) shall be served with written notice of the application for judgment at least three (3) days before the hearing on the application;",
+        "note": "SHORT AND BACKWARD -- THE EXACT SHAPE MISSISSIPPI HAD TO REFUSE, AND NEW MEXICO CAN SEED IT. Three days is 'ten days or less', so Rule 1-006(A)(2) excludes intermediate Saturdays, Sundays and legal holidays; and Rule 1-006(A)(6) states which way the roll runs -- \"the 'next day' is determined by continuing to count forward when the period is measured after an event and BACKWARD when measured before an event.\" Mississippi's Rule 6(a) is silent on direction AND its calendar is a deliberately under-inclusive intersection, so a short backward row there could land LATER than the rule allows. Here the direction is stated and the calendar is the judiciary's own complete list, so neither failure is available. NO SERVICE EXTENSION: Rule 1-006(C) applies to a party who must act 'within a specified time AFTER service', and this period runs before a hearing. THE ROW ONLY APPLIES IF THE DEFAULTING PARTY HAS APPEARED -- the rule says so, and the same paragraph adds that 'the filing of an appearance and disclaimer of interest shall not be construed as requiring the service of written notice'. Neither fact is visible to this engine. AMENDED VERY RECENTLY: Supreme Court Order No. S-1-RCR-2025-00174, effective for all cases pending or filed on or after 31 December 2025, which is why this row's effective_from is later than every other Rule 1-012-era row here.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-12-31",
+      "effective_to": null
+    },
+    {
+      "rule_id": "nm-1-068a-acceptance-of-offer-of-settlement-10-days",
+      "jurisdiction": "nm",
+      "domain": "civil-litigation",
+      "label": "Notice accepting an offer of settlement -- 10 days after service of the offer (New Mexico)",
+      "trigger_event": "service_of_offer_of_settlement",
+      "computation": "nm_1_006",
+      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "nm_1_006_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Rule 1-068(A) NMRA",
+        "url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "If within ten (10) days after the service of the offer the adverse party serves written notice that the offer is accepted, either party may then file the offer and notice of acceptance together with proof of service thereof and thereupon such judgment may be entered as the court may direct.",
+        "note": "TEN DAYS, SO THE EXCLUSION FIRES, AND THE CONSEQUENCE OF LETTING IT LAPSE IS MONEY: an offer not accepted 'shall be deemed withdrawn', and New Mexico's cost-shifting is two-sided and unusually sharp -- a claimant who beats its own rejected offer recovers 'DOUBLE the amount of costs incurred after the making of the offer'. THE OTHER PERIOD IN THIS RULE IS DELIBERATELY NOT SEEDED: an offer may be served 'at any time MORE THAN ten (10) days before the trial begins', which is a boundary expressed as a strict inequality rather than a period, and converting 'more than ten' into a backward eleven-day count would be a reading rather than a quotation. Nor is the claimant's 120-day waiting period seeded -- it runs from 'the filing of a responsive pleading by the party defending against that claim', a filing date the engine is not given.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2003-08-01",
+      "effective_to": null
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "_readme": [
+    "NEW MEXICO HOLIDAY CALENDAR -- 2026, eleven dates, transcribed from the",
+    "Chief Justice's own memorandum to all state judicial branch employees.",
+    "",
+    "THIS CALENDAR IS THE STATUTORY TEST, NOT A PROXY FOR IT, which is the",
+    "opposite of the two states seeded immediately before it. Rule 1-006(A)(7)",
+    "NMRA defines a legal holiday as 'the day that the following are observed BY",
+    "THE JUDICIARY', and New Mexico's district courts are state administered",
+    "under one branch-wide schedule. Wisconsin and Mississippi both key on",
+    "something a county can vary, so their calendars are deliberately",
+    "under-inclusive intersections. This one is complete for the year it covers.",
+    "",
+    "TWO DATES CANNOT BE DERIVED FROM ANY RULE AND MUST BE READ OFF THE MEMO:",
+    "PRESIDENTS' DAY IS OBSERVED ON FRIDAY 27 NOVEMBER 2026 -- the day after",
+    "Thanksgiving. Rule 1-006(A)(7)(a) itself says so in a parenthetical,",
+    "'(traditionally observed on the day after Thanksgiving)'. No other seeded",
+    "jurisdiction moves a holiday to the far side of the calendar. A generated",
+    "third-Monday-in-February date would be wrong twice over: it would add a",
+    "holiday on 16 February that the judiciary does not observe, and miss one on",
+    "27 November that it does.",
+    "INDEPENDENCE DAY IS OBSERVED ON FRIDAY 3 JULY 2026 because 4 July is a",
+    "Saturday. The memo states the observed date; nothing here is shifted by a",
+    "rule.",
+    "",
+    "2026 ONLY. The memo announces exactly one 2027 date -- New Year's Day on",
+    "Friday 1 January 2027 -- and that single entry is DELIBERATELY NOT used to",
+    "build a 2027 calendar. A year holding one of its eleven days would compute",
+    "answers instead of refusing, which is worse than refusing. Adding 2027 means",
+    "fetching the 2027 memorandum."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "nm",
+      "year": 2026,
+      "authority": {
+        "citation": "Rule 1-006(A)(7) NMRA, as observed by the New Mexico Judicial Branch per the memorandum of Chief Justice David K. Thomson, 19 November 2025",
+        "url": "https://firstdistrict.nmcourts.gov/wp-content/uploads/sites/20/2026/01/2026-NMJB-Holiday-Schedule-11-19-25.pdf",
+        "computation_url": "https://nmonesource.com/nmos/nmra/en/5687/1/document.do",
+        "quote": "SUPREME COURT OF NEW MEXICO. TO: ALL STATE JUDICIAL BRANCH EMPLOYEES. FROM: CHIEF JUSTICE DAVID K. THOMSON. RE: 2026 HOLIDAY SCHEDULE. DATE: NOVEMBER 19, 2025. The following legal public holidays will be observed by the New Mexico Judicial Branch of Government in 2026: New Year's Day 2026 will be observed on Thursday, January 1, 2026 ... Presidents' Day will be observed on Friday, November 27, 2026 ... Independence Day will be observed on Friday, July 3, 2026 ... New Year's Day 2027 will be observed on Friday, January 1, 2027",
+        "note": "THE JUDICIARY'S OWN LIST IS THE LEGAL TEST. Rule 1-006(A)(7) NMRA: \"'Legal holiday' means the day that the following are observed BY THE JUDICIARY: (a) New Year's Day, Martin Luther King Jr.'s Birthday, Presidents' Day (traditionally observed on the day after Thanksgiving), Memorial Day, Juneteenth, Independence Day, Labor Day, Indigenous Peoples Day, Veterans' Day, Thanksgiving Day, or Christmas Day; and (b) any other day observed as a holiday by the judiciary.\" New Mexico's district courts are state administered and the Chief Justice issues one schedule for the whole branch, so this memorandum IS the rule's referent. That is the Kansas shape. It is NOT the Wisconsin or Mississippi shape, where the rollover keys on something a county may lawfully vary and the calendar therefore has to be a defensive intersection. ELEVEN DATES FOR 2026, one per named holiday in (A)(7)(a), and every one checked against the weekday the memo prints. TWO ARE NOT DERIVABLE. Presidents' Day is observed on FRIDAY 27 NOVEMBER 2026, the day after Thanksgiving -- the rule's own parenthetical says so, and a generated third-Monday-in-February would both add 16 February, which the judiciary does not observe, and drop 27 November, which it does. Independence Day is observed on FRIDAY 3 JULY 2026 because 4 July falls on a Saturday; the memo states the observed date rather than a shift rule, the same transcription approach used for Arkansas, Maryland and Kansas. WHAT IS NOT HERE, AND IT IS ALWAYS EARLY: Rule 1-006(A)(4) extends a FILING deadline whenever the court is closed or unavailable for filing -- the committee commentary names weather and technological problems -- which is per-court and unknowable in advance, and is a separate limb from the holiday list rather than part of it. Also absent, correctly: any day under (A)(7)(b) declared after this memorandum issued. 2027 IS REFUSED RATHER THAN DERIVED. The memo announces one 2027 date, New Year's Day on Friday 1 January 2027, and it is deliberately NOT used to open a 2027 calendar: a year holding one of its eleven days would return confident dates built on ten missing holidays. Adding 2027 means fetching the 2027 memorandum, not extending this one.",
+        "retrieved_at": "2026-08-30"
+      },
+      "dates": [
+        { "date": "2026-01-01", "name": "New Year's Day", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Thursday, January 1, 2026; weekday verified." },
+        { "date": "2026-01-19", "name": "Martin Luther King Jr. Day", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Monday, January 19, 2026; weekday verified." },
+        { "date": "2026-05-25", "name": "Memorial Day", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Monday, May 25, 2026; weekday verified." },
+        { "date": "2026-06-19", "name": "Juneteenth", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Friday, June 19, 2026; weekday verified." },
+        { "date": "2026-07-03", "name": "Independence Day (observed)", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Friday, July 3, 2026, because 4 July 2026 is a Saturday. TRANSCRIBED, NOT SHIFTED -- Rule 1-006 contains no Saturday-observance rule, so this date exists only because the judiciary published it." },
+        { "date": "2026-09-07", "name": "Labor Day", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Monday, September 7, 2026; weekday verified." },
+        { "date": "2026-10-12", "name": "Indigenous Peoples' Day", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Monday, October 12, 2026; weekday verified. Rule 1-006(A)(7)(a) was amended effective 31 December 2024 to replace 'Columbus Day' with 'Indigenous Peoples Day' -- a renaming, not a new date." },
+        { "date": "2026-11-11", "name": "Veterans Day", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Wednesday, November 11, 2026; weekday verified." },
+        { "date": "2026-11-26", "name": "Thanksgiving Day", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Thursday, November 26, 2026; weekday verified." },
+        { "date": "2026-11-27", "name": "Presidents' Day (observed the day after Thanksgiving)", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Friday, November 27, 2026. THE MOST UNUSUAL DATE ON ANY CALENDAR IN THIS PLATFORM: New Mexico observes Presidents' Day in NOVEMBER, and Rule 1-006(A)(7)(a) confirms it in a parenthetical -- 'Presidents' Day (traditionally observed on the day after Thanksgiving)'. Any generator producing the third Monday in February is wrong in both directions at once." },
+        { "date": "2026-12-25", "name": "Christmas Day", "kind": "declared", "derivation": "Printed in the 2026 memorandum as observed Friday, December 25, 2026; weekday verified." }
+      ]
+    }
+  ]
+}
