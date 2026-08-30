@@ -1204,6 +1204,34 @@ async function runBlueprintAI(input){
   window.mechShowBootstrap=mechShowBootstrap;
   window.mechShowLogin=mechShowLogin;
 
+  // showApp() -- ADDED 2026-08-30. It did not exist.
+  // `showApp` appeared exactly ONCE in this file: the call on the next line.
+  // No definition anywhere, so mechEnter() threw ReferenceError before it could
+  // reveal anything -- which meant a user could enter a correct licence key,
+  // employee id and PIN, authenticate successfully against the server, get a
+  // valid session written to localStorage, and never see the app. Confirmed
+  // live: typeof showApp === 'undefined', #app computed display:none,
+  // offsetParent null, and the ONLY js write to #app.style.display is
+  // mechLogout()'s 'none'. Nothing could ever reveal it.
+  //
+  // Inline display beats the injected `#app { display:none }` rule, which
+  // deliberately carries no !important (unlike the .page rules beside it), so
+  // setting it inline is the intended override rather than a fight with CSS.
+  // The base rule at the top of the file also sets height:100vh and
+  // overflow:hidden on #app; display is the only property touched here so those
+  // survive.
+  function showApp(){
+    var l=document.getElementById('login');if(l)l.style.display='none';
+    var b=document.getElementById('mech-bootstrap');if(b)b.style.display='none';
+    var a=document.getElementById('app');if(a)a.style.display='block';
+    // Land on a page. page-dashboard already carries .active in the markup, so
+    // this is a guard for the case where nothing is active rather than a
+    // reassignment -- landing on a blank shell would read as broken.
+    if(!document.querySelector('.page.active')&&typeof showPage==='function'){
+      try{showPage('dashboard');}catch(e){}
+    }
+  }
+
   function mechEnter(){
     currentRole=mechSession.role;
     try{localStorage.setItem(APP_ID+'_session',JSON.stringify(mechSession));}catch(e){}
@@ -1446,6 +1474,22 @@ async function runBlueprintAI(input){
       '#app { display:none }',
     ].join(' ');
     document.head.appendChild(css);
+
+    // SESSION RESTORE ON LOAD -- ADDED 2026-08-30. mechRestore() existed, was
+    // correct, and had ZERO CALLERS: 1 definition, 1 total reference, no markup
+    // onclick, no window attachment. Two consequences, both live until now --
+    // a returning user with a valid unexpired session was never restored and
+    // had to sign in again every visit, and the revoked-account whoami
+    // round-trip its own comment describes ("without the round-trip a revoked
+    // account renders as logged in until the token expires") never ran at all.
+    //
+    // Same class as SAIRNcash, where reverifyTrial() worked the whole time and
+    // initApp() only ran on two paths that a returning user never took.
+    //
+    // Only the TRUE branch acts. On no/expired/foreign session mechRestore()
+    // returns false and this leaves the screen exactly as it was, so the
+    // existing login-vs-bootstrap decision is untouched.
+    try { if (mechRestore()) mechEnter(); } catch (e) {}
   }
 
   if (document.readyState === 'loading') {
