@@ -1,6 +1,7 @@
 ---
 name: sairn-differential-review
 description: Review a CHANGE, not a codebase — what this diff does that the file did not do before, and what else must agree with it for the change to actually work. Trigger before every commit and every push, on every PR, and any time a diff touches a validator, a schema, a grant, an auth gate, a shared file, or a seed. Distinct from sairn-code-scrubber (bug patterns inside a file) and sairn-adversarial-reviewer (hostile personas on a feature) — this one is about the DELTA and its blast radius. Every check below comes from a real SAIRN incident where the code was correct and the change still broke something.
+allowed-tools: Read Grep Glob Bash
 ---
 
 # SAIRN Differential Review
@@ -110,8 +111,8 @@ while the write failed. See `sairn-silent-failure-sweep`.
 
 **Incident:** two committed SAIRNlaw corrections changed seed *files*. A seed
 file change does nothing until `load_deadline_seed.py` runs, and nobody ran it.
-`LAW-PINNACLE-2026` computed federal answer deadlines **three days late for a
-day**, and it was found by accident.
+the canonical customer licence computed federal answer deadlines **three days
+late for a day**, and it was found by accident.
 
 **If the diff touches `sql/*_seed*.json`, the review is not done until the live
 licence is confirmed to match** —
@@ -169,6 +170,26 @@ and compare.
 pushed**. Cheapest tell there is, and not obvious.
 
 ---
+
+## What this skill does not cover
+
+**It reviews the DELTA, not the file.** Bug patterns inside code that the diff
+did not touch are `sairn-code-scrubber`. Whether the feature should exist at all
+is `sairn-decision-gate`. Hostile-persona review of a whole feature is
+`sairn-adversarial-reviewer`. Over-engineering is `sairn-minimalism`.
+
+**It cannot see anything outside the repo.** A Vercel environment variable, a
+Supabase grant, a live licence's loaded rules, a permit condition — every one of
+those has broken a SAIRN change, and none is in the diff. §2 tells you to go
+look at them; it cannot look for you.
+
+**It does not run the code.** Every check here is static plus git. A clean pass
+means "the change is coherent with what else must agree with it", never "the
+feature works" — that needs a real write, a real read-back, and `sairn-api-tester`.
+
+**`allowed-tools` deliberately omits `Write`.** Review reads. Per this platform's
+own vetting rule, a review skill requesting write access is capability creep;
+the third-party original declared `Write` and this one drops it on purpose.
 
 ## The one-paragraph version
 

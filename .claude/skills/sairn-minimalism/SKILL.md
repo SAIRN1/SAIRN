@@ -1,6 +1,7 @@
 ---
 name: sairn-minimalism
 description: The laziest solution that actually works — and the review pass that finds what to delete. One skill, both directions: use it BEFORE writing code (does this need to exist, what is the smallest thing that solves the stated problem) and AFTER (what in this diff is speculative, reinvented, or dead flexibility). Trigger on any coding task, on "simplify", "over-engineered", "what can we delete", "YAGNI", "do less", or whenever a solution starts growing options nobody asked for. Every example is a real SAIRN case where the smaller answer was also the more correct one.
+allowed-tools: Read Grep Glob Bash
 ---
 
 # SAIRN Minimalism

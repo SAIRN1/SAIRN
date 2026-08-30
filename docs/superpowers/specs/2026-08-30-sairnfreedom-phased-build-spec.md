@@ -11,6 +11,79 @@ detail** rather than guessed at.
 
 ---
 
+## 0. HARD GATES — read before designing anything
+
+**Four legal boundaries that are not preferences, not defaults, and not
+negotiable at build time.** Each is sourced to primary text and each has a real
+consequence for the customer, not for us. They live here rather than in §9
+because a builder who reads only the phase tables must still hit them.
+
+### 0a. Hall rental with alcohol — the third case is a REFUSAL, not a price
+
+**ORC 4303.17(A)(1):** the D-4 sells *"to its members only."* **The lodge's
+permit does not cover serving a renter's non-member guests.**
+
+Ohio's mechanism is a **jointly-issued F-2** — OAC 4301:1-1-36(B) permits
+issuance *"jointly to the applicant and a class D-3, **D-4**, or D-5 liquor
+permit holder, who is to conduct the sale"* — but **only for a not-for-profit
+renter** organised for a charitable, cultural, educational, fraternal or
+political purpose.
+
+| Case | Behaviour |
+|---|---|
+| Member-hosted, lodge serves | Allowed. Gate on a **dues-current** host |
+| Not-for-profit renter | Allowed via **joint F-2**: 4 consecutive days max, 1 per 30 days per renter, notification, proceeds destination |
+| **Private or commercial renter** (wedding, birthday, corporate) | **HARD BLOCK. Refuse the booking. Escalate to counsel.** No verified permit path exists |
+
+**The alcohol deposit tier in §3 (2.5) is gated behind cases 1 and 2 only.**
+Failure mode: a lodge sells drinks to a wedding party under its D-4 and loses
+the permit under ORC 4301.25(A).
+
+### 0b. The dues and initiation amounts are CERTIFIED FIGURES on a permit filing
+
+**ORC 4303.17(A)(1)** requires the officer certification to set forth *"the
+amount of initiation fee and yearly dues."* **ORC 4301.25(A)(3)** makes a false
+material statement in a permit application a **revocation ground**.
+
+**So §2a's fee fields are not product configuration.** Any change to
+`initiation_fee_amount` or `annual_dues_amount` must raise a **permit-filing
+flag**, not silently update a price. Same for a change in elected officers,
+since the statute conditions *retention* on all elected officers having filed.
+
+### 0c. VA claims — referral only, never preparation
+
+**38 U.S.C. § 5901** bars acting *"as an agent or attorney in the preparation,
+presentation, or prosecution"* of a claim without recognition.
+
+**Build:** referral directory, appointment scheduling and log,
+accreditation-status tracking, attributed general information.
+**Never build:** claim form auto-fill, drafting statements in support, evidence
+assembly — **or anything that functions as those regardless of what the UI calls
+it.**
+
+### 0d. Two product rules from the VA boundary
+
+**No fee may attach to claims assistance anywhere.** Every recognition route in
+§§ 5902, 5903 and 38 CFR 14.630 requires certifying **no compensation of any
+nature**. The Service Officer function must **never** sit behind a paid tier,
+subscription gate or upgrade prompt.
+
+**The AI assistant DECLINES claim-strategy questions in its system prompt** —
+not a disclaimer, a refusal. Precedent: SAIRNroofing's assistant was changed to
+refuse claim-strategy questions because *"nothing stopped it answering from
+general knowledge, and an app-branded answer of that shape was the real
+exposure."*
+
+### 0e. The compliance modules are COUPLED
+
+**OAC 4301:1-1-53(D)–(E)** permits charitable games and instant bingo *"provided
+strict compliance occurs"* with Chapter 2915. **A Chapter 2915 bingo violation
+is simultaneously a liquor-permit exposure.** Any 2915 compliance failure must
+raise a flag on the **liquor** dashboard. The gaming and liquor modules are not
+independent and must not be built as if they were.
+
+---
+
 ## 1. The two structural decisions everything else hangs off
 
 ### 1a. Capability-based permissions, with officer titles as a per-org-type MAPPING

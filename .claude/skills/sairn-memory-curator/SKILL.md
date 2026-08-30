@@ -1,6 +1,7 @@
 ---
 name: sairn-memory-curator
 description: Turn what a session learned into something the next session cannot miss — and stop a stale note from becoming a lie. Covers where a fact belongs (auto-memory vs CLAUDE.md vs a skill vs a work log vs an index row), the tense/verification rules that keep it true, and the pruning pass that removes what has been overtaken. Trigger at session end, before a handoff, after any correction to a standing document, whenever the same thing is explained twice, and whenever a note turns out to have been wrong. Every rule here comes from a SAIRN document that went stale and cost real time.
+allowed-tools: Read Write Grep Glob Bash
 ---
 
 # SAIRN Memory Curator
@@ -34,8 +35,8 @@ session a re-derivation.
 Anything with a tense — *is*, *has*, *currently*, *now*, a count, a status — is
 only true as of the read behind it. Write the read into the sentence.
 
-**Incident:** a HIGH-PRIORITY index row said `RF-PINNACLE-2026` had **zero
-active owners** and was API-unrecoverable. A live roster read showed **two active
+**Incident:** a HIGH-PRIORITY index row said a named production licence had
+**zero active owners** and was API-unrecoverable. A live roster read showed **two active
 owners** — someone had applied the exact promotion the row proposed as its
 recovery action, and nothing recorded it.
 
@@ -180,3 +181,23 @@ embarrassed to find is false?* Then check that one.
 clones exist, how to find a handoff, whether a skill exists, what a tool is
 called, and its own check count. **Every one was written in good faith.** The
 rate of drift is the argument for the audit, not evidence of carelessness.
+
+---
+
+## What this skill does not cover
+
+**It cannot tell you whether a claim is true — only whether it is checkable and
+current.** Every rule here is about tense, placement, provenance and pruning. A
+false statement written carefully, dated correctly and filed in the right place
+passes every check in this file. Verification is a separate act.
+
+**It cannot reach the chat-side memory system.** Facts that live only in a
+conversation's own memory are invisible to every clone — that is exactly how a
+research file described as being at `/areas/sairnveterans.md` turned out to
+exist nowhere on disk, after an exhaustive search. This file governs what is
+written *into the repo*; it has no authority over what was never written down.
+
+**It has no scheduler.** §10 says to audit the standing documents once a
+session. Nothing enforces that, and a rule that depends on remembering is the
+failure mode §6 describes. If the audit matters more than it currently does, it
+needs a hook, not a stronger sentence here.

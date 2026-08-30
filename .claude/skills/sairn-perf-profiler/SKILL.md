@@ -1,6 +1,7 @@
 ---
 name: sairn-perf-profiler
 description: Diagnose a SAIRN performance problem from measured evidence, not from reading code — slow endpoints, slow Postgres/PostgREST queries, oversized payloads, cold Vercel functions, and the 2MB single-file app ceiling. Trigger when something is "slow", when a page or endpoint times out, before and after any optimisation, and whenever a speed claim is about to be made. Distinct from the frontend `performance` and `core-web-vitals` skills, which cover browser delivery — this covers the server and data layer, where most SAIRN slowness actually lives. Never states a timing it did not measure.
+allowed-tools: Read Grep Glob Bash
 ---
 
 # SAIRN Performance Profiler

@@ -1,6 +1,7 @@
 ---
 name: sairn-api-tester
 description: Write and run tests against a SAIRN API endpoint that actually exercise it — the auth gate, the storage layer, the refusals, and the boundary in both directions. Trigger before calling any endpoint done, when adding a branch to api/sd-data.js or any api/*-auth.js, when a test file is added or changed, and whenever a suite is green but the feature has never been used. Encodes the specific ways tests on this platform have been green while the code was broken.
+allowed-tools: Read Write Grep Glob Bash
 ---
 
 # SAIRN API Tester
@@ -16,7 +17,7 @@ invisible.
 
 **Incident:** `api/_lib/dental-credentials-endpoint.test.js` ran **1 passed / 15
 failed** and had for some time. When written, every `dnt_*` branch was gated by
-the licence key alone, so `Authorization: Bearer DNT-TEST` reached real logic.
+the licence key alone, so `Authorization: Bearer <TEST-KEY>` reached real logic.
 Employee auth was added later; every branch began requiring `x-sd-auth`; the
 harness never sent one. Fifteen 401s.
 
@@ -39,7 +40,7 @@ A token signed against the row's literal value **verifies fine in isolation and
 is rejected by the handler**, with an indistinguishable `NO_SESSION`.
 
     const { signSessionToken } = require('./auth');
-    const LICENSE_HASH = require('./license').hashLicense('DNT-TEST');
+    const LICENSE_HASH = require('./license').hashLicense('<TEST-KEY>');
     const tok = (role) => signSessionToken({
       app: 'sairndental', employee_id: 'EMP-' + role.toUpperCase(),
       role, license_hash: LICENSE_HASH });
@@ -166,6 +167,24 @@ That sentence is the standard. A suite that does not state its own boundary
 invites someone to read "24 passed" as "the feature works in production".
 
 ---
+
+## Precedence — when to use this instead of the third-party `api-tester`
+
+The third-party `api-tester` generates and validates tests from a **real
+OpenAPI spec, route implementations and existing tests**, and is careful not to
+invent status codes, response shapes or SLAs. That discipline is the same as
+this file's §10 and it is genuinely good.
+
+**Use it when there is an OpenAPI spec to drive from. Use this one for
+`api/sd-data.js`.** SAIRN has no OpenAPI spec: the surface is one large
+action/resource switch behind a bearer licence key plus an `x-sd-auth` session,
+and every failure this file records is about the **auth ladder and the storage
+layer**, not about contract shape. A spec-driven generator cannot find a test
+harness that never sends a session header, because there is no spec saying it
+should.
+
+They compose: contract shape from that one, auth-and-storage reality from this
+one.
 
 ## Before calling an endpoint done
 
