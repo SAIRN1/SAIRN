@@ -28,8 +28,8 @@
       "task": "panel audit gap rederive",
       "claimed_at": "2026-08-30T23:03:08Z",
       "claimed_at_epoch": 1788130988.5717537,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-08-30T23:12:34Z"
     }
   ]
 }
