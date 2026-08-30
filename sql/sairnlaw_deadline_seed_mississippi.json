@@ -1,0 +1,387 @@
+{
+  "_readme": [
+    "MISSISSIPPI -- Miss. R. Civ. P., 11 rules, 30th computing jurisdiction.",
+    "",
+    "SOURCE POSITION IS SPLIT, AND IT IS THE MIRROR IMAGE OF COLORADO. The RULES",
+    "are free, official and complete: the Supreme Court serves the whole MRCP as",
+    "one 988 KB PDF with the advisory committee notes attached, no gate, no",
+    "sign-in, no click-through. The CODE is not: courts.ms.gov's own 'MS Code'",
+    "link goes to lexisnexis.com/hottopics/mscode/, which redirects to",
+    "advance.lexis.com -- the same publisher that blocks Colorado's rules. Only",
+    "the holiday DEFINITION lives there, and the judiciary's own State Library",
+    "page restates it and every closure notice cites it, so the statute is",
+    "corroborated by the judicial branch rather than taken from Lexis.",
+    "",
+    "THREE NUMBERS THAT WOULD BE WRONG IF CARRIED FROM A NEIGHBOUR:",
+    "  - THE ANSWER IS THIRTY DAYS, not twenty or twenty-one, and there is no",
+    "    long-arm variant. Rule 12(a) gives thirty for the answer, for an answer",
+    "    to a cross-claim, for an answer to a counterclaim and for a",
+    "    court-ordered reply -- one number, four triggers.",
+    "  - THE SHORT-PERIOD EXCLUSION IS SEVEN and it is a strict less-than.",
+    "  - THE MAIL EXTENSION IS PERIOD-LENGTHENING, mail only, and it expressly",
+    "    does NOT reach a response to a summons.",
+    "",
+    "TWO OF THE THREE DISCOVERY PERIODS ARE ELECTIONS AND THE THIRD IS A FLOOR,",
+    "inside one rule set. Rules 33(b)(3) and 34(b)(ii)(A) each say a defendant",
+    "'MAY serve' within forty-five days; Rule 36(a) says a defendant 'SHALL NOT",
+    "BE REQUIRED to serve ... before the expiration of forty-five days'. Only",
+    "the third is modelled as a later_of. Kansas made all three elections;",
+    "Arkansas made all three floors; Mississippi joins South Carolina in making",
+    "admissions alone mandatory.",
+    "",
+    "NO BACKWARD ROW IS SEEDED AT ALL, AND THAT IS A SAFETY CONSTRAINT RATHER",
+    "THAN AN OVERSIGHT. The ms calendar is deliberately under-inclusive (two",
+    "days -- see the calendar file), and under-inclusion is only safe when it",
+    "makes a date EARLIER. Counting BACKWARD it does the opposite in both",
+    "mechanisms: a short period excludes too few days, and a last day that",
+    "should have rolled back off an omitted holiday does not roll at all. Both",
+    "land CLOSER to the trigger than the rule allows, which is the direction",
+    "that lets a party act too late. Rule 6(d)'s five-day motion notice, its",
+    "one-day opposing affidavit and Rule 56(c)'s ten-day service of a",
+    "summary-judgment motion are all backward and all DELIBERATELY OMITTED --",
+    "including the ten-day one, which clears the seven-day threshold and still",
+    "fails on the rollover limb. Seeding a Mississippi backward row needs a",
+    "complete county-level calendar, not a longer period.",
+    "",
+    "THE SOURCE URL IS A TRAP FOR A SCRAPER, RECORDED BECAUSE IT IS THE SAME",
+    "TRAP AS COLORADO'S. courts.ms.gov/research/rules/rules.php contains TWO",
+    "links captioned 'Mississippi Rules of Civil Procedure'. The first, dated",
+    "2026-06-18, is inside an HTML comment and the file behind it no longer",
+    "exists -- requesting it returns HTTP 200 with 17,429 bytes of HTML, not a",
+    "PDF. A scraper taking the first match gets a soft-404 that curl reports as",
+    "success. The live one is dated 2026-07-01. Every quote here is from that",
+    "file."
+  ],
+  "rules": [
+    {
+      "rule_id": "ms-12a-answer-summons-and-complaint-30-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and complaint -- 30 days (Mississippi)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 12(a)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "A defendant shall serve his answer within thirty days after the service of the summons and complaint upon him or within such time as is directed pursuant to Rule 4.",
+        "note": "THIRTY, not the federal twenty-one and not the twenty most southern neighbours use. NO SERVICE EXTENSION IS DECLARED ON THIS ROW AND THE OMISSION IS EXPRESS RATHER THAN INFERRED. Rule 6(e)'s last sentence: 'This subdivision does not apply to responses to service of summons under Rule 4.' Federally the same result is reached only by inference from the Rule 4 / Rule 5 split; Mississippi states it. The field is absent so that a caller who passes service_method 'mail' cannot collect three days the rule forbids. 'OR WITHIN SUCH TIME AS IS DIRECTED PURSUANT TO RULE 4' IS NOT MODELLED: Rule 4 lets the court or the process direct a different period, which is a caller-supplied fact this engine cannot see. If the summons on its face sets a different date, that date governs and this row does not.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1982-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-12a-answer-to-crossclaim-30-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Answer to a cross-claim -- 30 days (Mississippi)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ms_r_civ_p_6_e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 12(a)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "A party served with a pleading stating a cross-claim against him shall serve an answer thereto within thirty days after the service upon him.",
+        "note": "THE MAIL EXTENSION DOES APPLY HERE, unlike the answer to the summons and complaint, and the difference is the whole point of Rule 6(e)'s Rule 4 carve-out: a cross-claim is a pleading served under Rule 5, not process served under Rule 4. Mail and mail alone -- Rule 5(b)(1) also permits service by electronic means and by leaving with or transmitting to the clerk, and Rule 6(e) reaches none of them.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1982-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-12a-answer-to-counterclaim-30-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Plaintiff's answer to a counterclaim -- 30 days (Mississippi)",
+      "trigger_event": "service_of_pleading_stating_counterclaim",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ms_r_civ_p_6_e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 12(a)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "The plaintiff shall serve his answer to a counterclaim within thirty days after service of the counterclaim.",
+        "note": "The rule says 'after service of the COUNTERCLAIM', not after service of the answer that contains it, so the trigger is named for the pleading rather than for the answer. In the ordinary case they are the same day. Thirty days again -- Rule 12(a) uses one number for all four of its periods, which is unusual enough to be worth stating: many states shorten the reply.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1982-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-12a-reply-when-ordered-30-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Reply, when the court orders one -- 30 days (Mississippi)",
+      "trigger_event": "service_of_order_to_reply",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ms_r_civ_p_6_e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 12(a)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "If a reply is ordered by the court, the reply shall be served within thirty days after service of the order, unless the order otherwise directs.",
+        "note": "'UNLESS THE ORDER OTHERWISE DIRECTS' is on the face of the rule and is invisible to this engine. A reply is only ever due because a court ordered it, so the same order can set its own period; when it does, that period governs and this row does not.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1982-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-12a1-responsive-pleading-after-motion-denied-10-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 12 motion is denied or postponed -- 10 days (Mississippi)",
+      "trigger_event": "notice_of_court_action_denying_or_postponing_motion",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ms_r_civ_p_6_e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 12(a)(1)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within ten days after notice of the court's action;",
+        "note": "TEN DAYS, AND TEN IS NOT LESS THAN SEVEN, so Rule 6(a)'s intermediate-day exclusion does NOT fire on this row. That is worth stating because the federal analogue is fourteen and several seeded states use a period that does cross their own threshold. THE TRIGGER IS NOTICE, NOT ENTRY. A caller who supplies the date the order was entered rather than the date notice of it went out computes EARLY. The mail extension is declared because Rule 6(e) reaches 'the service of a NOTICE or other paper'. 'The times stated under this subparagraph may be extended, once only, for a period not to exceed ten days, upon the written stipulation of counsel filed in the records of the action' -- a stipulation this engine cannot see.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1982-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-12a2-responsive-pleading-after-more-definite-statement-10-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after service of a more definite statement -- 10 days (Mississippi)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ms_r_civ_p_6_e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 12(a)(2)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "if the court grants a motion for a more definite statement, the responsive pleading shall be served within ten days after the service of the more definite statement.",
+        "note": "THE TRIGGER IS SERVICE OF THE STATEMENT, NOT THE ORDER GRANTING THE MOTION -- the same distinction as the sibling row above, in the opposite direction, and the rule states each explicitly. Ten days, so no short-period exclusion.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1982-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-33b3-interrogatory-answers-30-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- 30 days (Mississippi)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ms_r_civ_p_6_e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 33(b)(3)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within thirty days after the service of the interrogatories, except that a defendant may serve answers or objections within forty-five days after service of the summons and complaint upon that defendant. The court may allow a shorter or longer time.",
+        "note": "A PLAIN 30-DAY ROW, NOT A FLOOR, AND THE DECIDING WORD IS 'MAY'. The forty-five days is an ELECTION available to a defendant, not a period the rule guarantees, so it is not modelled as a later_of -- the same reading applied to all three Kansas discovery statutes. CONTRAST THIS JURISDICTION'S OWN RULE 36, which says a defendant 'shall not be required to serve answers or objections before the expiration of forty-five days' and IS seeded as a later_of. Two elections and one floor inside one rule set: Arkansas made all three floors, Kansas all three elections, and copying either is wrong here. 'The court may allow a shorter or longer time' is on the face of the rule and is invisible to this engine.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2021-10-11",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-34b-production-response-30-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- 30 days (Mississippi)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ms_r_civ_p_6_e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 34(b)(ii)(A)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "Time to Respond. The party upon whom the request is served shall serve a written response within thirty days after the service of the request, except that a defendant may serve a response within forty-five days after service of the summons and complaint upon that defendant. The court may allow a shorter or longer time.",
+        "note": "'MAY' AGAIN, so an election and not a floor, and the row is a plain thirty days for the same reason as Rule 33. WHAT THIS ROW IS NOT: the production itself. Rule 34(b)(ii)(B) says a responding party may state it will produce copies instead of permitting inspection and that 'the production must then be completed no later than the time for inspection specified in the request or another reasonable time specified in the response' -- a date set by the parties' own papers, not by the rule, and therefore not seedable. This row is the WRITTEN RESPONSE only. Amended effective 7 October 2021, four days before the companion amendment to Rule 33, by a separate order.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2021-10-07",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-36a-admissions-answer-later-of",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to requests for admission -- the later of 30 days and the 45-day defendant floor (Mississippi)",
+      "trigger_event": {
+        "id": "mississippi_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request for admission"
+          },
+          {
+            "event": "service_of_summons_for_admission",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons on the defendant"
+          }
+        ]
+      },
+      "computation": "ms_r_civ_p_6",
+      "service_extension": {
+        "standard": "ms_r_civ_p_6_e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 36(a)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "The matter is admitted unless, within thirty days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or by his attorney, but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of forty-five days after service of the summons upon him.",
+        "note": "THE ONLY MISSISSIPPI DISCOVERY PERIOD THAT IS A REAL FLOOR. 'SHALL NOT BE REQUIRED TO SERVE ... BEFORE THE EXPIRATION OF forty-five days' is mandatory language; Rules 33 and 34 both say a defendant 'MAY serve' and are therefore plain thirty-day rows. Encoding an election as a floor reports a date the rule does not guarantee, and encoding a floor as an election reports EARLY -- so the three had to be read one at a time. Mississippi joins South Carolina in making admissions the mandatory one; Alabama and Wisconsin each make a different one of the three mandatory. NOTE THE SECOND LIMB SAYS 'SERVICE OF THE SUMMONS', not 'the summons and complaint' as Rules 33 and 34 do. The wording is the rule's own and the limb is named for it. THE STAKES ARE HIGHER HERE THAN ON THE OTHER TWO: a missed Rule 36 date is not a sanction question, it is a deemed admission -- 'The matter is admitted unless ...' -- and Rule 36(b) makes an admission conclusively established unless the court permits withdrawal. BOTH LIMBS RUN FROM CALLER-SUPPLIED DATES, so this does not hit the chained-floor problem Maryland raises. A PLAINTIFF answering the same request takes the plain thirty days: supply only the request-service date and the 45-day limb does not arise.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1982-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-59b-motion-for-new-trial-10-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 10 days after entry of judgment (Mississippi)",
+      "trigger_event": "entry_of_judgment",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 59(b)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "Time for Motion. A motion for a new trial shall be filed not later than ten days after the entry of judgment.",
+        "note": "TEN DAYS, AND THE COURT CANNOT ENLARGE IT. Rule 6(b) names this rule in its own prohibition: 'it may not extend the time for taking any action under Rules 50(b), 52(b), 59(b), 59(d), 59(e), 60(b), and 60(c) except to the extent and under the conditions therein stated.' That makes this one of the few Mississippi periods where no stipulation or order can rescue a caller who computed it wrong. TEN IS NOT LESS THAN SEVEN, so Rule 6(a)'s intermediate-day exclusion does not fire. NO SERVICE EXTENSION: Rule 6(e) adds three days only where a party must act 'within a prescribed period AFTER the service of a notice or other paper', and entry of judgment is neither. The trigger is ENTRY, not notice of entry and not the date the judgment was signed. The 1997 amendment exists precisely to settle that the motion must be FILED, not merely served, within the ten days.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1997-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ms-59e-motion-to-alter-or-amend-judgment-10-days",
+      "jurisdiction": "ms",
+      "domain": "civil-litigation",
+      "label": "Motion to alter or amend the judgment -- 10 days after entry of judgment (Mississippi)",
+      "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend",
+      "computation": "ms_r_civ_p_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Miss. R. Civ. P. 59(e)",
+        "url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "Motion to Alter or Amend a Judgment. A motion to alter or amend the judgment shall be filed not later than ten days after entry of the judgment.",
+        "note": "A SEPARATE ROW FROM RULE 59(b) EVEN THOUGH THE PERIOD AND THE TRIGGER MATCH, because they are different motions with different consequences and a caller asking for one should not be answered with the other's citation. Rule 6(b) forbids enlargement of this one too. THE ROW STOPS AT THE DATE AND DOES NOT REACH THE APPEAL CLOCK: a timely Rule 59 motion tolls the time for appeal under M.R.A.P. 4(d), which is an APPELLATE rule and is not seeded here. Do not infer an appeal deadline from this date.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "1997-07-01",
+      "effective_to": null
+    }
+  ]
+}

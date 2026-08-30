@@ -1,0 +1,59 @@
+{
+  "_readme": [
+    "MISSISSIPPI HOLIDAY CALENDAR -- 2026, and it is deliberately TWO DAYS LONG.",
+    "It is not the statutory holiday list and is not meant to be. Miss. Code Ann.",
+    "Sec. 3-3-7(1) declares ten legal holidays but opens 'EXCEPT AS OTHERWISE",
+    "PROVIDED IN SUBSECTION (2)', and Sec. 3-3-7(2) lets any county or",
+    "municipality trade any ONE of them for Mardi Gras or any other day -- with",
+    "two express exceptions, the third Monday in January and 11 November. Those",
+    "two exceptions are this calendar.",
+    "",
+    "IT IS NOT THEORETICAL. Jackson County publishes a ten-item schedule that",
+    "carries GOOD FRIDAY, which is nowhere in Sec. 3-3-7, and omits the last",
+    "Monday in April, which is: one substitution, on the record, in a real",
+    "county. A statewide calendar carrying 2026-04-27 would roll a Jackson",
+    "County deadline off a day that courthouse was OPEN and report LATER than",
+    "Miss. R. Civ. P. 6(a) allows.",
+    "",
+    "Everything this omits runs EARLY, which is the safe direction. Everything a",
+    "statutory-list calendar would have added can run LATE, which is not.",
+    "",
+    "THE SATURDAY SHIFT IS NOT HERE ON PURPOSE. 4 July 2026 is a Saturday and",
+    "the Supreme Court closed the Gartin Justice Building on Friday 3 July, but",
+    "Sec. 25-1-99 says a courthouse 'MAY be closed on the Friday immediately",
+    "preceding' -- permissive, county by county. The Sunday shift in Sec.",
+    "3-3-7(1) IS mandatory, and is simply dormant in 2026: no Sec. 3-3-7 holiday",
+    "falls on a Sunday this year.",
+    "",
+    "Adding 2027 means re-deriving the two exception days for that year and",
+    "re-reading Sec. 3-3-7 for amendments, not extending a rule."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ms",
+      "year": 2026,
+      "authority": {
+        "citation": "Miss. R. Civ. P. 6(a) via Miss. Code Ann. Sec. 3-3-7(1)-(2) and Sec. 25-1-99",
+        "url": "https://courts.ms.gov/research/statelibrary/holidays.php",
+        "computation_url": "https://courts.ms.gov/research/rules/msrulesofcourt/2026-07-01%20Rules%20of%20Civil%20Procedure%20with%20Advisory%20Committee%20Notes%20(with%20Forms%206-8%20attached).pdf",
+        "quote": "Sec. 3-3-7(2): 'In lieu of any one (1) legal holiday provided for in subsection (1) of this section, WITH THE EXCEPTION OF the third Monday in January (Robert E. Lee's and Martin Luther King, Jr.'s birthday) and the eleventh day of November (Armistice or Veterans' Day), the governing authorities of any municipality or county may declare, by order spread upon its minutes, Mardi Gras Day or any one (1) other day during the year, to be a legal holiday.' Sec. 25-1-99: 'the courthouse shall be closed on all state holidays as set forth in Section 3-3-7, and when any state holiday set forth in Section 3-3-7 falls on a Saturday, the courthouse MAY be closed on the Friday immediately preceding such Saturday.'",
+        "note": "THE STATUTORY INTERSECTION, not the statutory list. Miss. R. Civ. P. 6(a) rolls the last day off 'a legal holiday, AS DEFINED BY STATUTE, or any other day when the courthouse or the clerk's office is IN FACT CLOSED, whether with or without legal authority.' The definition is Sec. 3-3-7, and Sec. 3-3-7(2) makes eight of its ten days SUBSTITUTABLE by any county or municipality by order spread upon its minutes. Only the third Monday in January and 11 November are expressly protected from substitution, and Sec. 25-1-99 makes closure on them mandatory in every county courthouse -- where the circuit and chancery clerks sit. Those two are the whole calendar. THE SUBSTITUTION IS REAL AND IS ON THE RECORD: Jackson County's published holiday schedule (co.jackson.ms.us/171/Holiday-Schedule) lists ten days including GOOD FRIDAY, which Sec. 3-3-7 does not contain, and omits the last Monday in April (Confederate Memorial Day), which it does -- a one-for-one Sec. 3-3-7(2) trade. Carrying 2026-04-27 statewide would roll a Jackson County deadline off an open courthouse and report LATE. WHY THIS IS THE WISCONSIN DESIGN AND NOT THE KANSAS ONE. Kansas keys its rollover on a day 'observed as a holiday by order of the Kansas supreme court' -- a statewide legal fact -- so the published list IS the test there. Mississippi keys on a statutory definition that each county may lawfully alter, plus actual closure, so the list is not the test, exactly as in Wisconsin. Wisconsin's intersection was found by reading a 72-county closure matrix; Mississippi's is written into the statute's own exception clause, which is stronger evidence, not weaker. WHAT IS DELIBERATELY ABSENT, ALL OF IT EARLY: New Year's Day, Washington's Birthday, Confederate Memorial Day, National Memorial Day and Jefferson Davis's birthday, Independence Day, Labor Day, Thanksgiving and Christmas -- every one substitutable under Sec. 3-3-7(2). The Friday-before observance of a Saturday holiday (Friday 3 July 2026, which the Supreme Court itself observed) -- permissive under Sec. 25-1-99. The Governor's customary extra Thanksgiving-Friday, Christmas-Eve and New-Year's-Eve days -- Sec. 25-1-99 leaves those to each board of supervisors' discretion. Any county's own adopted Mardi Gras or substitute day. Any weather or emergency closure under Rule 6(a)'s 'in fact closed' limb. THE APPELLATE CLOSURE NOTICES ARE EVIDENCE, NOT THE CALENDAR. courts.ms.gov publishes one PDF per holiday for the Carroll Gartin Justice Building in Jackson, which houses the Supreme Court, the Court of Appeals and the AOC -- not the 82 county courthouses. They are cited here because they confirm the two dates and because they show the Friday-before practice; they do not govern a circuit or chancery clerk. As of 2026-08-30 only six of them exist for 2026, and none for Armistice Day, Thanksgiving or Christmas, so they could not have supplied a full year anyway. 2026 ONLY: a later year is REFUSED rather than derived.",
+        "retrieved_at": "2026-08-30"
+      },
+      "dates": [
+        {
+          "date": "2026-01-19",
+          "name": "Robert E. Lee's and Dr. Martin Luther King, Jr.'s birthdays",
+          "kind": "declared",
+          "derivation": "Third Monday of January 2026, verified by weekday. Miss. Code Ann. Sec. 3-3-7(1) declares it a legal holiday and Sec. 3-3-7(2) EXPRESSLY FORBIDS any municipality or county substituting another day for it, so it is one of only two days in the year that is a legal holiday in all 82 counties. Sec. 25-1-99 then makes courthouse closure mandatory: 'the courthouse SHALL be closed on all state holidays as set forth in Section 3-3-7.' Confirmed against the Supreme Court's own notice posted 9 January 2026: 'Notice of Holiday Closure on Monday, January 19, 2026 ... See Miss. Code Ann. Sec. 3-3-7(1) (Supp. 2025).'"
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Armistice or Veterans' Day",
+          "kind": "declared",
+          "derivation": "The eleventh day of November, a fixed date; 11 November 2026 is a Wednesday, so neither the Sec. 3-3-7(1) Sunday shift nor the Sec. 25-1-99 Friday-before option is engaged. Miss. Code Ann. Sec. 3-3-7(1) declares it a legal holiday and Sec. 3-3-7(2) EXPRESSLY FORBIDS any municipality or county substituting another day for it, so it is one of only two days in the year that is a legal holiday in all 82 counties. Sec. 25-1-99 then makes courthouse closure mandatory. NO 2026 CLOSURE NOTICE EXISTED AS OF 2026-08-30 -- the 2025 one was posted 21 October -- so this date rests on the statute and on the prior-year notice, not on a 2026 notice."
+        }
+      ]
+    }
+  ]
+}
