@@ -1,0 +1,70 @@
+{
+  "_readme": [
+    "NEBRASKA HOLIDAY CALENDAR -- 2026, fourteen dates, derived from Neb. Rev.",
+    "Stat. Sec. 25-2221 and checked by weekday.",
+    "",
+    "THE STATUTE CARRIES ITS OWN LIST, AND THAT IS WHAT MAKES THIS CALENDAR",
+    "STRONG. Neb. Ct. R. Pldg. Sec. 6-1106(a) says 'Neb. Rev. Stat. Sec. 25-2221",
+    "governs the computation of time periods', and Sec. 25-2221 then rolls the",
+    "last day off 'a day during which the offices of courts of record may be",
+    "legally closed AS PROVIDED IN THIS SECTION' -- and enumerates those days in",
+    "its very next sentence. The rollover test and the holiday list are the same",
+    "text. There is no chain to trace and no second publisher to disagree with,",
+    "which is the opposite of Idaho, seeded the same day.",
+    "",
+    "ONE OF THE FULLEST LISTS ON THE PLATFORM, and the contrast with its",
+    "neighbour is exact: Idaho Code Sec. 73-108 has NO Juneteenth and NO day",
+    "after Thanksgiving. Nebraska has both, plus ARBOR DAY -- the last Friday in",
+    "April, which appears on no other calendar here and which Nebraska invented.",
+    "Three days of difference between two adjacent statutory lists.",
+    "",
+    "COLUMBUS DAY AND INDIGENOUS PEOPLES' DAY ARE ONE DAY UNDER TWO NAMES. The",
+    "statute writes them as a single entry -- 'Indigenous Peoples' Day and",
+    "Columbus Day, the second Monday in October' -- rather than as alternatives.",
+    "",
+    "BOTH SHIFTS ARE MANDATORY STATUTE IN BOTH DIRECTIONS, so Friday 3 July 2026",
+    "is DERIVED, not transcribed: 4 July 2026 is a Saturday and 'if any such",
+    "holiday falls on Saturday, the preceding Friday shall be a holiday'.",
+    "",
+    "THE FEDERAL-OVERRIDE CLAUSE IS DORMANT IN 2026 AND IS NOT MODELLED. Sec.",
+    "25-2221 subordinates every state observance date except Veterans Day to the",
+    "federal schedule where the two differ. Each 2026 date was checked against",
+    "the federal schedule and none diverges. In a year where they split, the",
+    "clause must be applied by hand -- see JURISDICTION_COVERAGE.ne.",
+    "",
+    "2027 ONLY BY FETCHING IT, not by generating it. The rules here would",
+    "generate a later year mechanically, which is exactly why it is refused:",
+    "generating would hide the two open limbs and the federal-override clause",
+    "behind a confident answer."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "ne",
+      "year": 2026,
+      "authority": {
+        "citation": "Neb. Rev. Stat. Sec. 25-2221, via Neb. Ct. R. Pldg. Sec. 6-1106(a)",
+        "url": "https://nebraskalegislature.gov/laws/statutes.php?statute=25-2221",
+        "computation_url": "https://nebraskajudicial.gov/book/export/html/9131",
+        "quote": "All courts and their offices may be closed on Saturdays, Sundays, days on which a specifically designated court is closed by order of the Chief Justice of the Supreme Court, and these holidays: New Year's Day, January 1; Birthday of Martin Luther King, Jr., the third Monday in January; President's Day, the third Monday in February; Arbor Day, the last Friday in April; Memorial Day, the last Monday in May; Juneteenth National Independence Day, June 19; Independence Day, July 4; Labor Day, the first Monday in September; Indigenous Peoples' Day and Columbus Day, the second Monday in October; Veterans Day, November 11; Thanksgiving Day, the fourth Thursday in November; the day after Thanksgiving; Christmas Day, December 25; and all days declared by law or proclamation of the Governor to be holidays. Such days shall be designated as nonjudicial days. If any such holiday falls on Sunday, the following Monday shall be a holiday. If any such holiday falls on Saturday, the preceding Friday shall be a holiday. Court services shall be available on all other days. If the date designated by the state for observance of any legal holiday pursuant to this section, except Veterans Day, is different from the date of observance of such holiday pursuant to a federal holiday schedule, the federal holiday schedule shall be observed.",
+        "note": "THE ROLLOVER TEST AND THE HOLIDAY LIST ARE THE SAME SENTENCE, which no other seeded jurisdiction manages. Sec. 25-2221 rolls the last day off 'a day during which the offices of courts of record may be legally closed AS PROVIDED IN THIS SECTION' and then enumerates them. Kansas keys on a supreme court order and New Mexico on what the judiciary observes -- both statewide legal facts, and both requiring a second document. Nebraska needs none. FOURTEEN DATES FOR 2026, every one derived from the statute's own words and checked against its weekday. THREE OF THEM DO NOT EXIST ON ITS NEIGHBOUR'S LIST: Idaho Code Sec. 73-108 carries no Juneteenth and no day after Thanksgiving, and nothing anywhere carries ARBOR DAY except Nebraska, which invented the holiday. ARBOR DAY IS THE LAST FRIDAY IN APRIL, not a fixed date -- 24 April in 2026 -- and it is the single most likely date for a copied calendar to miss entirely. COLUMBUS DAY AND INDIGENOUS PEOPLES' DAY ARE ONE ENTRY UNDER TWO NAMES in the statute's own words, not alternatives, and the calendar names them the same way. FRIDAY 3 JULY 2026 IS DERIVED from the mandatory Saturday shift; 4 July itself is carried too, because the shift adds the Friday without unmaking the Saturday, and a Saturday is excluded by the weekend limb regardless. THE SUNDAY LIMB IS DORMANT: no Sec. 25-2221 holiday falls on a Sunday in 2026. WHAT IS NOT HERE, BOTH EARLY AND NEITHER MODELLABLE: 'days on which a SPECIFICALLY DESIGNATED COURT is closed by order of the Chief Justice' -- per-court rather than statewide, the only place Nebraska resembles Wisconsin -- and 'all days declared by law or PROCLAMATION OF THE GOVERNOR'. THE FEDERAL-OVERRIDE CLAUSE IS NOT MODELLED AND IS DORMANT THIS YEAR: the statute subordinates every state observance date except Veterans Day to the federal schedule where the two differ. Every 2026 date was checked against the federal schedule and none diverges. It is live law in a year where they split. NOTE 'MAY BE CLOSED', NOT 'MUST': the statute then designates these 'nonjudicial days', and the rollover keys on that legal designation rather than on whether a particular courthouse opened -- the same reasoning that let Kansas use its list and stopped Wisconsin using its. 2026 ONLY: a later year is REFUSED rather than derived, precisely because the statute WOULD generate it.",
+        "retrieved_at": "2026-08-30"
+      },
+      "dates": [
+        { "date": "2026-01-01", "name": "New Year's Day", "kind": "declared", "derivation": "Sec. 25-2221, 'New Year's Day, January 1'. 1 January 2026 is a Thursday, so neither shift limb is engaged." },
+        { "date": "2026-01-19", "name": "Birthday of Martin Luther King, Jr.", "kind": "declared", "derivation": "Sec. 25-2221, 'the third Monday in January', computed for 2026 and verified by weekday." },
+        { "date": "2026-02-16", "name": "President's Day", "kind": "declared", "derivation": "Sec. 25-2221, 'the third Monday in February', computed for 2026 and verified by weekday. The statute writes it singular -- President's Day -- where Idaho's writes Washington's Birthday for the same Monday." },
+        { "date": "2026-04-24", "name": "Arbor Day", "kind": "declared", "derivation": "Sec. 25-2221, 'Arbor Day, the last Friday in April', computed for 2026 and verified as a Friday. THIS DATE EXISTS ON NO OTHER CALENDAR IN THIS PLATFORM. Arbor Day was founded in Nebraska City in 1872 and Nebraska is the only state to make it a nonjudicial day. A calendar copied from any neighbour misses it entirely, and it is a FLOATING date rather than a fixed one." },
+        { "date": "2026-05-25", "name": "Memorial Day", "kind": "declared", "derivation": "Sec. 25-2221, 'the last Monday in May', computed for 2026 and verified by weekday." },
+        { "date": "2026-06-19", "name": "Juneteenth National Independence Day", "kind": "declared", "derivation": "Sec. 25-2221, 'Juneteenth National Independence Day, June 19'. 19 June 2026 is a Friday. ENUMERATED IN NEBRASKA AND ABSENT FROM IDAHO -- Idaho Code Sec. 73-108 does not list it at all, which is why the two neighbours' calendars must never be read across." },
+        { "date": "2026-07-03", "name": "Independence Day (observed, statutory Saturday shift)", "kind": "declared", "derivation": "4 July 2026 is a SATURDAY, and Sec. 25-2221 makes the shift mandatory: 'If any such holiday falls on Saturday, the preceding Friday shall be a holiday.' Derived from the statute, not transcribed from any schedule." },
+        { "date": "2026-07-04", "name": "Independence Day", "kind": "declared", "derivation": "Sec. 25-2221, 'Independence Day, July 4'. Carried alongside the shifted Friday because the shift adds the Friday without unmaking the Saturday. A Saturday is excluded by the weekend limb regardless, so this entry changes no computation; it is here so the shift is visible in the data." },
+        { "date": "2026-09-07", "name": "Labor Day", "kind": "declared", "derivation": "Sec. 25-2221, 'the first Monday in September', computed for 2026 and verified by weekday." },
+        { "date": "2026-10-12", "name": "Indigenous Peoples' Day and Columbus Day", "kind": "declared", "derivation": "Sec. 25-2221, 'Indigenous Peoples' Day and Columbus Day, the second Monday in October', computed for 2026 and verified by weekday. ONE DAY UNDER TWO NAMES, joined by 'and' in the statute rather than offered as alternatives, and the name here preserves that." },
+        { "date": "2026-11-11", "name": "Veterans Day", "kind": "declared", "derivation": "Sec. 25-2221, 'Veterans Day, November 11'. 11 November 2026 is a Wednesday. THIS IS THE ONE HOLIDAY THE FEDERAL-OVERRIDE CLAUSE EXPRESSLY EXCEPTS, so it always takes the state date even in a year when the federal schedule differs." },
+        { "date": "2026-11-26", "name": "Thanksgiving Day", "kind": "declared", "derivation": "Sec. 25-2221, 'the fourth Thursday in November', computed for 2026 and verified by weekday." },
+        { "date": "2026-11-27", "name": "The day after Thanksgiving", "kind": "declared", "derivation": "Sec. 25-2221 enumerates 'the day after Thanksgiving' as its own entry. ENUMERATED IN THE STATUTE, not an administrative observance -- contrast Idaho, where it is not a statutory holiday at all, and Kansas, South Carolina, Wisconsin and Maryland, where it comes from a published judicial schedule rather than from the text." },
+        { "date": "2026-12-25", "name": "Christmas Day", "kind": "declared", "derivation": "Sec. 25-2221, 'Christmas Day, December 25'. 25 December 2026 is a Friday, so neither shift limb is engaged." }
+      ]
+    }
+  ]
+}

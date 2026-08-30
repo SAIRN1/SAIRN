@@ -1,0 +1,375 @@
+{
+  "_readme": [
+    "NEBRASKA -- Nebraska Court Rules of Pleading and of Discovery in Civil",
+    "Cases, plus two statutes. 10 rules, 33rd computing jurisdiction.",
+    "",
+    "THE COMPUTATION RULE IS A STATUTE AND THE COURT RULE SAYS SO IN ITS FIRST",
+    "LINE. Neb. Ct. R. Pldg. Sec. 6-1106(a): 'Neb. Rev. Stat. Sec. 25-2221",
+    "governs the computation of time periods.' No chain to trace, unlike Idaho",
+    "the same day. And Sec. 25-2221 carries its own holiday list in the same",
+    "sentence as its rollover test.",
+    "",
+    "*** THE PRIOR VERSIONS ARE STILL PUBLISHED, CORRECTLY LABELLED, AND ONE",
+    "CLICK AWAY. *** nebraskajudicial.gov lists 'Article 11 ... (Effective",
+    "January 1, 2025)' and 'Prior Version of Article 11 ... (Effective before",
+    "January 1, 2025)' side by side, and the same for Article 3. BOTH ARE REAL,",
+    "COMPLETE DOCUMENTS -- this is not Mississippi's dead soft-404, it is two",
+    "live rule sets, and the label is the only thing that distinguishes them.",
+    "THE 2025 AMENDMENTS MOVED REAL NUMBERS: the post-motion responsive pleading",
+    "went from 20 days to 21, and the court-ordered reply from 15 days to 21.",
+    "Every row here is the CURRENT text with effective_from 2025-01-01, so a",
+    "pre-2025 trigger REFUSES rather than answering with a number that was not",
+    "yet law.",
+    "",
+    "NO SHORT-PERIOD EXCLUSION. Sec. 25-2221 excludes the trigger day, counts to",
+    "the last day and rolls; there is no intermediate-day rule at all. Sixth",
+    "seeded jurisdiction with none, after MN, UT, NV, KS and ID.",
+    "",
+    "THE COURT SETTLED THIS ENGINE'S EXACT AMBIGUITY IN WRITING. Comment [2] to",
+    "Sec. 6-1106: 'It was unclear whether the 3 days were added to the time",
+    "period itself or at the end of the time period as computed by Sec.",
+    "25-2221. In 2024, the provision ... was reworded to clarify that the 3 days",
+    "are added AFTER THE PERIOD WOULD OTHERWISE EXPIRE.' That is the",
+    "period-lengthening vs after-expiry distinction, named by a court,",
+    "identified as genuinely ambiguous, and fixed by amendment. Comment [3] then",
+    "works an example -- 30 days ending on a Saturday expires Monday, plus three",
+    "gives THURSDAY -- which is asserted as a test.",
+    "",
+    "ALL THREE DISCOVERY RULES ARE later_of, AND THEY SAY SO THEMSELVES:",
+    "'45 days after being served with the summons or 30 days after being served",
+    "with the [request], WHICHEVER IS LONGER'. The rule does the resolving in",
+    "its own words, so no reading was needed. THE CONTRAST WITH IDAHO IS TOTAL:",
+    "its neighbour has no floor and no election on any of the three, and '45",
+    "days' does not appear in the I.R.C.P. at all.",
+    "",
+    "NO BACKWARD ROW IS SEEDED. Sec. 25-2221 rolls to 'the NEXT day on which the",
+    "office will be open' and says nothing about a period measured before an",
+    "event. The calendar is materially more complete than Idaho's so the case is",
+    "weaker, but the direction question has not been read out of any Nebraska",
+    "text and is not being guessed."
+  ],
+  "rules": [
+    {
+      "rule_id": "ne-6-1112a1A-answer-summons-and-complaint-30-days",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and complaint -- 30 days (Nebraska)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "computation": "ne_25_2221",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Neb. Ct. R. Pldg. Sec. 6-1112(a)(1)(A)",
+        "url": "https://nebraskajudicial.gov/book/export/html/9131",
+        "quote": "A defendant must serve an answer within 30 days after being served with the summons and complaint or completion of service by publication.",
+        "note": "THIRTY, not the federal twenty-one, even though the rest of Nebraska's Rule 12 tracks the restyled FRCP closely -- the 2025 amendment moved several other numbers to 21 and deliberately left this one at 30. THE RULE NAMES A SECOND TRIGGER THIS ROW DOES NOT MODEL: 'or completion of service by publication'. That is a different event with its own completion date, not a variant of personal service, and a caller with a published summons must supply that date to a row that does not yet exist rather than reuse this one. NO SERVICE EXTENSION: Sec. 6-1106(c) adds three days only for service 'under Sec. 6-1105(b)(3)(C)', and Sec. 6-1105(a)(1)(A) reaches 'a pleading filed AFTER the original complaint'. Original process is not Rule 5 service. Withholding reports EARLY; granting on a mailed summons would report LATE.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-6-1112a1B-answer-to-counterclaim-or-crossclaim-30-days",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Answer to a counterclaim or cross-claim -- 30 days (Nebraska)",
+      "trigger_event": "service_of_pleading_stating_counterclaim_or_crossclaim",
+      "computation": "ne_25_2221",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ne_6_1106_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Neb. Ct. R. Pldg. Sec. 6-1112(a)(1)(B)",
+        "url": "https://nebraskajudicial.gov/book/export/html/9131",
+        "quote": "A party must serve an answer to a counterclaim or cross-claim within 30 days after being served with the pleading that states the counterclaim or cross-claim.",
+        "note": "THE 2025 AMENDMENT SIMPLIFIED THIS AND THE OLD TEXT IS STILL ONLINE. The prior version ran the cross-claim answer from service of the pleading but the reply to a counterclaim from service of the ANSWER, in a single run-on subpart; the current rule treats both the same way and keys both to the pleading that states the claim. THE EXTENSION APPLIES HERE, unlike the answer to the summons, because this is a Rule 5 pleading rather than original process. MAIL ONLY, AND BY CROSS-REFERENCE: Sec. 6-1106(c) names Sec. 6-1105(b)(3)(C) specifically, out of six lettered service methods sitting beside it -- handing, leaving at an office or residence, MAILING, email, a designated delivery service, and any other consented means. Five siblings get nothing.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-6-1112a1C-reply-after-order-to-reply-21-days",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Reply to an answer, when the court orders one -- 21 days (Nebraska)",
+      "trigger_event": "service_of_order_to_reply",
+      "computation": "ne_25_2221",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ne_6_1106_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Neb. Ct. R. Pldg. Sec. 6-1112(a)(1)(C)",
+        "url": "https://nebraskajudicial.gov/book/export/html/9131",
+        "quote": "A party must serve a reply to an answer within 21 days after being served with an order to reply, unless the order specifies a different time.",
+        "note": "THE NUMBER CHANGED ON 1 JANUARY 2025, FROM 15 TO 21, and the superseded text is still published on the same site under 'Prior Version of Article 11'. The old rule read 'within 15 days after service of the order'. A seed built from that page reports SIX DAYS EARLY on this row. Early is the safe direction and it is still wrong. 'UNLESS THE ORDER SPECIFIES A DIFFERENT TIME' is on the face of the rule: a reply is only ever due because a court ordered it, so the same order can set its own period, and when it does that period governs and this row does not.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-6-1112a2A-responsive-pleading-after-motion-denied-21-days",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 12 motion is denied or postponed -- 21 days (Nebraska)",
+      "trigger_event": "notice_of_court_action_denying_or_postponing_motion",
+      "computation": "ne_25_2221",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Neb. Ct. R. Pldg. Sec. 6-1112(a)(2)(A)",
+        "url": "https://nebraskajudicial.gov/book/export/html/9131",
+        "quote": "if the court denies the motion or postpones its disposition until trial, the responsive pleading must be served within 21 days after notice of the court's action; or",
+        "note": "THE NUMBER CHANGED ON 1 JANUARY 2025, FROM 20 TO 21, and the superseded text is still published. A seed built from the prior version reports one day EARLY here and on the sibling row below. NO SERVICE EXTENSION, and the reasoning matches Idaho rather than Mississippi: Sec. 6-1106(c) reaches a party who must act 'after BEING SERVED and service is made under Sec. 6-1105(b)(3)(C)', with no notice limb, where Miss. R. Civ. P. 6(e) expressly reaches 'the service of a NOTICE or other paper'. Same trigger words in three states, two different answers, decided by the time rule rather than the pleading rule. THE TRIGGER IS NOTICE, NOT ENTRY: a caller who supplies the date the order was entered computes EARLY.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-6-1112a2B-responsive-pleading-after-more-definite-statement-21-days",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a more definite statement is served -- 21 days (Nebraska)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "ne_25_2221",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "service_extension": {
+        "standard": "ne_6_1106_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Neb. Ct. R. Pldg. Sec. 6-1112(a)(2)(B)",
+        "url": "https://nebraskajudicial.gov/book/export/html/9131",
+        "quote": "if the court grants a motion for a more definite statement, the responsive pleading must be served within 21 days after the more definite statement is served.",
+        "note": "ALSO 20 DAYS BEFORE 1 JANUARY 2025. THE SIBLING ROW RUNS FROM NOTICE AND THIS ONE RUNS FROM SERVICE, which is why this one takes the three mailed days and that one does not -- the same split Idaho has, decided by which verb the subparagraph uses. 'Unless the court specifies a different time' opens Sec. 6-1112(a)(2) and governs both rows; it is invisible to this engine.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-6-333b2-interrogatory-answers-later-of",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- the later of 30 days and the 45-day defending-party floor (Nebraska)",
+      "trigger_event": {
+        "id": "nebraska_interrogatory_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_interrogatories",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the interrogatories"
+          },
+          {
+            "event": "service_of_summons_for_interrogatories",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons on the defending party"
+          }
+        ]
+      },
+      "computation": "ne_25_2221",
+      "service_extension": {
+        "standard": "ne_6_1106_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Neb. Ct. R. Disc. Sec. 6-333(b)(2)",
+        "url": "https://nebraskajudicial.gov/book/export/html/9064",
+        "quote": "Time to Respond. The responding party must serve its answers and any objections within 30 days after being served with the interrogatories, except that a defending party may serve its answers and objections within 45 days after being served with the summons or 30 days after being served with the interrogatories, whichever is longer. A shorter or longer time may be stipulated to under Rule 29 or be ordered by the court.",
+        "note": "THE RULE DOES ITS OWN RESOLVING -- 'WHICHEVER IS LONGER' -- so this is a later_of on the rule's own words rather than on a reading. That matters because the subparagraph also says 'MAY', which in Kansas and in Mississippi's Rules 33 and 34 marks an ELECTION and produces a plain 30-day row. Here 'may' and 'whichever is longer' appear in the same sentence, and the comparative governs: the defending party is entitled to the longer of the two, which is a floor. THE LIMB RUNS FROM SERVICE OF THE SUMMONS, not the summons and complaint -- the rule's own words, and the limb is named for them. THE CONTRAST WITH IDAHO IS TOTAL: its neighbour has no floor and no election on any of the three discovery rules, and the string '45 days' does not appear in the I.R.C.P. at all. A PLAINTIFF answering the same interrogatories takes the plain 30 days: supply only the interrogatory-service date and the 45-day limb does not arise. Both limbs run from caller-supplied dates, so this does not hit the chained-floor problem Maryland raises.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-6-334b2A-production-response-later-of",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- the later of 30 days and the 45-day defending-party floor (Nebraska)",
+      "trigger_event": {
+        "id": "nebraska_production_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_production",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request for production"
+          },
+          {
+            "event": "service_of_summons_for_production",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons on the defending party"
+          }
+        ]
+      },
+      "computation": "ne_25_2221",
+      "service_extension": {
+        "standard": "ne_6_1106_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Neb. Ct. R. Disc. Sec. 6-334(b)(2)(A)",
+        "url": "https://nebraskajudicial.gov/book/export/html/9064",
+        "quote": "Time to Respond. The party to whom the request is directed must respond in writing within 30 days after being served, except that a defending party must respond within 45 days after being served with the summons or 30 days after being served with the request, whichever is longer. A shorter or longer time may be stipulated to under Rule 29 or be ordered by the court.",
+        "note": "'MUST ... WHICHEVER IS LONGER' -- unambiguously a floor, where the interrogatory rule reaches the same result through 'may ... whichever is longer'. The three Nebraska discovery rules are worded three different ways and land in the same place, which is worth recording because in Kansas and Mississippi the same words land somewhere else. WHAT THIS ROW IS NOT: the production itself. Sec. 6-334(b)(2)(B) lets a responding party state it will produce copies instead of permitting inspection, with production 'no later than the time for inspection specified in the request or another reasonable time specified in the response' -- a date set by the parties' own papers. This row is the WRITTEN RESPONSE only.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-6-336a4-admissions-answer-later-of",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- the later of 30 days and the 45-day defending-party floor, and silence ADMITS (Nebraska)",
+      "trigger_event": {
+        "id": "nebraska_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request for admission"
+          },
+          {
+            "event": "service_of_summons_for_admission",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons on the defending party"
+          }
+        ]
+      },
+      "computation": "ne_25_2221",
+      "service_extension": {
+        "standard": "ne_6_1106_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "order": "after_period_expires"
+      },
+      "authority": {
+        "citation": "Neb. Ct. R. Disc. Sec. 6-336(a)(4)",
+        "url": "https://nebraskajudicial.gov/book/export/html/9064",
+        "quote": "Time to Respond; Effect of Not Responding. A matter is admitted unless the party to whom the request is directed serves on the requesting party a written answer or objection addressed to the matter and signed by the party or its attorney: (A) within 30 days after being served with the request; (B) if the party is a defending party within 45 days after being served with the summons or 30 days after being served with the request, whichever is longer.",
+        "note": "SELF-EXECUTING, AND THE FLOOR IS BUILT INTO THE ADMISSION CLAUSE ITSELF rather than added as an exception -- the rule states the two periods as lettered alternatives inside 'A matter is admitted unless ...'. Sec. 6-336(b) then makes an admission conclusively established unless the court permits withdrawal. THE HIGHEST-STAKES ROW IN THE SEED, and the one where the Idaho contrast is most dangerous in the other direction: Idaho's identical-looking Rule 36(a)(4) has NO 45-day limb, so a row read across from Nebraska into Idaho would tell an Idaho defendant the matter is not yet admitted when it already is. Both limbs run from caller-supplied dates. A PLAINTIFF answering the same request takes the plain 30 days.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2025-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-25-1144-01-motion-for-new-trial-10-days",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 10 days after entry of judgment (Nebraska)",
+      "trigger_event": "entry_of_judgment_nebraska",
+      "computation": "ne_25_2221",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Neb. Rev. Stat. Sec. 25-1144.01",
+        "url": "https://nebraskalegislature.gov/laws/statutes.php?statute=25-1144.01",
+        "quote": "A motion for a new trial shall be filed no later than ten days after the entry of the judgment. A motion for a new trial filed after the announcement of a verdict or decision but before the entry of judgment shall be treated as filed after the entry of judgment and on the day thereof.",
+        "note": "TEN DAYS, AND IT IS A STATUTE RATHER THAN A RULE, WHICH IS WHY THE COURT CANNOT ENLARGE IT. Neb. Ct. R. Pldg. Sec. 6-1106(b)(2): 'If the time to act is specified by STATUTE, the court must not extend the time except to the extent and under the conditions stated by statute.' Most states freeze their post-judgment motions by naming them in a list; Nebraska freezes this one by the source of the deadline. ⚠ CITE 25-1144.01 AND NOT 25-1143. The old new-trial section, Neb. Rev. Stat. Sec. 25-1143, was REPEALED by Laws 2000, LB 921, Sec. 38 and the Legislature's own page now returns nothing but 'Repealed'. Any source predating 2000 sends a reader to a dead section. THE SECOND SENTENCE IS A DEEMING PROVISION THIS ROW RELIES ON: a motion filed after the verdict but before entry is treated as filed on the day of entry, so an early motion is never early-and-void. It does not change the DEADLINE and no separate row is needed. NO SERVICE EXTENSION: Sec. 6-1106(c) reaches a period running after service, and entry of judgment is not service. THE EFFECTIVE DATE IS A CONVENTION AND IS LABELLED AS ONE. The Legislature's page prints the source history -- 'Laws 2000, LB 921; Laws 2004, LB 1207' -- and NO effective date. This row therefore takes 2005-01-01, the 1 January following the last amending act, the same deliberately conservative rule Wisconsin and New Mexico's Rule 1-036 needed. Too late merely refuses; too early would answer for a period when the section may have read differently.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2005-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "ne-25-1329-motion-to-alter-or-amend-judgment-10-days",
+      "jurisdiction": "ne",
+      "domain": "civil-litigation",
+      "label": "Motion to alter or amend a judgment -- 10 days after entry (Nebraska)",
+      "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend_nebraska",
+      "computation": "ne_25_2221",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Neb. Rev. Stat. Sec. 25-1329",
+        "url": "https://nebraskalegislature.gov/laws/statutes.php?statute=25-1329",
+        "quote": "A motion to alter or amend a judgment shall be filed no later than ten days after the entry of the judgment. A motion to alter or amend a judgment filed after the announcement of a verdict or decision but before the entry of judgment shall be treated as filed after the entry of judgment and on the day thereof.",
+        "note": "A SEPARATE ROW FROM THE NEW-TRIAL MOTION even though the period, the trigger and even the deeming sentence match word for word -- they are different motions with different consequences and a caller asking for one should not be answered with the other's citation. Both were enacted by the same act, Laws 2000, LB 921, and both are frozen by Sec. 6-1106(b)(2) because both are statutory. TEN DAYS IS SHORT BY PLATFORM STANDARDS -- Idaho gives 14, Mississippi 10, New Mexico 30 -- and Nebraska counts every intervening day because Sec. 25-2221 has no short-period exclusion. THE ROW STOPS AT THE DATE AND DOES NOT REACH THE APPEAL CLOCK, which is Neb. Rev. Stat. Sec. 25-1912 and is not seeded. THE EFFECTIVE DATE IS A CONVENTION AND IS LABELLED AS ONE. The Legislature's page prints the source history -- 'Laws 2000, LB 921; Laws 2004, LB 1207' -- and NO effective date. This row therefore takes 2005-01-01, the 1 January following the last amending act, the same deliberately conservative rule Wisconsin and New Mexico's Rule 1-036 needed. Too late merely refuses; too early would answer for a period when the section may have read differently.",
+        "retrieved_at": "2026-08-30"
+      },
+      "effective_from": "2005-01-01",
+      "effective_to": null
+    }
+  ]
+}
