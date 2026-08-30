@@ -375,9 +375,82 @@ US11961032B2 first — was considered and rejected.
 Phase 2's passive sensor is a different technology and was not scanned; it
 needs its own pass before it is built.
 
+---
+
+# Phase 2 passive sensor — FIRST PASS ONLY
+
+Run 2026-08-30 at Michael's request: an initial read on whether this is worth
+real research time, **not** a scan to the standard of the Phase 1 work above.
+One claim was read in full. Treat every conclusion here as provisional.
+
+## The on-bottle space is occupied, commercially and by patent
+
+- **Nectar Inc** — **US10078003B2**, priority 2014-06-04, granted 2018-09-18,
+  status **"Active — Reinstated, expires 2036-03-22"**, and a family of **8+
+  related patents** (US11012764, US10324075, US10670444, US10267667,
+  US10591345, US11016072 …) with, per the family listing, "varying claim
+  scopes". Modality is **ultrasonic**: the device transmits a pulse and times
+  the bounce off the remaining liquid.
+- **BarVision LLC** — patented wireless "Smart Spouts" with an onboard IMU,
+  processor and radio. Shipping product, not just filings.
+- Plus a long tail of older dispensing-control art (US8453878B2 spout sensor,
+  US20070228068A1 weighing system, WO1994008887A1 control caps).
+
+## The one distinction that looked promising — and how far it actually goes
+
+US10078003B2 claim 1 **requires the sensor to be a container cover** — a bottle
+cap engaging the container opening. It cannot read on a sensor mounted
+separately and observing bottles at a distance.
+
+So the shelf-side, touches-nothing approach Phase 2 was aimed at sits **outside
+that particular claim**. That is a real distinction and it is the right one to
+have found.
+
+**But it is one claim out of a family of eight with varying scope.** "Outside
+claim 1 of one member" is not "clear of the family", and it is certainly not
+clear of BarVision or the older art. Establishing that would be the real
+research, and it has not been done.
+
+## The finding that matters more than the patent question
+
+**Phase 2 may be the wrong shape regardless of how the patents come out.**
+
+1. **The category is commercially served.** Nectar and BarVision are funded
+   companies shipping hardware. Phase 2 would not be entering an empty market;
+   it would be entering an occupied one with a late, unfunded product.
+2. **Hardware is a different business.** Manufacturing, unit economics,
+   certification, RMA, field support and firmware updates — none of which this
+   platform does today, for any app.
+3. **The moat was never the measurement.** The research above states Phase 1's
+   differentiator explicitly: not the fill-level reading itself, but "tying
+   into the post's event calendar and **bingo-fund compliance data**." That
+   differentiator does not require owning the sensor. Nothing in ORC 2915,
+   §2915.101's tiered distribution, or the licence-type gating is served
+   better by SAIRN manufacturing a depth sensor.
+
+**So the question to answer before spending research time is not "is the
+sensor patent-clear" — it is "why build the sensor at all."** An integration
+with an existing spout/cap vendor would deliver the same compliance-linked
+inventory data with no hardware business and no patent exposure, and the
+patent thicket found here is an argument *for* that route rather than an
+obstacle to route around.
+
+## Recommended next step, if this is pursued
+
+Check whether Nectar or BarVision expose an API or partner integration. That
+is a one-hour question and it likely decides the whole phase — if either does,
+the build-versus-integrate answer is settled without a single further patent
+search. **Do that before any deeper patent work.**
+
+This is a first-pass read, not a freedom-to-operate opinion. Not counsel.
+
 ## Sources
 
 - [US11961032B2 — inventory of containers for beverages](https://patents.google.com/patent/US11961032B2/en)
+- [US10078003B2 — Nectar sensor device configuration](https://patents.google.com/patent/US10078003B2/en)
+- [US8453878B2 — liquid level measuring device (spout)](https://patents.google.com/patent/US8453878B2)
+- [US20070228068A1 — alcoholic beverage management and inventory](https://patents.google.com/patent/US20070228068)
+- [BarVision — wireless smart spouts](https://barvision.com/)
 - [US20190197466A1 — inventory control for liquid containers (ABANDONED)](https://patents.google.com/patent/US20190197466A1/en)
 - [US12450865B2 — detecting liquid level inside a container](https://patents.google.com/patent/US12450865B2/en)
 - [EP3992847A1 — a bottle analysis system](https://patents.google.com/patent/EP3992847A1/en)
