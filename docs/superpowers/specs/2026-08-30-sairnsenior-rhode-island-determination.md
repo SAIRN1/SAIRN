@@ -66,6 +66,14 @@ contractors.**
 > a compliance checkbox, and it belongs in the same decision-gate pass as the
 > Iowa scope question.
 
+> **WIDENED 2026-08-30, same day, by the reclassification sweep.** This document
+> presents the clause as a *nursing service agency* rule. **It is not confined to
+> that category.** The identical rule appears in **216-RICR-40-10-17** — the home
+> care regulation — applying to *"a **home nursing care provider or home care
+> provider**"*. Rhode Island applies it across its home-care licensing scheme, so
+> an ordinary RI home care agency also cannot treat supplied caregivers as
+> contractors. See `2026-08-30-sairnsenior-reclassification-sweep.md` § 1.
+
 ## 2. Why SAIRNsenior is outside Part 10
 
 | Element of § 23-17.7.1-2(d) | SAIRNsenior |
