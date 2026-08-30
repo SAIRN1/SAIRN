@@ -20,6 +20,16 @@
       "claimed_at_epoch": 1788101512.510849,
       "status": "released",
       "released_at": "2026-08-30T21:48:23Z"
+    },
+    {
+      "id": "hank-1788127599",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "idaho deadline seed gate",
+      "claimed_at": "2026-08-30T22:06:39Z",
+      "claimed_at_epoch": 1788127599.8772461,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
