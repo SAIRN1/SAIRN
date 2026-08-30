@@ -18,8 +18,8 @@
       "task": "newmexico deadline seed gate",
       "claimed_at": "2026-08-30T14:51:52Z",
       "claimed_at_epoch": 1788101512.510849,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-08-30T21:48:23Z"
     }
   ]
 }
