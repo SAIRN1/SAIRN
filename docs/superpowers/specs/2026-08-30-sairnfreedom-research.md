@@ -104,7 +104,18 @@ three things the competitive scan identifies as the actual moat (see *The
 competitive gap*, corrected below). It is a demo feature, not a defensive one,
 and its FTO cost should be judged on that basis.
 
-### 2. Scope of this document
+### 2. Banner is ANIMATED app-wide, static on onboarding (2026-08-30)
+
+Supersedes the earlier static-everywhere call. One animated flag banner,
+consistently, on the dashboard and every page; **onboarding is the exception and
+stays static.** The earlier rejection was of a *bad implementation* — turbulence
+filters that read as water or TV static — not of the idea. It gets built
+properly as real work this time, and reviewed against `sairn-visual-review` on a
+rendered page before it is called done. No literal flag reproduction: diagonal
+red/white/blue stripe with a small star cluster. Full reasoning in the build
+spec §1d.
+
+### 3. Scope of this document
 
 Everything verified here is the **gaming** half. Liquor licensing is
 unexamined — see *Still not verified*. Do not read compliance coverage into

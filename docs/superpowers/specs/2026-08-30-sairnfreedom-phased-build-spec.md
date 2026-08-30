@@ -86,6 +86,34 @@ A post whose only `post.govern` holder is deactivated is the same trapdoor.
 already enforces the two safe end states — zero rows, or at least one active
 provisioner — and any SAIRNfreedom credential SQL must carry that guard.
 
+### 1d. Banner: animated app-wide, static on onboarding — DECISION 2026-08-30
+
+**This supersedes the earlier "static everywhere" branding call.**
+
+- **Animated flag banner, consistently, on the dashboard and every other page.**
+  One banner component, one behaviour, everywhere. An animation that appears on
+  some pages and not others reads as a bug, not a choice.
+- **Onboarding is the exception and is STATIC.** The one place a new member is
+  being asked to concentrate is the one place the banner does not move.
+
+**The constraint that produced the earlier call still stands and is why this is
+recorded rather than just changed.** Animated distortion was previously
+attempted and rejected as visually broken — it read as water or TV static — and
+the guidance was to avoid canvas/SVG turbulence-filter animation on a working
+dashboard. **That failure was a bad implementation, not a bad idea.** The
+decision now is that it gets built properly, by an agent, as real work — not
+attempted again in a quick mockup tool.
+
+**So the prohibition that survives is on the technique, not the effect:** do not
+reach for turbulence filters and call it done. Whatever is built must be
+reviewed against `sairn-visual-review` on a rendered page at real size before it
+is called finished, because the last attempt looked fine in source and wrong on
+screen.
+
+**Still holds, unchanged:** no literal reproduction of the American flag —
+trademark/copyright caution — so this is a red/white/blue diagonal-stripe motif
+with a small star cluster, not a flag.
+
 ---
 
 ## 2. Phase 1 — Foundation (no dependencies; everything else needs this)
@@ -98,7 +126,7 @@ provisioner — and any SAIRNfreedom credential SQL must carry that guard.
 | 1.4 | Dues, renewal, **three-layer fee structure** | **§9 — structure named, not defined** |
 | 1.5 | Conditional dues/fee waivers | **§9 — conditions not defined.** Note: waiver eligibility is a governance decision with audit implications, not a discount code |
 | 1.6 | Post profile: licence types, **15-year test** for fraternal orgs | OAC 109:1-4-08 Types I/II/III gate lawful activity; ORC 2915.01(V)(3) 15-years-continuous-existence gates fraternal disbursement eligibility |
-| 1.7 | Branding shell | Red/white/blue, **diagonal** stripe, small star cluster, no flag reproduction. Post name + org type + city in header. **Static with subtle fold-shadow banding** |
+| 1.7 | Branding shell | Red/white/blue, **diagonal** stripe, small star cluster, no literal flag reproduction. Post name + org type + city in header. **ANIMATED banner across the whole app — see §1d** |
 
 **Phase 1 exit criterion:** a real post can be created, its officers provisioned,
 its members enrolled and dues taken — and the app knows its org type, licence
@@ -200,12 +228,20 @@ it was not scanned).
 
 ### 9a. Regulated — do not build on assumption
 
-1. **Service Officer VA-claims referral.** Preparing, presenting or prosecuting
-   a VA claim is restricted to **accredited** representatives (38 U.S.C.
-   §§5901–5904; VA accreditation rules). A *referral directory* and an
-   *appointment log* are almost certainly fine; anything that assists in
-   preparing a claim may not be. **Read the primary source before designing the
-   feature, exactly as ORC 2915 was read.** Highest legal risk item in the spec.
+1. ~~**Service Officer VA-claims referral** — blocked pending primary-source
+   research.~~ **RESEARCHED AND SCOPED 2026-08-30.** See
+   `docs/2026-08-30-sairnfreedom-va-claims-accreditation-boundary.md`.
+   **38 U.S.C. § 5901** prohibits acting *"as an agent or attorney in the
+   preparation, presentation, or prosecution"* of a claim without recognition —
+   narrower than the feature name implied. **§ 5902(a)(1) names the American
+   Legion and the VFW in the statute** as organizations whose representatives
+   the Secretary may recognize, so a post's Service Officer is typically already
+   accredited. **Safe to build (Phase 5):** referral directory, appointment
+   scheduling and log, accreditation-status tracking, attributed general
+   information. **Out of scope:** anything that prepares, presents or prosecutes
+   a claim — including form auto-fill, drafting statements in support, or
+   assembling an evidence package. **Two hard product rules** come out of it, in
+   §9d below.
 2. **Tips received — tax treatment.** Already flagged. Reporting obligations,
    tip credit, allocation between employees and volunteers. **Do not build
    fields until researched.**
@@ -219,6 +255,25 @@ it was not scanned).
    unread.
 6. **Volunteer liability documents (5.2)** — templates need legal review; this
    is document *drafting*, not schema.
+
+### 9d. Two hard product rules from the VA research — not optional
+
+**No fee may attach to claims assistance, anywhere in the product.** Every
+recognition route in 38 U.S.C. §§ 5902, 5903 and 38 CFR 14.630 requires
+certifying that **no compensation of any nature** is charged. A post is a
+nonprofit and its officer serves free, so this is satisfied naturally — **but
+the Service Officer function must never sit behind a paid tier, subscription
+gate or upgrade prompt.** Doing so creates exactly the compensation the
+certification denies.
+
+**The AI assistant must DECLINE claim-strategy questions in its system prompt.**
+Not a disclaimer, not a warning banner — a refusal. This platform already made
+this call once on SAIRNroofing, where the operations assistant was changed to
+refuse claim-strategy questions because *"nothing stopped it answering a
+negotiation question from general knowledge, and an app-branded answer of that
+shape was the real exposure."* Here the stakes are higher: an AI answering
+*"what should I claim for?"* is producing claim preparation, under the post's
+brand, for an unaccredited asker, at scale.
 
 ### 9b. Named but not defined — need the source detail
 
