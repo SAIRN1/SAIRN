@@ -14488,18 +14488,18 @@ function printDrawCutSheet() {
 
 
 <!-- StoneDesk Missing DOM Targets — Patch v1.1 -->
-<div id="fu-pulse-style" style="display:none"></div>
-<div id="live-pulse-style" style="display:none"></div>
-<div id="sairn-blink-style" style="display:none"></div>
+<div id="legacy-stub-fu-pulse-style" style="display:none"></div>
+<div id="legacy-stub-live-pulse-style" style="display:none"></div>
+<div id="legacy-stub-sairn-blink-style" style="display:none"></div>
 <div id="sairn-intake-actions" style="display:none"></div>
-<div id="sairn-knowledge-indicator" style="display:none"></div>
+<div id="legacy-stub-sairn-knowledge-indicator" style="display:none"></div>
 <div id="sairn-lock-overlay" style="display:none"></div>
-<div id="sairn-memory-indicator" style="display:none"></div>
-<div id="sairn-memory-panel" style="display:none"></div>
-<div id="sairn-tone-bar" style="display:none"></div>
-<div id="sairn-tone-tooltip" style="display:none"></div>
+<div id="legacy-stub-sairn-memory-indicator" style="display:none"></div>
+<div id="legacy-stub-sairn-memory-panel" style="display:none"></div>
+<div id="legacy-stub-sairn-tone-bar" style="display:none"></div>
+<div id="legacy-stub-sairn-tone-tooltip" style="display:none"></div>
 <div id="sairn-voice-btn" style="display:none"></div>
-<div id="slow-pulse-style" style="display:none"></div>
+<div id="legacy-stub-slow-pulse-style" style="display:none"></div>
 <div id="roam-action-row" style="display:none"></div>
 <div id="upload-zone" style="display:none"></div>
 <div id="pin-input" style="display:none"></div>
@@ -17224,9 +17224,21 @@ document.head.appendChild(st);
 // Build tone bar — insert above the input area
 function buildToneBar() {
   if (document.getElementById('sairn-tone-bar')) return;
-  var sendBtn = document.getElementById('sendBtn');
-  if (!sendBtn) return;
-  var inputParent = sendBtn.closest('.input-area') || sendBtn.closest('.input-wrap') || sendBtn.parentElement;
+  // RETARGETED 2026-08-31. This anchored to #sendBtn, which exists only as an
+  // empty display:none placeholder stub -- so even once the sairn-tone-bar stub
+  // stopped blocking the install-once guard above, the bar would have been
+  // inserted inside that hidden block and stayed invisible. Same half-fix shape
+  // as the NEXUS handoff: the receiver was retargeted to the real widget and
+  // the sender was left pointing at the dead one. Anchor to the real AI input
+  // instead, and keep the #sendBtn path as a fallback for any surface that
+  // genuinely has one.
+  var anchor = document.getElementById('ai-input');
+  var inputParent = anchor ? anchor.parentElement : null;
+  if (!inputParent) {
+    var sendBtn = document.getElementById('sendBtn');
+    if (!sendBtn) return;
+    inputParent = sendBtn.closest('.input-area') || sendBtn.closest('.input-wrap') || sendBtn.parentElement;
+  }
   if (!inputParent || !inputParent.parentElement) return;
 
   var bar = document.createElement('div');
@@ -17789,6 +17801,25 @@ function stopVoice() {
   isListening = false;
 }
 
+// FEATURE 7 VOICE INPUT IS DELIBERATELY LEFT DORMANT (2026-08-31).
+//
+// The stub-id sweep freed ten squatted ids so the modules behind them could
+// install. This one was RESTORED after a browser check, because the feature it
+// provides already exists and works through a better mechanism.
+//
+// `attachVoiceInput()` is the live platform helper: it puts a "Tap to dictate"
+// 🎤 button directly beside its target field, and StoneDesk already ships three
+// of them -- #voicebtn-ai-input next to the AI chat box, plus
+// #voicebtn-viz-est-customer and #voicebtn-viz-est-sqft on the visualizer.
+// Retargeting this legacy Feature 7 injector at #ai-input produced a SECOND,
+// redundant mic button one level up in the DOM. Verified in a real browser, and
+// it is the only reason this was caught -- from source alone "the voice module
+// never installs" reads like a missing feature rather than a superseded one.
+//
+// So the `sairn-voice-btn` placeholder stub stays in place on purpose: it is
+// the thing keeping this module from installing a duplicate control. That makes
+// it the one stub in the block doing useful work, which is worth knowing before
+// anyone finishes the sweep by deleting it.
 function injectVoiceButton() {
   if (document.getElementById('sairn-voice-btn')) return;
   var sendBtn = document.getElementById('sendBtn');
