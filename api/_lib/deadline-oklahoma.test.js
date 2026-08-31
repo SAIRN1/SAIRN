@@ -221,7 +221,7 @@ check('a 2032 trigger refuses -- the calendar stops at 2031',
 
 // ── Nothing else moved ────────────────────────────────────────────────────
 check('Oklahoma declares NO coverage entry',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nm', 'va', 'wi']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nm', 'va', 'wi']);
 {
   const orSeed = JSON.parse(fs.readFileSync(path.join(SQL, 'sairnlaw_deadline_seed_oregon.json'), 'utf8'));
   const orCal = JSON.parse(fs.readFileSync(path.join(SQL, 'sairnlaw_deadline_calendars_oregon.json'), 'utf8'));

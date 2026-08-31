@@ -1696,7 +1696,43 @@ var COMPUTATION_STANDARDS = {
   // guessed.
   ne_25_2221: { label: 'Neb. Rev. Stat. § 25-2221', impl: 'frcp_6a',
     base_period_suffix: '', months_years_suffix: '',
-    rollover_suffix_forward: '', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // HAWAIʻI. Haw. R. Civ. P. 6(a) -- and the referent is EXPRESS, which is
+  // exactly what Idaho's was not. The rule ends: "As used in these rules,
+  // 'holiday' shall mean any day designated as such pursuant to SECTION 8-1 OF
+  // THE HAWAIʻI REVISED STATUTES." Idaho's I.R.C.P. 2.2 says "legal holiday"
+  // and stops, and three competing lists had to be sorted out. Hawaiʻi names
+  // its section.
+  //
+  // SEVEN, a strict less-than: "When the period of time prescribed or allowed
+  // is LESS THAN 7 DAYS, intermediate Saturdays, Sundays and holidays shall be
+  // excluded in the computation." Same threshold as ten other seeded states,
+  // read here rather than carried.
+  //
+  // NOTE WHAT IT ROLLS OFF: "a Saturday, a Sunday or A HOLIDAY" -- the rule
+  // uses the bare word "holiday" throughout and never says "legal holiday",
+  // which is why the definitional sentence at the end of 6(a) is load-bearing
+  // rather than decorative.
+  //
+  // NO DIRECTION RULE, SO NO BACKWARD ROW IS SEEDED -- the Mississippi, Idaho
+  // and Nebraska shape, not New Mexico's. Hawaiʻi has two backward periods
+  // worth having and neither is seeded: Rule 6(d) requires a written motion and
+  // notice of hearing to be served NOT LESS THAN 18 DAYS before the hearing,
+  // which is the longest motion-notice period of any seeded jurisdiction, and
+  // opposing affidavits not less than 8 days before. Both clear the seven-day
+  // threshold, so the short-period exclusion is not the obstacle -- the missing
+  // direction rule is.
+  //
+  // RULE 6 WAS AMENDED VERY RECENTLY AND TWICE: "further amended July 9, 2025,
+  // effective January 1, 2026; further corrected December 19, 2025; further
+  // amended May 21, 2026, effective July 1, 2026." The text encoded here is the
+  // current one. WHAT those amendments changed was NOT determined -- the
+  // judiciary publishes an amendment history but no redline in this document,
+  // and guessing would be worse than saying so.
+  hi_hrcp_6: { label: 'Haw. R. Civ. P. 6', impl: 'frcp_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '(a)', months_years_suffix: '(a)',
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1814,6 +1850,12 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'Florida rolls the last day off any day \"within a time extended by ORDER OF THE CHIEF JUSTICE\" -- the hurricane mechanism -- and off any day observed as a holiday by the CLERK\'S OFFICE or designated by the CHIEF JUDGE. None of the three can be known in advance and none is modelled. A Florida date from this engine is correct only in the absence of such an order; during hurricane season that is a real caveat, not a formality. Every omission makes this date EARLIER than the true deadline, never later.',
     detail: 'THREE UNKNOWABLE ROLLOVER SOURCES, ALL IN ONE RULE. Fla. R. Gen. Prac. & Jud. Admin. 2.514 reaches the chief justice\'s emergency orders in THREE separate places, not one. (a)(1)(C): \"include the last day of the period except if the last day is Saturday, Sunday, a legal holiday, OR FALLS WITHIN A TIME EXTENDED BY ORDER OF THE CHIEF JUSTICE, then the last day will fall on the next day that is not Saturday, Sunday, a legal holiday, or any period of time extended through an order of the chief justice.\" (a)(3)(C) says the same for periods stated in HOURS. (a)(6)(B) then defines \"legal holiday\" to include \"any day observed as a holiday BY THE CLERK\'S OFFICE or as designated by the CHIEF JUSTICE OR CHIEF JUDGE\" -- which is a third and a fourth source again, and the chief-JUDGE limb is per-circuit rather than statewide, the only place Florida resembles Wisconsin. THIS IS FLORIDA\'S HURRICANE MECHANISM AND IT IS USED. The Supreme Court of Florida issues administrative orders extending time in affected circuits after a storm, and a day inside such an order is treated exactly like a holiday by (a)(1)(C). No engine can read an order that has not issued, and no calendar can carry a date that depends on one. WHY THE DIRECTION IS EARLY, AND THE CONDITION THAT MAKES IT SO. Omitting a day that should have been rolled off means the engine returns the unrolled, sooner date -- filing early is safe. That holds because EVERY SEEDED FLORIDA ROW IS FORWARD AND NO SHORTER THAN 20 DAYS: none is backward, none is stated in hours, and none is under the 7-day threshold at 2.514(a)(2). If a backward Florida row is ever added, THIS REASONING STOPS BEING TRUE -- 2.514(a)(5) defines \"next day\" as counting backward for a period measured before an event, and an omitted holiday on a backward count leaves the date CLOSER to the trigger, which is later than the rule allows. Re-read this entry before seeding one. THE CALENDAR IS THE RULE\'S NINE OBSERVANCES, NOT THE STATE\'S HOLIDAY LIST. 2.514(a)(6)(A) enumerates exactly nine days set aside by Fla. Stat. 110.117 -- New Year\'s Day, Martin Luther King, Jr.\'s Birthday, Memorial Day, Independence Day, Labor Day, Veterans\' Day, Thanksgiving Day, THE FRIDAY AFTER THANKSGIVING DAY, and Christmas Day -- and the rule reaches only those, not all of 110.117. Florida\'s list is genuinely shorter than Illinois\'s fifteen or the federal eleven, and padding it to match a neighbour would extend real deadlines that Florida law does not extend. The both-way observance shift in 110.117(1) IS modelled: a holiday falling on Saturday is observed the preceding Friday, on Sunday the following Monday. Calendars cover 2026 through 2031. TWO MORE THINGS NOT MODELLED, NEITHER AFFECTING A SEEDED ROW. 2.514(a)(3)\'s HOURS arithmetic -- no seeded Florida row is stated in hours. And 2.514(a)(4)\'s split cut-off, \"11:59:59 p.m., eastern time for electronic filing or for service by any means\" versus \"when the clerk\'s office is scheduled to close\" for everything else: this engine returns a DATE, and on that date the deadline expires at a different moment depending on how the paper is filed. BEFORE RELYING ON A FLORIDA DATE THAT FALLS DURING OR SHORTLY AFTER A DECLARED EMERGENCY, check the Supreme Court of Florida\'s administrative orders and the relevant clerk\'s own closure schedule.'
+  },
+  hi: {
+    complete: false,
+    direction: 'early',
+    summary: 'The Hawaiʻi calendar is the thirteen fixed and derivable holidays HRS Sec. 8-1 designates -- the section Haw. R. Civ. P. 6(a) names by number. THREE THINGS ARE DELIBERATELY OMITTED, each because including it could report LATE: the Sec. 8-2 weekend observance shift, which for 2026 means FRIDAY 3 JULY; the general election day, which Sec. 8-1 makes a holiday only \"in the county wherein the election is held\"; and any day proclaimed by the President or the Governor. Every omission makes this date EARLIER, never later. Check any Hawaiʻi date falling in early July or on a general election day by hand.',
+    detail: 'THE REFERENT IS EXPRESS, WHICH IS EXACTLY WHAT IDAHO\'S WAS NOT. Haw. R. Civ. P. 6(a) ends: \"As used in these rules, \'holiday\' shall mean any day designated as such pursuant to SECTION 8-1 of the Hawaiʻi Revised Statutes.\" No chain to trace and no competing list -- contrast Idaho, where the rule said \"legal holiday\" and stopped and three published lists disagreed. THIRTEEN DATES FOR 2026, and FOUR OF THEM EXIST ON NO OTHER CALENDAR IN THIS PLATFORM: PRINCE JONAH KUHIO KALANIANAOLE DAY (26 March), KING KAMEHAMEHA I DAY (11 June), STATEHOOD DAY (the third Friday in August), and GOOD FRIDAY -- Hawaiʻi is the only seeded state to make Good Friday a legal holiday, and the provision survived an Establishment Clause challenge (932 F.2d 765). Good Friday is DERIVED from the computus, not transcribed: 3 April in 2026. Equally, NO JUNETEENTH, NO Columbus or Indigenous Peoples\' Day, and NO day after Thanksgiving -- so a calendar copied from Nebraska would add three days Hawaiʻi does not have and miss four it does. OMISSION 1, AND IT IS A READING RATHER THAN AN OVERSIGHT: THE SEC. 8-2 SHIFT. HRS Sec. 8-2 provides that a state holiday falling on Sunday is observed the following Monday and one falling on Saturday is observed the PRECEDING FRIDAY. But Rule 6(a) incorporates SECTION 8-1 BY NUMBER, and Sec. 8-2\'s shifted day is designated pursuant to Sec. 8-2, not Sec. 8-1. Idaho and Nebraska both carry their shifts because in those states the shift clause sits in the SAME section the rule points at; Hawaiʻi\'s does not. Both readings are respectable and the direction decides: omitting the shifted day reports EARLIER, carrying it would roll a deadline off a possibly-countable day and report LATER. IN 2026 THIS AFFECTS EXACTLY ONE DATE -- 4 July is a Saturday, so Sec. 8-2 would make FRIDAY 3 JULY 2026 an observed holiday and this calendar does not carry it. A practitioner will treat that Friday as a court holiday. Check any date landing in that week by hand. No other Sec. 8-1 holiday falls on a Saturday or Sunday in 2026. OMISSION 2: THE GENERAL ELECTION DAY. Sec. 8-1 designates \"all election days, except primary and special election days, IN THE COUNTY WHEREIN THE ELECTION IS HELD\" -- county-scoped by its own words, and requiring a second statute to fix the date. Neither was resolved on a primary source here, so the day is omitted rather than computed. For an even-numbered year the general election falls in early November and would be statewide in practice; a Hawaiʻi deadline landing on a general election day needs checking. OMISSION 3: \"any day designated by proclamation by the President of the United States or by the governor as a holiday\" -- the open limb every jurisdiction has and none can model. NO BACKWARD ROW IS SEEDED, AND HAWAIʻI HAS THE LONGEST MOTION NOTICE ON THE PLATFORM. Rule 6(d) requires a written motion and notice of hearing to be served NOT LESS THAN 18 DAYS before the hearing, and opposing affidavits not less than 8 days before. Both clear the seven-day exclusion threshold, so that is not the obstacle -- Rule 6(a) simply rolls to \"the NEXT day\" and says nothing about a period measured before an event, the Mississippi, Idaho and Nebraska shape rather than New Mexico\'s. RULE 6 WAS AMENDED TWICE IN THE LAST YEAR -- \"further amended July 9, 2025, effective January 1, 2026; further corrected December 19, 2025; further amended May 21, 2026, effective July 1, 2026\" -- and Rule 36 once, effective 1 January 2026. The text encoded is the current one. WHAT those amendments changed was not determined: the judiciary publishes an amendment history and no redline, and guessing would be worse than recording the gap. 2026 ONLY: a later year is REFUSED rather than derived. Twelve of the thirteen dates would generate mechanically and Good Friday from the computus, which is precisely why generating is refused -- it would hide the Sec. 8-2, election-day and proclamation questions behind a confident answer.'
   }
 };
 
@@ -3166,6 +3208,41 @@ var SERVICE_EXTENSION_STANDARDS = {
   ne_6_1106_c: {
     label: 'Neb. Ct. R. Pldg. § 6-1106(c)',
     sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail';
+    }
+  },
+  // HAWAIʻI. Haw. R. Civ. P. 6(e), verbatim:
+  //
+  //   "Whenever a party has the right or is required to do some act or take
+  //    some proceedings within a prescribed period after the service of a
+  //    NOTICE OR OTHER PAPER upon the party and the notice or paper is served
+  //    upon the party BY MAIL, 2 DAYS shall be ADDED TO THE PRESCRIBED PERIOD."
+  //
+  // ★ TWO DAYS, NOT THREE, AND HAWAIʻI IS THE ONLY SEEDED JURISDICTION THAT
+  // SAYS TWO. Every FRCP-family state adds three; South Carolina and New Jersey
+  // add five; California and New York use per-method tables. An `add: 3` copied
+  // from any neighbour over-counts by a day on every mailed Hawaiʻi deadline,
+  // which is the direction that reports LATE. The amount lives on each seeded
+  // row as `add: 2` and a test asserts no row carries 3.
+  //
+  // MAIL ONLY -- no electronic limb, no commercial carrier, nothing else.
+  //
+  // "ADDED TO THE PRESCRIBED PERIOD" -> add_to_period_then_roll, the
+  // period-lengthening order, not the federal after-expiry one.
+  //
+  // AND IT HAS THE NOTICE LIMB, WHICH IS A THIRD ANSWER TO A QUESTION TWO
+  // STATES ALREADY SPLIT ON. Miss. R. Civ. P. 6(e) reaches "the service of a
+  // NOTICE or other paper" and its post-motion row therefore takes the days;
+  // I.R.C.P. 2.2(c) and Neb. Ct. R. Pldg. § 6-1106(c) reach only "after
+  // service" and theirs do not. Hawaiʻi's wording matches Mississippi's, so
+  // its Rule 12(a)(3)(A) row -- triggered by "notice of the court's action" --
+  // DOES take the two days. Four states, the same trigger words, two answers,
+  // decided every time by the time rule rather than the pleading rule.
+  hi_hrcp_6_e: {
+    label: 'Haw. R. Civ. P. 6(e)',
+    sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) {
       return method === 'mail';

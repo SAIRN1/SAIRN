@@ -213,7 +213,7 @@ check('the disclosure names the unavailability limb, the November Presidents\' D
 // ── Nothing else moved ───────────────────────────────────────────────────
 check('the coverage table gained nm and nothing else',
   Object.keys(engine.JURISDICTION_COVERAGE).sort(),
-  ['al', 'ar', 'fl', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nm', 'va', 'wi']);
+  ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nm', 'va', 'wi']);
 check('New Mexico adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // The two jurisdictions that also use an 11-day threshold must be untouched --
