@@ -40,6 +40,16 @@
       "claimed_at_epoch": 1788131844.648375,
       "status": "released",
       "released_at": "2026-08-30T23:45:35Z"
+    },
+    {
+      "id": "cody-1788170190",
+      "session": "cody",
+      "subject": "platform",
+      "task": "unreachable-feature sweep",
+      "claimed_at": "2026-08-31T09:56:30Z",
+      "claimed_at_epoch": 1788170190.8450701,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
