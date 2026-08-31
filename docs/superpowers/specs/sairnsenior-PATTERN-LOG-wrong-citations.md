@@ -16,6 +16,7 @@ log instead of counting from memory each time.
 |---|---|---|---|---|---|
 | 1 | 4 | **Tennessee** | 0720-11 | not the home care rule | scan of the fetched text |
 | 2 | 15 | **Maine** | `title22ch1666` | **Appointment of Receivers** — right host, wrong chapter | the page loaded and read wrong |
+| 2r | 31 | **Maine** *(resolution of #2)* | - | the chapter is **22 M.R.S. ch. 419, Home Health Services**; chs. 1622/1623 carry the non-medical tiers and ch. 1625 is repealed | reading the Title 22 chapter list |
 | 3 | 20 / 26 | **North Dakota** | NDCC 23-17.5 | **Health Care Provider Cooperative Agreements [Repealed]** | reading the chapter |
 | 4 | 25 | **South Dakota** | SDCL 34-12 | *Regulation of Hospitals and Related Institutions* — licenses institutions, **not home health** | reading the Title 34 chapter list |
 | 5 | 30 | **North Dakota** *(resolution of #3)* | — | the live chapter is **NDCC 23-17.3, Home Health Agency Licensure** | reading the Title 23 chapter index |

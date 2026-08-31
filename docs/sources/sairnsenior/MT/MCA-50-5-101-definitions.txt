@@ -1,0 +1,280 @@
+
+  50-5-101. Definitions, MCA
+Toggle navigation
+MCA Contents
+Search
+Help
+Part Contents
+Next Section 
+MCA Contents
+TITLE 50
+CHAPTER 5
+Part 1
+50-5-101 Definitions
+Montana Code Annotated 2025
+      TITLE 50. HEALTH AND SAFETY
+      CHAPTER 5. HOSPITALS AND RELATED FACILITIES
+      Part 1. General Provisions
+      Definitions
+50-5-101
+. 
+(Temporary)
+ Definitions.
+ As used in parts 1 through 3 of this chapter, unless the context clearly indicates otherwise, the following definitions apply:
+                (1)	"Accreditation" means a designation of approval.
+                (2)	"Activities of daily living" means tasks usually performed in the course of a normal day in a resident's life that include eating, walking, mobility, dressing, grooming, bathing, toileting, and transferring.
+                (3)	"Adult day-care center" means a facility, freestanding or connected to another health care facility, that provides adults, on a regularly scheduled basis, with the care necessary to meet the needs of daily living but that does not provide overnight care.
+                (4)	(a) "Adult foster care home" means a private home or other facility that offers, except as provided in 
+50-5-216
+, only light personal care or custodial care to four or fewer disabled adults or aged persons who are not related to the owner or manager of the home by blood, marriage, or adoption or who are not under the full guardianship of the owner or manager.
+                (b)	As used in this subsection (4), the following definitions apply:
+                (i)	"Aged person" means a person as defined by department rule as aged.
+                (ii)	"Custodial care" means providing a sheltered, family-type setting for an aged person or disabled adult so as to provide for the person's basic needs of food and shelter and to ensure that a specific person is available to meet those basic needs.
+                (iii)	"Disabled adult" means a person who is 18 years of age or older and who is defined by department rule as disabled.
+                (iv)	(A) "Light personal care" means assisting the aged person or disabled adult in accomplishing such personal hygiene tasks as bathing, dressing, and hair grooming and supervision of prescription medicine administration.
+                (B)	The term does not include the administration of prescription medications.
+                (5)	"Affected person" means an applicant for a certificate of need, a long-term care facility located in the geographic area affected by the application, an agency that establishes rates for long-term care facilities, or a third-party payer who reimburses long-term care facilities in the area affected by the proposal.
+                (6)	"Assisted living facility" means a congregate residential setting that provides or coordinates personal care, 24-hour supervision and assistance, both scheduled and unscheduled, and activities and health-related services.
+                (7)	"Capital expenditure" means:
+                (a)	an expenditure made by or on behalf of a long-term care facility that, under generally accepted accounting principles, is not properly chargeable as an expense of operation and maintenance; or
+                (b)	a lease, donation, or comparable arrangement that would be a capital expenditure if money or any other property of value had changed hands.
+                (8)	"Certificate of need" means a written authorization by the department for a person to proceed with a proposal subject to 
+50-5-301
+.
+                (9)	"Clinical laboratory" means a facility for the microbiological, serological, chemical, hematological, radiobioassay, cytological, immunohematological, pathological, or other examination of materials derived from the human body for the purpose of providing information for the diagnosis, prevention, or treatment of a disease or assessment of a medical condition.
+                (10)	"Comparative review" means a joint review of two or more certificate of need applications that are determined by the department to be competitive in that the granting of a certificate of need to one of the applicants would substantially prejudice the department's review of the other applications.
+                (11)	"Congregate" means the provision of group services designed especially for elderly or disabled persons who require supportive services and housing.
+                (12)	"Construction" means the physical erection of a new health care facility and any stage of the physical erection, including groundbreaking, or remodeling, replacement, or renovation of:
+                (a)	an existing health care facility; or
+                (b)	a long-term care facility as defined in 
+50-5-301
+.
+                (13)	"Critical access hospital" means a facility that is located in a rural area, as defined in federal regulations adopted by the U.S. centers for medicare and medicaid services, and that has been designated by the department as a critical access hospital pursuant to 
+50-5-233
+.
+                (14)	"Department" means the department of public health and human services provided for in 
+2-15-2201
+.
+                (15)	"Eating disorder center" means a facility that specializes in the treatment of eating disorders.
+                (16)	"End-stage renal dialysis facility" means a facility that specializes in the treatment of kidney diseases and includes freestanding hemodialysis units.
+                (17)	"Experimental treatment center" means a facility that specializes in providing experimental treatments pursuant to Title 50, chapter 12, part 1.
+                (18)	"Federal acts" means federal statutes for the construction of health care facilities.
+                (19)	"Governmental unit" means the state, a state agency, a county, municipality, or political subdivision of the state, or an agency of a political subdivision.
+                (20)	(a) "Health care facility" or "facility" means all or a portion of an institution, building, or agency, private or public, excluding federal facilities, whether organized for profit or not, that is used, operated, or designed to provide health services, medical treatment, or nursing, rehabilitative, or preventive care to any individual. The term includes abortion clinics as defined in 
+50-20-901
+, critical access hospitals, eating disorder centers, end-stage renal dialysis facilities, experimental treatment centers, home health agencies, home infusion therapy agencies, hospices, hospitals, infirmaries, long-term care facilities, intermediate care facilities for the developmentally disabled, mental health centers, outpatient centers for primary care, outpatient centers for surgical services, rehabilitation facilities, residential care facilities, residential treatment facilities, residential treatment centers, rural emergency hospitals, and substance use disorder facilities.
+                (b)	The term does not include offices of private physicians, dentists, or other physical or mental health care workers regulated under Title 37, including licensed addiction counselors.
+                (21)	"Home health agency" means a public agency or private organization or subdivision of the agency or organization that is engaged in providing home health services to individuals in the places where they live. Home health services must include the services of a licensed registered nurse and at least one other therapeutic service and may include additional support services.
+                (22)	"Home infusion therapy agency" means a health care facility that provides home infusion therapy services.
+                (23)	"Home infusion therapy services" means the preparation, administration, or furnishing of parenteral medications or parenteral or enteral nutritional services to an individual in that individual's residence. The services include an educational component for the patient, the patient's caregiver, or the patient's family member.
+                (24)	"Hospice" means a coordinated program of home and inpatient health care that provides or coordinates palliative and supportive care to meet the needs of a terminally ill patient and the patient's family arising out of physical, psychological, spiritual, social, and economic stresses experienced during the final stages of illness and dying and that includes formal bereavement programs as an essential component. The term includes:
+                (a)	an inpatient hospice facility, which is a facility managed directly by a medicare-certified hospice that meets all medicare certification regulations for freestanding inpatient hospice facilities; and
+                (b)	a residential hospice facility, which is a facility managed directly by a licensed hospice program that can house three or more hospice patients.
+                (25)	(a) "Hospital" means a facility providing, by or under the supervision of licensed physicians, services for medical diagnosis, treatment, rehabilitation, and care of injured, disabled, or sick individuals. Except as otherwise provided by law, services provided must include medical personnel available to provide emergency care onsite 24 hours a day and may include any other service allowed by state licensing authority. A hospital has an organized medical staff that is on call and available within 20 minutes, 24 hours a day, 7 days a week, and provides 24-hour nursing care by licensed registered nurses. The term includes:
+                (i)	hospitals specializing in providing health services for psychiatric, developmentally disabled, and tubercular patients; and
+                (ii)	specialty hospitals.
+                (b)	The term does not include critical access hospitals or rural emergency hospitals.
+                (c)	The emergency care requirement for a hospital that specializes in providing health services for psychiatric, developmentally disabled, or tubercular patients is satisfied if the emergency care is provided within the scope of the specialized services provided by the hospital and by providing 24-hour nursing care by licensed registered nurses.
+                (26)	"Infirmary" means a facility located in a university, college, government institution, or industry for the treatment of the sick or injured, with the following subdefinitions:
+                (a)	an "infirmary--A" provides outpatient and inpatient care;
+                (b)	an "infirmary--B" provides outpatient care only.
+                (27)	(a) "Intermediate care facility for the developmentally disabled" means a facility or part of a facility that provides intermediate developmental disability care for two or more persons.
+                (b)	The term does not include community homes for persons with developmental disabilities that are licensed under 
+53-20-305
+ or community homes for persons with severe disabilities that are licensed under 
+52-4-203
+.
+                (28)	"Intermediate developmental disability care" means the provision of intermediate nursing care services, health-related services, and social services for persons with a developmental disability, as defined in 
+53-20-102
+, or for persons with related problems.
+                (29)	"Intermediate nursing care" means the provision of nursing care services, health-related services, and social services under the supervision of a licensed nurse to patients not requiring 24-hour nursing care.
+                (30)	"Licensed health care professional" means a licensed physician, physician assistant, advanced practice registered nurse, or registered nurse who is practicing within the scope of the license issued by the department of labor and industry.
+                (31)	(a) "Long-term care facility" means a facility or part of a facility that provides skilled nursing care, residential care, intermediate nursing care, or intermediate developmental disability care to a total of two or more individuals or that provides personal care.
+                (b)	The term does not include community homes for persons with developmental disabilities licensed under 
+53-20-305
+; community homes for persons with severe disabilities, licensed under 
+52-4-203
+; youth care facilities, licensed under 
+52-2-622
+; hotels, motels, boardinghouses, roominghouses, or similar accommodations providing for transients, students, or individuals who do not require institutional health care; or correctional facilities operating under the authority of the department of corrections.
+                (32)	"Mental health center" means a facility providing services for the prevention or diagnosis of mental illness, the care and treatment of mentally ill patients, the rehabilitation of mentally ill individuals, or any combination of these services.
+                (33)	"Nonprofit health care facility" means a health care facility owned or operated by one or more nonprofit corporations or associations.
+                (34)	"Offer" means the representation by a health care facility that it can provide specific health services.
+                (35)	(a) "Outdoor behavioral program" means a program that provides treatment, rehabilitation, and prevention for behavioral problems that endanger the health, interpersonal relationships, or educational functions of a youth and that:
+                (i)	serves either adjudicated or nonadjudicated youth;
+                (ii)	charges a fee for its services; and
+                (iii)	provides all or part of its services in the outdoors.
+                (b)	"Outdoor behavioral program" does not include recreational programs such as boy scouts, girl scouts, 4-H clubs, or other similar organizations.
+                (36)	"Outpatient center for primary care" means a facility that provides, under the direction of a licensed physician, either diagnosis or treatment, or both, to ambulatory patients and that is not an outpatient center for surgical services.
+                (37)	"Outpatient center for surgical services" means a clinic, infirmary, or other institution or organization that is specifically designed and operated to provide surgical services to patients not requiring hospitalization and that may include recovery care beds.
+                (38)	"Patient" means an individual obtaining services, including skilled nursing care, from a health care facility.
+                (39)	"Person" means an individual, firm, partnership, association, organization, agency, institution, corporation, trust, estate, or governmental unit, whether organized for profit or not.
+                (40)	"Personal care" means the provision of services and care for residents who need some assistance in performing the activities of daily living.
+                (41)	"Practitioner" means an individual licensed by the department of labor and industry who has assessment, admission, and prescription authority.
+                (42)	"Recovery care bed" means, except as provided in 
+50-5-235
+, a bed occupied for less than 24 hours by a patient recovering from surgery or other treatment.
+                (43)	"Rehabilitation facility" means a facility that is operated for the primary purpose of assisting in the rehabilitation of disabled individuals by providing comprehensive medical evaluations and services, psychological and social services, or vocational evaluation and training or any combination of these services and in which the major portion of the services is furnished within the facility.
+                (44)	"Resident" means an individual who is in a long-term care facility or in a residential care facility.
+                (45)	"Residential care facility" means an adult day-care center, an adult foster care home, an assisted living facility, or a retirement home.
+                (46)	"Residential psychiatric care" means active psychiatric treatment provided in a residential treatment facility to psychiatrically impaired individuals with persistent patterns of emotional, psychological, or behavioral dysfunction of such severity as to require 24-hour supervised care to adequately treat or remedy the individual's condition. Residential psychiatric care must be individualized and designed to achieve the patient's discharge to less restrictive levels of care at the earliest possible time.
+                (47)	"Residential treatment center" means a facility that offers primary mental health services, assessment, counseling, skilled nursing services, medication management, co-occurring substance use disorder treatment, and behavioral health treatment in a residential setting 24 hours a day to youth under 19 years of age whose mental health needs are not met in other settings.
+                (48)	"Residential treatment facility" means a facility operated for the primary purpose of providing residential psychiatric care to individuals under 21 years of age.
+                (49)	"Retirement home" means a building or buildings in which separate living accommodations are rented or leased to individuals who use those accommodations as their primary residence.
+                (50)	"Rural emergency hospital" means a facility defined in 42 U.S.C. 1395x(kkk)(2) that is designated by the department as a rural emergency hospital in accordance with 
+50-5-234
+.
+                (51)	"Skilled nursing care" means the provision of nursing care services, health-related services, and social services under the supervision of a licensed registered nurse on a 24-hour basis.
+                (52)	(a) "Specialty hospital" means a subclass of hospital that is exclusively engaged in the diagnosis, care, or treatment of one or more of the following categories:
+                (i)	patients with a cardiac condition;
+                (ii)	patients with an orthopedic condition;
+                (iii)	patients undergoing a surgical procedure; or
+                (iv)	patients treated for cancer-related diseases and receiving oncology services.
+                (b)	For purposes of this subsection (52), a specialty hospital may provide other services for medical diagnosis, treatment, rehabilitation, and care of injured, disabled, or sick individuals as otherwise provided by law if the care encompasses 35% or less of the hospital services.
+                (c)	The term "specialty hospital" does not include:
+                (i)	psychiatric hospitals;
+                (ii)	rehabilitation hospitals;
+                (iii)	children's hospitals;
+                (iv)	long-term care hospitals;
+                (v)	critical access hospitals; or
+                (vi)	rural emergency hospitals.
+                (53)	"State long-term care facilities plan" means the plan prepared by the department to project the need for long-term care facilities within Montana and approved by the governor and a statewide health coordinating council appointed by the director of the department.
+                (54)	"Substance use disorder facility" means a facility whose function is the treatment, rehabilitation, and prevention of the use of any chemical substance, including alcohol, that creates behavioral or health problems and endangers the physical or mental health, interpersonal relationships, or economic function of an individual or the public health, welfare, or safety.
+                (55)	"Swing bed" means a bed approved pursuant to 42 U.S.C. 1395tt to be used to provide either acute care or extended skilled nursing care to a patient.
+50-5-101
+. 
+(Effective January 1, 2027)
+ Definitions.
+ As used in parts 1 through 3 of this chapter, unless the context clearly indicates otherwise, the following definitions apply:
+                (1)	"Accreditation" means a designation of approval.
+                (2)	"Activities of daily living" means tasks usually performed in the course of a normal day in a resident's life that include eating, walking, mobility, dressing, grooming, bathing, toileting, and transferring.
+                (3)	"Adult day-care center" means a facility, freestanding or connected to another health care facility, that provides adults, on a regularly scheduled basis, with the care necessary to meet the needs of daily living but that does not provide overnight care.
+                (4)	(a) "Adult foster care home" means a private home or other facility that offers, except as provided in 
+50-5-216
+, only light personal care or custodial care to four or fewer disabled adults or aged persons who are not related to the owner or manager of the home by blood, marriage, or adoption or who are not under the full guardianship of the owner or manager.
+                (b)	As used in this subsection (4), the following definitions apply:
+                (i)	"Aged person" means a person as defined by department rule as aged.
+                (ii)	"Custodial care" means providing a sheltered, family-type setting for an aged person or disabled adult so as to provide for the person's basic needs of food and shelter and to ensure that a specific person is available to meet those basic needs.
+                (iii)	"Disabled adult" means a person who is 18 years of age or older and who is defined by department rule as disabled.
+                (iv)	(A) "Light personal care" means assisting the aged person or disabled adult in accomplishing such personal hygiene tasks as bathing, dressing, and hair grooming and supervision of prescription medicine administration.
+                (B)	The term does not include the administration of prescription medications.
+                (5)	"Affected person" means an applicant for a certificate of need, a long-term care facility located in the geographic area affected by the application, an agency that establishes rates for long-term care facilities, or a third-party payer who reimburses long-term care facilities in the area affected by the proposal.
+                (6)	"Assisted living facility" means a congregate residential setting that provides or coordinates personal care, 24-hour supervision and assistance, both scheduled and unscheduled, and activities and health-related services.
+                (7)	"Capital expenditure" means:
+                (a)	an expenditure made by or on behalf of a long-term care facility that, under generally accepted accounting principles, is not properly chargeable as an expense of operation and maintenance; or
+                (b)	a lease, donation, or comparable arrangement that would be a capital expenditure if money or any other property of value had changed hands.
+                (8)	"Certificate of need" means a written authorization by the department for a person to proceed with a proposal subject to 
+50-5-301
+.
+                (9)	"Clinical laboratory" means a facility for the microbiological, serological, chemical, hematological, radiobioassay, cytological, immunohematological, pathological, or other examination of materials derived from the human body for the purpose of providing information for the diagnosis, prevention, or treatment of a disease or assessment of a medical condition.
+                (10)	"Community benefit" is the federally reported community benefit calculated using the net community benefit expenses, net community building expenses, and total bad debt and medicare shortfall amounts listed by the nonprofit hospital on internal revenue service form 990 schedule H.
+                (11)	"Comparative review" means a joint review of two or more certificate of need applications that are determined by the department to be competitive in that the granting of a certificate of need to one of the applicants would substantially prejudice the department's review of the other applications.
+                (12)	"Congregate" means the provision of group services designed especially for elderly or disabled persons who require supportive services and housing.
+                (13)	"Construction" means the physical erection of a new health care facility and any stage of the physical erection, including groundbreaking, or remodeling, replacement, or renovation of:
+                (a)	an existing health care facility; or
+                (b)	a long-term care facility as defined in 
+50-5-301
+.
+                (14)	"Critical access hospital" means a facility that is located in a rural area, as defined in federal regulations adopted by the U.S. centers for medicare and medicaid services, and that has been designated by the department as a critical access hospital pursuant to 
+50-5-233
+.
+                (15)	"Department" means the department of public health and human services provided for in 
+2-15-2201
+.
+                (16)	"Eating disorder center" means a facility that specializes in the treatment of eating disorders.
+                (17)	"End-stage renal dialysis facility" means a facility that specializes in the treatment of kidney diseases and includes freestanding hemodialysis units.
+                (18)	"Experimental treatment center" means a facility that specializes in providing experimental treatments pursuant to Title 50, chapter 12, part 1.
+                (19)	"Federal acts" means federal statutes for the construction of health care facilities.
+                (20)	"Governmental unit" means the state, a state agency, a county, municipality, or political subdivision of the state, or an agency of a political subdivision.
+                (21)	(a) "Health care facility" or "facility" means all or a portion of an institution, building, or agency, private or public, excluding federal facilities, whether organized for profit or not, that is used, operated, or designed to provide health services, medical treatment, or nursing, rehabilitative, or preventive care to any individual. The term includes abortion clinics as defined in 
+50-20-901
+, critical access hospitals, eating disorder centers, end-stage renal dialysis facilities, experimental treatment centers, home health agencies, home infusion therapy agencies, hospices, hospitals, infirmaries, long-term care facilities, intermediate care facilities for the developmentally disabled, mental health centers, outpatient centers for primary care, outpatient centers for surgical services, rehabilitation facilities, residential care facilities, residential treatment facilities, residential treatment centers, rural emergency hospitals, and substance use disorder facilities.
+                (b)	The term does not include offices of private physicians, dentists, or other physical or mental health care workers regulated under Title 37, including licensed addiction counselors.
+                (22)	"Home health agency" means a public agency or private organization or subdivision of the agency or organization that is engaged in providing home health services to individuals in the places where they live. Home health services must include the services of a licensed registered nurse and at least one other therapeutic service and may include additional support services.
+                (23)	"Home infusion therapy agency" means a health care facility that provides home infusion therapy services.
+                (24)	"Home infusion therapy services" means the preparation, administration, or furnishing of parenteral medications or parenteral or enteral nutritional services to an individual in that individual's residence. The services include an educational component for the patient, the patient's caregiver, or the patient's family member.
+                (25)	"Hospice" means a coordinated program of home and inpatient health care that provides or coordinates palliative and supportive care to meet the needs of a terminally ill patient and the patient's family arising out of physical, psychological, spiritual, social, and economic stresses experienced during the final stages of illness and dying and that includes formal bereavement programs as an essential component. The term includes:
+                (a)	an inpatient hospice facility, which is a facility managed directly by a medicare-certified hospice that meets all medicare certification regulations for freestanding inpatient hospice facilities; and
+                (b)	a residential hospice facility, which is a facility managed directly by a licensed hospice program that can house three or more hospice patients.
+                (26)	(a) "Hospital" means a facility providing, by or under the supervision of licensed physicians, services for medical diagnosis, treatment, rehabilitation, and care of injured, disabled, or sick individuals. Except as otherwise provided by law, services provided must include medical personnel available to provide emergency care onsite 24 hours a day and may include any other service allowed by state licensing authority. A hospital has an organized medical staff that is on call and available within 20 minutes, 24 hours a day, 7 days a week, and provides 24-hour nursing care by licensed registered nurses. The term includes:
+                (i)	hospitals specializing in providing health services for psychiatric, developmentally disabled, and tubercular patients; and
+                (ii)	specialty hospitals.
+                (b)	The term does not include critical access hospitals or rural emergency hospitals.
+                (c)	The emergency care requirement for a hospital that specializes in providing health services for psychiatric, developmentally disabled, or tubercular patients is satisfied if the emergency care is provided within the scope of the specialized services provided by the hospital and by providing 24-hour nursing care by licensed registered nurses.
+                (27)	"Infirmary" means a facility located in a university, college, government institution, or industry for the treatment of the sick or injured, with the following subdefinitions:
+                (a)	an "infirmary--A" provides outpatient and inpatient care;
+                (b)	an "infirmary--B" provides outpatient care only.
+                (28)	(a) "Intermediate care facility for the developmentally disabled" means a facility or part of a facility that provides intermediate developmental disability care for two or more persons.
+                (b)	The term does not include community homes for persons with developmental disabilities that are licensed under 
+53-20-305
+ or community homes for persons with severe disabilities that are licensed under 
+52-4-203
+.
+                (29)	"Intermediate developmental disability care" means the provision of intermediate nursing care services, health-related services, and social services for persons with a developmental disability, as defined in 
+53-20-102
+, or for persons with related problems.
+                (30)	"Intermediate nursing care" means the provision of nursing care services, health-related services, and social services under the supervision of a licensed nurse to patients not requiring 24-hour nursing care.
+                (31)	"Licensed health care professional" means a licensed physician, physician assistant, advanced practice registered nurse, or registered nurse who is practicing within the scope of the license issued by the department of labor and industry.
+                (32)	(a) "Long-term care facility" means a facility or part of a facility that provides skilled nursing care, residential care, intermediate nursing care, or intermediate developmental disability care to a total of two or more individuals or that provides personal care.
+                (b)	The term does not include community homes for persons with developmental disabilities licensed under 
+53-20-305
+; community homes for persons with severe disabilities, licensed under 
+52-4-203
+; youth care facilities, licensed under 
+52-2-622
+; hotels, motels, boardinghouses, roominghouses, or similar accommodations providing for transients, students, or individuals who do not require institutional health care; or correctional facilities operating under the authority of the department of corrections.
+                (33)	"Mental health center" means a facility providing services for the prevention or diagnosis of mental illness, the care and treatment of mentally ill patients, the rehabilitation of mentally ill individuals, or any combination of these services.
+                (34)	"Nonprofit health care facility" means a health care facility owned or operated by one or more nonprofit corporations or associations.
+                (35)	(a) "Nonprofit hospital" means a hospital owned or operated by one or more nonprofit corporations or associations.
+                (b)	The term does not include specialty hospitals or hospitals specializing in providing health services for psychiatric, developmentally disabled, and tubercular patients.
+                (36)	"Offer" means the representation by a health care facility that it can provide specific health services.
+                (37)	(a) "Outdoor behavioral program" means a program that provides treatment, rehabilitation, and prevention for behavioral problems that endanger the health, interpersonal relationships, or educational functions of a youth and that:
+                (i)	serves either adjudicated or nonadjudicated youth;
+                (ii)	charges a fee for its services; and
+                (iii)	provides all or part of its services in the outdoors.
+                (b)	"Outdoor behavioral program" does not include recreational programs such as boy scouts, girl scouts, 4-H clubs, or other similar organizations.
+                (38)	"Outpatient center for primary care" means a facility that provides, under the direction of a licensed physician, either diagnosis or treatment, or both, to ambulatory patients and that is not an outpatient center for surgical services.
+                (39)	"Outpatient center for surgical services" means a clinic, infirmary, or other institution or organization that is specifically designed and operated to provide surgical services to patients not requiring hospitalization and that may include recovery care beds.
+                (40)	"Patient" means an individual obtaining services, including skilled nursing care, from a health care facility.
+                (41)	"Person" means an individual, firm, partnership, association, organization, agency, institution, corporation, trust, estate, or governmental unit, whether organized for profit or not.
+                (42)	"Personal care" means the provision of services and care for residents who need some assistance in performing the activities of daily living.
+                (43)	"Potential tax liability" means a statement indicating the amount of property taxes a nonprofit hospital would have owed on its real property in the prior tax year if the nonprofit hospital had not been exempt from taxation under 
+15-6-201
+.
+                (44)	"Practitioner" means an individual licensed by the department of labor and industry who has assessment, admission, and prescription authority.
+                (45)	"Recovery care bed" means, except as provided in 
+50-5-235
+, a bed occupied for less than 24 hours by a patient recovering from surgery or other treatment.
+                (46)	"Rehabilitation facility" means a facility that is operated for the primary purpose of assisting in the rehabilitation of disabled individuals by providing comprehensive medical evaluations and services, psychological and social services, or vocational evaluation and training or any combination of these services and in which the major portion of the services is furnished within the facility.
+                (47)	"Resident" means an individual who is in a long-term care facility or in a residential care facility.
+                (48)	"Residential care facility" means an adult day-care center, an adult foster care home, an assisted living facility, or a retirement home.
+                (49)	"Residential psychiatric care" means active psychiatric treatment provided in a residential treatment facility to psychiatrically impaired individuals with persistent patterns of emotional, psychological, or behavioral dysfunction of such severity as to require 24-hour supervised care to adequately treat or remedy the individual's condition. Residential psychiatric care must be individualized and designed to achieve the patient's discharge to less restrictive levels of care at the earliest possible time.
+                (50)	"Residential treatment center" means a facility that offers primary mental health services, assessment, counseling, skilled nursing services, medication management, co-occurring substance use disorder treatment, and behavioral health treatment in a residential setting 24 hours a day to youth under 19 years of age whose mental health needs are not met in other settings.
+                (51)	"Residential treatment facility" means a facility operated for the primary purpose of providing residential psychiatric care to individuals under 21 years of age.
+                (52)	"Retirement home" means a building or buildings in which separate living accommodations are rented or leased to individuals who use those accommodations as their primary residence.
+                (53)	"Rural emergency hospital" means a facility defined in 42 U.S.C. 1395x(kkk)(2) that is designated by the department as a rural emergency hospital in accordance with 
+50-5-234
+.
+                (54)	"Skilled nursing care" means the provision of nursing care services, health-related services, and social services under the supervision of a licensed registered nurse on a 24-hour basis.
+                (55)	(a) "Specialty hospital" means a subclass of hospital that is exclusively engaged in the diagnosis, care, or treatment of one or more of the following categories:
+                (i)	patients with a cardiac condition;
+                (ii)	patients with an orthopedic condition;
+                (iii)	patients undergoing a surgical procedure; or
+                (iv)	patients treated for cancer-related diseases and receiving oncology services.
+                (b)	For purposes of this subsection (55), a specialty hospital may provide other services for medical diagnosis, treatment, rehabilitation, and care of injured, disabled, or sick individuals as otherwise provided by law if the care encompasses 35% or less of the hospital services.
+                (c)	The term "specialty hospital" does not include:
+                (i)	psychiatric hospitals;
+                (ii)	rehabilitation hospitals;
+                (iii)	children's hospitals;
+                (iv)	long-term care hospitals;
+                (v)	critical access hospitals; or
+                (vi)	rural emergency hospitals.
+                (56)	"State long-term care facilities plan" means the plan prepared by the department to project the need for long-term care facilities within Montana and approved by the governor and a statewide health coordinating council appointed by the director of the department.
+                (57)	"Substance use disorder facility" means a facility whose function is the treatment, rehabilitation, and prevention of the use of any chemical substance, including alcohol, that creates behavioral or health problems and endangers the physical or mental health, interpersonal relationships, or economic function of an individual or the public health, welfare, or safety.
+                (58)	"Swing bed" means a bed approved pursuant to 42 U.S.C. 1395tt to be used to provide either acute care or extended skilled nursing care to a patient.
+History:
+ Ap. p. Sec. 2, Ch. 197, L. 1967; amd. Sec. 28, Ch. 349, L. 1974; Sec. 69-4102, R.C.M. 1947; Ap. p. Sec. 159, Ch. 197, L. 1967; amd. Sec. 1, Ch. 290, L. 1969; amd. Sec. 1, Ch. 197, L. 1971; amd. Sec. 1, Ch. 448, L. 1973; amd. Sec. 1, Ch. 150, L. 1974; amd. Sec. 1, Ch. 447, L. 1975; amd. Sec. 22, Ch. 187, L. 1977; R.C.M. 1947, 69-4102(1), 69-5201; amd. Sec. 1, Ch. 347, L. 1979; amd. Sec. 1, Ch. 432, L. 1981; amd. Sec. 1, Ch. 433, L. 1981; amd. Sec. 1, Ch. 324, L. 1983; amd. Secs. 1, 13, Ch. 329, L. 1983; amd. Sec. 7, Ch. 597, L. 1983; amd. Sec. 1, Ch. 641, L. 1983; amd. Sec. 9, Ch. 713, L. 1985; amd. Sec. 108, Ch. 370, L. 1987; amd. Sec. 1, Ch. 450, L. 1987; amd. Sec. 1, Ch. 477, L. 1987; amd. Sec. 13, Ch. 330, L. 1989; amd. Sec. 1, Ch. 616, L. 1989; amd. Sec. 1, Ch. 262, L. 1991; amd. Sec. 1, Ch. 764, L. 1991; amd. Sec. 1, Ch. 151, L. 1993; amd. Sec. 1, Ch. 590, L. 1993; amd. Sec. 21, Ch. 255, L. 1995; amd. Sec. 1, Ch. 366, L. 1995; amd. Sec. 2, Ch. 398, L. 1995; amd. Sec. 92, Ch. 418, L. 1995; amd. Sec. 250, Ch. 546, L. 1995; amd. Sec. 207, Ch. 42, L. 1997; amd. Sec. 3, Ch. 93, L. 1997; amd. Sec. 1, Ch. 99, L. 1997; amd. Sec. 2, Ch. 171, L. 1997; amd. Sec. 3, Ch. 188, L. 1997; amd. Sec. 4, Ch. 98, L. 1999; amd. Sec. 1, Ch. 133, L. 1999; amd. Sec. 4, Ch. 192, L. 2001; amd. Sec. 1, Ch. 366, L. 2001; amd. Sec. 2, Ch. 54, L. 2003; amd. Sec. 99, Ch. 114, L. 2003; amd. Sec. 1, Ch. 348, L. 2003; amd. Sec. 1, Ch. 401, L. 2003; amd. Sec. 1, Ch. 403, L. 2003; amd. Sec. 1, Ch. 365, L. 2005; amd. Sec. 23, Ch. 519, L. 2005; amd. Sec. 1, Ch. 466, L. 2007; amd. Sec. 83, Ch. 2, L. 2009; amd. Sec. 1, Ch. 456, L. 2009; amd. Sec. 1, Ch. 157, L. 2013; amd. Sec. 2, Ch. 345, L. 2017; amd. Sec. 27, Ch. 339, L. 2021; amd. Sec. 1, Ch. 477, L. 2021; amd. Sec. 2, Ch. 131, L. 2023; amd. Sec. 5, Ch. 492, L. 2023; amd. Sec. 5, Ch. 602, L. 2023; amd. Sec. 4, Ch. 364, L. 2025; amd. Sec. 3, Ch. 414, L. 2025; amd. Sec. 5, Ch. 621, L. 2025; amd. Sec. 5, Ch. 627, L. 2025.
+Disclaimer:
+ The Internet version of the
+                    Montana Code Annotated is provided as a research tool to users of the Code. In case of
+                    inconsistencies resulting from omissions or other errors, the printed version will prevail.
