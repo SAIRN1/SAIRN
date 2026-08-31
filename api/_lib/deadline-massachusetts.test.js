@@ -238,15 +238,15 @@ check('wv_rcp_6e is still the only contested standard',
 // jurisdiction, so an accidental or copy-pasted entry shows up here as a
 // failure. Add a jurisdiction to this list only when its gap was actually
 // reasoned about, never to make the test pass.
-check('exactly Alabama, Arkansas, Florida, Hawaii, Idaho, Kansas, Maryland, Wisconsin, Massachusetts, Minnesota, Mississippi, Missouri, Nebraska, New Mexico and Virginia declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nm', 'va', 'wi']);
+check('exactly Alabama, Arkansas, Florida, Hawaii, Idaho, Kansas, Maryland, Wisconsin, Massachusetts, Minnesota, Mississippi, Missouri, Nebraska, New Hampshire, New Mexico and Virginia declare a coverage gap',
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'va', 'wi']);
 // Each entry must be its OWN text, not another state's copied across -- the
 // failure mode this pins down is a disclosure that names the wrong state.
 check('each coverage summary names its own jurisdiction',
-  ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nm', 'va', 'wi'].filter(k => {
+  ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'va', 'wi'].filter(k => {
     const s = engine.JURISDICTION_COVERAGE[k].summary;
-    return { al: /Alabama/, ar: /Arkansas/, fl: /Florida/, hi: /Hawai/, id: /Idaho/, ks: /Kansas/, ma: /Massachusetts|Suffolk/, md: /Maryland/, mn: /Minnesota|Indigenous/, mo: /Missouri/, ms: /Mississippi/, ne: /Nebraska/, nm: /New Mexico/, va: /Virginia/, wi: /Wisconsin/ }[k].test(s);
-  }), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nm', 'va', 'wi']);
+    return { al: /Alabama/, ar: /Arkansas/, fl: /Florida/, hi: /Hawai/, id: /Idaho/, ks: /Kansas/, ma: /Massachusetts|Suffolk/, md: /Maryland/, mn: /Minnesota|Indigenous/, mo: /Missouri/, ms: /Mississippi/, ne: /Nebraska/, nh: /New Hampshire/, nm: /New Mexico/, va: /Virginia/, wi: /Wisconsin/ }[k].test(s);
+  }), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'va', 'wi']);
 // A pre-existing jurisdiction still computes what it computed, through the
 // same standards table the two new entries were added to.
 {

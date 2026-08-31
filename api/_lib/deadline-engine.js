@@ -1732,7 +1732,73 @@ var COMPUTATION_STANDARDS = {
   hi_hrcp_6: { label: 'Haw. R. Civ. P. 6', impl: 'frcp_6a',
     short_period_exclusion_days: 7,
     base_period_suffix: '(a)', months_years_suffix: '(a)',
-    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' },
+  // NEW HAMPSHIRE. N.H. Super. Ct. R. 2, quoted here IN FULL because it is the
+  // shortest computation rule on this platform and the quote is the argument:
+  //
+  //   "In computing any period of time prescribed or allowed by these rules, by
+  //    order of court, or by applicable law, the day of the act, event, or
+  //    default after which the designated period of time begins to run shall
+  //    not be included. The last day of the period so computed shall be
+  //    included, unless it is a Saturday, Sunday, or a legal holiday, in which
+  //    event the period shall extend until the end of the next day that is not
+  //    a Saturday, Sunday, or a legal holiday AS SPECIFIED IN RSA CH. 288, AS
+  //    AMENDED."
+  //
+  // Two sentences. That is the whole rule.
+  //
+  // NO SHORT-PERIOD EXCLUSION AT ANY LENGTH -- there is no sentence excluding
+  // intermediate Saturdays, Sundays or holidays from a short period, so every
+  // period counts straight through. Joins MN/UT/NV/KS/ID/NE. It matters more
+  // here than the tally suggests: FOUR seeded New Hampshire rows are TEN days,
+  // which Arkansas's 14-day threshold and Alabama's and Wisconsin's 11 would
+  // all have excluded weekends from. The field is left undefined rather than
+  // set to something small, and a test asserts that.
+  //
+  // ★ THE HOLIDAY REFERENT NAMES A CHAPTER, NOT A SECTION, AND THAT DISTINCTION
+  // ALREADY DECIDED A DATE ONCE. Haw. R. Civ. P. 6(a) named HRS Sec. 8-1 by
+  // number, so HRS Sec. 8-2's weekend observance sat OUTSIDE the reference and
+  // Hawaiʻi's calendar omits the shifted Friday as a reading. Rule 2 reaches
+  // "RSA CH. 288", so RSA 288:2 is INSIDE the reference and is carried. It then
+  // turns out not to matter in 2026, for a reason worth stating: RSA 288:2 is a
+  // SUNDAY RULE ONLY -- "When any holiday listed in RSA 288:1 falls on Sunday,
+  // the following day shall be observed as a holiday" -- with no Saturday limb
+  // at all. 4 July 2026 is a Saturday and there is no Friday 3 July observance
+  // here, not by interpretation but because no clause could produce one. Idaho
+  // and Nebraska both carry 3 July 2026 from Saturday-shift clauses inside the
+  // very sections their rules cite. Four jurisdictions, three reasons, one date.
+  //
+  // NO SUBDIVISIONS, SO EVERY SUFFIX IS EMPTY RATHER THAN GUESSED. Rule 2 is a
+  // single unlettered, unnumbered paragraph -- the Nebraska position.
+  //
+  // ★ AND THERE IS NO SERVICE-EXTENSION STANDARD TO PAIR WITH THIS ONE. New
+  // Hampshire is the FIRST seeded jurisdiction with no mailed-service extension
+  // of any kind: the phrases "shall be added", "additional days" and
+  // "prescribed period" do not occur anywhere in the civil rules or in the
+  // Supplemental Rules for Electronic Filing. The reason is structural rather
+  // than an omission -- New Hampshire runs its periods from FILING and from THE
+  // DATE ON THE CLERK'S NOTICE where the FRCP family runs them from SERVICE, so
+  // there is nothing to compensate for. Rule 12(e) and Rule 43 each name the
+  // delivery method in the same sentence and then decline to let it matter. Do
+  // NOT add an entry to SERVICE_EXTENSION_STANDARDS for nh; a three-day
+  // extension copied from a neighbour reports LATE on every New Hampshire
+  // deadline.
+  //
+  // NO DIRECTION RULE, SO NO BACKWARD ROW IS SEEDED -- Rule 2 extends to "the
+  // NEXT day" and says nothing about a period measured before an event, the
+  // Mississippi/Idaho/Nebraska/Hawaiʻi shape rather than New Mexico's. The one
+  // being given up is unusual enough to name: Rule 26(b) requires deposition
+  // notice "at least 3 days, EXCLUSIVE OF THE DAY OF SERVICE AND THE DAY OF
+  // CAPTION" -- a period carrying its own both-endpoints-excluded convention
+  // that Rule 2 does not supply.
+  //
+  // NO NON-EXTENDABLE LIST, WHICH IS ALSO UNUSUAL. Hawaiʻi's Rule 6(b) freezes
+  // six rules and reaches into the appellate rules; Idaho's 2.2(b)(3) freezes
+  // six. Rule 2 says nothing about extension at all, and Rule 1(d) lets the
+  // court "waive the application of any rule" as justice may require.
+  nh_scr_2: { label: 'N.H. Super. Ct. R. 2', impl: 'frcp_6a',
+    base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
@@ -1856,6 +1922,12 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'The Hawaiʻi calendar is the thirteen fixed and derivable holidays HRS Sec. 8-1 designates -- the section Haw. R. Civ. P. 6(a) names by number. THREE THINGS ARE DELIBERATELY OMITTED, each because including it could report LATE: the Sec. 8-2 weekend observance shift, which for 2026 means FRIDAY 3 JULY; the general election day, which Sec. 8-1 makes a holiday only \"in the county wherein the election is held\"; and any day proclaimed by the President or the Governor. Every omission makes this date EARLIER, never later. Check any Hawaiʻi date falling in early July or on a general election day by hand.',
     detail: 'THE REFERENT IS EXPRESS, WHICH IS EXACTLY WHAT IDAHO\'S WAS NOT. Haw. R. Civ. P. 6(a) ends: \"As used in these rules, \'holiday\' shall mean any day designated as such pursuant to SECTION 8-1 of the Hawaiʻi Revised Statutes.\" No chain to trace and no competing list -- contrast Idaho, where the rule said \"legal holiday\" and stopped and three published lists disagreed. THIRTEEN DATES FOR 2026, and FOUR OF THEM EXIST ON NO OTHER CALENDAR IN THIS PLATFORM: PRINCE JONAH KUHIO KALANIANAOLE DAY (26 March), KING KAMEHAMEHA I DAY (11 June), STATEHOOD DAY (the third Friday in August), and GOOD FRIDAY -- Hawaiʻi is the only seeded state to make Good Friday a legal holiday, and the provision survived an Establishment Clause challenge (932 F.2d 765). Good Friday is DERIVED from the computus, not transcribed: 3 April in 2026. Equally, NO JUNETEENTH, NO Columbus or Indigenous Peoples\' Day, and NO day after Thanksgiving -- so a calendar copied from Nebraska would add three days Hawaiʻi does not have and miss four it does. OMISSION 1, AND IT IS A READING RATHER THAN AN OVERSIGHT: THE SEC. 8-2 SHIFT. HRS Sec. 8-2 provides that a state holiday falling on Sunday is observed the following Monday and one falling on Saturday is observed the PRECEDING FRIDAY. But Rule 6(a) incorporates SECTION 8-1 BY NUMBER, and Sec. 8-2\'s shifted day is designated pursuant to Sec. 8-2, not Sec. 8-1. Idaho and Nebraska both carry their shifts because in those states the shift clause sits in the SAME section the rule points at; Hawaiʻi\'s does not. Both readings are respectable and the direction decides: omitting the shifted day reports EARLIER, carrying it would roll a deadline off a possibly-countable day and report LATER. IN 2026 THIS AFFECTS EXACTLY ONE DATE -- 4 July is a Saturday, so Sec. 8-2 would make FRIDAY 3 JULY 2026 an observed holiday and this calendar does not carry it. A practitioner will treat that Friday as a court holiday. Check any date landing in that week by hand. No other Sec. 8-1 holiday falls on a Saturday or Sunday in 2026. OMISSION 2: THE GENERAL ELECTION DAY. Sec. 8-1 designates \"all election days, except primary and special election days, IN THE COUNTY WHEREIN THE ELECTION IS HELD\" -- county-scoped by its own words, and requiring a second statute to fix the date. Neither was resolved on a primary source here, so the day is omitted rather than computed. For an even-numbered year the general election falls in early November and would be statewide in practice; a Hawaiʻi deadline landing on a general election day needs checking. OMISSION 3: \"any day designated by proclamation by the President of the United States or by the governor as a holiday\" -- the open limb every jurisdiction has and none can model. NO BACKWARD ROW IS SEEDED, AND HAWAIʻI HAS THE LONGEST MOTION NOTICE ON THE PLATFORM. Rule 6(d) requires a written motion and notice of hearing to be served NOT LESS THAN 18 DAYS before the hearing, and opposing affidavits not less than 8 days before. Both clear the seven-day exclusion threshold, so that is not the obstacle -- Rule 6(a) simply rolls to \"the NEXT day\" and says nothing about a period measured before an event, the Mississippi, Idaho and Nebraska shape rather than New Mexico\'s. RULE 6 WAS AMENDED TWICE IN THE LAST YEAR -- \"further amended July 9, 2025, effective January 1, 2026; further corrected December 19, 2025; further amended May 21, 2026, effective July 1, 2026\" -- and Rule 36 once, effective 1 January 2026. The text encoded is the current one. WHAT those amendments changed was not determined: the judiciary publishes an amendment history and no redline, and guessing would be worse than recording the gap. 2026 ONLY: a later year is REFUSED rather than derived. Twelve of the thirteen dates would generate mechanically and Good Friday from the computus, which is precisely why generating is refused -- it would hide the Sec. 8-2, election-day and proclamation questions behind a confident answer.'
+  },
+  nh: {
+    complete: false,
+    direction: 'early',
+    summary: 'The New Hampshire calendar is the ten dated holidays RSA 288:1 enumerates — the chapter N.H. Super. Ct. R. 2 names. ONE ENTRY IS DELIBERATELY OMITTED: RSA 288:1 makes \"the day on which the biennial election is held\" a legal holiday, and 2026 is an even-numbered year, so such a day exists — TUESDAY 3 NOVEMBER 2026 on the only statute that dates a statewide November election, RSA 653:7, which calls it the \"state general election\" and never uses the words \"biennial election\". Omitting it makes a date EARLIER, never later. Check any New Hampshire deadline falling in the first week of November 2026 by hand. Note separately that New Hampshire has NO mailed-service extension of any kind, which is a feature of its rules and not a gap in this seed.',
+    detail: 'THE REFERENT NAMES A CHAPTER, NOT A SECTION, AND THAT DISTINCTION ALREADY DECIDED A DATE ONCE. N.H. Super. Ct. R. 2 rolls the last day off \"a Saturday, Sunday, or a legal holiday AS SPECIFIED IN RSA CH. 288, AS AMENDED\". Haw. R. Civ. P. 6(a) named HRS Sec. 8-1 by number, so the weekend-observance section beside it fell OUTSIDE the reference and Hawaii omits its shifted Friday as a reading. Here RSA 288:2 is INSIDE the reference and IS carried. IT THEN TURNS OUT NOT TO MATTER IN 2026, AND THE REASON IS WORTH STATING: RSA 288:2 reads in full \"When any holiday listed in RSA 288:1 falls on Sunday, the following day shall be observed as a holiday\" — A SUNDAY RULE ONLY, with no Saturday limb at all. 4 July 2026 is a SATURDAY, so New Hampshire has NO Friday 3 July observance, not by interpretation but because no clause could produce one. Idaho Code Sec. 73-108 and Neb. Rev. Stat. Sec. 25-2221 both shift a Saturday holiday back to the Friday and both calendars carry 3 July 2026; Hawaii omits it as a reading; New Hampshire omits it because the rule does not exist. Four jurisdictions, three reasons, one date. And NO RSA 288:1 holiday falls on a Sunday in 2026, checked date by date, so the shift that does exist is dormant this year. THE LIST IS CLOSED, WHICH NO OTHER SEEDED HOLIDAY STATUTE IS. Idaho and Hawaii both end with a day appointed by the President or the governor; Kansas reaches any day observed by order of the supreme court; Nebraska subordinates its dates to the federal schedule and adds a governor-proclamation limb. RSA 288:1 enumerates and stops: \"...and Christmas Day are legal holidays.\" There is no proclamation limb to disclose, which removes the open-ended gap every other jurisdiction here has to declare. THE ONE OMISSION IS THE BIENNIAL ELECTION DAY, AND IT IS THE ONE JUDGMENT CALL IN THIS SEED. RSA 288:1 lists \"the day on which the biennial election is held\" among the legal holidays. 2026 is an even-numbered year so such a day exists. DATING IT REQUIRES A SECOND STATUTE THAT DOES NOT USE THE SAME WORD: RSA 653:7 provides that \"the state general election shall be held on the first Tuesday following the first Monday in November of every even-numbered year\", which for 2026 is TUESDAY 3 NOVEMBER 2026; and RSA ch. 652, the election-law definitions chapter, defines \"election\" (652:1), \"regular election\" (652:2), \"state election\" (652:3) and \"state general election\" (652:4) and NEVER DEFINES \"biennial election\". The identification is near-certain and it is still a reading across two chapters. THE DIRECTION DECIDES IT: omitting a holiday returns the unrolled, sooner date, and filing early is safe; carrying a day that is not a holiday returns a date one day LATE and loses the filing. So it is omitted and named here. A New Hampshire deadline landing on Tuesday 3 November 2026 should be checked by hand; no other 2026 date is affected. THE SAME CALL WAS MADE ON HAWAII\'S ELECTION DAY for a related but not identical reason — Hawaii\'s is county-scoped by the statute\'s own words, New Hampshire\'s is statewide and merely undated. TWO CONDITIONAL CLAUSES ARE LIVE LAW, NOT MODELLED, AND DORMANT IN 2026. Memorial Day is \"the last Monday in May ... OR, ON A DATE TO COINCIDE WITH THE FEDERAL OBSERVANCE IF IT IS HELD ON A DIFFERENT DAY\"; the federal observance under 5 U.S.C. 6103 is also the last Monday in May, so both fall on 25 May 2026 and the clause moves nothing. Thanksgiving is \"Thanksgiving Day, WHENEVER APPOINTED\", which names no date at all; it is seeded as the fourth Thursday, which is what 5 U.S.C. 6103 fixes federally and what every appointment in living memory has been, and that is a CONVENTION rather than a transcription. THE JUDICIAL BRANCH PUBLISHES ITS OWN COURT-HOLIDAY SCHEDULE AND IT IS NOT THE LEGAL TEST. courts.nh.gov lists \"Court Holidays - 2026\" as a PDF posted 11 June 2025, and a 2027 one beside it. NEITHER WAS READ — both refuse every automated route available here — and that is recorded rather than guessed at. It would not change this calendar: Rule 2 keys the rollover on a day being \"a legal holiday as specified in RSA ch. 288\", not on whether a courthouse opened. This is the KANSAS POSITION INVERTED. There the statute keys on a day being observed BY ORDER OF THE SUPREME COURT, so the Judicial Branch list IS the legal test; here the statute keys on the legislature\'s enumeration, so the courts\' own list is practical information and nothing more. A day the New Hampshire courts close that RSA 288:1 does not name remains a countable day under Rule 2, and a practitioner should still check it before relying on being able to file. NO BACKWARD ROW IS SEEDED, AND THE ONE BEING GIVEN UP IS UNUSUAL. Rule 2 extends to \"the NEXT day\" and says nothing about a period measured before an event — the Mississippi, Idaho, Nebraska and Hawaii shape, not New Mexico\'s. Rule 26(b) requires deposition notice \"at least 3 days, EXCLUSIVE OF THE DAY OF SERVICE AND THE DAY OF CAPTION, before the day on which they are to be taken\", a period carrying its own both-endpoints-excluded convention that Rule 2 does not supply and this engine cannot express. Also unseeded and backward: Rule 5(a)(8) dispositive motions not less than 120 days before trial, Rule 5(a)(9) other pre-trial motions not later than 14 days before trial, and Rule 35 trial-management filings 14 days before the conference. AN EFFECTIVE-DATE WARNING THAT IS NOT ABOUT HOLIDAYS. The New Hampshire Judicial Branch publishes these rules with NO amendment history and NO per-rule effective dates — checked on the combined page and on an individual rule page, and in sharp contrast to Hawaii, Idaho, Nebraska and New Mexico, which all print bracketed amendment notes. Every effective_from in this seed therefore comes from the ADOPTION ORDER of 22 May 2013 (\"The amendments shall take effect October 1, 2013\") and from the rule set\'s own PREAMBLE in that order (\"They take effect on October 1, 2013, and apply to civil actions pending or filed in superior court on or after that date\"), a preamble the currently-published web version does not reproduce. Each seeded row was then diffed against that order sentence by sentence. TWO REAL PERIODS WERE DROPPED FOR WANT OF A DATE: Rule 13A\'s ten-day reply to an objection and three-day notice to the clerk, and Rule 12\'s thirty-day summary-judgment objection with its twenty-day reply — all current, all post-dating the 2013 adoption, none carrying a published effective date. A caller needing either must not compute it from this seed. 2026 ONLY: a later year is REFUSED rather than derived. All ten dates would generate mechanically, which is precisely why generating is refused — it would hide the biennial-election question behind a confident answer, and it would be wrong in a second way, since 2027 is an ODD year in which the election limb produces no day at all and a generator that silently dropped it would look identical to one that had reasoned about it.'
   }
 };
 

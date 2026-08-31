@@ -271,7 +271,7 @@ check('a year outside the loaded calendars refuses',
 
 // ── Blast radius ─────────────────────────────────────────────────────────
 check('four jurisdictions declare a coverage gap',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nm', 'va', 'wi']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'va', 'wi']);
 // A pre-existing jurisdiction must compute exactly what it did before the
 // completion mechanism was inserted into the pipeline.
 {
