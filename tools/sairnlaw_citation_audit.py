@@ -87,6 +87,14 @@ STALE_PROBES = [
      r'Fla[^.\n]{0,30}\b1\.090\b',
      '2.514',
      'computation moved out of Fla. R. Civ. P. 1.090 to R. 2.514 in 2006'),
+    ('Oregon "ORCP 10 C" (the mail extension before 2015)',
+     r'(?:ORCP|R\. Civ\. P\.)\s*10\s*C\b',
+     '10 B',
+     'the mail-extension provision was ORCP 10 C until 2015: the rule\'s own '
+     'history reads "section B ... repealed by 2015 c.212 sec. 4; section C ... '
+     'amended and REDESIGNATED section B by 2015 c.212 sec. 6". An INTRA-RULE '
+     'redesignation, which is harder to notice than a whole-rule renumber '
+     'because the rule number itself never changed'),
     ('California "rule 45" (pre-2007 Rules of Court)',
      r'Cal[^.\n]{0,30}R\.\s*Ct\.\s*45\b',
      '1.10',
@@ -129,6 +137,11 @@ LEDGER = {
                                     'text matches what the standard models'),
     'ca_ccp_12_12a': ('2026-08-31', 'leginfo.legislature.ca.gov CCP section 12 resolves; SECTION '
                                     'NUMBER confirmed from the page title, body not extracted'),
+    'or_orcp_10':    ('2026-08-31', 'oregonlegislature.gov/bills_laws/SiteAssets/ORCP.html -- '
+                                    '"Oregon Rules of Civil Procedure (2025)", 79 rules, RULE 10 A '
+                                    '"Computation." WORKING URL RECORDED because the two obvious '
+                                    'hosts fail: courts.oregon.gov 404s and the Council on Court '
+                                    'Procedures site carries no full text'),
     'ga_ocga_1_3_1_d3':
                      ('2026-08-31', 'law.justia.com MIRROR -- subsection (d)(3) "Computation of '
                                     'time" confirmed. NOT the official publisher: the OCGA is '
@@ -138,12 +151,6 @@ LEDGER = {
 # Standards someone TRIED to verify and could not reach. Recorded so the next
 # session does not walk the same dead ends. Not a finding -- an absence of one.
 ATTEMPTED_AND_UNREACHED = {
-    'or_orcp_10': ('2026-08-31',
-                   'courts.oregon.gov/programs/utcr/Documents/2026_ORCP.pdf and '
-                   '/rules/orcp/Documents/ORCP_2026.pdf both 404; '
-                   'oregonlegislature.gov/bills_laws/Pages/ORCP.aspx loads but carries no rule '
-                   'text. Oregon puts computation at ORCP 10 rather than 6, which is exactly the '
-                   'shape most likely to be mis-cited, so this one is worth finishing.'),
     'ct_pb_63_2': ('2026-08-31',
                    'jud.ct.gov/pb.htm is an index page and does not carry Sec. 63-2 inline. '
                    'LOWEST PRIORITY of the unchecked set: Connecticut is held out of the seed by '
