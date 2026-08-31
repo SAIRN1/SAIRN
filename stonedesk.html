@@ -2614,9 +2614,82 @@ window.addEventListener('beforeunload', function() {
   });
 });
 
-// LAYER 27 — Right to Delete (One-click data wipe)
+// LAYER 27 — Right to Delete
+// SPLIT INTO TWO REAL ACTIONS 2026-08-31. It used to be one unscoped
+// localStorage.clear(). Every SAIRN app is served from the same origin, so they
+// share one localStorage -- a real browser checked while testing this held 201
+// keys across sd_, sc_, sb_, sdn_, law_, leg_, sv_ and alf_. So the single
+// "delete my data" button in StoneDesk's Admin panel destroyed SAIRNlaw's
+// matters and SAIRNvet's patients too, with nothing on screen saying so.
+//
+// Both actions are kept, because both are legitimate: a StoneDesk user
+// clearing StoneDesk, and a person exercising a genuine right-to-delete across
+// everything on the device. What was wrong was having only the second one and
+// calling it the first.
+
+// Keys this app OWNS. Derived by reading every literal storage key in this
+// file, not guessed: 83 distinct sd_ keys, plus the stonedesk_/stonedesk:
+// forms, the legacy fab_ shop-identity keys and the stondesk_ typo variant that
+// real installs still carry.
+//
+// THE UNDERSCORE IN 'sd_' IS LOAD-BEARING. SAIRNdental's keys are sdn_ --
+// sdn_clients, sdn_invoices, sdn_team. A prefix of 'sd' rather than 'sd_'
+// would delete a dental practice's client list from inside StoneDesk. There is
+// a live assertion below rather than a comment alone.
+var SA_APP_PREFIXES = ['sd_', 'stonedesk_', 'stonedesk:', 'stondesk_', 'fab_'];
+var SA_APP_EXACT    = ['quoteCounter', '_s_', 'sairn_learned_stonedesk', 'sairn_license_key_stonedesk'];
+
+// Deliberately NOT owned. stonedesk.html READS these -- the Bridge pulls
+// SAIRNbiz, SAIRNcare, SAIRN HR, SAIRNlaw and AP data -- and reading another
+// app's data has never made it yours to delete.
+var SA_FOREIGN_PREFIXES = ['sb_', 'sc_', 'sh_', 'sl_', 'sa_', 'sdn_', 'law_', 'leg_', 'sv_', 'alf_'];
+// Shared platform state, owned by no single app: consent, install age, the
+// cross-app learning store, the security counter.
+var SA_SHARED_EXACT = ['sairn_created', 'sairn_privacy_accepted', 'sairn_learned_global',
+                       'sairn_tone_prefs', 's_attempts', 'sairn_audit'];
+
+window.saIsAppKey = function(k) {
+  if (SA_SHARED_EXACT.indexOf(k) !== -1) return false;
+  if (SA_FOREIGN_PREFIXES.some(function(p) { return k.indexOf(p) === 0; })) return false;
+  if (SA_APP_EXACT.indexOf(k) !== -1) return true;
+  return SA_APP_PREFIXES.some(function(p) { return k.indexOf(p) === 0; });
+};
+
+// Live assertion, not a comment. If a future edit widens a prefix so that a
+// SAIRNdental or SAIRNbiz key starts matching, this fires on page load and the
+// scoped wipe refuses to run rather than quietly eating another app's records.
+var SA_SCOPE_OK = ['sdn_clients', 'sdn_invoices', 'sb_projects', 'sl_matters', 'sv_patients',
+                   'sairn_created', 'sairn_privacy_accepted']
+                  .every(function(k) { return window.saIsAppKey(k) === false; })
+              && ['sd_jobs', 'stonedesk_net_intel', 'fab_shop_name']
+                  .every(function(k) { return window.saIsAppKey(k) === true; });
+if (!SA_SCOPE_OK) saLog('L27-SCOPE', 'App-key scope assertion FAILED — scoped wipe disabled', 'critical');
+
+// DEFAULT ACTION: this app only.
+window.saWipeAppData = function() {
+  if (!SA_SCOPE_OK) { showToast('Scoped delete is disabled: key-ownership check failed. Nothing was deleted.', 6000); return; }
+  var ls = Object.keys(localStorage).filter(window.saIsAppKey);
+  var ss = Object.keys(sessionStorage).filter(window.saIsAppKey);
+  if (!ls.length && !ss.length) { showToast('No StoneDesk data stored on this device.'); return; }
+  if (!confirm('PERMANENT: Delete StoneDesk\'s ' + ls.length + ' stored items from this device?\n\n' +
+               'Other SAIRN apps in this browser are NOT touched. This cannot be undone.')) return;
+  ls.forEach(function(k) { try { localStorage.removeItem(k); } catch(e) {} });
+  ss.forEach(function(k) { try { sessionStorage.removeItem(k); } catch(e) {} });
+  // Cookies are origin-wide, not per app, so a scoped delete must not clear
+  // them -- doing so would reach every other app while claiming not to.
+  saLog('L27-WIPE-APP', 'StoneDesk data deleted: ' + ls.length + ' local, ' + ss.length + ' session', 'info');
+  showToast('StoneDesk data deleted (' + ls.length + ' items). Reloading...');
+  location.reload();
+};
+
+// SEPARATE ACTION: everything, every app. Unchanged in effect; the difference
+// is that it is now reached only from a control that says what it does.
 window.saWipeAllData = function() {
-  if (!confirm('PERMANENT: Delete all SAIRN data from this device? This cannot be undone.')) return;
+  var total = Object.keys(localStorage).length;
+  var others = Object.keys(localStorage).filter(function(k) { return !window.saIsAppKey(k); }).length;
+  if (!confirm('PERMANENT: Delete ALL SAIRN data from this device?\n\n' +
+               'This clears ' + total + ' stored items across EVERY SAIRN app in this browser — ' +
+               others + ' of them do not belong to StoneDesk. This cannot be undone.')) return;
   localStorage.clear();
   sessionStorage.clear();
   var cookies = document.cookie.split(';');
@@ -2624,8 +2697,8 @@ window.saWipeAllData = function() {
     var name = c.split('=')[0].trim();
     document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
   });
-  saLog('L27-WIPE', 'User-initiated data wipe completed', 'info');
-  showToast('All data wiped. Reloading...');
+  saLog('L27-WIPE', 'User-initiated ALL-APP data wipe completed: ' + total + ' items', 'info');
+  showToast('All SAIRN data wiped. Reloading...');
   location.reload();
 };
 
@@ -4527,23 +4600,24 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Session security status, and your right to delete SAIRN data stored on this device.</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn" onclick="saShowSecurityStatus()">🛡️ Security Status</button>
-    <button class="q-btn" onclick="saWipeAllData()" style="border-color:#DC2626;color:#DC2626">🗑️ Delete EVERY SAIRN App's Data On This Device</button>
+    <button class="q-btn" onclick="saWipeAppData()" style="border-color:#DC2626;color:#DC2626">🗑️ Delete StoneDesk's Data</button>
+    <button class="q-btn" onclick="saWipeAllData()" style="border-color:#991B1B;color:#991B1B">⚠️ Delete EVERY SAIRN App's Data</button>
   </div>
-  <!-- LABEL CORRECTED 2026-08-31, before this shipped to anyone. The first
-       version of this button read "Delete All Data On This Device", which a
-       StoneDesk admin reads as StoneDesk's data. It is not. saWipeAllData calls
-       localStorage.clear(), and every SAIRN app is served from the same origin,
-       so they share one localStorage: a real browser checked during this test
-       held 201 keys spanning sd_, sc_, sb_, sdn_, law_, leg_, sv_ and alf_
-       prefixes -- StoneDesk, SAIRNcode, SAIRNbiz, SAIRNdental, SAIRNlaw,
-       SAIRNlegacy, SAIRNvet and SAIRNcare. Clicking this in StoneDesk would
-       take SAIRNlaw's matters and SAIRNvet's patients with it.
-       An all-apps wipe is defensible as the CCPA/GDPR right to delete -- the
-       user is erasing their data from the device -- but only if the button says
-       so before they click, which is all this correction does. Whether the wipe
-       should instead be scoped per app, with a separate all-apps option, is a
-       product decision and is written up rather than made here. -->
-  <div style="font-size:11px;color:var(--muted);margin-top:10px">This clears data for <b>every SAIRN app</b> used in this browser, not just StoneDesk &mdash; they share one browser storage area. Permanent, asks for confirmation first, cannot be undone.</div>
+  <!-- TWO ACTIONS, 2026-08-31, replacing one that was mislabelled. This started
+       as a single "Delete All Data On This Device" button, which a StoneDesk
+       admin reads as StoneDesk's data -- and it was not. Every SAIRN app is
+       served from one origin, so they share one localStorage: the browser used
+       to test this held 201 keys spanning sd_, sc_, sb_, sdn_, law_, leg_, sv_
+       and alf_. The single button destroyed SAIRNlaw's matters and SAIRNvet's
+       patients along with StoneDesk's jobs.
+       Scoped delete is now the default and only ever touches keys this app
+       owns; the all-apps wipe is still available, separately, and says its
+       blast radius in both the label and the confirm. See the ownership rules
+       and the live scope assertion beside saWipeAppData. -->
+  <div style="font-size:11px;color:var(--muted);margin-top:10px">
+    <b>Delete StoneDesk's Data</b> removes only what StoneDesk stored &mdash; other SAIRN apps in this browser are untouched.<br>
+    <b>Delete EVERY SAIRN App's Data</b> clears the whole browser storage area shared by all SAIRN apps. Both are permanent, both confirm first, neither can be undone.
+  </div>
 </div>
 <script>
 (function(){
@@ -25329,6 +25403,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdCRMAdd()">+ Add Lead</button>
     <button class="q-btn" onclick="sdCRMAI()">🤖 AI Analysis</button>
     <button class="q-btn" onclick="sdCRMPrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdCRMExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
@@ -25978,6 +26053,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdRemnantAdd()">+ Add Remnant</button>
     <button class="q-btn" onclick="sdRemnantAI()">🤖 AI Match</button>
     <button class="q-btn" onclick="sdRemnantPrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdRemnantExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -26924,6 +27000,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdSintAdd()">+ Add Product</button>
     <button class="q-btn" onclick="sdSintAI()">🤖 AI Recommendation</button>
     <button class="q-btn" onclick="sdSintPrint()">🖨️ Print Catalog</button>
+      <button class="q-btn" onclick="sdSintExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -27212,6 +27289,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdVeinAnalyze()">🤖 AI Vein Analysis</button>
     <button class="q-btn" onclick="sdVeinPrint()">🖨️ Print Layout</button>
+      <button class="q-btn" onclick="sdVeinExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -27660,6 +27738,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdSeamAnalyze()">🤖 Analyze Seam</button>
     <button class="q-btn" onclick="sdSeamPrint()">🖨️ Print Report</button>
+      <button class="q-btn" onclick="sdSeamExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -27778,6 +27857,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdReviewsAdd()">+ Log Review</button>
     <button class="q-btn" onclick="sdReviewsAI()">🤖 AI Response Draft</button>
     <button class="q-btn" onclick="sdReviewsPrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdReviewsExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -28052,6 +28132,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdRefAdd()">+ Log Referral</button>
     <button class="q-btn" onclick="sdRefAI()">🤖 AI Strategy</button>
     <button class="q-btn" onclick="sdRefPrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdReferralExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -28341,6 +28422,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdEqAdd()">+ Add Equipment</button>
     <button class="q-btn" onclick="sdEqAI()">🤖 AI Maintenance</button>
     <button class="q-btn" onclick="sdEqPrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdEquipmentExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -28459,6 +28541,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdEmpAdd()">+ Add Employee</button>
     <button class="q-btn" onclick="sdEmpAI()">🤖 AI HR Insight</button>
     <button class="q-btn" onclick="sdEmpPrint()">🖨️ Print Directory</button>
+      <button class="q-btn" onclick="sdEmployeesExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -29025,6 +29108,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdYardAdd()">+ Add Slab</button>
     <button class="q-btn" onclick="sdYardAI()">🤖 AI Optimization</button>
     <button class="q-btn" onclick="sdYardPrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdStoneyardExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -29727,6 +29811,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdDmgAdd()">+ Log Damage</button>
     <button class="q-btn" onclick="sdDmgAI()">🤖 AI Assessment</button>
     <button class="q-btn" onclick="sdDmgPrint()">🖨️ Print Report</button>
+      <button class="q-btn" onclick="sdDamageExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -29844,6 +29929,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdTrainAdd()">+ Log Training</button>
     <button class="q-btn" onclick="sdTrainAI()">🤖 AI Training Plan</button>
     <button class="q-btn" onclick="sdTrainPrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdTrainingExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -29981,6 +30067,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdBulletinPost()">+ Post Bulletin</button>
     <button class="q-btn" onclick="sdBulletinAI()">🤖 AI Summary</button>
     <button class="q-btn" onclick="sdBulletinPrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdBulletinExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -30116,6 +30203,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <button class="q-btn primary" onclick="sdWasteLog()">+ Log Waste</button>
     <button class="q-btn" onclick="sdWasteAI()">🤖 AI Reduction Plan</button>
     <button class="q-btn" onclick="sdWastePrint()">🖨️ Print</button>
+      <button class="q-btn" onclick="sdWasteExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
@@ -30520,6 +30608,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdTaxCalc()">🤖 AI Tax Estimate</button>
     <button class="q-btn" onclick="sdTaxPrint()">🖨️ Print Report</button>
+      <button class="q-btn" onclick="sdTaxExport()">⬇️ Export CSV</button>
   </div>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
