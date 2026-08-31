@@ -87,6 +87,55 @@ not a mechanical edit, and ten of them at once is a design decision about which
 controls this product actually claims. That is Michael's call, and
 `sairn-decision-gate` applies before any of it is described as implemented.
 
+## UPDATE 2026-08-31 — nine of the ten wired and live-verified
+
+Michael's call: wire them. Nine are wired (`5e03232`) and verified against
+`sairn.vercel.app/stonedesk` by behaviour, not by reading the diff. Layer 2 is
+deliberately not wired — see below.
+
+| Layer | Verified how | Result |
+|---|---|---|
+| 6 Brute-Force PIN | 20 failed attempts through `saTrackLoginAttempt` | lockout overlay appeared, `L6-BRUTE` logged, counter reset on success |
+| 16 Rate Limiting | primed the limiter's own window, then one **real** proxy call | `REJECTED: SAIRN Security: rate limit exceeded (30 calls/min)` |
+| 17 Response Sanitization | asked Claude to **construct** `github_pat_` + 20 chars, so the pattern was absent from the request | caller received `[TOKEN-REMOVED]` — Layer 17's own string, and the only place it exists |
+| 19 Request Signing | inspected the real outbound payload | `_ts` and `_origin` present |
+| 20 Prompt Injection | real call carrying "Ignore previous instructions…" | outbound body became `[Content removed by SAIRN Security: prompt injection detected]`, `L7-INJECT` logged |
+| 21 Anomaly Detection | spy on the real request path | called with `stonedesk:/api/claude`, returned `false` for a single request — correct, not a false alarm |
+| 24 Data Minimization | wrote through the real `stRaw()` helper | `Sensitive fields in stored data: ssn, creditCard` logged **and the write still happened** |
+| 27 Right to Delete | button present and function reachable | **NOT fired** — see below |
+| 30 Security Status | invoked the control | real report with live counts from this session's own events |
+
+**Layer 17's test was designed to exclude a confound and the first attempt
+failed it.** Asking Claude to echo an `sk-…` string returned `[KEY-REDACTED]`
+— which looks like a pass and is not one: Layer 8 scrubs *outbound* content, so
+Claude only ever echoed a redaction that had already happened before the request
+left. The valid test makes the model build the token from parts so the pattern
+cannot appear in the request. Only then does a redacted response prove the
+*response* path did it.
+
+**Layer 27 was not fired, on purpose.** It calls `confirm()` — which blocks the
+browser automation channel entirely — and then clears localStorage including the
+licence key. Reachability is proven; behaviour is not. That is a gap in this
+verification, stated rather than glossed. It is a ten-second manual check.
+
+### Two things found while verifying, neither of them fixed
+
+**`maxLoginAttempts` is 20, not 5.** A five-attempt probe showed no lockout and
+looked like a wiring failure; it was the probe's threshold that was wrong. The
+layer works at 20. Whether twenty guesses at a numeric PIN before any delay is
+the intended policy is a separate decision — the code is doing what it was
+configured to do.
+
+**Layer 5's session-lock screen is guarded by two hardcoded 4-digit PINs.**
+`saUnlock` uses `Object.values(CODES)`, and `CODES` is `{sales, admin}` with
+two 4-digit literals sitting in a publicly served file. The front door moved to
+per-employee server-side auth (`api/sd-auth.js`); the *lock* screen did not. So
+a session that auto-locks after 30 minutes idle can be reopened with a PIN
+anyone can read out of the page source. (The literal `['1234','9999']` fallback
+in that function does not apply here, because `CODES` is defined — checked
+live, not assumed.) Not changed: making the lock screen re-authenticate is real
+work and a product decision, not part of wiring dead layers.
+
 ## Secondary pattern: superseded parallel implementations
 
 Several dead functions are older implementations of features that **do** work
