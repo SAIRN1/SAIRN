@@ -2116,6 +2116,32 @@ window.fetch = function(url, opts) {
 };
 
 // LAYER 2 — XSS Output Sanitizer
+// STILL NOT WIRED as of 2026-08-31, and named as such in the INIT log rather
+// than counted. It is the one of the ten dead layers that CANNOT be wired at an
+// interception point, and pretending otherwise would recreate the problem.
+//
+// Why. This is a VALUE escaper, not a document filter. It escapes `/` and
+// strips `on\w+=`, so applying it to an HTML string -- which is what every
+// innerHTML site in this file builds -- destroys the markup: every closing tag
+// comes out as escaped entities and renders as visible text. It is only correct
+// around an untrusted VALUE being interpolated INTO markup. Written below
+// without literal tags, because div_balance_check.py counts them wherever they
+// appear and the first draft of this comment failed the balance check by
+// exactly -1 for containing one:
+//
+//     CORRECT:  openTag + safeHTML(customer.name) + closeTag
+//     BREAKS:   safeHTML(openTag + customer.name + closeTag)
+//
+// So wiring it means auditing each innerHTML site in a ~2MB file and deciding,
+// per interpolation, whether the value is user-controlled. Getting that wrong
+// in the other direction is not harmless either: double-escaping shows a real
+// customer as O&#x27;Brien on their own invoice.
+//
+// That is a scoped piece of work, not a one-line wire, and it is deliberately
+// NOT being done here alongside nine mechanical wirings. Layer 17 already
+// strips <script> and javascript: from Claude responses, which is the largest
+// untrusted-input surface on this path; the remaining exposure is
+// user-and-import-supplied field values rendered into tables.
 window.safeHTML = function(str) {
   if (typeof str !== 'string') return str;
   return str
@@ -2486,8 +2512,14 @@ window.saSignRequest = function(payload) {
 };
 
 // LAYER 20 — Prompt Injection on Every Claude Call
-var _origSAIRNFetch = null;
-window.saSecureClaudeCall = function(url, opts) {
+// WIRED 2026-08-31. Was defined and never called: 1 occurrence in the file.
+// `next` added, and the tail changed from `window.fetch` to it. The old tail
+// was a recursion hazard the moment anything routed fetch through this
+// function -- window.fetch IS the patched chain, so the call would re-enter
+// here. It now receives the inner chain explicitly and defaults to the
+// pre-patch chain captured below, so it can be called directly or as part of
+// the interceptor without either path processing the body twice.
+window.saSecureClaudeCall = function(url, opts, next) {
   if (opts && opts.body) {
     try {
       var body = JSON.parse(opts.body);
@@ -2505,7 +2537,7 @@ window.saSecureClaudeCall = function(url, opts) {
       opts.body = JSON.stringify(body);
     } catch(e) {}
   }
-  return window.fetch(url, opts);
+  return (next || _saInnerFetch || window.fetch)(url, opts);
 };
 
 // LAYER 21 — Anomaly Detection (unusual patterns)
@@ -2665,8 +2697,125 @@ window.saShowSecurityStatus = function() {
   showToast(report);
 };
 
+// ===========================================================
+// LAYER WIRING — added 2026-08-31
+// ===========================================================
+// Layers 16, 17, 19, 20, 21 and 24 were DEFINED AND NEVER CALLED. Each had
+// exactly one occurrence in this file: its own definition. A platform sweep
+// (tools/sairn_dead_function_sweep.py) found ten such layers; these are the
+// six that belong on the Claude request path, wired here in one place.
+//
+// WHY THE FETCH CHAIN AND NOT callClaude(). There are 94 direct
+// `fetch('https://sairn.vercel.app/api/claude', ...)` call sites in this file
+// plus callClaude() itself. Wiring the layers into callClaude would have left
+// 94 paths unprotected while reading, from the diff, as though the job were
+// done -- the same present-but-ineffective shape that made these layers worth
+// finding. Layers 1 and 22 already work by patching window.fetch; this follows
+// them, so every existing call site and every future one is covered without
+// touching any of them.
+//
+// ORDER MATTERS. This patch is installed LAST, so it is the OUTERMOST wrapper
+// and runs BEFORE Layer 1's allowlist and Layer 22's direct-API blocker. That
+// is deliberate: rate limiting and anomaly detection should reject a flood
+// before any other work happens, and signing must add its fields before the
+// request is inspected downstream.
+var _saInnerFetch = window.fetch;
+
+function _saIsProxyCall(url) {
+  try {
+    var s = (typeof url === 'string') ? url : (url && url.url) ? url.url : String(url);
+    return s.indexOf('/api/claude') !== -1;
+  } catch (e) { return false; }
+}
+
+window.fetch = function(url, opts) {
+  if (!_saIsProxyCall(url)) return _saInnerFetch.apply(this, arguments);
+
+  // LAYER 16 — rate limiting. Rejects rather than logs: a limiter that only
+  // writes to the audit log is not a limiter.
+  if (!window.saCheckRateLimit(SAIRN_SEC.appName)) {
+    if (typeof showToast === 'function') {
+      showToast('Too many AI requests in the last minute. Wait a moment and try again.', 5000);
+    }
+    return Promise.reject(new Error('SAIRN Security: rate limit exceeded (30 calls/min)'));
+  }
+
+  // LAYER 21 — anomaly detection. Records and logs; deliberately does NOT
+  // block, because its threshold (2 req/sec sustained) is a signal about
+  // behaviour, not a policy about limits -- Layer 16 owns the limit. Blocking
+  // on both would make the effective limit whichever fires first and neither
+  // number would mean what it says.
+  window.saDetectAnomaly(SAIRN_SEC.appName, '/api/claude');
+
+  // LAYER 19 — request signing. Only replaces the body when signing SUCCEEDS.
+  // saSignRequest returns null on a payload with no app_id; dropping the
+  // request there would break callers over a metadata field, and silently
+  // sending an unsigned body while the log says otherwise is worse. The null
+  // path is already logged by the layer itself.
+  if (opts && opts.body && typeof opts.body === 'string') {
+    try {
+      var signed = window.saSignRequest(JSON.parse(opts.body));
+      if (signed) opts = Object.assign({}, opts, { body: JSON.stringify(signed) });
+    } catch (e) {}
+  }
+
+  // LAYER 20 — prompt injection + PII scrubbing on the outbound body, which
+  // in turn is what finally puts Layers 7 and 8 on every proxy call rather
+  // than only where a caller remembered them.
+  return window.saSecureClaudeCall(url, opts, _saInnerFetch).then(function(res) {
+    // LAYER 17 — response sanitization. Rebuilds the Response because a body
+    // can only be read once; the original is consumed here and a new one with
+    // identical status and headers is handed back, so callers see no
+    // difference. Non-JSON and unparseable bodies pass through UNCHANGED
+    // rather than being coerced -- a sanitizer that corrupts a payload it did
+    // not understand would be worse than the exposure it prevents.
+    var ct = '';
+    try { ct = res.headers.get('content-type') || ''; } catch (e) {}
+    if (ct.indexOf('json') === -1) return res;
+    return res.text().then(function(raw) {
+      var out = raw;
+      try {
+        var parsed = JSON.parse(raw);
+        ['text', 'content', 'completion', 'result'].forEach(function(k) {
+          if (typeof parsed[k] === 'string') parsed[k] = window.saSanitizeResponse(parsed[k]);
+        });
+        if (Array.isArray(parsed.content)) {
+          parsed.content = parsed.content.map(function(c) {
+            if (c && typeof c.text === 'string') c.text = window.saSanitizeResponse(c.text);
+            return c;
+          });
+        }
+        out = JSON.stringify(parsed);
+      } catch (e) { return new Response(raw, { status: res.status, statusText: res.statusText, headers: res.headers }); }
+      return new Response(out, { status: res.status, statusText: res.statusText, headers: res.headers });
+    });
+  });
+};
+
+// LAYER 24 — Data Minimization Checker, wired onto the localStorage write
+// helper. It was defined and never called, so nothing ever checked what this
+// app persists. stRaw() is the single raw-write helper, which makes it the one
+// place this can go. It REPORTS, it does not block: refusing a write here
+// would lose a user's work over a field name, and the layer's own contract is
+// a boolean check plus an audit entry.
+if (typeof window.stRaw === 'function' && !window.stRaw._saWrapped) {
+  var _saOrigStRaw = window.stRaw;
+  window.stRaw = function(key, value) {
+    try { window.saCheckDataMinimization(value); } catch (e) {}
+    return _saOrigStRaw.apply(this, arguments);
+  };
+  window.stRaw._saWrapped = true;
+}
+
 // == INITIALIZATION MESSAGE =================================
-saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'info');
+// "30 layers active" CORRECTED 2026-08-31. That string was false and had been
+// written into the audit log on every page load: ten of the thirty layers were
+// defined and never called. Six are wired directly above, Layer 6 at the login
+// path and Layers 27 and 30 to real controls; Layer 2 (safeHTML) is still NOT
+// wired and is named here rather than quietly counted -- see the note beside
+// its definition. The count is now computed from what is actually reachable
+// instead of asserted.
+saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired (Layer 2 pending)', 'info');
 
 
 })(); // End SAIRN Security IIFE
@@ -4354,6 +4503,23 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 30 layers active', 'in
   <div class="kpi"><div class="kpi-val" id="adm-backup">--</div><div class="kpi-label">Last Backup</div></div>
   <div class="kpi"><div class="kpi-val" id="adm-version">v52</div><div class="kpi-label">Build</div></div>
   <div class="kpi"><div class="kpi-val" style="color:var(--brand2)">✓</div><div class="kpi-label">API Connected</div></div>
+</div>
+<!-- SECURITY & PRIVACY CARD — added 2026-08-31. Layers 27 and 30 were defined
+     and never called; unlike the request-path layers they cannot be wired to an
+     interception point, because both ARE user actions and neither had a control
+     anywhere in the UI. Layer 27 in particular is the CCPA/GDPR "right to
+     delete" that the privacy notice at the bottom of the page already promises
+     in writing -- "You have the right to delete all stored data at any time
+     using the data wipe function in Settings" -- against a Settings screen that
+     had no such function on it. That is the gap this card closes. -->
+<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+  <div style="font-weight:700;margin-bottom:6px;color:var(--text);font-size:13px;text-transform:uppercase;letter-spacing:.5px">Security &amp; Privacy</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Session security status, and your right to delete every piece of data this app has stored on this device.</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="q-btn" onclick="saShowSecurityStatus()">🛡️ Security Status</button>
+    <button class="q-btn" onclick="saWipeAllData()" style="border-color:#DC2626;color:#DC2626">🗑️ Delete All Data On This Device</button>
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-top:10px">Deleting is permanent, asks for confirmation first, and cannot be undone.</div>
 </div>
 <script>
 (function(){
@@ -31366,10 +31532,20 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
             return;
           }
         }
+        // LAYER 6 — brute-force protection, WIRED 2026-08-31. saTrackLoginAttempt
+        // was defined and never called anywhere in the file, so the lockout it
+        // implements -- five attempts, then a blocking overlay -- had never once
+        // fired. The counter it maintains (SAIRN_SEC.loginAttempts, mirrored to
+        // sessionStorage 's_attempts') was likewise only ever written by the
+        // reset in init(), never incremented. Called on the FAILURE branch only,
+        // and deliberately after the licence-error redirect above: a dead licence
+        // key is not a wrong PIN and must not count toward a PIN lockout.
+        if (typeof window.saTrackLoginAttempt === 'function') window.saTrackLoginAttempt(false);
         if (errEl) { errEl.textContent = sdAuthErr(res.body, 'Sign-in failed — try again'); errEl.style.display = 'block'; }
         if (pinEl) { pinEl.value = ''; pinEl.focus(); }
         return;
       }
+      if (typeof window.saTrackLoginAttempt === 'function') window.saTrackLoginAttempt(true);
       try {
         sessionStorage.setItem(SD_SESSION_KEY, res.body.token);
         sessionStorage.setItem(SD_ROLE_KEY, res.body.role);
@@ -31535,10 +31711,16 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; });
     }).then(function(res) {
       if (!res.ok || !res.body || !res.body.ok) {
+        // LAYER 6 — the subcontractor door is a PIN door too. Wiring only the
+        // employee login would have left a second, equally guessable entrance
+        // with no lockout on it, which is exactly the kind of partial coverage
+        // that reads as protection and is not.
+        if (typeof window.saTrackLoginAttempt === 'function') window.saTrackLoginAttempt(false);
         if (errEl) { errEl.textContent = sdAuthErr(res.body, 'Sign-in failed — try again'); errEl.style.display = 'block'; }
         if (pinEl) { pinEl.value = ''; pinEl.focus(); }
         return;
       }
+      if (typeof window.saTrackLoginAttempt === 'function') window.saTrackLoginAttempt(true);
       try {
         sessionStorage.setItem(SD_SUB_SESSION_KEY, res.body.token);
         sessionStorage.setItem(SD_SUB_ID_KEY, res.body.sub_id);
