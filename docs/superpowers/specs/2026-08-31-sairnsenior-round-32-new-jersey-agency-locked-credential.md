@@ -144,6 +144,87 @@ should read about New Jersey**, and it is a one-section job.
 
 ---
 
+## 5a. ADDENDUM, same session — "health care service firm" was read, and it names the business model
+
+§ 5 said the definition of *health care service firm* "is the next thing anyone
+should read about New Jersey, and it is a one-section job." **It was read. It does
+not collapse the problem, but it changes its shape, and it is the single most
+directly relevant provision found in thirty-two rounds.**
+
+It is not in the health title at all. It is in **Title 34, Labor and Workmen's
+Compensation**, attached to the Private Employment Agency Act:
+
+> **N.J.S.A. 34:8-45.1(1)(a):** "Notwithstanding any other law or regulation to
+> the contrary, an employment agency required to be licensed pursuant to
+> P.L.1989, c.331 (C.34:8-43 et al.), **or any other firm, company, business,
+> agency, or other entity that is not a home health care agency** licensed
+> pursuant to P.L.1971, c.136 (C.26:2H-1 et seq.) **or a hospice** licensed
+> pursuant to P.L.1997, c.78, **which employs, places, arranges for the placement
+> of, or in any way refers, an individual to provide companion services, health
+> care services, or personal care services in the personal residence of a person
+> with a disability or who is age 60 or older, regardless of the title by which
+> the provider of the services is known, shall be registered as a Health Care
+> Service Firm** and shall be subject to the rules and regulations governing
+> Health Care Service Firms adopted by the Division of Consumer Affairs in the
+> Department of Law and Public Safety. The Division of Consumer Affairs is
+> authorized to enforce the health care service firm registration requirement …
+> upon any person whose operations are subject to this section, **whether the
+> operations include the direct employment of individuals, the use of an Internet
+> website or application, or any other process or business model.**"
+
+> **New Jersey wrote the platform into the statute.** Where South Carolina reaches
+> referral businesses only where the referrer has a financial interest, and
+> Wyoming folds "arranging" into its home health definition without saying why,
+> **New Jersey names "the use of an Internet website or application" and "any
+> other process or business model" as things that do not avoid registration.**
+> This is an anti-avoidance clause aimed squarely at the model.
+
+**Three definitions come with it, and they draw the medical/non-medical line
+somewhere no other state has put it:**
+
+- **"Companion services"** — "non-medical, basic supervision and socialization
+  services **which do not include assistance with activities of daily living**,
+  and which are provided in the individual's home. Companion services **may
+  include the performance of household chores.**"
+- **"Health care services"** — services for maintaining or restoring physical or
+  mental health, or any health-related services, **"and for which a license or
+  certification is required as a pre-condition to the rendering of such
+  services."**
+- **"Personal care services"** — "services performed **by licensed or certified
+  personnel**" assisting with ADLs that may involve physical contact: bathing,
+  toileting, transferring, dressing, grooming, ambulation, exercise, personal
+  hygiene.
+
+> **In New Jersey, ADL assistance is by definition credentialed work.** Companion
+> services stop where ADLs begin, and personal care services are defined as being
+> performed by licensed or certified personnel. **Compare Maine, which excludes
+> chore services from licensure entirely, and Minnesota, which lets unlicensed
+> personnel do ADLs under a basic licence.** The same three activities —
+> socialising, chores, ADLs — are cut into different categories by all three
+> states.
+
+**What this does to the held question.** It resolves one half and sharpens the
+other:
+
+- **Resolved:** a platform *can* be a health care service firm — in fact it
+  **must register as one** if it employs, places, arranges or refers anyone into
+  the home of a person 60+ or a person with a disability. Registration is with
+  **Consumer Affairs**, not the Department of Health. So the certificate legend's
+  phrase "*home health agency or health care service firm*" is reachable.
+- **Still open, and now the whole question:** §§ 45:11-24.6 and 24.7 both say
+  **"employed by"** — 24.7 for validity, 24.6 for renewal, the latter requiring
+  documented proof the aide is "**currently employed and regularly supervised by a
+  registered professional nurse**." **A registered health care service firm that
+  places independent contractors is not obviously "employing" them.** Whether New
+  Jersey treats placement by a registered HCSF as employment for these two
+  sections is **not established here** — it turns on the Consumer Affairs rules
+  (N.J.A.C. 13:45B), which were **not read**, and quite possibly on litigation
+  history, which was **not searched**.
+
+**That is now the one New Jersey question**, and it is narrow enough to put to
+counsel in a sentence: *does placement by a registered Health Care Service Firm
+satisfy "employed by" in N.J.S.A. 45:11-24.6 and 24.7?*
+
 ## 6. Where things stand
 
 | | |
