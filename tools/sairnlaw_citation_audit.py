@@ -117,8 +117,38 @@ LEDGER = {
     'ca_crc_1_10':   ('2026-08-30', 'courts.ca.gov rule1_10 -- "Rule 1.10. Time for actions"'),
     'nv_nrcp_6':     ('2026-08-30', 'leg.state.nv.us/courtrules/NRCP.html -- '
                                     'Rule 6, "Computing and Extending Time"'),
-    'fl_rgpja_2514': ('2026-08-30', 'Fla. R. Gen. Prac. & Jud. Admin. 2.514, '
-                                    'current set name confirmed'),
+    'fl_rgpja_2514': ('2026-08-31', 'read VERBATIM from the 1 July 2026 edition, '
+                                    'floridabar.org, 259pp -- 2.514 retained, set name current'),
+    'hi_hrcp_6':     ('2026-08-31', 'courts.state.hi.us hrcp_ada.htm -- Rule 6, and 6(a) names '
+                                    'HRS Sec. 8-1 as the holiday referent by number'),
+    'va_code_1_210': ('2026-08-31', 'law.lis.virginia.gov -- "Sec. 1-210. Computation of time"'),
+    'ny_gcl_20':     ('2026-08-31', 'nysenate.gov GCN ch. 22 art. 2 Sec. 20, "Day, computation" '
+                                    '-- note the law code is GCN, not CNS'),
+    'illinois_5ilcs70_111':
+                     ('2026-08-31', 'ilga.gov fulltext DocName=000500700K1.11 -- "Sec. 1.11", '
+                                    'text matches what the standard models'),
+    'ca_ccp_12_12a': ('2026-08-31', 'leginfo.legislature.ca.gov CCP section 12 resolves; SECTION '
+                                    'NUMBER confirmed from the page title, body not extracted'),
+    'ga_ocga_1_3_1_d3':
+                     ('2026-08-31', 'law.justia.com MIRROR -- subsection (d)(3) "Computation of '
+                                    'time" confirmed. NOT the official publisher: the OCGA is '
+                                    'published by LexisNexis, so this row is weaker than the rest'),
+}
+
+# Standards someone TRIED to verify and could not reach. Recorded so the next
+# session does not walk the same dead ends. Not a finding -- an absence of one.
+ATTEMPTED_AND_UNREACHED = {
+    'or_orcp_10': ('2026-08-31',
+                   'courts.oregon.gov/programs/utcr/Documents/2026_ORCP.pdf and '
+                   '/rules/orcp/Documents/ORCP_2026.pdf both 404; '
+                   'oregonlegislature.gov/bills_laws/Pages/ORCP.aspx loads but carries no rule '
+                   'text. Oregon puts computation at ORCP 10 rather than 6, which is exactly the '
+                   'shape most likely to be mis-cited, so this one is worth finishing.'),
+    'ct_pb_63_2': ('2026-08-31',
+                   'jud.ct.gov/pb.htm is an index page and does not carry Sec. 63-2 inline. '
+                   'LOWEST PRIORITY of the unchecked set: Connecticut is held out of the seed by '
+                   'its own _hold_reason and never computes, so a stale citation there cannot '
+                   'reach an answer.'),
 }
 
 
@@ -255,6 +285,12 @@ def main():
     for k in checked:
         when, where = LEDGER[k]
         print('     %-16s %s  %s' % (k, when, where))
+    if ATTEMPTED_AND_UNREACHED:
+        print('   TRIED AND COULD NOT REACH (%d) -- dead ends already walked, so nobody '
+              'walks them twice:' % len(ATTEMPTED_AND_UNREACHED))
+        for k in sorted(ATTEMPTED_AND_UNREACHED):
+            when, why = ATTEMPTED_AND_UNREACHED[k]
+            print('     %-16s %s  %s' % (k, when, why))
     print('   NEVER CHECKED (%d) -- this is a statement about our records, not a '
           'claim that any of them is wrong:' % len(unchecked))
     for i in range(0, len(unchecked), 4):

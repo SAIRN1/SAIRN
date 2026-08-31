@@ -1,0 +1,324 @@
+{
+  "_readme": [
+    "HAWAIʻI -- Hawaiʻi Rules of Civil Procedure. 10 rules, 34th computing",
+    "jurisdiction.",
+    "",
+    "*** TWO DAYS, NOT THREE. *** Haw. R. Civ. P. 6(e) adds 2 days for mailed",
+    "service, and Hawaiʻi is the ONLY seeded jurisdiction that says two. Every",
+    "FRCP-family state adds three; South Carolina and New Jersey add five;",
+    "California and New York use per-method tables. An `add: 3` copied from any",
+    "neighbour over-counts by a day on every mailed Hawaiʻi deadline, which is",
+    "the direction that reports LATE. A test asserts no row carries 3.",
+    "",
+    "THE HOLIDAY REFERENT IS EXPRESS, WHICH IS EXACTLY WHAT IDAHO'S WAS NOT.",
+    "Rule 6(a) closes: 'As used in these rules, \"holiday\" shall mean any day",
+    "designated as such pursuant to SECTION 8-1 of the Hawaiʻi Revised",
+    "Statutes.' One section, named by number.",
+    "",
+    "SOURCE: the Judiciary publishes the whole HRCP as one 1,363,985-byte HTML",
+    "document at courts.state.hi.us, free, on a plain curl, no gate. HRS Sec.",
+    "8-1, Sec. 8-2 and Sec. 1-29 are equally free from the Legislature. NOTE THE",
+    "UPLOAD PATH IS MISLEADING: the file lives under /wp-content/uploads/2024/09/",
+    "yet its own text records amendments effective 1 July 2026, so it is",
+    "maintained in place and the path date says nothing about currency.",
+    "",
+    "AND IT HAS THE NOTICE LIMB -- A THIRD ANSWER TO A QUESTION TWO STATES",
+    "ALREADY SPLIT ON. Rule 6(e) reaches 'the service of a NOTICE or other",
+    "paper', matching Miss. R. Civ. P. 6(e), where I.R.C.P. 2.2(c) and Neb. Ct.",
+    "R. Pldg. Sec. 6-1106(c) reach only 'after service'. So Hawaiʻi's",
+    "post-motion row -- triggered by 'notice of the court's action' -- DOES take",
+    "the two days, where Idaho's and Nebraska's take nothing.",
+    "",
+    "TWO ELECTIONS AND ONE FLOOR, the same split as Mississippi, New Mexico and",
+    "South Carolina. Rules 33(3) and 34 each say a defendant 'MAY serve' within",
+    "forty-five days; Rule 36 says a defendant 'shall not be required to serve",
+    "answers or objections BEFORE THE EXPIRATION OF' forty-five days. Only",
+    "admissions is a later_of.",
+    "",
+    "NO BACKWARD ROW IS SEEDED, AND HAWAIʻI HAS THE LONGEST MOTION NOTICE ON THE",
+    "PLATFORM. Rule 6(d) requires a written motion and notice of hearing to be",
+    "served NOT LESS THAN 18 DAYS before the hearing, and opposing affidavits",
+    "not less than 8 days before. Both clear the seven-day exclusion threshold,",
+    "so that is not the obstacle -- Rule 6(a) rolls to 'the NEXT day' and says",
+    "nothing about a period measured before an event, the Mississippi, Idaho and",
+    "Nebraska shape rather than New Mexico's.",
+    "",
+    "RECENT AMENDMENTS, RECORDED BECAUSE THEY ARE RECENT AND NOT BECAUSE ANYTHING",
+    "IS KNOWN TO HAVE MOVED: Rule 6 was amended effective 1 January 2026,",
+    "corrected 19 December 2025 and amended again effective 1 July 2026; Rule 36",
+    "was amended effective 1 January 2026. The text encoded is the current one.",
+    "WHAT those amendments changed was NOT determined -- the document carries an",
+    "amendment history and no redline, and guessing would be worse than saying",
+    "so."
+  ],
+  "rules": [
+    {
+      "rule_id": "hi-hrcp-12a1-answer-summons-and-complaint-20-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and complaint -- 20 days (Hawaiʻi)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 12(a)(1)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "A defendant shall serve an answer within 20 days after being served with the summons and complaint, except when service is made under Rule 4(c) and a different time is prescribed in an order of court under a statute or rule of court.",
+        "note": "TWENTY, the pre-2009 federal number, which Hawaiʻi kept when the FRCP moved to twenty-one. Rule 12 was last amended effective 1 January 2000 and has not been restyled since. THE RULE 4(c) CARVE-OUT IS NOT MODELLED: 'except when service is made under Rule 4(c) and a different time is prescribed in an order of court under a statute or rule of court' names a period set by the order itself, which the engine cannot see; when such an order exists it governs and this row does not. NO SERVICE EXTENSION. Rule 6(e) reaches a party acting 'after the service of a notice or other paper', and original process is served under Rule 4 rather than as a Rule 5 paper. Withholding reports EARLY; granting on a mailed summons would report LATE. The field is absent so a caller passing service_method cannot collect the days anyway.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2000-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-12a2-answer-to-crossclaim-20-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Answer to a cross-claim -- 20 days (Hawaiʻi)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "hi_hrcp_6_e",
+        "add": 2,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 12(a)(2)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "A party served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after being served.",
+        "note": "THE EXTENSION APPLIES HERE, unlike the answer to the summons, because a cross-claim is a pleading served under Rule 5 rather than original process. AND IT IS TWO DAYS, NOT THREE -- Rule 6(e) says '2 days shall be added to the prescribed period', and Hawaiʻi is the only seeded jurisdiction that says two. MAIL ONLY: no electronic limb, no commercial carrier, nothing else.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2000-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-12a2-reply-to-counterclaim-20-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Plaintiff's reply to a counterclaim in the answer -- 20 days after service of the answer (Hawaiʻi)",
+      "trigger_event": "service_of_the_answer",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "hi_hrcp_6_e",
+        "add": 2,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 12(a)(2)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "The plaintiff shall serve a reply to a counter-claim in the answer within 20 days after service of the answer or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs.",
+        "note": "THE TRIGGER IS SERVICE OF THE ANSWER, not service of the counterclaim -- the same wording as New Mexico's Rule 1-012(A) and the opposite of Mississippi's, which runs from service of the counterclaim. In the ordinary case the counterclaim is IN the answer and the dates coincide, which is exactly why the difference is easy to miss. The rule also spells the word 'counter-claim' with a hyphen where every neighbour writes it closed; the quote preserves it.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2000-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-12a2-reply-when-ordered-20-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Reply, when the court orders one -- 20 days after service of the order (Hawaiʻi)",
+      "trigger_event": "service_of_order_to_reply",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "hi_hrcp_6_e",
+        "add": 2,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 12(a)(2)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs.",
+        "note": "'UNLESS THE ORDER OTHERWISE DIRECTS' is on the face of the rule and is invisible to this engine. A reply is only ever due because a court ordered it, so the same order can set its own period; when it does, that period governs and this row does not. Twenty days, the same number as every other Rule 12(a) period here -- Hawaiʻi uses one figure for all four, as Mississippi does with thirty.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2000-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-12a3A-responsive-pleading-after-motion-denied-10-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 12 motion is denied or postponed -- 10 days (Hawaiʻi)",
+      "trigger_event": "notice_of_court_action_denying_or_postponing_motion",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "hi_hrcp_6_e",
+        "add": 2,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 12(a)(3)(A)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action;",
+        "note": "THIS ROW TAKES THE TWO DAYS, AND THAT IS THE THIRD ANSWER TO A QUESTION TWO STATES ALREADY SPLIT ON. Four jurisdictions now run this period from 'notice of the court's action'. Miss. R. Civ. P. 6(e) reaches 'the service of a NOTICE or other paper' and its row takes three days; I.R.C.P. 2.2(c) and Neb. Ct. R. Pldg. Sec. 6-1106(c) reach only 'after service' and theirs take nothing. Haw. R. Civ. P. 6(e) has the notice limb, so this row takes two. The answer is decided every time by the TIME rule, never by the pleading rule. TEN DAYS IS NOT LESS THAN SEVEN, so Rule 6(a)'s intermediate-day exclusion does not fire. THE TRIGGER IS NOTICE, NOT ENTRY: a caller who supplies the date the order was entered computes EARLY.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2000-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-12a3B-responsive-pleading-after-more-definite-statement-10-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after service of a more definite statement -- 10 days (Hawaiʻi)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "hi_hrcp_6_e",
+        "add": 2,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 12(a)(3)(B)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "if the court grants a motion for a more definite statement the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "THE SIBLING ROW RUNS FROM SERVICE AND THIS ONE FROM NOTICE, and in Hawaiʻi -- unlike Idaho and Nebraska -- BOTH take the extension, because Rule 6(e) reaches a notice as well as a paper. Seeded separately anyway, because the triggers are different events and a caller must supply the right one. 'Unless a different time is fixed by order of the court' opens Rule 12(a)(3) and governs both rows; it is invisible to this engine.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2000-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-33b3-interrogatory-answers-30-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- 30 days (Hawaiʻi)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "hi_hrcp_6_e",
+        "add": 2,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 33(b)(3)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within 30 days after the service of the interrogatories, except that a defendant may serve answers or objections within 45 days after service of the summons and complaint upon that defendant.",
+        "note": "A PLAIN 30-DAY ROW, NOT A FLOOR, AND THE DECIDING WORD IS 'MAY'. The forty-five days is an ELECTION available to a defendant, not a period the rule guarantees, so it is not modelled as a later_of -- the same reading applied in Kansas and to Mississippi's and New Mexico's Rules 33 and 34. Contrast this jurisdiction's own Rule 36, which says 'shall not be required ... before the expiration of' and IS a later_of. AND CONTRAST NEBRASKA, seeded the day before, whose Sec. 6-333(b)(2) says 'may' AND 'whichever is longer' in one sentence, which makes the comparative govern and turns the same word into a floor. 'A shorter or longer time may be directed by the court or, in the absence of such an order, agreed to in writing by the parties subject to Rule 29' is on the face of the rule and is invisible to this engine.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2015-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-34b-production-response-30-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- 30 days (Hawaiʻi)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "service_extension": {
+        "standard": "hi_hrcp_6_e",
+        "add": 2,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 34(b)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "The party upon whom the request is served shall serve a written response within 30 days after the service of the request, except that a defendant may serve a response within 45 days after service of the summons and complaint upon that defendant.",
+        "note": "'MAY' AGAIN, so an election and not a floor, and the row is a plain thirty days for the same reason as Rule 33. WHAT THIS ROW IS NOT: the production itself. The same paragraph requires the request to 'specify a reasonable time, place, and manner of making the inspection' -- a date set by the parties' own papers rather than by the rule, and therefore not seedable. This row is the WRITTEN RESPONSE only.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2015-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-36a-admissions-answer-later-of",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to requests for admission -- the later of 30 days and the 45-day defendant floor (Hawaiʻi)",
+      "trigger_event": {
+        "id": "hawaii_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": { "value": 30, "unit": "calendar_days" },
+            "label": "30 days after service of the request for admission"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": { "value": 45, "unit": "calendar_days" },
+            "label": "45 days after service of the summons and complaint on the defendant"
+          }
+        ]
+      },
+      "computation": "hi_hrcp_6",
+      "service_extension": {
+        "standard": "hi_hrcp_6_e",
+        "add": 2,
+        "unit": "calendar_days",
+        "applies_when": ["mail"],
+        "order": "after_base_period"
+      },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 36(a)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "The matter is admitted unless, within 30 days after service of the request, or within such shorter or longer time as the court may allow or as the parties may agree to in writing, subject to Rule 29, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or by the party's attorney, but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 45 days after service of the summons and complaint upon that defendant.",
+        "note": "THE ONLY HAWAIʻI DISCOVERY PERIOD THAT IS A REAL FLOOR. 'SHALL NOT BE REQUIRED TO SERVE ... BEFORE THE EXPIRATION OF forty-five days' is mandatory; Rules 33 and 34 both say a defendant 'MAY serve' and are plain thirty-day rows. Hawaiʻi joins Mississippi, New Mexico and South Carolina in making admissions the mandatory one. SELF-EXECUTING: 'The matter is admitted unless ...', and Rule 36(b) makes an admission conclusively established unless the court permits withdrawal -- so this is the row where reading the wrong shape costs the most. RULE 36 WAS AMENDED EFFECTIVE 1 JANUARY 2026 and corrected on 19 December 2025; the text here is the current one and this row's effective_from records that. Both limbs run from caller-supplied dates, so this does not hit the chained-floor problem Maryland raises. A PLAINTIFF answering the same request takes the plain thirty days.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2026-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-59b-motion-for-new-trial-10-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 10 days after entry of judgment (Hawaiʻi)",
+      "trigger_event": "entry_of_judgment_hawaii",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 59(b)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "Time for motion. A motion for a new trial shall be filed no later than 10 days after entry of the judgment.",
+        "note": "TEN DAYS, AND THE COURT CANNOT ENLARGE IT. Rule 6(b) names this rule in its own prohibition -- 'it may not extend the time for taking any action under Rules 50(b), 52(b), 59(b), (d) and (e) and 60(b) of these rules AND RULE 4(a) OF THE HAWAIʻI RULES OF APPELLATE PROCEDURE'. That last clause is unusual: Hawaiʻi's civil computation rule reaches into the appellate rules to freeze the notice of appeal as well, which no other seeded jurisdiction's Rule 6 does. TEN IS NOT LESS THAN SEVEN, so the intermediate-day exclusion does not fire. NO SERVICE EXTENSION: Rule 6(e) reaches a period running after the service of a notice or paper, and entry of judgment is neither. THE TRIGGER IS ENTRY, not notice of entry.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2000-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "hi-hrcp-59e-motion-to-alter-or-amend-judgment-10-days",
+      "jurisdiction": "hi",
+      "domain": "civil-litigation",
+      "label": "Motion to alter or amend the judgment -- 10 days after entry (Hawaiʻi)",
+      "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend_hawaii",
+      "computation": "hi_hrcp_6",
+      "count": { "value": 10, "unit": "calendar_days", "direction": "forward" },
+      "authority": {
+        "citation": "Haw. R. Civ. P. 59(e)",
+        "url": "https://www.courts.state.hi.us/wp-content/uploads/2024/09/hrcp_ada.htm",
+        "quote": "Motion to alter or amend judgment. Any motion to alter or amend a judgment shall be filed no later than 10 days after entry of the judgment.",
+        "note": "A SEPARATE ROW FROM RULE 59(b) even though the period and the trigger match, because they are different motions with different consequences and a caller asking for one should not be answered with the other's citation. Rule 6(b) freezes this one too. THE ROW STOPS AT THE DATE AND DOES NOT REACH THE APPEAL CLOCK -- HRAP Rule 4(a), which Rule 6(b) also freezes but which belongs to the appellate rules and is not seeded here.",
+        "retrieved_at": "2026-08-31"
+      },
+      "effective_from": "2000-01-01",
+      "effective_to": null
+    }
+  ]
+}
