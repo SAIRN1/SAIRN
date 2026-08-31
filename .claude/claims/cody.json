@@ -48,8 +48,8 @@
       "task": "unreachable-feature sweep",
       "claimed_at": "2026-08-31T09:56:30Z",
       "claimed_at_epoch": 1788170190.8450701,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-08-31T10:15:13Z"
     }
   ]
 }
