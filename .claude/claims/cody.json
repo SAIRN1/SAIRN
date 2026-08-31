@@ -50,6 +50,16 @@
       "claimed_at_epoch": 1788170190.8450701,
       "status": "released",
       "released_at": "2026-08-31T10:15:13Z"
+    },
+    {
+      "id": "cody-1788171945",
+      "session": "cody",
+      "subject": "sairnfreedom",
+      "task": "phase 1 foundation build",
+      "claimed_at": "2026-08-31T10:25:45Z",
+      "claimed_at_epoch": 1788171945.3007078,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
