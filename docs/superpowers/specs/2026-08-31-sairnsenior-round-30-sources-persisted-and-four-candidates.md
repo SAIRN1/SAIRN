@@ -157,9 +157,13 @@ and recorded that. **The home health chapter is 23-17.3, "Home Health Agency
 Licensure"**, and it is live. *(23-17.4 is Hospice Programs — also fetched this
 round, by the same mis-hit, and kept as a labelled example.)*
 
-**This is the third wrong-citation incident in the survey** after North Dakota
-itself (round 20) and South Dakota's eleven endpoint forms tested against the
-wrong chapter (round 25).
+**CORRECTED: this sentence originally said "the third wrong-citation incident".
+It is the fourth** — Tennessee 0720-11 (round 4) and Maine's
+*Appointment of Receivers* chapter (round 15) had both been forgotten by the
+time this was written. **Counting from memory two rounds later is exactly how
+the count went wrong**, so the incidents now live in
+`sairnsenior-PATTERN-LOG-wrong-citations.md` instead of in whichever round
+happened to notice one.
 
 On the axis: **one worker class in statute.** "Home health aide" is defined as
 "an individual who renders **personal related service under the supervision of a
