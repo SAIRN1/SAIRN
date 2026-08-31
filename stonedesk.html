@@ -4524,12 +4524,26 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
      had no such function on it. That is the gap this card closes. -->
 <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
   <div style="font-weight:700;margin-bottom:6px;color:var(--text);font-size:13px;text-transform:uppercase;letter-spacing:.5px">Security &amp; Privacy</div>
-  <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Session security status, and your right to delete every piece of data this app has stored on this device.</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Session security status, and your right to delete SAIRN data stored on this device.</div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn" onclick="saShowSecurityStatus()">🛡️ Security Status</button>
-    <button class="q-btn" onclick="saWipeAllData()" style="border-color:#DC2626;color:#DC2626">🗑️ Delete All Data On This Device</button>
+    <button class="q-btn" onclick="saWipeAllData()" style="border-color:#DC2626;color:#DC2626">🗑️ Delete EVERY SAIRN App's Data On This Device</button>
   </div>
-  <div style="font-size:11px;color:var(--muted);margin-top:10px">Deleting is permanent, asks for confirmation first, and cannot be undone.</div>
+  <!-- LABEL CORRECTED 2026-08-31, before this shipped to anyone. The first
+       version of this button read "Delete All Data On This Device", which a
+       StoneDesk admin reads as StoneDesk's data. It is not. saWipeAllData calls
+       localStorage.clear(), and every SAIRN app is served from the same origin,
+       so they share one localStorage: a real browser checked during this test
+       held 201 keys spanning sd_, sc_, sb_, sdn_, law_, leg_, sv_ and alf_
+       prefixes -- StoneDesk, SAIRNcode, SAIRNbiz, SAIRNdental, SAIRNlaw,
+       SAIRNlegacy, SAIRNvet and SAIRNcare. Clicking this in StoneDesk would
+       take SAIRNlaw's matters and SAIRNvet's patients with it.
+       An all-apps wipe is defensible as the CCPA/GDPR right to delete -- the
+       user is erasing their data from the device -- but only if the button says
+       so before they click, which is all this correction does. Whether the wipe
+       should instead be scoped per app, with a separate all-apps option, is a
+       product decision and is written up rather than made here. -->
+  <div style="font-size:11px;color:var(--muted);margin-top:10px">This clears data for <b>every SAIRN app</b> used in this browser, not just StoneDesk &mdash; they share one browser storage area. Permanent, asks for confirmation first, cannot be undone.</div>
 </div>
 <script>
 (function(){
