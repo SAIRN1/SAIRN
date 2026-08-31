@@ -1,0 +1,172 @@
+{
+  "_readme": [
+    "NEW HAMPSHIRE HOLIDAY CALENDAR -- 2026, ten dates, derived from RSA 288:1",
+    "and checked by weekday.",
+    "",
+    "THE REFERENT IS EXPRESS AND IT NAMES A CHAPTER, NOT A SECTION. N.H. Super.",
+    "Ct. R. 2 ends: '...unless it is a Saturday, Sunday, or a legal holiday, in",
+    "which event the period shall extend until the end of the next day that is",
+    "not a Saturday, Sunday, or a legal holiday AS SPECIFIED IN RSA CH. 288, AS",
+    "AMENDED.' Hawaiʻi's rule named ONE SECTION (HRS Sec. 8-1) and the weekend-",
+    "shift section beside it was therefore held to be outside the reference. New",
+    "Hampshire names the WHOLE CHAPTER, so RSA 288:2 -- the observance section --",
+    "is inside the reference and IS carried. That distinction decided a date in",
+    "Hawaiʻi and decides nothing here, for the reason immediately below.",
+    "",
+    "*** RSA 288:2 IS A SUNDAY RULE ONLY, AND IT IS DORMANT IN 2026. *** The",
+    "whole section reads: 'When any holiday listed in RSA 288:1 falls on Sunday,",
+    "the following day shall be observed as a holiday.' There is NO SATURDAY",
+    "LIMB. 4 July 2026 is a SATURDAY, so New Hampshire has no Friday 3 July",
+    "observance -- not as a reading, but because the statute has no clause that",
+    "could produce one. Idaho Code Sec. 73-108 and Neb. Rev. Stat. Sec. 25-2221",
+    "both shift a Saturday holiday back to the Friday and both calendars carry 3",
+    "July 2026; Hawaiʻi omits it as a READING of what its rule incorporates; New",
+    "Hampshire omits it because THE RULE DOES NOT EXIST. Four jurisdictions,",
+    "three different reasons, one date. And no RSA 288:1 holiday falls on a",
+    "Sunday in 2026, so the shift that DOES exist changes nothing this year --",
+    "checked date by date, not assumed.",
+    "",
+    "*** THE LIST IS CLOSED -- THERE IS NO PROCLAMATION LIMB. *** Every other",
+    "seeded state's holiday statute ends with an open clause: a day appointed by",
+    "the President or the governor (Idaho, Hawaiʻi), a day observed by order of",
+    "the supreme court (Kansas), a federal schedule override (Nebraska). RSA",
+    "288:1 ends '...and Christmas Day ARE LEGAL HOLIDAYS' and stops. The single",
+    "open element is inside one entry -- 'Thanksgiving Day, WHENEVER APPOINTED'",
+    "-- and it is seeded as the fourth Thursday, which is what every appointment",
+    "in living memory has been and what 5 U.S.C. 6103 fixes federally. That is a",
+    "convention and it is labelled as one on the row.",
+    "",
+    "*** THE BIENNIAL ELECTION DAY IS OMITTED AND IT IS THE ONE JUDGMENT CALL. ***",
+    "RSA 288:1 makes 'the day on which the biennial election is held' a legal",
+    "holiday. 2026 is an even-numbered year, so such a day exists. It is NOT",
+    "seeded, because DATING it needs a second statute and the term does not",
+    "appear in the one that would supply it: RSA 653:7 fixes 'the STATE GENERAL",
+    "ELECTION ... on the first Tuesday following the first Monday in November of",
+    "every even-numbered year' -- Tuesday 3 NOVEMBER 2026 -- and RSA ch. 652, the",
+    "election-law definitions chapter, defines 'election', 'regular election',",
+    "'state election' and 'state general election' and NEVER DEFINES 'biennial",
+    "election'. The identification is near-certain and it is still a reading",
+    "across two chapters that do not use the same word.",
+    "THE DIRECTION DECIDES IT. Omitting a holiday makes a deadline land EARLIER",
+    "than the truth, which is safe; carrying one that is not a holiday makes it",
+    "land a day LATE, which loses a filing. So it is omitted, and the coverage",
+    "entry names Tuesday 3 November 2026 by date so a practitioner can check the",
+    "one week it can affect. This is the same call made on Hawaiʻi's election",
+    "day, for a related but not identical reason -- Hawaiʻi's was county-scoped",
+    "by its own words, New Hampshire's is statewide and merely undated.",
+    "",
+    "WHAT NEW HAMPSHIRE DOES AND DOES NOT SHARE WITH ITS NEIGHBOURS: it HAS",
+    "Columbus Day (Nebraska and Idaho do too; Hawaiʻi and Oregon do not) and it",
+    "has NO Juneteenth, NO day after Thanksgiving, NO Good Friday, NO Patriots'",
+    "Day. Nebraska enumerates Juneteenth AND the day after Thanksgiving AND",
+    "Arbor Day; a calendar copied from it would add three days New Hampshire does",
+    "not have.",
+    "",
+    "MEMORIAL DAY CARRIES A CONDITIONAL CLAUSE THAT IS ALSO DORMANT IN 2026. RSA",
+    "288:1 says 'the last Monday in May, known as Memorial Day OR, ON A DATE TO",
+    "COINCIDE WITH THE FEDERAL OBSERVANCE IF IT IS HELD ON A DIFFERENT DAY'. The",
+    "federal observance (5 U.S.C. 6103) is also the last Monday in May, so the",
+    "two coincide in 2026 at 25 May. The clause is live law and is not modelled;",
+    "it can only ever move this one date and only in a year where Congress moves",
+    "the federal day.",
+    "",
+    "THE JUDICIAL BRANCH PUBLISHES ITS OWN COURT-HOLIDAY SCHEDULE AND IT IS NOT",
+    "THE LEGAL TEST. courts.nh.gov lists 'Court Holidays - 2026' (a PDF posted",
+    "11 June 2025) and a 2027 one beside it. NEITHER WAS READ -- both 403 to",
+    "every automated route tried from here and the browser PDF viewer returned a",
+    "blank frame -- and that is recorded rather than guessed at. It would not",
+    "change this calendar if it had been read: Rule 2 keys the rollover on a day",
+    "being 'a legal holiday as specified in RSA ch. 288', not on whether a",
+    "courthouse opened. This is the Kansas position (the statute keys on the",
+    "supreme court's ORDER, so the published list IS the test) inverted -- here",
+    "the statute keys on the legislature's list, so the courts' own list is",
+    "practical information and nothing more. A day the courts close that RSA",
+    "288:1 does not name is still a countable day under Rule 2.",
+    "",
+    "2026 ONLY. Every one of these ten would generate mechanically for any year",
+    "-- eight are fixed dates or nth-weekdays and two are conditional clauses",
+    "that were dormant this year. Generating 2027 anyway would hide the biennial-",
+    "election question behind a confident answer, and would be wrong in a",
+    "different way: 2027 is an ODD year, so the election limb produces no day at",
+    "all, and a generator that silently dropped it would look identical to one",
+    "that had reasoned about it. A 2027 trigger refuses NOT_PROVISIONED."
+  ],
+  "holiday_calendars": [
+    {
+      "jurisdiction": "nh",
+      "year": 2026,
+      "authority": {
+        "citation": "N.H. Super. Ct. R. 2 via RSA 288:1",
+        "url": "https://www.gencourt.state.nh.us/rsa/html/XXV/288/288-1.htm",
+        "computation_url": "https://www.courts.nh.gov/rules-superior-court-state-new-hampshire/civil-rules",
+        "quote": "288:1 Holidays. January 1; the third Monday in January, known as Martin Luther King, Jr. Civil Rights Day; the third Monday in February, known as Washington's Birthday; the last Monday in May, known as Memorial Day or, on a date to coincide with the federal observance if it is held on a different day; July 4, known as Independence Day; the first Monday in September, known as Labor Day; the second Monday in October, known as Columbus Day; the day on which the biennial election is held; November 11, known as Veterans Day; Thanksgiving Day, whenever appointed; and Christmas Day are legal holidays.",
+        "quote_2": "288:2 Falling on Sunday; Status of Martin Luther King, Jr. Civil Rights Day. When any holiday listed in RSA 288:1 falls on Sunday, the following day shall be observed as a holiday.",
+        "url_2": "https://www.gencourt.state.nh.us/rsa/html/XXV/288/288-2.htm",
+        "note": "A CHAPTER, NOT A SECTION, AND THAT IS THE POINT OF COMPARISON. N.H. Super. Ct. R. 2 rolls off 'a legal holiday as specified in RSA CH. 288, as amended'. Hawaiʻi's Rule 6(a) named HRS Sec. 8-1 alone, so HRS Sec. 8-2's weekend observance sat outside the reference and was omitted as a reading. New Hampshire's reference reaches the whole chapter, so RSA 288:2 IS incorporated -- and RSA 288:2 IS A SUNDAY RULE ONLY, with no Saturday limb at all. 4 July 2026 is a Saturday and there is therefore no Friday 3 July observance here, not by interpretation but because no clause could produce one. Idaho and Nebraska both carry 3 July 2026 from Saturday-shift clauses inside the very sections their rules cite. NO RSA 288:1 HOLIDAY FALLS ON A SUNDAY IN 2026, checked date by date, so the shift that does exist is dormant this year. THE LIST IS CLOSED: unlike Idaho, Hawaiʻi, Kansas and Nebraska, RSA 288:1 has NO proclamation or executive-designation limb -- it enumerates and stops. THE BIENNIAL ELECTION DAY IS THE ONE OMISSION: RSA 288:1 makes it a legal holiday, 2026 is an even year so one exists, and dating it requires RSA 653:7 ('the state general election shall be held on the first Tuesday following the first Monday in November of every even-numbered year' -- Tuesday 3 November 2026), a section that never uses the words 'biennial election'. RSA ch. 652 defines four kinds of election and not that one. Omitting reports EARLY and is safe; carrying a wrong holiday reports LATE and is not. The coverage entry names 3 November 2026 by date. THE JUDICIAL BRANCH'S OWN 2026 COURT-HOLIDAY PDF WAS NOT READ (403 to every automated route tried) and is not the legal test in any event: Rule 2 keys on the statute, not on whether a courthouse opened -- the inverse of Kansas, where the statute keys on the supreme court's own order and the published list therefore IS the test.",
+        "retrieved_at": "2026-08-31"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'January 1'. 1 January 2026 is a Thursday."
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King, Jr. Civil Rights Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'the third Monday in January, known as Martin Luther King, Jr. Civil Rights Day', computed for 2026 and verified by weekday. THE NAME IS STATUTORY AND IS NEW HAMPSHIRE'S OWN: no other seeded state calls it a Civil Rights Day, and RSA 288:4 III requires state-funded schools to use the RSA 288:1 name in official communications."
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'the third Monday in February, known as Washington's Birthday', computed for 2026 and verified by weekday. NOT 'Presidents' Day' -- Hawaiʻi's HRS Sec. 8-1 says Presidents' Day, New Hampshire's statute says Washington's Birthday. Same date, different statutory name."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'the last Monday in May, known as Memorial Day or, on a date to coincide with the federal observance if it is held on a different day', computed for 2026 and verified by weekday. THE CONDITIONAL LIMB IS DORMANT IN 2026: the federal observance under 5 U.S.C. 6103 is also the last Monday in May, so both fall on 25 May. The clause is live law, is not modelled, and can only ever move this one date."
+        },
+        {
+          "date": "2026-07-04",
+          "name": "Independence Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'July 4'. 4 JULY 2026 IS A SATURDAY, and unlike Idaho and Nebraska there is NO Friday 3 July observance -- RSA 288:2 shifts a holiday falling on SUNDAY only and has no Saturday limb whatsoever. The Saturday itself is carried faithfully and is excluded by the weekend limb regardless, so this entry changes no computation; it is here so the absence of 3 July is visibly deliberate."
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'the first Monday in September', computed for 2026 and verified by weekday."
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Columbus Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'the second Monday in October, known as Columbus Day', computed for 2026 and verified by weekday. NEW HAMPSHIRE ENUMERATES IT and Hawaiʻi does not; Idaho and Nebraska do. The statute keeps the Columbus name and does not offer an Indigenous Peoples' Day alternative."
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'November 11'. 11 November 2026 is a Wednesday. RSA 288:4 I separately forbids state-funded schools to open on this day, which is a schools provision and has no bearing on Rule 2."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'Thanksgiving Day, WHENEVER APPOINTED'. THIS IS A CONVENTION AND IS LABELLED AS ONE: the statute names no date and defers to an appointment the engine cannot read. It is seeded as the fourth Thursday in November, computed for 2026 and verified by weekday -- what 5 U.S.C. 6103 fixes federally and what every appointment in living memory has been. THE DAY AFTER IS NOT A NEW HAMPSHIRE HOLIDAY and is deliberately absent; Nebraska enumerates it."
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "RSA 288:1, 'Christmas Day'. 25 December 2026 is a Friday."
+        }
+      ]
+    }
+  ]
+}
