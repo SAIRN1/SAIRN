@@ -60,6 +60,16 @@
       "claimed_at_epoch": 1788168456.264877,
       "status": "released",
       "released_at": "2026-08-31T10:10:44Z"
+    },
+    {
+      "id": "hank-1788171671",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "newhampshire deadline seed gate",
+      "claimed_at": "2026-08-31T10:21:11Z",
+      "claimed_at_epoch": 1788171671.297778,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
