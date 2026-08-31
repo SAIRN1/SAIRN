@@ -2076,7 +2076,17 @@ var SAIRN_SEC = {
     'api.github.com'
   ],
   sessionTimeout: 30 * 60 * 1000,   // 30 minutes
-  maxLoginAttempts: 20,
+  // 20 -> 5, 2026-08-31. Twenty was never a deliberate policy -- it sat unused
+  // for as long as Layer 6 was dead (saTrackLoginAttempt had zero callers until
+  // 5e03232), so nothing ever exercised it and nothing ever questioned it. Five
+  // is the ordinary lockout threshold and, against a numeric PIN, twenty is the
+  // difference between a lockout and a speed bump.
+  //
+  // The lock it triggers is 60 seconds, not permanent, and Layer 6 resets the
+  // counter on any successful sign-in -- so five is not a support burden for a
+  // fabricator who fat-fingers a PIN, it is a real cost for anything grinding
+  // through the keyspace.
+  maxLoginAttempts: 5,
   dataEncryptKey: 'SAIRN2026SEC',
   logEnabled: true,
   auditLog: [],
