@@ -1554,10 +1554,24 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
-<script>
-function crSave(){var KEY=(typeof APP_ID!=="undefined"?APP_ID:"sairn")+"_checks";var num=parseInt(localStorage.getItem(KEY+"_num")||"1001");var entry={num:num++,date:new Date().toLocaleDateString(),payee:document.getElementById("cr-payee")?.value||"",amount:document.getElementById("cr-amount")?.value||"0",memo:document.getElementById("cr-memo")?.value||""};var arr=JSON.parse(localStorage.getItem(KEY)||"[]");arr.unshift(entry);localStorage.setItem(KEY,JSON.stringify(arr));localStorage.setItem(KEY+"_num",String(num));if(typeof showToast==="function")showToast("Check #"+entry.num+" saved");}
-function crPostGL(){if(typeof showToast==="function")showToast("Posted to GL");}
-function crUpdate(){}
-</script>
+<!-- Trailing <script> block DELETED 2026-08-31. It held crSave(), crPostGL()
+     and crUpdate() -- an abandoned second Check Register implementation, all
+     three with zero callers. Deleted rather than wired, because the live one
+     already works: the Save button calls saveCheck() and the inputs call
+     updateCheck(), both real and both earlier in the file.
+
+     The reason this was worth removing rather than leaving inert. crSave()
+     wrote the SAME localStorage key as saveCheck() -- APP_ID+'_checks' -- but
+     kept its counter in APP_ID+'_checks_num' while the live path keeps it in
+     APP_ID+'_crnum'. The two counters never see each other, so connecting this
+     button would have started re-issuing check numbers from 1001 into a
+     register that already contained them: duplicate cheque numbers in a
+     financial record, no error, no warning. crPostGL() was worse in kind --
+     it toasted "Posted to GL" and posted nothing, a false success with no
+     backing call at all. (The live "Post GL" button calls syncAll(), which is
+     honest: it says cross-app sync is not enabled and nothing was sent.)
+
+     Dead code that only wastes bytes can be left alone. Dead code that is one
+     onclick away from corrupting a money table is removed. -->
 </body>
 </html>
