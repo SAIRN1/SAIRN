@@ -143,6 +143,38 @@ produced a miss.
 - **Known gap:** Folio NXT (New Jersey) has no stable per-section URL, so NJ's
   citations rest on write-ups, not stored sources. **Logged, not fixed.**
 
+## 3a. ADDENDUM — N.J.A.C. 13:45B was attempted and stopped at a terms-of-use dialog
+
+§ 3 lists N.J.A.C. 13:45B as the second-priority open item because it answers the
+held New Jersey question. **It was attempted. It stopped one click short, and
+that click is Michael's to make, not mine.**
+
+**The route, for whoever picks it up:**
+
+1. `njconsumeraffairs.gov` sits behind **Imperva/Incapsula** bot protection —
+   `curl` receives a 212-byte JS challenge stub regardless of User-Agent. A real
+   browser passes it normally. Its *Law and Regulations* page carries statutes
+   only, no N.J.A.C. chapters.
+2. **The New Jersey Office of Administrative Law's own site links out to
+   LexisNexis for the code text** — `advance.lexis.com`, in a container titled
+   **"New Jersey Register – Free Public Access."**
+3. That container presents a **New Jersey terms-of-use dialog with an "I Agree"
+   button** before any search runs.
+
+**I did not click it.** Accepting terms or agreements on Michael's behalf is not
+something to do unasked, and a research errand is not a reason to make an
+exception. **Everything up to that dialog is done; the next person needs one
+decision and one click.**
+
+> **Worth recording for its own sake: this is the genuine article.** Rounds 21–26
+> labelled **Alabama and Mississippi** "LexisNexis-gated", and round 27 showed
+> both were wrong — those states publish their codes themselves, openly. **New
+> Jersey actually is.** Its administrative code reaches the public through a
+> commercial publisher's portal, linked from the state's own OAL page. The label
+> was applied twice where it was false before being met once where it is true,
+> which is a fair summary of how the whole "blocked state" category behaved this
+> session.
+
 ## 4. Method notes
 
 - **The stale-tab rule paid off twice more.** A screenshot timed out on the New
