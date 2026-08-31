@@ -77,6 +77,10 @@
     {
       "src": "/sairnroofing$",
       "dest": "/sairnroofing.html"
+    },
+    {
+      "src": "/sairnfreedom$",
+      "dest": "/sairnfreedom.html"
     }
   ],
   "crons": [

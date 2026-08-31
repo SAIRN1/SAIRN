@@ -56,6 +56,15 @@ const KNOWN_APP_IDS = [
   // above, caught live via a direct curl against this proxy before
   // assuming the existing chat worked.
   'sairnsenior',
+  // SAIRNfreedom (2026-08-31) -- added at Phase 1 BUILD TIME, not retrofitted
+  // after a live 400, which is the standing gap this list has hit twice
+  // (the 2026-07-26 nine-app correction and SAIRNsenior above, whose every
+  // AI call had been 400ing silently since Phase 1). Phase 1 makes no AI
+  // calls yet; the entry is here so the first one that ships cannot fail
+  // quietly. NOTE for whoever wires that assistant: spec 0d requires it to
+  // REFUSE VA claim-strategy questions in its system prompt -- a refusal,
+  // not a disclaimer.
+  'sairnfreedom',
   // SAIRNroofing (2026-08-24) -- added at Phase 1 build time, not
   // retrofitted after a live 400, per the standing gap this list has hit
   // twice before (2026-07-26, 2026-08-20). See

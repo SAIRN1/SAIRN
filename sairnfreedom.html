@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SAIRNfreedom - Veterans and Fraternal Post Operations</title>
+<style>
+/* Brand: red/white/blue, per spec 1.7 and 1d. NOT a flag -- a diagonal
+   stripe motif with a small star cluster. Literal reproduction of the
+   American flag is deliberately avoided (trademark/copyright caution,
+   spec 1d). Primary is a deep navy so the red reads as an accent rather
+   than as a second field colour; checked against every existing SAIRN
+   app colour and it is distinct from sairnlaw's green, sairnroofing's
+   rust and sairnbuild's amber. */
+:root{--p:#1E3A8A;--pd:#172554;--pt:#EFF6FF;--pb:#BFDBFE;--red:#B91C1C;--redl:#FEE2E2;
+--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;
+--danger:#EF4444;--ok:#16A34A;--warn:#D97706;--sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+
+/* ---- BANNER (spec 1d) ---------------------------------------------------
+   ANIMATED app-wide, STATIC on onboarding. Built with a CSS background-position
+   translation on a repeating diagonal gradient -- deliberately NOT an SVG
+   turbulence filter. The spec records that a turbulence-filter attempt was
+   rejected as visually broken ("read as water or TV static"), and that the
+   prohibition survives on the TECHNIQUE, not the effect. A gradient slide has
+   no distortion term at all, so it cannot reproduce that failure mode.
+   Honours prefers-reduced-motion, which the spec does not require but which a
+   moving element on every page plainly should. */
+.sf-banner{position:relative;height:56px;overflow:hidden;flex-shrink:0;
+background:repeating-linear-gradient(115deg,var(--pd) 0 42px,#FFFFFF 42px 56px,var(--red) 56px 98px,#FFFFFF 98px 112px);
+background-size:224px 100%;animation:sfSlide 18s linear infinite;}
+@keyframes sfSlide{from{background-position:0 0;}to{background-position:224px 0;}}
+.sf-banner.static,.sf-banner.static *{animation:none!important;}
+@media (prefers-reduced-motion:reduce){.sf-banner{animation:none;}}
+.sf-banner-veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(23,37,84,.92) 0%,rgba(23,37,84,.72) 55%,rgba(23,37,84,.35) 100%);}
+.sf-banner-txt{position:absolute;inset:0;display:flex;align-items:center;gap:12px;padding:0 20px;color:#fff;}
+.sf-post{font-size:17px;font-weight:800;letter-spacing:-.3px;}
+.sf-meta{font-size:12px;color:rgba(255,255,255,.82);}
+.sf-stars{display:flex;gap:3px;margin-left:auto;}
+.sf-star{width:9px;height:9px;background:#fff;opacity:.9;
+clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
+
+#gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+.gbox{background:#fff;border-radius:16px;padding:44px 40px;width:410px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.glogo{font-size:27px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
+.gsub{color:var(--muted);font-size:13px;margin-bottom:26px;}
+.ginp{width:100%;border:2px solid var(--border);border-radius:8px;padding:12px 14px;font-size:15px;outline:none;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+.ginp:focus{border-color:var(--p);}
+.gbtn{width:100%;background:var(--p);color:#fff;border:none;border-radius:8px;padding:13px;font-size:15px;font-weight:700;cursor:pointer;}
+.gbtn:hover{background:var(--pd);}
+.gerr{color:var(--danger);font-size:13px;margin-top:8px;min-height:18px;}
+
+#app{display:none;}
+#app.on{display:flex;flex-direction:column;height:100vh;}
+header{height:52px;background:var(--pd);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;}
+.hlogo{font-size:19px;font-weight:800;color:#fff;letter-spacing:-.5px;}
+.hbadge{background:rgba(255,255,255,.15);color:#fff;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;}
+.hr{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.huser{color:rgba(255,255,255,.85);font-size:12px;}
+.hbtn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:6px 13px;cursor:pointer;font-size:12px;font-weight:600;}
+.hbtn:hover{background:rgba(255,255,255,.26);}
+
+.wrap{display:flex;flex:1;overflow:hidden;}
+nav{width:214px;background:#fff;border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:10px 0;}
+.nsec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:14px 18px 6px;}
+.nitem{display:flex;align-items:center;gap:9px;padding:9px 18px;cursor:pointer;font-size:13px;color:var(--text);border-left:3px solid transparent;}
+.nitem:hover{background:var(--pt);}
+.nitem.on{background:var(--pt);border-left-color:var(--p);font-weight:600;color:var(--pd);}
+main{flex:1;overflow-y:auto;padding:22px 26px;}
+.panel{display:none;}
+.panel.on{display:block;}
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:16px;flex-wrap:wrap;}
+.ptitle{font-size:21px;font-weight:800;letter-spacing:-.4px;}
+.pdesc{color:var(--muted);font-size:13px;margin-top:3px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;box-shadow:var(--sh);}
+.card h3{font-size:14px;font-weight:700;margin-bottom:10px;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin-bottom:16px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;box-shadow:var(--sh);}
+.kpi-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);}
+.kpi-value{font-size:24px;font-weight:800;margin-top:5px;letter-spacing:-.5px;}
+.kpi-change{font-size:11px;color:var(--muted);margin-top:3px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+td{padding:9px 10px;border-bottom:1px solid var(--border);}
+tbody tr:hover{background:var(--pt);}
+.tw{overflow-x:auto;}
+.btn{background:var(--p);color:#fff;border:none;border-radius:7px;padding:9px 15px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn:hover{background:var(--pd);}
+.btn.sec{background:#fff;color:var(--p);border:1px solid var(--border);}
+.btn.dngr{background:var(--danger);}
+.btn.sm{padding:6px 11px;font-size:12px;}
+input,select{border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;background:#fff;color:var(--text);font-family:inherit;}
+input:focus,select:focus{outline:none;border-color:var(--p);}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
+.tag{display:inline-block;border-radius:20px;padding:2px 9px;font-size:11px;font-weight:700;}
+.tag.ok{background:#DCFCE7;color:#15803D;}
+.tag.warn{background:#FEF3C7;color:#B45309;}
+.tag.bad{background:var(--redl);color:var(--red);}
+.tag.info{background:var(--pt);color:var(--pd);}
+.flagbox{border-left:4px solid var(--warn);background:#FFFBEB;border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.55;}
+.flagbox strong{color:#92400E;}
+.blockbox{border-left:4px solid var(--red);background:var(--redl);border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.55;}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:8px;}
+#toast{position:fixed;bottom:22px;right:22px;background:var(--text);color:#fff;padding:11px 17px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:10000;}
+#toast.on{opacity:1;}
+#toast.err{background:var(--danger);}
+.empty{text-align:center;padding:26px;color:var(--muted);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gbox">
+    <!-- ONBOARDING BANNER IS STATIC, per spec 1d: "the one place a new member
+         is being asked to concentrate is the one place the banner does not
+         move." Same component, .static modifier. -->
+    <div class="sf-banner static" style="height:40px;border-radius:8px;margin-bottom:20px">
+      <div class="sf-banner-veil"></div>
+      <div class="sf-banner-txt"><span class="sf-post" style="font-size:14px">SAIRNfreedom</span>
+        <span class="sf-stars"><i class="sf-star"></i><i class="sf-star"></i><i class="sf-star"></i></span></div>
+    </div>
+    <div class="glogo">SAIRNfreedom</div>
+    <div class="gsub">Veterans and fraternal post operations</div>
+    <input class="ginp" id="lic" placeholder="Licence key" autocomplete="off">
+    <button class="gbtn" onclick="sfUnlock()">Open Post</button>
+    <div class="gerr" id="licerr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="hlogo">SAIRNfreedom</div>
+    <div class="hbadge" id="h-orgtype">--</div>
+    <div class="hr">
+      <div class="huser" id="h-user">Not signed in</div>
+      <button class="hbtn" onclick="sfLock()">Lock</button>
+    </div>
+  </header>
+
+  <div class="sf-banner" id="app-banner">
+    <div class="sf-banner-veil"></div>
+    <div class="sf-banner-txt">
+      <span class="sf-post" id="bn-post">--</span>
+      <span class="sf-meta" id="bn-meta">--</span>
+      <span class="sf-stars"><i class="sf-star"></i><i class="sf-star"></i><i class="sf-star"></i><i class="sf-star"></i><i class="sf-star"></i></span>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <nav>
+      <div class="nsec">Phase 1 &mdash; Foundation</div>
+      <div class="nitem on" id="nav-dashboard" onclick="sfNav('dashboard')">Dashboard</div>
+      <div class="nitem" id="nav-post" onclick="sfNav('post')">Post Profile</div>
+      <div class="nitem" id="nav-officers" onclick="sfNav('officers')">Officers</div>
+      <div class="nitem" id="nav-members" onclick="sfNav('members')">Members</div>
+      <div class="nitem" id="nav-dues" onclick="sfNav('dues')">Dues &amp; Fees</div>
+      <div class="nitem" id="nav-waivers" onclick="sfNav('waivers')">Waivers</div>
+    </nav>
+
+    <main>
+      <!-- DASHBOARD -->
+      <div class="panel on" id="panel-dashboard">
+        <div class="ph"><div><div class="ptitle">Dashboard</div>
+          <div class="pdesc">Foundation status for this post</div></div></div>
+        <div class="kpi-row" id="dash-kpis"></div>
+        <div id="dash-flags"></div>
+        <div class="card"><h3>Phase 1 scope</h3>
+          <div class="note">This build covers the foundation only &mdash; entity and licence
+          model, officer capabilities, member roster, the three-layer fee structure and
+          conditional waivers. Canteen, gaming compliance, disbursement and district
+          rollup are later phases and are deliberately absent rather than stubbed.</div>
+        </div>
+      </div>
+
+      <!-- POST PROFILE -->
+      <div class="panel" id="panel-post">
+        <div class="ph"><div><div class="ptitle">Post Profile</div>
+          <div class="pdesc">Entity, organisation type, licences and eligibility facts</div></div></div>
+        <div id="post-flags"></div>
+        <div class="card">
+          <h3>Entity</h3>
+          <div class="grid">
+            <div><label>Post / lodge name</label><input id="pp-name" placeholder="e.g. Post 214"></div>
+            <div><label>Organisation type</label><select id="pp-orgtype"></select></div>
+            <div><label>Charter / founding date</label><input type="date" id="pp-founded"></div>
+            <div><label>Entity ID</label><input id="pp-entity" placeholder="e.g. ENT-0001"></div>
+          </div>
+          <div class="note">Entity and location are separate keys (spec 1b). An
+          auxiliary that meets in this building is a <strong>separate entity</strong>
+          with its own treasury and officers &mdash; never merged into this one.
+          Sons of the American Legion are a <strong>member category</strong> of this
+          same entity, not a separate post.</div>
+        </div>
+        <div class="card">
+          <h3>Location</h3>
+          <div class="grid">
+            <div><label>Location ID</label><input id="pp-locid" placeholder="e.g. LOC-0001"></div>
+            <div><label>City</label><input id="pp-city"></div>
+            <div><label>State</label><input id="pp-state" value="OH" maxlength="2"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Licences</h3>
+          <div class="grid">
+            <div><label>Liquor permit class</label><select id="pp-liquor"></select></div>
+            <div><label>Bingo licence type</label><select id="pp-bingo"></select></div>
+          </div>
+          <div class="note">OAC 109:1-4-08 Types I/II/III gate which lawful activity the
+          post may run. The gaming and liquor modules are <strong>coupled</strong>
+          (spec 0e): a Chapter 2915 violation is simultaneously a liquor-permit
+          exposure. Phase 3 builds that interlock; this phase records the facts it
+          will branch on.</div>
+        </div>
+        <div class="card">
+          <button class="btn" onclick="sfSavePost()">Save post profile</button>
+          <button class="btn sec" onclick="sfRenderPost()">Reset form</button>
+        </div>
+      </div>
+
+      <!-- OFFICERS -->
+      <div class="panel" id="panel-officers">
+        <div class="ph"><div><div class="ptitle">Officers</div>
+          <div class="pdesc">Capabilities, with officer titles mapped per organisation type</div></div></div>
+        <div id="off-flags"></div>
+        <div class="card"><h3>Assign an officer</h3>
+          <div class="grid">
+            <div><label>Name</label><input id="of-name"></div>
+            <div><label>Capability</label><select id="of-cap"></select></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddOfficer()">Assign</button></div>
+          <div class="note">The stable thing is the <strong>capability</strong>; the title
+          shown is a per-org-type mapping (spec 1a). A VFW finance officer is the
+          Quartermaster &mdash; hardcoding one vocabulary would be wrong for three of
+          the five target orders.</div>
+        </div>
+        <div class="card"><div class="tw"><table>
+          <thead><tr><th>Officer</th><th>Title (this org type)</th><th>Capability</th><th>Status</th><th></th></tr></thead>
+          <tbody id="off-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- MEMBERS -->
+      <div class="panel" id="panel-members">
+        <div class="ph"><div><div class="ptitle">Members</div>
+          <div class="pdesc">Roster, categories and the S.A.L. sub-category</div></div></div>
+        <div class="kpi-row" id="mem-kpis"></div>
+        <div class="card"><h3>Admit a member</h3>
+          <div class="grid">
+            <div><label>Name</label><input id="mb-name"></div>
+            <div><label>Category</label><select id="mb-cat"></select></div>
+            <div><label>Admitted</label><input type="date" id="mb-admitted"></div>
+            <div><label>Separation date (if applicable)</label><input type="date" id="mb-sep"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddMember()">Admit</button></div>
+          <div class="note">Admission accrues a national per-capita liability for this
+          member immediately &mdash; see Dues &amp; Fees. Separation date is used only to
+          compute recently-separated waiver eligibility and is optional.</div>
+        </div>
+        <div class="card"><div class="tw"><table>
+          <thead><tr><th>Member</th><th>Category</th><th>Admitted</th><th>Dues</th><th>Per-capita</th><th></th></tr></thead>
+          <tbody id="mem-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- DUES -->
+      <div class="panel" id="panel-dues">
+        <div class="ph"><div><div class="ptitle">Dues &amp; Fees</div>
+          <div class="pdesc">Three money types, not three prices</div></div></div>
+        <div id="dues-flags"></div>
+        <div class="kpi-row" id="dues-kpis"></div>
+        <div class="card"><h3>Fee configuration</h3>
+          <div class="grid">
+            <div><label>Initiation fee (one-time)</label><input type="number" id="fee-init" min="0" step="0.01"></div>
+            <div><label>Annual dues</label><input type="number" id="fee-dues" min="0" step="0.01"></div>
+            <div><label>National per-capita (per member, per year)</label><input type="number" id="fee-cap" min="0" step="0.01"></div>
+            <div><label>Per-capita remittance due</label><input type="date" id="fee-capdue"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfSaveFees()">Save fee configuration</button></div>
+          <div class="blockbox" style="margin-top:12px"><strong>Initiation fee and annual dues are certified figures on a liquor-permit filing.</strong>
+          ORC 4303.17(A)(1) requires the officer certification to set forth the amount of
+          initiation fee and yearly dues, and ORC 4301.25(A)(3) makes a false material
+          statement in a permit application a revocation ground. Changing either raises a
+          permit-filing flag rather than silently updating a price.</div>
+        </div>
+        <div class="card"><h3>Ledger</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Member</th><th>Layer</th><th>Treatment</th><th>Amount</th></tr></thead>
+            <tbody id="dues-tbody"></tbody></table></div>
+          <div class="note">The national per-capita assessment is money collected on
+          behalf of another entity &mdash; a <strong>pass-through liability, not
+          income</strong>. It is never added to lodge revenue anywhere in this app.</div>
+        </div>
+      </div>
+
+      <!-- WAIVERS -->
+      <div class="panel" id="panel-waivers">
+        <div class="ph"><div><div class="ptitle">Waivers</div>
+          <div class="pdesc">Governance decisions with an audit trail &mdash; not discount codes</div></div></div>
+        <div id="wv-flags"></div>
+        <div class="card"><h3>Grant a waiver</h3>
+          <div class="grid">
+            <div><label>Member</label><select id="wv-member"></select></div>
+            <div><label>Condition</label><select id="wv-cond"></select></div>
+            <div><label>Granted by</label><select id="wv-by"></select></div>
+            <div><label>Granted on</label><input type="date" id="wv-date"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfGrantWaiver()">Grant waiver</button></div>
+          <div class="blockbox" style="margin-top:12px"><strong>A dues waiver never waives the national per-capita.</strong>
+          The lodge may waive its own revenue; the pass-through is owed upward for every
+          member regardless. Waiving it silently would mean the lodge funds the
+          difference without seeing it.</div>
+        </div>
+        <div class="card"><div class="tw"><table>
+          <thead><tr><th>Member</th><th>Condition</th><th>Granted by</th><th>Granted</th><th>Status</th><th></th></tr></thead>
+          <tbody id="wv-tbody"></tbody></table></div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ===================================================================
+   SAIRNfreedom -- Phase 1 Foundation
+   Built to docs/superpowers/specs/2026-08-30-sairnfreedom-phased-build-spec.md
+   sections 0 (hard gates), 1a-1d (structural decisions) and 2/2a/2b (Phase 1).
+
+   Phase 1 exit criterion, from the spec: "a real post can be created, its
+   officers provisioned, its members enrolled and dues taken -- and the app
+   knows its org type, licence types and eligibility facts, because everything
+   downstream branches on those."
+
+   STORAGE IS LOCAL FOR THIS PHASE and that is disclosed rather than implied.
+   No sf_* table has been provisioned, no api/_resources entry exists, and no
+   app_id is on the proxy allowlist yet. Every store below is browser
+   localStorage. The platform has shipped several apps whose migrations were
+   never run and which failed quietly for days; this one starts honest about
+   it and the Dashboard says so on screen.
+   =================================================================== */
+
+function $(id){ return document.getElementById(id); }
+function H(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function st(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+function ld(k,d){ try{ var r=localStorage.getItem(k); return r?JSON.parse(r):d; }catch(e){ return d; } }
+function toast(msg,kind){ var t=$('toast'); if(!t) return; t.textContent=msg;
+  t.className = 'on' + (kind==='err'?' err':''); setTimeout(function(){ t.className=''; }, 2600); }
+function money(n){ return '$' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+/* LOCAL DATE, NOT UTC. The spec calls this out by name in 2b: waiver expiry is
+   "date arithmetic on a boundary, in a codebase that has already shipped a
+   UTC-midnight date bug -- compute in the post's local date". toISOString()
+   would reintroduce exactly that, so it is not used for dates anywhere here. */
+function localToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseLocalDate(s){
+  if(!s) return null;
+  var p=String(s).split('-'); if(p.length!==3) return null;
+  var d=new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  return isNaN(d.getTime()) ? null : d;
+}
+function addMonthsLocal(s, months){
+  var d=parseLocalDate(s); if(!d) return null;
+  var day=d.getDate();
+  d.setMonth(d.getMonth()+months);
+  if(d.getDate()<day) d.setDate(0); // clamp, e.g. 31 Jan + 1 month
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+/* ---- ORG TYPES ---------------------------------------------------------
+   org_type is a first-class axis (spec 1a). Officer titles, charitable-purpose
+   tests and waiver conditions all vary on it. Anything below marked
+   `confirmed:false` is NOT researched for that order and must not be presented
+   as if it were -- the spec is explicit that the Elks waiver conditions are
+   confirmed for Elks only. */
+var ORG_TYPES = [
+  { id:'legion',  label:'American Legion', statutory:'veterans',  titles:{ 'post.govern':'Commander', 'post.govern.deputy':'Vice Commander', 'records.write':'Adjutant', 'finance.write':'Finance Officer', 'member.admit':'Adjutant', 'services.refer':'Service Officer', 'legal.review':'Judge Advocate', 'history.write':'Historian', 'ceremonial.manage':'Sergeant-at-Arms', 'chaplain.pastoral':'Chaplain' } },
+  { id:'vfw',     label:'VFW',             statutory:'veterans',  titles:{ 'post.govern':'Commander', 'post.govern.deputy':'Senior Vice Commander', 'records.write':'Adjutant', 'finance.write':'Quartermaster', 'member.admit':'Adjutant', 'services.refer':'Service Officer', 'legal.review':'Judge Advocate', 'history.write':'Historian', 'ceremonial.manage':'Sergeant-at-Arms', 'chaplain.pastoral':'Chaplain' } },
+  { id:'elks',    label:'Elks',            statutory:'fraternal', titles:{ 'post.govern':'Exalted Ruler', 'post.govern.deputy':'Leading Knight', 'records.write':'Secretary', 'finance.write':'Treasurer', 'member.admit':'Secretary', 'services.refer':'Service Officer', 'legal.review':'Esquire', 'history.write':'Historian', 'ceremonial.manage':'Tiler', 'chaplain.pastoral':'Chaplain' } },
+  { id:'moose',   label:'Moose',           statutory:'fraternal', titles:{ 'post.govern':'Governor', 'post.govern.deputy':'Junior Governor', 'records.write':'Administrator', 'finance.write':'Treasurer', 'member.admit':'Administrator', 'services.refer':'Service Officer', 'legal.review':'Prelate', 'history.write':'Historian', 'ceremonial.manage':'Sergeant-at-Arms', 'chaplain.pastoral':'Chaplain' } },
+  { id:'eagles',  label:'Eagles',          statutory:'fraternal', titles:{ 'post.govern':'Worthy President', 'post.govern.deputy':'Worthy Vice President', 'records.write':'Worthy Secretary', 'finance.write':'Worthy Treasurer', 'member.admit':'Worthy Secretary', 'services.refer':'Service Officer', 'legal.review':'Worthy Conductor', 'history.write':'Historian', 'ceremonial.manage':'Inside Guard', 'chaplain.pastoral':'Worthy Chaplain' } }
+];
+function orgType(id){ for(var i=0;i<ORG_TYPES.length;i++){ if(ORG_TYPES[i].id===id) return ORG_TYPES[i]; } return null; }
+
+/* Capabilities are the enum. Officer titles are display, mapped per org type. */
+var CAPABILITIES = [
+  { id:'post.govern',        label:'Govern the post',            sole:true,  provisioning:true },
+  { id:'post.govern.deputy', label:'Deputy governance',          sole:false, provisioning:true },
+  { id:'records.write',      label:'Records and minutes',        sole:false, provisioning:false },
+  { id:'finance.write',      label:'Finance (bonded)',           sole:false, provisioning:false },
+  { id:'member.admit',       label:'Admit members',              sole:false, provisioning:false },
+  { id:'services.refer',     label:'Service officer (referral only)', sole:false, provisioning:false },
+  { id:'legal.review',       label:'Bylaws and disputes',        sole:false, provisioning:false },
+  { id:'history.write',      label:'Post history',               sole:false, provisioning:false },
+  { id:'ceremonial.manage',  label:'Ceremonial and honor guard', sole:false, provisioning:false },
+  { id:'chaplain.pastoral',  label:'Chaplain (pastoral)',        sole:false, provisioning:false }
+];
+var PROVISIONING_CAPS = ['post.govern','post.govern.deputy'];
+function capById(id){ for(var i=0;i<CAPABILITIES.length;i++){ if(CAPABILITIES[i].id===id) return CAPABILITIES[i]; } return null; }
+function titleFor(capId, orgTypeId){
+  var o=orgType(orgTypeId);
+  if(o && o.titles && o.titles[capId]) return o.titles[capId];
+  var c=capById(capId);
+  return c ? c.label : capId;
+}
+
+/* Member categories. S.A.L. is a category of THIS entity (spec 1b), never a
+   separate post. An auxiliary is a separate tenant and is deliberately absent
+   from this list -- adding it here is the merge error the spec calls
+   unrecoverable. */
+var MEMBER_CATEGORIES = [
+  { id:'regular',   label:'Regular member' },
+  { id:'life',      label:'Life member' },
+  { id:'sal',       label:'Sons of the American Legion (S.A.L.)', orgTypes:['legion'] },
+  { id:'social',    label:'Social member' },
+  { id:'associate', label:'Associate member' }
+];
+
+/* Waiver conditions. CONFIRMED FOR ELKS ONLY -- the spec is explicit that VFW,
+   Legion, Moose and Eagles must not be assumed to share them. The UI says so
+   rather than presenting them as universal. */
+var WAIVER_CONDITIONS = [
+  { id:'active_duty', label:'Active duty',            expires:false, review:true },
+  { id:'recent_sep',  label:'Recently separated',     expires:true,  months:24 },
+  { id:'distress',    label:'Sick or in distress',    expires:false, review:true }
+];
+var WAIVER_CONFIRMED_ORG_TYPES = ['elks'];
+
+var K_POST='sf_post', K_OFFICERS='sf_officers', K_MEMBERS='sf_members',
+    K_FEES='sf_fees', K_LEDGER='sf_ledger', K_WAIVERS='sf_waivers',
+    K_PERMIT_FLAGS='sf_permit_flags', K_LIC='sf_license_key';
+
+function getPost(){ return ld(K_POST, { name:'', orgType:'', founded:'', entityId:'', locationId:'', city:'', state:'OH', liquor:'', bingo:'' }); }
+function getOfficers(){ return ld(K_OFFICERS, []); }
+function getMembers(){ return ld(K_MEMBERS, []); }
+function getFees(){ return ld(K_FEES, { initiation:0, dues:0, perCapita:0, perCapitaDue:'' }); }
+function getLedger(){ return ld(K_LEDGER, []); }
+function getWaivers(){ return ld(K_WAIVERS, []); }
+function getPermitFlags(){ return ld(K_PERMIT_FLAGS, []); }
+
+/* ---- LICENCE GATE ------------------------------------------------------ */
+function sfUnlock(){
+  var v=($('lic').value||'').trim();
+  if(!v){ $('licerr').textContent='Enter a licence key.'; return; }
+  st(K_LIC, v);
+  $('gate').style.display='none';
+  $('app').classList.add('on');
+  sfRenderAll();
+}
+function sfLock(){
+  $('app').classList.remove('on');
+  $('gate').style.display='flex';
+  $('lic').value=''; $('licerr').textContent='';
+}
+
+/* ---- NAV --------------------------------------------------------------- */
+function sfNav(id){
+  var panels=document.querySelectorAll('.panel');
+  for(var i=0;i<panels.length;i++) panels[i].classList.remove('on');
+  var p=$('panel-'+id); if(p) p.classList.add('on');
+  var items=document.querySelectorAll('.nitem');
+  for(var j=0;j<items.length;j++) items[j].classList.remove('on');
+  var n=$('nav-'+id); if(n) n.classList.add('on');
+}
+
+/* ---- POST PROFILE (1.1, 1.6) ------------------------------------------- */
+var LIQUOR_CLASSES = ['','D-4','D-4A','D-5','D-3'];
+var BINGO_TYPES = ['','Type I','Type II','Type III'];
+
+function sfRenderPost(){
+  var p=getPost();
+  var sel=$('pp-orgtype');
+  if(sel){
+    sel.innerHTML='<option value="">Select organisation type</option>' + ORG_TYPES.map(function(o){
+      return '<option value="'+H(o.id)+'"'+(o.id===p.orgType?' selected':'')+'>'+H(o.label)+'</option>'; }).join('');
+  }
+  var lq=$('pp-liquor');
+  if(lq) lq.innerHTML = LIQUOR_CLASSES.map(function(c){
+    return '<option value="'+H(c)+'"'+(c===p.liquor?' selected':'')+'>'+H(c||'Not recorded')+'</option>'; }).join('');
+  var bg=$('pp-bingo');
+  if(bg) bg.innerHTML = BINGO_TYPES.map(function(c){
+    return '<option value="'+H(c)+'"'+(c===p.bingo?' selected':'')+'>'+H(c||'Not recorded')+'</option>'; }).join('');
+  if($('pp-name')) $('pp-name').value=p.name||'';
+  if($('pp-founded')) $('pp-founded').value=p.founded||'';
+  if($('pp-entity')) $('pp-entity').value=p.entityId||'';
+  if($('pp-locid')) $('pp-locid').value=p.locationId||'';
+  if($('pp-city')) $('pp-city').value=p.city||'';
+  if($('pp-state')) $('pp-state').value=p.state||'OH';
+  sfRenderPostFlags();
+}
+
+/* ORC 2915.01(V)(3): fraternal disbursement eligibility is gated on fifteen
+   years of continuous existence. Computed from the charter date in LOCAL time,
+   and re-evaluated on every render rather than stored as a boolean that goes
+   stale on an anniversary nobody is watching. */
+function fifteenYearTest(){
+  var p=getPost();
+  var o=orgType(p.orgType);
+  if(!o) return { applies:false, reason:'Organisation type not set' };
+  if(o.statutory!=='fraternal') return { applies:false, reason:'Applies to fraternal organisations only; this post is a veterans organisation under ORC 2915.01(V)(2)' };
+  var d=parseLocalDate(p.founded);
+  if(!d) return { applies:true, known:false, reason:'Charter date not recorded' };
+  var elig=addMonthsLocal(p.founded, 180);
+  var today=localToday();
+  return { applies:true, known:true, passes: today >= elig, eligibleFrom: elig };
+}
+
+function sfRenderPostFlags(){
+  var box=$('post-flags'); if(!box) return;
+  var p=getPost(); var out='';
+  var t=fifteenYearTest();
+  if(!t.applies){
+    out += '<div class="flagbox"><strong>15-year test does not apply.</strong> '+H(t.reason)+'.</div>';
+  } else if(!t.known){
+    out += '<div class="flagbox"><strong>15-year test cannot be evaluated.</strong> '+H(t.reason)+
+      ' &mdash; ORC 2915.01(V)(3) gates fraternal disbursement eligibility on fifteen years of continuous existence.</div>';
+  } else if(t.passes){
+    out += '<div class="flagbox" style="border-left-color:var(--ok);background:#F0FDF4"><strong>15-year test met.</strong> '+
+      'Continuously chartered since '+H(p.founded)+'. Eligible from '+H(t.eligibleFrom)+'.</div>';
+  } else {
+    out += '<div class="blockbox"><strong>15-year test not yet met.</strong> Fraternal disbursement eligibility under '+
+      'ORC 2915.01(V)(3) begins '+H(t.eligibleFrom)+'.</div>';
+  }
+  if(!p.entityId || !p.locationId){
+    out += '<div class="flagbox">Entity ID and Location ID are separate keys and both should be set before Phase 6 district rollup, which aggregates <strong>entities, not buildings</strong>.</div>';
+  }
+  box.innerHTML=out;
+}
+
+function sfSavePost(){
+  var p=getPost();
+  p.name=($('pp-name').value||'').trim();
+  p.orgType=$('pp-orgtype').value;
+  p.founded=$('pp-founded').value;
+  p.entityId=($('pp-entity').value||'').trim();
+  p.locationId=($('pp-locid').value||'').trim();
+  p.city=($('pp-city').value||'').trim();
+  p.state=($('pp-state').value||'').trim().toUpperCase();
+  p.liquor=$('pp-liquor').value;
+  p.bingo=$('pp-bingo').value;
+  if(!p.name){ toast('Post name is required','err'); return; }
+  if(!p.orgType){ toast('Organisation type is required -- everything downstream branches on it','err'); return; }
+  st(K_POST,p);
+  toast('Post profile saved');
+  sfRenderAll();
+}
+
+/* ---- OFFICERS (1.2) ---------------------------------------------------- */
+function sfRenderOfficers(){
+  var p=getPost(), list=getOfficers();
+  var sel=$('of-cap');
+  if(sel) sel.innerHTML = CAPABILITIES.map(function(c){
+    return '<option value="'+H(c.id)+'">'+H(titleFor(c.id,p.orgType))+' &mdash; '+H(c.label)+'</option>'; }).join('');
+  var tb=$('off-tbody');
+  if(tb){
+    if(!list.length){
+      tb.innerHTML='<tr><td colspan="5" class="empty">No officers assigned yet. The post cannot be governed until someone holds '+H(titleFor('post.govern',p.orgType))+'.</td></tr>';
+    } else {
+      tb.innerHTML = list.map(function(o){
+        return '<tr><td>'+H(o.name)+'</td><td>'+H(titleFor(o.capability,p.orgType))+'</td><td>'+H(o.capability)+'</td>'+
+          '<td>'+(o.active?'<span class="tag ok">Active</span>':'<span class="tag bad">Inactive</span>')+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfToggleOfficer(\''+H(o.id)+'\')">'+(o.active?'Deactivate':'Reactivate')+'</button></td></tr>';
+      }).join('');
+    }
+  }
+  sfRenderOfficerFlags();
+}
+
+function activeProvisioners(){
+  return getOfficers().filter(function(o){ return o.active && PROVISIONING_CAPS.indexOf(o.capability)>=0; });
+}
+
+/* SPEC 1c -- THE PROVISIONING TRAPDOOR, DESIGNED IN RATHER THAN DISCOVERED.
+   The platform has a live instance of this: a licence with credential rows and
+   zero rows that are both active and hold a provisioning role is unrecoverable
+   through the API. RF-PINNACLE-2026 sat in that state and nothing noticed.
+   Two end states are safe and only two -- zero officers, or at least one active
+   provisioner. Deactivating the last one is refused here, the same rule
+   tools/employee_auth_guard_check.py enforces on the SQL side. */
+function sfToggleOfficer(id){
+  var list=getOfficers();
+  var o=null;
+  for(var i=0;i<list.length;i++){ if(list[i].id===id){ o=list[i]; break; } }
+  if(!o) return;
+  if(o.active && PROVISIONING_CAPS.indexOf(o.capability)>=0 && activeProvisioners().length<=1){
+    toast('Refused: this is the last active provisioner. Assign another before deactivating.','err');
+    return;
+  }
+  o.active=!o.active;
+  st(K_OFFICERS,list);
+  toast(o.active ? 'Reactivated '+o.name : 'Deactivated '+o.name);
+  sfRenderOfficers(); sfRenderDashboard();
+}
+
+function sfAddOfficer(){
+  var name=($('of-name').value||'').trim();
+  var cap=$('of-cap').value;
+  if(!name){ toast('Officer name is required','err'); return; }
+  var list=getOfficers();
+  var c=capById(cap);
+  if(c && c.sole){
+    var held=list.filter(function(o){ return o.active && o.capability===cap; });
+    if(held.length){ toast('Refused: '+titleFor(cap,getPost().orgType)+' is a sole-holder capability and is already held by '+held[0].name,'err'); return; }
+  }
+  list.push({ id:'of'+Date.now(), name:name, capability:cap, active:true, assigned:localToday() });
+  st(K_OFFICERS,list);
+  $('of-name').value='';
+  toast('Assigned '+name);
+  sfRenderOfficers(); sfRenderDashboard();
+}
+
+function sfRenderOfficerFlags(){
+  var box=$('off-flags'); if(!box) return;
+  var p=getPost(), out='';
+  var provs=activeProvisioners();
+  var list=getOfficers();
+  if(list.length && !provs.length){
+    out += '<div class="blockbox"><strong>Provisioning trapdoor.</strong> Officers exist but none is an active '+
+      H(titleFor('post.govern',p.orgType))+' or '+H(titleFor('post.govern.deputy',p.orgType))+
+      '. This post cannot provision anyone. Reactivate one, or remove all officers to start over.</div>';
+  } else if(provs.length===1){
+    out += '<div class="flagbox"><strong>Single point of failure.</strong> '+H(provs[0].name)+' is the only active provisioner. '+
+      'Assign a '+H(titleFor('post.govern.deputy',p.orgType))+' so governance survives an absence.</div>';
+  }
+  var svc=list.filter(function(o){ return o.active && o.capability==='services.refer'; });
+  if(svc.length){
+    out += '<div class="flagbox"><strong>Service Officer scope is referral only.</strong> 38 U.S.C. &sect; 5901 bars acting as agent or attorney in the preparation, presentation or prosecution of a claim without recognition. This app builds referral, scheduling and accreditation tracking &mdash; never claim preparation. No fee may attach to this function anywhere.</div>';
+  }
+  box.innerHTML=out;
+}
+
+/* ---- MEMBERS (1.3) ----------------------------------------------------- */
+function categoriesFor(orgTypeId){
+  return MEMBER_CATEGORIES.filter(function(c){ return !c.orgTypes || c.orgTypes.indexOf(orgTypeId)>=0; });
+}
+
+function sfRenderMembers(){
+  var p=getPost(), list=getMembers();
+  var sel=$('mb-cat');
+  if(sel) sel.innerHTML = categoriesFor(p.orgType).map(function(c){
+    return '<option value="'+H(c.id)+'">'+H(c.label)+'</option>'; }).join('');
+  if($('mb-admitted') && !$('mb-admitted').value) $('mb-admitted').value=localToday();
+
+  var tb=$('mem-tbody');
+  if(tb){
+    if(!list.length){
+      tb.innerHTML='<tr><td colspan="6" class="empty">No members on the roster yet.</td></tr>';
+    } else {
+      tb.innerHTML = list.map(function(m){
+        var w=activeWaiverFor(m.id);
+        var duesCell = w ? '<span class="tag info">Waived &mdash; '+H(conditionLabel(w.condition))+'</span>' : money(getFees().dues);
+        return '<tr><td>'+H(m.name)+'</td><td>'+H(categoryLabel(m.category))+'</td><td>'+H(m.admitted||'--')+'</td>'+
+          '<td>'+duesCell+'</td><td>'+money(getFees().perCapita)+' <span class="tag warn">liability</span></td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveMember(\''+H(m.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var k=$('mem-kpis');
+  if(k){
+    var sal=list.filter(function(m){ return m.category==='sal'; }).length;
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Members</div><div class="kpi-value">'+list.length+'</div><div class="kpi-change">This entity</div></div>'+
+      '<div class="kpi"><div class="kpi-label">S.A.L. sub-category</div><div class="kpi-value">'+sal+'</div><div class="kpi-change">Same entity, not a separate post</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Active waivers</div><div class="kpi-value">'+countActiveWaivers()+'</div><div class="kpi-change">Re-evaluated on render</div></div>';
+  }
+  sfRenderWaiverSelects();
+}
+function categoryLabel(id){ for(var i=0;i<MEMBER_CATEGORIES.length;i++){ if(MEMBER_CATEGORIES[i].id===id) return MEMBER_CATEGORIES[i].label; } return id; }
+
+function sfAddMember(){
+  var name=($('mb-name').value||'').trim();
+  if(!name){ toast('Member name is required','err'); return; }
+  var p=getPost();
+  if(!p.orgType){ toast('Set the organisation type first -- member categories depend on it','err'); return; }
+  var fees=getFees();
+  var id='mb'+Date.now();
+  var list=getMembers();
+  list.push({ id:id, name:name, category:$('mb-cat').value, admitted:$('mb-admitted').value||localToday(),
+              separation:$('mb-sep').value||'' });
+  st(K_MEMBERS,list);
+
+  /* THREE MONEY TYPES, THREE LEDGER TREATMENTS (spec 2a). Not one amount
+     column with a type tag used only for display. Initiation and dues are
+     lodge revenue; per-capita is a pass-through liability owed upward. */
+  var led=getLedger();
+  if(Number(fees.initiation)>0) led.push({ date:localToday(), memberId:id, member:name, layer:'initiation', treatment:'revenue',   amount:Number(fees.initiation) });
+  if(Number(fees.dues)>0)       led.push({ date:localToday(), memberId:id, member:name, layer:'annual_dues', treatment:'revenue',   amount:Number(fees.dues) });
+  if(Number(fees.perCapita)>0)  led.push({ date:localToday(), memberId:id, member:name, layer:'per_capita',  treatment:'liability', amount:Number(fees.perCapita) });
+  st(K_LEDGER,led);
+
+  $('mb-name').value=''; $('mb-sep').value='';
+  toast('Admitted '+name);
+  sfRenderAll();
+}
+
+function sfRemoveMember(id){
+  var list=getMembers().filter(function(m){ return m.id!==id; });
+  st(K_MEMBERS,list);
+  st(K_WAIVERS, getWaivers().filter(function(w){ return w.memberId!==id; }));
+  toast('Member removed');
+  sfRenderAll();
+}
+
+/* ---- FEES AND LEDGER (1.4 / 2a) ---------------------------------------- */
+function sfRenderDues(){
+  var f=getFees();
+  if($('fee-init')) $('fee-init').value=f.initiation||0;
+  if($('fee-dues')) $('fee-dues').value=f.dues||0;
+  if($('fee-cap')) $('fee-cap').value=f.perCapita||0;
+  if($('fee-capdue')) $('fee-capdue').value=f.perCapitaDue||'';
+
+  var led=getLedger();
+  var revenue=led.filter(function(r){ return r.treatment==='revenue'; }).reduce(function(a,r){ return a+Number(r.amount||0); },0);
+  var liability=led.filter(function(r){ return r.treatment==='liability'; }).reduce(function(a,r){ return a+Number(r.amount||0); },0);
+  var k=$('dues-kpis');
+  if(k){
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Lodge revenue</div><div class="kpi-value">'+money(revenue)+'</div><div class="kpi-change">Initiation + annual dues</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Per-capita owed upward</div><div class="kpi-value" style="color:var(--red)">'+money(liability)+'</div><div class="kpi-change">Liability &mdash; never lodge income</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Ledger entries</div><div class="kpi-value">'+led.length+'</div><div class="kpi-change">Three layers tracked separately</div></div>';
+  }
+  var tb=$('dues-tbody');
+  if(tb){
+    if(!led.length){ tb.innerHTML='<tr><td colspan="5" class="empty">No ledger entries yet. Admitting a member accrues them.</td></tr>'; }
+    else {
+      tb.innerHTML = led.slice().reverse().map(function(r){
+        var tag = r.treatment==='liability' ? '<span class="tag warn">Liability</span>' : '<span class="tag ok">Revenue</span>';
+        return '<tr><td>'+H(r.date)+'</td><td>'+H(r.member)+'</td><td>'+H(r.layer.replace(/_/g,' '))+'</td><td>'+tag+'</td><td>'+money(r.amount)+'</td></tr>';
+      }).join('');
+    }
+  }
+  sfRenderDuesFlags();
+}
+
+/* SPEC 0b -- changing a certified figure raises a permit-filing flag rather
+   than silently updating a price. The flag is a record with a date, not a
+   transient toast, because the thing it points at is a filing obligation. */
+function sfSaveFees(){
+  var prev=getFees();
+  var next={ initiation:Number($('fee-init').value||0), dues:Number($('fee-dues').value||0),
+             perCapita:Number($('fee-cap').value||0), perCapitaDue:$('fee-capdue').value||'' };
+  var flags=getPermitFlags();
+  if(Number(prev.initiation)!==next.initiation){
+    flags.push({ date:localToday(), field:'initiation_fee_amount', from:Number(prev.initiation), to:next.initiation });
+  }
+  if(Number(prev.dues)!==next.dues){
+    flags.push({ date:localToday(), field:'annual_dues_amount', from:Number(prev.dues), to:next.dues });
+  }
+  st(K_FEES,next);
+  st(K_PERMIT_FLAGS,flags);
+  toast('Fee configuration saved');
+  sfRenderAll();
+}
+
+function sfRenderDuesFlags(){
+  var box=$('dues-flags'); if(!box) return;
+  var out='', flags=getPermitFlags(), f=getFees();
+  if(flags.length){
+    var last=flags[flags.length-1];
+    out += '<div class="blockbox"><strong>Permit filing flag &mdash; '+flags.length+' outstanding.</strong> '+
+      'Most recent: <code>'+H(last.field)+'</code> changed from '+money(last.from)+' to '+money(last.to)+' on '+H(last.date)+
+      '. ORC 4303.17(A)(1) requires these amounts on the officer certification; ORC 4301.25(A)(3) makes a false material '+
+      'statement a revocation ground. The filing must be updated &mdash; this is not a price change.'+
+      ' <button class="btn sm" style="margin-left:8px" onclick="sfClearPermitFlags()">Mark filing updated</button></div>';
+  }
+  if(f.perCapitaDue){
+    var due=parseLocalDate(f.perCapitaDue), today=parseLocalDate(localToday());
+    if(due && today){
+      var days=Math.round((due-today)/86400000);
+      if(days<0) out += '<div class="blockbox"><strong>Per-capita remittance overdue by '+Math.abs(days)+' days.</strong> Late filing of the annual report that accompanies it carries a $100 fine and possible probation.</div>';
+      else if(days<=30) out += '<div class="flagbox"><strong>Per-capita remittance due in '+days+' days</strong> ('+H(f.perCapitaDue)+').</div>';
+    }
+  }
+  box.innerHTML=out;
+}
+function sfClearPermitFlags(){
+  st(K_PERMIT_FLAGS, []);
+  toast('Permit filing marked updated');
+  sfRenderAll();
+}
+
+/* ---- WAIVERS (1.5 / 2b) ------------------------------------------------ */
+function conditionLabel(id){ for(var i=0;i<WAIVER_CONDITIONS.length;i++){ if(WAIVER_CONDITIONS[i].id===id) return WAIVER_CONDITIONS[i].label; } return id; }
+function conditionById(id){ for(var i=0;i<WAIVER_CONDITIONS.length;i++){ if(WAIVER_CONDITIONS[i].id===id) return WAIVER_CONDITIONS[i]; } return null; }
+
+/* Eligibility is RE-EVALUATED, never stored as a boolean (spec 2b): "re-evaluate
+   eligibility rather than storing a boolean that silently goes stale". The
+   24-month window runs from the member's separation date, in local time. */
+function waiverStatus(w){
+  var c=conditionById(w.condition);
+  if(!c) return { state:'unknown', label:'Unknown condition' };
+  if(c.expires){
+    var m=null, members=getMembers();
+    for(var i=0;i<members.length;i++){ if(members[i].id===w.memberId){ m=members[i]; break; } }
+    var basis = (m && m.separation) ? m.separation : w.granted;
+    var lapses = addMonthsLocal(basis, c.months);
+    if(!lapses) return { state:'unknown', label:'Separation date not recorded' };
+    var expired = localToday() > lapses;
+    return { state: expired?'expired':'active', label: (expired?'Expired ':'Lapses ')+lapses, lapses:lapses };
+  }
+  return { state:'review', label:'Open-ended &mdash; needs review', review:true };
+}
+function activeWaiverFor(memberId){
+  var ws=getWaivers().filter(function(w){ return w.memberId===memberId; });
+  for(var i=0;i<ws.length;i++){ var s=waiverStatus(ws[i]); if(s.state==='active'||s.state==='review') return ws[i]; }
+  return null;
+}
+function countActiveWaivers(){
+  return getWaivers().filter(function(w){ var s=waiverStatus(w); return s.state==='active'||s.state==='review'; }).length;
+}
+
+function sfRenderWaiverSelects(){
+  var members=getMembers(), officers=getOfficers().filter(function(o){ return o.active; }), p=getPost();
+  var ms=$('wv-member');
+  if(ms) ms.innerHTML = members.length
+    ? members.map(function(m){ return '<option value="'+H(m.id)+'">'+H(m.name)+'</option>'; }).join('')
+    : '<option value="">No members yet</option>';
+  var cs=$('wv-cond');
+  if(cs) cs.innerHTML = WAIVER_CONDITIONS.map(function(c){ return '<option value="'+H(c.id)+'">'+H(c.label)+'</option>'; }).join('');
+  var bs=$('wv-by');
+  if(bs) bs.innerHTML = officers.length
+    ? officers.map(function(o){ return '<option value="'+H(o.name)+'">'+H(o.name)+' &mdash; '+H(titleFor(o.capability,p.orgType))+'</option>'; }).join('')
+    : '<option value="">No active officers</option>';
+  if($('wv-date') && !$('wv-date').value) $('wv-date').value=localToday();
+}
+
+function sfGrantWaiver(){
+  var memberId=$('wv-member').value, by=$('wv-by').value;
+  if(!memberId){ toast('No member selected','err'); return; }
+  if(!by){ toast('A waiver is a governance decision and must record who granted it','err'); return; }
+  var list=getWaivers();
+  list.push({ id:'wv'+Date.now(), memberId:memberId, condition:$('wv-cond').value,
+              grantedBy:by, granted:$('wv-date').value||localToday() });
+  st(K_WAIVERS,list);
+  toast('Waiver recorded');
+  sfRenderAll();
+}
+function sfRevokeWaiver(id){
+  st(K_WAIVERS, getWaivers().filter(function(w){ return w.id!==id; }));
+  toast('Waiver revoked');
+  sfRenderAll();
+}
+
+function sfRenderWaivers(){
+  var list=getWaivers(), members=getMembers(), p=getPost();
+  function memberName(id){ for(var i=0;i<members.length;i++){ if(members[i].id===id) return members[i].name; } return '(removed)'; }
+  var tb=$('wv-tbody');
+  if(tb){
+    if(!list.length){ tb.innerHTML='<tr><td colspan="6" class="empty">No waivers recorded.</td></tr>'; }
+    else {
+      tb.innerHTML = list.map(function(w){
+        var s=waiverStatus(w);
+        var tag = s.state==='active' ? '<span class="tag ok">Active</span>'
+                : s.state==='expired' ? '<span class="tag bad">Expired</span>'
+                : s.state==='review' ? '<span class="tag warn">Needs review</span>'
+                : '<span class="tag info">Unknown</span>';
+        return '<tr><td>'+H(memberName(w.memberId))+'</td><td>'+H(conditionLabel(w.condition))+'</td>'+
+          '<td>'+H(w.grantedBy)+'</td><td>'+H(w.granted)+'</td><td>'+tag+' <span class="kpi-change">'+s.label+'</span></td>'+
+          '<td><button class="btn sm sec" onclick="sfRevokeWaiver(\''+H(w.id)+'\')">Revoke</button></td></tr>';
+      }).join('');
+    }
+  }
+  var box=$('wv-flags');
+  if(box){
+    var out='';
+    if(p.orgType && WAIVER_CONFIRMED_ORG_TYPES.indexOf(p.orgType)<0){
+      out += '<div class="blockbox"><strong>These waiver conditions are confirmed for Elks only.</strong> '+
+        'This post is set to '+H((orgType(p.orgType)||{}).label||p.orgType)+
+        '. The conditions below have not been verified against its bylaws and must not be treated as authoritative here. '+
+        'Same lesson as the ORC 2915.01 (V)(2) versus (V)(3) split &mdash; waiver conditions are a cited row per organisation type.</div>';
+    }
+    var expired=list.filter(function(w){ return waiverStatus(w).state==='expired'; }).length;
+    if(expired) out += '<div class="flagbox"><strong>'+expired+' waiver(s) have lapsed.</strong> Eligibility is recomputed on every render, so this reflects today rather than the day it was granted.</div>';
+    box.innerHTML=out;
+  }
+}
+
+/* ---- DASHBOARD --------------------------------------------------------- */
+function sfRenderDashboard(){
+  var p=getPost(), members=getMembers(), led=getLedger();
+  var revenue=led.filter(function(r){ return r.treatment==='revenue'; }).reduce(function(a,r){ return a+Number(r.amount||0); },0);
+  var liability=led.filter(function(r){ return r.treatment==='liability'; }).reduce(function(a,r){ return a+Number(r.amount||0); },0);
+  var k=$('dash-kpis');
+  if(k){
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Members</div><div class="kpi-value">'+members.length+'</div><div class="kpi-change">'+H(p.name||'Post not named')+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Active officers</div><div class="kpi-value">'+getOfficers().filter(function(o){return o.active;}).length+'</div><div class="kpi-change">'+activeProvisioners().length+' can provision</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Lodge revenue</div><div class="kpi-value">'+money(revenue)+'</div><div class="kpi-change">Excludes per-capita</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Owed upward</div><div class="kpi-value" style="color:var(--red)">'+money(liability)+'</div><div class="kpi-change">Pass-through liability</div></div>';
+  }
+  var box=$('dash-flags');
+  if(box){
+    var out='<div class="flagbox"><strong>Local storage only.</strong> No server table has been provisioned for '+
+      'SAIRNfreedom yet, so everything here lives in this browser and is not synced or backed up. '+
+      'Stated on screen rather than implied, because several apps on this platform have had migrations that were never run and failed quietly for days.</div>';
+    if(!p.orgType) out += '<div class="blockbox"><strong>Organisation type is not set.</strong> Officer titles, member categories, waiver conditions and the charitable-purpose test all branch on it. Set it in Post Profile before anything else.</div>';
+    box.innerHTML=out;
+  }
+  var b=$('bn-post'), m=$('bn-meta'), ht=$('h-orgtype'), hu=$('h-user');
+  var o=orgType(p.orgType);
+  if(b) b.textContent = p.name || 'Post not named';
+  if(m) m.textContent = (o?o.label:'Organisation type not set') + (p.city?(' - '+p.city+', '+(p.state||'')):'');
+  if(ht) ht.textContent = o ? o.label : 'No org type';
+  if(hu){
+    var provs=activeProvisioners();
+    hu.textContent = provs.length ? (provs[0].name+' - '+titleFor(provs[0].capability,p.orgType)) : 'No active provisioner';
+  }
+}
+
+function sfRenderAll(){
+  sfRenderPost(); sfRenderOfficers(); sfRenderMembers(); sfRenderDues(); sfRenderWaivers(); sfRenderDashboard();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  if(ld(K_LIC,null)){ $('gate').style.display='none'; $('app').classList.add('on'); }
+  sfRenderAll();
+});
+</script>
+</body>
+</html>
