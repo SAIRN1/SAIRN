@@ -58,6 +58,48 @@
       "publisher_note": ""
     },
     {
+      "state": "MD",
+      "slug": "COMAR-10.07.05.12-services-provided",
+      "url": "http://regs.maryland.gov/us/md/exec/comar/10.07.05.12",
+      "fetched": "2026-08-31",
+      "http": 200,
+      "content_type": "text/html",
+      "bytes": 26045,
+      "sha256": "a80034e971ebaa8dcca3216381c98311847967b284234958b57cef756891ce0c",
+      "pdf_pages": null,
+      "text_chars": 8296,
+      "note": "Residential service agencies: services provided, incl. the .12D waiver of skilled services (round 33)",
+      "publisher_note": "Open Law Library asks: 'Please do not scrape. Instead, bulk download.' Individual pages read in the course of research only; this host is not swept."
+    },
+    {
+      "state": "MD",
+      "slug": "COMAR-10.27.11.03-delegation",
+      "url": "http://regs.maryland.gov/us/md/exec/comar/10.27.11.03",
+      "fetched": "2026-08-31",
+      "http": 200,
+      "content_type": "text/html",
+      "bytes": 16544,
+      "sha256": "f48a683829641a6647eb34daa1e4d5a4bd36fa697b868b0c9950b1a5ad5746a4",
+      "pdf_pages": null,
+      "text_chars": 3931,
+      "note": "Board of Nursing delegation of nursing functions (round 33)",
+      "publisher_note": "Open Law Library asks not to be scraped; individual pages only, host not swept."
+    },
+    {
+      "state": "MD",
+      "slug": "COMAR-10.27.11.04-delegation",
+      "url": "http://regs.maryland.gov/us/md/exec/comar/10.27.11.04",
+      "fetched": "2026-08-31",
+      "http": 200,
+      "content_type": "text/html",
+      "bytes": 15319,
+      "sha256": "2057705c7ee86d622762295f47e85067f78a5319eeeb424e119b7640e14dfc25",
+      "pdf_pages": null,
+      "text_chars": 2972,
+      "note": "Board of Nursing delegation of nursing functions (round 33)",
+      "publisher_note": "Open Law Library asks not to be scraped; individual pages only, host not swept."
+    },
+    {
       "state": "ME",
       "slug": "22-MRSA-2147-exclusions",
       "url": "https://legislature.maine.gov/statutes/22/title22sec2147.html",
