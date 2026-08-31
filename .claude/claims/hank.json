@@ -40,6 +40,16 @@
       "claimed_at_epoch": 1788131285.388227,
       "status": "released",
       "released_at": "2026-08-30T23:43:39Z"
+    },
+    {
+      "id": "hank-1788167326",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "florida coverage disclosure emergency tolling",
+      "claimed_at": "2026-08-31T09:08:46Z",
+      "claimed_at_epoch": 1788167326.5355294,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
