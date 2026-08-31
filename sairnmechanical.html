@@ -333,11 +333,23 @@ async function callClaude(system, messages, maxTokens) {
      function -- 9 jobs, 127 contracts, $28,400 revenue, $94K pipeline and
      19 more, invented and presented as live figures. Guardian Check 0b:
      compute from real data or show --. There is no data layer yet, so they
-     show --. Do NOT re-fabricate a replacement number. -->
-        <div class="sv">--</div><div class="sd">4 in progress</div></div>
-<div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">--</div><div class="sd">↑ 8 this month</div></div>
-<div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">On target</div></div>
-<div class="sc"><div class="sl">Pending Proposals</div><div class="sv">--</div><div class="sd">6 open</div></div></div>
+     show --. Do NOT re-fabricate a replacement number.
+
+     SUB-LABELS CORRECTED 2026-08-31. That sweep blanked every .sv and left
+     every .sd untouched, so each honest "--" sat beside a fabricated claim
+     in green -- "4 in progress", "On target", "6 open". Read together they
+     were WORSE than the original literals: the value admitted it had no
+     data while the line under it asserted a specific one. 19 of 24 .sd
+     labels across 7 panels were this. Counts keep their noun and lose their
+     number ("-- in progress"); judgements ("On target", "Clean", "Review
+     needed") become the plain period, because with no data layer there is
+     nothing to judge. The 5 that were already neutral period qualifiers
+     ("This month", "Annual") are untouched -- they describe the window, not
+     a value. -->
+        <div class="sv">--</div><div class="sd">-- in progress</div></div>
+<div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">--</div><div class="sd">-- this month</div></div>
+<div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">This week</div></div>
+<div class="sc"><div class="sl">Pending Proposals</div><div class="sv">--</div><div class="sd">-- open</div></div></div>
   <div class="card">
     <div class="ch"><div class="ct">🤖 Claude SAIRNmechanical Intelligence</div>
       <button class="btn bo bsm" onclick="runIntel()">Refresh</button></div>
@@ -497,7 +509,10 @@ async function callClaude(system, messages, maxTokens) {
   </div>
   <div class="card">
     <div class="ch"><div class="ct">Performance Benchmarks</div></div>
-    <div id="report-ranges"></div>
+    <!-- Honest empty state, added 2026-08-31. This div was filled by
+         renderRangeBars(), which was deleted: no callers, broken syntax,
+         fabricated values. An empty bordered card reads as broken. -->
+    <div id="report-ranges" style="color:#6B7280;font-size:13px;padding:8px 0">No benchmark data yet &mdash; nothing to compare.</div>
     <button class="btn bp bsm" style="margin-top:12px" onclick="runReportIntel()">🤖 Deep Analysis</button>
     <div class="ai-bub" id="report-intel" style="display:none"></div>
   </div>
@@ -580,7 +595,7 @@ async function callClaude(system, messages, maxTokens) {
     <div><div class="ptitle">🔧 Jobs</div><div class="psub">All active and scheduled service calls</div></div>
     <div class="pacts"><button class="btn bp">+ New Job</button></div>
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">--</div><div class="sd">4 in progress</div></div><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">On target</div></div><div class="sc"><div class="sl">Pending Estimates</div><div class="sv">--</div><div class="sd">6 open</div></div><div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">--</div><div class="sd">↑ 8 this month</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">--</div><div class="sd">-- in progress</div></div><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">This week</div></div><div class="sc"><div class="sl">Pending Estimates</div><div class="sv">--</div><div class="sd">-- open</div></div><div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">--</div><div class="sd">-- this month</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Job #</th><th>Customer</th><th>Address</th><th>Type</th><th>Tech</th><th>Priority</th><th>Status</th></tr></thead>
@@ -667,7 +682,7 @@ async function callClaude(system, messages, maxTokens) {
     <div><div class="ptitle">🔩 Maintenance Contracts</div><div class="psub">Recurring service agreements — your steady revenue</div></div>
     <div class="pacts"><button class="btn bp">+ New Contract</button></div>
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Active Contracts</div><div class="sv">--</div><div class="sd">$37,973/yr recurring</div></div><div class="sc"><div class="sl">Renewals Due</div><div class="sv">--</div><div class="sd">This month</div></div><div class="sc"><div class="sl">PM Visits Scheduled</div><div class="sv">--</div><div class="sd">This month</div></div><div class="sc"><div class="sl">Avg Contract Value</div><div class="sv">--</div><div class="sd">Annual</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Active Contracts</div><div class="sv">--</div><div class="sd">-- /yr recurring</div></div><div class="sc"><div class="sl">Renewals Due</div><div class="sv">--</div><div class="sd">This month</div></div><div class="sc"><div class="sl">PM Visits Scheduled</div><div class="sv">--</div><div class="sd">This month</div></div><div class="sc"><div class="sl">Avg Contract Value</div><div class="sv">--</div><div class="sd">Annual</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Customer</th><th>Plan</th><th>Units</th><th>Annual Fee</th><th>Next Visit</th><th>Auto-Renew</th><th>Status</th></tr></thead>
@@ -691,7 +706,7 @@ async function callClaude(system, messages, maxTokens) {
       <button class="btn bp" onclick="openFQ()">📷 Field Quote</button>
     </div>
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Open Proposals</div><div class="sv">--</div><div class="sd">$94K pipeline</div></div><div class="sc"><div class="sl">Avg Close Rate</div><div class="sv">--</div><div class="sd">Industry avg 25%</div></div><div class="sc"><div class="sl">Pending 7+ Days</div><div class="sv">--</div><div class="sd">Follow up today</div></div><div class="sc"><div class="sl">Won This Month</div><div class="sv">--</div><div class="sd">4 proposals</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Open Proposals</div><div class="sv">--</div><div class="sd">-- pipeline</div></div><div class="sc"><div class="sl">Avg Close Rate</div><div class="sv">--</div><div class="sd">This period</div></div><div class="sc"><div class="sl">Pending 7+ Days</div><div class="sv">--</div><div class="sd">Over 7 days old</div></div><div class="sc"><div class="sl">Won This Month</div><div class="sv">--</div><div class="sd">-- proposals</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Customer</th><th>System</th><th>Amount</th><th>Sent</th><th>Follow-Up</th><th>Status</th><th>Action</th></tr></thead>
@@ -716,7 +731,7 @@ async function callClaude(system, messages, maxTokens) {
       <button class="btn bp">+ New Invoice</button>
     </div>
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">9 jobs</div></div><div class="sc"><div class="sl">Outstanding</div><div class="sv">--</div><div class="sd">6 invoices</div></div><div class="sc"><div class="sl">Overdue 30+</div><div class="sv">--</div><div class="sd">2 invoices</div></div><div class="sc"><div class="sl">Avg Job Value</div><div class="sv">--</div><div class="sd">This month</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">-- jobs</div></div><div class="sc"><div class="sl">Outstanding</div><div class="sv">--</div><div class="sd">-- invoices</div></div><div class="sc"><div class="sl">Overdue 30+</div><div class="sv">--</div><div class="sd">-- invoices</div></div><div class="sc"><div class="sl">Avg Job Value</div><div class="sv">--</div><div class="sd">This month</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Invoice#</th><th>Customer</th><th>Job</th><th>Amount</th><th>Due</th><th>Status</th></tr></thead>
@@ -739,7 +754,7 @@ async function callClaude(system, messages, maxTokens) {
   <div style="background:var(--t);border:1.5px solid var(--a);border-radius:8px;padding:11px 16px;margin-bottom:14px;font-size:13px;color:var(--d);font-weight:600">
     🔒 Owner and Admin access only
   </div>
-  <div class="sgrid"><div class="sc"><div class="sl">Total Commissions</div><div class="sv">--</div><div class="sd">This period</div></div><div class="sc"><div class="sl">Pending Approval</div><div class="sv">--</div><div class="sd">Review needed</div></div><div class="sc"><div class="sl">Paid This Period</div><div class="sv">--</div><div class="sd">5 techs</div></div><div class="sc"><div class="sl">Disputes</div><div class="sv">--</div><div class="sd">Clean</div></div></div>
+  <div class="sgrid"><div class="sc"><div class="sl">Total Commissions</div><div class="sv">--</div><div class="sd">This period</div></div><div class="sc"><div class="sl">Pending Approval</div><div class="sv">--</div><div class="sd">This period</div></div><div class="sc"><div class="sl">Paid This Period</div><div class="sv">--</div><div class="sd">-- techs</div></div><div class="sc"><div class="sl">Disputes</div><div class="sv">--</div><div class="sd">This period</div></div></div>
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Tech</th><th>Structure</th><th>Jobs</th><th>Revenue</th><th>Commission</th><th>Status</th><th>Action</th></tr></thead>
@@ -1065,17 +1080,30 @@ function saveTakeoff(){
 function openSuiteApp(slug){
   window.open('https://sairn.vercel.app/'+slug,'_blank','noopener');
 }
-function renderRangeBars(){
-  const rb=document.getElementById('report-ranges');if(!rb)return;
-  const data=[('Jobs Today', '9', '4 in progress'), ('Maintenance Contracts', '127', '↑ 8 this month'), ('Revenue This Week', '$28,400', 'On target'), ('Pending Proposals', '$94K', '6 open')];
-  data.forEach(function(s){
-    if(typeof s[1]==='number'&&s[1]<=100){
-      rb.innerHTML+='<div class="rng-wrap"><div class="rng-lbl"><span>'+s[0]+'</span><span>'+s[1]+'</span></div><div class="rng-track"><div class="rng-fill" style="width:'+s[1]+'%"></div></div></div>';
-    }
-  });
-}
+// renderRangeBars() DELETED 2026-08-31. Three defects at once, so there was
+// nothing to salvage: it had ZERO CALLERS (1 definition, 1 total reference);
+// its data literal was Python tuple syntax pasted into JS, so the comma
+// operator collapsed each ('label','value','sub') to just the last string and
+// `typeof s[1]==='number'` could never be true against a string's character --
+// it would have rendered NOTHING even if something had called it; and the
+// values it carried ('9', '127', '$28,400', '$94K') were the same fabricated
+// figures the 2026-08-27 sweep removed from the markup, surviving in a
+// function nobody ran. Its target #report-ranges keeps an honest empty state
+// in the markup instead.
 function loadWeather(){
-  if(!navigator.geolocation)return;
+  // WIRED UP 2026-08-31. This function was fully written, correct, and had
+  // ZERO CALLERS -- so #wx-bar sat on "Loading weather... / --°F / Checking..."
+  // permanently. Nothing was loading and nothing was being checked; the panel
+  // described work that was never started. Same reachability class as
+  // mechRestore() above and SAIRNcash's reverifyTrial().
+  //
+  // Every exit now WRITES a state. Before, the no-geolocation return, the
+  // permission-denied callback and the fetch .catch were all silent, so all
+  // three failure modes were indistinguishable from the success path still
+  // being in flight -- the "Loading..." never changed either way.
+  var td=document.getElementById('wx-desc'),ts=document.getElementById('wx-status');
+  function wxFail(msg){if(td)td.textContent=msg;if(ts){ts.textContent='Unavailable';ts.style.color='#6B7280';}}
+  if(!navigator.geolocation){wxFail('Weather needs location, which this browser does not offer');return;}
   navigator.geolocation.getCurrentPosition(function(pos){
     var lat=pos.coords.latitude,lon=pos.coords.longitude;
     fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph')
@@ -1085,15 +1113,15 @@ function loadWeather(){
         var icons={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',61:'🌧',71:'🌨',80:'🌦',95:'⛈'};
         var goGo=cw.temperature>32&&cw.temperature<100&&cw.windspeed<25;
         var icon=icons[cw.weathercode]||'⛅';
-        var ti=document.getElementById('wx-icon'),tt=document.getElementById('wx-temp'),
-            td=document.getElementById('wx-desc'),ts=document.getElementById('wx-status');
+        var ti=document.getElementById('wx-icon'),tt=document.getElementById('wx-temp');
         if(ti)ti.textContent=icon;
         if(tt)tt.textContent=Math.round(cw.temperature)+'°F';
         if(td)td.textContent=Math.round(cw.temperature)+'°F - Wind '+Math.round(cw.windspeed)+'mph';
         if(ts){ts.textContent=goGo?'Crews Go':'Check Conditions';ts.style.color=goGo?'#16A34A':'#D97706';}
-      }).catch(function(){});
-  },function(){});
+      }).catch(function(){wxFail('Could not reach the weather service');});
+  },function(){wxFail('Location permission declined');});
 }
+window.loadWeather=loadWeather;
 document.addEventListener('DOMContentLoaded',function(){
   // (the old 4-digit #pin-in listener is gone with the PIN pad; the new
   // employee-ID/PIN fields carry their own onkeydown)
@@ -1238,6 +1266,11 @@ async function runBlueprintAI(input){
     var b=document.getElementById('mech-bootstrap');if(b)b.style.display='none';
     showApp();
     mechLoadAccess();
+    // Weather lives in the other script block and is only meaningful once the
+    // dashboard is actually on screen, so it is called here rather than at load
+    // -- calling it behind the login screen would prompt for location before the
+    // user has any reason to grant it.
+    if(typeof window.loadWeather==='function'){try{window.loadWeather();}catch(e){}}
   }
 
   // ── ACCESS / CREDENTIAL LIFECYCLE (2026-08-28) ─────────────────────────
