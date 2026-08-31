@@ -101,13 +101,39 @@ def main():
         if code != want:
             failures.append('args=%s exit %d, expected %d' % (args, code, want))
 
+    # ── --gate, the contract tools/sairn_push_gate_hook.py check 3 keys on ──
+    # The hook reads the EXIT CODE, never the text, so these three cases are
+    # what actually decides whether a push is blocked.
+    code, out = run(['--gate', defects])
+    if code != 1:
+        failures.append('gate/defects exit %d, expected 1 (must block)' % code)
+    if 'MISSING_COLUMN' not in out:
+        failures.append('gate/defects did not name the blocking column')
+
+    code, out = run(['--gate', control])
+    if code != 0 or out.strip():
+        failures.append('gate/control exit %d output %r, expected 0 and silence '
+                        '(an ordinary push must cost nothing)' % (code, out))
+
+    # The whole repo must pass the gate today. 17 UNDECLARED_TABLE findings for
+    # license_keys exist and are correct code; if the gate ever blocks on those
+    # it stops every licence-seed push, which is how a gate gets switched off.
+    code, out = run(['--gate'] + sorted(
+        os.path.join('sql', f) for f in os.listdir(os.path.join(ROOT, 'sql'))
+        if f.endswith('.sql')))
+    if code != 0:
+        failures.append('gate over all of sql/ exit %d, expected 0 -- the gate '
+                        'must not block existing correct files:\n%s' % (code, out))
+
     os.remove(snap)
     if failures:
         print('FAIL')
         for f in failures:
             print('  ' + f)
         return 1
-    print('PASS -- 4 defects caught, control clean, 7 exit codes correct')
+    print('PASS -- 4 defects caught, control clean, 7 exit codes correct, '
+          '3 gate cases correct (blocks a phantom column, silent on clean, '
+          'does not block any existing file in sql/)')
     return 0
 
 

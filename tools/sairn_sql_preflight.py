@@ -425,8 +425,48 @@ def declared_from_text(text):
     return schema
 
 
+def _gate(paths, schema, source):
+    """--gate: a narrow, blockable answer for tools/sairn_push_gate_hook.py.
+
+    THE EXIT CODE MEANS SOMETHING DIFFERENT HERE AND THAT IS DELIBERATE. The
+    normal DECLARED run exits 2 because it cannot claim a file is correct. A
+    gate is asking a smaller question it CAN answer without a live snapshot:
+
+        the repo declares this table, and the repo does not declare this
+        column -- so this INSERT/UPDATE names a column that, on the evidence
+        in this repo, does not exist.
+
+    That is MISSING_COLUMN, and it is the only class this blocks on.
+
+    UNDECLARED_TABLE IS EXPLICITLY NOT BLOCKING. In DECLARED mode it fires on
+    every real table with no tracked CREATE TABLE -- `license_keys` alone
+    produces 17 across sql/, all of them correct code. Blocking on that would
+    stop every licence-seed push on day one, and a gate that cries wolf gets
+    switched off. They are printed as a note instead.
+
+    Exit 0 = nothing blocking. Exit 1 = at least one MISSING_COLUMN.
+    Nothing else, so the hook keys on the code rather than parsing prose --
+    a format change must not be able to silently disarm the gate.
+    """
+    blocking, notes = [], []
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+        findings, _, _, _ = check(path, schema, source)
+        for kind, t, c in findings:
+            entry = '%s: %s %s' % (os.path.basename(path), kind, t + ('.' + c if c else ''))
+            (blocking if kind == 'MISSING_COLUMN' else notes).append(entry)
+    for b in blocking:
+        print(b)
+    if notes:
+        print('NON-BLOCKING (%s mode cannot prove these are absent from the database):' % source)
+        for n in notes:
+            print('  ' + n)
+    return 1 if blocking else 0
+
+
 def main(argv):
-    live_path, paths = None, []
+    live_path, paths, gate = None, [], False
     i = 0
     while i < len(argv):
         if argv[i] == '--live':
@@ -434,6 +474,8 @@ def main(argv):
             if i >= len(argv):
                 print('--live needs a path'); return 3
             live_path = argv[i]
+        elif argv[i] == '--gate':
+            gate = True
         else:
             paths.append(argv[i])
         i += 1
@@ -447,6 +489,9 @@ def main(argv):
         source = 'LIVE'
     else:
         schema, generated, source = declared_schema(), None, 'DECLARED'
+
+    if gate:
+        return _gate(paths, schema, source)
 
     print('schema source: %s  (%d tables, %d columns)%s' %
           (source, len(schema), sum(len(v) for v in schema.values()),

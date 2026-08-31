@@ -1,4 +1,4 @@
-"""PreToolUse hook for Bash. Two pre-push checks that must not depend on memory.
+"""PreToolUse hook for Bash. Three pre-push checks that must not depend on memory.
 
   1. SEED LOAD STATE -- blocks a push that ships a reference-seed change while
      the live licence is still serving the old value.
@@ -6,6 +6,14 @@
      that writes an `*_employee_auth` table without the guard that stops it
      leaving a licence with rows and ZERO active provisioners. SQL is the only
      path into that state; the API cannot reach it.
+  3. SQL PREFLIGHT (added 2026-08-31) -- blocks a push whose SQL names a column
+     the repo declares no such column for. Runs tools/sairn_sql_preflight.py in
+     DECLARED mode, which needs no schema snapshot and so costs an ordinary push
+     nothing. It blocks on MISSING_COLUMN only; UNDECLARED_TABLE is reported and
+     allowed, because in declared mode that fires on every real table with no
+     tracked CREATE TABLE (`license_keys` alone: 17 occurrences of correct code).
+     Live-snapshot blocking is deliberately NOT enabled -- that is a separate
+     decision about whether every SQL push should require a current snapshot.
 
 Neither runs unless the commits being pushed actually touch the relevant files,
 so an ordinary push costs nothing.
@@ -158,6 +166,51 @@ def main():
                     "provisioner, so it cannot get there. That is why the guard belongs in",
                     "the file rather than in the app.",
                     "",
+                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                ]
+                deny(chr(10).join(msg))
+
+        # ── CHECK 3: SQL preflight, declared-only ─────────────────────────
+        # Blocks a push whose SQL names a column the repo declares no such
+        # column for. DECLARED mode on purpose: it needs no snapshot, so it adds
+        # zero freshness friction to an ordinary push. Full --live blocking is a
+        # separate, later decision.
+        #
+        # IT BLOCKS ON MISSING_COLUMN ONLY. UNDECLARED_TABLE fires on every real
+        # table with no tracked CREATE TABLE -- `license_keys` alone accounts for
+        # 17 across sql/, all correct code -- so blocking on it would stop every
+        # licence-seed push on day one, and a gate that cries wolf gets switched
+        # off. The tool's --gate mode encodes that split in its EXIT CODE rather
+        # than in prose this hook would have to parse, so a change to its output
+        # format cannot silently disarm the gate.
+        pf = os.path.join(repo, 'tools', 'sairn_sql_preflight.py')
+        if os.path.isfile(pf):
+            try:
+                p = subprocess.run(
+                    [sys.executable, pf, '--gate']
+                    + [os.path.join(repo, q) for q in sql_changed],
+                    capture_output=True, text=True, timeout=120, cwd=repo)
+            except Exception:
+                p = None
+            if p is not None and p.returncode == 1:
+                msg = [
+                    "Blocked: this push contains SQL naming a column that does not exist.",
+                    "",
+                    p.stdout.strip(),
+                    "",
+                    "A wrong column in an INSERT fails loudly and is survivable. A wrong",
+                    "column in the WHERE of an UPDATE or DELETE does not fail -- it matches",
+                    "nothing and reports success, and '0 rows' is indistinguishable from",
+                    "'nothing needed changing'. That is why this blocks before the file can",
+                    "be pasted into the editor rather than after.",
+                    "",
+                    "Checked against the repo's CREATE TABLE / ALTER TABLE ADD COLUMN",
+                    "statements, not the database. If the column really does exist because",
+                    "it was added by hand in the editor, the fix is to write that ALTER down",
+                    "in sql/ -- an undeclared column is the reason this can be wrong, and",
+                    "declaring it fixes the gate and the repo at the same time.",
+                    "",
+                    "Full detail:  python tools/sairn_sql_preflight.py <file>",
                     "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
                 ]
                 deny(chr(10).join(msg))
