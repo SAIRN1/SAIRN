@@ -1,0 +1,1304 @@
+
+subchapter 13J � the licensing of home care agencies
+section .0100 � reserved for future codification
+10A NCAC 13J .0100������ Reserved for future codification
+section .0200 � reserved for future
+codification
+10A NCAC 13J .0200������ Reserved for future codification
+section .0300 � reserved for future codification
+10A NCAC 13j .0300������ Reserved for future codification
+section .0400 � reserved for future codification
+10A NCAC 13j .0400������ Reserved for future codification
+section .0500 � reserved for future codification
+10A NCAC 13j .0500������ Reserved for future codification
+section .0600 � reserved for future codification
+10A NCAC 13j .0600������ Reserved for future codification
+section .0700 � reserved for future codification
+10A NCAC 13j .0700������ Reserved for future codification
+section .0800 � reserved for future codification
+10A NCAC 13j .0800������ Reserved for future codification
+SECTION .0900 - GENERAL
+10A NCAC 13J .0901������ DEFINITIONS
+Terms used in this Subchapter have the meanings as defined
+in G.S. 131E-136 and as follows:
+(1)���������� "Activities of Daily Living" (ADL) means
+mobility, eating, bathing, dressing, and toileting.
+(2)���������� "Agency" means a home care agency.
+(3)���������� "Agency director" means the person having
+administrative responsibility for the operation of the agency.
+(4)���������� "Client" means as defined in G.S. 131E-136
+(2b).
+(5)���������� "Clinical respiratory services" means the
+provision of respiratory equipment and services that involve the assessment of
+a client's pulmonary status, monitoring of a client's response to therapy, and
+reporting to the client's physician. Procedures include: oximetry, blood gases,
+delivery of medication via aerosolization, management of ventilatory support
+equipment, pulmonary function testing, and infant monitoring.
+(6)���������� "Department" means the North Carolina
+Department of Health and Human Services.
+(7)���������� "Extensive Assistance" means a client is totally
+dependent or requires hands on assistance more than half the time while
+performing part of an activity, and meets one of the following criteria:
+(a)���������� requires extensive assistance in more than
+two activities of daily living (ADLs), as defined in Item (1) of this Rule; 
+(b)���������� needs an in-home aide to perform at least
+one task at the nurse aide II level; or
+(c)���������� requires extensive assistance in more than
+one ADL and has a medical or cognitive impairment as defined in Item (19) of
+this Rule.
+(8)���������� "Follow-up care" means services provided
+to a licensed hospital's discharged client in their home by a hospital's
+employees. No services shall exceed three visits in any two month period and
+shall not extend beyond a 12 month period following discharge, except pulmonary
+care, pulmonary rehabilitation, or ventilator services.
+(9)���������� "Governing body" means the person or
+group of persons having legal authority for the operation of the agency.
+(10)�������� "Hands-on care" means any home care
+service that involves touching the patient in order to implement the patient's
+plan of care.
+(11)�������� "Health care practitioner" means as
+defined in G.S. 90-640(a).
+(12)�������� "Infusion nursing services" means those
+services related to the administration of pharmaceutical agents into a body
+organ or cavity. Routes of administration include sub-cutaneous intravenous,
+intraspinal, epidural, or intrathecal infusion. Administration shall be by or
+under the supervision of a registered nurse in accordance with their legal
+scope of practice.
+(13)�������� "In-home aide services" are hands-on
+services that assist individuals, their family, or both with home management
+tasks, personal care tasks, or supervision of the client's activities to enable
+the individual, their family, or both to remain and function at home.
+(14)�������� "In-home caregiver" means any individual
+who provides home care services as enumerated in G.S. 131E-136.
+(15)�������� "Instrumental Activities of Daily Living"
+(IADL) means meal preparation, housekeeping, medication reminders, shopping,
+errands, transportation, money management, phone use, reading, and writing.
+(16)�������� "Licensed Clinical Social Worker" means as
+defined in G.S. 90B-3(6a).
+(17)�������� "Licensed practical nurse" means as
+defined in G.S. 90-171.30 or G.S 90-171.32.
+(18)�������� "Limited Assistance" means care to a
+client who requires hands-on care involving guided maneuvering of limbs with
+eating, toileting, bathing, dressing, personal hygiene, self-monitoring of
+medications, or other tasks assigned that require hands on assistance half the
+time or less during the activity and does not meet the definition of extensive assistance.
+(19)�������� "Medical or cognitive impairment" means a
+diagnosis and client assessment that documents at least one of the following:
+(a)���������� pain that is present more than half the time
+that interferes with an individual's activity or movement;
+(b)���������� dyspneic or short of breath with minimal
+exertion during the performance of ADLs and requires continuous use of oxygen;
+or
+(c)���������� individual is not alert and oriented or is
+unable to shift attention and recall directions more than half the time.
+(20)�������� "Nursing registry" means a person or
+organization that maintains a list of nurses, in-home aides, or both that is
+made available to persons seeking nursing care or in-home aide service, but
+does not collect a placement fee from the worker or client, coordinate the
+delivery of services, or supervise or control the provision of services.
+(21)�������� "Nursing services" means professional
+services provided by a registered nurse or a licensed practical nurse under the
+supervision of a registered nurse.
+(22)�������� "Occupational therapist" means as defined
+in G.S. 90-270.67(2) or G.S. 90-270.72.
+(23)�������� "Occupational therapist assistant" means
+as defined in G.S. 90-270.67(3) or G.S. 90-270.72.
+(24)�������� "Occupational therapy" means as defined in
+G.S. 90-270.67(4).
+(25)�������� "On-call services" means unscheduled home
+care services made available to clients on a 24-hour basis.
+(26)�������� "Personal care" means assistance to an
+individual with ADL and medical monitoring.
+(27)�������� "Physical therapist" means as defined in
+G.S. 90-270-24(2), G.S. 90-270-30, or G.S. 90-270-31(b).
+(28)�������� "Physical therapist assistant" means as
+defined in G.S. 90-270.24(3) or G.S. 90-270-31(b).
+(29)�������� "Physical therapy" means as defined in
+G.S. 90-270.24(4).
+(30)�������� "Physician" means as defined in G.S.90-9.1
+or G.S. 90-9.2.
+(31)�������� "Plan of care" means the written
+description of the authorized home care services and tasks to be provided to a
+client.
+(32)�������� "Practice of respiratory care" means as
+defined in G.S.90-648(10).
+(33)�������� "Premises" means the location or licensed
+site that the agency provides home care services or maintains client service
+records or advertises itself as a home care agency.
+(34)�������� "Qualified" means suitable for employment
+as a consequence of having met the standards of education, experience,
+licensure, or certification established in the applicable job description
+created and adopted by the agency.
+(35)�������� "Registered nurse" means as defined in
+G.S. 90-171.30 or G.S. 90.171.32.
+(36)�������� "Respiratory care practitioner" means as
+defined in G.S. 90-648(12).
+(37)�������� "Scope of services" means those specific
+services provided by a licensed agency as listed on their home care license.
+(38)�������� "Survey" means an inspection by the
+Division of Health Service Regulation in order to assess the compliance of
+agencies with the home care licensure rules.
+(39)�������� "Social worker" means as defined in G.S
+90B-3(8).
+(40)�������� "Speech and language pathologist" means as
+defined in G.S. 90-293(5).
+(41)�������� "Skilled Services" means all home care
+services enumerated in G.S. 131E-136(3) with the exception of in-home aide
+services.
+(42)�������� "The practice of speech and language
+pathology" means as defined in G.S. 90-293(7).
+History Note:������� Authority G.S. 131E-136; 131E-140;
+Eff. July 1, 1992;
+RRC Objection due to lack of statutory authority Eff.
+November 16, 1995;
+Amended Eff. January 1, 2010; February 1, 1996;
+Readopted Eff. June 1, 2018.
+10A NCAC 13J .0902������ LICENSE
+Each agency premises shall obtain a license unless exempted
+by G.S. 131E‑136(3).
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.� 
+10A NCAC 13J .0903������ APPLICATION FOR AND ISSUANCE OF LICENSE
+(a)� An application for the operation of an agency premises
+shall be submitted to the Department prior to the scheduling of an initial
+licensure survey or the issuance of a license.� The agency shall establish,
+maintain and make available for inspection such documents, records and policies
+as required in this Section and statistical data sufficient to complete the
+licensure application and upon request of the Department, to submit an annual
+data report, as noted in Rule .1002(b) of this Subchapter. If the applicant
+cannot demonstrate to the Division of Health Service Regulation that he or she
+has ever owned or operated a home care agency prior to submission of the
+application, the Division shall not issue a license until the applicant has
+received training approved by the Division which shall include the requirements
+for licensure, the licensure process, and the rules pertaining to the operation
+of a home care agency.� 
+(b)� The Department shall issue a license to each agency
+premises.� Initial and ongoing licensure inspections may include all premises
+of an agency.� Licensure shall be for a period of one year.� Each license shall
+expire at midnight on the expiration date on the license and is renewable upon
+application.
+(c)� The license shall be posted in a prominent location
+accessible to public view within the premises.� The agency shall also post a
+sign at the public access door with the agency name.
+(d)� The license shall be issued for the premises and
+persons named in the application and shall not be transferable.� The name and
+street address under which the agency operates shall appear on the license.�
+The license shall reflect the services provided by the agency.
+(e)� Prior to change of ownership or the establishment of a
+new agency, the agency must be in compliance with all the applicable statutes
+and rules.� If the agency is authorized to provide Medicare certified Home
+Health Services, it shall also be in compliance with statutes and rules
+established under G.S. 131E, Article 9.
+(f)� The licensee shall notify the Department in writing of
+any proposed change in ownership or name at least 30 days prior to the
+effective date of the change.
+(g)� Any agency adding a new service category as outlined in
+G.S. 131E-136(3)(a) through (f) shall notify the Department in writing at least
+30 days prior to the provision of that service to any clients.� The Department
+shall approve the added service upon determining the agency is in compliance
+with the rules specific to the service being provided as contained in Section
+.1100 of this Subchapter.
+(h)� An agency shall notify the Department in writing if it
+discontinues or is unable to provide for a period of six continuous months any
+service category as outlined in G.S. 131E-136(3)(a) through (f) that is listed
+on the agency's license.
+History Note:������� Authority G.S. 131E‑140;� 
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996; May 1, 1993;
+Temporary Amendment Eff. April 1, 2006;
+Amended Eff. November 1, 2006;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .0904������ INSPECTIONS
+(a)� Any agency licensed by the Department shall be subject
+to proper inspections by authorized representatives of the Department at any
+time as a condition of holding such license.
+(b)� Any organization subject to licensure which presents
+itself to the public as a home care agency, which does not hold a license, and
+is or may be in violation of Rule .0902 of this Section and G.S. 131E‑138
+shall be subject to inspections at any time by authorized representatives of
+the Department.
+(c)� Authorized representatives of the Department shall make
+their identities known to the person in charge prior to inspection.
+(d)� Inspection of service records shall be carried out in
+accordance with G.S. 131E‑141(b).
+(e)� An inspection shall be considered proper whenever the
+purpose of the inspection is to determine whether the agency complies with the
+provisions of this Subchapter or whenever there is reason to believe that some
+condition exists which is not in compliance with the rules in this Subchapter.�
+The agency shall allow immediate access to its premises and the records
+necessary to conduct an inspection and determine compliance with the rules of
+this Subchapter.� Failure to do so shall result in termination of the survey
+and may result in injunctive relief as outlined in G.S. 131E-142(b).
+(f)� An agency shall file a plan of correction for cited
+deficiencies within 10 working days of receipt.� The Department shall review
+and respond to a written plan of correction within 10 working days of receipt.
+(g)� Representatives of the Department may visit clients in
+their homes to assess the agency's compliance with the clients' plans of care
+and with the licensure rules.� Clients will be contacted by the agency staff in
+the presence of Department staff for permission to visit.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .0905������ MULTIPLE PREMISES
+If a person operates multiple agency premises:
+(1)���������� the Department may conduct inspections at any or
+all of the premises and may issue a license to each of the premises based upon
+a sample inspection of any of the premises;
+(2)���������� with 72 hours advance notice, the Department may
+request records from any of the premises necessary to ensure compliance with
+the rules of this Subchapter be brought to the site being inspected, including
+the portions of personnel records subject to review.� For agencies for whom a
+business or government policy precludes the disclosure of employee evaluations,
+a statement signed by the employee's supervisor attesting to its completion
+shall be accepted.
+(3)���������� the premises may share hands‑on care staff or
+administrative staff, and may centralize the maintenance of records.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .0906������ COMPLIANCE WITH LAWS
+(a)� The agency shall be in compliance with all applicable
+federal, state, and local laws, rules, and regulations including Title XI Part
+A Section 1128B of the Social Security Act - Criminal penalties for acts
+involving Federal health care programs.� A failure to comply with Federal law
+may subject the agency to civil or criminal penalties as set forth in 42 U.S.C.
+�1320a-7a - Making or causing to be made false statements or representations -
+and 42 U.S.C. �1320a-7b - Illegal remunerations.
+(b)� Staff of the agency shall be currently licensed or
+registered in accordance with applicable laws of the State of North Carolina.
+(c) �Nothing in this Rule shall prohibit the Department from
+conducting inspections as provided for in Rule .0904 of this Section.
+(d)� Any agency deemed to be in compliance by virtue of
+accreditation by one of the specified accrediting bodies listed in G.S.
+131E-138(g) shall submit to the Department a copy of its accreditation report
+within 30 days after the agency receives its report each time it is surveyed by
+the accrediting body.� The agency shall notify the Department of any action
+taken that affects its accreditation status, either temporarily or
+permanently.� The Department may conduct annual validation surveys to assure
+compliance.
+History Note:������� Authority G.S. 131E-138; 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. October 1, 2006; February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .0907������ ADVERSE ACTION
+(a)� An agency may appeal any adverse decision made by the
+Department concerning its license by making such appeal in accordance with the
+Administrative Procedure Act, G.S. 150B and departmental rules 10A NCAC 01 et
+seq.
+(b)� The Department may amend a license by reducing it from
+a full license to a provisional license whenever the Department finds that:
+(1)���������� the licensee has substantially failed to
+comply with the provisions of G.S. 131E, Part C of Article 6 and the rules promulgated
+under that Part; and
+(2)���������� there is a reasonable probability that the
+licensee can remedy the licensure deficiencies within a reasonable length of
+time; and
+(3)���������� there is a reasonable probability that the
+licensee will be able thereafter to remain in compliance with the home care
+licensure rules for the foreseeable future.
+The Department shall give the licensee written notice of the
+amendment of its license.� This notice shall be given by registered or
+certified mail or by personal service and shall set forth the reasons for the
+action.
+(c)� The provisional license shall be effective immediately
+upon its receipt by the licensee and must be posted in a prominent location,
+accessible to public view, within the licensed premises in lieu of the full license.�
+The provisional license shall remain in effect until:
+(1)���������� the Department restores the licensee to
+full licensure status; or
+(2)���������� the Department revokes the licensee's
+license; or
+(3)���������� the end of the licensee's licensure year.� If
+a licensee has a provisional license at the time that the licensee submits a
+renewal application, the license, if renewed, shall also be a provisional
+license unless the Department determines that the licensee can be returned to
+full license status.� A decision to issue a provisional license is stayed
+during the pendency of an administrative appeal and the licensee may continue
+to display its full license during the appeal.
+(d)� The Department may revoke a license whenever:
+(1)���������� The Department finds that:
+(A)��������� the licensee has substantially failed to comply with
+the provisions of G.S. 131E, Part C of Article 6 and the rules promulgated
+under those parts; and
+(B)��������� it is not reasonably probable that the licensee can
+remedy the licensure deficiencies within a reasonable length of time; or
+(2)���������� The Department finds that:
+(A)��������� the licensee has substantially failed to comply with
+the provisions of G.S. 131E, Part C of Article 6; and
+(B)��������� although the licensee may be able to remedy the
+deficiencies within a reasonable time, it is not reasonably probable that the
+licensee will be able to remain in compliance with the home care licensure
+rules for the foreseeable future; or
+(3)���������� The Department finds that there has been
+any failure to comply with the provisions of G.S. 131E, Part C of Article 6 and
+the rules promulgated under those parts that endangers the health, safety or
+welfare of the clients receiving services from the agency.
+The issuance of a provisional license is not a procedural
+prerequisite to the revocation of a license pursuant to Subparagraphs (d)(1)(2)
+and (3) of this Rule.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+SECTION .1000 ‑ ADMINISTRATION
+10A NCAC 13J .1001������ AGENCY MANAGEMENT AND SUPERVISION
+(a)� The governing body or its designee shall establish and
+implement written policies governing agency operation.� Such policies shall be
+available for inspection by the Department.� The policies shall include:
+(1)���������� a description of the scope of services offered;
+(2)���������� admission and discharge policies;
+(3)���������� supervision of personnel;
+(4)���������� development of, and updates to, the plan of
+care;
+(5)���������� management of emergency care situations in
+the home;
+(6)���������� time frame for completion and return of
+service records to the agency;
+(7)���������� personnel qualifications;
+(8)���������� an organizational chart;
+(9)���������� program evaluation;
+(10)�������� employee and client confidentiality; and
+(11)�������� coordination of and referral to and from
+other community agencies and resources.
+(b)� The agency shall designate an individual to serve as
+agency director.� The agency director shall have the authority and
+responsibility for administrative direction of the agency and shall meet one or
+more of the following qualifications:
+(1)���������� a health care practitioner as defined in� G.S.
+90‑640(a);
+(2)���������� an individual who has at least two years of
+supervisory or management experience in home care or any other provider
+licensed pursuant to G.S. 131E or G.S. 122C; or
+(3)���������� an individual who holds a bachelor's degree
+in� health, business or public administration science and has at least one year
+of supervisory or management experience in home care or other licensed health
+care program.
+Such qualifications do not apply with respect to persons
+acting in the capacity of agency director prior to October 1, 2006. 
+(c)� The agency shall designate a person responsible for
+supervising each type of home care service contained in Section .1100 of this
+Subchapter that is provided by the agency either directly or by contract.� This
+individual may be the supervisor for one or more home care services and may
+also serve as the agency director.
+(d)� There shall be written documentation that specifies the
+responsibilities and authority of the agency director and supervisor.
+(e)� If the position of agency director becomes vacant, the
+Department shall be notified within five working days in writing of such
+vacancy along with the name of the replacement, if available.� Agency policies
+shall define the order of authority in the absence of the administrator.
+(f)� The agency shall have the ultimate responsibility for
+the services provided under its license; however, it may make arrangements with
+contractors and others to provide services in accordance with Rule .1111 of
+this Subchapter.
+(g)� An agency shall have written policies which identify
+the specific geographic area in which the agency provides each service.� If an
+agency plans to expand its geographic service area without opening an
+additional site, the Department shall be notified in writing 30 days in
+advance.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. October 1, 2006; February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1002������ ADMINISTRATIVE, FINANCIAL AND
+STATISTICAL RECORDS
+(a)� The agency shall establish, maintain and make available
+for inspection the home care annual budget.
+(b)� The agency shall record, maintain and make available as
+requested to the Department statistical records.� The records shall include the
+following:
+(1)���������� Number of home care staff, and their
+full-time equivalents including administrative, clerical, professional and
+paraprofessional and their total number of units of services;
+(2)���������� Client demographics, including county of
+residence and age;
+(3)���������� Number of units of service by applicable
+service category; and
+(4)���������� Total charges and number of visits by payor
+source (for Medicare certified agencies).
+(c)� Records shall be retained for a period of not less than
+three years.
+(d)� When an agency operates as a part of a health care
+facility licensed under Article 5 or 6 of G.S. 131E, or as a part of a larger
+diversified agency, records of home care activities and expenditures that are
+separate and identifiable shall be maintained for the agency.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13j .1003������ PERSONNEL
+(a)� Written policies shall be established and implemented
+by the agency regarding infection control and exposure to communicable diseases
+consistent with Subchapter 19A of Title 15A, North Carolina Administrative
+Code.� These policies shall include provisions for compliance with 29 CFR 1910
+(Occupational Safety and Health Standards) which is incorporated by reference
+including subsequent amendments.� Copies of Title 29 Part 1910 can be purchased
+from the Superintendent of Documents, U.S. Government Printing Office, P.O. Box
+371954, Pittsburgh, PA 15250-7954 or by calling Washington, D.C. (202)
+512-1800.� The cost is twenty-one dollars ($21.00) and may be purchased with a
+credit card.
+(b)� Hands-on care employees must have a baseline skin test
+for TB.� Individuals who test positive must demonstrate noninfectious status
+prior to assignment in a client's home. Individuals who have previously tested
+positive to the TB skin test shall obtain a baseline and subsequent annual
+verification that they are free of TB symptoms.� This verification shall be
+obtained from the local health department, a private physician or health nurse
+employed by the agency.� The Tuberculosis Control Branch of the North Carolina
+Department of Health and Human Services, Division of Public Health, 1902 Mail
+Service Center, Raleigh, NC 27699-1902 shall provide, free of charge,
+guidelines for conducting verification and Form DHHS 3405 (Record of
+Tuberculosis Screening).� Employees identified by agency risk assessment, to be
+at risk for exposure shall be subsequently tested at intervals prescribed by
+OSHA standards.
+(c)� The agency shall not hire any individual either
+directly or by contract who has a substantiated finding on the North Carolina
+Health Care Personnel Registry in accordance with G.S. 131E-256(a)(1).
+(d)� Written policies shall be established and implemented
+which include personnel record content, orientation and in-service education.
+Records on the subject of in-service education and attendance shall be
+maintained by the agency and retained as set out in Paragraph (f) of this Rule.
+(e)� Job descriptions for every position shall be
+established in writing which include qualifications and specific
+responsibilities. Individuals shall be assigned only to duties for which they
+are trained and competent to perform and when applicable for which they are
+licensed.
+(f)� Personnel records shall be established and maintained
+for each home care employee.� When requested, the records shall be available on
+the agency premises for inspection by the Department.� These records shall be
+maintained for at least one year after termination from agency employment.� The
+records shall include the following:
+(1)���������� an application or resume which lists
+education, training and previous employment that can be verified, including job
+title;
+(2)���������� a job description with record of
+acknowledgment by the employee;
+(3)���������� reference checks or verification of
+previous employment;
+(4)���������� records of tuberculosis screening for
+employees for whom the test is necessary as described in Paragraph (a) of this
+Rule;
+(5)���������� documentation of Hepatitis B immunization
+or declination for hands-on care employees in accordance with the agency's
+exposure control plan;
+(6)���������� airborne and bloodborne pathogen training
+for hands on care employees, including annual updates, in compliance with 29
+CFR 1910 and in accordance with the agency's exposure control plan;
+(7)���������� performance evaluations according to agency
+policy and at least annually.� These evaluations may be confidential pursuant
+to Rule .0905 of this Subchapter;
+(8)���������� verification of employees' credentials as
+applicable; and
+(9)���������� records of the verification of competencies
+by agency supervisory personnel of all skills required of home care services
+personnel to carry out client care tasks to which the employee is assigned.�
+The method of verification shall be defined in agency policy.
+(g)� For in-home aides not listed on the nurse aide
+registry, personnel records shall include verification of core competencies by
+a registered nurse that includes the following core personal care skills for
+in-home aides hired after April 1, 2009:
+(1)���������� Assisting with Mobility including
+ambulation, transfers and bed mobility;
+(2)���������� Assisting with Bath/Shower;
+(3)���������� Assisting with Toileting;
+(4)���������� Assisting with Dressing;
+(5)���������� Assisting with Eating; and
+(6)���������� Assisting with continence needs.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996; June 1, 1994;
+Temporary Amendment Eff. April 1, 2006;
+Amended Eff. January 1, 2010; October 1, 2006;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1004������ EVALUATION
+(a)� The agency's governing body or its designee shall
+annually conduct a comprehensive evaluation of the agency's total operation.
+(b)� The evaluation shall review the quality of the agency's
+services with findings used to verify policy implementation, to identify
+problems, and to establish problem resolution and policy revision as necessary.
+(c)� The evaluation shall consist of a policy and
+administration review, including the scope of services offered, arrangements
+for services with other agencies or individuals, admission and discharge
+policies, supervision and plan of care, emergency care, service records,
+personnel qualifications, and program evaluation. Data to be assessed shall
+include the following:
+(1)���������� number of clients receiving each service;
+(2)���������� number of visits or hours for each service;
+(3)���������� client outcomes;
+(4)���������� adequacy of staff to meet client needs;
+(5)���������� numbers and reasons for nonacceptance of
+clients; and
+(6)���������� reasons for discharge.
+(d)� The agency's governing body or its designee shall
+evaluate the agency's client records every 90 days. The evaluation shall
+include a review of sample active and closed client records to ensure that
+agency policies are followed in providing services, both direct and under
+contract, and to assure the quality of service meets the client's needs. The
+review shall consist of a representative sample of all home care services
+provided by the agency.
+(e)� Documentation of the evaluation shall include the names
+and qualifications of the persons carrying out the evaluation, the criteria and
+methods used to accomplish it, and any action taken by the agency as a result
+of its findings.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+RRC Objection due to lack of statutory authority Eff.
+November 16, 1995;
+Amended Eff. February 1, 1996;
+Readopted Eff. June 1, 2018.
+10A NCAC 13J .1005������ HOSPICE CARE
+(a)� If an agency offers or provides a hospice program of
+care, such services shall be in compliance with all provisions of 10A NCAC 13K
+(Hospice Licensing Rules), with the exception of rules requiring a separate
+hospice license.
+(b)� A hospice shall be eligible for a home care license if
+it meets the requirements of 10A NCAC 13J and meets the standards for the
+specific home care services offered.� The extent of the licensure review shall
+be at the discretion of the Department.
+(c)� If an agency that operates a hospice, a hospice
+inpatient facility, or a hospice residential care facility, under its home care
+license, substantially fails to comply with the provisions of Article 10 of
+G.S. 131E or of 10A NCAC 13J, the Department may amend the agency's home care
+license by revoking the agency's right to operate a hospice, a hospice
+inpatient facility, or a hospice residential care facility, or offer hospice
+services under its home care license.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1006������ NURSING POOL
+(a)� If an agency offers or provides a nursing pool, and
+does not wish to obtain a separate license for its nursing pool, such services
+shall be in compliance with all provisions of 10A NCAC 13L (Nursing Pool
+Licensing Rules).
+(b)� If an agency that operates a nursing pool under its
+home care license substantially fails to comply with the provisions of Part E
+of Article 6 of G.S. 131E or of 10A NCAC 13L, the Department may amend the
+agency's home care license by revoking the agency's right to operate a nursing
+pool under its home care license.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1007������ CLIENT RIGHTS AND RESPONSIBILITIES
+(a)� An agency shall provide each client with a written
+notice of the client's rights and responsibilities in advance of furnishing
+care to the client or during the initial evaluation visit before the initiation
+of services. The agency shall maintain documentation showing that all clients
+have been informed of their rights and responsibilities as set forth in G.S.
+131E-144.3.
+(b)� An agency shall provide notice to clients as set forth
+in G.S. 131E-144.4. The Division of Health Service Regulation shall investigate
+all allegations of non-compliance with rules of this Subchapter.
+(c)� An agency shall comply with G.S. 131E-144.6(b).
+History Note:������� Authority G.S. 131E-140; 131E-144.3;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Readopted Eff. June 1, 2018.
+SECTION .1100 ‑ SCOPE OF SERVICES
+10A NCAC 13J .1101������ ACCEPTANCE OF CLIENTS FOR SERVICE
+PROVISION
+Within the scope of services provided, the agency shall
+develop and implement written policies governing the acceptance of clients and
+client services.� These policies and procedures shall include the following:
+(1)���������� adequacy and suitability of agency personnel and
+resources to provide the services required by the client and information on
+resources available to cover staff absence;
+(2)���������� reasonable expectation that the client's need for
+requested services can be met adequately at home by the agency;
+(3)���������� adequate physical facilities in the client's home
+for their plan of care;
+(4)���������� availability or absence of family or substitute
+family member able and willing to participate in the client's care when
+necessary to ensure the safety of the client;
+(5)���������� information on the scope of services provided and
+the geographic area served with each service;
+(6)���������� notification to the referral source when one or
+more needed and requested services (including assessment) cannot be provided to
+a specific client within a time frame requested by the referral source and
+established by agency policy;
+(7)���������� advance notification of at least 48 hours to the
+client or responsible party when service provision is to be reduced or
+terminated, except in cases where the client is in agreement with changes,
+there is a danger to a client or staff member, or the physician terminates
+services; and
+(8)���������� referral to and coordination with other appropriate
+agencies when the agency is unable to respond to a request for service
+promptly, or to continue to provide service.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13j .1102������ NURSING SERVICES AND DUTIES
+(a)� If an agency provides nursing services, those services
+shall be provided by or under the supervision of a registered nurse and in
+accordance with the North Carolina Nursing Practice Act, G.S. Chapter 90,
+Article 9A, and the client's plan of care shall include the following as a
+minimum:
+(1)���������� regularly assess the nursing needs of the
+client;
+(2)���������� develop and implement the client's nursing
+plan of care;
+(3)���������� provide nursing services, treatment, and
+diagnostic and preventive procedures;
+(4)���������� initiate preventive and rehabilitative
+nursing procedures appropriate for the client's care and safety;
+(5)���������� observe signs and symptoms and report to
+the physician any reaction to treatment, drugs, or changes in the client's physical
+or emotional condition;
+(6)���������� teach, supervise, and counsel the client
+and family members about providing care for the client at home; and
+(7)���������� supervise and train other nursing service
+personnel.
+(b)� Licensed practical nurse duties are delegated by and
+performed under the supervision of a registered nurse.� Consistent with the
+client's plan of care, duties may include:
+(1)���������� participating in assessment of the client's
+health status;
+(2)���������� implementing nursing activities, including
+the administration of prescribed medical treatments and medications;
+(3)���������� assisting in teaching the client and family
+members about providing care to the client at home; and
+(4)���������� delegating tasks to in-home aides and
+supervising their performance of tasks within the limitations established in 21
+NCAC 36 .0225(d)(3) adopted by reference.
+(c)� If an agency provides nursing services, the agency
+shall provide on‑call nursing services on a 24 hour basis, seven days a
+week.� The agency shall retain current on-call schedules and previous schedules
+for one year and make them available, on request, to the Department.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+RRC Objection due to lack of statutory authority Eff.
+November 16, 1995;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1103������ PHYSICAL THERAPY SERVICES
+(a)� If an agency provides physical therapy services, such
+services shall be provided by or under the supervision of a licensed physical
+therapist and in accordance with G.S. Chapter 90, Article 18B, Physical Therapy,
+and the plan of care and shall include:
+(1)���������� assessment of the client to determine level
+of physical function;
+(2)���������� establishment and implementation of the
+physical therapy treatment plan;
+(3)���������� observation, recording, and reporting to
+the physician any reaction to treatment or changes in the client's condition;
+(4)���������� instruction of the family in the client's
+total physical therapy program; and
+(5)���������� instructing of family members, in‑home
+aides and other health team personnel in performing appropriate therapy
+treatment.
+(b)� When a licensed physical therapist assistant is
+providing services in the home, the licensed physical therapist shall be
+accessible at all times clients are receiving services, and meet the
+supervisory requirements specified in Rule .1110 of this Section.
+(c)� The licensed physical therapist shall visit the client
+to perform all initial assessments, establish the plan of care, and perform all
+discharge assessments.� The physical therapist shall visit to perform plan of
+care updates and assess the client's functional status, as prescribed in Rule
+.1202 of this Subchapter.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+RRC Objection due to lack of statutory authority Eff.
+November 16, 1995;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1104������ SPEECH THERAPY/PATHOLOGY SERVICES
+If an agency provides speech therapy, or services in speech
+and language pathology or audiology such services shall be provided in
+accordance with G.S. 90, Article 22, North Carolina Licensure Act for Speech
+and Language Pathologists and Audiologists and the client's plan of care and
+shall include the following at a minimum:
+(1)���������� assessment of clients with speech, language, voice,
+dysphagia, and/or hearing disorders;
+(2)���������� establishment and implementation of the speech
+therapy treatment plan;
+(3)���������� recording and reporting to the physician any
+reaction to treatment or changes in the client's condition;
+(4)���������� teaching other health team personnel and family
+members techniques to help improve and correct the client's speech, language,
+voice, dysphagia, or hearing potential; and
+(5)���������� counseling the client and family about the client's
+speech, language, voice, dysphagia, and/or hearing disabilities.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1105������ OCCUPATIONAL THERAPY SERVICES
+(a)� If an agency provides occupational therapy, such
+services shall be provided by or under the supervision of a licensed
+occupational therapist in accordance with G.S. Chapter 90, Article 18D, Occupational
+Therapy and the client's plan of care and shall include:
+(1)���������� assessment of the client's functional
+ability to perform activities of daily living;
+(2)���������� establishment and implementation of the
+occupational therapy treatment plan;
+(3)���������� observation, recording, and reporting to
+the physician any reaction to treatment and any changes in the client's
+condition;
+(4)���������� instruction of family members, in‑home
+aides and other health team personnel in appropriate therapy methods; and
+(5)���������� design, development and fitting orthotic
+devices and self‑help devices.
+(b)� When a certified occupational therapist assistant is
+providing services in the home, the licensed occupational therapist shall be
+accessible at all times clients are receiving services, and meet the supervisory
+requirements specified in Rule .1110 of this Section.
+(c)� The licensed occupational therapist shall visit the
+client to perform all initial assessments, establish the plan of care, and
+perform all discharge assessments.� The occupational therapist shall visit to
+perform plan of care updates as described in Rule .1202 of this Subchapter.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+RRC Objection due to lack of statutory authority Eff.
+November 16, 1995;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1106������ MEDICAL SOCIAL WORK SERVICES
+If an agency provides medical social work services, such
+services shall be provided by or under the supervision of a medical social
+worker and in accordance with the client's plan of care and shall include the
+following:
+(1)���������� assisting the physician and other members of the
+health team in understanding the significant social and emotional factors
+related to the client's health problems;
+(2)���������� assessing social and emotional factors in order to
+estimate the client's capacity and potential to cope with problems of daily
+living;
+(3)���������� helping the client and family to understand,
+accept, and follow medical recommendations and provision of services planned to
+restore the client to optimum social and health adjustment within their
+capacity;
+(4)���������� assisting the client and family with personal and
+environmental difficulties which predispose toward illness or interfere with
+the client obtaining maximum benefits from medical care; and
+(5)���������� assisting the client and family in the utilization
+of appropriate community resources.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+RRC Objection due to lack of statutory authority Eff.
+November 16, 1995;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1107������ IN-HOME AIDE SERVICES
+(a)� If an agency provides in-home aide services, the
+services shall be provided in accordance with the client's plan of care. The
+plan of care shall be signed and dated by the health care practitioner and the
+client or the client's responsible party. The client shall have access to a
+copy of the in-home aide plan of care in the home. 
+(b)� The plan of care shall contain the level of assistance
+required by the client for each ADL. If the client's plan of care requires the
+in-home aide to provide extensive assistance, the in-home aide shall be listed
+on the Nurse Aide Registry pursuant to G.S. 131E-255. However, if the client's
+plan of care requires the in-home aide to provide only limited assistance, the
+in-home aide is not required to be listed on the Nurse Aide Registry.
+(c)� In-home aides shall follow instructions for client care
+written by the health care practitioner. In-home aide duties may include the
+following:
+(1)���������� help with prescribed exercises that the
+client and in-home aides have been taught by a health care practitioner;
+(2)���������� provide or assist with ADLs;
+(3)���������� assist client with self-administration of
+medications that are ordered by a health care practitioner or other person
+authorized by state law to prescribe;
+(4)���������� perform IADLs that are essential to the
+client's care at home; and
+(5)���������� record and report changes in the client's
+condition, family situation, or needs to the health care practitioner.
+(d)� For agencies providing in-home aide services, the
+initial assessment shall be conducted in the client's home by the health care
+practitioner. The initial assessment shall include the client's functional
+status in the areas of social, mental, physical health, environmental,
+economic, ADLs, and IADLs.
+(e)� The initial assessment shall be conducted prior to the
+development of the plan of care and signed and dated by the health care
+practitioner.
+(f)� Agencies providing in-home aide services shall provide
+availability of the health care practitioner for supervision and consultation.
+(g)� Agencies participating in the Home and Community Care
+Block Grant or Social Services Block Grant through the Division of Aging and
+Adult Services shall comply with the in-home aide service level rules contained
+in 10A NCAC 06A and 10A NCAC 06X, which are hereby incorporated by reference
+with all subsequent amendments and editions. Copies of these rules may be
+accessed at no cost at http://reports.oah.state.nc.us/ncac.asp?folderName=\Title
+10A - Health and Human Services\Chapter 06 - AGING - PROGRAMS OPERATIONS.
+(h)� In order to assure supervision of services provided by
+in-home caregivers, geographic service areas for these services shall be
+limited to the area that includes the county where the agency is located,
+counties that are contiguous with the county where the agency is located, or
+within 90 minutes driving time from the site where the agency is located,
+whichever is greater. Agencies providing services to any client prior to
+January 1, 2006 who resides in a geographic service area that prior to January
+1, 2006 is beyond the counties that are contiguous with the county where the
+agency is located or greater than 90 minutes driving time from the site where
+the agency is located, may continue to provide services to the client in these
+areas until the client is discharged from the agency.
+History Note:������� Authority G.S. 131E-140;
+Eff. July 1, 1992;
+Amended Eff. January 1, 2010; October 1, 2007; October 1,
+2006; February 1, 1996;
+Readopted Eff. June 1, 2018.
+10a NCAC 13j .1108������ INFUSION NURSING SERVICES
+(a)� If an agency provides infusion nursing services, the
+services shall be provided by or under the supervision of a registered nurse
+with training in infusion services or special training in the drug and nutritional
+therapies the agency offers, as identified in agency policies, and in
+accordance with the North Carolina Nursing Practice Act, G.S. Chapter 90,
+Article 9A, and a plan of care signed by a physician.
+(b)� If an agency provides or arranges for infusion
+services, the agency shall provide on‑call infusion nursing services on a
+24 hour basis, seven days a week.
+(c)� If the agency provides or contracts for infusion
+pharmacy services there shall be policies and procedures governing the scope of
+pharmacy services provided.� Pharmacy services shall be provided in accordance
+with the Pharmacy Laws of North Carolina and related rules and shall be
+provided on a 24-hour basis, seven days a week.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+RRC Objection due to lack of statutory authority Eff.
+November 16, 1995;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J
+.1109������ CLINICAL RESPIRATORY SERVICES, INCLUDING PULMONARY, OR VENTILATION
+SERVICES
+(a)� If an agency provides clinical respiratory services or
+ventilation services, the services shall be provided by or under the
+supervision of a respiratory therapist or a registered nurse with demonstrated
+competency in the delivery of respiratory services under a plan of care signed
+by a physician.� Within the agency's defined scope of service, respiratory
+staff, including contractors, shall maintain an active license, certification
+or registry and shall demonstrate proof of education and experience sufficient
+for the safe delivery of service.
+(b)� Clinical respiratory services shall include the
+following:
+(1)���������� assessment of the client's ongoing need for services;
+(2)���������� teach and train client or caregivers to self‑administer
+home respiratory care procedures;
+(3)���������� collect laboratory specimens;
+(4)���������� evaluate functioning of ventilator support
+equipment;
+(5)���������� evaluate functioning of infant monitors; and
+(6)���������� when ordered by a physician, administration of
+aerosolized medication.
+(c)� If an agency provides these services, the agency shall
+provide on‑call respiratory services emergency response on a 24 hour
+basis, seven days a week.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+RRC Objection due to lack of statutory authority and
+ambiguity Eff. November 16, 1995;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1110������ SUPERVISION AND COMPETENCY OF IN-HOME
+caregivers
+(a)� In-home caregivers subject to occupational licensing
+laws shall meet requirements consistent with the rules established by the
+occupational licensing board that they are subject. Each agency shall document
+that its in-home caregivers are competent to perform client care tasks or
+activities that they are assigned. Meeting competency includes a demonstration
+of tasks to the health care practitioner. In-home caregivers shall perform
+delegated activities under the supervision of persons authorized by state law
+to provide such supervision.
+(b)� Those in-home caregivers who are not subject to
+occupational licensing laws shall only be assigned client care activities that
+they have demonstrated competency, and the documentation of competency is
+maintained by the agency. Meeting competency includes a demonstration of tasks
+to the health care practitioner. Each agency shall document that its in-home
+caregivers demonstrate competence for all assigned client care tasks or
+activities. In-home caregivers shall be supervised by the health care
+practitioner who may further delegate specific supervisory activities to
+in-home caregivers as designated by agency policy, provided that the following
+criteria are met:
+(1)���������� there is availability of the health care
+practitioner for supervision and consultation; and
+(2)���������� accountability for supervisory activities
+delegated is maintained by the health care practitioner.
+(c)� In-home caregivers subject to Paragraph (a) of this
+Rule shall be subject to the method and frequency of supervision defined in the
+agency's policy. The health care practitioner shall supervise an in-home
+caregiver subject to Paragraph (b) of this Rule by making a supervisory visit
+to each client's place of residence every 90 days with or without the in-home
+caregiver's presence, and annually, while the in-home caregiver is providing
+care to each client. The supervisory visit shall include review of the client's
+general condition, progress, and response to the services provided by the in-home
+caregiver.
+(d)� Documentation of supervisory visits shall be maintained
+in the agency's records and shall contain date of visit, findings of visit, and
+signature of person performing the visit.
+(e)� When follow-up corrective action is needed for any type
+of in-home caregiver based on findings of the supervisory visit, documentation
+of such corrective action by the health care practitioner shall be maintained
+in the employee(s) record.
+(f)� A health care practitioner conducting a supervisory
+visit for any in-home caregiver may simultaneously conduct the case review
+every 90 days as required in Rule .1202 of this Subchapter.
+(g)� The health care practitioner shall be available for
+supervision during the hours that in-home care services are provided.
+History Note:������� Authority G.S. 131E-140;
+Eff. July 1, 1992;
+Amended Eff. July 1, 1993;
+RRC Objection due to lack of statutory authority and
+ambiguity Eff. November 16, 1995;
+Amended Eff. February 1, 1996;
+Temporary Amendment Eff. April 1, 2006;
+Amended Eff. November 1, 2006;
+Readopted Eff. June 1, 2018.
+10A NCAC 13J .1111������ ARRANGEMENTS FOR SERVICES WITH OTHER
+AGENCIES OR INDIVIDUALS
+(a)� When an agency makes arrangements for providing
+services through other agencies or individuals, or where the agency contracts
+with a state or county agency to provide licensed home care services, there
+shall be a written agreement, signed by both parties, which includes the
+following:
+(1)���������� specific service to be provided;
+(2)���������� period of time the contract is to be in
+effect;
+(3)���������� availability of services;
+(4)���������� financial arrangements;
+(5)���������� verification that any individual providing
+service is appropriately licensed or registered as required by statute;
+(6)���������� provision for supervision of contract
+personnel where applicable;
+(7)���������� assurance that individuals providing
+services under contractual arrangements meet the same requirements as those
+specified for home care agency personnel;
+(8)���������� provision for the documentation of services
+rendered in the client's service record;
+(9)���������� provision for the sharing of assessment and
+plan of care data; and
+(10)�������� the geographic service area the contractor
+agrees to serve.
+(b)� All contract services shall be provided in accordance
+with the client's plan of care.
+(c)� The agency shall assure that all contract services are
+provided in accordance with the agreement.� Agreements are to be reviewed and
+updated, if necessary, on an annual basis.
+(d)� The agency who is subcontracting its work must maintain
+or produce a complete home care record for the client.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1112������ HOME MEDICAL EQUIPMENT AND SUPPLIES
+If an agency provides medical supplies and equipment in
+conjunction with home care services as defined in G.S. 131E-136(3), the agency
+shall have policies and procedures governing their management.� These policies
+shall address the following:
+(1)���������� set-up, delivery, electrical safety, and
+environmental requirements for equipment.
+(2)���������� proper cleaning and storage, preventive
+maintenance, and repair according to manufacturer's guidelines.
+(3)���������� transportation, tracking, and recall of equipment
+to meet all applicable regulatory requirements.
+(4)���������� emergency preparedness and backup of systems for
+equipment or power failure.
+(5)���������� client instruction materials for each item of home
+medical equipment or supplies provided.
+History Note:������� Authority G.S. 131E-140;
+Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+SECTION .1200 ‑ CASE REVIEW AND PLAN OF CARE
+10A NCAC 13J .1201������ POLICIES
+An agency shall develop and implement written policies and
+procedures to assure that services and items to be provided are specified under
+a plan of care.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1202������ CASE REVIEW AND PLAN OF CARE
+(a)� The plan of care shall be established in collaboration
+with the client and incorporated in the service record. The plan of care shall
+be reviewed every 90 days by the health care practitioner and revised as needed
+based on the client's needs. If the client record is purged, the original and
+updated authorization or orders for care shall be maintained in the client's
+record. All records shall be available to Department staff for review if
+requested. If physician orders are needed for the services, the health care
+practitioner shall notify the physician of any changes in the client's
+condition that indicates the need for altering the plan of care or for
+terminating services. Based upon the findings of the client assessment, the
+plan of care shall include the following:
+(1)���������� type of service(s) and care to be
+delivered;
+(2)���������� frequency and duration of service;
+(3)���������� activity restrictions;
+(4)���������� safety measures; and
+(5)���������� service objectives and goals.
+(b)� Where applicable, the plan of care shall include:
+(1)���������� equipment required;
+(2)���������� functional limitations;
+(3)���������� rehabilitation potential;
+(4)���������� diet and nutritional needs;
+(5)���������� medications and treatments;
+(6)���������� specific therapies;
+(7)���������� pertinent diagnoses; and
+(8)���������� prognosis.
+(c)� If the health care practitioner is assigned
+responsibility for two or more of the following, these functions may be
+conducted during the same home visit:
+(1)���������� assessment of client's condition, progress,
+and response every 90 days;
+(2)���������� provision of regularly scheduled
+professional services; or
+(3)���������� supervision of in-home caregiver.
+History Note:������� Authority G.S. 131E-140;
+Eff. July 1, 1992;
+Amended Eff. May 1, 1993;
+RRC Objection due to lack of statutory authority Eff.
+November 16, 1995;
+Amended Eff. February 1, 1996;
+Readopted Eff. June 1, 2018.
+SECTION .1300 ‑ PHARMACEUTICALS AND MEDICAL TREATMENT
+ORDERS
+10A NCAC 13J .1301������ POLICIES, PROCEDURES, AND STAFF
+RESPONSIBILITY
+If the agency administers any pharmaceuticals or medical
+treatments, it shall develop and implement policies and procedures relative to
+the administration of pharmaceuticals and treatments.� The policies shall
+specify staff accountability for:
+(1)���������� recognizing side effects;
+(2)���������� recognizing toxic effects;
+(3)���������� recognizing allergic reactions;
+(4)���������� recognizing immediate desired effects;
+(5)���������� recognizing unusual and unexpected effects;
+(6)���������� recognizing changes in the client's condition that
+contraindicates continued administration of the medication;
+(7)���������� anticipating those effects which may rapidly
+endanger a client's life or well-being; and
+(8)���������� notifying the physician of any problems.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1302������ ORDERS
+(a)� Orders for pharmaceuticals and medical treatments, or
+orders for in-home aide services when orders for in-home aide services are
+required, shall be signed by the physician or other person authorized by State
+law to prescribe such treatments and the original incorporated in the client's
+service records.� Care may commence in the interim with a verbal order.
+(b)� Verbal orders for the administration of pharmacological
+agents and other medical treatment interventions shall be given to a licensed
+nurse, or other person authorized by state law to receive such orders.� The
+order once recorded shall include the date and signature of the person
+receiving the order, shall be recorded in the client record, and shall be
+countersigned by the physician or other person authorized by State law to
+prescribe.
+(c)� Verbal orders for allied health services personnel,
+other than nursing or other than in-home aide services, shall be given to
+either a licensed nurse or the appropriate health professional.� The order once
+recorded shall include the date and signature of the person receiving the
+order, shall be recorded in the client record and shall be countersigned by the
+physician or other person authorized by State law to prescribe.
+(d)� The home care agency shall develop and implement
+written policies and procedures for obtaining countersignatures on verbal
+orders within 60 days of the date of the verbal order.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 2004; February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1303������ reserved for future codification
+SECTION .1400 ‑ SERVICE RECORDS
+10A NCAC 13J .1401������ REQUIREMENT
+(a)� The agency shall develop and implement written policies
+governing content and handling of client records.
+(b)� The agency shall maintain a client record for each
+client.� Each page of the client record shall have the client's name.� All
+entries in the record shall reflect the actual date of entry.� When agency
+staff make additional, late, or out of sequence entries into the client record,
+the documentation shall include the following applicable notations:� addendum,
+late entry, or entry out of sequence, and the date of the entry.� A system for
+maintaining originals and copies shall be described in the agency policies and
+procedures.
+(c)� The agency shall assure that originals of client records
+are kept confidential and secure on the licensed premises unless in accordance
+with Rule .0905 of this Subchapter, or subpoenaed by a court of legal
+jurisdiction, or to conduct an evaluation as required in Rule .1004 of this
+Subchapter.
+(d)� If a record is removed to conduct an evaluation, the
+record shall be returned to the agency premises within five working days.� The
+agency shall maintain a sign out log that includes to whom the record was
+released, client's name and date removed.� Only authorized staff or other
+persons authorized by law may remove the record for these purposes.
+(e)� A copy of the client record for each client must be
+readily available to the appropriate health professional(s) providing services
+or managing the delivery of such services.
+(f)� Client records shall be retained for a period of not
+less than five years from the date of the most recent discharge of the client,
+unless the client is a minor in which case the record must be retained until
+three years after the client's 18th birthday.� When an agency ceases operation,
+the Department shall be notified in writing where the records will be stored
+for the required retention period.
+History Note:������� Authority G.S. 131E‑140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1402������ CONTENT OF RECORD
+(a)� If the agency is providing services to a client, the
+service record shall contain the following information:
+(1)���������� Admission data:
+(A)��������� identification data such as name, address, telephone
+number, date of birth, sex, and marital status;
+(B)��������� a copy of the signed client's rights form or
+documentation of its delivery;
+(C)��������� names of next of kin, legal guardian, or other
+family members;
+(D)��������� source of referral; and
+(E)���������� assessment of home environment.
+(2)���������� Service data:
+(A)��������� initial assessments by the health care practitioner
+of the client's functional status in the areas of social, mental, physical
+health, environmental, economic, ADLs, and IADLs;
+(B)��������� identification of problems, the establishment of
+goals and proposed intervention, and indication of the client's understanding
+of and approval for services to be provided. If the client is diagnosed as not
+competent, the approval of the client's responsible party shall be recorded;
+(C)��������� a record of all services provided with entries with
+date and time of service, and signed by the individual providing the service;
+(D)��������� discharge summary that includes an overall summary
+of services provided by the agency and the date and reason for discharge. When
+a specific service to a client is terminated and other services continue, there
+shall be documentation of the date and reason for terminating the specific
+service; and
+(E)���������� evidence of coordination of services when the
+client is receiving more than one in-home care service.
+(b)� If the agency is providing services to a client that
+require a physician's order, the service record shall include all of the items
+described in Paragraph (a) of this Rule and the following items:
+(1)���������� Admission data:
+(A)��������� admission and discharge dates from hospital or other
+institution when applicable; and
+(B)��������� names of physician(s) responsible for the client's
+care.
+(2)���������� Service data:
+(A)��������� client's diagnoses;
+(B)��������� physician's orders for pharmaceuticals and medical
+treatments; and
+(C)��������� if the agency is providing services to a hospital or
+nursing facility patient, the agency's record shall include referral
+information, dates and times of services, and documentation of services
+provided.
+History Note:������� Authority G.S. 131E-140;
+Eff. July 1, 1992;
+Amended Eff. February 1, 1996;
+Readopted Eff. June 1, 2018.
+SECTION .1500 � COMPANION, SITTER, AND RESPITE SERVICES
+10A NCAC 13J .1501������ DEFINITIONS 
+The following definitions shall apply throughout this
+Section:
+(1)���������� "Companion, sitter, or respite services
+personnel" means an individual as used in G.S. 131E-136, who spends time
+with or provides non-hands-on care services for clients.
+(2)���������� "Non-Hands-on Care Services" means basic
+home management tasks, shopping, meal preparation, transportation, companion
+services, socialization, medication reminders, and other services that do not
+require the service provider to use "hands-on care" as defined in
+Rule .0901 of this Subchapter and which do not require training or verification
+of skills by a Registered Nurse.
+(3)���������� "Respite Care" means planned or emergency
+care provided to an individual in order to provide temporary relief to the
+family caregiver.
+History Note:������� Authority G.S. 131E-140;
+Eff. January 1, 2010;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1502������ SCOPE OF SERVICES
+(a)� If an agency provides In-home companion, sitter, or
+respite services, the services shall be provided in accordance with the
+client's plan of care. Agencies participating in the Home and Community Care
+Block Grant or Social Services Block Grant through the Division of Aging and
+Adult Services shall comply with the service level rules
+contained in
+10A NCAC 06A and 10A NCAC 06X. All other agencies providing in-home companion,
+sitter, or respite services shall comply with the provisions of the rules in
+this Section.
+(b)� In-home companion, sitter, or respite services
+personnel shall follow the plan of care written by the in-home companion,
+sitter, or respite services supervisor.
+History Note:������� Authority G.S. 131E-140;
+Eff. January 1, 2010;
+Readopted Eff. June 1, 2018.
+10A NCAC 13J .1503������ AGENCY MANAGEMENT AND SUPERVISION
+Notwithstanding the requirements in Rule .1001 of this
+Subchapter, the agency shall meet the following requirements:
+(1)���������� The agency shall designate an individual to
+serve as agency director. �The agency director shall have the authority and
+responsibility for administrative direction of the agency. �The agency director
+shall be a high school graduate, or be certified under the G.E.D. Program, and
+shall meet one or more of the following qualifications:
+(a)���������� shall be a health care practitioner as defined in
+G.S. 90-640(a); or
+(b)���������� shall have one year experience in home care,
+companion, sitter, or respite services, or any other provider licensed pursuant
+to G.S. 131E or G.S. 122C.
+(2)���������� The agency shall designate a person
+responsible for supervising non-hands-on care services that is provided by the
+agency either directly or by contract. �This individual may be the supervisor
+for the companion, sitter, or respite services and may also serve as the agency
+director.
+History Note:������� Authority G.S. 131E-140;
+Eff. January 1, 2010;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.
+10A NCAC 13J .1504������ SUPERVISION AND COMPETENCY OF COMPANION,
+SITTER, AND RESPITE SERVICES
+In addition to the requirements in Rule .1110 of this
+Subchapter, an agency providing In-home companion, sitter, or respite care
+services shall meet the following requirements: 
+(1)���������� Each agency shall have documentation that its
+companion and sitters are competent to perform client care tasks or activities
+to which they are assigned. Such individuals shall perform delegated activities
+under the supervision of a supervisor designated by agency policy for the
+services assigned.
+(2)���������� The agency designated supervisor shall supervise
+the companion and sitter staff by contacting the client receiving care every
+three months and by making a supervisory visit to each client's place of
+residence at least every six months, with or without the companion and sitter's
+presence, and at least annually, while the companion or sitter is in the home
+providing services to the client. 
+(3)���������� The supervisory visit shall include a review of the
+client's general condition, monitoring progress and response to the services
+provided by the companion or sitter, and updates to the plan of care as needed.
+(4)���������� Documentation of supervisory visits shall be
+maintained in the agency's records and shall contain the following:
+(a)���������� date of visit;
+(b)���������� findings of visit; and
+(c)���������� signature of person performing the visit.
+(5)���������� The agency designated supervisor conducting a
+supervisory contact for a companion, sitter, or respite provider may
+simultaneously conduct the quarterly case review as required in Rule .1202 of
+this Subchapter.
+(6)���������� The agency directed supervisor shall be available
+for supervision, on-site where services are provided when necessary, during the
+hours that companion, sitter, or respite services are provided.
+History Note:������� Authority G.S. 131E-140;
+Eff. January 1, 2010;
+Pursuant to G.S. 150B-21.3A, rule is necessary without
+substantive public interest Eff. June 25, 2016.

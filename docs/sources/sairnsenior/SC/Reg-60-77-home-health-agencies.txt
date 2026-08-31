@@ -1,0 +1,1113 @@
+<<<PAGE 1>>>
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+    
+ 
+ 
+ 
+  
+  Regulation 60-77 
+  Standards for Licensing Home Health Agencies 
+ 
+    
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Disclaimer 
+DPH provides this copy of the regulation for the convenience of the 
+public and makes every effort to ensure its accuracy.  However, this 
+is an unofficial version of the regulation.  The regulation's most 
+recent final publication in the South Carolina State Register presents 
+the official, legal version of the regulation. 
+ 
+ 
+<<<PAGE 2>>>
+ 
+Statutory Authority: S.C. Code Sections 44-69-10 et seq. 
+ 
+ 
+Table of Contents 
+SECTION 100 – DEFINITIONS AND LICENSURE .................................................................................... 1 
+101. Definitions. ............................................................................................................................................. 1 
+102. Licensure. ................................................................................................................................................ 5 
+SECTION 200 – ENFORCEMENT OF REGULATIONS.............................................................................. 7 
+201. General. ................................................................................................................................................... 7 
+202. Inspections and Investigations. ........................................................................................................... 7 
+203. Consultations. ........................................................................................................................................ 8 
+SECTION 300 – ENFORCEMENT ACTIONS ............................................................................................ 8 
+301. General. ................................................................................................................................................... 8 
+302. Violation Classifications. ....................................................................................................................... 8 
+SECTION 400 – POLICIES AND PROCEDURES ....................................................................................... 9 
+SECTION 500 – STAFFING ...................................................................................................................... 9 
+501. General. ................................................................................................................................................... 9 
+502. Administrator. ...................................................................................................................................... 10 
+503. Clinical Manager. ................................................................................................................................. 10 
+504. Health Status. (I) ................................................................................................................................... 10 
+SECTION 600 – REPORTING ................................................................................................................ 11 
+601. Incidents................................................................................................................................................ 11 
+602. Administrator Changes. ...................................................................................................................... 11 
+603. Agency Closure..................................................................................................................................... 12 
+Regulation History as Published in State Register 
+Date Document Number Volume Issue 
+April 23, 1979 - 3 8, Part 2 
+May 14, 1980 (Errata) - 4 9 
+May 28, 1982 210 6 8 
+April 28, 1989 1058 13 4 
+May 28, 1999 2331 23 5 
+May 27, 2022 5057 46 5 
+May 23, 2025 5352 49 5 
+<<<PAGE 3>>>
+604. Joint Annual Report. ............................................................................................................................ 12 
+SECTION 700 – PATIENT RECORDS ..................................................................................................... 12 
+701. Content (II). ........................................................................................................................................... 12 
+702. Record Maintenance. .......................................................................................................................... 13 
+703. Authentication. ..................................................................................................................................... 13 
+704. Record Retention. ................................................................................................................................ 13 
+SECTION 800 – ADMISSIONS, DISCHARGES, AND TRANSFERS ......................................................... 13 
+801. Admission. ............................................................................................................................................ 13 
+802. Discharge. ............................................................................................................................................. 14 
+803. Transfer. ................................................................................................................................................ 14 
+SECTION 900 – PATIENT CARE, TREATMENT, AND SERVICES ........................................................... 14 
+901. General. ................................................................................................................................................. 14 
+902. Comprehensive Assessment. ............................................................................................................. 14 
+903. Treatment Plan. ................................................................................................................................... 14 
+SECTION 1000 – PATIENT RIGHTS ...................................................................................................... 14 
+1001. General (II). ......................................................................................................................................... 14 
+1002. Informed Consent. ............................................................................................................................ 15 
+1003. Patient Protections. ........................................................................................................................... 15 
+SECTION 1100 – [RESERVED] ............................................................................................................... 15 
+SECTION 1200 – MEDICATION AND TREATMENT ORDERS ............................................................... 15 
+SECTION 1300 – AGREEMENTS WITH CONTRACTED PARTIES .......................................................... 16 
+SECTION 1400 – EMERGENCY PROCEDURES AND DISASTER PREPAREDNESS. (II) .......................... 16 
+1401. Disaster Preparedness. ..................................................................................................................... 16 
+1402. Continuity of Care, Treatment, and Services. ................................................................................ 16 
+SECTION 1500 – [RESERVED] ............................................................................................................... 16 
+SECTION 1600 – [RESERVED] ............................................................................................................... 16 
+SECTION 1700 – INFECTION CONTROL .............................................................................................. 16 
+1701. Staff Practices. (I) ............................................................................................................................... 16 
+1702. Tuberculosis Risk Assessment and Screening (I). .......................................................................... 17 
+SECTION 1800 – QUALITY IMPROVEMENT PROGRAM ...................................................................... 18 
+SECTION 1900 – [RESERVED] ............................................................................................................... 18 
+SECTION 2000 – [RESERVED] ............................................................................................................... 18 
+SECTION 2100 – [RESERVED] ............................................................................................................... 18 
+<<<PAGE 4>>>
+SECTION 2200 – [RESERVED] ............................................................................................................... 18 
+SECTION 2300 – [RESERVED] ............................................................................................................... 18 
+SECTION 2400 – [RESERVED] ............................................................................................................... 19 
+SECTION 2500 – [RESERVED] ............................................................................................................... 19 
+SECTION 2600 – [RESERVED] ............................................................................................................... 19 
+SECTION 2700 – SEVERABILITY ........................................................................................................... 19 
+SECTION 2800 – GENERAL .................................................................................................................. 19 
+ 
+ 
+<<<PAGE 5>>>
+1 | Regulation 60-77 
+ 
+SECTION 100 – DEFINITIONS AND LICENSURE 
+ 
+101. Definitions. 
+ 
+ A. Abuse. Physical Abuse or Psychological Abuse. 
+ 
+  1. Physical Abuse. Intentionally inflicting or allowing to be inflicted physical injury on a Patient by an 
+act or failure to act. Physical abuse includes, but is not limited to, slapping, hitting, kicking, biting, choking, 
+pinching, burning, actual or attempted sexual battery, use of medication outside the standards of reasonable 
+medical practice for the purpose of controlling behavior, and unreasonable confinement. Physical Abuse 
+also includes the use of a restrictive or physically intrusive procedure to control behavior for the purpose 
+of punishment except that a therapeutic procedure prescribed by a licensed physician or other qualified 
+professional or that is part of a written plan of care by a licensed physician or other qualified professional 
+is not considered physical abuse. Physical  abuse does not include altercations or acts of assault between 
+Patients. 
+ 
+  2. Psychological Abuse. Deliberately subjecting a Patient to threats or harassment or other forms of 
+intimidating behavior causing fear, humiliation, degradation, agitation, confusion, or other forms of serious 
+emotional distress. 
+ 
+ B. Administrator.
+ The individual designated by the governing body or Licensee who is in charge of and 
+responsible for the administration of the Home Health Agency. May also be referred to as Director. 
+ 
+ C. Authorized Healthcare Provider. An individual authorized by law and currently licensed in South 
+Carolina as a Physician, advanced practice registered nurse, or physician assistant to provide specific 
+treatments, care, and services to Patients. 
+ 
+ D.  Branch Office. A location or site from which a H ome Health Agency provides services within a 
+portion of the total geographic area served by the Parent Agency. The Branch Office is part of the Agency 
+and is located sufficiently close to share administration, supervision, and services in a manner that renders 
+it unnecessary for the branch independently to meet the licensure requirements as an Agency. 
+ 
+ E. Comprehensive Assessment. An individualized assessment that reflects each Patient’s current health 
+status, includes information that may be used to demonstrate the Patient’s progress toward achievement of 
+the desired outcomes, identifies the Patient’s need for Home Health Services, and reflects the Patient’s 
+medical, nursing, rehabilitative, social and Discharge planning needs. 
+ 
+ F. Consultation. A visit by individuals authorized by Department representatives who will  provide 
+information to Agencies with the goal of facilitating compliance with the regulations. 
+ 
+ G. Contracted Party. An individual, business, or other entity who enters into an agreement with a Home 
+Health Agency to provide care, treatment, or services normally provided by the Home Health Agency to a 
+Patient. 
+ 
+ H.  Department. The South Carolina Department of Public Health. 
+ 
+ I. Direct Care Staff. Those individuals who provide direct treatment, care, and services to Patients, 
+including: 
+ 
+  1. A Registered Nurse, Licensed Practical Nurse, or certified nurse assistant; 
+ 
+<<<PAGE 6>>>
+2 | Regulation 60-77 
+ 
+  2. Any other licensed professional employed by or contracting with a Home Health Agency who 
+provides to Patients direct care or services and includes, but is not limited to, a physical, speech, 
+occupational, or respiratory care therapist; 
+ 
+  3. A person who is not licensed but provides physical assistance or care to a Patient served by a Home 
+Health Agency; 
+ 
+  4. A person employed by or under contract with a Home Health Agency who works within any building 
+housing Patients; or 
+ 
+  5. A person employed by or under contract with a Home Health Agency whose duties include the 
+possibility of Patient contact. 
+ 
+ J. Discharge. The point at which treatment, care, and services provided by a Home Health Agency are 
+terminated and the Home Health Agency no longer maintains active responsibility for the care of the 
+Patient. 
+ 
+ K. Exploitation. 1) Causing or requiring a Patient to engage in activity or labor which is improper, 
+unlawful, or against the reasonable and rational wishes of the Patient. Exploitation does not include 
+requiring a Patient to participate in an activity or labor which is a part of a written plan of care or which is 
+prescribed or authorized by a licensed physician attending the Patient; 2) An improper, unlawful, or 
+unauthorized use of the funds, assets, property, power of attorney, guardianship, or conservat orship of a 
+Patient by a person for the profit or advantage of that person or another person; or 3) Causing a Patient to 
+purchase goods or services for the profit or advantage of the seller or another person through: undue 
+influence, harassment, duress, fo rce, coercion, or swindling by overreaching, cheating, or defrauding the 
+vulnerable adult through cunning arts or devices that delude the vulnerable adult and cause him to lose 
+money or other property. 
+ 
+ L. Health Assessment. An evaluation of the health status of a S taff member by a Physician, other 
+Authorized Healthcare Provider, or Registered Nurse in accordance with Agency policy. 
+ 
+ M. Home Health Agency (“Agency”). A public, nonprofit, or proprietary organization, whether owned 
+or operated by one or more persons or legal entities, which furnishes or offers to furnish H ome Health 
+Services. 
+ 
+ N. Home Health Aide Services. Services provided by an individual supervised by a Registered Nurse or 
+licensed therapist who renders assistance in the home to P atients with personal care problems and who 
+meets minimum qualifications and training as set by the Home Health Agency. 
+ 
+ O. Home Health Services. Those items and services furnished to an individual by a Home Health Agency, 
+or by others under arrangement with the Home Health Agency, on a visiting basis and, except for subsection 
+5, below, in a place of temporary or permanent residence used as the individual's home as follows:  
+ 
+  1. Part-time or I ntermittent skilled nursing care as ordered by a P hysician or other Authorized 
+Healthcare Provider and provided by or under the supervision of a Registered Nurse and at least one other 
+service listed below: 
+ 
+  2. Physical, occupational or speech therapy; 
+ 
+  3. Medical social services, Home Health Aide Services, and other therapeutic services;  
+ 
+<<<PAGE 7>>>
+3 | Regulation 60-77 
+ 
+  4. Medical supplies and the use of medical appliances; 
+ 
+  5. Any of the above items and services provided on an outpatient basis under arrangements made by 
+the Home Health Agency with a hospital, nursing home, or rehabilitation center and the furnishing of which 
+involves the use of equipment of such a nature that the items  and/or services cannot readily be made 
+available to the individual in his/her home, or which are furnished at one of the above facilities while the 
+Patient is there to receive such items or services, but not including transportation of the individual in 
+connection with any such items or services.  
+ 
+ P. Incident. An unusual, unexpected adverse event, including any accidents, that could potentially cause 
+harm, injury, or death to Patients or Staff members. 
+ 
+ Q. Inspection. A visit by individuals authorized by the Department to a licensed Home Health Agency 
+or to a proposed Home Health Agency for the purpose of determining compliance with this regulation. 
+ 
+ R. Intermittent. Any combination of temporary skilled nursing, Home Health Aide, and/or Therapeutic 
+Services, provided on a less-than-daily basis, or if provided daily, is less than eight (8) hours per day. 
+ 
+ S. Investigation. A visit by individuals authorized by the Department to an unlicensed or licensed Home 
+Health Agency for the purpose of determining the validity of allegations of violations received by the 
+Department relating to this regulation. 
+ 
+ T. Joint Annual Report. An annual statistical and utilization data report submitted to the South Carolina 
+Revenue and Fiscal Affairs Office. 
+ 
+ U. License. A License issued by the Department to a H ome Health Agency to provide Home Health 
+Services in designated counties within the state. 
+ 
+ V. Licensed Practical Nurse. An individual who is currently licensed as such by the South Carolina Board 
+of Nursing. 
+ 
+ W. Licensee. The individual, corporation, or public entity who has received a License to provide Home 
+Health Services and with whom rests the ultimate responsibility for compliance with this regulation. 
+ 
+ X.  Medical Social Worker. A person who has one (1) year of social work experience in a health care 
+setting and is licensed by the South Carolina Board of Social Work Examiners at the Master (LMSW) or 
+Independent (LISW) level. 
+ 
+ Y. Medical Social Worker Assistant. A person who has at least one (1) year of social work experience in 
+a health care setting, is licensed by the South Carolina Board of Social Work Examiners , and provides 
+services under the supervision of a Medical Social Worker as defined in 101.X. 
+ 
+ Z. Neglect. The failure or omission of a caregiver to provide the care, goods, or services necessary to 
+maintain the health or safety of a Patient including, but not limited to, food, clothing, medicine, shelter, 
+supervision, and medical services and the failure or omission has caused, or presents a substantial risk of 
+causing, physical or mental injury to the Patient. Noncompliance with regulatory standards alone does not 
+constitute Neglect. Neglect includes the inability of a Patient, in the absence of a caretaker, to provide for 
+his or her own health or safety which produces or could reasonably be expected to produce serious physical 
+or psychological harm or substantial risk of death. 
+ 
+ 
+<<<PAGE 8>>>
+4 | Regulation 60-77 
+ 
+ AA. Occupational Therapist. A person currently licensed as such by the South Carolina Board of 
+Occupational Therapy. 
+ 
+ BB. Occupational Therapist Assistant. A person who is currently licensed as such by the South Carolina 
+Board of Occupational Therapy. 
+ 
+ CC. Parent Home Health Agency  (“Parent Agency”) . The A gency that develops and maintains 
+administrative control Branch Offices. 
+ 
+ DD. Part-time. Any combination of temporary skilled nursing, Home Health Aide, and/or Therapeutic 
+Services being provided for less than eight (8) hours per day. 
+ 
+ EE. Patient. A person who receives treatment, services, or care from a Home Health Agency licensed by 
+the Department. 
+ 
+ FF. Physician. A doctor of medicine, podiatrist, or doctor of osteopathic medicine licensed by the South 
+Carolina Board of Medical Examiners. 
+ 
+ GG. Physical Therapist. An individual currently licensed as such by the South Carolina Board of Physical 
+Therapy. 
+ 
+ HH. Physical Therapist Assistant. An individual who is currently licensed as such by the South Carolina 
+Board of Physical Therapy. 
+ 
+ II. Quality Improvement. The process used by the H ome Health Agency to examine its methods and 
+practices of providing care, identifying the opportunities to improve its performance, and taking actions 
+that result in higher quality of care for the Home Health Agency’s Patients. 
+ 
+ JJ. Registered Nurse. An individual who is currently licensed as such by the South Carolina Board of 
+Nursing. 
+ 
+ KK. Representative. The Patient’s legal representative, such as a guardian, who makes healthcare 
+decisions on the Patient’s behalf, or a Patient-selected representative who participates in making decisions 
+related to the Patient’s care or well-being, including but not limited to, a family member or an advocate for 
+the Patient.  
+ 
+ LL. Revocation of License. An action by the Department to cancel or annul a Home Health Agency 
+license by recalling, withdrawing, or rescinding its authority to operate. 
+ 
+ MM. Skilled Nursing. A service provided by a registered nurse that: 
+ 
+  1. Is ordered by a Physician or other Authorized Healthcare Provider; 
+ 
+  2. Requires the skills of technical or professional personnel such as Registered Nurses, Licensed 
+Practical Nurses, Physical Therapists, Occupational Therapists and speech pathologists or audiologists; and 
+ 
+  3. Is furnished directly by, or under, the supervision of such personnel. 
+ 
+ NN. Speech Therapist. An individual currently licensed as such by the South Carolina Board of Speech-
+Language Pathology and Audiology. 
+ 
+<<<PAGE 9>>>
+5 | Regulation 60-77 
+ 
+ OO. Staff. Those individuals , including Direct Care Staff, who are employees of the H ome Health 
+Agency. 
+ 
+ PP. Start of Care Date. The first visit where the Home Health Agency provides hands-on, direct care 
+services, or treatments to the Patient. 
+ 
+ QQ. Suspension of License.  An action by the Department requiring a Licensee to cease operations for a 
+period of time and/or requiring a Home Health Agency to cease admitting Patients, until such time as the 
+Department rescinds that restriction. 
+ 
+ RR. Therapeutic Services. Services provided by a licensed or supervised therapist within their scope of 
+practice and as prescribed by a Physician or other Authorized Healthcare Provider, which can be safely 
+provided in the home. 
+ 
+ SS. Treatment Plan. A written plan that describes the Patient’s condition and details the treatment to be 
+provided, expected outcomes, and expected duration of the treatment prescribed by the Physician or other 
+Authorized Healthcare Provider. 
+ 
+102. Licensure. 
+ 
+ A.  License. No person, private or public organization, political subdivision, or governmental agency shall 
+establish, conduct, or maintain a H ome Health Agency or represent itself as providing Home Health 
+Services without first obtaining a L icense from the Department. No Agency shall admit  Patients prior to 
+the effective date of licensure. When it has been determined by the Department that Home Health Services 
+are being provided at a location, and the owner has not been issued a License from the Department, the 
+owner shall cease operations immediately and ensure the safety, health, and well-being of Patients. Current 
+and/or previous violations of the S.C. Code of Laws or Department regulations may jeopardize the issuance 
+of a License for the Agency, the licensing of any other Agency or facility type, or addition to an existing 
+Agency or facility. The Home Health Agency shall provide only the services, treatment, or care it is licensed 
+to provide pursuant to the Home Health Services definition in Section 101.H of this regulation. (I) 
+ 
+ B. Compliance. An initial L icense shall not be issued to a proposed Home Health Agency, until the 
+applicant has demonstrated to the Department that the proposed H ome Health Agency is in substantial 
+compliance with the licensing standards. A paper or electronic copy of the licensing standards shall be 
+maintained at the Home Health Agency and accessible to all H ome Health Agency Staff. In the event a 
+Licensee, who already has a Home Health Agency or facility licensed by the Department, makes application 
+for another Home Health Agency, the currently licensed H ome Health Agency and/or facility shall be in 
+substantial compliance with the applicable standards prior to the Department issuing a L icense to the 
+proposed Home Health Agency. 
+ 
+ C. Licensed Services. The Home Health Agency shall provide services only in the county(ies) identified 
+on the face of the License and shall provide services to the entire county(ies) identified on the License. (I) 
+ 
+ D. Issuance of License. 
+ 
+  1. The Home Health Agency shall post the License issued by the Department in a conspicuous place 
+in a public area within the Home Health Agency. 
+ 
+  2. The issuance of a L icense does not guarantee adequacy or quality of individual care, treatment, 
+personal safety, fire safety, or the well-being of any Patient of the Home Health Agency. 
+ 
+<<<PAGE 10>>>
+6 | Regulation 60-77 
+ 
+  3. A License is not assignable or transferable and is subject to revocation at any time by the Department 
+for the Licensee’s failure to comply with the laws and regulations of this state. 
+ 
+  4. A License shall be effective for a specified H ome Health Agency, at a specific location(s), for a 
+specified period following the date of issue as determined by the Department. A License shall remain in 
+effect until the Licensee is notified otherwise by the Department. 
+ 
+  5. Multiple types of care on the same premises shall be licensed separately even though they are owned 
+by the same entity. 
+ 
+ E. Home Health Agency Name. No proposed H ome Health Agency shall be named, nor any existing 
+Home Health Agency have its name changed , to the same or similar name  as any other Home Health 
+Agency licensed in South Carolina.  If the Home Health Agency is part of a “chain operation” it shall then 
+have the geographic area in which it is located as part of its name.  
+ 
+ F. Application. Applicants for a L icense shall submit to the Department a complete and accurate 
+application, on a form prescribed, prepared, and furnished by the Department, prior to initial licensing and 
+periodically thereafter at intervals determined by the Department. The applicant shall ensure the application 
+is signed by the owner(s) if an individual or partnership; by two (2) officers if a corporation; or by the head 
+of the governmental department having jurisdiction if a governmental unit. Corporati ons or limited 
+partnerships, limited liability companies, or any other organized business entity shall be registered with the 
+South Carolina Secretary of State’s Office if required to do so by state law. 
+ 
+ G. Required Documentation. The applicant shall ensure the application for initial licensure includes: 
+ 
+  1. The full name and address of the proposed Home Health Agency and the owner, and the names of 
+the persons in control of the Home Health Agency. The Department may require additional information, 
+including affirmative evidence of the applicant’s ability to comply with this regulation; 
+ 
+  2. The applicant’s oath assuring that the contents of the application are accurate and true; 
+ 
+  3. Proof of ownership of real property in which the Agency is located, or lease agreement allowing the 
+Licensee to occupy the real property in which the Agency is located; and 
+ 
+  4. The county(ies) in which the Home Health Agency will provide services. 
+ 
+ H. Licensing Fees. Each applicant shall pay a License fee prior to the issuance of a License. The initial 
+and renewal License fee shall be one hundred dollars ($100.00) plus fifty dollars ($50.00) for each county 
+served. All fees are non -refundable, shall be made payable to the Department by credit card or secured 
+portal or specific website, and shall be submitted with the application . Governmental H ome Health 
+Agencies are exempt from payment of L icense fees.  Annual licensing fees shall also include any 
+outstanding Inspection fees. 
+ 
+ I. Licensing Late Fee. Failure to submit a renewal application and fee to the Department by the License 
+expiration date may result in a late fee(s) of twenty-five percent (25%) of the License fee amount, but not 
+less than seventy-five dollars ($75.00), in addition to the License fee. Failure to submit the License fee and 
+late fees to the Department within thirty (30) calendar days of the License expiration date shall render the 
+Home Health Agency unlicensed. 
+ 
+ J. License Renewal. For a License to be renewed, applicants shall file an application with the Department, 
+shall pay the License renewal fee, and shall not have pending enforcement actions by the Department. If 
+<<<PAGE 11>>>
+7 | Regulation 60-77 
+ 
+the License renewal is delayed due to enforcement actions, the License renewal shall be issued only when 
+the matter has been resolved satisfactorily by the Department, or when the adjudicatory process is 
+completed, whichever is applicable. 
+ 
+ K. Amended License. 
+ 
+  The Home Health Agency shall request issuance of an amended  License by application to the 
+Department prior to any of the following circumstances: 
+ 
+  1. Changes of a Home Health Agency location from one geographic site to another; 
+ 
+  2. Change of the Home Health Agency’s name or address; 
+ 
+  3. Change in the county(ies) in which the Home Health Agency provides services. The Home Health 
+Agency shall pay an amended License fee of fifty dollars ($50.00) for each additional county be served; or 
+ 
+  4. Establishment of new Branch Offices of the Home Health Agency. 
+ 
+ L. Change of Licensee. The Home Health Agency shall request issuance of a new License by application 
+to the Department prior to any of the following circumstances: 
+ 
+  1. A change in the controlling interest even if, in the case of a corporation or partnership, the legal 
+entity retains its identity and name; or 
+ 
+  2. A change of the legal entity, for example, sole proprietorship to or from a corporation, partnership 
+to or from a corporation, even if the controlling interest does not change. 
+ 
+ M. Variance. The Home Health Agency may request a variance to this regulation in a format as 
+determined by the Department. Variances shall be considered on a case -by-case basis by the Department. 
+The Department may revoke issued variances as it determines appropriate. 
+ 
+SECTION 200 – ENFORCEMENT OF REGULATIONS 
+ 
+201. General. 
+ 
+ The Department shall utilize Inspections, Investigations, Consultations, and other pertinent 
+documentation regarding a proposed or licensed Home Health Agency to enforce this regulation. 
+ 
+202. Inspections and Investigations. 
+ 
+ A.  The Home Health Agency shall be inspected prior to initial licensing and subsequently as determined 
+by the Department. 
+ 
+ B. All Home Health A gencies are subject to I nspection and/or Investigation at any time without prior 
+notice by individuals  authorized by the South Carolina Code of Laws . When Staff are absent from the 
+Parent Home Health Agency, the Home Health Agency shall post information at the entrance of the Home 
+Health Agency to those seeking legitimate access to the Home Health Agency, as to the expected return of 
+the Staff. The Home Health Agency shall ensure the posted information includes contact information and 
+the expected time of return of the Staff members and Patients. The Home Health Agency shall ensure the 
+contact information includes the name of a designated contact and his or her telephone number. The Home 
+<<<PAGE 12>>>
+8 | Regulation 60-77 
+ 
+Health Agency shall ensure the telephone number for the designated contact is not the Home Health Agency 
+telephone number. (I) 
+ 
+ C. Individuals authorized by South Carolina law  shall be granted access to all properties and areas, 
+objects, documents, and records at the time of Inspections and Investigations and in a timely manner  and 
+have the authority to require the Agency to make photocopies of those documents required in the course of 
+Inspections or Investigations. Photocopies shall be used only for purposes of enforcement of regulations 
+and confidentiality shall be maintained except to verify individuals in enforcement action proceedings. 
+Records shall be made available to individuals authorized by the Department in a timely manner. (I) 
+ 
+ D.  When there is noncompliance with the licensing standards, the A gency shall submit an acceptable 
+written plan of correction in a format determined by the Department. The Agency shall return the plan of 
+correction by the date specified on the report of Inspection and/or Investigation. The Agency shall describe 
+the following in the written plan of correction: 
+ 
+  1. The actions taken to correct each cited deficiency; 
+ 
+  2. The actions taken to prevent recurrences (actual and similar); and 
+ 
+  3. The actual or expected completion dates of those actions. (II) 
+ 
+ E. The Home Health Agency shall ensure reports of Inspections or Investigations conducted by the 
+Department, including the Agency response, are provided to the public upon written request with the 
+redaction of the names of those individuals in the report. (II) 
+ 
+ F. Inspection Fees. In accordance with S.C. Code Section 44- 7-270, the Department may charge a fee 
+for Inspections. The fee for initial and routine Inspections shall be two hundred fifty dollars ($250.00) plus 
+twenty-five dollars ($25.00) per county serve d. The fee for follow -up Inspections shall be one hundred 
+twenty-five dollars ($125.00) plus twenty-five dollars ($25.00) per county served.  
+ 
+203. Consultations. 
+ 
+ Consultations may be provided by the Department as requested by the Agency or as deemed appropriate 
+by the Department. 
+ 
+SECTION 300 – ENFORCEMENT ACTIONS 
+ 
+301. General. 
+ 
+ When the Department determines that a Home Health Agency is in violation of any statutory provision, 
+rule, or regulation relating to the operation or maintenance of such A gency, the Department, upon proper 
+notice to the Licensee, may deny, suspend, or revoke the Licenses, or assess a monetary penalty. 
+ 
+302. Violation Classifications. 
+ 
+ Violations of standards in this regulation are classified as follows: 
+ 
+ A. Class I violations are those that present an imminent danger to the health, safety, or well-being of the 
+Patients of the Home Health Agency or a substantial probability that death or serious physical harm could 
+result therefrom.  A physical condition or one or more practices, means, methods , or operations in use in 
+an Agency may constitute such a violation. The condition or practice constituting a Class I violation shall 
+<<<PAGE 13>>>
+9 | Regulation 60-77 
+ 
+be abated or eliminated immediately unless a fixed period of time, as stipulated by the Department, is 
+required for correction. Each day such violation exists after expiration of this  time shall be considered a 
+subsequent violation. 
+ 
+ B. Class II violations are those, other than Class I violations, that the Department determines to have a 
+direct or immediate relationship to the health, safety , or well-being of the Agency's Patients. The citation 
+of a Class II violation shall specify the time within which the violation is required to be corrected. Each day 
+such violation exists after expiration of this time shall be considered a subsequent violation. 
+ 
+ C. Class III violations are those that are not classified as Class I or II in this  regulation or those that are 
+against best practices. The citation of a Class III violation shall specify the time within which the violation 
+is required to be corrected. Each day such violation exists after expiration of this time shall be considered 
+a subsequent violation. 
+ 
+ D.  The notations (I) or (II), placed within sections of this regulation, indicate those standards are Class I 
+or II violations if they are not met, respectively. Failure to meet standards not so annotated are Class III 
+violations. 
+ 
+ E. When assessing a monetary penalty, the Department may invoke S.C. Code Section 44- 7-320(C) to 
+determine the dollar amount or may utilize the following schedule: 
+ 
+FREQUENCY CLASS I CLASS II CLASS III 
+1st $500-1,500 $300-800 $100-300 
+2nd 1,000-3,000 500-1,500 300-800 
+3rd 2,000-5,000 1,000-3,000 500-1,500 
+4th 5,000 2,000-5,000 1,000-3,000 
+5th 5,000 5,000 2,000-5,000 
+6th 5,000 5,000 5,000 
+ 
+SECTION 400 – POLICIES AND PROCEDURES 
+ 
+ A.  The Home Health Agency shall maintain and adhere to written policies and procedures addressing the 
+manner in which the requirements of this regulation shall be met. The Home Health Agency shall be in full 
+compliance with the policies and procedures. 
+ 
+ B. The Home Health Agency shall establish a time period for review, not to exceed two (2) years, of all 
+policies and procedures, and such reviews shall be documented and signed by the Administrator. The Home 
+Health Agency shall ensure all policies and proced ures are accessible to Agency Staff, printed or 
+electronically, at all times. 
+ 
+SECTION 500 – STAFFING  
+ 
+501. General. 
+ 
+ A. Before being employed or contracted as a Staff member, all Direct Care Staff shall undergo a criminal 
+background check pursuant to S.C. Code Section 44- 7-2910. Staff members and volunteers of the Home 
+Health Agency shall not have a prior conviction or pled no contest (nolo contendere) to unlawful conduct 
+toward a child, as defined by S.C. Code Section 63-45-70; Abuse, Neglect, or Exploitation of a vulnerable 
+adult, as defined by S.C. Code Sections 43-35-10, et seq.; or any similar criminal offense. (I) 
+ 
+<<<PAGE 14>>>
+10 | Regulation 60-77 
+ 
+ B. The Agency shall define in writing the responsibilities, qualifications, and competencies of Staff for 
+all positions. The Agency shall ensure that the type and number of Staff are:  
+ 
+  1. Properly licensed or credentialed in their respective professional fields as required for assigned job 
+duties;  
+ 
+  2. Trained as necessary to perform the duties for which they are responsible in an effective manner;  
+ 
+  3. Capable of rendering care and services to Patients; and  
+ 
+  4. Capable of following applicable regulations.  
+ 
+ C. The facility shall maintain current information regarding all Staff members, to include:  
+ 
+  1. Name, address, and telephone number;  
+ 
+  2. Date of hire and date of initial Patient contact;  
+ 
+  3. Past employment, experience, and education;  
+ 
+  4. Professional licensure or credentials; and  
+ 
+  5. Job description signed by the Staff member. 
+ 
+502. Administrator. 
+ 
+ A. The Home Health Agency shall have a full -time Administrator who is responsible for the overall 
+management and operation of the Agency and meets one of the following: 
+ 
+  1. A Physician or other Authorized Healthcare Provider; 
+ 
+  2. A Registered Nurse; or 
+ 
+  3. Has training and experience in health service administration and at least one (1) year of supervisory 
+administrative experience in home health care or a related healthcare program. 
+ 
+ B. A Staff member shall be designated, in writing, to act in the absence of the Administrator, such as, a 
+listing of the lines of authority by position title, including the names of the persons filling these positions. 
+ 
+503. Clinical Manager. 
+ 
+ The Home Health Agency shall designate a Physician or other Authorized Healthcare Provider, or a 
+Registered Nurse to supervise the professional clinical activities in providing Home Health Services in 
+accordance with the orders and Treatment Plan of the P hysician or other Authorized Healthcare Provider 
+responsible for the care of the Patient. 
+ 
+504. Health Status. (I) 
+ 
+ A. The Home Health Agency shall ensure all Staff members who have contact with Patients have a 
+documented Health Assessment within twelve (12) months prior to initial Patient contact. The Health 
+Assessment shall include tuberculin skin testing as described in Section 1702. 
+<<<PAGE 15>>>
+11 | Regulation 60-77 
+ 
+ 
+ B. If a Staff member is working at multiple Home Health Agencies or facilities operated by the same 
+Licensee, copies of the documented Health Assessment shall be accessible at each location.  
+ 
+SECTION 600 – REPORTING  
+ 
+601. Incidents. 
+ 
+ A. The Home Health Agency shall document every Incident, and include an Incident review, 
+investigation, and evaluation as well as corrective action taken, if any. The Home Health Agency shall 
+retain all documented Incidents reported pursuant to this Section for six (6) years after the Patient involved 
+is last Discharged. The Home Health Agency shall ensure the records are readily available and stored for 
+the first year following Patient Discharge. 
+ 
+ B. The Home Health Agency shall report the following types of Incidents to the Patient’s Representative 
+or emergency contact for each affected individual at the earliest practicable hour, not exceeding twenty-four 
+(24) hours of the Incident. The Home Health Agency shall notify the Department immediately, not to exceed 
+twenty-four (24) hours, via the Department’s electronic reporting system or as otherwise determined by the 
+Department. Incidents requiring reporting include, but are not limited to: 
+ 
+1. Confirmed or suspected crimes against a Patient by Agency Staff; 
+ 
+2. Confirmed or suspected Abuse, Neglect, or Exploitation of a Patient by Agency Staff; 
+ 
+3. Medication errors with adverse impact by Agency Staff; 
+ 
+4. Hospital admission or death resulting from an Incident while in the care of Agency Staff; and 
+ 
+5. Bone or joint fracture while in the care of Agency Staff. 
+ 
+ C. The Home Health Agency shall submit a separate written investigation report within five (5) calendar 
+days of every Incident required to be reported to the Department pursuant to Section 601.A via the 
+Department’s electronic reporting system or as otherwise determined by the Department. The Home Health 
+Agency shall ensure reports submitted to the Department contain: the Home Health Agency name, License 
+number, type of Incident, the date the Incident occurred, a Patient medical record identification numbe r, 
+Patient age and sex, number of Staff directly injured or affected, witness(es)’ name(s), identified cause of 
+the Incident, internal investigation results if cause unknown, a brief description of the Incident including 
+location where occurred, and treatment of injuries. 
+ 
+602. Administrator Changes. 
+ 
+ A. The Agency shall notify the Department, in a means as determined by the Department, within 
+seventy-two (72) hours of any change in Administrator status. 
+ 
+ B. The Licensee shall notify the Department in a means as determined by the Department within ten (10) 
+calendar days of any change in the Administrator, including the name of the newly- appointed individual, 
+their qualifications pursuant to Section 502, and effective date of the appointment. 
+ 
+ 
+ 
+ 
+<<<PAGE 16>>>
+12 | Regulation 60-77 
+ 
+603. Agency Closure. 
+ 
+ In the event of closure of an Agency for any reason, the Home Health Agency shall ensure continuity of 
+care by promptly notifying the Patient’s Physician or other Authorized Healthcare Provider and arranging 
+for referral to other Home Health Agencies at the direction of the Physician or other Authorized Healthcare 
+Provider. The Home Health Agency shall notify the Department in writing of the closure by the Agency no 
+later than five (5) business days prior to closure. (II) 
+ 
+604. Joint Annual Report. 
+ 
+ All Home Health Agencies shall submit a Joint Annual Report as specified by the Department. 
+ 
+SECTION 700 – PATIENT RECORDS 
+ 
+701. Content (II). 
+ 
+ A. The Home Health Agency shall maintain an organized record for each Patient. The Home Health 
+Agency shall ensure all entries in the Patient record are permanently written, typed, or electronic media, 
+authenticated by the author, and dated.  
+ 
+ B. The Home Health Agency shall ensure Patient records reflect services, treatment, and care provided 
+directly to the Patient by the Home Health Agency or by the Contracted Party, including Patient progress, 
+and descriptions of the planned clinical outcomes achieved. 
+ 
+ C. The Home Health Agency shall ensure the specific Patient record entries and documentation include, 
+at a minimum: 
+ 
+  1. Face sheet; 
+ 
+   a. Basic identification information; 
+ 
+   b. Diagnosis; 
+ 
+   c. Primary care Physician’s name and phone number; 
+ 
+   d. Representative’s name, or name of other individual to be contacted in case of emergency, and 
+phone number; 
+ 
+   e. Patient’s address and phone number; 
+ 
+   f. Admission date; and 
+ 
+   g. Start of Care Date; 
+ 
+  2. Comprehensive Assessment; 
+ 
+  3. Original Treatment Plan and subsequent reviews and changes; 
+ 
+  4. Clinical notes including all interventions, medication administration, treatments, and services, and 
+responses to those interventions;  
+ 
+<<<PAGE 17>>>
+13 | Regulation 60-77 
+ 
+  5. Physician or other Authorized Healthcare Provider orders; and 
+ 
+  6. Signed and dated original Informed Consent. 
+ 
+702. Record Maintenance. 
+ 
+ A. The Licensee shall provide accommodations, space, supplies, and equipment for the protection, 
+storage, and maintenance of Patient records in an organized manner. The Home Health Agency shall 
+determine the medium in which information is stored.  
+ 
+ B. Patient records are the property of the Licensee. The Home Health Agency shall maintain all Patient 
+records at the Home Health Agency, including Contracted Party Patient records, and make available to Staff 
+and other authorized individuals at all times, with the exception of Patient records being utilized with active 
+Patients or by court order. (II) 
+ 
+ C. The Home Health Agency shall ensure Patient record confidentiality and shall only make Patient 
+records available to individuals authorized by law. (II) 
+ 
+703. Authentication. 
+ 
+ Home Health Agencies shall have policies and procedures to prohibit the use or authentication of Patient 
+records by unauthorized users. 
+ 
+704. Record Retention. 
+ 
+ A. The Home Health Agency shall ensure Patient records are completed upon Discharge within a 
+timeframe as determined by the Home Health Agency, but no later than thirty (30) calendar days from the 
+Patient’s Discharge.  
+ 
+ B. The Home Health Agency shall retain all Patient records for at least ten (10) years from the Patient’s 
+Discharge. The Home Health Agency shall retain all other documentation required by this regulation at 
+least twelve (12) months or since the last Insp ection, whichever is the longer period. If the Patient is a 
+minor, the Home Health Agency shall retain the Patient’s records at least until after the expiration the period 
+of election following achievement of majority as prescribed by applicable law. 
+ 
+ C. The Licensee shall arrange for preservation of records prior to closing a Home Health Agency, and 
+shall notify the Department, in writing, describing these arrangements within ten (10) calendar days of 
+closure. 
+ 
+ D. In the event of change of ownership, the Home Health Agency shall ensure all active Patient records 
+or copies of active Patient records are transferred to the new owner(s). 
+ 
+SECTION 800 – ADMISSIONS, DISCHARGES, AND TRANSFERS 
+ 
+801. Admission.  
+ 
+ The Home Health Agency shall admit Patients for treatment on the basis of a reasonable expectation that 
+the Patient’s medical, nursing, and social needs can be met by the Agency in the Patient’s place of residence.  
+ 
+ 
+ 
+<<<PAGE 18>>>
+14 | Regulation 60-77 
+ 
+802. Discharge.  
+ 
+ The Home Health Agency shall ensure each Patient, or Representative if applicable, is informed of and 
+participates in Discharge planning. The Home Health Agency shall develop and maintain a written plan of 
+Discharge with the Patient or Representative that  includes Patient or Representative signature and date, a 
+Discharge summary, and Discharge instructions.  
+ 
+803. Transfer. 
+ 
+ The Home Health Agency shall provide requested Patient record information to healthcare providers no 
+later than two (2) business days following notification of the transfer to ensure continuity of care. 
+ 
+SECTION 900 – PATIENT CARE, TREATMENT, AND SERVICES 
+ 
+901. General. 
+ 
+ The Home Health Agency shall ensure n ursing and other Th erapeutic Services relative to the needs of 
+the Patient, including medications administered, are provided in a safe and effective manner; in accordance 
+with federal, state, and local laws and regulations; and established professional practices. The Home Health 
+Agency shall ensure the care and services provided are supervised by appropriate qualified professionals. 
+(I) 
+ 
+902. Comprehensive Assessment. 
+ 
+ The Home Health Agency shall complete a Patient-specific Comprehensive Assessment consistent with 
+the Patient’s immediate needs within a time period determined by the Home Health Agency, but no later 
+than five (5) business days after admission. The Home Health Agency shall ensure the Comprehensive 
+Assessment addresses the Patient’s medical, nursing, rehabi litative, social, and Discharge planning needs 
+and is used in making individual treatment decisions. The Home Health Agency shall review and/or revise 
+the Comprehensive Assessment as changes in the Patient’s condition occur or due to a major decline or 
+improvement in the Patient’s health status. 
+ 
+903. Treatment Plan. 
+ 
+ The Home Health Agency shall develop and implement a Treatment Plan based on the interdisciplinary 
+needs of the Patient as determined by the Comprehensive Assessment. The Home Health Agency shall 
+ensure the Treatment Plan identifies desired measurable clinical outcomes and the methods by which the 
+outcomes are achieved through implementation of the plan and includes medical emergency situations. The 
+Home Health Agency shall notify the Physician or other Authorized Healthcare Provider when planned 
+clinical outcomes are not achieved or when there is a significant change in the Patient’s clinical condition. 
+The Home Health Agency shall ensure the Treatment Plan is approved and reviewed by a Physician or 
+other Authorized Healthcare Provider at a frequency as determined by the Agency but no less frequently 
+than every sixty (60) calendar days. 
+ 
+SECTION 1000 – PATIENT RIGHTS 
+ 
+1001. General (II). 
+ 
+ A.  The Home Health Agency shall ensure Patient rights are guaranteed, and inform each Patient of: 
+ 
+  1. The care to be provided and the opportunity to participate in care planning; 
+<<<PAGE 19>>>
+15 | Regulation 60-77 
+ 
+ 
+  2. Grievance and complaint procedures including the Department’s contact information and provisions 
+prohibiting retaliation; 
+ 
+  3. Confidentiality of Patient records; 
+ 
+  4. Respect for the Patient’s property; 
+ 
+  5. Specific coverage and non-coverage of services and of his or her liability for payment; 
+ 
+  6. Advance directive options; 
+ 
+  7. Freedom from Abuse, Neglect, and Exploitation; and 
+ 
+  8. Respect and dignity in receiving care. 
+ 
+1002. Informed Consent.  
+ 
+ The Home Health Agency shall obtain written informed consent from the Patient, or Representative, for 
+Home Health Services upon admission and provide a copy to the Patient. The informed consent between 
+the Patient and the Home Health Agency shall include at least the following: 
+ 
+ A. An explanation of the specific care, services, and/or equipment provided by the Home Health Agency; 
+ 
+ B. An explanation of the conditions under which the Patient may be Discharged; and 
+ 
+ C. Documentation of the explanation of the Patient’s rights pursuant to Section 1001 and the grievance 
+procedure.  
+ 
+1003. Patient Protections.  
+ 
+ The Home Health Agency shall comply with all relevant federal, state, and local laws and regulations 
+related to Patient protections, as appropriate, including Title VI, Section 601 of the Civil Rights Act of 1964 
+and the Americans with Disabilities Act, and ensure that there is no discrimination with regard to source of 
+payment in the recruitment, location of Patient, and acceptance or provision of goods and services to 
+Patients or potential Patients, provided that payment offered is not less than the cost of providing services. 
+(II) 
+ 
+SECTION 1100 – [RESERVED] 
+ 
+SECTION 1200 – MEDICATION AND TREATMENT ORDERS 
+ 
+ The Home Health Agency shall ensure orders for medications and treatments are signed by a Physician 
+or other Authorized Healthcare Provider and incorporated in the Patient's record. The Home Health Agency 
+shall ensure v erbal orders are received by a licensed nurse or licensed therapist  and include the time of 
+receipt of the order, description of the order, identification of the Physician or other Authorized Healthcare 
+Provider and the individual receiving the order . The Home Health Agency shall ensure the verbal orders 
+are authenticated and dated by a Physician or other Authorized Healthcare Provider pursuant to the Home 
+Health Agency’s policies and procedures, but no later than thirty (30) calendar days after the order is given. 
+(II) 
+ 
+<<<PAGE 20>>>
+16 | Regulation 60-77 
+ 
+SECTION 1300 – AGREEMENTS WITH CONTRACTED PARTIES 
+ 
+ A.  When a Home Health Agency utilizes a Contracted Party to provide services, treatment, or care,, the 
+Home Health Agency shall maintain a written agreement with the Contracted Party which describes how 
+the services provided are in accordance with the Patient Treatment Plan and which ensures that personnel 
+providing these services are qualified and properly supervised. 
+ 
+ B. The Home Health Agency shall ensure the Contracted Party complies with this regulation. 
+ 
+SECTION 1400 – EMERGENCY PROCEDURES AND DISASTER PREPAREDNESS. (II) 
+ 
+1401. Disaster Preparedness. 
+ 
+ A. The Home Health Agency shall develop and maintain a written emergency preparedness plan that 
+shall be reviewed and updated at least annually. The Home Health Agency shall ensure the emergency 
+preparedness plan addresses the needs of the Patients, and in cludes continuity of treatment, care, and 
+services provided by the Agency to the Patients.  
+ 
+ B. The Home Health Agency shall provide data, evacuation status, and other requested information 
+during an emergent event as determined by the Department, and at a frequency as determined by the 
+Department. 
+ 
+1402. Continuity of Care, Treatment, and Services.  
+ 
+ The Home Health Agency shall have a written plan to be implemented to ensure the continuation of 
+essential Patient services for such reasons as power outage, water shortage, or in the event of the absence 
+from work of any portion of the work force resulting from inclement weather or other causes.  
+ 
+SECTION 1500 – [RESERVED] 
+ 
+SECTION 1600 – [RESERVED] 
+ 
+SECTION 1700 – INFECTION CONTROL 
+ 
+1701. Staff Practices. (I) 
+ 
+ A. The Home Health Agency shall maintain and implement Staff practices that prevent the spread of 
+infectious, contagious, and communicable diseases, including but not limited to, standard precautions, 
+transmission-based precautions, contact precautions, airborne precautions, and isolation techniques. The 
+Home Health Agency shall ensure proper disposal of toxic and hazardous substances. The Home Health 
+Agency shall ensure the preventive measures and practices are in compliance with applicable guidelines of 
+the Bloodborne Pathogens Standard of the Occupational Safety and Health Act of 1970, the Centers for 
+Disease Control and Prevention, R.61- 105, Infectious Waste Management, and other applicable federal, 
+state, and local laws and regulations. 
+ 
+ B. The Home Health Agency shall ensure the practice of hand hygiene to prevent the hand transfer of 
+pathogens, and the use of barrier precautions such as gloves in accordance with established guidelines. 
+ 
+ 
+ 
+ 
+<<<PAGE 21>>>
+17 | Regulation 60-77 
+ 
+1702. Tuberculosis Risk Assessment and Screening (I). 
+ 
+ A. Tuberculosis (TB) Testing. The Home Health Agency shall utilize either Tuberculin Skin Test or 
+Blood Assay for Mycobacterium tuberculosis (BAMT) for detecting Mycobacterium tuberculosis infection. 
+ 
+ B. The Home Health Agency shall conduct an annual tuberculosis risk assessment in accordance with 
+the Centers for Disease Control and Prevention guidelines. 
+ 
+ C. Baseline Status. 
+ 
+  1. The Home Health Agency shall determine the baseline status of all Staff according to current Centers 
+for Disease Control and Prevention and Department tuberculosis guidelines. 
+ 
+  2. Tuberculosis Screening. All Staff within three (3) months prior to Patient contact shall have a 
+baseline two-step Tuberculin Skin Test or a single Blood Assay for Mycobacterium tuberculosis. If a new 
+Staff member has had a documented negative Tubercul in Skin Test or a Blood Assay for Mycobacterium 
+tuberculosis result within the previous twelve (12) months, a single Tuberculin Skin Test or the single Blood 
+Assay for Mycobacterium tuberculosis may be administered and read to serve as the baseline prior to Patient 
+contact. 
+ 
+ D. Positive TB Screening Tests.  
+ 
+  1. For all Staff with a history of positive TB screening, the Home Health Agency shall secure and 
+maintain documentation of treatment, or if no documentation is available consult with and document 
+consultation with the Department’s TB Control.  
+ 
+  2. For all Staff with a newly positive reaction (Positive Reactors) for Mycobacterium tuberculosis 
+infection, the Home Health Agency shall secure and maintain documentation of a chest X -ray performed 
+to rule out active disease.  
+ 
+   a. If TB is present, the Home Health Agency shall report any known or suspected cases of TB disease 
+to the Department’s Bureau of Communicable Disease Prevention and Control in a form and manner as 
+prescribed by the Department within twenty-four (24) hours and exclude the Staff member from work until 
+he or she is evaluated by the Department’s TB Control Program.  
+ 
+   b. Latent TB Infection (LTBI). For new positive reactors without TB disease, as determined by a 
+normal chest X -ray, the Home Health Agency shall educate him or her on preventative treatment and 
+document in the individual Staff file his or her decision to receive or decline preventative treatment. 
+  
+  4. The Home Health Agency shall maintain documentation that the Positive Reactor who declines 
+preventive treatment is:  
+ 
+   a. Assessed annually for signs and symptoms of TB;  
+ 
+   b. Advised of the lifelong risk of developing and transmitting TB to Patients, other Staff members, 
+and the community; and 
+ 
+   c. Informed of symptoms that suggest the onset of TB and the procedure to follow should such 
+symptoms develop.  
+ 
+<<<PAGE 22>>>
+18 | Regulation 60-77 
+ 
+ E. Post Exposure. After known exposure to a person with potentially infectious tuberculosis disease 
+without the use of adequate personal protection, the Home Health Agency shall ensure the tuberculosis 
+status of all Staff is determined in a manner prescribed in the current Centers for Disease Control and 
+Prevention and Department tuberculosis guidelines. 
+ 
+ F. Annual Tuberculosis Training. The Home Health Agency shall ensure all Staff receive annual training 
+regarding tuberculosis to include risk factors and signs and symptoms of tuberculosis disease. The Home 
+Health Agency shall ensure the annual tuberculosis training is documented in a Staff record and maintained 
+at the Agency. 
+ 
+ G. Serial Screening. The Home Health Agency shall follow the current Centers for Disease Control and 
+Prevention and Department tuberculosis guidelines related to serial screening. 
+ 
+SECTION 1800 – QUALITY IMPROVEMENT PROGRAM 
+ 
+ A. The Home Health Agency shall have a written, implemented quality improvement program, to include 
+risk management and infection control, which provides effective self -assessment and implementation of 
+measures designed to improve the services rendered by the Agency. 
+ 
+ B. The Home Health Agency shall ensure the quality improvement program includes: 
+ 
+  1. Establishing desired outcomes and the criteria by which policy and procedure effectiveness is 
+regularly, systematically, and objectively measured; 
+ 
+  2. Identifying, evaluating, and determining the causes of any deviation from the desired outcomes; 
+ 
+  3. Identifying the action taken to correct current deviations and prevent future deviation, and the 
+persons responsible for implementation of these actions; 
+ 
+  4. Addressing quality indicator data to evaluate: 
+ 
+   a. Quality of Patient care and Staff performance; 
+ 
+   b. Appropriateness of the combination of services/mix of professionals reflected on the Treatment 
+Plan; and 
+ 
+   c. Effectiveness of the communication among Agency Staff. 
+ 
+  5. Analyzing the appropriateness and clinical necessity of admission, treatment, care and services; and 
+ 
+  6. Establishing a systematic method of obtaining feedback from Patients and Representatives. 
+ 
+SECTION 1900 – [RESERVED] 
+ 
+SECTION 2000 – [RESERVED] 
+ 
+SECTION 2100 – [RESERVED] 
+ 
+SECTION 2200 – [RESERVED] 
+ 
+SECTION 2300 – [RESERVED] 
+<<<PAGE 23>>>
+19 | Regulation 60-77 
+ 
+ 
+SECTION 2400 – [RESERVED] 
+ 
+SECTION 2500 – [RESERVED] 
+ 
+SECTION 2600 – [RESERVED] 
+ 
+SECTION 2700 – SEVERABILITY 
+ 
+ In the event that any portion of this regulation is construed by a court of competent jurisdiction to be 
+invalid or otherwise unenforceable, such determination shall in no manner affect the remaining portions of 
+this regulation, and they shall remain in effect, as if such invalid portions were not originally a part of this 
+regulation. 
+ 
+SECTION 2800 – GENERAL 
+ 
+ Conditions which have not been addressed in these standards shall be managed in accordance with the 
+best practices as determined and interpreted by the Department. 
+ 
+ 
+ 
+ 
