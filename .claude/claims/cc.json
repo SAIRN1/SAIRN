@@ -20,6 +20,16 @@
       "claimed_at_epoch": 1788167487.7737577,
       "status": "released",
       "released_at": "2026-08-31T09:36:15Z"
+    },
+    {
+      "id": "cc-1788169846",
+      "session": "cc",
+      "subject": "stonedesk security layers wiring",
+      "task": "",
+      "claimed_at": "2026-08-31T09:50:46Z",
+      "claimed_at_epoch": 1788169846.6232352,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
