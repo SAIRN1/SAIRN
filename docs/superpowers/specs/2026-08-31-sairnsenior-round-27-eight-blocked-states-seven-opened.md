@@ -2,6 +2,17 @@
 
 2026-08-31. **Research only.** Forty-first document in the series.
 
+> **CORRECTED THE SAME DAY BY ROUND 28.** This document says four times that
+> **Idaho is "the only genuine failure of the eight."** That is wrong. Idaho
+> opened on the same two angles as the other seven — a moved host
+> (`/rules/current/16/…` now 302s to `/current-rules/`) and a client-rendered
+> list that `curl` cannot see. **The real figure is eight of eight, and zero of
+> the eight were ever blocked.** See
+> `2026-08-31-sairnsenior-round-28-idaho-was-not-blocked-either.md`.
+> The Idaho 404 that produced the "outage" label had been carried forward
+> untested for twenty-plus rounds — which is the same error this document is
+> about, committed one more time.
+
 Round 26 corrected round 25 by finding a stale tab. **This round finds the
 larger version of the same mistake.** Every one of the eight diagnosed states
 carried a diagnosis about a *transport* — "LexisNexis-gated", "publisher SPA",
