@@ -1765,6 +1765,46 @@ body.is-exec .exec-only-block{display:block}
 <script>
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 window.escHtml=escHtml;
+
+// jsStr -- JS-STRING escaping, for a value that ends up inside a quoted JS
+// string inside an HTML attribute. That is `onclick="fn('VALUE')"`, and it is
+// the one context escHtml alone cannot secure.
+//
+// WHY, because this is counter-intuitive and getting it backwards is silent.
+// The browser decodes HTML entities in an attribute value BEFORE the JS parser
+// ever sees the text. So escHtml's `&#39;` turns back into a real apostrophe
+// and closes the JS string exactly as an unescaped one would. escHtml is not
+// weak here, it is simply solving the wrong layer.
+//
+// THE ORDER IS LOAD-BEARING:  escHtml(jsStr(v))  and never  jsStr(escHtml(v)).
+//   jsStr first  -> `it's` becomes `it\'s`, then escHtml makes it `it\&#39;s`,
+//                   the browser decodes that to `it\'s`, and the JS parser
+//                   reads one escaped quote. Correct.
+//   escHtml first -> `it&#39;s`, jsStr finds no quote to escape, the browser
+//                   decodes to `it's`, and the string closes early. Broken,
+//                   and broken in a way that looks escaped in the source.
+//
+// The backslash rule must come first inside jsStr for the same reason: escaping
+// quotes before backslashes lets a trailing `\` swallow the escape.
+// U+2028/2029 are line terminators to a JS parser and are escaped for that
+// reason, not for display.
+function jsStr(v){
+  return String(v == null ? '' : v)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+window.jsStr=jsStr;
+
+// The pair, spelled out once so call sites read as intent rather than as a
+// composition someone has to re-derive. Use this for anything landing inside
+// an on*= handler.
+function escAttrJs(v){ return escHtml(jsStr(v)); }
+window.escAttrJs=escAttrJs;
 // Honest-failure localStorage wrapper (2026-08-18 platform audit) -- same shape as
 // SAIRNbuild's st() fix (sairnbuild.html:1886). Every save*()/write path in this file
 // previously called localStorage.setItem() directly, each independently wrapped (or not)
@@ -3258,7 +3298,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
           '<span style="font-weight:800;color:'+(j.paid?'#16a34a':'#92400E')+'">$'+(parseFloat(j.payAmount)||0).toLocaleString()+'</span>' +
         '</div>' +
         (photosHtml ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+photosHtml+'</div>' : '') +
-        '<button onclick="sdOpenProgressPhoto(\'sub\',\''+subEsc((j.address||j.id||'').replace(/\x27/g,''))+'\')" style="width:100%;margin-top:10px;background:#111827;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">📷 AI Progress Check</button>' +
+        '<button onclick="sdOpenProgressPhoto(\'sub\',\''+escAttrJs(j.address||j.id||'')+'\')" style="width:100%;margin-top:10px;background:#111827;color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">📷 AI Progress Check</button>' +
       '</div>';
     }).join('');
   };
@@ -4589,7 +4629,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
         +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:800;color:var(--brand2);font-size:14px">$'+(x.amount||0).toLocaleString()+'</td>'
         +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:center"><span style="background:'+(statusColors[st]||'#f3f4f6')+';color:'+(statusText[st]||'#374151')+';padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">'+st+'</span></td>'
         +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:12px">'+x.date+'</td>'
-        +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:center"><button class="q-btn" style="font-size:11px;padding:3px 8px" onclick="sdHistoryView('+x.id+')">View</button></td>'
+        +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:center"><button class="q-btn" style="font-size:11px;padding:3px 8px" onclick="sdHistoryView(\''+escAttrJs(x.id)+'\')">View</button></td>'
         +'</tr>';
     });
     document.getElementById('hist-tbody').innerHTML=rows.join('');
@@ -6963,7 +7003,7 @@ function sdInvExport(){
             '<input placeholder="Vendor (optional)" id="bsu-vendor-'+item.id+'" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg);color:var(--text)">' +
           '</div>' +
         '</div>' +
-        '<button onclick="bsuRemoveItem(\''+item.id+'\')" style="background:rgba(220,38,38,.08);color:#dc2626;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer;flex-shrink:0">×</button>' +
+        '<button onclick="bsuRemoveItem(\''+escAttrJs(item.id)+'\')" style="background:rgba(220,38,38,.08);color:#dc2626;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer;flex-shrink:0">×</button>' +
       '</div>';
     document.getElementById('bsu-queue').insertAdjacentHTML('beforeend', html);
   }
@@ -9113,8 +9153,8 @@ function tmRender(){
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">'+
           '<span style="background:'+sl.bg+';color:'+sl.color+';padding:4px 12px;border-radius:100px;font-size:11px;font-weight:700">'+sl.label+'</span>'+
           '<div style="display:flex;gap:6px">'+
-            '<button onclick="tmViewDetail(\''+r.id+'\')" style="padding:5px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;font-size:11px;cursor:pointer;color:var(--navy);font-weight:600">View</button>'+
-            (r.status!=='sent_cnc'?'<button onclick="tmAdvanceStatus(\''+r.id+'\')" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">Advance &#8594;</button>':'')+
+            '<button onclick="tmViewDetail(\''+escAttrJs(r.id)+'\')" style="padding:5px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;font-size:11px;cursor:pointer;color:var(--navy);font-weight:600">View</button>'+
+            (r.status!=='sent_cnc'?'<button onclick="tmAdvanceStatus(\''+escAttrJs(r.id)+'\')" style="padding:5px 12px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:11px;cursor:pointer;font-weight:600">Advance &#8594;</button>':'')+
           '</div>'+
         '</div>'+
       '</div>'+
@@ -9158,10 +9198,10 @@ function tmViewDetail(id){
     '<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Attached Files</div>'+filesHtml+'</div>'+
     '<div style="margin-bottom:20px"><div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Status Log</div>'+logHtml+'</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      (r.status!=='sent_cnc'?'<button onclick="tmAdvanceStatus(\''+r.id+'\');tmCloseDetailModal()" class="btn-primary">Advance Status &#8594;</button>':'')+
-      '<button onclick="tmFlagIssue(\''+r.id+'\',\'missing_dims\')" style="padding:8px 14px;background:rgba(220,38,38,0.08);color:#dc2626;border:1px solid rgba(220,38,38,0.2);border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Flag Issue</button>'+
-      '<button onclick="tmFlagIssue(\''+r.id+'\',\'remeasure\')" style="padding:8px 14px;background:rgba(249,115,22,0.08);color:#f97316;border:1px solid rgba(249,115,22,0.2);border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Needs Re-Measure</button>'+
-      '<button onclick="tmDeleteRecord(\''+r.id+'\')" style="padding:8px 14px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'+
+      (r.status!=='sent_cnc'?'<button onclick="tmAdvanceStatus(\''+escAttrJs(r.id)+'\');tmCloseDetailModal()" class="btn-primary">Advance Status &#8594;</button>':'')+
+      '<button onclick="tmFlagIssue(\''+escAttrJs(r.id)+'\',\'missing_dims\')" style="padding:8px 14px;background:rgba(220,38,38,0.08);color:#dc2626;border:1px solid rgba(220,38,38,0.2);border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Flag Issue</button>'+
+      '<button onclick="tmFlagIssue(\''+escAttrJs(r.id)+'\',\'remeasure\')" style="padding:8px 14px;background:rgba(249,115,22,0.08);color:#f97316;border:1px solid rgba(249,115,22,0.2);border-radius:8px;font-size:12px;cursor:pointer;font-weight:700">Needs Re-Measure</button>'+
+      '<button onclick="tmDeleteRecord(\''+escAttrJs(r.id)+'\')" style="padding:8px 14px;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:12px;cursor:pointer;margin-left:auto">Delete</button>'+
     '</div>';
   document.getElementById('tm-detail-modal').style.display='flex';
 }
@@ -9439,9 +9479,9 @@ function invRender() {
         '<div style="font-size:11px;color:var(--muted);margin-top:3px">Due ' + inv.due + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px">' +
-        '<button class="q-btn" onclick="invPrint(\''+inv.id+'\')" title="View & Print">🖨️</button>' +
-        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid(\''+inv.id+'\')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
-        '<button class="q-btn" onclick="invDeleteInvoice(\''+inv.id+'\')" title="Delete" style="color:#dc2626">🗑️</button>' +
+        '<button class="q-btn" onclick="invPrint(\''+escAttrJs(inv.id)+'\')" title="View & Print">🖨️</button>' +
+        (inv.status !== 'Paid' ? '<button class="q-btn" onclick="invMarkPaid(\''+escAttrJs(inv.id)+'\')" title="Mark Paid" style="color:#16a34a">✅</button>' : '') +
+        '<button class="q-btn" onclick="invDeleteInvoice(\''+escAttrJs(inv.id)+'\')" title="Delete" style="color:#dc2626">🗑️</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -9877,10 +9917,10 @@ function fmStopCardHtml(s, orderNum){
   var statusControls = '';
   if(canEditStatus){
     statusControls =
-      '<select onchange="fmMarkStopStatus(\''+s.sourceId+'\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
+      '<select onchange="fmMarkStopStatus(\''+escAttrJs(s.sourceId)+'\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
         ['not-started','in-progress','done'].map(function(v){ return '<option value="'+escHtml(v)+'"'+(s.status===v?' selected':'')+'>'+(v==='not-started'?'Not Started':v==='in-progress'?'In Progress':'Done')+'</option>'; }).join('')+
       '</select>'+
-      '<button onclick="fmDeleteStop(\''+s.sourceId+'\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>';
+      '<button onclick="fmDeleteStop(\''+escAttrJs(s.sourceId)+'\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>';
   } else {
     statusControls = '<div style="font-size:10px;color:var(--muted);text-align:right">status from '+(s.sourceType==='job'?'Schedule':'Remakes')+'</div>';
   }
@@ -11981,7 +12021,7 @@ function dcOpenEdgeTypeMenu(segIdx, px, py) {
   menu.style.top = (rect.top + rawY*dispScale - 10) + 'px';
   const types = ['polished','wall','cabinet','appliance','waterfall','splash'];
   menu.innerHTML = types.map(t =>
-    '<div onclick="dcSetEdgeType(' + segIdx + ',\'' + t + '\')" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;border-radius:5px;font-size:11px;color:#fff" onmouseover="this.style.background=\'rgba(255,255,255,0.08)\'" onmouseout="this.style.background=\'transparent\'">' +
+    '<div onclick="dcSetEdgeType(' + segIdx + ',\'' + escAttrJs(t) + '\')" style="display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;border-radius:5px;font-size:11px;color:#fff" onmouseover="this.style.background=\'rgba(255,255,255,0.08)\'" onmouseout="this.style.background=\'transparent\'">' +
       '<span style="width:10px;height:10px;border-radius:3px;background:' + EDGE_COLORS[t].color + '"></span>' + EDGE_COLORS[t].label +
     '</div>'
   ).join('');
@@ -14018,7 +14058,7 @@ function updateDCCutoutList() {
     const borderColor = warn ? '#F87171' : c.color;
     return '<span title="'+(warn ? escHtml(c.fitReason||'') : '')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(warn?'rgba(248,113,113,0.12)':'rgba(255,255,255,0.05)')+';border:1px solid '+borderColor+(warn?'':'55')+';border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
       '<span style="width:8px;height:8px;border-radius:50%;background:'+c.color+'"></span>'+c.label+
-      '<button onclick="dcRemoveCutout(\''+c.id+'\')" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0 0 0 4px">×</button>'+
+      '<button onclick="dcRemoveCutout(\''+escAttrJs(c.id)+'\')" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0 0 0 4px">×</button>'+
     '</span>';
   }).join('');
 }
@@ -14301,7 +14341,7 @@ function updateDCSeamList() {
   el.innerHTML = dcSeams.map(s =>
     '<span style="display:inline-flex;align-items:center;gap:6px;background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
       '<span style="width:8px;height:8px;border-radius:50%;background:#A855F7"></span>'+s.label+
-      '<button onclick="dcRemoveSeam(\''+s.id+'\')" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0 0 0 4px">×</button>'+
+      '<button onclick="dcRemoveSeam(\''+escAttrJs(s.id)+'\')" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0 0 0 4px">×</button>'+
     '</span>'
   ).join('');
 }
@@ -18789,7 +18829,7 @@ function installStreamingHook() {
                 var delta = evt.delta && evt.delta.text ? evt.delta.text : '';
                 if (delta) {
                   fullText += delta;
-                  contentEl.innerHTML = renderMarkdown(fullText);
+                  contentEl.innerHTML = renderMarkdownRich(fullText);
                   chatArea.scrollTop = chatArea.scrollHeight;
                 }
               } catch(e) {}
@@ -18803,7 +18843,7 @@ function installStreamingHook() {
         // Simulate streaming character by character for visual effect
         if (fullText) {
           for (var ci = 0; ci < fullText.length; ci += 4) {
-            contentEl.innerHTML = renderMarkdown(fullText.slice(0, ci + 4));
+            contentEl.innerHTML = renderMarkdownRich(fullText.slice(0, ci + 4));
             chatArea.scrollTop = chatArea.scrollHeight;
             await new Promise(function(r){ setTimeout(r, 8); });
           }
@@ -18813,7 +18853,7 @@ function installStreamingHook() {
       // Finalize
       cursor.remove();
       if (fullText) {
-        contentEl.innerHTML = renderMarkdown(fullText);
+        contentEl.innerHTML = renderMarkdownRich(fullText);
         msgArr.push({ role: 'assistant', content: fullText });
         // Trigger follow-up and action hooks via synthetic addMsg
         window._saircStreamLastResponse = fullText;
@@ -18871,29 +18911,36 @@ window._saircMarkdownInstalled = true;
 //
 // It used to be `window.renderMarkdown = function(text)`, and the comment
 // above it said "expose the renderer globally so streaming can use it".
-// Streaming never used it. `function renderMarkdown(txt)` at ~L24912 is a
-// top-level declaration in a LATER script block, so it overwrites this
-// assignment, and all four call sites -- the three streaming ones just above
-// and the exec-AI one at ~L24907 -- have always resolved to that simpler
-// renderer instead. Same shadowing shape as the saUnlock stub found earlier
-// tonight, and the third instance of it in this file.
+// Streaming never used it. `function renderMarkdown(txt)` at ~L24978 is a
+// top-level declaration in a LATER script block, so it overwrote this
+// assignment and every call site resolved to that simpler renderer instead.
+// Same shadowing shape as the saUnlock stub found the same night, and the
+// third instance of it in this file.
 //
 // PROVEN IN THE BROWSER, NOT INFERRED: on the deployed page,
-// `window.renderMarkdown('[ok](https://example.com)')` returns its input
-// unchanged and `# H` produces a div rather than an h1 -- which is L24912's
-// behaviour and not this function's. My own node-based probe missed it
+// `window.renderMarkdown('[ok](https://example.com)')` returned its input
+// unchanged and `# H` produced a div rather than an h1 -- which is the other
+// function's behaviour and not this one's. A node-based probe missed it
 // because it evaluated each renderer in isolation and so never modelled the
 // collision.
 //
-// Renamed rather than deleted, and the call sites are deliberately NOT
-// repointed: switching them would start rendering tables, fenced code blocks
-// and links in the AI panels, which is a visible product change and Michael's
-// call, not a side effect of clearing a name collision. It is unused today and
-// sairn_reachability_check.py will correctly say so.
+// NOW WIRED, 2026-09-01 (Michael's call). The four AI-chat-area call sites --
+// the three streaming ones above and the addMsg interception at ~L19057 -- now
+// call this by name. Tables, fenced code blocks and links render in the chat
+// area for the first time.
 //
-// The escaping added to it this session is kept: if it is ever wired up it
-// must not arrive unescaped, and leaving a known-unsafe renderer parked in the
-// file for someone to adopt later is how this comes back.
+// A COUNT I GOT WRONG AND AM CORRECTING HERE: I reported "four call sites,
+// three streaming and one exec-AI". There are FIVE. The four that belong
+// together are the three streaming plus addMsg, all painting the same dark
+// chat surface. The fifth -- the Executive Suite chat at ~L24973 -- is
+// DELIBERATELY LEFT on the simple renderer, because `.exec-ai-msg.ai` is
+// `background:var(--surface-2); color:var(--text)`, theme variables rather than
+// a dark panel, and this function hardcodes #F0F0FF for headings and bold and
+// rgba(240,240,255,0.8) for list items. Repointing it would paint near-white
+// text on a light surface. That is a visual regression, not a security one.
+//
+// It escapes its input before any markdown replacement -- which matters more
+// now that it is reachable than it did when it was parked.
 window.renderMarkdownRich = function(text) {
   if (!text) return '';
   // NOW IT ACTUALLY DOES, 2026-09-01. The comment below said "Escape HTML
@@ -19014,7 +19061,7 @@ function installMarkdownHook() {
         var el = document.createElement('div');
         el.className = 'ai-message msg ai';
         el.style.cssText = 'padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);margin:8px 0;line-height:1.75;font-size:14px;color:rgba(240,240,255,0.85)';
-        el.innerHTML = window.renderMarkdown(content);
+        el.innerHTML = window.renderMarkdownRich(content);
         chatArea.appendChild(el);
         chatArea.scrollTop = chatArea.scrollHeight;
         return el;
@@ -21267,7 +21314,7 @@ function renderAlertBar(alerts) {
   if (!alerts.length) { bar.innerHTML = ''; return; }
   // Show top 3 alerts max
   bar.innerHTML = alerts.slice(0, 3).map((a,i) =>
-    '<div class="alert-pill ' + a.level + '" onclick="showPanel(\'' + a.panel + '\')" title="Click to view">' +
+    '<div class="alert-pill ' + a.level + '" onclick="showPanel(\'' + escAttrJs(a.panel) + '\')" title="Click to view">' +
     '<span class="alert-dot"></span>' +
     '<span>' + a.msg + '</span>' +
     '<button class="alert-pill-close" onclick="event.stopPropagation();dismissAlert(' + i + ')">×</button>' +
@@ -21423,13 +21470,13 @@ function custOpenDetail(id) {
         (c.phone?'<a href="tel:'+escHtml(c.phone)+'" class="q-btn" style="text-decoration:none">&#128222; Call</a>':'')+
         (c.phone?'<a href="sms:'+escHtml(c.phone)+'" class="q-btn" style="text-decoration:none">&#128172; Text</a>':'')+
         (c.email?'<a href="mailto:'+escHtml(c.email)+'" class="q-btn" style="text-decoration:none">&#9993; Email</a>':'')+
-        '<button class="q-btn" onclick="custFollowUpAI(' + id + ')">&#129504; AI Follow-Up</button>'+
-        '<button class="q-btn primary" onclick="custCreateInvoiceFrom(' + id + ')">&#129534; Invoice</button>'+
+        '<button class="q-btn" onclick="custFollowUpAI(\'' + escAttrJs(id) + '\')">&#129504; AI Follow-Up</button>'+
+        '<button class="q-btn primary" onclick="custCreateInvoiceFrom(\'' + escAttrJs(id) + '\')">&#129534; Invoice</button>'+
       '</div>'+
     '</div>'+
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Job Status</div>'+
-      '<select onchange="custUpdateStatus('+id+',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
+      '<select onchange="custUpdateStatus(\''+escAttrJs(id)+'\',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
       ['quoted','approved','templated','fabricating','scheduled','complete'].map(function(s){return '<option value="'+escHtml(s)+'"'+(c.status===s?' selected':'')+'>'+escHtml(statusLabels[s])+'</option>';}).join('')+
       '</select>'+
     '</div>'+
@@ -21444,7 +21491,7 @@ function custOpenDetail(id) {
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
         '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Communication Log</div>'+
-        '<button class="q-btn" onclick="custLogComm(' + id + ')" style="font-size:11px;padding:4px 10px">+ Log Contact</button>'+
+        '<button class="q-btn" onclick="custLogComm(\'' + escAttrJs(id) + '\')" style="font-size:11px;padding:4px 10px">+ Log Contact</button>'+
       '</div>'+
       '<div id="cdm-commlog">'+
       (c.commLog&&c.commLog.length?c.commLog.slice().reverse().map(function(l){
@@ -21471,7 +21518,7 @@ function custOpenDetail(id) {
       '<div style="font-size:13px;line-height:1.6">'+escHtml(c.notes)+'</div>'+
     '</div>':'')+
     '<div style="display:flex;justify-content:flex-end;margin-top:8px">'+
-      '<button class="q-btn" onclick="custDelete(' + id + ');custCloseDetail();" style="color:#dc2626;border-color:#dc2626">&#128465;&#65039; Delete</button>'+
+      '<button class="q-btn" onclick="custDelete(\'' + escAttrJs(id) + '\');custCloseDetail();" style="color:#dc2626;border-color:#dc2626">&#128465;&#65039; Delete</button>'+
     '</div>';
   document.getElementById('cust-detail-modal').style.display='flex';
 }
@@ -21543,7 +21590,7 @@ function renderCustKanban(){
       '<div style="font-size:12px;font-weight:800;color:'+stage.color+';margin-bottom:4px">'+stage.label+'</div>'+
       '<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+cards.length+' &middot; $'+value.toLocaleString()+'</div>'+
       cards.map(function(c){
-        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer" onclick="custOpenDetail(' + c.id + ')">'+
+        return '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer" onclick="custOpenDetail(\'' + escAttrJs(c.id) + '\')">'+
           '<div style="font-size:13px;font-weight:700">'+escHtml(c.name)+'</div>'+
           '<div style="font-size:11px;color:var(--muted);">'+escHtml(c.project||'')+'</div>'+
           (c.quote?'<div style="font-size:12px;font-weight:700;color:var(--brand2);margin-top:4px">$'+c.quote.toLocaleString()+'</div>':'')+
@@ -21595,7 +21642,7 @@ function renderCustomers() {
     var slabCt=(typeof sdSlabs!=='undefined')?sdSlabs.filter(function(s){return s.reservedFor&&s.reservedFor.toLowerCase()===c.name.toLowerCase();}).length:0;
     var photoCt=(typeof sdPhotos!=='undefined')?sdPhotos.filter(function(p){return p.job&&p.job.toLowerCase().includes(c.name.toLowerCase());}).length:0;
     var commCt=(c.commLog||[]).length;
-    return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(urgency==='red'?'#dc2626':urgency==='yellow'?'#ca8a04':sc)+';border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer" onclick="custOpenDetail(' + c.id + ')">'+
+    return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(urgency==='red'?'#dc2626':urgency==='yellow'?'#ca8a04':sc)+';border-radius:12px;padding:16px;margin-bottom:10px;cursor:pointer" onclick="custOpenDetail(\'' + escAttrJs(c.id) + '\')">'+
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
         '<div style="flex:1">'+
           '<div style="font-size:15px;font-weight:800;color:var(--text)">'+escHtml(c.name)+
@@ -21710,10 +21757,10 @@ function renderPhotos() {
   list.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">'+photos.map(function(p){
     var cc=catColors[p.cat]||'#6B7280';
     return '<div class="photo-thumb" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:0;overflow:hidden;position:relative">'+
-      (p.data?'<img src="'+escHtml(p.data)+'" alt="'+escHtml(p.name)+'" onclick="photoLightbox(\''+p.id+'\')" style="cursor:pointer;width:100%;height:140px;object-fit:cover;display:block" loading="lazy">'
+      (p.data?'<img src="'+escHtml(p.data)+'" alt="'+escHtml(p.name)+'" onclick="photoLightbox(\''+escAttrJs(p.id)+'\')" style="cursor:pointer;width:100%;height:140px;object-fit:cover;display:block" loading="lazy">'
         :'<div style="height:140px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,'+cc+'15,'+cc+'30)"><div style="font-size:36px">📷</div></div>')+
-      '<button class="photo-thumb-del" onclick="event.stopPropagation();photoDelete(\''+p.id+'\')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;width:22px;height:22px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#10005;</button>'+
-      (p.data?'<button onclick="event.stopPropagation();photoAnalyze(\''+p.id+'\')" style="position:absolute;top:6px;left:6px;background:'+(p.aiAnalysis?'var(--brand2)':'rgba(0,0,0,.6)')+';color:#fff;border:none;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;cursor:pointer">'+(p.aiAnalysis?'&#129504; Done':'&#129504; Analyze')+'</button>':'')+
+      '<button class="photo-thumb-del" onclick="event.stopPropagation();photoDelete(\''+escAttrJs(p.id)+'\')" style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;width:22px;height:22px;border-radius:50%;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#10005;</button>'+
+      (p.data?'<button onclick="event.stopPropagation();photoAnalyze(\''+escAttrJs(p.id)+'\')" style="position:absolute;top:6px;left:6px;background:'+(p.aiAnalysis?'var(--brand2)':'rgba(0,0,0,.6)')+';color:#fff;border:none;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;cursor:pointer">'+(p.aiAnalysis?'&#129504; Done':'&#129504; Analyze')+'</button>':'')+
       '<div style="padding:10px">'+
         '<div style="font-size:10px;font-weight:700;color:'+cc+';margin-bottom:2px">'+escHtml(catLabels[p.cat]||p.cat)+'</div>'+
         '<div style="font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escHtml(p.job)+(p.name?' &bull; '+escHtml(p.name):'')+'</div>'+
@@ -22173,7 +22220,7 @@ function schedPromptConsumeSlab(slab, job){
       '<div class="fg"><label>Remnant Width (in)</label><input id="slab-remnant-w" type="number" step="0.1"></div>'+
     '</div>'+
     '<div style="display:flex;gap:10px;margin-top:14px">'+
-      '<button class="q-btn primary" onclick="slabConfirmConsume(\''+slab.id+'\')">Yes — Consume It</button>'+
+      '<button class="q-btn primary" onclick="slabConfirmConsume(\''+escAttrJs(slab.id)+'\')">Yes — Consume It</button>'+
       '<button class="q-btn" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Skip</button>'+
     '</div>';
   document.getElementById('slab-action-modal').style.display='flex';
@@ -22239,10 +22286,10 @@ function renderSchedule(){
         (j.reservedSlabId&&typeof sdSlabs!=='undefined'?(function(){var s=sdSlabs.find(function(x){return x.id===j.reservedSlabId;});return s?'<div style="font-size:11px;margin-top:5px;padding:3px 8px;background:var(--stone);border-radius:20px;display:inline-block">🪨 Slab: <b>'+escHtml(s.colorName||'')+'</b> — <span style="color:'+(s.status==='consumed'?'#6B7280':s.status==='reserved'?'#92400E':'#166534')+'">'+s.status.toUpperCase()+'</span></div>':'';})():'') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
-        '<select onchange="schedUpdateStage(\'' + j.id + '\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
+        '<select onchange="schedUpdateStage(\'' + escAttrJs(j.id) + '\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
           ['templated','cutting','polishing','qa','ready','installed'].map(s=>'<option value="'+escHtml(s)+'"'+(j.stage===s?' selected':'')+'>'+escHtml(stageLabels[s])+'</option>').join('')+
         '</select>' +
-        '<button onclick="schedDelete(\'' + j.id + '\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
+        '<button onclick="schedDelete(\'' + escAttrJs(j.id) + '\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -22373,9 +22420,9 @@ function renderInventory(){
         '<div style="font-size:12px">'+item.qty+' '+item.unit+' <span style="color:var(--muted)">(min '+item.min+')</span></div>'+
         '<div style="font-size:12px">$' + (item.cost||0).toFixed(2)+'</div>'+
         '<div style="display:flex;gap:4px">'+
-          '<button class="inv-step-btn" onclick="invUpdateQty(\'' + item.id + '\',1)" style="background:rgba(22,163,74,0.12);color:#16a34a">+</button>'+
-          '<button class="inv-step-btn" onclick="invUpdateQty(\'' + item.id + '\',-1)" style="background:rgba(220,38,38,0.1);color:#dc2626">−</button>'+
-          '<button class="inv-step-btn inv-del" onclick="invDelete(\'' + item.id + '\')" style="background:rgba(100,100,100,0.1);color:var(--muted)">×</button>'+
+          '<button class="inv-step-btn" onclick="invUpdateQty(\'' + escAttrJs(item.id) + '\',1)" style="background:rgba(22,163,74,0.12);color:#16a34a">+</button>'+
+          '<button class="inv-step-btn" onclick="invUpdateQty(\'' + escAttrJs(item.id) + '\',-1)" style="background:rgba(220,38,38,0.1);color:#dc2626">−</button>'+
+          '<button class="inv-step-btn inv-del" onclick="invDelete(\'' + escAttrJs(item.id) + '\')" style="background:rgba(100,100,100,0.1);color:var(--muted)">×</button>'+
         '</div>'+
       '</div>';
     }).join('')+'</div>';
@@ -22484,9 +22531,9 @@ function renderVendor(){
         (lowStockItem?'<span class="reorder-dot red"></span>':'')+escHtml(p.name)+savingsBadge+bestBadge+'</div>'+
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+p.cat+' &middot; '+p.sku+'</div></div>'+
       '<span style="font-size:14px;font-weight:800;color:var(--a)">$' + p.price.toFixed(2)+'</span>'+
-      '<button onclick="vendorCompare(\'' + p.id + '\',\'' + _activeVendor + '\')" style="padding:5px 10px;background:#F0FEF6;color:#15803D;border:1px solid #BBF7D0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">&#129504; Compare</button>'+
-      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" value="'+escHtml(cartQty)+'" min="0" onchange="cartUpdate(\'' + _activeVendor + '\',\'' + p.id + '\',this.value)">'+
-      '<button onclick="cartAdd(\'' + _activeVendor + '\',\'' + p.id + '\',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
+      '<button onclick="vendorCompare(\'' + escAttrJs(p.id) + '\',\'' + escAttrJs(_activeVendor) + '\')" style="padding:5px 10px;background:#F0FEF6;color:#15803D;border:1px solid #BBF7D0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">&#129504; Compare</button>'+
+      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" value="'+escHtml(cartQty)+'" min="0" onchange="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',this.value)">'+
+      '<button onclick="cartAdd(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(p.id) + '\',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
     '</div>';
   }).join('');
 }
@@ -22535,7 +22582,7 @@ function renderCart(){
     '<span style="color:var(--muted);font-size:11px">'+i.vendor+'</span>'+
     '<span style="color:var(--muted)">×'+i.qty+'</span>'+
     '<span style="font-weight:700;color:var(--a)">$' + (i.price*i.qty).toFixed(2)+'</span>'+
-    '<button onclick="cartUpdate(\'' + _activeVendor + '\',\'' + i.id + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
+    '<button onclick="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(i.id) + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
     '</div>'
   ).join('');
   var vcList=document.getElementById('vendor-cart-items-list');
@@ -22545,7 +22592,7 @@ function renderCart(){
     '<span style="color:var(--muted);font-size:11px">'+escHtml(i.vendor)+'</span>'+
     '<span style="color:var(--muted)">×'+i.qty+'</span>'+
     '<span style="font-weight:700;color:var(--a)">$' + (i.price*i.qty).toFixed(2)+'</span>'+
-    '<button onclick="cartUpdate(\'' + _activeVendor + '\',\'' + i.id + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
+    '<button onclick="cartUpdate(\'' + escAttrJs(_activeVendor) + '\',\'' + escAttrJs(i.id) + '\',0);renderVendor()" style="padding:2px 6px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">×</button>'+
     '</div>'
   ).join('');
   var vcTotal=document.getElementById('vendor-cart-total');
@@ -22734,8 +22781,8 @@ function vendorShowCompareModal(product, comparisons) {
             '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
               '<span style="font-size:11px;color:var(--muted);font-weight:600">Your negotiated price:</span>' +
               '<input id="neg-price-'+escHtml(c.product.sku)+'" type="number" step="0.01" placeholder="Enter your deal price" value="'+escHtml(negPriceSet?c.negotiatedPrice:'')+'" style="width:130px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);outline:none">' +
-              '<button onclick="vendorSaveNegotiated(' + c.product.sku + ',document.getElementById(' + '\'neg-price-\'' + '+c.product.sku+' + '\'\'' + ').value)" style="padding:5px 12px;background:var(--brand2);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Save Deal</button>' +
-              (negPriceSet?'<button onclick="vendorSaveNegotiated(' + c.product.sku + ',null)" style="padding:5px 8px;background:none;color:#dc2626;border:1px solid #dc2626;border-radius:6px;font-size:10px;cursor:pointer">Clear</button>':'') +
+              '<button onclick="vendorSaveNegotiated(\'' + escAttrJs(c.product.sku) + '\',document.getElementById(\'neg-price-' + escAttrJs(c.product.sku) + '\').value)" style="padding:5px 12px;background:var(--brand2);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Save Deal</button>' +
+              (negPriceSet?'<button onclick="vendorSaveNegotiated(\'' + escAttrJs(c.product.sku) + '\',null)" style="padding:5px 8px;background:none;color:#dc2626;border:1px solid #dc2626;border-radius:6px;font-size:10px;cursor:pointer">Clear</button>':'') +
               '<a href="'+escHtml(c.vendorWebsite)+'" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:var(--a);text-decoration:none;margin-left:auto">&#127758; Order from '+escHtml(c.vendorName)+' &#8594;</a>' +
             '</div>' +
           '</div>';
@@ -22751,7 +22798,7 @@ function vendorShowCompareModal(product, comparisons) {
         // Quick add to cart from best vendor
         '<div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end">' +
           '<button onclick="document.getElementById(\'vendor-compare-modal\').style.display=\'none\'" class="q-btn">Close</button>' +
-          '<button onclick="cartAdd(' + comparisons[0].vendorKey + ',' + comparisons[0].product.id + ',1);document.getElementById(' + '\'vendor-compare-modal\'' + ').style.display=' + '\'none\'' + ';" class="q-btn primary">&#10133; Add Best Price to Cart</button>' +
+          '<button onclick="cartAdd(\'' + escAttrJs(comparisons[0].vendorKey) + '\',\'' + escAttrJs(comparisons[0].product.id) + '\',1);document.getElementById(\'vendor-compare-modal\').style.display=\'none\';" class="q-btn primary">&#10133; Add Best Price to Cart</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -22903,7 +22950,7 @@ function pmRenderVendorDiscounts() {
         '<span style="font-size:13px;color:var(--muted)">% off all products</span>' +
         (disc>0 ? '<span style="font-size:11px;color:var(--brand2);font-weight:700">&#9989; Active</span>' : '') +
       '</div>' +
-      '<button onclick="pmSaveVendorDiscount(' + vk + ')" class="q-btn primary" style="margin-top:8px;width:100%;font-size:12px">Save</button>' +
+      '<button onclick="pmSaveVendorDiscount(\'' + escAttrJs(vk) + '\')" class="q-btn primary" style="margin-top:8px;width:100%;font-size:12px">Save</button>' +
     '</div>';
   }).join('');
 }
@@ -23071,7 +23118,7 @@ function pmRenderOverrides() {
         '<span style="font-family:monospace;font-size:11px">'+sku+'</span>' +
         '<span style="font-size:12px;font-weight:700;color:var(--brand2)">$'+yourPrice.toFixed(2)+'</span>' +
         '<span style="font-size:11px;color:var(--muted)">'+(catalogPrice?'$'+catalogPrice.toFixed(2)+' <span style="color:#16a34a">(save $'+saving.toFixed(2)+')</span>':'—')+'</span>' +
-        '<button onclick="pmRemoveOverride(' + sku + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px">&#10005;</button>' +
+        '<button onclick="pmRemoveOverride(\'' + escAttrJs(sku) + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px">&#10005;</button>' +
       '</div>';
     }).join('');
 }
@@ -23339,7 +23386,7 @@ function safetyRenderTraining() {
       '<div style="font-size:11px;color:var(--muted);margin-top:2px">Completed: '+t.date+(t.expiry?' &middot; Expires: '+t.expiry:'')+'</div></div>' +
       '<div style="display:flex;align-items:center;gap:8px">' +
         '<span style="background:'+(expired?'#FEE2E2':expiringSoon?'#FEF3C7':'#F0FEF6')+';color:'+statusColor+';padding:3px 10px;border-radius:100px;font-size:11px;font-weight:700">'+statusLabel+'</span>' +
-        '<button onclick="safetyDeleteTraining(' + t.id + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px">&#10005;</button>' +
+        '<button onclick="safetyDeleteTraining(\'' + escAttrJs(t.id) + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px">&#10005;</button>' +
       '</div></div>';
   }).join('');
 }
@@ -23472,7 +23519,7 @@ function safetyRenderIncidents() {
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px">' +
         '<div><div style="font-size:14px;font-weight:700;color:var(--text)">'+(typeLabels[inc.type]||inc.type)+(inc.oshaReportable==='yes'?' <span style="font-size:10px;background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:100px">OSHA REPORTABLE</span>':'')+'</div>' +
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+inc.datetime+(inc.employee?' &middot; '+escHtml(inc.employee):'')+'</div></div>' +
-        '<button onclick="safetyDeleteIncident(\'' + inc.id + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer">&#10005;</button>' +
+        '<button onclick="safetyDeleteIncident(\'' + escAttrJs(inc.id) + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer">&#10005;</button>' +
       '</div>' +
       '<div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:6px">'+escHtml(inc.desc)+'</div>' +
       (inc.cause?'<div style="font-size:12px;color:var(--muted)"><strong>Root cause:</strong> '+escHtml(inc.cause)+'</div>':'') +
@@ -23776,7 +23823,7 @@ function nestingRenderSaved() {
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px">' +
       '<div><div style="font-size:13px;font-weight:600">'+escHtml(s.material)+' &mdash; '+s.slabW+'"&times;'+s.slabH+'"</div>' +
       '<div style="font-size:11px;color:var(--muted)">'+new Date(s.date).toLocaleDateString()+' &middot; '+s.cutouts.length+' pieces &middot; '+yld+'% yield</div></div>' +
-      '<button onclick="nestingLoad(' + s.id + ')" class="q-btn" style="font-size:11px">Load</button>' +
+      '<button onclick="nestingLoad(\'' + escAttrJs(s.id) + '\')" class="q-btn" style="font-size:11px">Load</button>' +
     '</div>';
   }).join('');
 }
@@ -23925,7 +23972,7 @@ function finRenderJobs(){
         '<div style="font-size:24px;font-weight:900;color:'+mc+'">'+j.margin+'%</div>' +
         '<div style="font-size:11px;color:var(--muted)">Margin</div>' +
       '</div>' +
-      '<button onclick="finDeleteJob(' + j.id + ')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px">&#10005;</button>' +
+      '<button onclick="finDeleteJob(\'' + escAttrJs(j.id) + '\')" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px">&#10005;</button>' +
     '</div>';
   }).join('');
 }
@@ -24147,7 +24194,7 @@ function showExecRolePicker(){
   overlay.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--a);border-radius:14px;padding:18px 24px;z-index:9000;box-shadow:0 8px 40px rgba(0,0,0,.3);min-width:320px;text-align:center';
   overlay.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Select your executive role</div>'+
     '<div style="display:flex;gap:8px;justify-content:center;margin-bottom:10px">'+
-    ['ceo','cfo','cto'].map(r=>'<button onclick="setExecRoleAndClose(\'' + r + '\')" style="padding:8px 18px;border-radius:8px;border:2px solid var(--a);background:transparent;color:var(--a);font-size:13px;font-weight:800;cursor:pointer;text-transform:uppercase">'+r.toUpperCase()+'</button>').join('')+
+    ['ceo','cfo','cto'].map(r=>'<button onclick="setExecRoleAndClose(\'' + escAttrJs(r) + '\')" style="padding:8px 18px;border-radius:8px;border:2px solid var(--a);background:transparent;color:var(--a);font-size:13px;font-weight:800;cursor:pointer;text-transform:uppercase">'+r.toUpperCase()+'</button>').join('')+
     '<button onclick="setExecRoleAndClose(\'admin\')" style="padding:8px 18px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer">Admin Only</button>'+
     '</div>'+
     '<div style="font-size:11px;color:var(--muted)">This unlocks the Executive Suite & private channel</div>';
@@ -24320,9 +24367,9 @@ function renderRemakes(){
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">' +
           (r.status==='open'&&!r.approvedExtension&&document.body.classList.contains('is-exec')?
-            '<button onclick="remakeApprove(\'' + r.id + '\')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve Ext.</button>':'') +
-          (r.status==='open'?'<button onclick="remakeComplete(\'' + r.id + '\')" style="padding:4px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Mark Done</button>':'') +
-          '<button onclick="remakeDelete(\'' + r.id + '\')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer">×</button>' +
+            '<button onclick="remakeApprove(\'' + escAttrJs(r.id) + '\')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve Ext.</button>':'') +
+          (r.status==='open'?'<button onclick="remakeComplete(\'' + escAttrJs(r.id) + '\')" style="padding:4px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Mark Done</button>':'') +
+          '<button onclick="remakeDelete(\'' + escAttrJs(r.id) + '\')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer">×</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -24457,7 +24504,7 @@ function renderExecRemakes(){
       '<span class="item-urgency '+urg+'" style="flex-shrink:0">'+typeLabels[r.type]+'</span>'+
       '<span style="font-weight:600;flex:1">'+escHtml(r.customer)+'</span>'+
       '<span style="color:var(--muted)">'+Math.round(hrs)+'h elapsed</span>'+
-      (urg==='red'&&!r.approvedExtension?'<button onclick="remakeApprove(\'' + r.id + '\')" style="padding:3px 8px;background:#16a34a;color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">Approve</button>':
+      (urg==='red'&&!r.approvedExtension?'<button onclick="remakeApprove(\'' + escAttrJs(r.id) + '\')" style="padding:3px 8px;background:#16a34a;color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">Approve</button>':
        r.approvedExtension?'<span style="font-size:10px;color:#16a34a;font-weight:700">Approved ✓</span>':'') +
     '</div>';
   }).join('');
@@ -24726,7 +24773,7 @@ function renderCommsThreads() {
         '<div style="flex:1"><div style="font-size:13px;font-weight:800;color:#C2410C">'+escHtml(t.from)+'</div>'+
         '<div style="font-size:13px;color:#1C1917;margin-top:2px">'+escHtml(t.body)+'</div>'+
         '<div style="font-size:11px;color:#6B7280;margin-top:4px">'+new Date(t.ts).toLocaleString()+'</div></div>'+
-        (isExec?'<button onclick="commsPin(' + t.id + ')" style="font-size:11px;background:none;border:none;color:#C2410C;cursor:pointer">Unpin</button>':'')+
+        (isExec?'<button onclick="commsPin(\'' + escAttrJs(t.id) + '\')" style="font-size:11px;background:none;border:none;color:#C2410C;cursor:pointer">Unpin</button>':'')+
       '</div>';
     }).join('');
   }
@@ -24745,7 +24792,7 @@ function renderCommsThreads() {
     var isOpen = t._open;
     return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+priColor+';border-radius:12px;margin-bottom:10px;overflow:hidden'+(t.unread?';box-shadow:0 2px 8px rgba(0,0,0,0.08)':'')+'">'+
       // Header — always visible
-      '<div style="padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:10px" onclick="commsToggle(' + t.id + ');commsMarkRead(' + t.id + ')">'+
+      '<div style="padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:10px" onclick="commsToggle(\'' + escAttrJs(t.id) + '\');commsMarkRead(\'' + escAttrJs(t.id) + '\')">'+
         (t.unread?'<div style="min-width:8px;height:8px;background:#dc2626;border-radius:50%;margin-top:5px"></div>':'<div style="min-width:8px"></div>')+
         '<div style="flex:1">'+
           '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">'+
@@ -24773,12 +24820,12 @@ function renderCommsThreads() {
               '<textarea id="resp-'+t.id+'" placeholder="Write reply..." style="flex:1;height:60px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;color:var(--text);resize:vertical;outline:none"></textarea>'+
             '</div>'+
             '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
-              '<button onclick="commsReply(' + t.id + ')" class="q-btn primary" style="font-size:12px;padding:5px 12px">Reply</button>'+
-              '<button onclick="commsAIReply(' + t.id + ')" class="q-btn" style="font-size:12px;padding:5px 12px">&#129504; AI Reply</button>'+
-              (['remake_ext','shower_ext','request'].includes(t.category)?'<button onclick="commsApprove(' + t.id + ')" class="q-btn" style="font-size:12px;padding:5px 12px;background:#16a34a;color:#fff;border-color:#16a34a">&#10003; Approve</button>':'')+
-              (t.isAnnouncement?'<button onclick="commsPin(' + t.id + ')" class="q-btn" style="font-size:12px">&#128204; '+(t.pinned?'Unpin':'Pin')+'</button>':'')+
-              '<button onclick="commsClose(' + t.id + ')" class="q-btn" style="font-size:12px">Close</button>'+
-              '<button onclick="commsDelete(' + t.id + ')" class="q-btn" style="font-size:12px;color:#dc2626;margin-left:auto">&#128465;&#65039;</button>'+
+              '<button onclick="commsReply(\'' + escAttrJs(t.id) + '\')" class="q-btn primary" style="font-size:12px;padding:5px 12px">Reply</button>'+
+              '<button onclick="commsAIReply(\'' + escAttrJs(t.id) + '\')" class="q-btn" style="font-size:12px;padding:5px 12px">&#129504; AI Reply</button>'+
+              (['remake_ext','shower_ext','request'].includes(t.category)?'<button onclick="commsApprove(\'' + escAttrJs(t.id) + '\')" class="q-btn" style="font-size:12px;padding:5px 12px;background:#16a34a;color:#fff;border-color:#16a34a">&#10003; Approve</button>':'')+
+              (t.isAnnouncement?'<button onclick="commsPin(\'' + escAttrJs(t.id) + '\')" class="q-btn" style="font-size:12px">&#128204; '+(t.pinned?'Unpin':'Pin')+'</button>':'')+
+              '<button onclick="commsClose(\'' + escAttrJs(t.id) + '\')" class="q-btn" style="font-size:12px">Close</button>'+
+              '<button onclick="commsDelete(\'' + escAttrJs(t.id) + '\')" class="q-btn" style="font-size:12px;color:#dc2626;margin-left:auto">&#128465;&#65039;</button>'+
             '</div>'
           :(!canReply&&t.replies&&t.replies.length?'':'<div style="font-size:12px;color:var(--muted);padding:4px 0">Awaiting management response.</div>'))+
         '</div>'+
@@ -25779,7 +25826,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }).join('');
     document.getElementById('crm-tbody').innerHTML=d.map(function(x){
       var assignedCell=isMgmt&&x.id
-        ? '<select onchange="sdCRMReassign(\''+x.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
+        ? '<select onchange="sdCRMReassign(\''+escAttrJs(x.id)+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
           +'<option value="">Unassigned</option>'
           +(_roster||[]).map(function(e){return '<option value="'+escHtml(e.employee_id)+'"'+(e.employee_id===x.assigned_employee_id?' selected':'')+'>'+escHtml(e.display_name||e.employee_id)+'</option>';}).join('')
           +'</select>'
@@ -27784,7 +27831,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var thumb = s.photo_base64
         ? '<img src="'+escHtml(s.photo_base64)+'" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0">'
         : '<div style="width:36px;height:36px;border-radius:5px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🪨</div>';
-      return '<div class="viz-slab-row" data-id="'+escHtml(s.id)+'" onclick="vizSelectSlab(\''+s.id+'\')" ' +
+      return '<div class="viz-slab-row" data-id="'+escHtml(s.id)+'" onclick="vizSelectSlab(\''+escAttrJs(s.id)+'\')" ' +
         'style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;display:flex;gap:8px;align-items:center">' +
         thumb +
         '<span style="flex:1"><b>'+escHtml(s.colorName||'(unnamed)')+'</b> — '+escHtml(label)+'</span>' +
@@ -29010,7 +29057,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('emp-grid').innerHTML=d.map(function(x){
       var yrs=Math.floor((Date.now()-new Date(x.start))/31536000000);
       return '<div style="background:'+(bgMap[x.dept]||'#f3f4f6')+';border:1px solid var(--border);border-radius:8px;padding:12px;position:relative">'
-        +'<button onclick="sdEmpDelete(\''+x.id+'\')" title="Remove from directory" aria-label="Remove '+escHtml(x.name)+' from directory" style="position:absolute;top:8px;right:8px;min-width:28px;min-height:28px;background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;line-height:1;color:#dc2626">&#128465;</button>'
+        +'<button onclick="sdEmpDelete(\''+escAttrJs(x.id)+'\')" title="Remove from directory" aria-label="Remove '+escHtml(x.name)+' from directory" style="position:absolute;top:8px;right:8px;min-width:28px;min-height:28px;background:rgba(255,255,255,.7);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;line-height:1;color:#dc2626">&#128465;</button>'
         +'<div style="font-size:24px;margin-bottom:6px">'+(EMOJIS[x.dept]||'👤')+'</div>'
         +'<div style="font-weight:700;font-size:13px;margin-bottom:2px;padding-right:24px">'+escHtml(x.name)+'</div>'
         +'<div style="font-size:12px;color:#555;margin-bottom:4px">'+escHtml(x.role)+'</div>'
@@ -29173,7 +29220,7 @@ document.addEventListener('DOMContentLoaded', function() {
             ' &middot; '+(isActive?'Active':'Deactivated')+'</div>'+
           (why?'<div style="font-size:11px;color:var(--muted)">'+escHtml(why)+'</div>':'')+
         '</div>'+
-        (isSelf?'':'<button class="q-btn" onclick="sdAskRevokeAccess(\''+escHtml(e.employee_id)+'\','+(isActive?'false':'true')+')">'+
+        (isSelf?'':'<button class="q-btn" onclick="sdAskRevokeAccess(\''+escAttrJs(e.employee_id)+'\','+(isActive?'false':'true')+')">'+
           (isActive?'Deactivate':'Reactivate')+'</button>')+
       '</div>';
     }).join('');
@@ -29191,7 +29238,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // Reason required ONLY to deactivate, matching the server exactly.
       (nextActive?'':'<input id="emp-revoke-reason" maxlength="500" placeholder="Reason (required) -- e.g. Left the company 2026-08-28" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--card);color:var(--text);box-sizing:border-box">')+
       '<div id="emp-revoke-err" style="display:none;color:#b91c1c;font-size:12px;margin-bottom:8px"></div>'+
-      '<button class="q-btn primary" id="emp-revoke-go" onclick="sdDoRevokeAccess(\''+escHtml(employee_id)+'\','+nextActive+')">Confirm</button> '+
+      '<button class="q-btn primary" id="emp-revoke-go" onclick="sdDoRevokeAccess(\''+escAttrJs(employee_id)+'\','+nextActive+')">Confirm</button> '+
       '<button class="q-btn" onclick="document.getElementById(\'emp-revoke-confirm\').innerHTML=\'\'">Cancel</button>'+
       '</div>';
   }
@@ -29239,7 +29286,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var expLbl={new:'New',developing:'Developing',experienced:'Experienced',veteran:'Veteran'};
       var styLbl={detailed:'Detailed',balanced:'Balanced',terse:'Terse'};
       listEl.innerHTML=rows.map(function(p){
-        return '<div style="display:flex;justify-content:space-between;padding:6px 8px;background:var(--bg);border-radius:6px"><span><strong>'+escHtml(p.employee_id)+'</strong> &mdash; '+(expLbl[p.experience_level]||p.experience_level)+' / '+(styLbl[p.communication_style]||p.communication_style)+'</span><a href="#" onclick="sdEditEmployeeProfile(\''+escHtml(p.employee_id)+'\',\''+p.experience_level+'\',\''+p.communication_style+'\');return false;" style="color:var(--muted)">Edit</a></div>';
+        return '<div style="display:flex;justify-content:space-between;padding:6px 8px;background:var(--bg);border-radius:6px"><span><strong>'+escHtml(p.employee_id)+'</strong> &mdash; '+(expLbl[p.experience_level]||p.experience_level)+' / '+(styLbl[p.communication_style]||p.communication_style)+'</span><a href="#" onclick="sdEditEmployeeProfile(\''+escAttrJs(p.employee_id)+'\',\''+escAttrJs(p.experience_level)+'\',\''+escAttrJs(p.communication_style)+'\');return false;" style="color:var(--muted)">Edit</a></div>';
       }).join('');
     });
   }
@@ -29559,8 +29606,8 @@ document.addEventListener('DOMContentLoaded', function() {
             '<span style="background:'+(s.active!==false?'#dcfce7':'#f3f4f6')+';color:'+(s.active!==false?'#166534':'#6b7280')+';padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">'+(s.active!==false?'ACTIVE':'INACTIVE')+'</span>' +
           '</div>' +
           '<div style="display:flex;gap:6px;margin-top:8px">' +
-            '<button class="q-btn" style="font-size:11px;padding:4px 9px" onclick="subxSetPin(\''+s.sub_id+'\')">🔑 Set/Reset PIN</button>' +
-            '<button class="q-btn" style="font-size:11px;padding:4px 9px" onclick="subxToggleActive(\''+s.sub_id+'\','+(s.active!==false)+')">'+(s.active!==false?'Deactivate':'Reactivate')+'</button>' +
+            '<button class="q-btn" style="font-size:11px;padding:4px 9px" onclick="subxSetPin(\''+escAttrJs(s.sub_id)+'\')">🔑 Set/Reset PIN</button>' +
+            '<button class="q-btn" style="font-size:11px;padding:4px 9px" onclick="subxToggleActive(\''+escAttrJs(s.sub_id)+'\','+(s.active!==false)+')">'+(s.active!==false?'Deactivate':'Reactivate')+'</button>' +
           '</div>' +
         '</div>';
       }).join('');
@@ -29712,7 +29759,7 @@ document.addEventListener('DOMContentLoaded', function() {
           '<span style="color:var(--muted)">'+escHtml(j.payRate||'')+'</span>' +
           '<span style="font-weight:800">$'+(parseFloat(j.payAmount)||0).toLocaleString()+'</span>' +
         '</div>' +
-        (!j.paid ? '<button class="q-btn primary" style="width:100%;margin-top:8px;font-size:11px;padding:5px" onclick="subxMarkPaid(\''+j.id+'\')">✓ Mark Paid</button>' : '') +
+        (!j.paid ? '<button class="q-btn primary" style="width:100%;margin-top:8px;font-size:11px;padding:5px" onclick="subxMarkPaid(\''+escAttrJs(j.id)+'\')">✓ Mark Paid</button>' : '') +
       '</div>';
     }).join('');
   }
@@ -31280,9 +31327,9 @@ function agRender() {
       '</div>' +
       '<div style="font-size:18px;font-weight:800;color:var(--brand2)">$' + (ag.price || 0) + '/mo</div>' +
       '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
-        '<button class="q-btn" onclick="agPrint(\'' + ag.id + '\')" style="color:#0A3D1F;border-color:var(--brand2)">&#128196; Print</button>' +
-        (ag.status !== 'signed' ? '<button class="q-btn" onclick="agEsigOpen(\'' + ag.id + '\')" style="background:var(--brand2);color:#fff;border-color:var(--brand2)">&#9997; Sign In-App</button>' : '<button class="q-btn" onclick="agViewSigned(\'' + ag.id + '\')" style="color:#16a34a;border-color:#16a34a">&#128196; View Signed</button>') +
-        '<button class="q-btn" onclick="agDelete(\'' + ag.id + '\')" style="color:#dc2626">&#128465;</button>' +
+        '<button class="q-btn" onclick="agPrint(\'' + escAttrJs(ag.id) + '\')" style="color:#0A3D1F;border-color:var(--brand2)">&#128196; Print</button>' +
+        (ag.status !== 'signed' ? '<button class="q-btn" onclick="agEsigOpen(\'' + escAttrJs(ag.id) + '\')" style="background:var(--brand2);color:#fff;border-color:var(--brand2)">&#9997; Sign In-App</button>' : '<button class="q-btn" onclick="agViewSigned(\'' + escAttrJs(ag.id) + '\')" style="color:#16a34a;border-color:#16a34a">&#128196; View Signed</button>') +
+        '<button class="q-btn" onclick="agDelete(\'' + escAttrJs(ag.id) + '\')" style="color:#dc2626">&#128465;</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -31559,7 +31606,7 @@ async function sdRunEmailScan() {
     }).join(''):'<div style="color:var(--muted);font-size:13px;padding:12px 0">No scans flagged yet — use Scan Email to analyze a suspicious message.</div>';
     document.getElementById('email-checklist').innerHTML=CHECKLIST_ITEMS.map(function(x){
       var on=!!cl[x.id];
-      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer" onclick="emailToggleChecklist(\''+x.id+'\')">'
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer" onclick="emailToggleChecklist(\''+escAttrJs(x.id)+'\')">'
         +'<span style="font-size:18px">'+(on?'✅':'❌')+'</span>'
         +'<span style="color:'+(on?'var(--text)':'#dc2626')+'">'+escHtml(x.item)+'</span>'
         +'</div>';
@@ -32406,7 +32453,7 @@ function slabOpenConsume(id){
       '<div class="fg"><label>Remnant Width (in)</label><input id="slab-remnant-w-b" type="number" step="0.1"></div>'+
     '</div>'+
     '<div style="display:flex;gap:10px;margin-top:14px">'+
-      '<button class="q-btn primary" onclick="slabConfirmConsume(\''+id+'\')">Confirm Consumed</button>'+
+      '<button class="q-btn primary" onclick="slabConfirmConsume(\''+escAttrJs(id)+'\')">Confirm Consumed</button>'+
       '<button class="q-btn" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Cancel</button>'+
     '</div>';
   document.getElementById('slab-action-modal').style.display='flex';
@@ -32683,7 +32730,7 @@ function qbOpenSlabPicker(ctx){
       '<div style="max-height:320px;overflow-y:auto">'+available.map(function(s){
         return '<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:8px">'+
           '<div style="font-size:12px"><b>'+escHtml(s.colorName||'')+'</b> — '+slabMaterialLabel(s.material)+', '+(s.usableSqft||0)+' sqft</div>'+
-          '<button class="q-btn primary" style="font-size:11px;padding:4px 8px" onclick="qbPickSlab(\''+s.id+'\')">Pick</button>'+
+          '<button class="q-btn primary" style="font-size:11px;padding:4px 8px" onclick="qbPickSlab(\''+escAttrJs(s.id)+'\')">Pick</button>'+
         '</div>';
       }).join('')+'</div>'+
       '<button class="q-btn" style="margin-top:12px" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Close</button>';
@@ -32817,15 +32864,15 @@ function intakeCardHtml(s) {
     : '';
   var btns = '';
   if (s.status === 'pending') {
-    btns += '<button class="q-btn primary" style="font-size:11px;padding:5px 10px" onclick="intakeAccept(\'' + s.id + '\')">✓ Accept → Create Job</button>';
+    btns += '<button class="q-btn primary" style="font-size:11px;padding:5px 10px" onclick="intakeAccept(\'' + escAttrJs(s.id) + '\')">✓ Accept → Create Job</button>';
   }
   if (hasPhoto) {
-    btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px" onclick="intakeAnalyzePhoto(\'' + s.id + '\')">🧠 Analyze Photo</button>';
+    btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px" onclick="intakeAnalyzePhoto(\'' + escAttrJs(s.id) + '\')">🧠 Analyze Photo</button>';
   }
   if (s.claude_analysis) {
-    btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px" onclick="intakeLoadToDraw(\'' + s.id + '\')">📐 Load into Drawing</button>';
+    btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px" onclick="intakeLoadToDraw(\'' + escAttrJs(s.id) + '\')">📐 Load into Drawing</button>';
   }
-  btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px;background:rgba(220,38,38,.08);color:#dc2626" onclick="intakeDismiss(\'' + s.id + '\')">✕</button>';
+  btns += '<button class="q-btn" style="font-size:11px;padding:5px 10px;background:rgba(220,38,38,.08);color:#dc2626" onclick="intakeDismiss(\'' + escAttrJs(s.id) + '\')">✕</button>';
 
   return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px">' +
     '<div style="display:flex;gap:12px;align-items:flex-start">' +
@@ -32970,9 +33017,9 @@ async function intakeAnalyzePhoto(id) {
       '</div>';
 
     actionsEl.innerHTML =
-      '<button class="q-btn primary" style="font-size:12px" onclick="intakeLoadToDraw(\'' + id + '\');document.getElementById(\'intake-analyze-modal\').style.display=\'none\'">'+
+      '<button class="q-btn primary" style="font-size:12px" onclick="intakeLoadToDraw(\'' + escAttrJs(id) + '\');document.getElementById(\'intake-analyze-modal\').style.display=\'none\'">'+
         '📐 Load into Drawing Tool</button>'+
-      '<button class="q-btn" style="font-size:12px" onclick="intakeAccept(\'' + id + '\')">✓ Accept → Create Job</button>';
+      '<button class="q-btn" style="font-size:12px" onclick="intakeAccept(\'' + escAttrJs(id) + '\')">✓ Accept → Create Job</button>';
 
     intakeRender();
   } catch(e) {
@@ -33145,7 +33192,7 @@ function sbSearch(q) {
   }).slice(0, 8);
   if (!matches.length) { results.style.display = 'none'; return; }
   results.innerHTML = matches.map(function(p) {
-    return '<div class="sb-search-result" onclick="sbSearchGo(\''+p.id+'\')">'+
+    return '<div class="sb-search-result" onclick="sbSearchGo(\''+escAttrJs(p.id)+'\')">'+
       '<span class="sb-search-result-icon">'+p.icon+'</span>'+
       '<div><div style="font-weight:600">'+p.label+'</div>'+
       '<div style="font-size:10px;opacity:.5">'+p.section+'</div></div>'+
@@ -33336,7 +33383,7 @@ function renderSchedLanes(){
             '</div>'+
             (j.material?'<div style="color:var(--muted);font-size:10px;margin-bottom:3px">'+escHtml(j.material.slice(0,28))+'</div>':'')+
             (j.installer?'<div style="color:var(--muted);font-size:10px;margin-bottom:5px">👷 '+escHtml(j.installer)+'</div>':'')+
-            (ns?'<button onclick="schedAdvanceStage(\''+j.id+'\',\''+ns+'\')" style="width:100%;padding:4px;background:'+hc+';color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">'+nextLabel[s]+'</button>':
+            (ns?'<button onclick="schedAdvanceStage(\''+escAttrJs(j.id)+'\',\''+escAttrJs(ns)+'\')" style="width:100%;padding:4px;background:'+hc+';color:#fff;border:none;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">'+nextLabel[s]+'</button>':
                '<span style="font-size:10px;color:'+urgColor+';font-weight:700">COMPLETE ✓</span>')+
           '</div>';
         }).join(''):'<div style="color:var(--muted);font-size:11px;text-align:center;padding:16px;opacity:.6">Empty</div>')+
@@ -33414,7 +33461,7 @@ function renderSchedCrew(){
             '<span style="background:'+stageBg+';color:#fff;font-size:9px;font-weight:700;padding:1px 7px;border-radius:100px">'+stageLabels[j.stage]+'</span>'+
             (j.sqft?'<span style="font-size:10px;color:var(--muted)">'+j.sqft+' sqft</span>':'')+
           '</div>'+
-          '<select onchange="schedReassignCrew(\''+j.id+'\',this)" style="width:100%;font-size:10px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+crewOpts+'</select>'+
+          '<select onchange="schedReassignCrew(\''+escAttrJs(j.id)+'\',this)" style="width:100%;font-size:10px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+crewOpts+'</select>'+
         '</div>';
       }).join('')+
       '</div></div>';
@@ -33671,7 +33718,7 @@ function esigApprove(){
           '<button onclick="esigSendDepositEmail(\''+name.replace(/'/g,"\\'")+'\')" style="flex:1;padding:13px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer">📧 Email Deposit Request</button>' +
           '<button onclick="esigPrintApproval()" style="flex:1;padding:13px;background:var(--a);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer">🖨️ Print Approval Copy</button>' +
         '</div>' +
-        (totalAmt>0?'<div style="margin-top:10px"><button onclick="esigCreateInvoice(\''+name.replace(/'/g,'\\\'')+'\')" style="width:100%;padding:10px;background:rgba(27,58,107,0.08);border:1.5px solid var(--a);color:var(--a);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">💳 Create Invoice in StoneDesk</button></div>':'') +
+        (totalAmt>0?'<div style="margin-top:10px"><button onclick="esigCreateInvoice(\''+escAttrJs(name)+'\')" style="width:100%;padding:10px;background:rgba(27,58,107,0.08);border:1.5px solid var(--a);color:var(--a);border-radius:10px;font-size:12px;font-weight:700;cursor:pointer">💳 Create Invoice in StoneDesk</button></div>':'') +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#6B7280">' +
         '<span>🔒</span><span>Signature captured and saved. Approval recorded '+new Date().toLocaleString()+'.</span>' +
@@ -33862,7 +33909,7 @@ async function invSmartReorder(){
     cardsHtml+='</div>';
     cardsHtml+='<div style="display:flex;align-items:center;gap:10px">';
     cardsHtml+='<span style="font-size:13px;font-weight:700;color:#0A3D1F">$'+vTotal.toFixed(2)+'</span>';
-    cardsHtml+='<button onclick="invReorderSendToCart(\''+vKey+'\')" style="padding:5px 12px;background:'+vColor+';color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add to Cart →</button>';
+    cardsHtml+='<button onclick="invReorderSendToCart(\''+escAttrJs(vKey)+'\')" style="padding:5px 12px;background:'+vColor+';color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">Add to Cart →</button>';
     cardsHtml+='</div>';
     cardsHtml+='</div>';
     // Items
@@ -34379,7 +34426,7 @@ function jcRender(){
         '<span>'+sdFmt(j.quoted)+'</span><span>'+sdFmt(j.totalCost)+'</span>'+
         '<span style="font-weight:800;color:'+mc+'">'+j.margin.toFixed(1)+'%</span>'+
         '<span>'+sdFmt(ppsf)+'</span><span>'+j.laborHrs+'h</span>'+
-        '<button onclick="jcDelete(\''+j.id+'\')" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer;font-size:11px">x</button>'+
+        '<button onclick="jcDelete(\''+escAttrJs(j.id)+'\')" style="padding:3px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer;font-size:11px">x</button>'+
       '</div>';
     }).join('')+'</div>';
 }
@@ -34733,7 +34780,7 @@ function piInit(){
     PI_RATES.map(function(r){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px">'+r.mat+'</td><td style="padding:8px 12px;text-align:center">$'+r.low+'</td><td style="padding:8px 12px;text-align:center">$'+r.high+'</td><td style="padding:8px 12px;text-align:center;font-weight:700;color:var(--a)">$'+r.avg+'</td></tr>';}).join('')+
     '</table></div>';
   var ri=document.getElementById('pi-rate-inputs');
-  if(ri)ri.innerHTML=PI_RATES.map(function(r){var key=r.mat.replace(/[^a-z0-9]/gi,'_');return '<div class="fg"><label style="font-size:11px">'+escHtml(r.mat)+'</label><div style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:0 8px"><span style="font-size:12px;color:var(--muted)">$</span><input type="number" id="pir-'+escHtml(key)+'" value="'+escHtml(piMyRates[r.mat]||'')+'" placeholder="'+escHtml(r.avg)+'" style="border:none;outline:none;width:80px;font-size:13px;padding:6px 4px;background:transparent;color:var(--text)" oninput="piMyRates[\''+r.mat+'\']=parseFloat(this.value)||0;piUpdateComparison()"></div></div>';}).join('');
+  if(ri)ri.innerHTML=PI_RATES.map(function(r){var key=r.mat.replace(/[^a-z0-9]/gi,'_');return '<div class="fg"><label style="font-size:11px">'+escHtml(r.mat)+'</label><div style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:0 8px"><span style="font-size:12px;color:var(--muted)">$</span><input type="number" id="pir-'+escHtml(key)+'" value="'+escHtml(piMyRates[r.mat]||'')+'" placeholder="'+escHtml(r.avg)+'" style="border:none;outline:none;width:80px;font-size:13px;padding:6px 4px;background:transparent;color:var(--text)" oninput="piMyRates[\''+escAttrJs(r.mat)+'\']=parseFloat(this.value)||0;piUpdateComparison()"></div></div>';}).join('');
   piUpdateComparison();
 }
 function piUpdateComparison(){
@@ -34831,7 +34878,7 @@ function itaRender(){
     '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr auto;padding:8px 14px;background:var(--surface-2);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase"><span>Name</span><span>Role</span><span>Added</span><span></span></div>'+
     users.map(function(u){return '<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr auto;align-items:center;padding:10px 14px;border-top:1px solid var(--border);font-size:13px">'+
       '<span style="font-weight:600">'+escHtml(u.name)+'</span><span style="text-transform:capitalize">'+u.role+'</span><span style="color:var(--muted);font-size:11px">'+new Date(u.added).toLocaleDateString()+'</span>'+
-      '<button onclick="itaDeleteUser(\''+u.name+'\')" style="padding:3px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer;font-size:11px">Remove</button>'+
+      '<button onclick="itaDeleteUser(\''+escAttrJs(u.name)+'\')" style="padding:3px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer;font-size:11px">Remove</button>'+
     '</div>';}).join('')+'</div>':'<div style="color:var(--muted);padding:12px">No additional users.</div>';
   // Storage calc
   var total=0;for(var i=0;i<localStorage.length;i++){try{var k=localStorage.key(i);total+=(localStorage.getItem(k)||'').length*2;}catch(e){}}
@@ -34906,10 +34953,10 @@ function dmgRender(){
       (c.resolution?'<div style="font-size:12px;color:#16a34a;font-weight:600">Resolution: '+escHtml(c.resolution)+'</div>':'')+
     '</div>'+
     '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
-      '<select onchange="dmgUpdateStatus(\''+c.id+'\',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+
+      '<select onchange="dmgUpdateStatus(\''+escAttrJs(c.id)+'\',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+
         ['open','repair','customer','resolved','denied'].map(function(s){return '<option value="'+escHtml(s)+'"'+(s===c.status?' selected':'')+'>'+escHtml(s)+'</option>';}).join('')+
       '</select>'+
-      '<button onclick="dmgDelete(\''+c.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">Delete</button>'+
+      '<button onclick="dmgDelete(\''+escAttrJs(c.id)+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">Delete</button>'+
     '</div></div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No damage claims. Keep it that way.</div>';
 }
 
@@ -34947,7 +34994,7 @@ function bltnRender(){
         (p.body?'<div style="font-size:13px;line-height:1.7;margin-bottom:8px">'+escHtml(p.body)+'</div>':'')+
         '<div style="font-size:11px;color:var(--muted)">Posted by '+escHtml(p.author)+' · '+new Date(p.createdAt).toLocaleDateString()+(p.expires?' · Expires '+p.expires:'')+'</div>'+
       '</div>'+
-      '<button onclick="bltnDelete(\''+p.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">Remove</button>'+
+      '<button onclick="bltnDelete(\''+escAttrJs(p.id)+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap">Remove</button>'+
     '</div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:48px"><div style="font-size:36px;margin-bottom:12px">📋</div><div style="font-size:15px;font-weight:700">No active announcements</div><div style="font-size:13px;margin-top:6px">Post your first shop announcement above.</div></div>';
 }
 
@@ -35017,7 +35064,7 @@ function npsRender(){
     (r.feedback?'<div style="font-size:13px;line-height:1.6;font-style:italic">"'+escHtml(r.feedback)+'"</div>':'')+
     '<div style="font-size:11px;color:var(--muted);margin-top:4px">'+escHtml(r.channel||'')+(r.date?' · '+r.date:'')+'</div>'+
     '</div>'+
-    '<button onclick="npsDelete(\''+r.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:10px;cursor:pointer;flex-shrink:0">x</button>'+
+    '<button onclick="npsDelete(\''+escAttrJs(r.id)+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:10px;cursor:pointer;flex-shrink:0">x</button>'+
     '</div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No customer feedback logged yet.</div>';
 }
 
@@ -35650,8 +35697,8 @@ window.sdQcQueueRefresh = async function() {
         + '<div style="font-weight:700;font-size:13px">' + escHtml(p.job_id) + ' <span style="font-weight:400;color:#6B7280;font-size:11px">(' + escHtml(p.captured_by_type === 'sub' ? 'sub: ' + p.captured_by_id : p.captured_by_id) + ')</span></div>'
         + '<div style="font-size:11px;color:#374151;margin-top:2px;white-space:pre-wrap">' + escHtml((p.ai_analysis || '').slice(0, 200)) + '</div>'
         + '<div style="display:flex;gap:8px;margin-top:8px">'
-        + '<button onclick="sdQcDecide(\'' + p.id + '\',\'approved\')" style="background:#16A34A;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Approve</button>'
-        + '<button onclick="sdQcDecide(\'' + p.id + '\',\'rejected\')" style="background:#fff;border:1px solid #DC2626;color:#DC2626;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Reject</button>'
+        + '<button onclick="sdQcDecide(\'' + escAttrJs(p.id) + '\',\'approved\')" style="background:#16A34A;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Approve</button>'
+        + '<button onclick="sdQcDecide(\'' + escAttrJs(p.id) + '\',\'rejected\')" style="background:#fff;border:1px solid #DC2626;color:#DC2626;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;min-height:36px">Reject</button>'
         + '</div></div></div>';
     }).join('');
   } catch (e) { /* leave default message in place */ }
