@@ -148,8 +148,8 @@
       "task": "delaware seed build",
       "claimed_at": "2026-09-01T18:52:44Z",
       "claimed_at_epoch": 1788288764.083121,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T19:35:58Z"
     }
   ]
 }
