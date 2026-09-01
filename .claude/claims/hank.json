@@ -68,8 +68,8 @@
       "task": "newhampshire deadline seed gate",
       "claimed_at": "2026-08-31T10:21:11Z",
       "claimed_at_epoch": 1788171671.297778,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T10:59:08Z"
     }
   ]
 }
