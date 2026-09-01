@@ -40,6 +40,16 @@
       "claimed_at_epoch": 1788288364.5132751,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1788291411",
+      "session": "fourth",
+      "subject": "sairnlegacy",
+      "task": "cleanup sql and ai capability rollout",
+      "claimed_at": "2026-09-01T19:36:51Z",
+      "claimed_at_epoch": 1788291411.42292,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
