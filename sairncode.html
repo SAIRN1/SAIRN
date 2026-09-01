@@ -695,6 +695,7 @@
                 <button class="nav-btn" onclick="showPanel('uc')" data-tip="Urgent Care -- payer branching S9083/S9088 vs E/M, POS 20, ED-code block">Urgent Care</button>
                 <button class="nav-btn" onclick="showPanel('eye')" data-tip="Optometry/Ophthalmology -- routine vs medical, refraction split, co-management modifiers">Optometry / Ophth</button>
                 <button class="nav-btn" onclick="showPanel('cos')" data-tip="Cosmetic/Reconstructive -- direct-pay vs insurance routing, evidence, mixed-session modifiers">Cosmetic / Recon</button>
+                <button class="nav-btn" onclick="showPanel('chiro')" data-tip="Chiropractic -- three covered codes, region count, AT modifier, P.A.R.T. exam, GA/GZ on maintenance, statutory exclusions">Chiropractic</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1455,6 +1456,53 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <button class="btn btn-primary" onclick="runCosCheck()">Check Case</button>
             </div>
             <div id="cos-result"></div>
+        </div>
+
+        <!-- Chiropractic (2026-09-01). Built from MLN Matters SE1601 (rev.
+             7 May 2019) and the contractor Billing and Coding Guidelines
+             L34585, both read in full rather than summarised.
+
+             THE PANEL ASKS FOR THE REGIONS, NOT A REGION COUNT, and that is
+             deliberate: the count is what selects the CPT code, so a count
+             the user types is the one input here that cannot be checked
+             against anything. Typed region NAMES can be -- against the five
+             areas SE1601's own subluxation table names, and against the M99
+             level cited as the primary diagnosis. -->
+        <div id="panel-chiro" class="panel">
+            <h1 class="panel-title">Chiropractic</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                Under Medicare a doctor of chiropractic may bill three codes and nothing else &mdash;
+                98940 / 98941 / 98942, manual manipulation of the spine to correct a subluxation. The
+                office visit, the x-ray, the therapy and the supply are excluded <b>by statute</b>, not by
+                medical necessity. <b>Every Medicare-only rule here is gated on payer</b> and stays silent
+                on a commercial or cash claim.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="chiro-codes" placeholder="Codes e.g. 98941" class="search-input" style="min-width:170px;">
+                <select id="chiro-payer"><option value="">Payer type</option><option value="medicare">Medicare</option><option value="commercial">Commercial</option><option value="medicaid">Medicaid</option></select>
+                <input type="text" id="chiro-regions" placeholder="Regions e.g. cervical, thoracic, lumbar" class="search-input" style="min-width:250px;">
+                <input type="text" id="chiro-mods" placeholder="Modifiers e.g. AT" class="search-input" style="max-width:160px;">
+                <select id="chiro-phase"><option value="">Active or maintenance?</option><option value="active">Active / corrective</option><option value="maintenance">Maintenance</option></select>
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <select id="chiro-shown"><option value="">Subluxation demonstrated by&hellip;</option><option value="part">P.A.R.T. examination</option><option value="xray">X-ray / CT / MRI</option></select>
+                <input type="text" id="chiro-part" placeholder="P.A.R.T. elements e.g. A, R" class="search-input" style="max-width:200px;">
+                <input type="number" id="chiro-xraydays" placeholder="X-ray: days before treatment" class="search-input" style="max-width:215px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="chiro-chronic"> Chronic &amp; permanent documented</label>
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="chiro-dx1" placeholder="Primary dx e.g. M99.01" class="search-input" style="max-width:190px;">
+                <input type="text" id="chiro-dx2" placeholder="Secondary dx e.g. M54.2" class="search-input" style="max-width:190px;">
+                <select id="chiro-abn"><option value="">ABN signed? (maintenance)</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <input type="number" id="chiro-perday" placeholder="Treatments today" class="search-input" style="max-width:150px;">
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="chiro-item14"> Item 14 initial-treatment date recorded</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="chiro-item19"> A date is present in Item 19</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="chiro-device"> Separate charge for a manual device</label>
+                <button class="btn btn-primary" onclick="runChiroCheck()">Check Claim</button>
+            </div>
+            <div id="chiro-result"></div>
         </div>
 
         <div id="panel-anesthesia" class="panel">
@@ -7056,6 +7104,35 @@ How to answer:
             }));
         }
 
+        function runChiroCheck(){
+            var abn = document.getElementById('chiro-abn').value;
+            var xd  = document.getElementById('chiro-xraydays').value;
+            var pd  = document.getElementById('chiro-perday').value;
+            scRenderCheckResult('chiro-result', scValidateChiropractic({
+                codes: scParseList(document.getElementById('chiro-codes').value),
+                payer: document.getElementById('chiro-payer').value,
+                // Regions are split here rather than through scParseList
+                // because that helper UPPER-CASES, and the region vocabulary
+                // is matched in lower case -- sending them through it would
+                // make every region unrecognised and every count zero.
+                regions_treated: String(document.getElementById('chiro-regions').value || '')
+                    .split(',').map(function(r){ return r.trim(); }).filter(Boolean),
+                modifiers: scParseList(document.getElementById('chiro-mods').value),
+                treatment_phase: document.getElementById('chiro-phase').value,
+                subluxation_shown_by: document.getElementById('chiro-shown').value,
+                part_elements: scParseList(document.getElementById('chiro-part').value),
+                xray_days_before_treatment: xd === '' ? null : Number(xd),
+                chronic_permanent_documented: document.getElementById('chiro-chronic').checked,
+                primary_dx: document.getElementById('chiro-dx1').value,
+                secondary_dx: document.getElementById('chiro-dx2').value,
+                abn_signed: abn === 'yes' ? true : (abn === 'no' ? false : null),
+                treatments_today: pd === '' ? null : Number(pd),
+                initial_treatment_date_recorded: document.getElementById('chiro-item14').checked,
+                item19_date_present: document.getElementById('chiro-item19').checked,
+                device_charge: document.getElementById('chiro-device').checked
+            }));
+        }
+
         function runMhCheck(){
             var el = document.getElementById('mh-result');
             var codes = scParseList(document.getElementById('mh-codes').value);
@@ -7879,6 +7956,314 @@ How to answer:
         }
 
         // ================================================================
+        // ================================================================
+        // CHIROPRACTIC MODULE (2026-09-01).
+        //
+        // Built from the two primary CMS documents read in full, not from a
+        // billing-service summary: MLN Matters SE1601 (revised 7 May 2019)
+        // and the contractor Billing and Coding Guidelines for Chiropractic
+        // Services (L34585). BOTH 403 A PLAIN FETCH AND RETURN 200 TO THE
+        // SAME URL WITH A BROWSER HEADER SET -- the same header-check shape
+        // courts.nh.gov has, recorded here so the next reader does not take
+        // a 403 for a paywall and work from secondary sources instead.
+        //
+        // THE ONE THING THAT MAKES THIS SPECIALTY DIFFERENT FROM EVERY OTHER
+        // MODULE HERE: almost everything a chiropractor does is STATUTORILY
+        // excluded from Medicare rather than merely unlikely to be paid.
+        // Coverage is "specifically limited to treatment by means of manual
+        // manipulation, i.e., by use of hands", and three CPT codes carry the
+        // entire benefit. So the useful checks are mostly about what must NOT
+        // be on the claim -- the opposite shape to the rest of this app.
+        //
+        // AND EVERY ONE OF THOSE EXCLUSIONS IS MEDICARE-ONLY, WHICH IS WHY
+        // THEY ARE ALL GATED ON PAYER. A commercial plan routinely covers the
+        // E/M, the x-ray and the therapy Medicare excludes by statute. A
+        // module that fired the exclusion rules blind would be wrong more
+        // often than right, because most chiropractic volume is not Medicare.
+        // ================================================================
+        var SC_CHIRO_SOURCES = {
+            manual_only:  'CMS Billing and Coding Guidelines for Chiropractic Services (L34585) -- "Coverage of chiropractic service is specifically limited to treatment by means of manual manipulation, i.e., by use of hands." No other diagnostic or therapeutic service furnished by a chiropractor or under his or her order is covered; the listed exclusions include laboratory tests, x-rays, office visits, physiotherapy, traction, supplies, injections, drugs, diagnostic studies including EKGs, acupuncture, orthopedic devices, and nutritional supplements and counseling',
+            at_required:  'L34585 / CR 3449, effective for dates of service on or after 1 October 2004 -- every chiropractic claim containing 98940, 98941 or 98942 must include the Acute Treatment (AT) modifier if active/corrective treatment is being performed. "Claims without the AT modifier will be considered as maintenance therapy and denied"',
+            at_not_maint: 'L34585 -- "The AT modifier must not be placed on the claim when maintenance therapy has been provided"',
+            at_not_proof: 'MLN Matters SE1601 (rev. 7 May 2019) -- "the presence of the HCPCS modifier AT may not in all instances indicate that the service is reasonable and necessary." Contractors may still deny after medical review',
+            abn:          'L34585 -- a chiropractor who gives or receives an ABN follows Pub. 100-04, Medicare Claims Processing Manual, Chapter 23, section 20.9.1.1 and includes a GA (or in rare instances a GZ) modifier on the claim',
+            regions:      'SE1601 -- doctors of chiropractic are limited to three CPT codes under Medicare: 98940 (chiropractic manipulative treatment; spinal, one to two regions), 98941 (three to four regions), 98942 (five regions)',
+            one_cmt:      'SE1601 -- 98940, 98941 and 98942 are the same service distinguished only by the number of spinal regions treated, so one session is described by exactly one of them',
+            extraspinal:  'L34585 -- "Medicare does not cover chiropractic treatments to extraspinal regions (CPT 98943), which includes the head, upper and lower extremities, rib cage, and abdomen"',
+            primary_dx:   'L34585 coding guideline 1 -- "The precise level of subluxation must be specified on the claim and must be listed as the primary diagnosis. The neuromusculoskeletal condition necessitating the treatment must be listed as the secondary diagnosis"',
+            dx_table:     'SE1601 subluxation table -- Neck: occiput M99.00, cervical M99.01; Back: dorsal/thoracic including costovertebral and costotransverse M99.02; Low Back: lumbar M99.03; Sacral: sacrum and coccyx M99.04; Pelvis: Ilii R and L M99.05',
+            part:         'SE1601 -- where the subluxation is demonstrated by physical examination, two of the four P.A.R.T. criteria are required, one of which must be asymmetry/misalignment or range of motion abnormality. P.A.R.T. is the examination alternative to the previously mandated demonstration by x-ray/MRI/CT for services beginning 1 January 2000',
+            xray_window:  'SE1601 -- the date of the x-ray must be reasonably close to (within 12 months prior or 3 months following) the beginning of treatment. In certain cases of chronic subluxation an older x-ray may be accepted where the record indicates the condition has existed longer than 12 months and there is a reasonable basis for concluding it is permanent',
+            item14:       'L34585 -- the date of the initial treatment, or of the exacerbation of the existing condition, must be entered in Item 14 of Form CMS-1500 or the electronic equivalent. Failure to report the required claim items "will result in claim denial or delay"',
+            item19:       'L34585 -- "Date of last x-ray is no longer required. Any date placed in item 19 is considered date of last x-ray. It is recommended that providers do not place any date in item 19 of the CMS-1500 claim form"',
+            one_per_day:  'L34585 -- reimbursement "will be limited to not more than one treatment per day unless documentation of the reasonableness and necessity for additional treatment is submitted with the claim"; the room or ward fees charged under an "intensive care" concept of treatment are not covered',
+            device:       'SE1601 -- hand-held manual devices whose thrust is controlled manually may be used, but "Medicare makes no additional payment for use of the device, nor does Medicare recognize an extra charge for the device itself"',
+            maintenance:  'SE1601 -- once the clinical status has remained stable for a given condition, without expectation of additional objective clinical improvement, further manipulative treatment is considered maintenance therapy and is not covered'
+        };
+
+        // 98943 is listed deliberately with a null band: it is a real CPT
+        // code and a real service, it simply is not a Medicare benefit, and
+        // the region-count rules below must not be applied to it.
+        var SC_CHIRO_CMT = { '98940': [1, 2], '98941': [3, 4], '98942': [5, 5] };
+        var SC_CHIRO_EXTRASPINAL_CODE = '98943';
+
+        // The five spinal areas exactly as SE1601's own subluxation table
+        // names them, with that table's ICD-10 codes. Sourced to the table
+        // rather than to CPT because the table is the document actually read.
+        var SC_CHIRO_REGION_DX = {
+            cervical: ['M99.00', 'M99.01'],
+            thoracic: ['M99.02'],
+            lumbar:   ['M99.03'],
+            sacral:   ['M99.04'],
+            pelvic:   ['M99.05']
+        };
+        var SC_CHIRO_REGION_ALIASES = {
+            'neck': 'cervical', 'cervical': 'cervical', 'occiput': 'cervical', 'occipital': 'cervical',
+            'atlanto-occipital': 'cervical', 'atlas': 'cervical', 'axis': 'cervical',
+            'back': 'thoracic', 'thoracic': 'thoracic', 'dorsal': 'thoracic',
+            'costovertebral': 'thoracic', 'costotransverse': 'thoracic',
+            'low back': 'lumbar', 'lowback': 'lumbar', 'lumbar': 'lumbar',
+            'sacral': 'sacral', 'sacrum': 'sacral', 'coccyx': 'sacral', 'sacrococcygeal': 'sacral',
+            'pelvis': 'pelvic', 'pelvic': 'pelvic', 'ilii': 'pelvic', 'ilium': 'pelvic',
+            'sacroiliac': 'pelvic', 'si': 'pelvic'
+        };
+        var SC_CHIRO_PART_LABELS = {
+            P: 'Pain/tenderness',
+            A: 'Asymmetry/misalignment',
+            R: 'Range of motion abnormality',
+            T: 'Tissue tone, texture and temperature abnormality'
+        };
+
+        function scChiroFinding(sev, rule, detail, k){
+            return { severity: sev, rule: rule, detail: detail, source: SC_CHIRO_SOURCES[k] || '' };
+        }
+
+        // Maps a free-typed region name onto one of the five areas. Returns
+        // null for anything unrecognised rather than guessing -- an unknown
+        // word is surfaced to the user, never silently counted as a region,
+        // because the region COUNT is what selects the CPT code.
+        function scChiroNormalizeRegion(raw){
+            var k = String(raw || '').trim().toLowerCase().replace(/\s+/g, ' ');
+            if (!k) return null;
+            return SC_CHIRO_REGION_ALIASES[k] || (SC_CHIRO_REGION_DX[k] ? k : null);
+        }
+
+        function scValidateChiropractic(input){
+            input = input || {};
+            var codes = (input.codes || []).map(function(c){ return String(c || '').trim().toUpperCase(); }).filter(Boolean);
+            var mods  = (input.modifiers || []).map(function(m){ return String(m || '').trim().toUpperCase(); }).filter(Boolean);
+            var payer = String(input.payer || '').toLowerCase();
+            var isMedicare = payer === 'medicare';
+            var phase = String(input.treatment_phase || '').toLowerCase();
+            var findings = [];
+
+            var cmt = codes.filter(function(c){ return SC_CHIRO_CMT[c]; });
+            var hasExtraspinal = codes.indexOf(SC_CHIRO_EXTRASPINAL_CODE) !== -1;
+            var otherCodes = codes.filter(function(c){
+                return !SC_CHIRO_CMT[c] && c !== SC_CHIRO_EXTRASPINAL_CODE;
+            });
+
+            // --- Regions: parsed, not counted from a number the user typed ---
+            var rawRegions = (input.regions_treated || []).map(function(r){ return String(r || '').trim(); }).filter(Boolean);
+            var normRegions = [], unknownRegions = [];
+            rawRegions.forEach(function(r){
+                var n = scChiroNormalizeRegion(r);
+                if (n) { if (normRegions.indexOf(n) === -1) normRegions.push(n); }
+                else unknownRegions.push(r);
+            });
+            var regionCount = normRegions.length;
+
+            if (unknownRegions.length) {
+                findings.push(scChiroFinding('warn', 'Region not recognised and therefore not counted',
+                    unknownRegions.join(', ') + ' did not match any of the five spinal areas, so ' + (unknownRegions.length === 1 ? 'it is' : 'they are')
+                    + ' excluded from the region count of ' + regionCount + '. The five are cervical (incl. occiput), thoracic (incl. costovertebral and costotransverse), lumbar, sacral and pelvic.', 'dx_table'));
+            }
+
+            // --- Payer must be known before any exclusion rule can fire ---
+            if (codes.length && !payer) {
+                findings.push(scChiroFinding('block', 'Payer type not recorded',
+                    'Nearly every chiropractic coverage rule below is Medicare-specific -- the statutory exclusions, the AT modifier and the ABN modifiers all are. Nothing that depends on payer is checked until payer is known.', 'manual_only'));
+            }
+
+            // --- Region count against the code billed ---
+            cmt.forEach(function(c){
+                var band = SC_CHIRO_CMT[c];
+                if (!rawRegions.length) {
+                    findings.push(scChiroFinding('block', 'Regions treated not recorded',
+                        c + ' is selected by the number of spinal regions treated (' + band[0] + (band[0] === band[1] ? '' : ' to ' + band[1]) + '), so the regions have to be documented before the code can be checked.', 'regions'));
+                } else if (regionCount < band[0] || regionCount > band[1]) {
+                    findings.push(scChiroFinding('block', 'Region count does not support this code',
+                        c + ' covers ' + (band[0] === band[1] ? band[0] + ' regions' : band[0] + ' to ' + band[1] + ' regions')
+                        + ', but ' + regionCount + ' ' + (regionCount === 1 ? 'region is' : 'regions are') + ' documented (' + normRegions.join(', ') + '). '
+                        + (regionCount < band[0]
+                            ? 'Billing the higher-region code without documentation supporting every region is the most common overcoding finding in this specialty.'
+                            : 'Report the code whose band matches the documented regions.'), 'regions'));
+                }
+            });
+
+            if (cmt.length > 1) {
+                findings.push(scChiroFinding('block', 'More than one manipulation code on one session',
+                    cmt.join(', ') + ' all describe the same service at different region counts. One session is reported with exactly one of them.', 'one_cmt'));
+            }
+
+            // --- Extraspinal ---
+            if (hasExtraspinal && isMedicare) {
+                findings.push(scChiroFinding('block', '98943 is not a Medicare benefit',
+                    'Extraspinal manipulation (head, upper and lower extremities, rib cage, abdomen) is not covered by Medicare at any diagnosis. It may be reported to a commercial payer, or billed to the patient.', 'extraspinal'));
+            } else if (hasExtraspinal && payer && !isMedicare) {
+                findings.push(scChiroFinding('info', '98943 reported to a non-Medicare payer',
+                    'Extraspinal manipulation is excluded by Medicare but is commonly covered elsewhere. Check the plan rather than assuming either way.', 'extraspinal'));
+            }
+
+            // --- Statutory exclusions, Medicare only ---
+            if (otherCodes.length && isMedicare) {
+                findings.push(scChiroFinding('block', 'Only manual manipulation of the spine is covered when a chiropractor performs it',
+                    otherCodes.join(', ') + ' ' + (otherCodes.length === 1 ? 'is' : 'are') + ' outside 98940-98942 and is excluded when ordered or performed by a doctor of chiropractic -- this includes the E/M, the x-ray, the therapy modality and the supply, regardless of medical necessity. Report it only to obtain a denial for a secondary carrier, or bill the patient.', 'manual_only'));
+            }
+
+            // --- AT modifier ---
+            var hasAT = mods.indexOf('AT') !== -1;
+            if (isMedicare && cmt.length) {
+                if (phase === 'active' && !hasAT) {
+                    findings.push(scChiroFinding('block', 'AT modifier missing on active treatment',
+                        'Treatment is recorded as active/corrective but AT is not on the claim. Without it the claim is read as maintenance therapy and denied.', 'at_required'));
+                }
+                if (phase === 'maintenance' && hasAT) {
+                    findings.push(scChiroFinding('block', 'AT modifier on a maintenance claim',
+                        'Treatment is recorded as maintenance. AT asserts active/corrective care and must not be appended here.', 'at_not_maint'));
+                }
+                if (!phase) {
+                    findings.push(scChiroFinding('block', 'Active or maintenance not recorded',
+                        'The AT modifier, the ABN and the coverage decision all turn on whether this visit is active/corrective care or maintenance, so it cannot be left unstated.', 'maintenance'));
+                }
+                if (phase === 'active' && hasAT) {
+                    findings.push(scChiroFinding('info', 'AT is required, and it is not itself proof of necessity',
+                        'AT is correctly present for active/corrective treatment. It does not settle medical necessity -- the record still has to show a subluxation and an expectation of functional improvement.', 'at_not_proof'));
+                }
+            }
+
+            // --- ABN / GA / GZ on maintenance ---
+            if (isMedicare && cmt.length && phase === 'maintenance') {
+                var hasGA = mods.indexOf('GA') !== -1, hasGZ = mods.indexOf('GZ') !== -1;
+                // ORDER MATTERS AND IS NOT COSMETIC. The two "wrong modifier
+                // for the ABN state" cases are tested BEFORE the two "modifier
+                // missing" cases, because a claim carrying GZ when an ABN was
+                // signed also satisfies "GA is not on the claim" -- and the
+                // generic message would have sent the biller looking for a
+                // missing modifier instead of the wrong one that is already
+                // there. Caught by the harness, not by reading it back.
+                if (hasGA && hasGZ) {
+                    findings.push(scChiroFinding('block', 'GA and GZ are mutually exclusive',
+                        'GA says a signed ABN is on file; GZ says one is not. Only one can be true of this claim.', 'abn'));
+                } else if (input.abn_signed === true && hasGZ) {
+                    findings.push(scChiroFinding('block', 'GZ used although an ABN was signed',
+                        'GZ states that no ABN was obtained and forfeits patient liability for the denied charge. With a signed ABN the correct modifier is GA.', 'abn'));
+                } else if (input.abn_signed === false && hasGA) {
+                    findings.push(scChiroFinding('block', 'GA used although no ABN was signed',
+                        'GA attests that the beneficiary was notified in advance and accepted liability. Nothing on file supports that here, and GZ is the modifier for a service expected to be denied with no ABN.', 'abn'));
+                } else if (input.abn_signed === true && !hasGA) {
+                    findings.push(scChiroFinding('block', 'Signed ABN on file but GA is not on the claim',
+                        'Maintenance care is not covered. With a signed ABN the claim carries GA, which is what makes the patient liable for the denied charge.', 'abn'));
+                } else if (input.abn_signed === false && !hasGZ) {
+                    findings.push(scChiroFinding('block', 'Maintenance billed with no ABN and no GZ',
+                        'Without a signed ABN the claim carries GZ, and the charge is not collectable from the patient. Obtain the ABN before the visit rather than after it.', 'abn'));
+                } else if (input.abn_signed === null || input.abn_signed === undefined) {
+                    findings.push(scChiroFinding('warn', 'ABN status not recorded on a maintenance claim',
+                        'Maintenance therapy is never covered, so whether an ABN was signed decides who pays. It selects GA or GZ.', 'abn'));
+                }
+            }
+
+            // --- Diagnosis ---
+            var primary = String(input.primary_dx || '').trim().toUpperCase();
+            var secondary = String(input.secondary_dx || '').trim().toUpperCase();
+            var allSubluxDx = [];
+            Object.keys(SC_CHIRO_REGION_DX).forEach(function(r){
+                SC_CHIRO_REGION_DX[r].forEach(function(d){ allSubluxDx.push(d); });
+            });
+            if (cmt.length) {
+                if (!primary) {
+                    findings.push(scChiroFinding('block', 'Primary diagnosis missing',
+                        'The precise level of subluxation is the primary diagnosis on a chiropractic claim. It is a required claim element, not a documentation preference.', 'primary_dx'));
+                } else if (allSubluxDx.indexOf(primary) === -1) {
+                    findings.push(scChiroFinding('block', 'Primary diagnosis is not a subluxation code',
+                        primary + ' is in the primary position. The primary diagnosis must be the subluxation at its precise level (M99.00-M99.05); the neuromusculoskeletal condition being treated goes in the secondary position.', 'primary_dx'));
+                } else if (normRegions.length) {
+                    var covered = normRegions.some(function(r){ return SC_CHIRO_REGION_DX[r].indexOf(primary) !== -1; });
+                    if (!covered) {
+                        findings.push(scChiroFinding('block', 'Subluxation level does not match any region treated',
+                            primary + ' names a level in a spinal area that is not among the regions documented (' + normRegions.join(', ') + '). The subluxation cited and the region manipulated have to be the same place.', 'dx_table'));
+                    }
+                }
+                if (!secondary) {
+                    findings.push(scChiroFinding('block', 'Secondary diagnosis missing',
+                        'The neuromusculoskeletal condition necessitating the treatment is a required secondary diagnosis. A subluxation code alone does not state why manipulation was needed.', 'primary_dx'));
+                }
+            }
+
+            // --- Subluxation demonstrated ---
+            var shownBy = String(input.subluxation_shown_by || '').toLowerCase();
+            var part = (input.part_elements || []).map(function(p){ return String(p || '').trim().toUpperCase().charAt(0); })
+                        .filter(function(p){ return SC_CHIRO_PART_LABELS[p]; });
+            part = part.filter(function(p, i){ return part.indexOf(p) === i; });
+            if (cmt.length) {
+                if (!shownBy) {
+                    findings.push(scChiroFinding('block', 'How the subluxation was demonstrated is not recorded',
+                        'A subluxation must be demonstrated by x-ray or by physical examination. Since 1 January 2000 the P.A.R.T. examination is the alternative to imaging; neither is recorded here.', 'part'));
+                } else if (shownBy === 'part') {
+                    var hasAR = part.indexOf('A') !== -1 || part.indexOf('R') !== -1;
+                    if (part.length < 2) {
+                        findings.push(scChiroFinding('block', 'P.A.R.T. examination does not meet the minimum',
+                            part.length + ' of the four criteria documented. Two are required.', 'part'));
+                    } else if (!hasAR) {
+                        findings.push(scChiroFinding('block', 'P.A.R.T. is missing the required A or R element',
+                            part.join(' and ') + ' documented. Two criteria are required and one of them must be asymmetry/misalignment (A) or range of motion abnormality (R) -- pain and tissue findings alone do not demonstrate a subluxation.', 'part'));
+                    } else {
+                        findings.push(scChiroFinding('info', 'P.A.R.T. examination meets the requirement',
+                            part.map(function(p){ return p + ' (' + SC_CHIRO_PART_LABELS[p] + ')'; }).join('; ') + '.', 'part'));
+                    }
+                } else if (shownBy === 'xray') {
+                    var days = input.xray_days_before_treatment;
+                    if (days === null || days === undefined || !isFinite(days)) {
+                        findings.push(scChiroFinding('warn', 'X-ray date relative to treatment not recorded',
+                            'The x-ray must fall within 12 months before, or 3 months after, the beginning of treatment. A positive number of days before treatment, or a negative number for an x-ray taken after it, decides this.', 'xray_window'));
+                    } else if (days > 365 && input.chronic_permanent_documented !== true) {
+                        findings.push(scChiroFinding('block', 'X-ray is outside the window and no chronic exception is documented',
+                            Math.round(days) + ' days before treatment began, where the limit is 365. An older film is acceptable only where the record shows a chronic subluxation existing longer than 12 months with a reasonable basis for concluding it is permanent.', 'xray_window'));
+                    } else if (days > 365) {
+                        findings.push(scChiroFinding('info', 'Older x-ray accepted under the chronic-subluxation exception',
+                            Math.round(days) + ' days before treatment, with a documented chronic and reasonably permanent condition.', 'xray_window'));
+                    } else if (days < -90) {
+                        findings.push(scChiroFinding('block', 'X-ray taken too long after treatment began',
+                            Math.round(Math.abs(days)) + ' days after the beginning of treatment, where the limit is 3 months.', 'xray_window'));
+                    }
+                }
+            }
+
+            // --- Required claim elements ---
+            if (cmt.length && input.initial_treatment_date_recorded !== true) {
+                findings.push(scChiroFinding('block', 'Date of initial treatment not recorded',
+                    'The date the course of treatment began, or the date of exacerbation, belongs in Item 14. Omitting it denies or delays the claim on its own.', 'item14'));
+            }
+            if (input.item19_date_present === true) {
+                findings.push(scChiroFinding('warn', 'A date is present in Item 19',
+                    'Any date in Item 19 is read as the date of last x-ray, which is no longer required. CMS recommends leaving it empty.', 'item19'));
+            }
+
+            // --- Frequency and device ---
+            var perDay = input.treatments_today;
+            if (isFinite(perDay) && perDay > 1) {
+                findings.push(scChiroFinding('warn', 'More than one treatment on the same day',
+                    perDay + ' treatments recorded today. Medicare pays no more than one per day unless documentation of the reasonableness and necessity of the additional treatment goes with the claim; room or ward fees are never covered.', 'one_per_day'));
+            }
+            if (input.device_charge === true && isMedicare) {
+                findings.push(scChiroFinding('block', 'Separate charge for a manual device',
+                    'A hand-held manual device may be used to perform the manipulation, but there is no additional payment for its use and no recognised charge for the device itself.', 'device'));
+            }
+
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length,
+                     regions: normRegions, cmt_codes: cmt };
+        }
+
         // PRE-SUBMISSION RISK CHECK (2026-08-20, Phase 3 item 5).
         //
         // WHAT THIS DELIBERATELY IS NOT: a denial-probability score. The
