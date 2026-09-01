@@ -30,6 +30,16 @@
       "claimed_at_epoch": 1788169846.6232352,
       "status": "released",
       "released_at": "2026-08-31T11:25:44Z"
+    },
+    {
+      "id": "cc-1788259559",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "safehtml audit, session lock auth, push gate live mode",
+      "claimed_at": "2026-09-01T10:45:59Z",
+      "claimed_at_epoch": 1788259559.776884,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
