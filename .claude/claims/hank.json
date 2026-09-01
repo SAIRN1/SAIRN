@@ -120,6 +120,16 @@
       "claimed_at_epoch": 1788268735.9818282,
       "status": "released",
       "released_at": "2026-09-01T18:13:42Z"
+    },
+    {
+      "id": "hank-1788287179",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "stale row resolution audit",
+      "claimed_at": "2026-09-01T18:26:19Z",
+      "claimed_at_epoch": 1788287179.3294854,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
