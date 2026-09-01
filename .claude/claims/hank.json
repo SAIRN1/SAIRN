@@ -90,6 +90,16 @@
       "claimed_at_epoch": 1788262237.3467927,
       "status": "released",
       "released_at": "2026-09-01T12:28:40Z"
+    },
+    {
+      "id": "hank-1788265871",
+      "session": "hank",
+      "subject": "sairncode",
+      "task": "oncology specialty module",
+      "claimed_at": "2026-09-01T12:31:11Z",
+      "claimed_at_epoch": 1788265871.5426958,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
