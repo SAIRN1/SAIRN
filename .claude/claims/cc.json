@@ -70,6 +70,16 @@
       "claimed_at_epoch": 1788287062.661622,
       "status": "released",
       "released_at": "2026-09-01T19:34:01Z"
+    },
+    {
+      "id": "cc-1788291710",
+      "session": "cc",
+      "subject": "push-gate",
+      "task": "reconcile cc and cody fixes",
+      "claimed_at": "2026-09-01T19:41:50Z",
+      "claimed_at_epoch": 1788291710.3664508,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
