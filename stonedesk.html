@@ -15529,7 +15529,23 @@ function printDrawCutSheet() {
 // reload, and its position:fixed, full-width, z-index:99990 footprint could
 // sit directly over real buttons (including AI Quote Review) until
 // dismissed, silently blocking clicks on whatever was underneath it.
-function saUnlock(){ var el=document.getElementById('sairn-lock-overlay'); if(el)el.style.display='none'; }
+// saUnlock STUB REMOVED 2026-09-01 -- the same defect the comment directly
+// above describes, sitting immediately underneath it. A previous session found
+// two stubs here shadowing the real saAcceptPrivacy/saDeclinePrivacy and fixed
+// those two; this third one, on the very next line, was left in place.
+//
+// It read, in full:
+//     function saUnlock(){ var el=document.getElementById('sairn-lock-overlay');
+//                          if(el)el.style.display='none'; }
+//
+// A plain function declaration in a later script block overwrites the earlier
+// `window.saUnlock =` from the security layer with no warning, so the lock
+// screen's Unlock button ran THIS -- which hides the overlay and checks
+// nothing. Not a weak PIN check: no PIN check. Anyone at an idle machine
+// clicked Unlock and was in. Found by driving the real lock screen in a browser
+// rather than by reading the file: the overlay went away while data-sa-locked
+// was still set and the error line was still empty, which is a shape the real
+// handler cannot produce.
 
 // SAIRI camera/doc/compare/profile — these are dynamically injected by SAIRI
 // Stub them so no console errors if SAIRI hasn't initialized yet
