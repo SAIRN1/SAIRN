@@ -68,8 +68,8 @@
       "task": "theme vars, competitive gap close, shadowing sweep",
       "claimed_at": "2026-09-01T18:24:22Z",
       "claimed_at_epoch": 1788287062.661622,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T19:34:01Z"
     }
   ]
 }
