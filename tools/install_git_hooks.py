@@ -64,6 +64,33 @@ def main():
             print('Failed to set core.hooksPath: %s' % err)
             return 1
 
+    # ── LINE ENDINGS: THE REASON THIS HOOK NEVER RAN ANYWHERE ──────────────
+    # Added 2026-09-01 during the CC/Cody reconciliation. This repo runs
+    # core.autocrlf=true. .githooks/pre-push is stored LF in the object
+    # database, but with no attribute governing it git wrote CRLF into every
+    # working tree on checkout -- which makes the shebang name an interpreter
+    # whose name ends in a carriage return. git then skips the hook SILENTLY,
+    # with no error, on every push.
+    #
+    # Measured across all four clones that day: hank CRLF, cody CRLF, fourth
+    # CRLF, cc CRLF. hank and cody had already run this installer and had
+    # core.hooksPath set, so both were reporting themselves protected while the
+    # hook had never once executed. .gitattributes now pins `.githooks/* text
+    # eol=lf`, but an attribute only takes effect on the NEXT checkout, so an
+    # existing clone keeps its broken copy until something rewrites it. That is
+    # what this does.
+    #
+    # Rewriting is safe and invisible to git status: the blob is already LF, so
+    # with autocrlf=true a CRLF and an LF working file are both "unmodified".
+    try:
+        raw = open(hookfile, 'rb').read()
+        if b'\r\n' in raw:
+            open(hookfile, 'wb').write(raw.replace(b'\r\n', b'\n'))
+            print('REPAIRED: .githooks/pre-push had CRLF endings -- git was skipping it')
+            print('          silently. Rewritten with LF.')
+    except Exception as e:
+        print('WARNING: could not check .githooks/pre-push line endings: %s' % e)
+
     # On Windows+Git-Bash the executable bit is not what decides whether a hook
     # runs, but set it where the filesystem supports it so the same checkout
     # works on macOS and Linux.
@@ -88,7 +115,35 @@ def main():
         print('WARNING: the gate script did not run cleanly (exit %d).' % r.returncode)
         print(r.stderr.strip()[:400])
         return 1
-    print('Gate script runs. Installed.')
+    print('Gate script runs.')
+
+    # AND THE SHELL WRAPPER, WHICH IS A SEPARATE CLAIM. The check above proves
+    # the PYTHON runs. It says nothing about the wrapper, and that is where this
+    # failed: the python was fine, the shell file was not executable by git, and
+    # "Gate script runs. Installed." was true while the hook was dead.
+    #
+    # HONEST SCOPE, MEASURED RATHER THAN ASSUMED: this catches a broken wrapper
+    # (shell syntax error, missing interpreter, wrong path). It does NOT catch
+    # the CRLF failure -- `sh <file>` reads the file as a script and never
+    # consults the shebang, so a CRLF copy and an LF copy both exit 0 here.
+    # Verified both ways before writing this line. The CRLF case is caught and
+    # repaired by the byte check above, which is the authoritative one; this run
+    # is a second, narrower net and is not a substitute for it.
+    try:
+        w = subprocess.run(['sh', hookfile], input='', capture_output=True, text=True, cwd=repo)
+        bad = ('not found' in (w.stderr or '').lower()
+               or 'bad interpreter' in (w.stderr or '').lower()
+               or w.returncode not in (0, 1))
+        if bad:
+            print('WARNING: the SHELL WRAPPER did not execute (exit %d).' % w.returncode)
+            print((w.stderr or '').strip()[:300])
+            print('git would skip this hook silently. Do not treat this as installed.')
+            return 1
+        print('Shell wrapper executes.')
+    except Exception as e:
+        print('WARNING: could not execute the shell wrapper: %s' % e)
+        return 1
+    print('Installed.')
     print('')
     print('Verify end to end with a real push from a NON-Bash caller:')
     print('    python tools/sairn_claim.py claim <subject> <task>')
