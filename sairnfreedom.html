@@ -172,6 +172,8 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="nitem" id="nav-donations" onclick="sfNav('donations')">Donations &amp; Donors</div>
       <div class="nitem" id="nav-service" onclick="sfNav('service')">Service Hours</div>
       <div class="nitem" id="nav-outreach" onclick="sfNav('outreach')">Community Outreach</div>
+      <div class="nsec">Phase 6 &mdash; District rollup</div>
+      <div class="nitem" id="nav-district" onclick="sfNav('district')">District Rollup</div>
     </nav>
 
     <main>
@@ -206,8 +208,13 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           enumerated purposes (4.6) and service-hour tracking (4.7).
           <strong>Receipts are generated but nothing is emailed</strong> &mdash; there is no
           email endpoint for this app, and that is stated rather than implied.<br>
-          <strong>Not built:</strong> Phase 5 (member experience) and Phase 6 (district
-          rollup). Absent rather than stubbed.</div>
+          <strong>Phase 6 &mdash; District rollup:</strong> signed export and import of
+          aggregate reports, including the compliance row. <strong>The live grant-gated
+          cross-tenant read is deliberately not built</strong> &mdash; it needs a server
+          tier and real authentication this app does not have, and a real district's use
+          of the file exchange should inform that investment rather than the reverse.<br>
+          <strong>Not built:</strong> Phase 5 (member experience). Absent rather than
+          stubbed.</div>
         </div>
       </div>
 
@@ -364,6 +371,69 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><div class="tw"><table>
           <thead><tr><th>Member</th><th>Condition</th><th>Granted by</th><th>Granted</th><th>Status</th><th></th></tr></thead>
           <tbody id="wv-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- ============ PHASE 6 — SIGNED EXPORT / IMPORT ============ -->
+      <div class="panel" id="panel-district">
+        <div class="ph"><div><div class="ptitle">District Rollup</div>
+          <div class="pdesc">Signed aggregate reports, exchanged as files &mdash; no live cross-tenant read exists, deliberately</div></div></div>
+        <div id="ds-flags"></div>
+
+        <div class="card"><h3>This post's signing key</h3>
+          <div id="ds-key"></div>
+          <div style="margin-top:10px">
+            <button class="btn sec" onclick="sfShowSigningKey()">Show this post's key fingerprint</button>
+          </div>
+          <div class="blockbox" style="margin-top:12px"><strong>What the signature does and does not prove.</strong>
+          The keypair is ECDSA P-256, generated in this browser; the private key never
+          leaves it. A valid signature proves the report was produced by a browser holding
+          <em>this post's</em> private key and has not been altered since. It does
+          <strong>not</strong> prove the figures are true &mdash; the post computes its own
+          report, which is correct because they are the post's books. Key distribution is
+          trust-on-first-use: a district records a post's public key the first time it
+          imports from it, and is warned loudly if that key ever changes.</div>
+          <div class="flagbox"><strong>Losing this browser loses the key.</strong> Storage
+          here is local, so clearing site data destroys the private key and every future
+          report will carry a new fingerprint that districts will flag as changed. Export
+          the key below and keep it somewhere real before that matters.</div>
+          <div style="margin-top:10px">
+            <button class="btn sec" onclick="sfExportSigningKey()">Export this key (private &mdash; keep it safe)</button>
+            <button class="btn sec" onclick="sfPromptImportKey()">Restore a key from backup</button>
+          </div>
+          <div><input type="file" accept="application/json,.json" id="ds-keyfile" style="display:none" onchange="sfImportSigningKey()"></div>
+        </div>
+
+        <div class="card"><h3>Export this post's report</h3>
+          <div class="grid">
+            <div><label>Calendar year</label><select id="ds-year"></select></div>
+          </div>
+          <div style="margin-top:10px">
+            <button class="btn" onclick="sfExportReport()">Generate and download a signed report</button>
+            <button class="btn sec" onclick="sfPreviewReport()">Preview what leaves this post</button>
+          </div>
+          <div id="ds-preview"></div>
+          <div class="blockbox" style="margin-top:12px"><strong>Aggregates only, by
+          construction.</strong> The report contains no member, staff, operator, donor or
+          winner names, no roster, no tickets and no prize list &mdash; those bytes are
+          never placed in the document, rather than being filtered out of it later. That is
+          the same reason ORC 2915.10(A)(3) winner Social Security numbers are held out of
+          this app entirely: a district tier that never receives a thing cannot leak it.</div>
+        </div>
+
+        <div class="card"><h3>Import reports from posts</h3>
+          <div><input type="file" accept="application/json,.json" id="ds-import" multiple onchange="sfImportReports()"></div>
+          <div id="ds-importout" style="margin-top:12px"></div>
+          <div class="note">Each file's signature is verified before anything is shown. A
+          report that fails verification is <strong>rejected, not shown with a warning</strong>
+          &mdash; an unverified figure in a district roll-up is worse than a missing one,
+          because it looks like data.</div>
+        </div>
+
+        <div class="card"><h3>District roll-up</h3>
+          <div class="kpi-row" id="ds-kpis"></div>
+          <div id="ds-rollup"></div>
+          <div style="margin-top:10px"><button class="btn sec dngr" onclick="sfClearImports()">Clear imported reports</button></div>
+        </div>
       </div>
 
       <!-- ============ PHASE 4 — DISBURSEMENT (4.1, 4.2, 4.3) ============ -->
@@ -4168,6 +4238,454 @@ function sfRenderOutreach(){
     : '<div class="blockbox"><strong>Organisation type is not set</strong>, so there is no category set to constrain suggestions against.</div>';
 }
 
+/* ========================================================================
+   PHASE 6 -- SIGNED EXPORT / IMPORT
+   Built to docs/superpowers/specs/2026-09-01-sairnfreedom-phase6-cross-tenant-
+   authorization-design.md, Option D. THE LIVE GRANT-GATED PUBLISH IS
+   DELIBERATELY NOT BUILT: it needs a server tier this app does not have and
+   real authentication this app does not have (sfUnlock accepts any string),
+   and the design's recommendation is that a real district's usage should
+   inform that investment rather than the other way round.
+
+   THE PART THAT IS EXPENSIVE TO REVERSE IS THE AGGREGATE SHAPE, NOT THE
+   TRANSPORT. That is why this ships now: it settles the shape against real
+   data, cheaply, inside the architecture that already exists.
+
+   READ-ONLY BY CONSTRUCTION, taken literally. The report is built by naming
+   the fields that go INTO it. No member, staff, operator, donor or winner name
+   is ever placed in the document, so no filter can fail open. Same reasoning
+   that holds ORC 2915.10(A)(3) winner SSNs out of the app entirely.
+   ======================================================================== */
+
+var K_KEYPAIR='sf_district_keypair', K_IMPORTS='sf_district_imports',
+    K_KNOWNKEYS='sf_district_known_keys';
+var DISTRICT_REPORT_FORMAT='sairnfreedom.district-report';
+var DISTRICT_REPORT_VERSION=1;
+
+function getImports(){ return ld(K_IMPORTS, []); }
+function getKnownKeys(){ return ld(K_KNOWNKEYS, {}); }
+
+/* Deterministic serialisation. JSON.stringify preserves insertion order, which
+   means two structurally identical objects can serialise differently and a
+   signature made over one will not verify against the other. Sorting keys
+   recursively removes that entirely. */
+function sfCanonical(v){
+  if(v===null || typeof v!=='object') return JSON.stringify(v);
+  if(Array.isArray(v)) return '['+v.map(sfCanonical).join(',')+']';
+  return '{'+Object.keys(v).sort().map(function(k){
+    return JSON.stringify(k)+':'+sfCanonical(v[k]);
+  }).join(',')+'}';
+}
+function b64url(buf){
+  var bytes=new Uint8Array(buf), s='';
+  for(var i=0;i<bytes.length;i++) s+=String.fromCharCode(bytes[i]);
+  return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function unb64url(str){
+  var s=String(str||'').replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4) s+='=';
+  var bin=atob(s), out=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++) out[i]=bin.charCodeAt(i);
+  return out.buffer;
+}
+function subtle(){
+  return (window.crypto && window.crypto.subtle) ? window.crypto.subtle : null;
+}
+function sfSha256Hex(str){
+  var s=subtle();
+  if(!s) return Promise.reject(new Error('no subtle crypto'));
+  return s.digest('SHA-256', new TextEncoder().encode(str)).then(function(buf){
+    var b=new Uint8Array(buf), h='';
+    for(var i=0;i<b.length;i++) h+=b[i].toString(16).padStart(2,'0');
+    return h;
+  });
+}
+/* A short, readable fingerprint of the PUBLIC key -- what a district records
+   the first time it imports from a post, and compares on every import after. */
+function keyFingerprint(publicJwk){
+  return sfSha256Hex(sfCanonical({ crv:publicJwk.crv, kty:publicJwk.kty, x:publicJwk.x, y:publicJwk.y }))
+    .then(function(hex){ return hex.slice(0,16).replace(/(.{4})/g,'$1 ').trim().toUpperCase(); });
+}
+
+var SIG_ALG={ name:'ECDSA', hash:{ name:'SHA-256' } };
+var KEY_ALG={ name:'ECDSA', namedCurve:'P-256' };
+
+function sfEnsureKeypair(){
+  var stored=ld(K_KEYPAIR, null);
+  if(stored && stored.privateJwk && stored.publicJwk) return Promise.resolve(stored);
+  var s=subtle();
+  if(!s) return Promise.reject(new Error('Web Crypto is unavailable in this browser context, so nothing can be signed.'));
+  return s.generateKey(KEY_ALG, true, ['sign','verify']).then(function(kp){
+    return Promise.all([ s.exportKey('jwk', kp.privateKey), s.exportKey('jwk', kp.publicKey) ]);
+  }).then(function(pair){
+    var rec={ privateJwk:pair[0], publicJwk:pair[1], created:localToday() };
+    st(K_KEYPAIR, rec);
+    return rec;
+  });
+}
+function signPayload(payloadStr){
+  return sfEnsureKeypair().then(function(rec){
+    return subtle().importKey('jwk', rec.privateJwk, KEY_ALG, false, ['sign']).then(function(key){
+      return subtle().sign(SIG_ALG, key, new TextEncoder().encode(payloadStr));
+    }).then(function(sig){ return { signature:b64url(sig), publicJwk:rec.publicJwk }; });
+  });
+}
+function verifyPayload(payloadStr, signature, publicJwk){
+  var s=subtle();
+  if(!s) return Promise.resolve(false);
+  return s.importKey('jwk', publicJwk, KEY_ALG, false, ['verify']).then(function(key){
+    return s.verify(SIG_ALG, key, unb64url(signature), new TextEncoder().encode(payloadStr));
+  })['catch'](function(){ return false; });
+}
+
+/* ---- THE AGGREGATE SHAPE ----------------------------------------------
+   Built by NAMING what goes in. Entities, never buildings -- an auxiliary is
+   a separate tenant sharing a location, and Phase 1 already keeps entityId and
+   locationId as separate keys.
+
+   Gaming net profit is reported SPLIT BY REGIME and never summed into one
+   number, because ORC 2915.01(V) and ORC 2915.101 govern different money under
+   different rules. Collapsing them at district level would be exactly the error
+   Phase 4 was careful to avoid at post level. */
+function buildDistrictReport(year){
+  var p=getPost(), o=orgType(p.orgType), fees=getFees();
+  var members=getMembers(), led=getLedger();
+  var y=String(year);
+
+  var byCategory={};
+  MEMBER_CATEGORIES.forEach(function(c){ byCategory[c.id]=0; });
+  members.forEach(function(m){ if(byCategory[m.category]===undefined) byCategory[m.category]=0; byCategory[m.category]++; });
+
+  var perCapitaAccrued=led.filter(function(r){ return r.layer==='per_capita' && String(r.date||'').slice(0,4)===y; })
+    .reduce(function(a,r){ return a+Number(r.amount||0); },0);
+  var lodgeRevenue=led.filter(function(r){ return r.treatment==='revenue' && String(r.date||'').slice(0,4)===y; })
+    .reduce(function(a,r){ return a+Number(r.amount||0); },0);
+
+  var sessions=getSessions().filter(function(s){ return s.recorded && String(s.date||'').slice(0,4)===y; });
+  var receipts=0, prizes=0;
+  sessions.forEach(function(s){ var g=sessionGross(s); receipts+=g.receipts; prizes+=g.prizes; });
+  var np=netProfitByGame(y);
+  var cfg=getP4Config();
+  var req=tieredRequirement(np.tieredRegimeNet, cfg.threshold);
+  var disb=getDisbursements().filter(function(d){ return String(d.date||'').slice(0,4)===y; });
+  var distributedTiered=disb.filter(function(d){
+    return d.source==='gaming_net_profit' && TIERED_REGIME_GAMES.indexOf(d.game)>=0 && d.direction==='given_away';
+  }).reduce(function(a,d){ return a+Number(d.amount||0); },0);
+
+  var byPurpose={}, byNational={};
+  disb.forEach(function(d){
+    if(d.purpose) byPurpose[d.purpose]=Math.round(((byPurpose[d.purpose]||0)+Number(d.amount||0))*100)/100;
+    if(d.natcat) byNational[d.natcat]=Math.round(((byNational[d.natcat]||0)+Number(d.amount||0))*100)/100;
+  });
+
+  var svc=getServiceLog().filter(function(s){ return String(s.date||'').slice(0,4)===y; });
+  function sum(rows,f){ return Math.round(rows.reduce(function(a,r){ return a+Number(r[f]||0); },0)*100)/100; }
+
+  /* COMPLIANCE ROW -- included by decision 2026-09-01. COUNTS AND CITATIONS
+     ONLY, NEVER NAMES: a barred operator is a person, and the design's whole
+     premise is that the district tier receives aggregates rather than filtering
+     records. */
+  var barredByCite={};
+  getOperators().forEach(function(op){
+    var e=operatorEligibility(op);
+    if(e.eligible) return;
+    e.reasons.forEach(function(r){ barredByCite[r.cite]=(barredByCite[r.cite]||0)+1; });
+  });
+  var prizeCapBreaches=sessions.filter(function(s){ return sessionGross(s).prizes>MAX_PRIZE_PER_SESSION; }).length;
+  var overdrawn=getAccounts().filter(function(a){ return accountDeposits(a.id)-accountPayments(a.id) < 0; }).length;
+  var unlicensedGaming=getVendors().filter(function(v){ var c=vendorCategory(v.category); return c && c.licensedOnly && !v.licensed; }).length;
+  var unrecordedPast=getSessions().filter(function(s){
+    return !s.recorded && dayNum(s.date)!==null && dayNum(s.date) < dayNum(localToday());
+  }).length;
+  var totals=donorTotals();
+  var recognitionOwed=Object.keys(totals).filter(function(k){
+    var t=tierEarned(totals[k].lifetime); if(!t) return false;
+    var a=awardFor(k); return !a || a.state!=='presented';
+  }).length;
+  var t15=fifteenYearTest();
+
+  return {
+    format:DISTRICT_REPORT_FORMAT,
+    version:DISTRICT_REPORT_VERSION,
+    generated:localToday(),
+    period:{ basis:'calendar year', year:y },
+    entity:{
+      entityId:p.entityId||'', locationId:p.locationId||'',
+      name:p.name||'', orgType:p.orgType||'', statutoryClass:o?o.statutory:'',
+      city:p.city||'', state:p.state||'',
+      liquorPermit:p.liquor||'', d6Held:!!p.d6,
+      bingoLicenceTypes:licenceTypes().slice().sort()
+    },
+    membership:{ total:members.length, byCategory:byCategory, activeWaivers:countActiveWaivers() },
+    money:{
+      lodgeRevenue:Math.round(lodgeRevenue*100)/100,
+      perCapitaAccrued:Math.round(perCapitaAccrued*100)/100,
+      perCapitaRatePerMember:Number(fees.perCapita||0),
+      perCapitaRemittanceDue:fees.perCapitaDue||''
+    },
+    gaming:{
+      sessionsRecorded:sessions.length,
+      grossReceipts:Math.round(receipts*100)/100,
+      prizesPaid:Math.round(prizes*100)/100,
+      grossProfit:Math.round((receipts-prizes)*100)/100,
+      netProfitPurposeRegime:Math.round(np.purposeRegimeNet*100)/100,
+      netProfitTieredRegime:Math.round(np.tieredRegimeNet*100)/100,
+      expensesWereAllocated:!!np.allocated
+    },
+    distribution:{
+      threshold:req.threshold,
+      minimumRequired:Math.round(req.required*100)/100,
+      distributed:Math.round(distributedTiered*100)/100,
+      shortfall:Math.round(Math.max(0,req.required-distributedTiered)*100)/100,
+      ownPurposeAllowance:Math.round(req.ownPurposeAllowance*100)/100
+    },
+    disbursement:{ byOhioCharitablePurpose:byPurpose, byNationalCategory:byNational,
+                   totalAllSources:Math.round(disb.reduce(function(a,d){ return a+Number(d.amount||0); },0)*100)/100 },
+    service:{ personHours:sum(svc,'personHours'), personMiles:sum(svc,'personMiles'),
+              nationalCountablePersonHours:sum(svc.filter(function(s){ return s.national; }),'personHours'),
+              memberVolunteers:sum(svc,'members'), nonMemberVolunteers:sum(svc,'nonmembers') },
+    compliance:{
+      permitFilingFlagsOutstanding:getPermitFlags().length,
+      barredOperatorsByCitation:barredByCite,
+      barredOperatorCount:getOperators().filter(function(op){ return !operatorEligibility(op).eligible; }).length,
+      prizeCapBreaches:prizeCapBreaches,
+      pastSessionsWithNoRecordedResults:unrecordedPast,
+      overdrawnGamingAccounts:overdrawn,
+      gamingVendorsNotMarkedLicensed:unlicensedGaming,
+      donorRecognitionOwed:recognitionOwed,
+      distributionShortfall:Math.round(Math.max(0,req.required-distributedTiered)*100)/100,
+      fifteenYearTest: t15.applies ? (t15.known ? (t15.passes?'met':'not met') : 'unknown') : 'not applicable'
+    }
+  };
+}
+
+/* Signature covers a canonical serialisation of the report body. The envelope
+   carries the body, the public key and the signature -- so a verifier needs
+   nothing from us except the file. */
+function sfBuildSignedDocument(year){
+  var report=buildDistrictReport(year);
+  var payload=sfCanonical(report);
+  return signPayload(payload).then(function(sig){
+    return keyFingerprint(sig.publicJwk).then(function(fp){
+      return { report:report, publicJwk:sig.publicJwk, keyFingerprint:fp, signature:sig.signature };
+    });
+  });
+}
+function sfVerifyDocument(doc){
+  if(!doc || !doc.report || !doc.signature || !doc.publicJwk) return Promise.resolve({ ok:false, reason:'The file is not a signed district report.' });
+  if(doc.report.format!==DISTRICT_REPORT_FORMAT) return Promise.resolve({ ok:false, reason:'Unrecognised format.' });
+  if(Number(doc.report.version)!==DISTRICT_REPORT_VERSION) return Promise.resolve({ ok:false, reason:'Report version '+doc.report.version+' -- this build reads version '+DISTRICT_REPORT_VERSION+'.' });
+  return verifyPayload(sfCanonical(doc.report), doc.signature, doc.publicJwk).then(function(valid){
+    if(!valid) return { ok:false, reason:'The signature does not verify. The file was altered after signing, or was not signed by the key it carries.' };
+    return keyFingerprint(doc.publicJwk).then(function(fp){
+      if(doc.keyFingerprint && doc.keyFingerprint!==fp){
+        return { ok:false, reason:'The stated key fingerprint does not match the key in the file.' };
+      }
+      return { ok:true, fingerprint:fp };
+    });
+  });
+}
+
+function sfDownload(name, text){
+  var blob=new Blob([text], { type:'application/json' });
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); if(a.parentNode) a.parentNode.removeChild(a); }, 0);
+}
+function reportYear(){ var y=$('ds-year'); return (y && y.value) || String(parseLocalDate(localToday()).getFullYear()); }
+
+function sfPreviewReport(){
+  var box=$('ds-preview'); if(!box) return;
+  var rep=buildDistrictReport(reportYear());
+  box.innerHTML='<div class="flagbox" style="margin-top:12px"><strong>This is the whole document, exactly as it would leave this post.</strong> No names appear anywhere in it.</div>'+
+    '<div class="card" style="white-space:pre-wrap;font-family:monospace;font-size:11px;max-height:340px;overflow:auto">'+H(JSON.stringify(rep,null,2))+'</div>';
+}
+function sfExportReport(){
+  var box=$('ds-preview'); if(!box) return;
+  var p=getPost();
+  if(!p.entityId){ toast('Set an Entity ID in Post Profile first -- the roll-up aggregates entities, not buildings','err'); return; }
+  var year=reportYear();
+  box.innerHTML='<div class="flagbox" style="margin-top:12px">Signing...</div>';
+  sfBuildSignedDocument(year).then(function(doc){
+    sfDownload('sairnfreedom-'+(p.entityId||'entity')+'-'+year+'.json', JSON.stringify(doc,null,2));
+    box.innerHTML='<div class="flagbox" style="margin-top:12px;border-left-color:var(--ok);background:#F0FDF4"><strong>Signed and downloaded.</strong> Key fingerprint <code>'+H(doc.keyFingerprint)+'</code>. A district importing this for the first time will record that fingerprint and warn if it ever changes.</div>';
+  })['catch'](function(e){
+    box.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>Nothing was exported.</strong> '+H(e && e.message ? e.message : 'Signing failed.')+' An unsigned report is not offered as a fallback -- a district cannot tell an unsigned file from a forged one.</div>';
+  });
+}
+
+function sfShowSigningKey(){
+  var box=$('ds-key'); if(!box) return;
+  box.innerHTML='<div class="note">Generating...</div>';
+  sfEnsureKeypair().then(function(rec){
+    return keyFingerprint(rec.publicJwk).then(function(fp){
+      box.innerHTML='<div class="note">Fingerprint <code>'+H(fp)+'</code> &middot; ECDSA P-256 &middot; created '+H(rec.created)+'</div>';
+    });
+  })['catch'](function(e){
+    box.innerHTML='<div class="blockbox"><strong>No signing key.</strong> '+H(e && e.message ? e.message : 'Web Crypto is unavailable.')+'</div>';
+  });
+}
+function sfExportSigningKey(){
+  sfEnsureKeypair().then(function(rec){
+    sfDownload('sairnfreedom-signing-key-'+(getPost().entityId||'entity')+'.json', JSON.stringify(rec,null,2));
+    toast('Key exported -- this file is the private key, treat it accordingly');
+  })['catch'](function(){ toast('Could not export the key','err'); });
+}
+function sfPromptImportKey(){ var f=$('ds-keyfile'); if(f) f.click(); }
+function sfImportSigningKey(){
+  var f=$('ds-keyfile');
+  if(!f || !f.files || !f.files.length) return;
+  var r=new FileReader();
+  r.onload=function(){
+    var rec=null;
+    try{ rec=JSON.parse(String(r.result||'')); }catch(e){ rec=null; }
+    if(!rec || !rec.privateJwk || !rec.publicJwk){ toast('That is not a signing-key backup','err'); return; }
+    st(K_KEYPAIR, rec);
+    f.value='';
+    toast('Signing key restored');
+    sfShowSigningKey();
+  };
+  r.readAsText(f.files[0]);
+}
+
+/* ---- IMPORT: verify first, reject rather than caveat ------------------- */
+function sfImportReports(){
+  var input=$('ds-import'), box=$('ds-importout');
+  if(!input || !input.files || !input.files.length || !box) return;
+  var files=Array.prototype.slice.call(input.files);
+  box.innerHTML='<div class="flagbox">Verifying '+files.length+' file(s)...</div>';
+  var results=[];
+  var chain=Promise.resolve();
+  files.forEach(function(file){
+    chain=chain.then(function(){
+      return new Promise(function(resolve){
+        var r=new FileReader();
+        r.onerror=function(){ results.push({ name:file.name, ok:false, reason:'The file could not be read.' }); resolve(); };
+        r.onload=function(){
+          var doc=null;
+          try{ doc=JSON.parse(String(r.result||'')); }catch(e){ doc=null; }
+          if(!doc){ results.push({ name:file.name, ok:false, reason:'Not valid JSON.' }); resolve(); return; }
+          sfVerifyDocument(doc).then(function(v){
+            if(!v.ok){ results.push({ name:file.name, ok:false, reason:v.reason }); resolve(); return; }
+            /* TRUST ON FIRST USE. The first import from an entity records its
+               fingerprint; a later report from the same entity under a
+               different key is accepted as a signature but flagged loudly,
+               because that is either a rotated key or a different signer and
+               the district is the only one who can tell which. */
+            var known=getKnownKeys(), eid=doc.report.entity.entityId||('(unnamed) '+doc.report.entity.name);
+            var changed=false, firstSeen=false;
+            if(!known[eid]){ known[eid]={ fingerprint:v.fingerprint, firstSeen:localToday() }; firstSeen=true; st(K_KNOWNKEYS, known); }
+            else if(known[eid].fingerprint!==v.fingerprint){ changed=true; }
+            var imports=getImports().filter(function(x){
+              return !(x.entityId===eid && x.year===doc.report.period.year);
+            });
+            imports.push({ entityId:eid, year:doc.report.period.year, fingerprint:v.fingerprint,
+                           importedOn:localToday(), report:doc.report });
+            st(K_IMPORTS, imports);
+            results.push({ name:file.name, ok:true, entityId:eid, year:doc.report.period.year,
+                           fingerprint:v.fingerprint, firstSeen:firstSeen, changed:changed,
+                           generated:doc.report.generated });
+            resolve();
+          });
+        };
+        r.readAsText(file);
+      });
+    });
+  });
+  chain.then(function(){
+    input.value='';
+    box.innerHTML=results.map(function(r){
+      if(!r.ok) return '<div class="blockbox"><strong>Rejected &mdash; '+H(r.name)+'.</strong> '+H(r.reason)+'</div>';
+      var extra = r.changed
+        ? '<div class="blockbox" style="margin-top:8px"><strong>The signing key for this entity has CHANGED since its last report.</strong> That is either a rotated key or a different signer, and only you can tell which. Confirm with the post before relying on these figures.</div>'
+        : (r.firstSeen ? ' <span class="tag info">First report from this entity &mdash; fingerprint recorded</span>' : '');
+      return '<div class="flagbox" style="border-left-color:var(--ok);background:#F0FDF4"><strong>Verified &mdash; '+H(r.entityId)+', '+H(r.year)+'.</strong> '+
+        'Generated '+H(r.generated)+', key <code>'+H(r.fingerprint)+'</code>.'+extra+'</div>';
+    }).join('');
+    sfRenderAll();
+  });
+}
+function sfClearImports(){
+  st(K_IMPORTS, []);
+  toast('Imported reports cleared');
+  sfRenderAll();
+}
+
+function sfRenderDistrict(){
+  var years={};
+  getSessions().forEach(function(s){ if(s.date) years[String(s.date).slice(0,4)]=1; });
+  getDisbursements().forEach(function(d){ if(d.date) years[String(d.date).slice(0,4)]=1; });
+  var ylist=Object.keys(years).sort().reverse();
+  if(!ylist.length) ylist=[String(parseLocalDate(localToday()).getFullYear())];
+  var ys=$('ds-year');
+  if(ys){
+    var prev=ys.value;
+    ys.innerHTML=ylist.map(function(y){ return '<option value="'+H(y)+'">'+H(y)+'</option>'; }).join('');
+    if(prev && ylist.indexOf(prev)>=0) ys.value=prev;
+  }
+
+  var imports=getImports();
+  var box=$('ds-rollup');
+  if(box){
+    if(!imports.length){ box.innerHTML='<div class="empty">No reports imported. The roll-up aggregates entities, not buildings &mdash; two entities sharing one address stay two rows.</div>'; }
+    else {
+      var rows=imports.slice().sort(function(a,b){ return a.entityId<b.entityId?-1:1; }).map(function(im){
+        var r=im.report, c=r.compliance;
+        var issues=Number(c.permitFilingFlagsOutstanding||0)+Number(c.prizeCapBreaches||0)+
+                   Number(c.barredOperatorCount||0)+Number(c.overdrawnGamingAccounts||0)+
+                   Number(c.gamingVendorsNotMarkedLicensed||0)+(Number(c.distributionShortfall||0)>0?1:0);
+        return '<tr><td>'+H(r.entity.name||im.entityId)+'<div class="kpi-change">'+H(im.entityId)+' &middot; '+H(r.entity.city||'')+'</div></td>'+
+          '<td>'+H((orgType(r.entity.orgType)||{}).label||r.entity.orgType)+'<div class="kpi-change">'+H(r.entity.statutoryClass||'')+'</div></td>'+
+          '<td>'+H(String(r.membership.total))+'</td>'+
+          '<td>'+money(r.money.perCapitaAccrued)+'</td>'+
+          '<td>'+money(r.gaming.netProfitPurposeRegime)+'</td>'+
+          '<td>'+money(r.gaming.netProfitTieredRegime)+'</td>'+
+          '<td>'+money(r.distribution.shortfall)+'</td>'+
+          '<td>'+H(String(r.service.personHours))+'</td>'+
+          '<td>'+(issues?'<span class="tag bad">'+issues+'</span>':'<span class="tag ok">0</span>')+'</td>'+
+          '<td class="kpi-change">'+H(r.generated)+'</td></tr>';
+      }).join('');
+      box.innerHTML='<div class="tw"><table><thead><tr><th>Entity</th><th>Type</th><th>Members</th>'+
+        '<th>Per-capita owed up</th><th>Net profit &mdash; (V)</th><th>Net profit &mdash; 2915.101</th>'+
+        '<th>Distribution shortfall</th><th>Person-hours</th><th>Compliance issues</th><th>As of</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table></div>'+
+        '<div class="flagbox" style="margin-top:12px"><strong>Every figure is as of the date in the last column, not as of now.</strong> '+
+        'These are published reports, not a live read. A post that stops publishing shows silence, not falsehood &mdash; this roll-up cannot tell you the difference and does not pretend to.</div>'+
+        '<div class="flagbox"><strong>The two net-profit columns are never summed.</strong> ORC 2915.01(V) governs traditional bingo and ORC 2915.101 governs instant and electronic instant bingo, under different rules. One combined district figure would be the same error at district level that Phase 4 avoids at post level.</div>';
+    }
+  }
+
+  var k=$('ds-kpis');
+  if(k){
+    function tot(f){ return Math.round(imports.reduce(function(a,im){ return a+Number(f(im.report)||0); },0)*100)/100; }
+    var issues=imports.filter(function(im){
+      var c=im.report.compliance;
+      return Number(c.permitFilingFlagsOutstanding||0)+Number(c.prizeCapBreaches||0)+
+             Number(c.barredOperatorCount||0)+Number(c.overdrawnGamingAccounts||0)+
+             Number(c.gamingVendorsNotMarkedLicensed||0)+(Number(c.distributionShortfall||0)>0?1:0) > 0;
+    }).length;
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Entities reporting</div><div class="kpi-value">'+imports.length+'</div><div class="kpi-change">Entities, not buildings</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Members</div><div class="kpi-value">'+H(String(tot(function(r){ return r.membership.total; })))+'</div><div class="kpi-change">Across reporting entities</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Per-capita owed upward</div><div class="kpi-value">'+money(tot(function(r){ return r.money.perCapitaAccrued; }))+'</div><div class="kpi-change">Pass-through liability</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Entities with issues</div><div class="kpi-value"'+(issues?' style="color:var(--red)"':'')+'>'+issues+'</div><div class="kpi-change">Of '+imports.length+' reporting</div></div>';
+  }
+
+  var fl=$('ds-flags');
+  if(fl){
+    var out='<div class="flagbox"><strong>There is no live cross-tenant read here, and that is a decision rather than a gap.</strong> '+
+      'A district officer reading a post’s books live would need a server tier this app does not have and authentication this app does not have. '+
+      'What ships instead is a signed file exchange: it settles the part that is expensive to reverse &mdash; the aggregate shape &mdash; against real data, and a real district’s use of it should inform the bigger investment rather than the other way round. '+
+      'Design in <code>docs/superpowers/specs/2026-09-01-sairnfreedom-phase6-cross-tenant-authorization-design.md</code>.</div>';
+    if(!getPost().entityId){
+      out += '<div class="blockbox"><strong>No Entity ID is set.</strong> The roll-up keys on entities, and an auxiliary sharing this building is a separate entity with its own treasury. Set one in Post Profile before exporting.</div>';
+    }
+    fl.innerHTML=out;
+  }
+}
+
 /* ---- DASHBOARD --------------------------------------------------------- */
 function sfRenderDashboard(){
   var p=getPost(), members=getMembers(), led=getLedger();
@@ -4223,6 +4741,7 @@ function sfRenderAll(){
   sfRenderCanteen(); sfRenderCloseout(); sfRenderEvents(); sfRenderHall(); sfRenderVendors();
   sfRenderSessions(); sfRenderAccounts(); sfRenderOperators();
   sfRenderDisbursements(); sfRenderDonations(); sfRenderService(); sfRenderOutreach();
+  sfRenderDistrict();
   sfRenderDashboard();
 }
 
