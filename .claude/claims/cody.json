@@ -68,8 +68,8 @@
       "task": "content re-verification of the 11 signature-cleared panels",
       "claimed_at": "2026-09-01T11:30:09Z",
       "claimed_at_epoch": 1788262209.770774,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-01T12:30:49Z",
       "note": "Written directly, not via sairn_claim.py claim. That command exits 1 on a FALSE POSITIVE: its overlap matcher fires on any shared generic word -- here 'audit' against cc's stonedesk claim, different subject and different file. Second instance tonight after 'phase'. Michael confirmed the block is not real and authorised proceeding. Disclosed rather than reworded to slip past the gate."
     }
   ]
