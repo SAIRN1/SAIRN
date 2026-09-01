@@ -29553,10 +29553,25 @@ document.addEventListener('DOMContentLoaded', function() {
       </div>
       <input id="subx-id" placeholder="Portal login ID (e.g. jrivera — no spaces)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <div style="font-size:11px;color:var(--muted);margin-bottom:10px">You'll set their PIN in a separate step after adding them, from the roster list below.</div>
+      <div id="subx-compliance-fields" style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:10px">
+        <div style="font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px">Insurance &amp; Licence</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Optional, but an <strong>expired</strong> certificate blocks new job assignments.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <input id="subx-coi-carrier" placeholder="Insurance carrier" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+          <input id="subx-coi-policy" placeholder="Policy no." style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <label style="font-size:11px;color:var(--muted)">COI expiry<input id="subx-coi-expiry" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"></label>
+          <label style="font-size:11px;color:var(--muted)">Licence expiry<input id="subx-licence-expiry" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)"></label>
+        </div>
+        <input id="subx-licence-no" placeholder="Licence no." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)"><input type="checkbox" id="subx-w9"> W-9 on file</label>
+      </div>
       <button class="q-btn primary" style="width:100%" onclick="subxAddSub()">Add Subcontractor</button>
     </div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px">
       <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Roster</div>
+      <div id="subx-compliance-banner" style="display:none;font-size:11px;border-radius:8px;padding:8px 10px;margin-bottom:8px"></div>
       <div id="subx-roster-list" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
   </div>
@@ -29610,9 +29625,48 @@ document.addEventListener('DOMContentLoaded', function() {
     return data;
   }
 
+  // COMPLIANCE (2026-09-01) -- closes §5 Row 1 of the 2026-08-27 worldwide
+  // competitive pass, the one StoneDesk row in it. Three states, never two:
+  // valid / expiring / expired, plus UNTRACKED, which is shown as untracked
+  // and never as a green tick. See api/sd-sub-data.js for the server-side
+  // gate; everything below is the UX on top of it, not the enforcement.
+  var _subxCompliance = null;   // null until the first roster read answers
+
+  function subxCompliancePill(s){
+    var c = s && s.compliance;
+    if (_subxCompliance === false) {
+      return '<span title="Run sql/sd_subs_compliance_2026-09-01.sql" style="background:#f3f4f6;color:#6b7280;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">COMPLIANCE N/A</span>';
+    }
+    if (!c) return '';
+    if (c.blocking && c.blocking.length) {
+      return '<span title="Blocks new job assignments" style="background:#fee2e2;color:#991b1b;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">EXPIRED: '+escHtml(c.blocking.join(' + ').toUpperCase())+'</span>';
+    }
+    if (c.expiring && c.expiring.length) {
+      return '<span style="background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">EXPIRING: '+escHtml(c.expiring.join(' + ').toUpperCase())+'</span>';
+    }
+    if (c.coi === 'untracked' && c.licence === 'untracked') {
+      return '<span style="background:#f3f4f6;color:#6b7280;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">NOT TRACKED</span>';
+    }
+    return '<span style="background:#dcfce7;color:#166534;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">COMPLIANT</span>';
+  }
+
+  function subxComplianceLine(s){
+    var c = s && s.compliance;
+    if (!c) return '';
+    var bits = [];
+    bits.push('COI ' + (s.coi_expiry ? escHtml(String(s.coi_expiry).slice(0,10)) : 'not on file'));
+    bits.push('Licence ' + (s.licence_expiry ? escHtml(String(s.licence_expiry).slice(0,10)) : 'not on file'));
+    bits.push('W-9 ' + (c.w9 ? 'on file' : 'missing'));
+    return '<div style="font-size:11px;color:var(--muted);margin-top:6px">' + bits.join(' &bull; ') + '</div>';
+  }
+
   window.subxLoadRoster = async function(){
     var data = await subxCall('read', 'roster', {});
     _subxRoster = (data && data.data) || [];
+    // Explicit tri-state: true / false / null-if-the-call-failed. `!==false`
+    // would read a failed call as provisioned, which is the assumption this
+    // whole feature exists to stop making.
+    _subxCompliance = data ? !!data.compliance_provisioned : null;
     subxRenderRoster();
     subxUpdateKPIs();
   };
@@ -29620,6 +29674,23 @@ document.addEventListener('DOMContentLoaded', function() {
   function subxRenderRoster(){
     var el = document.getElementById('subx-roster-list');
     var sel = document.getElementById('subx-job-sub');
+    var banner = document.getElementById('subx-compliance-banner');
+    if (banner) {
+      if (_subxCompliance === false) {
+        banner.style.display = 'block';
+        banner.style.background = '#fef3c7';
+        banner.style.color = '#92400e';
+        banner.textContent = 'Compliance tracking is not provisioned on this database — insurance and licence expiry are NOT being checked, and nothing here means a subcontractor is covered. Run sql/sd_subs_compliance_2026-09-01.sql.';
+      } else if (_subxCompliance === null) {
+        banner.style.display = 'block';
+        banner.style.background = '#f3f4f6';
+        banner.style.color = '#6b7280';
+        banner.textContent = 'Could not load the roster, so compliance was not checked. This is not a pass — reload before assigning work.';
+      } else {
+        banner.style.display = 'none';
+        banner.textContent = '';
+      }
+    }
     if (!_subxRoster.length) {
       el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No subcontractors added yet.</div>';
     } else {
@@ -29628,8 +29699,10 @@ document.addEventListener('DOMContentLoaded', function() {
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
             '<div><div style="font-weight:700;font-size:13px;color:var(--text)">'+escHtml(s.name)+'</div>' +
             '<div style="font-size:11px;color:var(--muted)">'+escHtml(s.trade||'')+(s.phone?' &bull; '+escHtml(s.phone):'')+' &bull; ID: '+escHtml(s.sub_id)+'</div></div>' +
-            '<span style="background:'+(s.active!==false?'#dcfce7':'#f3f4f6')+';color:'+(s.active!==false?'#166534':'#6b7280')+';padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">'+(s.active!==false?'ACTIVE':'INACTIVE')+'</span>' +
+            '<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">' + subxCompliancePill(s) +
+            '<span style="background:'+(s.active!==false?'#dcfce7':'#f3f4f6')+';color:'+(s.active!==false?'#166534':'#6b7280')+';padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700">'+(s.active!==false?'ACTIVE':'INACTIVE')+'</span></div>' +
           '</div>' +
+          subxComplianceLine(s) +
           '<div style="display:flex;gap:6px;margin-top:8px">' +
             '<button class="q-btn" style="font-size:11px;padding:4px 9px" onclick="subxSetPin(\''+escAttrJs(s.sub_id)+'\')">🔑 Set/Reset PIN</button>' +
             '<button class="q-btn" style="font-size:11px;padding:4px 9px" onclick="subxToggleActive(\''+escAttrJs(s.sub_id)+'\','+(s.active!==false)+')">'+(s.active!==false?'Deactivate':'Reactivate')+'</button>' +
@@ -29638,8 +29711,15 @@ document.addEventListener('DOMContentLoaded', function() {
       }).join('');
     }
     var current = sel.value;
+    // The dropdown LABELS a blocked sub rather than hiding them. Hiding would
+    // read as "that person is gone" and send the office looking for a bug;
+    // naming the reason sends them to the fix. The actual refusal is
+    // server-side in api/sd-sub-data.js -- this is only the signpost.
     sel.innerHTML = '<option value="">Pick a subcontractor...</option>' + _subxRoster.filter(function(s){return s.active!==false;}).map(function(s){
-      return '<option value="'+escHtml(s.sub_id)+'">'+escHtml(s.name)+'</option>';
+      var c = s.compliance;
+      var blocked = !!(c && c.blocking && c.blocking.length);
+      return '<option value="'+escHtml(s.sub_id)+'">'+escHtml(s.name)+
+        (blocked ? ' — BLOCKED: expired '+escHtml(c.blocking.join(' + ')) : '')+'</option>';
     }).join('');
     if (current) sel.value = current;
   }
@@ -29649,22 +29729,40 @@ document.addEventListener('DOMContentLoaded', function() {
     var subId = document.getElementById('subx-id').value.trim();
     if (!name || !subId) { showToast('Name and a portal login ID are required.'); return; }
     if (!/^[a-zA-Z0-9._-]+$/.test(subId)) { showToast('Login ID: letters, numbers, dots, dashes only — no spaces.'); return; }
+    var v = function(id){ var e=document.getElementById(id); return e ? e.value.trim() : ''; };
     var payload = {
-      sub_id: subId, name: name, trade: document.getElementById('subx-trade').value.trim(),
-      phone: document.getElementById('subx-phone').value.trim(), email: document.getElementById('subx-email').value.trim(),
-      active: true
+      sub_id: subId, name: name, trade: v('subx-trade'),
+      phone: v('subx-phone'), email: v('subx-email'),
+      active: true,
+      coi_carrier: v('subx-coi-carrier'), coi_policy_no: v('subx-coi-policy'),
+      coi_expiry: v('subx-coi-expiry'),
+      licence_no: v('subx-licence-no'), licence_expiry: v('subx-licence-expiry'),
+      w9_on_file: !!(document.getElementById('subx-w9')||{}).checked
     };
     var data = await subxCall('write', 'roster', payload);
     if (!data) return;
-    ['subx-name','subx-trade','subx-phone','subx-email','subx-id'].forEach(function(id){ document.getElementById(id).value = ''; });
-    showToast('Subcontractor added — set their PIN below to give them portal access.');
+    ['subx-name','subx-trade','subx-phone','subx-email','subx-id',
+     'subx-coi-carrier','subx-coi-policy','subx-coi-expiry','subx-licence-no','subx-licence-expiry']
+      .forEach(function(id){ var e=document.getElementById(id); if(e) e.value = ''; });
+    var w9 = document.getElementById('subx-w9'); if (w9) w9.checked = false;
+    // The server says so when the compliance half did not land. Reporting
+    // "added" while the COI expiry was silently dropped is the exact
+    // partial-success-read-as-success shape this feature is guarding against.
+    if (data.warning) showToast(data.warning);
+    else showToast('Subcontractor added — set their PIN below to give them portal access.');
     subxLoadRoster();
   };
 
   window.subxToggleActive = async function(subId, currentlyActive){
     var sub = _subxRoster.find(function(s){ return s.sub_id === subId; });
     if (!sub) return;
-    var data = await subxCall('write', 'roster', Object.assign({}, sub, { active: !currentlyActive }));
+    // `compliance` is a SERVER-COMPUTED field on the read, not a column. It
+    // must not be echoed back into a write -- the API ignores unknown keys,
+    // but sending derived state back as if it were input is how a computed
+    // value ends up being stored and then trusted.
+    var round = Object.assign({}, sub, { active: !currentlyActive });
+    delete round.compliance;
+    var data = await subxCall('write', 'roster', round);
     if (!data) return;
     subxLoadRoster();
   };
