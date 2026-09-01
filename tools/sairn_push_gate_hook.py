@@ -169,25 +169,48 @@ def prepush_base():
     sha>' per line. An all-zero remote sha means a brand-new branch, which has
     no base -- return None and let the caller fall back rather than diffing
     against a sha that does not exist.
+
+    A push that only DELETES refs ships no content and is exempt: git sends an
+    all-zero LOCAL sha for a deletion. Without this, `git push origin --delete
+    somebranch` was refused while HEAD happened to sit on a branch with
+    uncommitted-looking SQL outgoing -- verified 2026-09-01 by having a branch
+    deletion blocked, which is a pure false positive: deleting a remote ref
+    cannot ship a migration.
+
+    Returns (base_sha_or_None, is_delete_only).
     """
     try:
         data = sys.stdin.read()
     except Exception:
-        return None
-    for line in data.splitlines():
-        parts = line.split()
-        if len(parts) == 4 and set(parts[3]) != {'0'}:
-            return parts[3]
-    return None
+        return None, False
+    lines = [l.split() for l in data.splitlines() if l.split()]
+    refs = [p for p in lines if len(p) == 4]
+    if refs and all(set(p[1]) == {'0'} for p in refs):
+        return None, True
+    for parts in refs:
+        if set(parts[3]) != {'0'}:
+            return parts[3], False
+    return None, False
 
 
 def main():
     base = None
+    # Only ever assigned in pretooluse mode. It is initialised here because the
+    # combined-commit check further down referenced it unguarded, which raised
+    # UnboundLocalError in PREPUSH mode -- swallowed by the fail-open handler,
+    # so the pre-push hook silently allowed every push it was added to catch.
+    # Found 2026-09-01 by instrumenting the shell hook to prove git really was
+    # invoking it, then reproducing with git's actual new-branch stdin. Two
+    # bypass fixes landed within minutes of each other and the second disabled
+    # the first; neither test would have caught it alone.
+    cmd = ''
     if MODE == 'prepush':
         # git already decided a push is happening. There is no command text to
         # match and nothing to opt out of -- that is the entire point of this
         # entry point existing.
-        base = prepush_base()
+        base, delete_only = prepush_base()
+        if delete_only:
+            sys.exit(0)
     else:
         payload = json.load(sys.stdin)
         cmd = (payload.get('tool_input', {}) or {}).get('command', '') or ''
@@ -220,7 +243,10 @@ def main():
     # uncommitted in the working tree or the index. An ordinary combined
     # commit+push that touches no SQL is unaffected, which matters -- a gate
     # that blocks every routine workflow gets switched off within a day.
-    if re.search(r'\bgit\s+commit\b', cmd):
+    # PRETOOLUSE ONLY. In prepush mode git has already built the commit list,
+    # so there is no "the commit does not exist yet" ambiguity to guard against
+    # -- and cmd is empty there by construction.
+    if MODE == 'pretooluse' and re.search(r'\bgit\s+commit\b', cmd):
         pending = [ln[3:].strip().replace('\\', '/')
                    for ln in git(repo, 'status', '--porcelain').splitlines() if ln.strip()]
         pending_sql = sorted(q for q in pending if q.startswith('sql/') and q.endswith('.sql'))

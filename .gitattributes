@@ -22,3 +22,9 @@ docs/skill-backups/** -text
 # stray \r in every compared string. Same narrow scope as the rule above --
 # this is not the repo-wide attributes decision, which is still open.
 scripts/*.sh text eol=lf
+
+# .githooks/* must stay LF. A CRLF shebang makes the kernel look for "/bin/sh\r",
+# which does not exist, and git then skips the hook SILENTLY -- verified on
+# 2026-09-01, when a pre-push gate that denied correctly when run by hand did
+# not fire at all on a real push because the file had been written with CRLF.
+.githooks/* text eol=lf
