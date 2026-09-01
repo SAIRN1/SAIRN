@@ -3886,13 +3886,34 @@ module.exports = async (req, res) => {
       const roster = (Array.isArray(empRows) ? empRows : []).map((e) => ({
         employee_id: e.employee_id, role: e.role, active: e.active !== false
       }));
+      // warn_days FORWARDED 2026-09-01. The engine has read `input.warn_days`
+      // since it was written and this call site never set it, so the expiry
+      // warning window was pinned to DEFAULT_WARN_DAYS (30) and no caller could
+      // change it. Found by tools/sairn_seam_check.py on its first real run --
+      // the same engine-reads-it, endpoint-never-sends-it shape that ran
+      // SAIRNlaw's Florida deadline five days late for five days.
+      //
+      // A BAD VALUE IS REFUSED, NOT SILENTLY DROPPED. The engine accepts only
+      // `typeof === 'number'`, so a caller sending "45" as a string would have
+      // been ignored and would have got the 30-day default back while believing
+      // it had set 45. That is the same silent-default failure in miniature, so
+      // it 400s instead.
+      let warnDays;
+      if (payload && payload.warn_days !== undefined && payload.warn_days !== null) {
+        const wd = payload.warn_days;
+        if (typeof wd !== 'number' || !isFinite(wd) || Math.floor(wd) !== wd || wd < 0 || wd > 365) {
+          res.status(400).json({ error: { code: 'BAD_WARN_DAYS', message: 'warn_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+          return;
+        }
+        warnDays = wd;
+      }
       const programs = (Array.isArray(progRows) ? progRows : []).map((x) => roofingPrograms.evaluateProgram({
         program: {
           program_id: x.program_id, manufacturer: x.manufacturer, program_name: x.program_name,
           requirements: x.requirements || [],
           standing: { status: x.status, obtained_on: x.obtained_on, expires_on: x.expires_on, has_expiry: x.has_expiry }
         },
-        roster: roster, certifications: records, today: today
+        roster: roster, certifications: records, today: today, warn_days: warnDays
       }));
       res.status(200).json({
         ok: true, provisioned: true, today: today,

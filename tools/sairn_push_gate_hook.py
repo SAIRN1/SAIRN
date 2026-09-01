@@ -1,4 +1,23 @@
-"""PreToolUse hook for Bash. Three pre-push checks that must not depend on memory.
+"""Pre-push checks that must not depend on memory. FOUR of them as of 2026-09-01.
+
+DO NOT TRUST THAT NUMBER -- count the `CHECK n:` markers in this file. A count
+in a header is exactly the kind of claim that goes stale the day someone adds
+the fifth, and CLAUDE.md already records the Guardian skill drifting to three
+different check counts at once.
+
+TWO ENTRY POINTS, and the difference matters more than the checks do:
+
+  * PreToolUse (Bash) -- fires when the command TEXT matches a git push. Fast
+    feedback inside a session, and structurally leaky: it cannot see a push
+    driven from Python (tools/sairn_claim.py), and it runs BEFORE the command
+    executes, so `git add && git commit && git push` in one call is invisible
+    to it -- at hook time the commit does not exist yet. Both holes were hit
+    in production on 2026-09-01, hours apart, by different sessions.
+
+  * pre-push (git, via .githooks/pre-push --pre-push) -- fires on the git
+    OPERATION. Every caller, every spelling, and always after the commit
+    exists. This is the one that actually holds; install it per clone with
+    tools/install_git_hooks.py.
 
   1. SEED LOAD STATE -- blocks a push that ships a reference-seed change while
      the live licence is still serving the old value.
@@ -385,6 +404,67 @@ def main():
                     "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
                 ]
                 deny(chr(10).join(msg))
+
+    # ── CHECK 4: endpoint/engine seam ──────────────────────────────────────
+    # Added 2026-09-01. SAIRNlaw's deadline engine grew a `service_methods`
+    # input and api/legal-deadlines.js was never updated, so the field was
+    # dropped on every live request for five days -- Florida answers five days
+    # late on the shortest period in the engine. Both suites stayed green the
+    # whole time because they call the engine directly and never traverse the
+    # endpoint.
+    #
+    # Runs on any api/*.js change, not only on changed endpoints: editing an
+    # ENGINE is how the seam breaks, and the endpoint that stops matching it is
+    # a file the push never touched. Checking only changed files would have
+    # missed the original incident exactly.
+    api_changed = [q for q in changed if q.startswith('api/') and q.endswith('.js')]
+    if api_changed:
+        seam = os.path.join(repo, 'tools', 'sairn_seam_check.py')
+        if os.path.isfile(seam):
+            try:
+                s = subprocess.run([sys.executable, seam],
+                                   capture_output=True, text=True, timeout=90, cwd=repo)
+            except Exception as e:
+                deny(chr(10).join([
+                    "Blocked: the endpoint/engine seam check could not be run, so this",
+                    "push is unchecked.",
+                    "",
+                    "  %s: %s" % (type(e).__name__, e),
+                    "",
+                    "A checker that cannot be run has not passed anything.",
+                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                ]))
+            if s.returncode == 1:
+                deny(chr(10).join([
+                    "Blocked: an endpoint does not forward every input its engine reads.",
+                    "",
+                    s.stdout.strip(),
+                    "",
+                    "This does not throw at run time. The field arrives undefined, the",
+                    "engine takes its default branch, and the response looks entirely",
+                    "reasonable -- which is how SAIRNlaw returned Florida deadlines five",
+                    "days late for five days with both test suites green.",
+                    "",
+                    "Fix by forwarding the field, or -- if the engine supplies it itself or",
+                    "the endpoint fills it from the database -- declare it in the ENGINE",
+                    "file next to the contract it describes:",
+                    "    // seam-check: server-supplied <field> [<field>...]",
+                    "",
+                    "Full detail:  python tools/sairn_seam_check.py",
+                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                ]))
+            if s.returncode == 2:
+                # A seam this tool cannot parse is not a pass and does not
+                # pretend to be, but blocking on it would make an unanalysable
+                # shape unshippable -- same trade as check 1's could-not-tell.
+                note = ("Seam check COULD NOT TELL for at least one endpoint/engine pair. "
+                        "The push is allowed, but nothing was verified about that seam. "
+                        "Run: python tools/sairn_seam_check.py")
+                if MODE == 'prepush':
+                    sys.stderr.write('\n' + note + '\n\n')
+                else:
+                    print(json.dumps({"hookSpecificOutput": {
+                        "hookEventName": "PreToolUse", "additionalContext": note}}))
 
     # ── CHECK 1: seed load state ──────────────────────────────
     apps = []

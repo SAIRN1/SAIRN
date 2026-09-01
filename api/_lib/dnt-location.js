@@ -45,6 +45,19 @@ const MAX_LOCATIONS = 50;
 // blank, non-string or over-length falls back to the default rather than
 // being rejected, because refusing a write here would break every existing
 // single-location client that has never heard of locations.
+//
+// seam-check: server-supplied location_id
+//
+// Declared for tools/sairn_seam_check.py, and the reason is the interesting
+// part. That tool's model is "the engine reads X, so the endpoint must send
+// X" -- which is right for a calculating engine and WRONG for a stamper. This
+// function exists precisely to SUPPLY location_id when the caller has none;
+// api/sairndental/public-book.js omits it deliberately (see the comment at its
+// call site about dnt_settings not yet being split per location). Without this
+// line the checker reports a defect on code that is behaving exactly as
+// designed. The declaration lives here, next to the contract it describes,
+// rather than in the tool -- a stale exception is then visible in the diff of
+// the file it excuses.
 function stampLocation(payload) {
   const out = Object.assign({}, payload || {});
   const raw = out.location_id;

@@ -172,6 +172,24 @@ def engine_reads(lib_src, fn):
     if body is None:
         return set(), 'could not find a balanced body for %s()' % fn
     reads = set(re.findall(r'(?<![.\w])' + re.escape(pname) + r'\.([A-Za-z_$][\w$]*)', body))
+
+    # FOLLOW ONE LEVEL OF COPY. dnt-location.js does
+    #     const out = Object.assign({}, payload || {});  ... out.location_id
+    # so a naive scan sees zero reads off `payload` and calls the seam clean --
+    # a vacuous pass. Reads through a single-level copy alias count as reads of
+    # the input, because they are. Deeper aliasing is still not followed and
+    # still reports CANNOT TELL rather than guessing.
+    aliases = set()
+    for m in re.finditer(
+            r'(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*Object\.assign\(\s*\{\s*\}\s*,\s*'
+            + re.escape(pname) + r'\b', body):
+        aliases.add(m.group(1))
+    for m in re.finditer(
+            r'(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*\{\s*\.\.\.\s*' + re.escape(pname) + r'\b', body):
+        aliases.add(m.group(1))
+    for a in aliases:
+        reads |= set(re.findall(r'(?<![.\w])' + re.escape(a) + r'\.([A-Za-z_$][\w$]*)', body))
+
     dynamic = re.search(re.escape(pname) + r'\s*\[', body)
     problem = None
     if dynamic:
